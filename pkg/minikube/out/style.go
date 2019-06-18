@@ -87,6 +87,7 @@ var styles = map[StyleEnum]style{
 	Caching:          {Prefix: "🤹  "},
 	StartingVM:       {Prefix: "🔥  "},
 	StartingNone:     {Prefix: "🤹  "},
+	Provisioner:      {Prefix: "ℹ️  "},
 	Resetting:        {Prefix: "🔄  "},
 	DeletingHost:     {Prefix: "🔥  "},
 	Copying:          {Prefix: "✨  "},
