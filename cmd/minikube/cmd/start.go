@@ -446,6 +446,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
+			KeepContext:         viper.GetBool(keepContext),
 			MinikubeISO:         viper.GetString(isoURL),
 			Memory:              viper.GetInt(memory),
 			CPUs:                viper.GetInt(cpus),
