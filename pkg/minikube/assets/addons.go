@@ -260,6 +260,12 @@ var Addons = map[string]*Addon{
 			"registry-svc.yaml",
 			"0640",
 			false),
+		MustBinAsset(
+			"deploy/addons/registry/registry-proxy.yaml.tmpl",
+			constants.AddonsPath,
+			"registry-proxy.yaml",
+			"0640",
+			false),
 	}, false, "registry"),
 	"registry-creds": NewAddon([]*BinAsset{
 		MustBinAsset(
