@@ -60,7 +60,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 				return err
 			}
 		}
-		if err := pkgutil.RetryAfter(5, stop, 1*time.Second); err != nil {
+		if err := pkgutil.RetryAfter(6, stop, 3*time.Second); err != nil {
 			exit.WithError("Unable to stop VM", err)
 		}
 		if !nonexistent {
@@ -71,8 +71,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 			console.OutStyle(console.WarningType, "Unable to kill mount process: %s", err)
 		}
 
-		machineName := pkg_config.GetMachineName()
-		err = pkgutil.UnsetCurrentContext(constants.KubeconfigPath, machineName)
+		err = pkgutil.SetCurrentContext(constants.KubeconfigPath, "")
 		if err != nil {
 			exit.WithError("update config", err)
 		}

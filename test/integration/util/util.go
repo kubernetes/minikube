@@ -330,6 +330,19 @@ func (k *KubectlRunner) DeleteNamespace(namespace string) error {
 	return err
 }
 
+// CurrentContext returns the current context or fails
+func (k *KubectlRunner) CurrentContext() string {
+	out, err := k.RunCommand([]string{"config", "current-context"})
+	ctx := strings.TrimRight(string(out), "\n")
+	if err != nil {
+		if strings.Contains(ctx, "is not set") == true {
+			return ""
+		}
+		t.Fatalf("Failed to fetch current-context")
+	}
+	return ctx
+}
+
 // WaitForBusyboxRunning waits until busybox pod to be running
 func WaitForBusyboxRunning(t *testing.T, namespace string) error {
 	client, err := commonutil.GetClient()
