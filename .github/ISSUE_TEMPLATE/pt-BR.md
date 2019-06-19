@@ -1,8 +1,8 @@
 ---
 name: Português
-about: Reportar um problema em português
+about: Reportar um problema em Português
 labels:
-- l/en-US
+- l/pt-BR
 ---
 <!-- Use este modelo ao reportar um problema e forneça o máximo de informações possível. Se não fazer isso, pode haver um atraso na resposta. A equipe agradece. -->
  
@@ -10,6 +10,6 @@ labels:
  
 **A saída completa do comando que apresentou falha**:
  
-**A saída do comando "minikube logs"**:
+**A saída do comando `minikube logs`**:
  
 **A versão do sistema operacional usado**:
