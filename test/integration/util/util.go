@@ -338,7 +338,7 @@ func (k *KubectlRunner) CurrentContext() string {
 		if strings.Contains(ctx, "is not set") == true {
 			return ""
 		}
-		t.Fatalf("Failed to fetch current-context")
+		k.t.Fatalf("Failed to fetch current-context")
 	}
 	return ctx
 }

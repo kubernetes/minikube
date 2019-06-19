@@ -97,7 +97,7 @@ func TestStartStop(t *testing.T) {
 				t.Fatalf("timed out while checking stopped status: %v", err)
 			}
 			afterCtx := kctl.CurrentContext()
-			if origCtx != afterCtx {
+			if afterCtx != "" {
 				t.Fatalf("After stop: got current-context - %q, want  current-context %q", string(afterCtx), "")
 			}
 			r.Start(test.args...)
