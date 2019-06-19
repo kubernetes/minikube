@@ -192,6 +192,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	} else {
 		// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
 		viper.Set(cacheImages, false)
+		config.KubernetesConfig.ShouldLoadCachedImages = false
 	}
 
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
