@@ -93,13 +93,22 @@ func TestStartStop(t *testing.T) {
 				return r.CheckStatusNoFail(state.Stopped.String())
 			}
 
-			if err := util.Retry(t, checkStop, 6*time.Second, 10); err != nil {
+			checkCtx := func() error {
+				afterStopCtx := kctl.CurrentContext()
+				if afterStopCtx != "" {
+					return fmt.Errorf("Got current-context - %q, want %q", afterStopCtx, "")
+				}
+				return nil
+			}
+
+			if err := util.Retry(t, checkStop, 20*time.Second, 10); err != nil {
 				t.Fatalf("timed out while checking stopped status: %v", err)
 			}
-			afterCtx := kctl.CurrentContext()
-			if afterCtx != "" {
-				t.Fatalf("After stop: got current-context - %q, want  current-context %q", afterCtx, "")
+
+			if err := util.Retry(t, checkCtx, 1*time.Second, 5); err != nil {
+				t.Fatalf("Failed setting after-stop current-context: %v", err)
 			}
+
 			r.Start(test.args...)
 			r.CheckStatus(state.Running.String())
 
