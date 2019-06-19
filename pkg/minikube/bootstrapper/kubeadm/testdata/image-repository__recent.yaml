@@ -1,4 +1,4 @@
-apiVersion: kubeadm.k8s.io/v1alpha3
+apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
 apiEndpoint:
   advertiseAddress: 1.1.1.1
@@ -15,7 +15,7 @@ nodeRegistration:
   name: mk
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1alpha3
+apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
 imageRepository: test/repo
 apiServerExtraArgs:
