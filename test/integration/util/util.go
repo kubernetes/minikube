@@ -335,10 +335,10 @@ func (k *KubectlRunner) CurrentContext() string {
 	out, err := k.RunCommand([]string{"config", "current-context"})
 	ctx := strings.TrimRight(string(out), "\n")
 	if err != nil {
-		if strings.Contains(ctx, "is not set") == true {
+		if strings.Contains(ctx, "is not set") {
 			return ""
 		}
-		k.t.Fatalf("Failed to fetch current-context")
+		k.T.Fatalf("Failed to fetch current-context")
 	}
 	return ctx
 }
