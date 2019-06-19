@@ -73,7 +73,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 
 		err = pkgutil.SetCurrentContext(constants.KubeconfigPath, "")
 		if err != nil {
-			exit.WithError("update config", err)
+			exit.WithError("Eror unsetting kubectl context", err)
 		}
 	},
 }
