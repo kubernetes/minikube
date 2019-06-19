@@ -29,8 +29,8 @@ import (
 )
 
 const (
-	newMajor      = "v1.14.0"
-	recentMajor   = "v1.13.0"
+	newMajor      = "v1.15.0"
+	recentMajor   = "v1.14.0"
 	oldMajor      = "v1.12.0"
 	obsoleteMajor = "v1.10.0"
 )
@@ -56,7 +56,7 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,

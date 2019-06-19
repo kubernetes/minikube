@@ -1,5 +1,4 @@
-apiVersion: kubeadm.k8s.io/v1alpha3
-kind: InitConfiguration
+apiVersion: kubeadm.k8s.io/v1beta1
 apiEndpoint:
   advertiseAddress: 1.1.1.1
   bindPort: 8443
@@ -15,7 +14,7 @@ nodeRegistration:
   name: mk
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1alpha3
+apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
 apiServerExtraArgs:
   enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
