@@ -1,15 +1,15 @@
 ---
 name: Español 
-about: Report an issue in Spanish
+about: Reportar un problema en Español
 labels:
 - l/es
 ---
-<!-- Use este modelo ao reportar um problema e forneça o máximo de informações possível. Se não fazer isso, pode haver um atraso na resposta. A equipe agradece. -->
+<!-- Utiliza esta plantilla para informar de incidencias y proporciona tanta información como sea posible. Si no lo haces, es posible que la respuesta se retrase. Muchas gracias. -->
  
-**Os comandos necessários para reproduzir o problema**:
+**Los comandos necesarios para reproducir la incidencia**:
  
-**A saída completa do comando que apresentou falha**:
+**El resultado completo del comando que ha fallado**:
  
-**A saída do comando "minikube logs"**:
+**El resultado del comando `minikube logs`**:
  
-**A versão do sistema operacional usado**:
+**La versión del sistema operativo que utilizaste**:
