@@ -199,8 +199,6 @@ const (
 	KubeadmConfigFile = "/var/lib/kubeadm.yaml"
 	// DefaultCNIConfigPath is the path to the CNI configuration
 	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
-	// DefaultRktNetConfigPath is the path to the rkt net configuration
-	DefaultRktNetConfigPath = "/etc/rkt/net.d/k8s.conf"
 )
 
 const (
