@@ -23,9 +23,9 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"testing"
 
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/util"
@@ -33,7 +33,7 @@ import (
 
 func getSHAFromURL(url string) (string, error) {
 	fmt.Println("Downloading: ", url)
-	r, err := http.Get(url)
+	r, err := retryablehttp.Get(url)
 	if err != nil {
 		return "", err
 	}

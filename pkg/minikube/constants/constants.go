@@ -165,7 +165,7 @@ var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 var DefaultKubernetesVersion = "v1.14.3"
 
 // NewestKubernetesVersion is the newest Kubernetes version to test against
-var NewestKubernetesVersion = "v1.14.3"
+var NewestKubernetesVersion = "v1.15.0-beta.1"
 
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
 var OldestKubernetesVersion = "v1.10.13"
@@ -199,8 +199,6 @@ const (
 	KubeadmConfigFile = "/var/lib/kubeadm.yaml"
 	// DefaultCNIConfigPath is the path to the CNI configuration
 	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
-	// DefaultRktNetConfigPath is the path to the rkt net configuration
-	DefaultRktNetConfigPath = "/etc/rkt/net.d/k8s.conf"
 )
 
 const (

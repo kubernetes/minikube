@@ -23,7 +23,7 @@ VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 RPM_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2018.05
+BUILDROOT_BRANCH ?= 2018.05.3
 REGISTRY?=gcr.io/k8s-minikube
 
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
@@ -367,7 +367,7 @@ release-minikube: out/minikube checksum
 out/docker-machine-driver-kvm2:
 	go build 																		\
 		-installsuffix "static" 													\
-		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm/version.VERSION=$(VERSION)" 	\
+		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION)" 	\
 		-tags libvirt.1.3.1 														\
 		-o $(BUILD_DIR)/docker-machine-driver-kvm2 									\
 		k8s.io/minikube/cmd/drivers/kvm
