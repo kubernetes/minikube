@@ -1,0 +1,48 @@
+title = "minikube"
+baseURL = "https://minikube.sigs.k8s.io"
+languageCode = "en-us"
+
+# code highlighting
+pygmentsCodeFences = true
+pygmentsCodefencesGuessSyntax = true
+pygmentsUseClasses = true
+
+
+# unused
+disableKinds = ["taxonomy", "taxonomyTerm"]
+
+themesDir = "themes"
+theme = "hugo-whisper-theme"
+
+[[menu.main]]
+    name = "Home"
+    url = "/"
+    weight = 1
+
+[[menu.main]]
+    name = "Docs"
+    url = "/docs/"
+    weight = 2
+
+[params]
+  google_analytics_id=""
+  homepage_button_link = '/docs'
+  homepage_button_text = 'Read The Docs'
+  homepage_intro = 'minikube implements a local Kubernetes cluster on macOS, Linux, and Windows.'
+  homepage_image = 'https://github.com/kubernetes/minikube/raw/master/images/start.jpg'
+
+  [params.homepage_meta_tags]
+    meta_description = "minikube desc"
+    meta_og_title = "minikube"
+    meta_og_type = "website"
+    meta_og_url = "https://minikube.sigs.k8s.io"
+    meta_og_image = "https://raw.githubusercontent.com/JugglerX/hugo-whisper-theme/master/images/tn.png"
+
+  [params.logo]
+      mobile = "https://github.com/kubernetes/minikube/raw/master/images/logo/logo.png"
+      standard  = "https://github.com/kubernetes/minikube/raw/master/images/logo/logo.png"
+
+
+
+
+

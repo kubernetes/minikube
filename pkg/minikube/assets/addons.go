@@ -47,6 +47,11 @@ func NewAddon(assets []*BinAsset, enabled bool, addonName string) *Addon {
 	return a
 }
 
+// Name get the addon name
+func (a *Addon) Name() string {
+	return a.addonName
+}
+
 // IsEnabled checks if an Addon is enabled
 func (a *Addon) IsEnabled() (bool, error) {
 	addonStatusText, err := config.Get(a.addonName)
@@ -253,6 +258,12 @@ var Addons = map[string]*Addon{
 			"deploy/addons/registry/registry-svc.yaml.tmpl",
 			constants.AddonsPath,
 			"registry-svc.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry/registry-proxy.yaml.tmpl",
+			constants.AddonsPath,
+			"registry-proxy.yaml",
 			"0640",
 			false),
 	}, false, "registry"),

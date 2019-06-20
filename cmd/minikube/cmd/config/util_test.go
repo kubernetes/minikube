@@ -19,6 +19,7 @@ package config
 import (
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/assets"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 )
 
@@ -77,5 +78,35 @@ func TestSetBool(t *testing.T) {
 	}
 	if !val {
 		t.Fatalf("SetBool set wrong value")
+	}
+}
+
+func TestIsAddonAlreadySet(t *testing.T) {
+	testCases := []struct {
+		addonName string
+		expectErr string
+	}{
+		{
+			addonName: "ingress",
+			expectErr: "addon ingress was already ",
+		},
+		{
+			addonName: "heapster",
+			expectErr: "addon heapster was already ",
+		},
+	}
+
+	for _, test := range testCases {
+		addon := assets.Addons[test.addonName]
+		addonStatus, _ := addon.IsEnabled()
+
+		expectMsg := test.expectErr + "enabled"
+		if !addonStatus {
+			expectMsg = test.expectErr + "disabled"
+		}
+		err := isAddonAlreadySet(addon, addonStatus)
+		if err.Error() != expectMsg {
+			t.Errorf("Did not get expected error, \n\n expected: %+v \n\n actual: %+v", expectMsg, err)
+		}
 	}
 }

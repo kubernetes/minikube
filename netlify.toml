@@ -1,0 +1,17 @@
+[build]
+base = "site/"
+publish = "site/public/"
+command = "hugo"
+
+[build.environment]
+HUGO_VERSION = "0.55.0"
+
+[context.production.environment]
+HUGO_ENV = "production"
+HUGO_BASEURL = "https://minikube.sigs.k8s.io/"
+
+[context.deploy-preview]
+command = "hugo --enableGitInfo --buildFuture -b $DEPLOY_PRIME_URL"
+
+[context.branch-deploy]
+command = "hugo --enableGitInfo --buildFuture -b $DEPLOY_PRIME_URL"

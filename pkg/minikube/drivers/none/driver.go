@@ -18,6 +18,7 @@ package none
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/drivers/none"
@@ -46,4 +47,14 @@ func createNoneHost(config cfg.MachineConfig) interface{} {
 		StorePath:        constants.GetMinipath(),
 		ContainerRuntime: config.ContainerRuntime,
 	})
+}
+
+// AutoOptions returns suggested extra options based on the current config
+func AutoOptions() string {
+	// for more info see: https://github.com/kubernetes/minikube/issues/3511
+	f := "/run/systemd/resolve/resolv.conf"
+	if _, err := os.Stat(f); err != nil {
+		return ""
+	}
+	return fmt.Sprintf("kubelet.resolv-conf=%s", f)
 }

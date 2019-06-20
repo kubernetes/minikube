@@ -32,6 +32,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/apimachinery/pkg/labels"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
@@ -105,7 +106,7 @@ func testDashboard(t *testing.T) {
 		t.Errorf("got host %s, expected 127.0.0.1", host)
 	}
 
-	resp, err := http.Get(u.String())
+	resp, err := retryablehttp.Get(u.String())
 	if err != nil {
 		t.Fatalf("failed get: %v", err)
 	}

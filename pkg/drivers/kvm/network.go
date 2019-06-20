@@ -108,6 +108,11 @@ func (d *Driver) ensureNetwork() error {
 
 // createNetwork is called during creation of the VM only (and not on start)
 func (d *Driver) createNetwork() error {
+
+	if d.Network == defaultPrivateNetworkName {
+		return fmt.Errorf("KVM network can't be named %s. This is the name of the private network created by minikube", defaultPrivateNetworkName)
+	}
+
 	conn, err := getConnection()
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt connection")
