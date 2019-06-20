@@ -40,6 +40,10 @@ Remember to turn off the _imagePullPolicy:Always_, as otherwise Kubernetes won't
 
 Another approach is to enable minikube registry addons and then push images directly into registry. Steps for this approach is as follows:
 
+Ensure that docker is configured to use `192.168.39.0/24` as insecure registry. Refer [here](https://docs.docker.com/registry/insecure/) for instructions.
+
+Ensure that `192.168.39.0/24` is enabled as insecure registry in minikube. Refer [here](https://github.com/kubernetes/minikube/blob/master/docs/insecure_registry.md) for instructions..
+
 Enable minikube registry addon:
 
 ```shell
@@ -62,4 +66,10 @@ Now run it in minikube:
 
 ```shell
 kubectl run test-img --image=$(minikube ip):5000/test-img
+```
+
+Or if `192.168.39.0/24` is not enabled as insecure registry in minikube, then:
+
+```shell
+kubectl run test-img --image=localhost:5000/test-img
 ```
