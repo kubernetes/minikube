@@ -1,4 +1,4 @@
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1alpha3
 kind: InitConfiguration
 apiEndpoint:
   advertiseAddress: 1.1.1.1
@@ -15,11 +15,15 @@ nodeRegistration:
   name: mk
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
-imageRepository: test/repo
 apiServerExtraArgs:
   enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+  fail-no-swap: "true"
+controllerManagerExtraArgs:
+  kube-api-burst: "32"
+schedulerExtraArgs:
+  scheduler-name: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs/
 clusterName: kubernetes
 controlPlaneEndpoint: localhost:8443

@@ -1,8 +1,8 @@
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1alpha3
 kind: InitConfiguration
-localAPIEndpoint:
+apiEndpoint:
   advertiseAddress: 1.1.1.1
-  bindPort: 8443
+  bindPort: 12345
 bootstrapTokens:
   - groups:
       - system:bootstrappers:kubeadm:default-node-token
@@ -15,20 +15,17 @@ nodeRegistration:
   name: mk
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
-apiServer:
-  extraArgs:
-    enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
+apiServerExtraArgs:
+  enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 certificatesDir: /var/lib/minikube/certs/
 clusterName: kubernetes
-controlPlaneEndpoint: localhost:8443
-dns:
-  type: CoreDNS
+controlPlaneEndpoint: localhost:12345
 etcd:
   local:
     dataDir: /data/minikube
-kubernetesVersion: v1.15.0
+kubernetesVersion: v1.13.0
 networking:
   dnsDomain: cluster.local
   podSubnet: ""
@@ -36,7 +33,6 @@ networking:
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
-imageGCHighThresholdPercent: 100
 evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
