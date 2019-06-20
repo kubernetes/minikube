@@ -41,6 +41,7 @@ MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 KERNEL_VERSION ?= 4.16.14
 
 GO_VERSION ?= $(shell go version | cut -d' ' -f3 | sed -e 's/go//')
+GOLINT_VERSION ?= v1.17.1
 export GO111MODULE := on
 
 GOOS ?= $(shell go env GOOS)
@@ -222,19 +223,9 @@ fmt:
 vet:
 	@go vet $(SOURCE_PACKAGES)
 
-# Once v1.16.1+ is released, replace with
-# curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh \
-#  | bash -s -- -b out/linters v1.16.1
 out/linters/golangci-lint:
 	mkdir -p out/linters
-	cd out/linters
-	test -f go.mod || go mod init linters
-	go get -u github.com/golangci/golangci-lint/cmd/golangci-lint@692dacb773b703162c091c2d8c59f9cd2d6801db 2>&1 \
-	  | grep -v "go: finding"
-	test -x $(GOPATH)/bin/golangci-lint \
-	  || curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh \
-	  | sh -s -- -b $(GOPATH)/bin v1.16.0
-	cp -f $(GOPATH)/bin/golangci-lint out/linters/golangci-lint
+	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b out/linters $(GOLINT_VERSION)
 
 .PHONY: lint
 lint: pkg/minikube/assets/assets.go out/linters/golangci-lint
