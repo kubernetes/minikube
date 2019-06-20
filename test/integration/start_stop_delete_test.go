@@ -85,27 +85,23 @@ func TestStartStop(t *testing.T) {
 			// check for the current-context before and after the stop
 			currCtx := kctl.CurrentContext()
 			if currCtx != "minikube" {
-				t.Fatalf("got current-context - %q, want  current-context %q", currCtx, "minikube")
+				t.Fatalf("Got current-context - %q, want %q", currCtx, "minikube")
 			}
 			checkStop := func() error {
 				r.RunCommand("stop", false)
-				return r.CheckStatusNoFail(state.Stopped.String())
-			}
-
-			checkCtx := func() error {
-				afterStopCtx := kctl.CurrentContext()
-				if afterStopCtx != "" {
+				err := r.CheckStatusNoFail(state.Stopped.String())
+				if err == nil {
+					afterStopCtx := kctl.CurrentContext()
+					if afterStopCtx == "" {
+						return nil
+					}
 					return fmt.Errorf("Got current-context - %q, want %q", afterStopCtx, "")
 				}
-				return nil
+				return err
 			}
 
 			if err := util.Retry(t, checkStop, 20*time.Second, 10); err != nil {
-				t.Fatalf("timed out while checking stopped status: %v", err)
-			}
-
-			if err := util.Retry(t, checkCtx, 1*time.Second, 5); err != nil {
-				t.Fatalf("Failed setting after-stop current-context: %v", err)
+				t.Fatalf("Timed checking minikube stop : %v", err)
 			}
 
 			r.Start(test.args...)
