@@ -242,7 +242,7 @@ func StopHost(api libmachine.API) error {
 		if ok && alreadyInStateError.State == state.Stopped {
 			err = pkgutil.SetCurrentContext(constants.KubeconfigPath, "")
 			if err != nil {
-				return &util.RetriableError{Err: errors.Wrapf(err, "Already stopped: %s", "Failed unsetting current context")}
+				return &util.RetriableError{Err: errors.Wrapf(err, "error unsetting current context wjen already stopped")}
 			}
 			return nil
 		}
