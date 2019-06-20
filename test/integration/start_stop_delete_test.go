@@ -87,9 +87,8 @@ func TestStartStop(t *testing.T) {
 			if currCtx != "minikube" {
 				t.Fatalf("got current-context - %q, want  current-context %q", currCtx, "minikube")
 			}
-
 			checkStop := func() error {
-				r.RunCommand("stop", true)
+				r.RunCommand("stop", false)
 				return r.CheckStatusNoFail(state.Stopped.String())
 			}
 
