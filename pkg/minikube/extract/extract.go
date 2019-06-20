@@ -34,7 +34,13 @@ import (
 )
 
 // blacklist is a list of strings to explicitly omit from translation files.
-var blacklist = []string{"%s: %v"}
+var blacklist = []string{
+	"%s: %v",
+	"%s.%s=%s",
+	"%s/%d",
+	"%s=%s",
+	"%v",
+}
 
 // state is a struct that represent the current state of the extraction process
 type state struct {
@@ -348,6 +354,13 @@ func writeStringsToFiles(e *state, output string) error {
 		for k := range e.translations {
 			if _, ok := currentTranslations[k]; !ok {
 				currentTranslations[k] = ""
+			}
+		}
+
+		// Remove translations from the file that are empty and were not extracted
+		for k, v := range currentTranslations {
+			if _, ok := e.translations[k]; !ok && len(v.(string)) == 0 {
+				delete(currentTranslations, k)
 			}
 		}
 
