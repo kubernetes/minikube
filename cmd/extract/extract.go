@@ -14,6 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+/* This file scans all of minikube's code and finds all strings that need to be able to be translated.
+It uses the more generic extract.TranslatableStringd, and prints all the translations
+into every json file it can find in pkg/minikube/translate/translations.
+
+Usage: from the root minikube directory, go run cmd/extract/extract.go
+*/
+
 package main
 
 import (

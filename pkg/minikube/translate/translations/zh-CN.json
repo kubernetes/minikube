@@ -1,9 +1,9 @@
 {
-    "minikube %s on %s (%s)": "",
-    "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...": "",
-    "Configuring environment for Kubernetes %s on %s %s": "",
-    "Pulling images ...": "",
-    "Launching Kubernetes ...": "",
-    "Verifying:": "",
-    "Done! kubectl is now configured to use %q": ""
+    "minikube %s on %s (%s)": "您正在使用minikube %s， 运行平台：%s (%s)",
+    "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...": "正在创建%s虚拟机（CPU =％d，内存=％dMB，磁盘=％dMB）...",
+    "Configuring environment for Kubernetes %s on %s %s": "开始为Kubernetes %s，%s %s 配置环境变量",
+    "Pulling images ...": "拉取镜像 ...",
+    "Launching Kubernetes ...": "正在启动 Kubernetes ...",
+    "Verifying:": "正在验证:",
+    "Done! kubectl is now configured to use %q": "完成！kubectl已经配置至%q"
 }
