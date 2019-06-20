@@ -12,7 +12,7 @@ func TestExtract(t *testing.T) {
 	paths := []string{"testdata/sample_file.go"}
 
 	// The function we care about
-	functions := []string{"PrintToScreen"}
+	functions := []string{"extract.PrintToScreen"}
 
 	// The directory where the sample translation file is in
 	output := "testdata/"
