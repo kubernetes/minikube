@@ -22,7 +22,11 @@ import (
 
 func main() {
 	paths := []string{"cmd", "pkg"}
-	functions := []string{"Translate"}
+	functions := []string{"translate.T"}
 	output := "pkg/minikube/translate/translations"
-	extract.TranslatableStrings(paths, functions, output)
+	err := extract.TranslatableStrings(paths, functions, output)
+
+	if err != nil {
+		panic(err)
+	}
 }
