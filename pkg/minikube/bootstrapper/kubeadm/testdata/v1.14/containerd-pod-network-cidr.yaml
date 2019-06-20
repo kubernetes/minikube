@@ -2,7 +2,7 @@ apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
-  bindPort: 12345
+  bindPort: 8443
 bootstrapTokens:
   - groups:
       - system:bootstrappers:kubeadm:default-node-token
@@ -22,13 +22,13 @@ apiServer:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 certificatesDir: /var/lib/minikube/certs/
 clusterName: kubernetes
-controlPlaneEndpoint: localhost:12345
+controlPlaneEndpoint: localhost:8443
 dns:
   type: CoreDNS
 etcd:
   local:
     dataDir: /data/minikube
-kubernetesVersion: v1.15.0
+kubernetesVersion: v1.14.0
 networking:
   dnsDomain: cluster.local
   podSubnet: ""

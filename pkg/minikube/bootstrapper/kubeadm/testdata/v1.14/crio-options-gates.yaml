@@ -11,7 +11,7 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: /var/run/dockershim.sock
+  criSocket: /var/run/crio/crio.sock
   name: mk
   taints: []
 ---
@@ -21,11 +21,14 @@ apiServer:
   extraArgs:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
     fail-no-swap: "true"
+    feature-gates: "a=b"
 controllerManager:
   extraArgs:
+    feature-gates: "a=b"
     kube-api-burst: "32"
 scheduler:
   extraArgs:
+    feature-gates: "a=b"
     scheduler-name: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs/
 clusterName: kubernetes
@@ -35,7 +38,7 @@ dns:
 etcd:
   local:
     dataDir: /data/minikube
-kubernetesVersion: v1.15.0
+kubernetesVersion: v1.14.0
 networking:
   dnsDomain: cluster.local
   podSubnet: ""
