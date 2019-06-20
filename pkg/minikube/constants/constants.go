@@ -181,9 +181,6 @@ func GetProfileFile(profile string) string {
 	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
 }
 
-// ReportingURL is the URL for reporting a minikube error
-const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
-
 // AddonsPath is the default path of the addons configuration
 const AddonsPath = "/etc/kubernetes/addons"
 
