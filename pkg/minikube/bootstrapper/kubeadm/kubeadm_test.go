@@ -29,7 +29,6 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-
 func TestGenerateKubeletConfig(t *testing.T) {
 	tests := []struct {
 		description string
@@ -172,7 +171,7 @@ func TestGenerateConfig(t *testing.T) {
 	versions := []string{"v1.15", "v1.14", "v1.13", "v1.12", "v1.11", "v1.10"}
 	foundNewest := false
 	foundDefault := false
-	
+
 	for _, v := range versions {
 		if strings.HasPrefix(constants.NewestKubernetesVersion, v) {
 			foundNewest = true
@@ -189,7 +188,7 @@ func TestGenerateConfig(t *testing.T) {
 	if !foundDefault {
 		t.Errorf("No tests exist yet for default minor version: %s", constants.DefaultKubernetesVersion)
 	}
-		
+
 	tests := []struct {
 		name      string
 		runtime   string
