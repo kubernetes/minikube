@@ -30,18 +30,16 @@ import (
 	"strings"
 
 	"github.com/golang-collections/collections/stack"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/exit"
 )
 
-// A list of strings to explicitly omit from translation files.
+// blacklist is a list of strings to explicitly omit from translation files.
 var blacklist = []string{"%s: %v"}
 
 // state is a struct that represent the current state of the extraction process
 type state struct {
 	// The list of functions to check for
-	funcs map[string]struct{}
+	funcs map[funcType]struct{}
 
 	// A stack representation of funcs for easy iteration
 	fs *stack.Stack
@@ -50,21 +48,37 @@ type state struct {
 	translations map[string]interface{}
 
 	// The function call we're currently checking for
-	currentFunc string
+	currentFunc funcType
 
 	// The function we're currently parsing
-	parentFunc string
+	parentFunc funcType
 
 	// The file we're currently checking
 	filename string
+
+	// THe package we're currenly in
+	currentPackage string
+}
+
+type funcType struct {
+	pack string // The package the function is in
+	name string // The name of the function
 }
 
 // newExtractor initializes state for extraction
-func newExtractor(functionsToCheck []string) *state {
-	funcs := make(map[string]struct{})
+func newExtractor(functionsToCheck []string) (*state, error) {
+	funcs := make(map[funcType]struct{})
 	fs := stack.New()
 
-	for _, f := range functionsToCheck {
+	for _, t := range functionsToCheck {
+		t2 := strings.Split(t, ".")
+		if len(t2) < 2 {
+			return nil, errors.Wrap(nil, fmt.Sprintf("Invalid function string %s. Needs package name as well.", t))
+		}
+		f := funcType{
+			pack: t2[0],
+			name: t2[1],
+		}
 		funcs[f] = struct{}{}
 		fs.Push(f)
 	}
@@ -73,14 +87,22 @@ func newExtractor(functionsToCheck []string) *state {
 		funcs:        funcs,
 		fs:           fs,
 		translations: make(map[string]interface{}),
+	}, nil
+}
+
+// SetParentFunc Sets the current parent function, along with package information
+func setParentFunc(e *state, f string) {
+	e.parentFunc = funcType{
+		pack: e.currentPackage,
+		name: f,
 	}
 }
 
 // TranslatableStrings finds all strings to that need to be translated in paths and prints them out to all json files in output
-func TranslatableStrings(paths []string, functions []string, output string) {
+func TranslatableStrings(paths []string, functions []string, output string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
-		exit.WithError("Getting current working directory", err)
+		return errors.Wrap(err, "Getting current working directory")
 	}
 
 	if strings.Contains(cwd, "cmd") {
@@ -88,13 +110,16 @@ func TranslatableStrings(paths []string, functions []string, output string) {
 		os.Exit(1)
 	}
 
-	e := newExtractor(functions)
+	e, err := newExtractor(functions)
+
+	if err != nil {
+		return errors.Wrap(err, "Initializing")
+	}
 
 	fmt.Println("Compiling translation strings...")
 	for e.fs.Len() > 0 {
-		f := e.fs.Pop().(string)
+		f := e.fs.Pop().(funcType)
 		e.currentFunc = f
-		glog.Infof("Checking function: %s\n", f)
 		for _, root := range paths {
 			err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 				if shouldCheckFile(path) {
@@ -105,7 +130,7 @@ func TranslatableStrings(paths []string, functions []string, output string) {
 			})
 
 			if err != nil {
-				exit.WithError("Extracting strings", err)
+				return errors.Wrap(err, "Extracting strings")
 			}
 		}
 	}
@@ -113,10 +138,11 @@ func TranslatableStrings(paths []string, functions []string, output string) {
 	err = writeStringsToFiles(e, output)
 
 	if err != nil {
-		exit.WithError("Writing translation files", err)
+		return errors.Wrap(err, "Writing translation files")
 	}
 
 	fmt.Println("Done!")
+	return nil
 }
 
 func shouldCheckFile(path string) bool {
@@ -130,124 +156,86 @@ func inspectFile(e *state) error {
 	if err != nil {
 		return err
 	}
-	glog.Infof("Parsing %s\n", e.filename)
 	file, err := parser.ParseFile(fset, "", r, parser.ParseComments)
 	if err != nil {
 		return err
 	}
 
 	ast.Inspect(file, func(x ast.Node) bool {
-		fd, ok := x.(*ast.FuncDecl)
-
-		// Only check functions for now.
-		if !ok {
-			// Deal with Solutions text here
-
-			// Deal with Cobra stuff here
-			/*gd, ok := x.(*ast.GenDecl)
-			if !ok {
-				return true
-			}
-			for _, spec := range gd.Specs {
-				if vs, ok := spec.(*ast.ValueSpec); ok {
-					for _, v := range vs.Values {
-						if ue, ok := v.(*ast.UnaryExpr); ok {
-							fmt.Printf("%s: %s\n", ue.X, reflect.TypeOf(ue.X))
-						}
-					}
-				}
-			}*/
+		if fi, ok := x.(*ast.File); ok {
+			e.currentPackage = fi.Name.String()
 			return true
 		}
 
-		e.parentFunc = fd.Name.String()
-
-		// Check each line inside the function
-		for _, stmt := range fd.Body.List {
-			checkStmt(stmt, e)
+		if fd, ok := x.(*ast.FuncDecl); ok {
+			setParentFunc(e, fd.Name.String())
+			return true
 		}
+
+		checkNode(x, e)
 		return true
 	})
 
 	return nil
 }
 
-// checkStmt checks each line to see if it's a call to print a string out to the console
-func checkStmt(stmt ast.Stmt, e *state) {
-	//fmt.Printf("%s: %s\n", stmt, reflect.TypeOf(stmt))
-
-	// If this line is an expression, see if it's a function call
-	if expr, ok := stmt.(*ast.ExprStmt); ok {
+// checkNode checks each node to see if it's a function call
+func checkNode(stmt ast.Node, e *state) {
+	// This line is a function call, that's what we care about
+	if expr, ok := stmt.(*ast.CallExpr); ok {
 		checkCallExpression(expr, e)
-	}
-
-	// If this line is the beginning of an if statement, then check of the body of the block
-	if ifstmt, ok := stmt.(*ast.IfStmt); ok {
-		checkIfStmt(ifstmt, e)
-	}
-
-	// Same for loops
-	if forloop, ok := stmt.(*ast.ForStmt); ok {
-		for _, s := range forloop.Body.List {
-			checkStmt(s, e)
-		}
-	}
-}
-
-// checkIfStmt does if-statement-specific checks, especially relating to else stmts
-func checkIfStmt(stmt *ast.IfStmt, e *state) {
-	for _, s := range stmt.Body.List {
-		checkStmt(s, e)
-	}
-	if stmt.Else != nil {
-		// A straight else
-		if block, ok := stmt.Else.(*ast.BlockStmt); ok {
-			for _, s := range block.List {
-				checkStmt(s, e)
-			}
-		}
-
-		// An else if
-		if elseif, ok := stmt.Else.(*ast.IfStmt); ok {
-			checkIfStmt(elseif, e)
-		}
-
 	}
 }
 
 // checkCallExpression takes a function call, and checks its arguments for strings
-func checkCallExpression(expr *ast.ExprStmt, e *state) {
-	s, ok := expr.X.(*ast.CallExpr)
-
-	// This line isn't a function call
-	if !ok {
-		return
-	}
-
+func checkCallExpression(s *ast.CallExpr, e *state) {
 	for _, arg := range s.Args {
 		// This argument is a function literal, check its body.
 		if fl, ok := arg.(*ast.FuncLit); ok {
 			for _, stmt := range fl.Body.List {
-				checkStmt(stmt, e)
+				checkNode(stmt, e)
 			}
 		}
 	}
 
+	var functionName string
+	var packageName string
+
+	// SelectorExpr is a function call to a separate package
 	sf, ok := s.Fun.(*ast.SelectorExpr)
-	if !ok {
-		addParentFuncToList(e)
+	if ok {
+		// Parse out the package of the call
+		sfi, ok := sf.X.(*ast.Ident)
+		if !ok {
+			return
+		}
+		packageName = sfi.Name
+		functionName = sf.Sel.Name
+	}
+
+	// Ident is an identifier, in this case it's a function call in the same package
+	id, ok := s.Fun.(*ast.Ident)
+	if ok {
+		functionName = id.Name
+		packageName = e.currentPackage
+	}
+
+	// This is not a function call.
+	if len(functionName) == 0 {
 		return
 	}
 
-	// Wrong function or called with no arguments.
-	if e.currentFunc != sf.Sel.Name || len(s.Args) == 0 {
+	// This is not the correct function call, or it was called with no arguments.
+	if e.currentFunc.name != functionName || e.currentFunc.pack != packageName || len(s.Args) == 0 {
 		return
 	}
 
+	matched := false
 	for _, arg := range s.Args {
 		// This argument is an identifier.
 		if i, ok := arg.(*ast.Ident); ok {
 			if checkIdentForStringValue(i, e) {
+				matched = true
 				break
 			}
 		}
@@ -255,9 +243,14 @@ func checkCallExpression(expr *ast.ExprStmt, e *state) {
 		// This argument is a string.
 		if argString, ok := arg.(*ast.BasicLit); ok {
 			if addStringToList(argString.Value, e) {
+				matched = true
 				break
 			}
 		}
+	}
+
+	if !matched {
+		addParentFuncToList(e)
 	}
 
 }
@@ -324,7 +317,6 @@ func addStringToList(s string, e *state) bool {
 
 	// Hooray, we can translate the string!
 	e.translations[stringToTranslate] = ""
-	//fmt.Printf("	%s\n", stringToTranslate)
 	return true
 }
 
@@ -353,7 +345,6 @@ func writeStringsToFiles(e *state, output string) error {
 
 		// Make sure to not overwrite already translated strings
 		for k := range e.translations {
-			//fmt.Println(k)
 			if _, ok := currentTranslations[k]; !ok {
 				currentTranslations[k] = ""
 			}

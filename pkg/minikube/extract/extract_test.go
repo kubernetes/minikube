@@ -28,7 +28,7 @@ func TestExtract(t *testing.T) {
 	TranslatableStrings(paths, functions, output)
 
 	var got map[string]interface{}
-	f, err := ioutil.ReadFile("testdata/en-US.json")
+	f, err := ioutil.ReadFile("testdata/test.json")
 	if err != nil {
 		t.Fatalf("Reading json file: %s", err)
 	}

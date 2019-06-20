@@ -13,8 +13,7 @@ func DoSomeStuff() {
 	PrintToScreenNoInterface("5")
 
 	// Try with a sudo command
-	path := "."
-	PrintToScreen("sudo ls %s", path)
+	PrintToScreenNoInterface("sudo ls .")
 
 	DoSomeOtherStuff(true, 4, "I think this should work")
 
@@ -30,6 +29,7 @@ func DoSomeOtherStuff(choice bool, i int, s string) {
 	} else if i > 5 {
 		PrintToScreen("Wow another string: %s", i)
 	} else {
+		// Also try a loop
 		for i > 10 {
 			PrintToScreenNoInterface("Holy cow I'm in a loop!")
 			i = i + 1
