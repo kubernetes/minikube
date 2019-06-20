@@ -1,0 +1,9 @@
+{
+    "minikube %s on %s (%s)": "",
+    "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...": "",
+    "Configuring environment for Kubernetes %s on %s %s": "",
+    "Pulling images ...": "",
+    "Launching Kubernetes ...": "",
+    "Verifying:": "",
+    "Done! kubectl is now configured to use %q": ""
+}

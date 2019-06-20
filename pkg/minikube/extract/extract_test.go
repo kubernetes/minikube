@@ -25,7 +25,11 @@ func TestExtract(t *testing.T) {
 		"Wow another string: %s":                    "",
 	}
 
-	TranslatableStrings(paths, functions, output)
+	err := TranslatableStrings(paths, functions, output)
+
+	if err != nil {
+		t.Fatalf("Error translating strings: %v", err)
+	}
 
 	var got map[string]interface{}
 	f, err := ioutil.ReadFile("testdata/test.json")
