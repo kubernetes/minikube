@@ -38,7 +38,7 @@ type Manager interface {
 	// Version retrieves the current version of this runtime
 	Version() (string, error)
 	// Enable idempotently enables this runtime on a host
-	Enable() error
+	Enable(bool) error
 	// Disable idempotently disables this runtime on a host
 	Disable() error
 	// Active returns whether or not a runtime is active on a host

@@ -684,7 +684,8 @@ func configureRuntimes(runner cruntime.CommandRunner) cruntime.Manager {
 		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
 	}
 
-	err = cr.Enable()
+	disableOtherContainerEngines := viper.GetString(vmDriver) != constants.DriverNone
+	err = cr.Enable(disableOtherContainerEngines)
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
 	}
