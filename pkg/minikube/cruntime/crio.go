@@ -78,9 +78,11 @@ func (r *CRIO) Active() bool {
 }
 
 // Enable idempotently enables CRIO on a host
-func (r *CRIO) Enable() error {
-	if err := disableOthers(r, r.Runner); err != nil {
-		glog.Warningf("disableOthers: %v", err)
+func (r *CRIO) Enable(disableOtherContainerEngines bool) error {
+	if disableOtherContainerEngines {
+		if err := disableOthers(r, r.Runner); err != nil {
+			glog.Warningf("disableOthers: %v", err)
+		}
 	}
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
