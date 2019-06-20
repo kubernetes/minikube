@@ -57,7 +57,6 @@ require (
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v0.0.0-20180701023420-4b7aa43c6742 // indirect
-	github.com/nicksnyder/go-i18n/v2 v2.0.0-beta.7
 	github.com/olekukonko/tablewriter v0.0.0-20160923125401-bdcc175572fd
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect

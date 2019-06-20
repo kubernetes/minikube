@@ -56,7 +56,7 @@ type state struct {
 	// The file we're currently checking
 	filename string
 
-	// THe package we're currenly in
+	// The package we're currently in
 	currentPackage string
 }
 
@@ -71,6 +71,7 @@ func newExtractor(functionsToCheck []string) (*state, error) {
 	fs := stack.New()
 
 	for _, t := range functionsToCheck {
+		// Functions must be of the form "package.function"
 		t2 := strings.Split(t, ".")
 		if len(t2) < 2 {
 			return nil, errors.Wrap(nil, fmt.Sprintf("Invalid function string %s. Needs package name as well.", t))

@@ -87,7 +87,9 @@ func TestOut(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.format, func(t *testing.T) {
-			translate.SetPreferredLanguage(tc.lang)
+			if err := translate.SetPreferredLanguage(tc.lang); err != nil {
+				t.Errorf("unexpected error: %q", err)
+			}
 			f := tests.NewFakeFile()
 			SetOutFile(f)
 			ErrLn("unrelated message")
@@ -140,7 +142,9 @@ func TestSetPreferredLanguage(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
 			// Set something so that we can assert change.
-			translate.SetPreferredLanguage("is")
+			if err := translate.SetPreferredLanguage("is"); err != nil {
+				t.Errorf("unexpected error: %q", err)
+			}
 			if err := translate.SetPreferredLanguage(tc.input); err != nil {
 				t.Errorf("unexpected error: %q", err)
 			}
