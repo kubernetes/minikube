@@ -92,7 +92,7 @@ var RootCmd = &cobra.Command{
 		}
 
 		if enableUpdateNotification {
-			notify.MaybePrintUpdateTextFromGithub(os.Stderr)
+			notify.MaybePrintUpdateTextFromGithub()
 		}
 	},
 }
