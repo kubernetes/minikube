@@ -60,12 +60,12 @@ func T(s string) string {
 func DetermineLocale() {
 	locale, err := jibber_jabber.DetectIETF()
 	if err != nil {
-		glog.Warningf("Getting system locale failed: %s", err)
+		glog.Infof("Getting system locale failed: %v", err)
 		locale = ""
 	}
 	err = SetPreferredLanguage(locale)
 	if err != nil {
-		glog.Warningf("Setting locale failed: %s", err)
+		glog.Infof("Setting locale failed: %v", err)
 		preferredLanguage = defaultLanguage
 	}
 
@@ -77,13 +77,13 @@ func DetermineLocale() {
 	translationFile := "pkg/minikube/translate/translations/" + preferredLanguage.String() + ".json"
 	t, err := ioutil.ReadFile(translationFile)
 	if err != nil {
-		glog.Errorf("Failed to load transalation file for %s: %s", preferredLanguage.String(), err)
+		glog.Infof("Failed to load translation file for %s: %v", preferredLanguage.String(), err)
 		return
 	}
 
 	err = json.Unmarshal(t, &Translations)
 	if err != nil {
-		glog.Errorf("Failed to populate translation map: %s", err)
+		glog.Infof("Failed to populate translation map: %v", err)
 	}
 
 }
