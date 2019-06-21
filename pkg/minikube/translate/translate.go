@@ -77,13 +77,13 @@ func DetermineLocale() {
 	translationFile := "pkg/minikube/translate/translations/" + preferredLanguage.String() + ".json"
 	t, err := ioutil.ReadFile(translationFile)
 	if err != nil {
-		glog.Errorf("Failed to load transalation file for %s: %s", preferredLanguage.String(), err)
+		glog.Infof("Failed to load translation file for %s: %s", preferredLanguage.String(), err)
 		return
 	}
 
 	err = json.Unmarshal(t, &Translations)
 	if err != nil {
-		glog.Errorf("Failed to populate translation map: %s", err)
+		glog.Infof("Failed to populate translation map: %s", err)
 	}
 
 }
