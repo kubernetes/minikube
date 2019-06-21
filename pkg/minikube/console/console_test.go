@@ -17,7 +17,6 @@ limitations under the License.
 package console
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"strconv"
@@ -25,31 +24,13 @@ import (
 
 	"golang.org/x/text/language"
 	"golang.org/x/text/message"
+	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
-
-// fakeFile satisfies fdWriter
-type fakeFile struct {
-	b bytes.Buffer
-}
-
-func newFakeFile() *fakeFile {
-	return &fakeFile{}
-}
-
-func (f *fakeFile) Fd() uintptr {
-	return uintptr(0)
-}
-
-func (f *fakeFile) Write(p []byte) (int, error) {
-	return f.b.Write(p)
-}
-func (f *fakeFile) String() string {
-	return f.b.String()
-}
 
 func TestOutStyle(t *testing.T) {
 
-	var tests = []struct {
+	var testCases = []struct {
 		style     StyleEnum
 		message   string
 		params    []interface{}
@@ -64,12 +45,12 @@ func TestOutStyle(t *testing.T) {
 		{Issue, "http://i/%d", []interface{}{10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
 		{Usage, "raw: %s %s", []interface{}{"'%'", "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
 	}
-	for _, tc := range tests {
+	for _, tc := range testCases {
 		for _, override := range []bool{true, false} {
 			t.Run(fmt.Sprintf("%s-override-%v", tc.message, override), func(t *testing.T) {
 				// Set MINIKUBE_IN_STYLE=<override>
 				os.Setenv(OverrideEnv, strconv.FormatBool(override))
-				f := newFakeFile()
+				f := tests.NewFakeFile()
 				SetOutFile(f)
 				OutStyle(tc.style, tc.message, tc.params...)
 				got := f.String()
@@ -93,21 +74,23 @@ func TestOut(t *testing.T) {
 		t.Fatalf("setstring: %v", err)
 	}
 
-	var tests = []struct {
+	var testCases = []struct {
 		format string
-		lang   language.Tag
+		lang   string
 		arg    interface{}
 		want   string
 	}{
 		{format: "xyz123", want: "xyz123"},
-		{format: "Installing Kubernetes version %s ...", lang: language.Arabic, arg: "v1.13", want: "... v1.13 تثبيت Kubernetes الإصدار"},
-		{format: "Installing Kubernetes version %s ...", lang: language.AmericanEnglish, arg: "v1.13", want: "Installing Kubernetes version v1.13 ..."},
+		{format: "Installing Kubernetes version %s ...", lang: "ar", arg: "v1.13", want: "... v1.13 تثبيت Kubernetes الإصدار"},
+		{format: "Installing Kubernetes version %s ...", lang: "en-us", arg: "v1.13", want: "Installing Kubernetes version v1.13 ..."},
 		{format: "Parameter encoding: %s", arg: "%s%%%d", want: "Parameter encoding: %s%%%d"},
 	}
-	for _, tc := range tests {
+	for _, tc := range testCases {
 		t.Run(tc.format, func(t *testing.T) {
-			SetPreferredLanguageTag(tc.lang)
-			f := newFakeFile()
+			if err := translate.SetPreferredLanguage(tc.lang); err != nil {
+				t.Errorf("unexpected error: %q", err)
+			}
+			f := tests.NewFakeFile()
 			SetOutFile(f)
 			ErrLn("unrelated message")
 			Out(tc.format, tc.arg)
@@ -121,7 +104,7 @@ func TestOut(t *testing.T) {
 
 func TestErr(t *testing.T) {
 	os.Setenv(OverrideEnv, "0")
-	f := newFakeFile()
+	f := tests.NewFakeFile()
 	SetErrFile(f)
 	Err("xyz123 %s\n", "%s%%%d")
 	OutLn("unrelated message")
@@ -135,7 +118,7 @@ func TestErr(t *testing.T) {
 
 func TestErrStyle(t *testing.T) {
 	os.Setenv(OverrideEnv, "1")
-	f := newFakeFile()
+	f := tests.NewFakeFile()
 	SetErrFile(f)
 	ErrStyle(FatalType, "error: %s", "%s%%%d")
 	got := f.String()
@@ -159,14 +142,15 @@ func TestSetPreferredLanguage(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.input, func(t *testing.T) {
 			// Set something so that we can assert change.
-			SetPreferredLanguageTag(language.Icelandic)
-			if err := SetPreferredLanguage(tc.input); err != nil {
+			if err := translate.SetPreferredLanguage("is"); err != nil {
+				t.Errorf("unexpected error: %q", err)
+			}
+			if err := translate.SetPreferredLanguage(tc.input); err != nil {
 				t.Errorf("unexpected error: %q", err)
 			}
 
-			// Just compare the bases ("en", "fr"), since I can't seem to refer directly to them
 			want, _ := tc.want.Base()
-			got, _ := preferredLanguage.Base()
+			got, _ := translate.GetPreferredLanguage().Base()
 			if got != want {
 				t.Errorf("SetPreferredLanguage(%s) = %q, want %q", tc.input, got, want)
 			}

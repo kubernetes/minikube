@@ -19,6 +19,7 @@ require (
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680 // indirect
 	github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e // indirect
+	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang/glog v0.0.0-20141105023935-44145f04b68c
 	github.com/golang/groupcache v0.0.0-20160516000752-02826c3e7903 // indirect
 	github.com/google/btree v1.0.0 // indirect
@@ -85,10 +86,10 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20150808065054-e02fc20de94c // indirect
 	github.com/xeipuuv/gojsonschema v0.0.0-20160623135812-c539bca196be
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
-	golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2
+	golang.org/x/crypto v0.0.0-20190506204251-e1dfcc566284
 	golang.org/x/oauth2 v0.0.0-20190115181402-5dab4167f31c
-	golang.org/x/sync v0.0.0-20190227155943-e225da77a7e6
-	golang.org/x/sys v0.0.0-20190222072716-a9d3bda3a223
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
+	golang.org/x/sys v0.0.0-20190507160741-ecd444e8653b
 	golang.org/x/text v0.3.2
 	golang.org/x/time v0.0.0-20161028155119-f51c12702a4d // indirect
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
