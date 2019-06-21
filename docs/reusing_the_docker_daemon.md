@@ -1,5 +1,7 @@
 # Reusing the Docker daemon
 
+## Method 1: Without minikube registry addon
+
 When using a single VM of Kubernetes it's really handy to reuse the Docker daemon inside the VM; as this means you don't have to build on your host machine and push the image into a docker registry - you can just build inside the same docker daemon as minikube which speeds up local experiments.
 
 To be able to work with the docker daemon on your mac/linux host use the docker-env command in your shell:
@@ -38,7 +40,11 @@ The fix is to update /etc/sysconfig/docker to ensure that minikube's environment
 
 Remember to turn off the _imagePullPolicy:Always_, as otherwise Kubernetes won't use images you built locally.
 
-Another approach is to enable minikube registry addons and then push images directly into registry. Steps for this approach is as follows:
+## Method 2: With minikube registry addon
+
+Enable minikube registry addon and then push images directly into registry. Steps are as follows:
+
+For illustration purpose, we will assume that minikube VM has one of the ip from `192.168.39.0/24` subnet. If you have not overridden these subnets as per [networking guide](https://github.com/kubernetes/minikube/blob/master/docs/networking.md), you can find out default subnet being used by minikube for a specific OS and driver combination [here](https://github.com/kubernetes/minikube/blob/dfd9b6b83d0ca2eeab55588a16032688bc26c348/pkg/minikube/cluster/cluster.go#L408) which is subject to change. Replace `192.168.39.0/24` with appropriate values for your environment wherever applicable.
 
 Ensure that docker is configured to use `192.168.39.0/24` as insecure registry. Refer [here](https://docs.docker.com/registry/insecure/) for instructions.
 
