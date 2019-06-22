@@ -37,7 +37,9 @@ cat Makefile | grep "VERSION_MINOR ?=" | grep $VERSION_MINOR
 cat Makefile | grep "VERSION_BUILD ?=" | grep $VERSION_BUILD
 
 # Build and upload
-BUILD_IN_DOCKER=y make -j 16 all out/minikube-installer.exe out/minikube_${DEB_VERSION}.deb out/minikube-${RPM_VERSION}.rpm
+BUILD_IN_DOCKER=y make -j 16 all out/minikube-installer.exe \
+out/minikube_${DEB_VERSION}.deb out/minikube-${RPM_VERSION}.rpm \
+out/docker-machine-driver-kvm2_${DEB_VERSION}.deb out/docker-machine-driver-kvm2-${RPM_VERSION}.rpm
 make checksum
 
 gsutil -m cp out/* gs://$BUCKET/releases/$TAGNAME/

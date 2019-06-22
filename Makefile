@@ -407,6 +407,23 @@ out/docker-machine-driver-kvm2:
 		k8s.io/minikube/cmd/drivers/kvm
 	chmod +X $@
 
+out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2
+	cp -r installers/linux/deb/kvm2_deb_template out/docker-machine-driver-kvm2_$(DEB_VERSION)
+	chmod 0755 out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN
+	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
+	mkdir -p out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin
+	cp out/docker-machine-driver-kvm2 out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
+	fakeroot dpkg-deb --build out/docker-machine-driver-kvm2_$(DEB_VERSION)
+	rm -rf out/docker-machine-driver-kvm2_$(DEB_VERSION)
+
+out/docker-machine-driver-kvm2-$(RPM_VERSION).rpm: out/docker-machine-driver-kvm2
+	cp -r installers/linux/rpm/kvm2_rpm_template out/docker-machine-driver-kvm2-$(RPM_VERSION)
+	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	rpmbuild -bb -D "_rpmdir $(PWD)/out" -D "_rpmfilename docker-machine-driver-kvm2-$(RPM_VERSION).rpm" \
+		out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	rm -rf out/docker-machine-driver-kvm2-$(RPM_VERSION)
+
 kvm-image: $(KVM_BUILD_IMAGE) # convenient alias to build the docker container
 $(KVM_BUILD_IMAGE): installers/linux/kvm/Dockerfile
 	docker build --build-arg "GO_VERSION=$(GO_VERSION)" -t $@ -f $< $(dir $<)
