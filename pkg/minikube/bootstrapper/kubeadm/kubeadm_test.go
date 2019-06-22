@@ -19,6 +19,7 @@ package kubeadm
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/pmezard/go-difflib/difflib"
@@ -26,13 +27,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/util"
-)
-
-const (
-	newMajor      = "v1.14.0"
-	recentMajor   = "v1.13.0"
-	oldMajor      = "v1.12.0"
-	obsoleteMajor = "v1.10.0"
 )
 
 func TestGenerateKubeletConfig(t *testing.T) {
@@ -43,10 +37,10 @@ func TestGenerateKubeletConfig(t *testing.T) {
 		shouldErr   bool
 	}{
 		{
-			description: "docker runtime",
+			description: "old docker",
 			cfg: config.KubernetesConfig{
 				NodeIP:            "192.168.1.100",
-				KubernetesVersion: recentMajor,
+				KubernetesVersion: constants.OldestKubernetesVersion,
 				NodeName:          "minikube",
 				ContainerRuntime:  "docker",
 			},
@@ -56,7 +50,7 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,
@@ -95,7 +89,7 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,
@@ -173,13 +167,26 @@ func TestGenerateConfig(t *testing.T) {
 		},
 	}
 
-	// Test version policy: Last 4 major releases (slightly looser than our general policy)
-	versions := map[string]string{
-		"default":  constants.DefaultKubernetesVersion,
-		"new":      newMajor,
-		"recent":   recentMajor,
-		"old":      oldMajor,
-		"obsolete": obsoleteMajor,
+	// test the 6 most recent releases
+	versions := []string{"v1.15", "v1.14", "v1.13", "v1.12", "v1.11", "v1.10"}
+	foundNewest := false
+	foundDefault := false
+
+	for _, v := range versions {
+		if strings.HasPrefix(constants.NewestKubernetesVersion, v) {
+			foundNewest = true
+		}
+		if strings.HasPrefix(constants.DefaultKubernetesVersion, v) {
+			foundDefault = true
+		}
+	}
+
+	if !foundNewest {
+		t.Errorf("No tests exist yet for newest minor version: %s", constants.NewestKubernetesVersion)
+	}
+
+	if !foundDefault {
+		t.Errorf("No tests exist yet for default minor version: %s", constants.DefaultKubernetesVersion)
 	}
 
 	tests := []struct {
@@ -198,18 +205,18 @@ func TestGenerateConfig(t *testing.T) {
 		{"containerd-pod-network-cidr", "containerd", false, config.KubernetesConfig{ExtraOptions: extraOptsPodCidr}},
 		{"image-repository", "docker", false, config.KubernetesConfig{ImageRepository: "test/repo"}},
 	}
-	for vname, version := range versions {
+	for _, version := range versions {
 		for _, tc := range tests {
 			runtime, err := cruntime.New(cruntime.Config{Type: tc.runtime})
 			if err != nil {
 				t.Fatalf("runtime: %v", err)
 			}
-			tname := tc.name + "__" + vname
+			tname := tc.name + "_" + version
 			t.Run(tname, func(t *testing.T) {
 				cfg := tc.cfg
 				cfg.NodeIP = "1.1.1.1"
 				cfg.NodeName = "mk"
-				cfg.KubernetesVersion = version
+				cfg.KubernetesVersion = version + ".0"
 
 				got, err := generateConfig(cfg, runtime)
 				if err != nil && !tc.shouldErr {
@@ -221,7 +228,7 @@ func TestGenerateConfig(t *testing.T) {
 				if tc.shouldErr {
 					return
 				}
-				expected, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s.yaml", tname))
+				expected, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
 				if err != nil {
 					t.Fatalf("unable to read testdata: %v", err)
 				}
