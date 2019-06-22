@@ -185,15 +185,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// For non-"none", the ISO is required to boot, so block until it is downloaded
-	if viper.GetString(vmDriver) != constants.DriverNone {
-		if err := cluster.CacheISO(config.MachineConfig); err != nil {
-			exit.WithError("Failed to cache ISO", err)
-		}
-	} else {
-		// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
-		viper.Set(cacheImages, false)
-		config.KubernetesConfig.ShouldLoadCachedImages = false
-	}
+	downloadISO(config)
+
+	// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
+	skipCache(config)
 
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
@@ -242,14 +237,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	cr := configureRuntimes(runner)
-	version, _ := cr.Version()
-	console.OutStyle(cr.Style(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion, cr.Name(), version)
-	for _, v := range dockerOpt {
-		console.OutStyle(console.Option, "opt %s", v)
-	}
-	for _, v := range dockerEnv {
-		console.OutStyle(console.Option, "env %s", v)
-	}
+	showVersionInfo(k8sVersion, cr)
 
 	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
 	waitCacheImages(&cacheGroup)
@@ -274,6 +262,32 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	showKubectlConnectInfo(kubeconfig)
 
+}
+
+func downloadISO(config cfg.Config) {
+	if viper.GetString(vmDriver) != constants.DriverNone {
+		if err := cluster.CacheISO(config.MachineConfig); err != nil {
+			exit.WithError("Failed to cache ISO", err)
+		}
+	}
+}
+
+func skipCache(config cfg.Config) {
+	if viper.GetString(vmDriver) == constants.DriverNone {
+		viper.Set(cacheImages, false)
+		config.KubernetesConfig.ShouldLoadCachedImages = false
+	}
+}
+
+func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
+	version, _ := cr.Version()
+	console.OutStyle(cr.Style(), "Configuring environment for Kubernetes %s on %s %s", k8sVersion, cr.Name(), version)
+	for _, v := range dockerOpt {
+		console.OutStyle(console.Option, "opt %s", v)
+	}
+	for _, v := range dockerEnv {
+		console.OutStyle(console.Option, "env %s", v)
+	}
 }
 
 func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
