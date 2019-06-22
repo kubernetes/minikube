@@ -76,7 +76,7 @@ MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
 
 CMD_SOURCE_DIRS = cmd pkg
-SOURCE_DIRS = $(SOURCE_DIRS) test
+SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 # $(call DOCKER, image, command)
@@ -222,6 +222,14 @@ fmt:
 .PHONY: vet
 vet:
 	@go vet $(SOURCE_PACKAGES)
+
+.PHONY: golint
+golint:
+	@golint -set_exit_status $(SOURCE_PACKAGES)
+
+.PHONY: gocyclo
+gocyclo:
+	@gocyclo -over 15 `find $(SOURCE_DIRS) -type f -name "*.go"`
 
 out/linters/golangci-lint:
 	mkdir -p out/linters
