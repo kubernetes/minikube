@@ -26,6 +26,10 @@ INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2018.05.3
 REGISTRY?=gcr.io/k8s-minikube
 
+# Get git commit id
+COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
+COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
+
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
 # NOTE: "latest" as of 2019-05-09. kube-cross images aren't updated as often as Kubernetes
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.12.5-1
@@ -57,7 +61,7 @@ BUILD_OS := $(shell uname -s)
 STORAGE_PROVISIONER_TAG := v1.8.1
 
 # Set the version information for the Kubernetes servers
-MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET)
+MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT)
 PROVISIONER_LDFLAGS := "$(MINIKUBE_LDFLAGS) -s -w"
 
 MINIKUBEFILES := ./cmd/minikube/

@@ -30,6 +30,9 @@ const VersionPrefix = "v"
 // version is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.version=vX.Y.Z"
 var version = "v0.0.0-unset"
 
+// version is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.gitCommitID=<commit-id>"
+var gitCommitID = ""
+
 // isoVersion is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.isoVersion=vX.Y.Z"
 var isoVersion = "v0.0.0-unset"
 
@@ -38,6 +41,11 @@ var isoPath = "minikube/iso"
 // GetVersion returns the current minikube version
 func GetVersion() string {
 	return version
+}
+
+// GetGitCommitID returns the git commit id from which it is being built
+func GetGitCommitID() string {
+	return gitCommitID
 }
 
 // GetISOVersion returns the current minikube.iso version
