@@ -6,8 +6,7 @@ As soon as a VM is created, minikube will populate the root filesystem with any 
 
 For example, running the following commands will result in `/etc/OMG` being added with the contents of `hello` into the minikube VM:
 
-
-```
+```shell
 mkdir -p ~/.minikube/files/etc
 echo hello > ~/.minikube/files/etc/OMG
 minikube start
