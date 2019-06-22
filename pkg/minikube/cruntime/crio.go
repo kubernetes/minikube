@@ -35,7 +35,7 @@ func (r *CRIO) Name() string {
 	return "CRI-O"
 }
 
-// Name is a human readable name for CRIO
+// Style is the console style for CRIO
 func (r *CRIO) Style() console.StyleEnum {
 	return console.CRIO
 }

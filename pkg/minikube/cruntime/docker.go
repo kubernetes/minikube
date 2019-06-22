@@ -36,7 +36,7 @@ func (r *Docker) Name() string {
 	return "Docker"
 }
 
-// Name is a human readable name for Docker
+// Style is the console style for Docker
 func (r *Docker) Style() console.StyleEnum {
 	return console.Docker
 }
