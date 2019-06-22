@@ -217,7 +217,12 @@ gendocs: out/docs/minikube.md
 
 .PHONY: fmt
 fmt:
-	@gofmt -l -s -w $(SOURCE_DIRS)
+	@gofmt -s -w $(SOURCE_DIRS)
+
+.PHONY: gofmt
+gofmt:
+	@gofmt -s -l $(SOURCE_DIRS)
+	@test -z "`gofmt -s -l $(SOURCE_DIRS)`"
 
 .PHONY: vet
 vet:
