@@ -22,7 +22,6 @@ We also have a shortcut for fetching the minikube IP and a service's `NodePort`:
 
 `minikube service --url $SERVICE`
 
-
 ### Increasing the NodePort range
 
 By default, minikube only exposes ports 30000-32767. If this is not enough, you can configure the apiserver to allow all ports using:
@@ -30,7 +29,6 @@ By default, minikube only exposes ports 30000-32767. If this is not enough, you 
 `minikube start --extra-config=apiserver.service-node-port-range=1-65535`
 
 This flag also accepts a comma separated list of ports and port ranges.
-
 
 ## Access to LoadBalancer services using `minikube tunnel`
 
@@ -77,5 +75,4 @@ minikube tunnel --cleanup
 
 If you want to avoid entering the root password, consider setting NOPASSWD for "ip" and "route" commands:
 
-https://superuser.com/questions/1328452/sudoers-nopasswd-for-single-executable-but-allowing-others
-
+<https://superuser.com/questions/1328452/sudoers-nopasswd-for-single-executable-but-allowing-others>

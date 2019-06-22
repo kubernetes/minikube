@@ -1,6 +1,6 @@
 # Minikube Release Notes
 
-# Version 1.1.1 - 2019-06-07
+## Version 1.1.1 - 2019-06-07
 
 * Upgrade to kubernetes 1.14.3 [#4444](https://github.com/kubernetes/minikube/pull/4444)
 * fix ShowDriverDeprecationNotification config setting [#4431](https://github.com/kubernetes/minikube/pull/4431)
@@ -27,7 +27,8 @@
 * Get current profile if no arguments given [#4335](https://github.com/kubernetes/minikube/pull/4335)
 * Skip kvm network deletion if private network doesn't exist [#4331](https://github.com/kubernetes/minikube/pull/4331)
 
-Huge thank you for this release towards our contributors: 
+Huge thank you for this release towards our contributors:
+
 - Abdulla Bin Mustaqeem
 - Anders Björklund
 - Andy Daniels
@@ -169,6 +170,7 @@ Thank you to the contributors whose work made v1.1 into something we could all b
 * ```#compdef``` must be the first line [#4015](https://github.com/kubernetes/minikube/pull/4015)
 
 Huge thank you for this release towards our contributors:
+
 - Abdulla Bin Mustaqeem
 - Anders F Björklund
 - Andy Daniels
