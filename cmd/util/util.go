@@ -102,4 +102,3 @@ func GetKubeConfigPath() string {
 	}
 	return filepath.SplitList(kubeConfigEnv)[0]
 }
-
