@@ -424,7 +424,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 	repository := viper.GetString(imageRepository)
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
 	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
-		console.OutStyle(console.Connectivity, "checking main repository and mirrors for images")
+		// console.OutStyle(console.Connectivity, "checking main repository and mirrors for images")
 		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, k8sVersion)
 		if err != nil {
 			exit.WithError("Failed to check main repository and mirrors for images for images", err)
