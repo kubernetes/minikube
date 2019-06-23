@@ -76,7 +76,7 @@ See the [installation guide](https://kubernetes.io/docs/tasks/tools/install-mini
 * *macOS 10.12 (Sierra)*
   * Requires installing a hypervisor, such as [hyperkit](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver) (recommended) or VirtualBox
   * using [brew](https://brew.sh/): `brew cask install minikube`
-  * manually: `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64 && sudo install minikube-darwin-amd64 /usr/local/bin/minikube`
+  * manually: `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-amd64 && sudo install minikube-darwin-amd64 /usr/local/bin/minikube && rm minikube-darwin-amd64`
 
 * *Windows 10*
   * Requires a hypervisor, such as VirtualBox (recommended) or HyperV
@@ -87,7 +87,7 @@ See the [installation guide](https://kubernetes.io/docs/tasks/tools/install-mini
 * *Linux*
   * Requires either the [kvm2 driver](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver) (recommended), or VirtualBox
   * VT-x/AMD-v virtualization must be enabled in BIOS
-  * manually:  `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube`
+  * manually:  `curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64 && sudo install minikube-linux-amd64 /usr/local/bin/minikube && rm minikube-linux-amd64`
 
 ### Supported Hypervisors
 
