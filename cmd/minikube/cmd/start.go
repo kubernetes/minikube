@@ -685,7 +685,7 @@ func configureRuntimes(runner cruntime.CommandRunner) cruntime.Manager {
 	}
 
 	disableOthers := true
-	if  viper.GetString(vmDriver) == constants.DriverNone {
+	if viper.GetString(vmDriver) == constants.DriverNone {
 		disableOthers = false
 	}
 	err = cr.Enable(disableOthers)
