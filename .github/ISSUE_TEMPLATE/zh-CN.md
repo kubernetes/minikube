@@ -1,5 +1,5 @@
 ---
-name: 中文
+name: 中文 (Chinese)
 about: 报告问题
 labels: l/zh-CN
 ---
