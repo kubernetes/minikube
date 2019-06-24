@@ -115,7 +115,7 @@ func init() {
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors (vboxfs, xhyve-9p)")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
-	startCmd.Flags().Int(memory, constants.DefaultMemory, "Amount of RAM allocated to the minikube VM in MB")
+	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
 	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
@@ -373,9 +373,9 @@ func validateUser() {
 
 // validateConfig validates the supplied configuration against known bad combinations
 func validateConfig() {
-	diskSizeMB := pkgutil.CalculateDiskSizeInMB(viper.GetString(humanReadableDiskSize))
-	if diskSizeMB < constants.MinimumDiskSizeMB {
-		exit.WithCode(exit.Config, "Requested disk size (%dMB) is less than minimum of %dMB", diskSizeMB, constants.MinimumDiskSizeMB)
+	diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+	if diskSizeMB < pkgutil.CalculateSizeInMB(constants.MinimumDiskSize) {
+		exit.WithCode(exit.Config, "Requested disk size (%dMB) is less than minimum of (%dMB)", diskSizeMB, pkgutil.CalculateSizeInMB(constants.MinimumDiskSize))
 	}
 
 	if viper.GetBool(gpu) && viper.GetString(vmDriver) != constants.DriverKvm2 {
@@ -388,6 +388,14 @@ func validateConfig() {
 	err := autoSetOptions(viper.GetString(vmDriver))
 	if err != nil {
 		glog.Errorf("Error autoSetOptions : %v", err)
+	}
+	
+	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) {
+		console.OutStyle(console.Notice, "Requested memory allocation (%dMB) is less than the default memory allocation of (%dMB). Beware that Minikube might not work correctly or crash unexpectedly.", memorySizeMB, pkgutil.CalculateSizeInMB(constants.DefaultMemorySize))
+	}
+	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.MinimumMemorySize) {
+		exit.Usage("Requested memory allocation (%dMB) is less than the minimum allowed of %dMB", memorySizeMB, pkgutil.CalculateSizeInMB(constants.MinimumMemorySize))
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
