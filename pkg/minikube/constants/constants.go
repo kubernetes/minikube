@@ -59,19 +59,37 @@ func ArchTag(hasTag bool) string {
 	return "-" + runtime.GOARCH + ":"
 }
 
+// DriverNone is the none driver.
+const DriverNone = "none"
+
+// DriverKvmOld is the old kvm driver option
+const DriverKvmOld = "kvm"
+
+// DriverKvm2 is the kvm2 driver option used in linux
+const DriverKvm2 = "kvm2"
+
+// DriverVirtualbox is the virtualbox driver option
+const DriverVirtualbox = "virtualbox"
+
+// DriverHyperkit is the hyperkit driver option for mac os
+const DriverHyperkit = "hyperkit"
+
+// DriverVmware is the hyperkit driver option for mac os
+const DriverVmware = "vmware"
+
 // SupportedVMDrivers is a list of supported drivers on all platforms. Currently
 // used in gendocs.
 var SupportedVMDrivers = [...]string{
-	"virtualbox",
+	DriverVirtualbox,
 	"parallels",
 	"vmwarefusion",
-	"kvm",
+	DriverKvmOld,
 	"xhyve",
 	"hyperv",
-	"hyperkit",
-	"kvm2",
-	"vmware",
-	"none",
+	DriverHyperkit,
+	DriverKvm2,
+	DriverVmware,
+	DriverNone,
 }
 
 // DefaultMinipath is the default Minikube path (under the home directory)
@@ -130,7 +148,7 @@ const (
 	// MinimumDiskSizeMB is the minimum disk image size, in megabytes
 	MinimumDiskSizeMB = 2000
 	// DefaultVMDriver is the default virtual machine driver name
-	DefaultVMDriver = "virtualbox"
+	DefaultVMDriver = DriverVirtualbox
 	// DefaultStatusFormat is the default format of a host
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
@@ -234,9 +252,6 @@ func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) s
 
 // IsMinikubeChildProcess is the name of "is minikube child process" variable
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
-
-// DriverNone is the none driver
-const DriverNone = "none"
 
 // FileScheme is the file scheme
 const FileScheme = "file"

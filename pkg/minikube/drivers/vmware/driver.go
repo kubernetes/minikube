@@ -27,7 +27,7 @@ import (
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          "vmware",
+		Name:          constants.DriverVmware,
 		Builtin:       false,
 		ConfigCreator: createVMwareHost,
 	})

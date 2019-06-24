@@ -21,6 +21,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 var minikubeConfig = pkgConfig.MinikubeConfig{
@@ -47,7 +48,7 @@ func TestFindSetting(t *testing.T) {
 }
 
 func TestSetString(t *testing.T) {
-	err := SetString(minikubeConfig, "vm-driver", "virtualbox")
+	err := SetString(minikubeConfig, "vm-driver", constants.DriverVirtualbox)
 	if err != nil {
 		t.Fatalf("Couldnt set string: %v", err)
 	}

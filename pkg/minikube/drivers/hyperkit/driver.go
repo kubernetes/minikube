@@ -31,7 +31,7 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          "hyperkit",
+		Name:          constants.DriverHyperkit,
 		Builtin:       false,
 		ConfigCreator: createHyperkitHost,
 	}); err != nil {

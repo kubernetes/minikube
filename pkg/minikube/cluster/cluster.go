@@ -409,7 +409,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
 	case "kvm":
 		return net.ParseIP("192.168.42.1"), nil
-	case "kvm2":
+	case constants.DriverKvm2:
 		return net.ParseIP("192.168.39.1"), nil
 	case "hyperv":
 		re := regexp.MustCompile(`"VSwitch": "(.*?)",`)
@@ -420,7 +420,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, fmt.Sprintf("ip for interface (%s)", hypervVirtualSwitch))
 		}
 		return ip, nil
-	case "virtualbox":
+	case constants.DriverVirtualbox:
 		out, err := exec.Command(detectVBoxManageCmd(), "showvminfo", host.Name, "--machinereadable").Output()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "vboxmanage")
@@ -432,9 +432,9 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
 		return ip, nil
-	case "xhyve", "hyperkit":
+	case "xhyve", constants.DriverHyperkit:
 		return net.ParseIP("192.168.64.1"), nil
-	case "vmware":
+	case constants.DriverVmware:
 		vmIPString, err := host.Driver.GetIP()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM IP address")

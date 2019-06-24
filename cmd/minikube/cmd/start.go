@@ -175,14 +175,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	console.OutStyle(console.Happy, "minikube %s on %s (%s)", version.GetVersion(), runtime.GOOS, runtime.GOARCH)
 	validateConfig()
 
-	currentUser, err := user.Current()
-
-	// Display warning if minikube is being started with root and vmDriver is not HyperV
-	if err != nil {
-		glog.Errorf("Error getting the current user: %v", err)
-	} else if currentUser.Name == "root" && !(viper.GetString(vmDriver) == "hyperv" || viper.GetString(vmDriver) == "none") {
-		console.OutStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary.")
-	}
+	validateUser()
 
 	oldConfig, err := cfg.Load()
 	if err != nil && !os.IsNotExist(err) {
@@ -231,11 +224,12 @@ func runStart(cmd *cobra.Command, args []string) {
 	host, preexisting := startHost(m, config.MachineConfig)
 
 	ip := validateNetwork(host)
-	// Makes minikube node ip to bypass http(s) proxy. since it is local traffic.
+	// Bypass proxy for minikube's vm ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
 		console.ErrStyle(console.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,%s`.", ip)
 	}
+
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
@@ -364,6 +358,18 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	return false, fallback, nil
 }
 
+// validerUser validates minikube is run by the recommended user (privileged or regular)
+func validateUser() {
+	currentUser, err := user.Current()
+
+	// Display warning if minikube is being started with root and vmDriver is not HyperV
+	if err != nil {
+		glog.Errorf("Error getting the current user: %v", err)
+	} else if currentUser.Name == "root" && !(viper.GetString(vmDriver) == "hyperv" || viper.GetString(vmDriver) == "none") {
+		console.OutStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary.")
+	}
+}
+
 // validateConfig validates the supplied configuration against known bad combinations
 func validateConfig() {
 	diskSizeMB := pkgutil.CalculateDiskSizeInMB(viper.GetString(humanReadableDiskSize))
@@ -371,11 +377,11 @@ func validateConfig() {
 		exit.WithCode(exit.Config, "Requested disk size (%dMB) is less than minimum of %dMB", diskSizeMB, constants.MinimumDiskSizeMB)
 	}
 
-	if viper.GetBool(gpu) && viper.GetString(vmDriver) != "kvm2" {
-		exit.Usage("Sorry, the --gpu feature is currently only supported with --vm-driver=kvm2")
+	if viper.GetBool(gpu) && viper.GetString(vmDriver) != constants.DriverKvm2 {
+		exit.Usage("Sorry, the --gpu feature is currently only supported with --vm-driver=%s", constants.DriverKvm2)
 	}
-	if viper.GetBool(hidden) && viper.GetString(vmDriver) != "kvm2" {
-		exit.Usage("Sorry, the --hidden feature is currently only supported with --vm-driver=kvm2")
+	if viper.GetBool(hidden) && viper.GetString(vmDriver) != constants.DriverKvm2 {
+		exit.Usage("Sorry, the --hidden feature is currently only supported with --vm-driver=%s", constants.DriverKvm2)
 	}
 
 	err := autoSetOptions(viper.GetString(vmDriver))
