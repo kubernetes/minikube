@@ -151,20 +151,6 @@ func (d *Driver) createNetwork() error {
 }
 
 func (d *Driver) deleteNetwork() error {
-	type source struct {
-		//XMLName xml.Name `xml:"source"`
-		Network string `xml:"network,attr"`
-	}
-	type iface struct {
-		//XMLName xml.Name `xml:"interface"`
-		Source source `xml:"source"`
-	}
-	type result struct {
-		//XMLName xml.Name `xml:"domain"`
-		Name       string  `xml:"name"`
-		Interfaces []iface `xml:"devices>interface"`
-	}
-
 	conn, err := getConnection()
 	if err != nil {
 		return errors.Wrap(err, "getting libvirt connection")
@@ -186,6 +172,41 @@ func (d *Driver) deleteNetwork() error {
 		return errors.Wrapf(err, "failed looking for network %s", d.PrivateNetwork)
 	}
 	log.Debugf("Network %s exists", d.PrivateNetwork)
+
+	err = d.checkDomains(conn)
+	if err != nil {
+		return err
+	}
+
+	// when we reach this point, it means it is safe to delete the network
+	log.Debugf("Trying to destroy network %s...", d.PrivateNetwork)
+	err = network.Destroy()
+	if err != nil {
+		return errors.Wrap(err, "network destroy")
+	}
+	log.Debugf("Trying to undefine network %s...", d.PrivateNetwork)
+	err = network.Undefine()
+	if err != nil {
+		return errors.Wrap(err, "network undefine")
+	}
+
+	return nil
+}
+
+func (d *Driver) checkDomains(conn *libvirt.Connect) error {
+	type source struct {
+		//XMLName xml.Name `xml:"source"`
+		Network string `xml:"network,attr"`
+	}
+	type iface struct {
+		//XMLName xml.Name `xml:"interface"`
+		Source source `xml:"source"`
+	}
+	type result struct {
+		//XMLName xml.Name `xml:"domain"`
+		Name       string  `xml:"name"`
+		Interfaces []iface `xml:"devices>interface"`
+	}
 
 	// iterate over every (also turned off) domains, and check if it
 	// is using the private network. Do *not* delete the network if
@@ -242,18 +263,6 @@ func (d *Driver) deleteNetwork() error {
 			}
 			log.Debugf("domain %s does not use network %s", name, d.PrivateNetwork)
 		}
-	}
-
-	// when we reach this point, it means it is safe to delete the network
-	log.Debugf("Trying to destroy network %s...", d.PrivateNetwork)
-	err = network.Destroy()
-	if err != nil {
-		return errors.Wrap(err, "network destroy")
-	}
-	log.Debugf("Trying to undefine network %s...", d.PrivateNetwork)
-	err = network.Undefine()
-	if err != nil {
-		return errors.Wrap(err, "network undefine")
 	}
 
 	return nil
