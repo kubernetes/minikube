@@ -23,12 +23,6 @@ RUNC_MASTER_MAKE_ENV = $(HOST_GO_TARGET_ENV) \
 RUNC_MASTER_GLDFLAGS = \
 	-buildmode=pie -X main.gitCommit=$(RUNC_MASTER_VERSION)
 
-ifeq ($(BR2_STATIC_LIBS),y)
-RUNC_MASTER_GLDFLAGS += -extldflags '-static'
-endif
-
-RUNC_MASTER_GOTAGS = cgo static_build
-
 ifeq ($(BR2_PACKAGE_LIBSECCOMP),y)
 RUNC_MASTER_GOTAGS += seccomp
 RUNC_MASTER_DEPENDENCIES += libseccomp host-pkgconf
@@ -47,8 +41,6 @@ endef
 
 define RUNC_MASTER_INSTALL_TARGET_CMDS
 	$(INSTALL) -D -m 0755 $(@D)/bin/runc $(TARGET_DIR)/usr/bin/runc
-	# Install the binary in the location where Docker expects it, so that we can keep runc releases in sync.
-	ln $(@D)/bin/runc $(TARGET_DIR)/usr/bin/docker-runc
 endef
 
 $(eval $(generic-package))
