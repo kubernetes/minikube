@@ -30,8 +30,8 @@ import (
 func main() {
 	paths := []string{"cmd", "pkg"}
 	functions := []string{"translate.T"}
-	output := "translations"
-	err := extract.TranslatableStrings(paths, functions, output)
+	outDir := "translations"
+	err := extract.TranslatableStrings(paths, functions, outDir)
 
 	if err != nil {
 		panic(err)
