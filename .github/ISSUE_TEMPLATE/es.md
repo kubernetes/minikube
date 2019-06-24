@@ -1,8 +1,7 @@
 ---
-name: Español 
-about: Reportar un problema en Español
-labels:
-- l/es
+name: Español
+about: Reportar un problema
+labels: l/es
 ---
 <!-- Utiliza esta plantilla para informar de incidencias y proporciona tanta información como sea posible. Si no lo haces, es posible que la respuesta se retrase. Muchas gracias. -->
  
