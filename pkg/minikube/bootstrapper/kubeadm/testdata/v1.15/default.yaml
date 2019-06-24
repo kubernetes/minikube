@@ -11,7 +11,7 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: /var/run/crio/crio.sock
+  criSocket: /var/run/dockershim.sock
   name: mk
   taints: []
 ---
@@ -28,7 +28,7 @@ dns:
 etcd:
   local:
     dataDir: /data/minikube
-kubernetesVersion: v1.14.3
+kubernetesVersion: v1.15.0
 networking:
   dnsDomain: cluster.local
   podSubnet: ""
