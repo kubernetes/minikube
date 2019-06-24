@@ -1,8 +1,7 @@
 ---
 name: Português
-about: Reportar um problema em Português
-labels:
-- l/pt-BR
+about: Comunicar um problema
+labels: l/pt-BR
 ---
 <!-- Use este modelo ao reportar um problema e forneça o máximo de informações possível. Se não fazer isso, pode haver um atraso na resposta. A equipe agradece. -->
  
