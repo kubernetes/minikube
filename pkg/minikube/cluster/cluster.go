@@ -254,7 +254,7 @@ func DeleteHost(api libmachine.API) error {
 		return errors.Wrap(err, "load")
 	}
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
-	if host.Driver.DriverName() == "hyperv" {
+	if host.Driver.DriverName() == constants.DriverHyperv {
 		trySSHPowerOff(host)
 	}
 
@@ -320,21 +320,21 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 
 func preCreateHost(config *cfg.MachineConfig) {
 	switch config.VMDriver {
-	case "kvm":
+	case constants.DriverKvmOld:
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 			console.Warning(`The kvm driver is deprecated and support for it will be removed in a future release.
 				Please consider switching to the kvm2 driver, which is intended to replace the kvm driver.
 				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver for more information.
 				To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 		}
-	case "xhyve":
+	case constants.DriverXhyve:
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 			console.Warning(`The xhyve driver is deprecated and support for it will be removed in a future release.
 Please consider switching to the hyperkit driver, which is intended to replace the xhyve driver.
 See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver for more information.
 To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 		}
-	case "vmwarefusion":
+	case constants.DriverVmwareFusion:
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 			console.Warning(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 				Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
@@ -407,11 +407,11 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 // GetVMHostIP gets the ip address to be used for mapping host -> VM and VM -> host
 func GetVMHostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
-	case "kvm":
+	case constants.DriverKvmOld:
 		return net.ParseIP("192.168.42.1"), nil
 	case constants.DriverKvm2:
 		return net.ParseIP("192.168.39.1"), nil
-	case "hyperv":
+	case constants.DriverHyperv:
 		re := regexp.MustCompile(`"VSwitch": "(.*?)",`)
 		// TODO(aprindle) Change this to deserialize the driver instead
 		hypervVirtualSwitch := re.FindStringSubmatch(string(host.RawDriver))[1]
@@ -432,7 +432,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
 		return ip, nil
-	case "xhyve", constants.DriverHyperkit:
+	case constants.DriverXhyve, constants.DriverHyperkit:
 		return net.ParseIP("192.168.64.1"), nil
 	case constants.DriverVmware:
 		vmIPString, err := host.Driver.GetIP()

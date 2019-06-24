@@ -365,7 +365,7 @@ func validateUser() {
 	// Display warning if minikube is being started with root and vmDriver is not HyperV
 	if err != nil {
 		glog.Errorf("Error getting the current user: %v", err)
-	} else if currentUser.Name == "root" && !(viper.GetString(vmDriver) == "hyperv" || viper.GetString(vmDriver) == "none") {
+	} else if currentUser.Name == "root" && !(viper.GetString(vmDriver) == constants.DriverHyperv || viper.GetString(vmDriver) == constants.DriverNone) {
 		console.OutStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary.")
 	}
 }
