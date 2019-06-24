@@ -29,7 +29,6 @@ Check your installed virsh version:
 
 If your version of virsh is newer than 1.3.1 (January 2016), you may download our pre-built driver:
 
-
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
   && sudo install docker-machine-driver-kvm2 /usr/local/bin/
@@ -37,12 +36,13 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-
 
 If your version of virsh is older than 1.3.1 (Januarry 2016), you may build your own driver binary if you have go 1.12+ installed.
 
-```shell
+```console
 $ sudo apt install libvirt-dev
 $ git clone https://github.com/kubernetes/minikube.git
 $ cd minikube
 $ make out/docker-machine-driver-kvm2
 $ sudo install out/docker-machine-driver-kvm2 /usr/local/bin
+$
 ```
 
 To finish the kvm installation, start and verify the `libvirtd` service
@@ -191,7 +191,7 @@ and run minikube as usual:
 minikube start
 ```
 
-# Troubleshooting
+## Troubleshooting
 
 minikube is currently unable to display the error message received back from the VM driver. Users can however reveal the error by passing `--alsologtostderr -v=8` to `minikube start`. For instance:
 
@@ -201,8 +201,8 @@ minikube start --vm-driver=kvm2 --alsologtostderr -v=8
 
 Output:
 
-```
+```text
 Found binary path at /usr/local/bin/docker-machine-driver-kvm2
 Launching plugin server for driver kvm2
-Error starting plugin binary: fork/exec /usr/local/bin/docker-machine-driver-kvm2: exec format error   
+Error starting plugin binary: fork/exec /usr/local/bin/docker-machine-driver-kvm2: exec format error
 ```

@@ -44,7 +44,6 @@ To set these environment variables permanently, consider adding these to your [s
 
 As of v1.0, minikube automatically configures the Docker instance inside of the VM to use the proxy environment variables, unless you have specified a `--docker-env` override. If you need to manually configure Docker for a set of proxies, use:
 
-
 ```shell
 minikube start \
   --docker-env=HTTP_PROXY=$HTTP_PROXY \

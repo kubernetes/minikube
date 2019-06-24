@@ -21,7 +21,7 @@ Please send a PR to suggest any improvements to it.
 ## (#3) Cross-platform
 
 - [ ] Users should never need to separately install supporting binaries [#3975](https://github.com/kubernetes/minikube/issues/3975) [#4391](https://github.com/kubernetes/minikube/issues/4391)
-- [ ] Simplified installation process across all supported platforms 
+- [ ] Simplified installation process across all supported platforms
 
 ## (#4) Support all Kubernetes features
 
