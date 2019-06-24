@@ -18,7 +18,7 @@ As of v1.0, `minikube start` is offline compatible out of the box. Here are some
 For offline use on other hosts, one can copy the contents of `~/.minikube/cache`. As of the v1.0 release, this directory
 contains 685MB of data:
 
-```
+```text
 cache/iso/minikube-v1.0.0.iso
 cache/images/gcr.io/k8s-minikube/storage-provisioner_v1.8.1
 cache/images/k8s.gcr.io/k8s-dns-sidecar-amd64_1.14.13
@@ -38,5 +38,3 @@ cache/v1.14.0/kubelet
 ```
 
 If any of these files exist, minikube will use copy them into the VM directly rather than pulling them from the internet.
-
-
