@@ -16,7 +16,7 @@ limitations under the License.
 
 /* This file scans all of minikube's code and finds all strings that need to be able to be translated.
 It uses the more generic extract.TranslatableStringd, and prints all the translations
-into every json file it can find in pkg/minikube/translate/translations.
+into every json file it can find in the translations directory.
 
 Usage: from the root minikube directory, go run cmd/extract/extract.go
 */
@@ -30,7 +30,7 @@ import (
 func main() {
 	paths := []string{"cmd", "pkg"}
 	functions := []string{"translate.T"}
-	output := "pkg/minikube/translate/translations"
+	output := "translations"
 	err := extract.TranslatableStrings(paths, functions, output)
 
 	if err != nil {
