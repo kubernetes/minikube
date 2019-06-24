@@ -18,7 +18,6 @@ package translate
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"strings"
 
 	"github.com/cloudfoundry-attic/jibber_jabber"
@@ -74,8 +73,8 @@ func DetermineLocale() {
 	}
 
 	// Load translations for preferred language into memory.
-	translationFile := "pkg/minikube/translate/translations/" + preferredLanguage.String() + ".json"
-	t, err := ioutil.ReadFile(translationFile)
+	translationFile := "translations/" + preferredLanguage.String() + ".json"
+	t, err := Asset(translationFile)
 	if err != nil {
 		glog.Infof("Failed to load translation file for %s: %v", preferredLanguage.String(), err)
 		return
