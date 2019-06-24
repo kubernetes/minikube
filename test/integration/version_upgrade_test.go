@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"os"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/docker/machine/libmachine/state"
@@ -82,8 +83,8 @@ func TestVersionUpgrade(t *testing.T) {
 	releaseRunner.RunCommand("stop", true)
 	releaseRunner.CheckStatus(state.Stopped.String())
 
-	// Trim the leading "v" prefix to assert that we handle  it properly.
-	currentRunner.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v"))
+	// Trim the leading "v" prefix to assert that we handle it properly.
+	currentRunner.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
 	currentRunner.CheckStatus(state.Running.String())
 	currentRunner.RunCommand("delete", true)
 	currentRunner.CheckStatus(state.None.String())
