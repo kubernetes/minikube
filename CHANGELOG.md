@@ -1,5 +1,38 @@
 # Minikube Release Notes
 
+## Version 1.2.0 - 2019-06-24
+
+* Update Kubernetes default version to v1.15.0 [#4534](https://github.com/kubernetes/minikube/pull/4534)
+* Allow --kubernetes-version to be specified without the leading v [#4568](https://github.com/kubernetes/minikube/pull/4568)
+* Enable running containers with Podman [#4421](https://github.com/kubernetes/minikube/pull/4421)
+* Provide warning message for unnecessary sudo [#4455](https://github.com/kubernetes/minikube/pull/4455)
+* Universally redirect stdlog messages to glog [#4562](https://github.com/kubernetes/minikube/pull/4562)
+* Add ability to localize all strings output to console [#4464](https://github.com/kubernetes/minikube/pull/4464)
+* Upgrade CNI config version to 0.3.0 [#4410](https://github.com/kubernetes/minikube/pull/4410)
+* Register registry-proxy.yaml.tmpl with registry addons [#4529](https://github.com/kubernetes/minikube/pull/4529)
+* Stop updating /etc/rkt/net.d config files [#4407](https://github.com/kubernetes/minikube/pull/4407)
+* Fix "mount failed: File exists" issue when unmount fails [#4393](https://github.com/kubernetes/minikube/pull/4393)
+* Don't try to load cached images for none driver [#4522](https://github.com/kubernetes/minikube/pull/4522)
+* Add support for Kubernetes v1.15.0-beta.1 [#4469](https://github.com/kubernetes/minikube/pull/4469)
+* Switch kubectl current-context on profile change [#4504](https://github.com/kubernetes/minikube/pull/4504)
+* Add kvm network name validation [#4380](https://github.com/kubernetes/minikube/pull/4380)
+* Detect status before enable/disable addon [#4424](https://github.com/kubernetes/minikube/pull/4424)
+* Automatically add extra options for none driver on ubuntu [#4465](https://github.com/kubernetes/minikube/pull/4465)
+
+Thank you to the following wonderful people for their contribution to this release:
+
+- Anders F Björklund
+- Deepjyoti Mondal
+- Francis
+- Jose Donizetti
+- Medya Ghazizadeh
+- Om Kumar
+- Sharif Elgamal
+- Thomas Strömberg
+- Y.Horie
+- fenglixa
+- josedonizetti
+
 ## Version 1.1.1 - 2019-06-07
 
 * Upgrade to kubernetes 1.14.3 [#4444](https://github.com/kubernetes/minikube/pull/4444)
