@@ -83,7 +83,7 @@ associated files.`,
 			console.Fatal("Failed to kill mount process: %v", err)
 		}
 
-		if err := os.Remove(constants.GetProfileFile(viper.GetString(pkg_config.MachineProfile))); err != nil {
+		if err := os.RemoveAll(constants.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {
 			if os.IsNotExist(err) {
 				console.OutStyle(console.Meh, "%q profile does not exist", profile)
 				os.Exit(0)
