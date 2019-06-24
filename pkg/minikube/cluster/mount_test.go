@@ -54,7 +54,7 @@ func TestMount(t *testing.T) {
 			target: "target",
 			cfg:    &MountConfig{Type: "9p", Mode: os.FileMode(0700)},
 			want: []string{
-				"findmnt -T target | grep target && sudo umount target || true",
+				"[ \"x$(findmnt -T target | grep target)\" != \"x\" ] && { sudo fuser -km target; sudo umount target; } || echo ",
 				"sudo mkdir -m 700 -p target && sudo mount -t 9p -o dfltgid=0,dfltuid=0 src target",
 			},
 		},
@@ -64,7 +64,7 @@ func TestMount(t *testing.T) {
 			target: "target",
 			cfg:    &MountConfig{Type: "9p", Mode: os.FileMode(0700), UID: "docker", GID: "docker"},
 			want: []string{
-				"findmnt -T target | grep target && sudo umount target || true",
+				"[ \"x$(findmnt -T target | grep target)\" != \"x\" ] && { sudo fuser -km target; sudo umount target; } || echo ",
 				"sudo mkdir -m 700 -p target && sudo mount -t 9p -o dfltgid=$(grep ^docker: /etc/group | cut -d: -f3),dfltuid=$(id -u docker) src target",
 			},
 		},
@@ -77,7 +77,7 @@ func TestMount(t *testing.T) {
 				"cache":    "fscache",
 			}},
 			want: []string{
-				"findmnt -T /target | grep /target && sudo umount /target || true",
+				"[ \"x$(findmnt -T /target | grep /target)\" != \"x\" ] && { sudo fuser -km /target; sudo umount /target; } || echo ",
 				"sudo mkdir -m 777 -p /target && sudo mount -t 9p -o cache=fscache,dfltgid=72,dfltuid=82,noextend,version=9p2000.u 10.0.0.1 /target",
 			},
 		},
@@ -89,7 +89,7 @@ func TestMount(t *testing.T) {
 				"version": "9p2000.L",
 			}},
 			want: []string{
-				"findmnt -T tgt | grep tgt && sudo umount tgt || true",
+				"[ \"x$(findmnt -T tgt | grep tgt)\" != \"x\" ] && { sudo fuser -km tgt; sudo umount tgt; } || echo ",
 				"sudo mkdir -m 700 -p tgt && sudo mount -t 9p -o dfltgid=0,dfltuid=0,version=9p2000.L src tgt",
 			},
 		},
@@ -115,7 +115,7 @@ func TestUnmount(t *testing.T) {
 		t.Fatalf("Unmount(/mnt): %v", err)
 	}
 
-	want := []string{"findmnt -T /mnt | grep /mnt && sudo umount /mnt || true"}
+	want := []string{"[ \"x$(findmnt -T /mnt | grep /mnt)\" != \"x\" ] && { sudo fuser -km /mnt; sudo umount /mnt; } || echo "}
 	if diff := cmp.Diff(r.cmds, want); diff != "" {
 		t.Errorf("command diff (-want +got): %s", diff)
 	}

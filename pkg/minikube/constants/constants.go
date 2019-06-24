@@ -162,10 +162,10 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.14.3"
+var DefaultKubernetesVersion = "v1.15.0"
 
 // NewestKubernetesVersion is the newest Kubernetes version to test against
-var NewestKubernetesVersion = "v1.15.0-beta.1"
+var NewestKubernetesVersion = "v1.15.0"
 
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
 var OldestKubernetesVersion = "v1.10.13"
@@ -180,9 +180,6 @@ var ConfigFile = MakeMiniPath("config", "config.json")
 func GetProfileFile(profile string) string {
 	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
 }
-
-// ReportingURL is the URL for reporting a minikube error
-const ReportingURL = "https://clouderrorreporting.googleapis.com/v1beta1/projects/k8s-minikube/events:report?key=AIzaSyACUwzG0dEPcl-eOgpDKnyKoUFgHdfoFuA"
 
 // AddonsPath is the default path of the addons configuration
 const AddonsPath = "/etc/kubernetes/addons"
@@ -199,8 +196,6 @@ const (
 	KubeadmConfigFile = "/var/lib/kubeadm.yaml"
 	// DefaultCNIConfigPath is the path to the CNI configuration
 	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
-	// DefaultRktNetConfigPath is the path to the rkt net configuration
-	DefaultRktNetConfigPath = "/etc/rkt/net.d/k8s.conf"
 )
 
 const (

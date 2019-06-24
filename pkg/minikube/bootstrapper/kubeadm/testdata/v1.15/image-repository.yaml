@@ -17,6 +17,7 @@ nodeRegistration:
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
+imageRepository: test/repo
 apiServer:
   extraArgs:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
@@ -28,7 +29,7 @@ dns:
 etcd:
   local:
     dataDir: /data/minikube
-kubernetesVersion: v1.14.3
+kubernetesVersion: v1.15.0
 networking:
   dnsDomain: cluster.local
   podSubnet: ""
