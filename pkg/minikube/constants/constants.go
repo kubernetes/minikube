@@ -62,30 +62,42 @@ func ArchTag(hasTag bool) string {
 // DriverNone is the none driver.
 const DriverNone = "none"
 
-// DriverKvmOld is the old kvm driver option
+// DriverKvmOld is the depricated kvm driver option name
 const DriverKvmOld = "kvm"
 
-// DriverKvm2 is the kvm2 driver option used in linux
+// DriverKvm2 is the kvm2 driver option name for in linux
 const DriverKvm2 = "kvm2"
 
-// DriverVirtualbox is the virtualbox driver option
+// DriverVirtualbox is the virtualbox driver option name
 const DriverVirtualbox = "virtualbox"
 
-// DriverHyperkit is the hyperkit driver option for mac os
+// DriverHyperkit is the hyperkit driver option name for mac os
 const DriverHyperkit = "hyperkit"
 
-// DriverVmware is the hyperkit driver option for mac os
+// DriverVmware is the vmware driver option name
 const DriverVmware = "vmware"
+
+// DriverVmwareFusion is the vmware fusion driver option
+const DriverVmwareFusion = "vmwarefusion"
+
+// DriverHyperv is the hyperv driver option for windows
+const DriverHyperv = "hyperv"
+
+// DriverXhyve is the depricated xhyve driver option name
+const DriverXhyve = "xhyve"
+
+// DriverParallels is the parallels driver option name
+const DriverParallels = "parallels"
 
 // SupportedVMDrivers is a list of supported drivers on all platforms. Currently
 // used in gendocs.
 var SupportedVMDrivers = [...]string{
 	DriverVirtualbox,
-	"parallels",
-	"vmwarefusion",
+	DriverParallels,
+	DriverVmwareFusion,
 	DriverKvmOld,
-	"xhyve",
-	"hyperv",
+	DriverXhyve,
+	DriverHyperv,
 	DriverHyperkit,
 	DriverKvm2,
 	DriverVmware,

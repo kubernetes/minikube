@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"reflect"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 type configTestCase struct {
@@ -47,7 +49,7 @@ var configTestCases = []configTestCase{
     "vm-driver": "kvm"
 }`,
 		config: map[string]interface{}{
-			"vm-driver":                 "kvm",
+			"vm-driver":                 constants.DriverKvmOld,
 			"cpus":                      4,
 			"disk-size":                 "20g",
 			"v":                         5,
