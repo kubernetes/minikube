@@ -17,10 +17,7 @@ limitations under the License.
 package machine
 
 import (
-	"bytes"
-	"io"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -285,23 +282,6 @@ func getDstPath(dst string) (string, error) {
 
 // CacheImage caches an image
 func CacheImage(image, dst string) error {
-	// There are go-containerregistry calls here that result in
-	// ugly log messages getting printed to stdout. Capture
-	// stdout instead and writing it to info.
-	r, w, err := os.Pipe()
-	if err != nil {
-		return errors.Wrap(err, "opening writing buffer")
-	}
-	log.SetOutput(w)
-	defer func() {
-		log.SetOutput(os.Stdout)
-		var buf bytes.Buffer
-		if _, err := io.Copy(&buf, r); err != nil {
-			glog.Errorf("output copy failed: %v", err)
-		}
-		glog.Infof(buf.String())
-	}()
-
 	glog.Infof("Attempting to cache image: %s at %s\n", image, dst)
 	if _, err := os.Stat(dst); err == nil {
 		return nil
