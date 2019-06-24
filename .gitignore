@@ -34,6 +34,7 @@ _testmain.go
 deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 
 /pkg/minikube/assets/assets.go
+/pkg/minikube/translate/translations.go
 /minikube
 
 .DS_Store
