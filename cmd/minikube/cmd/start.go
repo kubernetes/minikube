@@ -23,6 +23,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"runtime"
 	"strconv"
@@ -173,6 +174,15 @@ assumes you have already installed one of the VM drivers: virtualbox/parallels/v
 func runStart(cmd *cobra.Command, args []string) {
 	console.OutStyle(console.Happy, "minikube %s on %s (%s)", version.GetVersion(), runtime.GOOS, runtime.GOARCH)
 	validateConfig()
+
+	currentUser, err := user.Current()
+
+	// Display warning if minikube is being started with root and vmDriver is not HyperV
+	if err != nil {
+		glog.Errorf("Error getting the current user: %v", err)
+	} else if currentUser.Name == "root" && !(viper.GetString(vmDriver) == "hyperv" || viper.GetString(vmDriver) == "none") {
+		console.OutStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary.")
+	}
 
 	oldConfig, err := cfg.Load()
 	if err != nil && !os.IsNotExist(err) {
