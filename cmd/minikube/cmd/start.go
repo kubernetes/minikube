@@ -586,15 +586,17 @@ func validateNetwork(h *host.Host) string {
 
 // validateKubernetesVersions ensures that the requested version is reasonable
 func validateKubernetesVersions(old *cfg.Config) (string, bool) {
-	nv := viper.GetString(kubernetesVersion)
+	rawVersion := viper.GetString(kubernetesVersion)
 	isUpgrade := false
-	if nv == "" {
-		nv = constants.DefaultKubernetesVersion
+	if rawVersion == "" {
+		rawVersion = constants.DefaultKubernetesVersion
 	}
-	nvs, err := semver.Make(strings.TrimPrefix(nv, version.VersionPrefix))
+
+	nvs, err := semver.Make(strings.TrimPrefix(rawVersion, version.VersionPrefix))
 	if err != nil {
-		exit.WithCode(exit.Data, "Unable to parse %q: %v", nv, err)
+		exit.WithCode(exit.Data, "Unable to parse %q: %v", rawVersion, err)
 	}
+	nv := version.VersionPrefix + nvs.String()
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
 		return nv, isUpgrade
