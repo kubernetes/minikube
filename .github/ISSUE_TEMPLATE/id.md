@@ -1,8 +1,7 @@
 ---
 name: Bahasa Indonesia
-about: Laporkan masalah dalam Bahasa Indonesia
-labels:
-- l/id
+about: Laporkan masalah
+labels: l/id
 ---
 <!-- Gunakan template ini saat melaporkan masalah, dengan memberikan informasi sebanyak mungkin. Jika hal ini tidak dilakukan, respons terhadap laporan dapat menjadi tertunda. Terima kasih. -->
  
