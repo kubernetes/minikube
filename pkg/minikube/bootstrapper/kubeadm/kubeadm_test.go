@@ -130,8 +130,8 @@ ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/
 	}
 }
 
-func TestGenerateConfig(t *testing.T) {
-	extraOpts := util.ExtraOptionSlice{
+func getExtraOpts() []util.ExtraOption {
+	return util.ExtraOptionSlice{
 		util.ExtraOption{
 			Component: Apiserver,
 			Key:       "fail-no-swap",
@@ -158,15 +158,19 @@ func TestGenerateConfig(t *testing.T) {
 			Value:     "true",
 		},
 	}
+}
 
-	extraOptsPodCidr := util.ExtraOptionSlice{
+func getExtraOptsPodCidr() []util.ExtraOption {
+	return util.ExtraOptionSlice{
 		util.ExtraOption{
 			Component: Kubeadm,
 			Key:       "pod-network-cidr",
 			Value:     "192.168.32.0/20",
 		},
 	}
+}
 
+func recentReleases() ([]string, error) {
 	// test the 6 most recent releases
 	versions := []string{"v1.15", "v1.14", "v1.13", "v1.12", "v1.11", "v1.10"}
 	foundNewest := false
@@ -182,13 +186,23 @@ func TestGenerateConfig(t *testing.T) {
 	}
 
 	if !foundNewest {
-		t.Errorf("No tests exist yet for newest minor version: %s", constants.NewestKubernetesVersion)
+		return nil, fmt.Errorf("No tests exist yet for newest minor version: %s", constants.NewestKubernetesVersion)
 	}
 
 	if !foundDefault {
-		t.Errorf("No tests exist yet for default minor version: %s", constants.DefaultKubernetesVersion)
+		return nil, fmt.Errorf("No tests exist yet for default minor version: %s", constants.DefaultKubernetesVersion)
 	}
 
+	return versions, nil
+}
+
+func TestGenerateConfig(t *testing.T) {
+	extraOpts := getExtraOpts()
+	extraOptsPodCidr := getExtraOptsPodCidr()
+	versions, err := recentReleases()
+	if err != nil {
+		t.Errorf("versions: %v", err)
+	}
 	tests := []struct {
 		name      string
 		runtime   string
