@@ -181,6 +181,11 @@ func GetProfileFile(profile string) string {
 	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
 }
 
+// GetProfilePath returns the Minikube profile path of config file
+func GetProfilePath(profile string) string {
+	return filepath.Join(GetMinipath(), "profiles", profile)
+}
+
 // AddonsPath is the default path of the addons configuration
 const AddonsPath = "/etc/kubernetes/addons"
 
