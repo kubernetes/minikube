@@ -30,7 +30,7 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          "kvm2",
+		Name:          constants.DriverKvm2,
 		Builtin:       false,
 		ConfigCreator: createKVM2Host,
 	}); err != nil {

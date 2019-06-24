@@ -118,7 +118,7 @@ func (d *Driver) Create() error {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	return "hyperkit"
+	return constants.DriverHyperkit
 }
 
 // GetSSHHostname returns hostname for use with ssh
@@ -223,7 +223,7 @@ func (d *Driver) Start() error {
 	h.Memory = d.Memory
 	h.UUID = d.UUID
 	// This should stream logs from hyperkit, but doesn't seem to work.
-	logger := golog.New(os.Stderr, "hyperkit", golog.LstdFlags)
+	logger := golog.New(os.Stderr, constants.DriverHyperkit, golog.LstdFlags)
 	h.SetLogger(logger)
 
 	if vsockPorts, err := d.extractVSockPorts(); err != nil {

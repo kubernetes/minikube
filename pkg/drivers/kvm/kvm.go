@@ -220,7 +220,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	return "kvm2"
+	return constants.DriverKvm2
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
