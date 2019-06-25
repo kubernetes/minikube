@@ -133,6 +133,14 @@ or, to use hyperkit as a default driver for minikube:
 minikube config set vm-driver hyperkit
 ```
 
+### Troubleshoot
+
+Make sure you are running the lastest version of your driver.
+
+```shell
+docker-machine-driver-hyperkit --version
+```
+
 ## HyperV driver
 
 Hyper-v users may need to create a new external network switch as described [here](https://docs.docker.com/machine/drivers/hyper-v/). This step may prevent a problem in which `minikube start` hangs indefinitely, unable to ssh into the minikube virtual machine. In this add, add the `--hyperv-virtual-switch=switch-name` argument to the `minikube start` command.

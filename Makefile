@@ -329,7 +329,9 @@ out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
 else
-	GOOS=darwin CGO_ENABLED=1 go build -o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
+	GOOS=darwin CGO_ENABLED=1 go build \
+		-ldflags "-X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION)" 	\
+		-o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
 endif
 
 .PHONY: install-hyperkit-driver
