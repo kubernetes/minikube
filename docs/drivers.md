@@ -96,6 +96,12 @@ virsh net-define kvm-default.xml
 virsh net-start default
 ```
 
+Make sure you are running the lastest version of your driver.
+
+ ```shell
+docker-machine-driver-kvm2 --version
+```
+
 ## Hyperkit driver
 
 Install the [hyperkit](http://github.com/moby/hyperkit) VM manager using [brew](https://brew.sh):
