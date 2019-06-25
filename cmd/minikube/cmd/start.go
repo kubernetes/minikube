@@ -204,10 +204,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	m, err := machine.NewAPIClient()
-	defer m.Close()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
+	defer m.Close()
 
 	// If --download-only, complete the remaining downloads and exit.
 	if viper.GetBool(downloadOnly) {
