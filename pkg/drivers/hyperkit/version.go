@@ -1,5 +1,3 @@
-// +build darwin
-
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -16,21 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package hyperkit
 
-import (
-	"fmt"
-	"os"
+// The current version of the docker-machine-driver-hyperkit
 
-	"github.com/docker/machine/libmachine/drivers/plugin"
-	"k8s.io/minikube/pkg/drivers/hyperkit"
-)
+// version is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/drivers/hyperkit.version=vX.Y.Z"
+var version = "v0.0.0-unset"
 
-func main() {
-	if len(os.Args) > 1 && os.Args[1] == "--version" {
-		fmt.Println(hyperkit.GetVersion())
-		return
-	}
-
-	plugin.RegisterDriver(hyperkit.NewDriver("", ""))
+// GetVersion returns the current docker-machine-driver-hyperkit version
+func GetVersion() string {
+	return version
 }
