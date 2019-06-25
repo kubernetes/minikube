@@ -60,6 +60,9 @@ func TestStartStop(t *testing.T) {
 			"--extra-config",
 			"kubeadm.ignore-preflight-errors=SystemVerification",
 		}},
+		{"registry_mirror", []string{
+			"--registry-mirror=https://localhost",
+		}},
 	}
 
 	for _, test := range tests {

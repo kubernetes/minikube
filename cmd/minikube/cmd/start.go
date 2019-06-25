@@ -399,8 +399,13 @@ func validateConfig() {
 		}
 	}
 
-	// This validates if the --registry-mirror args
-	// match the format of http://localhost
+	validateRegistryMirror()
+}
+
+// This function validates if the --registry-mirror
+//args match the format of http://localhost
+func validateRegistryMirror() {
+
 	if len(registryMirror) > 0 {
 		for _, loc := range registryMirror {
 			URL, err := url.Parse(loc)
@@ -413,7 +418,6 @@ func validateConfig() {
 
 		}
 	}
-
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
