@@ -76,12 +76,12 @@ func TestLocalClientNewHost(t *testing.T) {
 	}{
 		{
 			description: "host vbox correct",
-			driver:      "virtualbox",
+			driver:      constants.DriverVirtualbox,
 			rawDriver:   []byte(vboxConfig),
 		},
 		{
 			description: "host vbox incorrect",
-			driver:      "virtualbox",
+			driver:      constants.DriverVirtualbox,
 			rawDriver:   []byte("?"),
 			err:         true,
 		},
@@ -137,7 +137,7 @@ func TestRunDriver(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	os.Setenv(localbinary.PluginEnvKey, localbinary.PluginEnvVal)
-	os.Setenv(localbinary.PluginEnvDriverName, "virtualbox")
+	os.Setenv(localbinary.PluginEnvDriverName, constants.DriverVirtualbox)
 
 	// Capture stdout and reset it later.
 	old := os.Stdout

@@ -35,7 +35,7 @@ https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#xhyve-driver
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          "xhyve",
+		Name:          constants.DriverXhyve,
 		Builtin:       false,
 		ConfigCreator: createXhyveHost,
 		DriverCreator: func() drivers.Driver {

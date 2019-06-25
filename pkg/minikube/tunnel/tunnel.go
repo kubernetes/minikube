@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 //tunnel represents the basic API for a tunnel: periodically the state of the tunnel
@@ -149,7 +150,7 @@ func setupRoute(t *tunnel, h *host.Host) {
 			return
 		}
 
-		if h.DriverName == "hyperkit" {
+		if h.DriverName == constants.DriverHyperkit {
 			//the virtio-net interface acts up with ip tunnels :(
 			setupBridge(t)
 			if t.status.RouteError != nil {
