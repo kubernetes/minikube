@@ -34,6 +34,7 @@ import (
 	"github.com/golang/glog"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 // ErrPrefix notes an error
@@ -53,13 +54,18 @@ type RetriableError struct {
 
 func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Error() }
 
-// CalculateDiskSizeInMB returns the number of MB in the human readable string
-func CalculateDiskSizeInMB(humanReadableDiskSize string) int {
-	diskSize, err := units.FromHumanSize(humanReadableDiskSize)
-	if err != nil {
-		glog.Errorf("Invalid disk size: %v", err)
+// CalculateSizeInMB returns the number of MB in the human readable string
+func CalculateSizeInMB(humanReadableSize string) int {
+	_, err := strconv.ParseInt(humanReadableSize, 10, 64)
+	if err == nil {
+		humanReadableSize += "mb"
 	}
-	return int(diskSize / units.MB)
+	size, err := units.FromHumanSize(humanReadableSize)
+	if err != nil {
+		exit.WithCode(exit.Config, "Invalid size passed in argument: %v", err)
+	}
+
+	return int(size / units.MB)
 }
 
 // Until endlessly loops the provided function until a message is received on the done channel.
