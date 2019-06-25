@@ -35,6 +35,7 @@ func (r *Containerd) Name() string {
 	return "containerd"
 }
 
+// Style is the console style for containerd
 func (r *Containerd) Style() console.StyleEnum {
 	return console.Containerd
 }

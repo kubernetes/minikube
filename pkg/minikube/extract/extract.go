@@ -237,6 +237,10 @@ func checkCallExpression(s *ast.CallExpr, e *state) {
 		return
 	}
 
+	checkArguments(s, e)
+}
+
+func checkArguments(s *ast.CallExpr, e *state) {
 	matched := false
 	for _, arg := range s.Args {
 		// This argument is an identifier.

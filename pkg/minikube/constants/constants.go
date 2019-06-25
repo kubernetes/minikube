@@ -59,19 +59,49 @@ func ArchTag(hasTag bool) string {
 	return "-" + runtime.GOARCH + ":"
 }
 
+// DriverNone is the none driver.
+const DriverNone = "none"
+
+// DriverKvmOld is the depricated kvm driver option name
+const DriverKvmOld = "kvm"
+
+// DriverKvm2 is the kvm2 driver option name for in linux
+const DriverKvm2 = "kvm2"
+
+// DriverVirtualbox is the virtualbox driver option name
+const DriverVirtualbox = "virtualbox"
+
+// DriverHyperkit is the hyperkit driver option name for mac os
+const DriverHyperkit = "hyperkit"
+
+// DriverVmware is the vmware driver option name
+const DriverVmware = "vmware"
+
+// DriverVmwareFusion is the vmware fusion driver option
+const DriverVmwareFusion = "vmwarefusion"
+
+// DriverHyperv is the hyperv driver option for windows
+const DriverHyperv = "hyperv"
+
+// DriverXhyve is the depricated xhyve driver option name
+const DriverXhyve = "xhyve"
+
+// DriverParallels is the parallels driver option name
+const DriverParallels = "parallels"
+
 // SupportedVMDrivers is a list of supported drivers on all platforms. Currently
 // used in gendocs.
 var SupportedVMDrivers = [...]string{
-	"virtualbox",
-	"parallels",
-	"vmwarefusion",
-	"kvm",
-	"xhyve",
-	"hyperv",
-	"hyperkit",
-	"kvm2",
-	"vmware",
-	"none",
+	DriverVirtualbox,
+	DriverParallels,
+	DriverVmwareFusion,
+	DriverKvmOld,
+	DriverXhyve,
+	DriverHyperv,
+	DriverHyperkit,
+	DriverKvm2,
+	DriverVmware,
+	DriverNone,
 }
 
 // DefaultMinipath is the default Minikube path (under the home directory)
@@ -130,7 +160,7 @@ const (
 	// MinimumDiskSizeMB is the minimum disk image size, in megabytes
 	MinimumDiskSizeMB = 2000
 	// DefaultVMDriver is the default virtual machine driver name
-	DefaultVMDriver = "virtualbox"
+	DefaultVMDriver = DriverVirtualbox
 	// DefaultStatusFormat is the default format of a host
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
@@ -181,6 +211,11 @@ func GetProfileFile(profile string) string {
 	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
 }
 
+// GetProfilePath returns the Minikube profile path of config file
+func GetProfilePath(profile string) string {
+	return filepath.Join(GetMinipath(), "profiles", profile)
+}
+
 // AddonsPath is the default path of the addons configuration
 const AddonsPath = "/etc/kubernetes/addons"
 
@@ -229,9 +264,6 @@ func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) s
 
 // IsMinikubeChildProcess is the name of "is minikube child process" variable
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
-
-// DriverNone is the none driver
-const DriverNone = "none"
 
 // FileScheme is the file scheme
 const FileScheme = "file"
