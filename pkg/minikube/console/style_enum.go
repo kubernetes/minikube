@@ -16,8 +16,10 @@ limitations under the License.
 
 package console
 
+// StyleEnum is an enumeration of Style
 type StyleEnum int
 
+// All the Style constants available
 const (
 	Happy StyleEnum = iota
 	SuccessType

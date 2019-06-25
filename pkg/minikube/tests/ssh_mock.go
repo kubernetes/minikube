@@ -72,14 +72,8 @@ type execRequest struct {
 	Command string
 }
 
-// Start starts the mock SSH Server, and returns the port it's listening on.
-func (s *SSHServer) Start() (int, error) {
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
-	if err != nil {
-		return 0, errors.Wrap(err, "Error creating tcp listener for ssh server")
-	}
-
-	// Main loop, listen for connections and store the commands.
+// Main loop, listen for connections and store the commands.
+func (s *SSHServer) mainLoop(listener net.Listener) {
 	go func() {
 		for {
 			nConn, err := listener.Accept()
@@ -109,54 +103,68 @@ func (s *SSHServer) Start() (int, error) {
 					for req := range requests {
 						glog.Infoln("Got Req: ", req.Type)
 						// Store anything that comes in over stdin.
-						go func() {
-							if _, err := io.Copy(s.Transfers, channel); err != nil {
-								panic(fmt.Sprintf("copy failed: %v", err))
-							}
-							channel.Close()
-						}()
-						switch req.Type {
-						case "exec":
-							if err := req.Reply(true, nil); err != nil {
-								panic(fmt.Sprintf("reply failed: %v", err))
-							}
-
-							// Note: string(req.Payload) adds additional characters to start of input.
-							var cmd execRequest
-							if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
-								glog.Errorf("Unmarshall encountered error: %v with req: %v", err, req.Type)
-								return
-							}
-							s.Commands[cmd.Command] = 1
-
-							// Write specified command output as mocked ssh output
-							if val, err := s.GetCommandToOutput(cmd.Command); err == nil {
-								if _, err := channel.Write([]byte(val)); err != nil {
-									glog.Errorf("Write failed: %v", err)
-									return
-								}
-							}
-							if _, err := channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0}); err != nil {
-								glog.Errorf("SendRequest failed: %v", err)
-								return
-							}
-
-						case "pty-req":
-							if err := req.Reply(true, nil); err != nil {
-								glog.Errorf("Reply failed: %v", err)
-								return
-							}
-
-							if _, err := channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0}); err != nil {
-								glog.Errorf("SendRequest failed: %v", err)
-								return
-							}
-						}
+						s.handleRequest(channel, req)
 					}
 				}
 			}()
 		}
 	}()
+}
+
+func (s *SSHServer) handleRequest(channel ssh.Channel, req *ssh.Request) {
+	go func() {
+		if _, err := io.Copy(s.Transfers, channel); err != nil {
+			panic(fmt.Sprintf("copy failed: %v", err))
+		}
+		channel.Close()
+	}()
+	switch req.Type {
+	case "exec":
+		if err := req.Reply(true, nil); err != nil {
+			panic(fmt.Sprintf("reply failed: %v", err))
+		}
+
+		// Note: string(req.Payload) adds additional characters to start of input.
+		var cmd execRequest
+		if err := ssh.Unmarshal(req.Payload, &cmd); err != nil {
+			glog.Errorf("Unmarshall encountered error: %v with req: %v", err, req.Type)
+			return
+		}
+		s.Commands[cmd.Command] = 1
+
+		// Write specified command output as mocked ssh output
+		if val, err := s.GetCommandToOutput(cmd.Command); err == nil {
+			if _, err := channel.Write([]byte(val)); err != nil {
+				glog.Errorf("Write failed: %v", err)
+				return
+			}
+		}
+		if _, err := channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0}); err != nil {
+			glog.Errorf("SendRequest failed: %v", err)
+			return
+		}
+
+	case "pty-req":
+		if err := req.Reply(true, nil); err != nil {
+			glog.Errorf("Reply failed: %v", err)
+			return
+		}
+
+		if _, err := channel.SendRequest("exit-status", false, []byte{0, 0, 0, 0}); err != nil {
+			glog.Errorf("SendRequest failed: %v", err)
+			return
+		}
+	}
+}
+
+// Start starts the mock SSH Server, and returns the port it's listening on.
+func (s *SSHServer) Start() (int, error) {
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		return 0, errors.Wrap(err, "Error creating tcp listener for ssh server")
+	}
+
+	s.mainLoop(listener)
 
 	// Parse and return the port.
 	_, p, err := net.SplitHostPort(listener.Addr().String())
