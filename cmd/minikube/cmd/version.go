@@ -32,6 +32,10 @@ var versionCmd = &cobra.Command{
 	},
 	Run: func(command *cobra.Command, args []string) {
 		console.OutLn("minikube version: %v", version.GetVersion())
+		gitCommitID := version.GetGitCommitID()
+		if gitCommitID != "" {
+			console.OutLn("commit: %v", gitCommitID)
+		}
 	},
 }
 
