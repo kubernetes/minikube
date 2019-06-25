@@ -28,7 +28,7 @@ import (
 
 func init() {
 	registry.Register(registry.DriverDef{
-		Name:          "hyperv",
+		Name:          constants.DriverHyperv,
 		Builtin:       true,
 		ConfigCreator: createHypervHost,
 		DriverCreator: func() drivers.Driver {

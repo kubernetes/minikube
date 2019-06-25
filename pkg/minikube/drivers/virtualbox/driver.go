@@ -30,7 +30,7 @@ const defaultVirtualboxNicType = "virtio"
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          "virtualbox",
+		Name:          constants.DriverVirtualbox,
 		Builtin:       true,
 		ConfigCreator: createVirtualboxHost,
 		DriverCreator: func() drivers.Driver {
