@@ -108,7 +108,7 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
-	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
+	mv out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
 out/minikube-%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go  $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -201,6 +201,15 @@ pkg/minikube/translate/translations.go: $(shell find translations/ -type f)
 
 .PHONY: cross
 cross: out/minikube-linux-$(GOARCH) out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+
+.PHONY: windows
+windows: out/minikube-windows-amd64.exe
+
+.PHONY: darwin
+darwin: out/minikube-darwin-amd64
+
+.PHONY: linux
+linux: out/minikube-linux-$(GOARCH)
 
 .PHONY: e2e-cross
 e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
