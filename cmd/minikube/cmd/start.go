@@ -207,6 +207,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
+	defer m.Close()
 
 	// If --download-only, complete the remaining downloads and exit.
 	if viper.GetBool(downloadOnly) {
@@ -525,7 +526,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 	return cfg, nil
 }
 
-// autoSetOptions sets the options needed for specific configuration automatically.
+// autoSetOptions sets the options needed for specific vm-driver automatically.
 func autoSetOptions(vmDriver string) error {
 	//  options for none driver
 	if vmDriver == constants.DriverNone {
