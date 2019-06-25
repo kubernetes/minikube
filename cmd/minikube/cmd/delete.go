@@ -39,59 +39,61 @@ var deleteCmd = &cobra.Command{
 	Short: "Deletes a local kubernetes cluster",
 	Long: `Deletes a local kubernetes cluster. This command deletes the VM, and removes all
 associated files.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 {
-			exit.Usage("usage: minikube delete")
-		}
-		profile := viper.GetString(pkg_config.MachineProfile)
-		api, err := machine.NewAPIClient()
+	Run: runDelete,
+}
+
+// runDelete handles the executes the flow of "minikube delete"
+func runDelete(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		exit.Usage("usage: minikube delete")
+	}
+	profile := viper.GetString(pkg_config.MachineProfile)
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		exit.WithError("Error getting client", err)
+	}
+	defer api.Close()
+
+	cc, err := pkg_config.Load()
+	if err != nil && !os.IsNotExist(err) {
+		console.ErrLn("Error loading profile config: %v", err)
+	}
+
+	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
+	if err == nil && cc.MachineConfig.VMDriver == constants.DriverNone {
+		kc := cc.KubernetesConfig
+		bsName := viper.GetString(cmdcfg.Bootstrapper)
+		console.OutStyle(console.Resetting, "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
+		clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
-
-		cc, err := pkg_config.Load()
-		if err != nil && !os.IsNotExist(err) {
-			console.ErrLn("Error loading profile config: %v", err)
+			console.ErrLn("Unable to get bootstrapper: %v", err)
+		} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
+			console.ErrLn("Failed to delete cluster: %v", err)
 		}
 
-		// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
-		if err == nil && cc.MachineConfig.VMDriver == constants.DriverNone {
-			kc := cc.KubernetesConfig
-			bsName := viper.GetString(cmdcfg.Bootstrapper)
-			console.OutStyle(console.Resetting, "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
-			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
-			if err != nil {
-				console.ErrLn("Unable to get bootstrapper: %v", err)
-			} else {
-				if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
-					console.ErrLn("Failed to delete cluster: %v", err)
-				}
-			}
-		}
+	}
 
-		if err = cluster.DeleteHost(api); err != nil {
-			switch err := errors.Cause(err).(type) {
-			case mcnerror.ErrHostDoesNotExist:
-				console.OutStyle(console.Meh, "%q cluster does not exist", profile)
-			default:
-				exit.WithError("Failed to delete cluster", err)
-			}
+	if err = cluster.DeleteHost(api); err != nil {
+		switch err := errors.Cause(err).(type) {
+		case mcnerror.ErrHostDoesNotExist:
+			console.OutStyle(console.Meh, "%q cluster does not exist", profile)
+		default:
+			exit.WithError("Failed to delete cluster", err)
 		}
+	}
 
-		if err := cmdUtil.KillMountProcess(); err != nil {
-			console.Fatal("Failed to kill mount process: %v", err)
-		}
+	if err := cmdUtil.KillMountProcess(); err != nil {
+		console.Fatal("Failed to kill mount process: %v", err)
+	}
 
-		if err := os.RemoveAll(constants.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {
-			if os.IsNotExist(err) {
-				console.OutStyle(console.Meh, "%q profile does not exist", profile)
-				os.Exit(0)
-			}
-			exit.WithError("Failed to remove profile", err)
+	if err := os.RemoveAll(constants.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {
+		if os.IsNotExist(err) {
+			console.OutStyle(console.Meh, "%q profile does not exist", profile)
+			os.Exit(0)
 		}
-		console.OutStyle(console.Crushed, "The %q cluster has been deleted.", profile)
-	},
+		exit.WithError("Failed to remove profile", err)
+	}
+	console.OutStyle(console.Crushed, "The %q cluster has been deleted.", profile)
 }
 
 func init() {
