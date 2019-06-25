@@ -46,6 +46,11 @@ $ ls out/
 minikube-darwin-amd64  minikube-linux-amd64  minikube-windows-amd64.exe
 ```
 
+You can also build platform specific executables like below:
+    1. `make windows` will build the binary for Windows platform
+    2. `make linux` will build the binary for Linux platform
+    3. `make darwin` will build the binary for Darwin/Mac platform
+
 ### Run Instructions
 
 Start the cluster using your built minikube with:
