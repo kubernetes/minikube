@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/user"
@@ -395,6 +396,26 @@ func validateConfig() {
 		if !pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
 			!pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], param) {
 			exit.Usage("Sorry, the kubeadm.%s parameter is currently not supported by --extra-config", param)
+		}
+	}
+
+	validateRegistryMirror()
+}
+
+// This function validates if the --registry-mirror
+//args match the format of http://localhost
+func validateRegistryMirror() {
+
+	if len(registryMirror) > 0 {
+		for _, loc := range registryMirror {
+			URL, err := url.Parse(loc)
+			if err != nil {
+				glog.Errorln("Error Parsing URL: ", err)
+			}
+			if (URL.Scheme != "http" && URL.Scheme != "https") || URL.Path != "" {
+				exit.Usage("Sorry, url provided with --registry-mirror flag is invalid %q", loc)
+			}
+
 		}
 	}
 }
