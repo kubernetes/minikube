@@ -89,17 +89,20 @@ func TestStartStop(t *testing.T) {
 			}
 
 			checkStop := func() error {
-				r.RunCommand("stop", true)
-				return r.CheckStatusNoFail(state.Stopped.String())
+				r.RunCommand("stop", false)
+				err := r.CheckStatusNoFail(state.Stopped.String())
+				if err == nil {
+					// kubecctl's current-context after minikube stop
+					afterCtx := kctlR.CurrentContext()
+					if afterCtx != "" {
+						return fmt.Errorf("got current-context - %q, want  %q", afterCtx, "")
+					}
+				}
+				return err
 			}
 
-			if err := util.Retry(t, checkStop, 13*time.Second, 3); err != nil {
-				t.Fatalf("timed out while checking stopped status: %v", err)
-			}
-			// kubecctl's current-context after minikube stop
-			afterCtx := kctlR.CurrentContext()
-			if afterCtx != "" {
-				t.Fatalf("got current-context - %q, want  %q", currCtx, "")
+			if err := util.Retry(t, checkStop, 7*time.Second, 3); err != nil {
+				t.Fatalf("Timed out checking stopped status: %v", err)
 			}
 
 			r.Start(test.args...)

@@ -22,7 +22,6 @@ import (
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
@@ -44,7 +43,8 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
-	profile := viper.GetString(pkg_config.MachineProfile)
+	profile := pkg_config.GetMachineName()
+
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Error getting client", err)
@@ -64,9 +64,15 @@ func runStop(cmd *cobra.Command, args []string) {
 			return err
 		}
 	}
-	if err := pkgutil.RetryAfter(5, stop, 5*time.Second); err != nil {
+	err = pkgutil.UnsetCurrentContext(constants.KubeconfigPath, profile)
+	if err != nil {
+		exit.WithError("Failed to unset the kubernetes current-context", err)
+	}
+
+	if err := pkgutil.RetryAfter(3, stop, 5*time.Second); err != nil {
 		exit.WithError("Unable to stop VM", err)
 	}
+
 	if !nonexistent {
 		console.OutStyle(console.Stopped, "%q stopped.", profile)
 	}
@@ -75,11 +81,6 @@ func runStop(cmd *cobra.Command, args []string) {
 		console.OutStyle(console.WarningType, "Unable to kill mount process: %s", err)
 	}
 
-	machineName := pkg_config.GetMachineName()
-	err = pkgutil.UnsetCurrentContext(constants.KubeconfigPath, machineName)
-	if err != nil {
-		exit.WithError("update config", err)
-	}
 }
 func init() {
 	RootCmd.AddCommand(stopCmd)
