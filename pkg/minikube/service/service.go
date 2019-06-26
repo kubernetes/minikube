@@ -245,7 +245,12 @@ func OptionallyHTTPSFormattedURLString(bareURLString string, https bool) (string
 // WaitAndMaybeOpenService waits for a service, and opens it when running
 func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
 	wait int, interval int) error {
-	if err := util.RetryAfter(wait, func() error { return CheckService(namespace, service) }, time.Duration(interval)*time.Second); err != nil {
+	// Convert "Amount of time to wait" and "interval of each check" to attempts
+	if interval == 0 {
+		interval = 1
+	}
+	attempts := wait/interval + 1
+	if err := util.RetryAfter(attempts, func() error { return CheckService(namespace, service) }, time.Duration(interval)*time.Second); err != nil {
 		return errors.Wrapf(err, "Could not find finalized endpoint being pointed to by %s", service)
 	}
 
