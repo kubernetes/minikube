@@ -29,7 +29,7 @@ import (
 )
 
 // EnvVars are variables we plumb through to the underlying container runtime
-var EnvVars = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY"}
+var EnvVars = []string{"HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "http_proxy", "https_proxy", "no_proxy"}
 
 // isInBlock checks if ip is a CIDR block
 func isInBlock(ip string, block string) (bool, error) {

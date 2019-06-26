@@ -447,6 +447,9 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 		if !cmd.Flags().Changed("docker-env") {
 			for _, k := range proxy.EnvVars {
 				if v := os.Getenv(k); v != "" {
+					// convert https_proxy to HTTPS_PROXY for linux
+					// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
+					k = strings.ToUpper(k)
 					dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
 				}
 			}
@@ -604,6 +607,7 @@ func validateNetwork(h *host.Host) string {
 			}
 			console.OutStyle(console.Option, "%s=%s", k, v)
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
+			k = strings.ToUpper(k)               // for http_proxy & https_proxy
 			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
 				console.Warning("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP (%s). Please see https://github.com/kubernetes/minikube/blob/master/docs/http_proxy.md for more details", ip)
 				warnedOnce = true
