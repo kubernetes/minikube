@@ -138,7 +138,7 @@ minikube config set vm-driver hyperkit
 Make sure you are running the lastest version of your driver.
 
 ```shell
-docker-machine-driver-hyperkit --version
+docker-machine-driver-hyperkit version
 ```
 
 ## HyperV driver
