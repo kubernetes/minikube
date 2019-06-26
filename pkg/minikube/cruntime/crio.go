@@ -78,8 +78,8 @@ func (r *CRIO) Active() bool {
 }
 
 // Enable idempotently enables CRIO on a host
-func (r *CRIO) Enable(disableOtherContainerEngines bool) error {
-	if disableOtherContainerEngines {
+func (r *CRIO) Enable(disOthers bool) error {
+	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			glog.Warningf("disableOthers: %v", err)
 		}
