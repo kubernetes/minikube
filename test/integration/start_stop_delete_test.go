@@ -65,6 +65,8 @@ func TestStartStop(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			r := NewMinikubeRunner(t)
+			kctlR := util.NewKubectlRunner(t)
+
 			if !strings.Contains(test.name, "docker") && usingNoneDriver(r) {
 				t.Skipf("skipping %s - incompatible with none driver", test.name)
 			}
@@ -81,14 +83,9 @@ func TestStartStop(t *testing.T) {
 				t.Fatalf("IP command returned an invalid address: %s", ip)
 			}
 
-			// check for the current-context before and after the stop
-			kubectlRunner := util.NewKubectlRunner(t)
-			currentContext, err := kubectlRunner.RunCommand([]string{"config", "current-context"})
-			if err != nil {
-				t.Fatalf("Failed to fetch current-context")
-			}
-			if strings.TrimRight(string(currentContext), "\n") != "minikube" {
-				t.Fatalf("got current-context - %q, want  current-context %q", string(currentContext), "minikube")
+			currCtx := kctlR.CurrentContext()
+			if currCtx != "minikube" {
+				t.Fatalf("got current-context - %q, want %q", currCtx, "minikube")
 			}
 
 			checkStop := func() error {
@@ -96,13 +93,13 @@ func TestStartStop(t *testing.T) {
 				return r.CheckStatusNoFail(state.Stopped.String())
 			}
 
-			if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
+			if err := util.Retry(t, checkStop, 13*time.Second, 3); err != nil {
 				t.Fatalf("timed out while checking stopped status: %v", err)
 			}
-
-			// running this command results in error when the current-context is not set
-			if err := r.Run("config current-context"); err != nil {
-				t.Logf("current-context is not set to minikube")
+			// kubecctl's current-context after minikube stop
+			afterCtx := kctlR.CurrentContext()
+			if afterCtx != "" {
+				t.Fatalf("got current-context - %q, want  %q", currCtx, "")
 			}
 
 			r.Start(test.args...)

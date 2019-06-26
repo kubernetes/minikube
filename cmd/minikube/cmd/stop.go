@@ -64,7 +64,7 @@ func runStop(cmd *cobra.Command, args []string) {
 			return err
 		}
 	}
-	if err := pkgutil.RetryAfter(5, stop, 2*time.Second); err != nil {
+	if err := pkgutil.RetryAfter(5, stop, 5*time.Second); err != nil {
 		exit.WithError("Unable to stop VM", err)
 	}
 	if !nonexistent {
