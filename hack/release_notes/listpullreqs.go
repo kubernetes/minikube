@@ -50,7 +50,7 @@ func main() {
 	rootCmd.Flags().StringVar(&fromTag, "fromTag", "", "comparison of commits is based on this tag (defaults to the latest tag in the repo)")
 	rootCmd.Flags().StringVar(&toTag, "toTag", "master", "this is the commit that is compared with fromTag")
 	if err := rootCmd.Execute(); err != nil {
-		glog.FatalF("Failed to execute: %v", err)
+		glog.Fatalf("Failed to execute: %v", err)
 	}
 }
 
@@ -59,7 +59,7 @@ func printPullRequests() {
 
 	releases, _, err := client.Repositories.ListReleases(context.Background(), org, repo, &github.ListOptions{})
 	if err != nil {
-		glog.FatalF("Failed to list releases: %v", err)
+		glog.Fatalf("Failed to list releases: %v", err)
 	}
 	lastReleaseTime := *releases[0].PublishedAt
 	fmt.Println(fmt.Sprintf("Collecting pull request that were merged since the last release: %s (%s)", *releases[0].TagName, lastReleaseTime))
@@ -76,7 +76,7 @@ func printPullRequests() {
 			},
 		})
 		if err != nil {
-			glog.FatalF("Failed to list pull requests: %v", err)
+			glog.Fatalf("Failed to list pull requests: %v", err)
 		}
 
 		seen := 0
