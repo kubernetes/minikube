@@ -75,8 +75,8 @@ func (r *Docker) Active() bool {
 }
 
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable(disableOtherContainerEngines bool) error {
-	if disableOtherContainerEngines {
+func (r *Docker) Enable(disOthers bool) error {
+	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			glog.Warningf("disableOthers: %v", err)
 		}

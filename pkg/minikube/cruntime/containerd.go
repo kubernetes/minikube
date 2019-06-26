@@ -80,8 +80,8 @@ func (r *Containerd) Available() error {
 }
 
 // Enable idempotently enables containerd on a host
-func (r *Containerd) Enable(disableOtherContainerEngines bool) error {
-	if disableOtherContainerEngines {
+func (r *Containerd) Enable(disOthers bool) error {
+	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			glog.Warningf("disableOthers: %v", err)
 		}
