@@ -25,6 +25,11 @@ func re(s string) *regexp.Regexp {
 
 // vmProblems are VM related problems
 var vmProblems = map[string]match{
+	"SERVICE_NOT_FOUND": {
+		Regexp: re(`Could not find finalized endpoint being pointed to by`),
+		Advice: "Please make sure the service you are looking for is deployed or is in the correct namespace.",
+		Issues: []int{4599},
+	},
 	"HYPERKIT_NO_IP": {
 		Regexp: re(`IP address never found in dhcp leases file Temporary Error: Could not find an IP address for`),
 		Advice: "Install the latest minikube hyperkit driver, and run 'minikube delete'",
