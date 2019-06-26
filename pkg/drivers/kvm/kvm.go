@@ -459,12 +459,13 @@ func (d *Driver) Remove() error {
 }
 
 func (d *Driver) destroyRunningDomain(dom *libvirt.Domain) error {
-	state, reason, err := dom.GetState()
+	state, _, err := dom.GetState()
 	if err != nil {
 		return errors.Wrap(err, "getting domain state")
 	}
 
-	if state == libvirt.DOMAIN_SHUTOFF && reason == int(libvirt.DOMAIN_SHUTOFF_DESTROYED) {
+	// if the domain is not running, we don't destroy it
+	if state != libvirt.DOMAIN_RUNNING {
 		log.Warnf("Domain %s already destroyed, skipping...", d.MachineName)
 		return nil
 	}
