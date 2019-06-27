@@ -170,13 +170,10 @@ The driver must be:
 2. Named `docker-machine-driver-vmware`
 3. Executable (`chmod +x` on UNIX based platforms)
 
-If you're running on macOS with Fusion, this is an easy way install the driver:
+If you're running on macOS with Fusion, an easy way install the driver is to use brew:
 
 ```shell
-export LATEST_VERSION=$(curl -L -s -H 'Accept: application/json' https://github.com/machine-drivers/docker-machine-driver-vmware/releases/latest | sed -e 's/.*"tag_name":"\([^"]*\)".*/\1/') \
-&& curl -L -o docker-machine-driver-vmware https://github.com/machine-drivers/docker-machine-driver-vmware/releases/download/$LATEST_VERSION/docker-machine-driver-vmware_darwin_amd64 \
-&& chmod +x docker-machine-driver-vmware \
-&& mv docker-machine-driver-vmware /usr/local/bin/
+brew install docker-machine-driver-vmware
 ```
 
 To use the driver:
