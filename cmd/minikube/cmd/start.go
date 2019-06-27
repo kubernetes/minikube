@@ -97,6 +97,8 @@ const (
 	embedCerts            = "embed-certs"
 	noVTXCheck            = "no-vtx-check"
 	downloadOnly          = "download-only"
+	dnsProxy              = "dns-proxy"
+	hostDNSResolver       = "host-dns-resolver"
 )
 
 var (
@@ -156,6 +158,8 @@ func init() {
 	startCmd.Flags().Bool(gpu, false, "Enable experimental NVIDIA GPU support in minikube (works only with kvm2 driver on Linux)")
 	startCmd.Flags().Bool(hidden, false, "Hide the hypervisor signature from the guest in minikube (works only with kvm2 driver on Linux)")
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
+	startCmd.Flags().Bool(dnsProxy, false, "Enable proxy for NAT DNS requests (virtualbox)")
+	startCmd.Flags().Bool(hostDNSResolver, true, "Enable host resolver for NAT DNS requests (virtualbox)")
 	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
 	}
@@ -527,6 +531,8 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			GPU:                 viper.GetBool(gpu),
 			Hidden:              viper.GetBool(hidden),
 			NoVTXCheck:          viper.GetBool(noVTXCheck),
+			DNSProxy:            viper.GetBool(dnsProxy),
+			HostDNSResolver:     viper.GetBool(hostDNSResolver),
 		},
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
