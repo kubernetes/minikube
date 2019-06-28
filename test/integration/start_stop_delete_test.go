@@ -97,8 +97,8 @@ func TestStartStop(t *testing.T) {
 			}
 
 			checkStop := func() error {
-				r.RunCommand("stop", false)
-				err := r.CheckStatusNoFail(state.Stopped.String())
+				miniR.RunCommand("stop", false)
+				err := miniR.CheckStatusNoFail(state.Stopped.String())
 				if err == nil {
 					// kubecctl's current-context after minikube stop
 					afterCtx := kctlR.CurrentContext()
@@ -114,15 +114,15 @@ func TestStartStop(t *testing.T) {
 			}
 
 			// running this command results in error when the current-context is not set
-			if err := r.Run("config current-context"); err != nil {
+			if err := miniR.Run("config current-context"); err != nil {
 				t.Logf("current-context is not set to minikube")
 			}
 
-			r.Start(test.args...)
-			r.CheckStatus(state.Running.String())
+			miniR.Start(test.args...)
+			miniR.CheckStatus(state.Running.String())
 
-			r.RunCommand("delete", true)
-			r.CheckStatus(state.None.String())
+			miniR.RunCommand("delete", true)
+			miniR.CheckStatus(state.None.String())
 		})
 	}
 }
