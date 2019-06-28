@@ -54,8 +54,8 @@ func createVirtualboxHost(config cfg.MachineConfig) interface{} {
 	d.NoVTXCheck = config.NoVTXCheck
 	d.NatNicType = defaultVirtualboxNicType
 	d.HostOnlyNicType = defaultVirtualboxNicType
-	d.DNSProxy = false
-	d.HostDNSResolver = true
+	d.DNSProxy = config.DNSProxy
+	d.HostDNSResolver = config.HostDNSResolver
 
 	return d
 }

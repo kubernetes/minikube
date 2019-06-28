@@ -56,6 +56,8 @@ type MachineConfig struct {
 	GPU                 bool   // Only used by kvm2
 	Hidden              bool   // Only used by kvm2
 	NoVTXCheck          bool   // Only used by virtualbox
+	DNSProxy            bool   // Only used by virtualbox
+	HostDNSResolver     bool   // Only used by virtualbox
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
