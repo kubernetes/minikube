@@ -342,7 +342,26 @@ func (d *Driver) Stop() error {
 		return err
 	}
 	d.cleanupNfsExports()
-	return d.sendSignal(syscall.SIGTERM)
+	err := d.sendSignal(syscall.SIGTERM)
+	if err != nil {
+		return errors.Wrap(err, fmt.Sprintf("hyperkit sigterm failed"))
+	}
+
+	// wait 5s for graceful shutdown
+	for i := 0; i < 5; i++ {
+		log.Debug("waiting for graceful shutdown")
+		time.Sleep(time.Second * 1)
+		s, err := d.GetState()
+		if err != nil {
+			return errors.Wrap(err, fmt.Sprintf("hyperkit waiting graceful shutdown failed"))
+		}
+		if s == state.Stopped {
+			return nil
+		}
+	}
+
+	log.Debug("sending sigkill")
+	return d.Kill()
 }
 
 func (d *Driver) extractKernel(isoPath string) error {
