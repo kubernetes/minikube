@@ -64,21 +64,26 @@ func TestStartStop(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r := NewMinikubeRunner(t)
-			if !strings.Contains(test.name, "docker") && usingNoneDriver(r) {
+			miniR := NewMinikubeRunner(t)
+			kctlR := util.NewKubectlRunner(t)
+			if !strings.Contains(test.name, "docker") && usingNoneDriver(miniR) {
 				t.Skipf("skipping %s - incompatible with none driver", test.name)
 			}
 
-			r.RunCommand("config set WantReportErrorPrompt false", true)
-			r.RunCommand("delete", false)
-			r.CheckStatus(state.None.String())
-			r.Start(test.args...)
-			r.CheckStatus(state.Running.String())
+			miniR.RunCommand("config set WantReportErrorPrompt false", true)
+			miniR.RunCommand("delete", false)
+			miniR.CheckStatus(state.None.String())
+			miniR.Start(test.args...)
+			miniR.CheckStatus(state.Running.String())
 
-			ip := r.RunCommand("ip", true)
+			ip := miniR.RunCommand("ip", true)
 			ip = strings.TrimRight(ip, "\n")
 			if net.ParseIP(ip) == nil {
 				t.Fatalf("IP command returned an invalid address: %s", ip)
+			}
+			currCtx := kctlR.CurrentContext()
+			if currCtx != "minikube" {
+				t.Fatalf("got current-context - %q, want %q", currCtx, "minikube")
 			}
 
 			// check for the current-context before and after the stop
@@ -92,12 +97,20 @@ func TestStartStop(t *testing.T) {
 			}
 
 			checkStop := func() error {
-				r.RunCommand("stop", true)
-				return r.CheckStatusNoFail(state.Stopped.String())
+				r.RunCommand("stop", false)
+				err := r.CheckStatusNoFail(state.Stopped.String())
+				if err == nil {
+					// kubecctl's current-context after minikube stop
+					afterCtx := kctlR.CurrentContext()
+					if afterCtx != "" {
+						return fmt.Errorf("got current-context - %q, want  %q", afterCtx, "")
+					}
+				}
+				return err
 			}
 
-			if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
-				t.Fatalf("timed out while checking stopped status: %v", err)
+			if err := util.Retry(t, checkStop, 7*time.Second, 3); err != nil {
+				t.Fatalf("Timed out checking stopped status: %v", err)
 			}
 
 			// running this command results in error when the current-context is not set
