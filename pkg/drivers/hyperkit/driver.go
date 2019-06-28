@@ -54,6 +54,7 @@ const (
 		"sudo chown root:wheel %s && sudo chmod u+s %s"
 )
 
+// Driver is the machine driver for Hyperkit
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -69,6 +70,7 @@ type Driver struct {
 	VSockPorts     []string
 }
 
+// NewDriver creates a new driver for a host
 func NewDriver(hostName, storePath string) *Driver {
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
@@ -98,6 +100,7 @@ func (d *Driver) verifyRootPermissions() error {
 	return nil
 }
 
+// Create a host using the driver's config
 func (d *Driver) Create() error {
 	if err := d.verifyRootPermissions(); err != nil {
 		return err
@@ -194,6 +197,7 @@ func (d *Driver) Remove() error {
 	return nil
 }
 
+// Restart a host
 func (d *Driver) Restart() error {
 	return pkgdrivers.Restart(d)
 }
