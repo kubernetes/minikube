@@ -83,6 +83,9 @@ CMD_SOURCE_DIRS = cmd pkg
 SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
+# kvm2 ldflags
+KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT) 
+
 # $(call DOCKER, image, command)
 define DOCKER
 	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --entrypoint /bin/bash $(1) -c '$(2)'
@@ -387,11 +390,11 @@ release-minikube: out/minikube checksum
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
 out/docker-machine-driver-kvm2:
-	go build 																		\
-		-installsuffix "static" 													\
-		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION)" 	\
+	go build 																					\
+		-installsuffix "static" 												\
+		-ldflags="$(KVM2_LDFLAGS)" 											\
 		-tags libvirt.1.3.1 														\
-		-o $(BUILD_DIR)/docker-machine-driver-kvm2 									\
+		-o $(BUILD_DIR)/docker-machine-driver-kvm2 			\
 		k8s.io/minikube/cmd/drivers/kvm
 	chmod +X $@
 
