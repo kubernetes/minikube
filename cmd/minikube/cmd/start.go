@@ -77,6 +77,7 @@ const (
 	enableDefaultCNI      = "enable-default-cni"
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
+	kvmQemuURI            = "kvm-qemu-uri"
 	keepContext           = "keep-context"
 	createMount           = "mount"
 	featureGates          = "feature-gates"
@@ -122,6 +123,7 @@ func init() {
 	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
+	startCmd.Flags().String(kvmQemuURI, "qemu:///system", "The KVM QEMU connection URI. (works only with kvm2 driver on linux)")
 	startCmd.Flags().String(xhyveDiskDriver, "ahci-hd", "The disk driver to use [ahci-hd|virtio-blk] (only supported with xhyve driver)")
 	startCmd.Flags().StringSlice(nfsShare, []string{}, "Local folders to share with Guest via NFS mounts (Only supported on with hyperkit now)")
 	startCmd.Flags().String(nfsSharesRoot, "/nfsshares", "Where to root the NFS Shares (defaults to /nfsshares, only supported with hyperkit now)")
@@ -520,7 +522,8 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			RegistryMirror:      registryMirror,
 			HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
 			HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
-			KvmNetwork:          viper.GetString(kvmNetwork),
+			KVMNetwork:          viper.GetString(kvmNetwork),
+			KVMQemuURI:          viper.GetString(kvmQemuURI),
 			Downloader:          pkgutil.DefaultDownloader{},
 			DisableDriverMounts: viper.GetBool(disableDriverMounts),
 			UUID:                viper.GetString(uuid),
