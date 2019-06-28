@@ -391,11 +391,11 @@ func validateConfig() {
 	}
 
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
-	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) {
-		console.OutStyle(console.Notice, "Requested memory allocation (%dMB) is less than the default memory allocation of (%dMB). Beware that Minikube might not work correctly or crash unexpectedly.", memorySizeMB, pkgutil.CalculateSizeInMB(constants.DefaultMemorySize))
-	}
 	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.MinimumMemorySize) {
 		exit.Usage("Requested memory allocation (%dMB) is less than the minimum allowed of %dMB", memorySizeMB, pkgutil.CalculateSizeInMB(constants.MinimumMemorySize))
+	}
+	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) {
+		console.OutStyle(console.Notice, "Requested memory allocation (%dMB) is less than the default memory allocation of (%dMB). Beware that Minikube might not work correctly or crash unexpectedly.", memorySizeMB, pkgutil.CalculateSizeInMB(constants.DefaultMemorySize))
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
