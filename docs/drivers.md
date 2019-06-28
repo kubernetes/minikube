@@ -99,7 +99,7 @@ virsh net-start default
 Make sure you are running the lastest version of your driver.
 
  ```shell
-docker-machine-driver-kvm2 --version
+docker-machine-driver-kvm2 version
 ```
 
 ## Hyperkit driver

@@ -30,7 +30,7 @@ const VersionPrefix = "v"
 // version is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.version=vX.Y.Z"
 var version = "v0.0.0-unset"
 
-// version is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.gitCommitID=<commit-id>"
+// gitCommitID is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.gitCommitID=<commit-id>"
 var gitCommitID = ""
 
 // isoVersion is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.isoVersion=vX.Y.Z"

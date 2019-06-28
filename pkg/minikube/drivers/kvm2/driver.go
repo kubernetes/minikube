@@ -53,6 +53,7 @@ type kvmDriver struct {
 	DiskPath       string
 	GPU            bool
 	Hidden         bool
+	ConnectionURI  string
 }
 
 func createKVM2Host(config cfg.MachineConfig) interface{} {
@@ -64,7 +65,7 @@ func createKVM2Host(config cfg.MachineConfig) interface{} {
 		},
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
-		Network:        config.KvmNetwork,
+		Network:        config.KVMNetwork,
 		PrivateNetwork: "minikube-net",
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
 		DiskSize:       config.DiskSize,
@@ -72,5 +73,6 @@ func createKVM2Host(config cfg.MachineConfig) interface{} {
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
 		GPU:            config.GPU,
 		Hidden:         config.Hidden,
+		ConnectionURI:  config.KVMQemuURI,
 	}
 }

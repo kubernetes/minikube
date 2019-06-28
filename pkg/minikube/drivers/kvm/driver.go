@@ -64,7 +64,7 @@ func createKVMHost(config cfg.MachineConfig) interface{} {
 		},
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
-		Network:        config.KvmNetwork,
+		Network:        config.KVMNetwork,
 		PrivateNetwork: "docker-machines",
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
 		DiskSize:       config.DiskSize,
