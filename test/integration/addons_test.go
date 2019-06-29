@@ -198,9 +198,9 @@ func testRegistry(t *testing.T) {
 	t.Log("wait for registry to come up")
 
 	if err := util.WaitForDockerRegistryRunning(t); err != nil {
-		t.Fatalf("waiting for registry to be up: %v", err)	
+		t.Fatalf("waiting for registry to be up: %v", err)
 	}
-	
+
 	// Check access from outside the cluster on port 5000, validing connectivity via registry-proxy
 	checkExternalAccess := func() error {
 		t.Log("checking registry access from outside cluster")
@@ -233,11 +233,11 @@ func testRegistry(t *testing.T) {
 	if !strings.Contains(internalCheckOutput, expectedStr) {
 		t.Fatalf("ExpectedStr internalCheckOutput to be: %s. Output was: %s", expectedStr, internalCheckOutput)
 	}
-	
+
 	defer func() {
 		if _, err := kubectlRunner.RunCommand([]string{"delete", "pod", "registry-test"}); err != nil {
 			t.Fatalf("failed to delete pod registry-test")
-		}	
+		}
 	}()
 	minikubeRunner.RunCommand("addons disable registry", true)
 }
