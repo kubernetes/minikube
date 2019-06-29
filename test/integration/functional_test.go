@@ -33,20 +33,21 @@ func TestFunctional(t *testing.T) {
 	// before we run any other tests.
 	t.Run("Status", testClusterStatus)
 
-	t.Run("DNS", testClusterDNS)
-	t.Run("Logs", testClusterLogs)
-	t.Run("Addons", testAddons)
-	t.Run("Dashboard", testDashboard)
-	t.Run("ServicesList", testServicesList)
-	t.Run("Provisioning", testProvisioning)
-	t.Run("Tunnel", testTunnel)
+	// t.Run("DNS", testClusterDNS)
+	// t.Run("Logs", testClusterLogs)
+	// t.Run("Addons", testAddons)
+	t.Run("Registry", testRegistry)
+	// t.Run("Dashboard", testDashboard)
+	// t.Run("ServicesList", testServicesList)
+	// t.Run("Provisioning", testProvisioning)
+	// t.Run("Tunnel", testTunnel)
 
-	if !usingNoneDriver(r) {
-		t.Run("EnvVars", testClusterEnv)
-		t.Run("SSH", testClusterSSH)
-		t.Run("IngressController", testIngressController)
-		t.Run("Mounting", testMounting)
-	}
+	// if !usingNoneDriver(r) {
+	// 	t.Run("EnvVars", testClusterEnv)
+	// 	t.Run("SSH", testClusterSSH)
+	// 	t.Run("IngressController", testIngressController)
+	// 	t.Run("Mounting", testMounting)
+	// }
 }
 
 func TestFunctionalContainerd(t *testing.T) {
