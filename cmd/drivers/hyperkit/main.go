@@ -27,8 +27,9 @@ import (
 )
 
 func main() {
-	if len(os.Args) > 1 && os.Args[1] == "--version" {
-		fmt.Println(hyperkit.GetVersion())
+	if len(os.Args) > 1 && os.Args[1] == "version" {
+		fmt.Println("version:", hyperkit.GetVersion())
+		fmt.Println("commit:", hyperkit.GetGitCommitID())
 		return
 	}
 
