@@ -78,6 +78,8 @@ const (
 	hypervVirtualSwitch   = "hyperv-virtual-switch"
 	kvmNetwork            = "kvm-network"
 	kvmQemuURI            = "kvm-qemu-uri"
+	kvmGPU                = "kvm-gpu"
+	kvmHidden             = "kvm-hidden"
 	keepContext           = "keep-context"
 	createMount           = "mount"
 	featureGates          = "feature-gates"
@@ -93,8 +95,6 @@ const (
 	uuid                  = "uuid"
 	vpnkitSock            = "hyperkit-vpnkit-sock"
 	vsockPorts            = "hyperkit-vsock-ports"
-	gpu                   = "gpu"
-	hidden                = "hidden"
 	embedCerts            = "embed-certs"
 	noVTXCheck            = "no-vtx-check"
 	downloadOnly          = "download-only"
@@ -126,6 +126,8 @@ func init() {
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
 	startCmd.Flags().String(kvmQemuURI, "qemu:///system", "The KVM QEMU connection URI. (works only with kvm2 driver on linux)")
+	startCmd.Flags().Bool(kvmGPU, false, "Enable experimental NVIDIA GPU support in minikube")
+	startCmd.Flags().Bool(kvmHidden, false, "Hide the hypervisor signature from the guest in minikube")
 	startCmd.Flags().String(xhyveDiskDriver, "ahci-hd", "The disk driver to use [ahci-hd|virtio-blk] (only supported with xhyve driver)")
 	startCmd.Flags().StringSlice(nfsShare, []string{}, "Local folders to share with Guest via NFS mounts (Only supported on with hyperkit now)")
 	startCmd.Flags().String(nfsSharesRoot, "/nfsshares", "Where to root the NFS Shares (defaults to /nfsshares, only supported with hyperkit now)")
@@ -157,8 +159,6 @@ func init() {
 	startCmd.Flags().String(uuid, "", "Provide VM UUID to restore MAC address (only supported with Hyperkit driver).")
 	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
 	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
-	startCmd.Flags().Bool(gpu, false, "Enable experimental NVIDIA GPU support in minikube (works only with kvm2 driver on Linux)")
-	startCmd.Flags().Bool(hidden, false, "Hide the hypervisor signature from the guest in minikube (works only with kvm2 driver on Linux)")
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
 	startCmd.Flags().Bool(dnsProxy, false, "Enable proxy for NAT DNS requests (virtualbox)")
 	startCmd.Flags().Bool(hostDNSResolver, true, "Enable host resolver for NAT DNS requests (virtualbox)")
@@ -385,13 +385,6 @@ func validateConfig() {
 		exit.WithCode(exit.Config, "Requested disk size (%dMB) is less than minimum of %dMB", diskSizeMB, constants.MinimumDiskSizeMB)
 	}
 
-	if viper.GetBool(gpu) && viper.GetString(vmDriver) != constants.DriverKvm2 {
-		exit.Usage("Sorry, the --gpu feature is currently only supported with --vm-driver=%s", constants.DriverKvm2)
-	}
-	if viper.GetBool(hidden) && viper.GetString(vmDriver) != constants.DriverKvm2 {
-		exit.Usage("Sorry, the --hidden feature is currently only supported with --vm-driver=%s", constants.DriverKvm2)
-	}
-
 	err := autoSetOptions(viper.GetString(vmDriver))
 	if err != nil {
 		glog.Errorf("Error autoSetOptions : %v", err)
@@ -528,11 +521,11 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
 			KVMNetwork:          viper.GetString(kvmNetwork),
 			KVMQemuURI:          viper.GetString(kvmQemuURI),
+			KVMGPU:              viper.GetBool(kvmGPU),
+			KVMHidden:           viper.GetBool(kvmHidden),
 			Downloader:          pkgutil.DefaultDownloader{},
 			DisableDriverMounts: viper.GetBool(disableDriverMounts),
 			UUID:                viper.GetString(uuid),
-			GPU:                 viper.GetBool(gpu),
-			Hidden:              viper.GetBool(hidden),
 			NoVTXCheck:          viper.GetBool(noVTXCheck),
 			DNSProxy:            viper.GetBool(dnsProxy),
 			HostDNSResolver:     viper.GetBool(hostDNSResolver),
