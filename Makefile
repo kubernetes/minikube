@@ -86,6 +86,9 @@ SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 # kvm2 ldflags
 KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT) 
 
+# hyperkit ldflags
+HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/hyperkit.gitCommitID=$(COMMIT)
+
 # $(call DOCKER, image, command)
 define DOCKER
 	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --entrypoint /bin/bash $(1) -c '$(2)'
@@ -330,7 +333,7 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
 else
 	GOOS=darwin CGO_ENABLED=1 go build \
-		-ldflags "-X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION)" 	\
+		-ldflags="$(HYPERKIT_LDFLAGS)"   \
 		-o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
 endif
 
