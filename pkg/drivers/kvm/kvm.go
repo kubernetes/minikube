@@ -118,7 +118,7 @@ func NewDriver(hostName, storePath string) *Driver {
 func (d *Driver) PreCommandCheck() error {
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return errors.Wrap(err, "Error connecting to libvirt socket.  Have you added yourself to the libvirtd group?")
+		return errors.Wrap(err, "error connecting to libvirt socket. Have you added yourself to the libvirtd group?")
 	}
 	libVersion, err := conn.GetLibVersion()
 	if err != nil {
@@ -276,7 +276,7 @@ func (d *Driver) Start() (err error) {
 
 	log.Info("Creating domain...")
 	if err := dom.Create(); err != nil {
-		return errors.Wrap(err, "Error creating VM")
+		return errors.Wrap(err, "error creating VM")
 	}
 
 	log.Info("Waiting to get IP...")
@@ -299,7 +299,7 @@ func (d *Driver) Start() (err error) {
 	}
 
 	if d.IPAddress == "" {
-		return errors.New("Machine didn't return an IP after 120 seconds")
+		return errors.New("machine didn't return an IP after 120 seconds")
 	}
 
 	log.Info("Waiting for SSH to be available...")
@@ -337,7 +337,7 @@ func (d *Driver) Create() (err error) {
 
 	log.Infof("Building disk image from %s", d.Boot2DockerURL)
 	if err = pkgdrivers.MakeDiskImage(d.BaseDriver, d.Boot2DockerURL, d.DiskSize); err != nil {
-		return errors.Wrap(err, "Error creating disk")
+		return errors.Wrap(err, "error creating disk")
 	}
 
 	if err := ensureDirPermissions(store); err != nil {
@@ -411,7 +411,7 @@ func (d *Driver) Stop() (err error) {
 		for i := 0; i < 60; i++ {
 			s, err := d.GetState()
 			if err != nil {
-				return errors.Wrap(err, "Error getting state of VM")
+				return errors.Wrap(err, "error getting state of VM")
 			}
 			if s == state.Stopped {
 				return nil
