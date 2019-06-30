@@ -151,14 +151,16 @@ const (
 	DefaultKeepContext = false
 	// SHASuffix is the suffix of a SHA-256 checksum file
 	SHASuffix = ".sha256"
-	// DefaultMemory is the default memory of a host, in megabytes
-	DefaultMemory = 2048
+	// DefaultMemorySize is the default memory which will be allocated to minikube, in megabytes
+	DefaultMemorySize = "2000mb"
+	//MinimumMemorySize is the minimum memory size, in megabytes
+	MinimumMemorySize = "1024mb"
 	// DefaultCPUS is the default number of cpus of a host
 	DefaultCPUS = 2
-	// DefaultDiskSize is the default disk image size, parseable
-	DefaultDiskSize = "20g"
-	// MinimumDiskSizeMB is the minimum disk image size, in megabytes
-	MinimumDiskSizeMB = 2000
+	// DefaultDiskSize is the default disk image size, in megabytes
+	DefaultDiskSize = "20000mb"
+	// MinimumDiskSize is the minimum disk image size, in megabytes
+	MinimumDiskSize = "2000mb"
 	// DefaultVMDriver is the default virtual machine driver name
 	DefaultVMDriver = DriverVirtualbox
 	// DefaultStatusFormat is the default format of a host
