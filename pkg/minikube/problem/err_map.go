@@ -119,6 +119,11 @@ var vmProblems = map[string]match{
 		URL:    "http://mikko.repolainen.fi/documents/virtualization-with-kvm",
 		Issues: []int{2991},
 	},
+	"KVM_CONNECTION_ERROR": {
+		Regexp: re(`error connecting to libvirt socket`),
+		Advice: "Have you set up libvirt correctly?",
+		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver",
+	},
 	"DRIVER_CRASHED": {
 		Regexp: re(`Error attempting to get plugin server address for RPC`),
 		Advice: "The VM driver exited with an error, and may be corrupt. Run 'minikube start' with --alsologtostderr -v=8 to see the error",
