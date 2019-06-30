@@ -156,7 +156,7 @@ func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
 	}
 	res, err := conn.Close()
 	if res != 0 {
-		return fmt.Errorf("CloseConnection() == %d, expected 0", res)
+		return fmt.Errorf("conn.Close() == %d, expected 0", res)
 	}
 	return err
 }
@@ -188,14 +188,14 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 
 	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error getting libvirt connection")
+		return nil, errors.Wrap(err, "error getting libvirt connection")
 	}
 	defer conn.Close()
 
 	// define the domain in libvirt using the generated XML
 	dom, err := conn.DomainDefineXML(domainXML.String())
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error defining domain xml: %s", domainXML.String())
+		return nil, errors.Wrapf(err, "error defining domain xml: %s", domainXML.String())
 	}
 
 	return dom, nil
