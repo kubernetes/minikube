@@ -204,12 +204,29 @@ func testRegistry(t *testing.T) {
 	// Check access from outside the cluster on port 5000, validing connectivity via registry-proxy
 	checkExternalAccess := func() error {
 		t.Log("checking registry access from outside cluster")
-		expectedStr := "200"
-		runCmd := fmt.Sprintf("curl -sS -o /dev/null -w '%%{http_code}' http://127.0.0.1:5000")
-		externalCheckOutput, _ := minikubeRunner.SSH(runCmd)
-		if !strings.Contains(externalCheckOutput, expectedStr) {
-			return fmt.Errorf("ExpectedStr externalCheckOutput to be: %s. Output was: %s", expectedStr, externalCheckOutput)
+		_, out := minikubeRunner.RunDaemon("ip")
+		s, err := readLineWithTimeout(out, 180*time.Second)
+
+		if err != nil {
+			t.Fatalf("failed to read minikubeIP: %v", err)
 		}
+
+		registryEndpoint := "http://" + strings.TrimSpace(s) + "5000"
+		u, err := url.Parse(registryEndpoint)
+
+		if err != nil {
+			t.Fatalf("failed to parse %q: %v", s, err)
+		}
+
+		resp, err := retryablehttp.Get(u.String())
+		if err != nil {
+			t.Fatalf("failed get: %v", err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("%s returned status code %d, expected %d.\n", registryEndpoint, resp.StatusCode, http.StatusOK)
+		}
+
 		return nil
 	}
 
