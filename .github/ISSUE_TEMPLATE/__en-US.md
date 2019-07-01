@@ -6,6 +6,7 @@ about: Report an issue
 
 **The exact command to reproduce the issue**:
 
+
 **The full output of the command that failed**:
 <details><summary><code>Output</code></summary><br><pre>
 
@@ -15,7 +16,7 @@ about: Report an issue
 
 **The output of the `minikube logs` command**:
 <details><summary><code>minikube logs</code></summary><br><pre>
-$ minikube logs
+
 
 </pre></details>
 
