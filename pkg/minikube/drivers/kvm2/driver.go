@@ -71,8 +71,8 @@ func createKVM2Host(config cfg.MachineConfig) interface{} {
 		DiskSize:       config.DiskSize,
 		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
-		GPU:            config.GPU,
-		Hidden:         config.Hidden,
+		GPU:            config.KVMGPU,
+		Hidden:         config.KVMHidden,
 		ConnectionURI:  config.KVMQemuURI,
 	}
 }
