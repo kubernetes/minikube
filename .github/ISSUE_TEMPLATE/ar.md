@@ -8,7 +8,16 @@ labels: l/ar
 **الأوامر المطلوبة لإعادة إظهار المشكلة**:
 
 **النتيجة الكاملة للأمر الذي تعذّر تنفيذه**:
+<details><summary><code>النتيجة الكاملة</code></summary><br><pre>
+
+
+</pre></details>
 
 **نتيجة الأمر `minikube logs`**:
+<details><summary><code>minikube logs</code></summary><br><pre>
+
+
+</pre></details>
+
 
 **إصدار نظام التشغيل المُستخدَم**:
