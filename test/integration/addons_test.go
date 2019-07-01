@@ -211,7 +211,7 @@ func testRegistry(t *testing.T) {
 			t.Fatalf("failed to read minikubeIP: %v", err)
 		}
 
-		registryEndpoint := "http://" + strings.TrimSpace(s) + "5000"
+		registryEndpoint := "http://" + strings.TrimSpace(s) + ":5000"
 		u, err := url.Parse(registryEndpoint)
 
 		if err != nil {
