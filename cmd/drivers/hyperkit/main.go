@@ -19,10 +19,19 @@ limitations under the License.
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/docker/machine/libmachine/drivers/plugin"
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 )
 
 func main() {
+	if len(os.Args) > 1 && os.Args[1] == "version" {
+		fmt.Println("version:", hyperkit.GetVersion())
+		fmt.Println("commit:", hyperkit.GetGitCommitID())
+		return
+	}
+
 	plugin.RegisterDriver(hyperkit.NewDriver("", ""))
 }
