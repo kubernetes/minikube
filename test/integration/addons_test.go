@@ -76,7 +76,7 @@ func readLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error)
 
 func testDashboard(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t)
+	minikubeRunner := NewMinikubeRunner(t, t.Name())
 	cmd, out := minikubeRunner.RunDaemon("dashboard --url")
 	defer func() {
 		err := cmd.Process.Kill()
@@ -121,7 +121,7 @@ func testDashboard(t *testing.T) {
 
 func testIngressController(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t)
+	minikubeRunner := NewMinikubeRunner(t, t.Name())
 	kubectlRunner := util.NewKubectlRunner(t)
 
 	minikubeRunner.RunCommand("addons enable ingress", true)
@@ -177,7 +177,7 @@ func testIngressController(t *testing.T) {
 
 func testServicesList(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t)
+	minikubeRunner := NewMinikubeRunner(t, t.Name())
 
 	checkServices := func() error {
 		output := minikubeRunner.RunCommand("service list", false)
@@ -192,7 +192,7 @@ func testServicesList(t *testing.T) {
 }
 
 func testGvisor(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
+	minikubeRunner := NewMinikubeRunner(t, t.Name())
 	minikubeRunner.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")
@@ -224,7 +224,7 @@ func testGvisor(t *testing.T) {
 }
 
 func testGvisorRestart(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
+	minikubeRunner := NewMinikubeRunner(t, t.Name())
 	minikubeRunner.EnsureRunning()
 	minikubeRunner.RunCommand("addons enable gvisor", true)
 

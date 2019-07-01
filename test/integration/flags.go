@@ -18,6 +18,7 @@ package integration
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"testing"
 
@@ -37,7 +38,11 @@ var mountArgs = flag.String("minikube-mount-args", "", "Arguments to pass to min
 var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
 
 // NewMinikubeRunner creates a new MinikubeRunner
-func NewMinikubeRunner(t *testing.T) util.MinikubeRunner {
+func NewMinikubeRunner(t *testing.T, profile string) util.MinikubeRunner {
+	if profile != "" {
+		a := fmt.Sprintf("%s -p %s", *args, profile)
+		args = &a
+	}
 	return util.MinikubeRunner{
 		Args:       *args,
 		BinaryPath: *binaryPath,

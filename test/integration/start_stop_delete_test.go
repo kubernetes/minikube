@@ -65,7 +65,7 @@ func TestStartStop(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r := NewMinikubeRunner(t)
+			r := NewMinikubeRunner(t, t.Name())
 			if !strings.Contains(test.name, "docker") && usingNoneDriver(r) {
 				t.Skipf("skipping %s - incompatible with none driver", test.name)
 			}

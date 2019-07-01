@@ -43,7 +43,7 @@ func testMounting(t *testing.T) {
 	}
 
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t)
+	minikubeRunner := NewMinikubeRunner(t, t.Name())
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {

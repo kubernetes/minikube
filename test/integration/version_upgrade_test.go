@@ -66,7 +66,7 @@ func downloadMinikubeBinary(version string) (*os.File, error) {
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
-	currentRunner := NewMinikubeRunner(t)
+	currentRunner := NewMinikubeRunner(t, t.Name())
 	currentRunner.RunCommand("delete", true)
 	currentRunner.CheckStatus(state.None.String())
 	tf, err := downloadMinikubeBinary("latest")
@@ -75,7 +75,7 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 	defer os.Remove(tf.Name())
 
-	releaseRunner := NewMinikubeRunner(t)
+	releaseRunner := NewMinikubeRunner(t, t.Name())
 	releaseRunner.BinaryPath = tf.Name()
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
 	releaseRunner.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))

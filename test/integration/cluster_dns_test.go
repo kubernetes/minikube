@@ -19,14 +19,11 @@ limitations under the License.
 package integration
 
 import (
-	"bytes"
 	"path/filepath"
 	"testing"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
