@@ -47,14 +47,14 @@ type MachineConfig struct {
 	HypervVirtualSwitch string
 	KVMNetwork          string             // Only used by the KVM driver
 	KVMQemuURI          string             // Only used by kvm2
+	KVMGPU              bool               // Only used by kvm2
+	KVMHidden           bool               // Only used by kvm2
 	Downloader          util.ISODownloader `json:"-"`
 	DockerOpt           []string           // Each entry is formatted as KEY=VALUE.
 	DisableDriverMounts bool               // Only used by virtualbox and xhyve
 	NFSShare            []string
 	NFSSharesRoot       string
 	UUID                string // Only used by hyperkit to restore the mac address
-	GPU                 bool   // Only used by kvm2
-	Hidden              bool   // Only used by kvm2
 	NoVTXCheck          bool   // Only used by virtualbox
 	DNSProxy            bool   // Only used by virtualbox
 	HostDNSResolver     bool   // Only used by virtualbox
