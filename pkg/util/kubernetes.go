@@ -22,18 +22,12 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/proxy"
@@ -45,28 +39,6 @@ var (
 	// ReasonableStartTime is how long to wait for pods to start, considering dependency chains & slow networks.
 	ReasonableStartTime = time.Minute * 10
 )
-
-// PodStore stores pods
-type PodStore struct {
-	cache.Store
-	stopCh    chan struct{}
-	Reflector *cache.Reflector
-}
-
-// List lists the pods
-func (s *PodStore) List() []*core.Pod {
-	objects := s.Store.List()
-	pods := make([]*core.Pod, 0)
-	for _, o := range objects {
-		pods = append(pods, o.(*core.Pod))
-	}
-	return pods
-}
-
-// Stop stops the pods
-func (s *PodStore) Stop() {
-	close(s.stopCh)
-}
 
 // GetClient gets the client from config
 func GetClient() (kubernetes.Interface, error) {
@@ -83,28 +55,6 @@ func GetClient() (kubernetes.Interface, error) {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
 	return client, nil
-}
-
-// NewPodStore creates a new PodStore
-func NewPodStore(c kubernetes.Interface, namespace string, label fmt.Stringer, field fmt.Stringer) *PodStore {
-	lw := &cache.ListWatch{
-		ListFunc: func(options meta.ListOptions) (runtime.Object, error) {
-			options.LabelSelector = label.String()
-			options.FieldSelector = field.String()
-			obj, err := c.CoreV1().Pods(namespace).List(options)
-			return runtime.Object(obj), err
-		},
-		WatchFunc: func(options meta.ListOptions) (watch.Interface, error) {
-			options.LabelSelector = label.String()
-			options.FieldSelector = field.String()
-			return c.CoreV1().Pods(namespace).Watch(options)
-		},
-	}
-	store := cache.NewStore(cache.MetaNamespaceKeyFunc)
-	stopCh := make(chan struct{})
-	reflector := cache.NewReflector(lw, &core.Pod{}, store, 0)
-	go reflector.Run(stopCh)
-	return &PodStore{Store: store, stopCh: stopCh, Reflector: reflector}
 }
 
 // StartPods starts all pods
@@ -179,65 +129,6 @@ func WaitForEvent(c kubernetes.Interface, ns string, reason string) error {
 		}
 		return false, nil
 	})
-}
-
-// WaitForRCToStabilize waits till the RC has a matching generation/replica count between spec and status.
-func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
-	options := meta.ListOptions{FieldSelector: fields.Set{
-		"metadata.name":      name,
-		"metadata.namespace": ns,
-	}.AsSelector().String()}
-	w, err := c.CoreV1().ReplicationControllers(ns).Watch(options)
-	if err != nil {
-		return err
-	}
-	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
-		if event.Type == watch.Deleted {
-			return false, apierr.NewNotFound(schema.GroupResource{Resource: "replicationcontrollers"}, "")
-		}
-
-		rc, ok := event.Object.(*core.ReplicationController)
-		if ok {
-			if rc.Name == name && rc.Namespace == ns &&
-				rc.Generation <= rc.Status.ObservedGeneration &&
-				*(rc.Spec.Replicas) == rc.Status.Replicas {
-				return true, nil
-			}
-			glog.Infof("Waiting for rc %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
-				name, rc.Generation, rc.Status.ObservedGeneration, *(rc.Spec.Replicas), rc.Status.Replicas)
-		}
-		return false, nil
-	})
-	return err
-}
-
-// WaitForDeploymentToStabilize waits till the Deployment has a matching generation/replica count between spec and status.
-func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
-	options := meta.ListOptions{FieldSelector: fields.Set{
-		"metadata.name":      name,
-		"metadata.namespace": ns,
-	}.AsSelector().String()}
-	w, err := c.AppsV1().Deployments(ns).Watch(options)
-	if err != nil {
-		return err
-	}
-	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
-		if event.Type == watch.Deleted {
-			return false, apierr.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
-		}
-		dp, ok := event.Object.(*apps.Deployment)
-		if ok {
-			if dp.Name == name && dp.Namespace == ns &&
-				dp.Generation <= dp.Status.ObservedGeneration &&
-				*(dp.Spec.Replicas) == dp.Status.Replicas {
-				return true, nil
-			}
-			glog.Infof("Waiting for deployment %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
-				name, dp.Generation, dp.Status.ObservedGeneration, *(dp.Spec.Replicas), dp.Status.Replicas)
-		}
-		return false, nil
-	})
-	return err
 }
 
 // WaitForService waits until the service appears (exist == true), or disappears (exist == false)
