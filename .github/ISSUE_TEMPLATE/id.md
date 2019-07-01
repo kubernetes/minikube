@@ -8,7 +8,15 @@ labels: l/id
 **Perintah yang diperlukan untuk merekonstruksi masalah**:
 
 **Output penuh dari perintah yang gagal**:
+<details><summary><code>Output</code></summary><br><pre>
+
+
+</pre></details>
 
 **Output dari perintah `minikube logs`**:
+<details><summary><code>minikube logs</code></summary><br><pre>
+
+
+</pre></details>
 
 **Versi sistem operasi yang digunakan**:
