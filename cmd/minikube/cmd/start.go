@@ -368,14 +368,21 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 
 // validerUser validates minikube is run by the recommended user (privileged or regular)
 func validateUser() {
-	currentUser, err := user.Current()
+	u, err := user.Current()
+	d := viper.GetString(vmDriver)
+	// Check if minikube needs to run with sudo or not.
+	if err == nil {
+		if d == constants.DriverNone && u.Name != "root" {
+			exit.Usage("Please run with sudo. the vm-driver %q requires sudo.", constants.DriverNone)
 
-	// Display warning if minikube is being started with root and vmDriver is not HyperV
-	if err != nil {
+		} else if u.Name == "root" && !(d == constants.DriverHyperv || d == constants.DriverNone) {
+			console.OutStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with %s driver.", d)
+		}
+
+	} else {
 		glog.Errorf("Error getting the current user: %v", err)
-	} else if currentUser.Name == "root" && !(viper.GetString(vmDriver) == constants.DriverHyperv || viper.GetString(vmDriver) == constants.DriverNone) {
-		console.OutStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary.")
 	}
+
 }
 
 // validateConfig validates the supplied configuration against known bad combinations
