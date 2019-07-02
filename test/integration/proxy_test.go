@@ -64,6 +64,7 @@ func setUpProxy(t *testing.T) (*http.Server, error) {
 }
 
 func TestProxy(t *testing.T) {
+	t.Parallel()
 	origHP := os.Getenv("HTTP_PROXY")
 	origNP := os.Getenv("NO_PROXY")
 	srv, err := setUpProxy(t)

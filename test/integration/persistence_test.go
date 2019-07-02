@@ -30,18 +30,23 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t, "")
+	testName="TestPersistence"
+	minikubeRunner := NewMinikubeRunner(t, testName)
 	if strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
 	minikubeRunner.EnsureRunning()
 
-	kubectlRunner := util.NewKubectlRunner(t, "minikube")
+	kubectlRunner := util.NewKubectlRunner(t, testName)
 	curdir, err := filepath.Abs("")
 	if err != nil {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)
 	}
 	podPath := path.Join(curdir, "testdata", "busybox.yaml")
+
+	// Making sure it the context is not changed by other tests 
+	if _, err := kubectlRunner.RunCommand([]string{"config", "use-context",testName}); err != nil {
+		t.Fatalf("Error setting the current context: %v", err)
 
 	// Create a pod and wait for it to be running.
 	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
@@ -49,7 +54,7 @@ func TestPersistence(t *testing.T) {
 	}
 
 	verify := func(t *testing.T) {
-		if err := util.WaitForBusyboxRunning(t, "default", "minikube"); err != nil {
+		if err := util.WaitForBusyboxRunning(t, "default", testName); err != nil {
 			t.Fatalf("waiting for busybox to be up: %v", err)
 		}
 

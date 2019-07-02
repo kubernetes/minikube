@@ -53,7 +53,7 @@ func testProvisioning(t *testing.T) {
 
 	checkStorageClass := func() error {
 		scl := storage.StorageClassList{}
-		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "storageclass"}, &scl); err != nil {
+		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "storageclass"}, &scl, true); err != nil {
 			return fmt.Errorf("get storageclass: %v", err)
 		}
 
@@ -95,7 +95,7 @@ func testProvisioning(t *testing.T) {
 	// And check that it gets bound to a PV.
 	checkStorage := func() error {
 		pvc := core.PersistentVolumeClaim{}
-		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc); err != nil {
+		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc, true); err != nil {
 			return err
 		}
 		// The test passes if the volume claim gets bound.

@@ -49,7 +49,6 @@ func TestFunctional(t *testing.T) {
 }
 
 func TestFunctionalContainerd(t *testing.T) {
-	t.Parallel()
 	r := NewMinikubeRunner(t, "")
 
 	if usingNoneDriver(r) {

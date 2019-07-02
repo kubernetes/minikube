@@ -64,8 +64,10 @@ func (k *KubectlRunner) CurrentContext() (stdOut string, err error) {
 }
 
 // RunCommandParseOutput runs a command and parses the JSON output
-func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}) error {
-	args = append(args, "-o=json", "--context "+k.KCtx)
+func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}, withCtx bool) error {
+	if withCtx {
+		args = append(args, "-o=json", "--context "+k.KCtx)
+	}
 	output, err := k.RunCommand(args)
 	if err != nil {
 		return err
@@ -77,9 +79,14 @@ func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface
 	return nil
 }
 
+// RunCommandWithContext
+func (k *KubectlRunner) RunCommandWithContext(args []string) (stdout []byte, err error) {
+	args = append(args, "--context "+k.KCtx)
+	return k.RunCommand(args)
+}
+
 // RunCommand runs a command, returning stdout
 func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
-	args = append(args, "--context "+k.KCtx)
 	inner := func() error {
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()

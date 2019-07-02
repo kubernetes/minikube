@@ -31,7 +31,6 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
-	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -89,7 +88,7 @@ func TestStartStop(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to fetch current-context")
 			}
-			if currCtx != "minikube" {
+			if currCtx != "TestStartStop" { 
 				t.Fatalf("got current-context - %q, want  current-context %q", currCtx, "minikube")
 			}
 			checkStop := func() error {
@@ -102,7 +101,7 @@ func TestStartStop(t *testing.T) {
 			}
 
 			if _, err := kctlRunner.CurrentContext(); err != nil { // TODO check if it is correct ctx
-				t.Logf("current-context is not set") 
+				t.Logf("current-context is not set")
 			}
 
 			r.Start(test.args...)
