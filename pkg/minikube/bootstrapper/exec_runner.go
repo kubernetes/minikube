@@ -18,6 +18,7 @@ package bootstrapper
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -26,6 +27,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/google/shlex"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
@@ -49,19 +51,27 @@ func splitCommandString(cmd string) (string, []string) {
 func (*ExecRunner) Run(cmd string) error {
 	glog.Infoln("Run:", cmd)
 
-	command, arguments := splitCommandString(cmd)
+	// command, arguments := splitCommandString(cmd)
+	partitions, err := shlex.Split(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "splitting command: %s", cmd)
+	}
+
+	command := partitions[0]
+	arguments := partitions[1:]
+
 	if command == "" {
 		return errors.New("an empty command was supplied to Run")
 	}
 
 	commandPath, err := exec.LookPath(command)
 	if err != nil {
-		return errors.Wrapf(err, "looking up: %s. The executable does not exist in your path", cmd)
+		return errors.Wrapf(err, "looking up: %s. The executable does not exist in your path", command)
 	}
 
 	c := exec.Command(commandPath, arguments...)
 	if err := c.Run(); err != nil {
-		return errors.Wrapf(err, "running command: %s", cmd)
+		return errors.Wrapf(err, "running command: %s", command)
 	}
 	return nil
 }
@@ -70,11 +80,30 @@ func (*ExecRunner) Run(cmd string) error {
 // output and error to out.
 func (*ExecRunner) CombinedOutputTo(cmd string, out io.Writer) error {
 	glog.Infoln("Run with output:", cmd)
-	c := exec.Command("/bin/bash", "-c", cmd)
+
+	partitions, err := shlex.Split(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "splitting command: %s", cmd)
+	}
+
+	command := partitions[0]
+	arguments := partitions[1:]
+
+	if command == "" {
+		return errors.New("an empty command was supplied to Run")
+	}
+
+	commandPath, err := exec.LookPath(command)
+	if err != nil {
+		return errors.Wrapf(err, "looking up: %s. The executable does not exist in your path", command)
+	}
+
+	fmt.Printf("Command String: %v, Command: %v, Full Path: %v, Arguments: %v \n", cmd, command, commandPath, arguments)
+
+	c := exec.Command(commandPath, arguments...)
 	c.Stdout = out
 	c.Stderr = out
-	err := c.Run()
-	if err != nil {
+	if err := c.Run(); err != nil {
 		return errors.Wrapf(err, "running command: %s\n.", cmd)
 	}
 
