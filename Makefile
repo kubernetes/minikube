@@ -412,7 +412,7 @@ $(KVM_BUILD_IMAGE): installers/linux/kvm/Dockerfile
 kvm_in_docker:
 	docker inspect $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
 	rm -f out/docker-machine-driver-kvm2
-	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2)
+	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 
 .PHONY: install-kvm
 install-kvm: out/docker-machine-driver-kvm2
