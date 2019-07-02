@@ -27,31 +27,32 @@ import (
 )
 
 func TestDocker(t *testing.T) {
-	t.Paralell()
-	testName=TestDocker
-	mk := NewMinikubeRunner(t, testName)
-	if strings.Contains(mk.StartArgs, "--vm-driver=none") {
+	testName:="TestDocker"
+	r := NewMinikubeRunner(t, testName)
+	if usingNoneDriver(r) {
 		t.Skip("skipping test as none driver does not bundle docker")
 	}
+
+	t.Paralell()
 
 	// Start a timer for all remaining commands, to display failure output before a panic.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
 
-	if _, _, err := mk.RunWithContext(ctx, "delete"); err != nil {
+	if _, _, err := r.RunWithContext(ctx, "delete"); err != nil {
 		t.Logf("pre-delete failed (probably ok): %v", err)
 	}
 
-	startCmd := fmt.Sprintf("start %s %s %s", mk.StartArgs, mk.Args,
+	startCmd := fmt.Sprintf("start %s %s %s", r.StartArgs, r.Args,
 		"--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true --alsologtostderr --v=5")
-	stdout, stderr, err := mk.RunWithContext(ctx, startCmd)
+	stdout, stderr, err := r.RunWithContext(ctx, startCmd)
 	if err != nil {
 		t.Fatalf("start: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
 	}
 
-	mk.EnsureRunning()
+	r.EnsureRunning()
 
-	stdout, stderr, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
+	stdout, stderr, err = r.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
 	if err != nil {
 		t.Errorf("docker env: %v\nstderr: %s", err, stderr)
 	}
@@ -62,7 +63,7 @@ func TestDocker(t *testing.T) {
 		}
 	}
 
-	stdout, stderr, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=ExecStart --no-pager")
+	stdout, stderr, err = r.RunWithContext(ctx, "ssh -- systemctl show docker --property=ExecStart --no-pager")
 	if err != nil {
 		t.Errorf("ssh show docker: %v\nstderr: %s", err, stderr)
 	}
