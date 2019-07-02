@@ -19,11 +19,16 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"testing"
+	"time"
+
+	api "k8s.io/kubernetes/pkg/apis/core"
+	"k8s.io/minikube/test/integration/util"
 )
 
 func testClusterStatus(t *testing.T) {
-	kubectlRunner := util.NewKubectlRunner(t)
+	kubectlRunner := util.NewKubectlRunner(t, "minikube")
 	cs := api.ComponentStatusList{}
 
 	healthy := func() error {

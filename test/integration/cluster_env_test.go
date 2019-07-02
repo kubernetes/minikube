@@ -31,7 +31,7 @@ import (
 func testClusterEnv(t *testing.T) {
 	t.Parallel()
 
-	r := NewMinikubeRunner(t, t.Name())
+	r := NewMinikubeRunner(t, "")
 
 	// Set a specific shell syntax so that we don't have to handle every possible user shell
 	envOut := r.RunCommand("docker-env --shell=bash", true)

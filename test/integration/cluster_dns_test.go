@@ -19,11 +19,14 @@ limitations under the License.
 package integration
 
 import (
+	"bytes"
 	"path/filepath"
 	"testing"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -34,7 +37,7 @@ func testClusterDNS(t *testing.T) {
 		t.Fatalf("Error getting kubernetes client %v", err)
 	}
 
-	kr := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t, "minikube")
 	busybox := busyBoxPod(t, client, kr)
 	defer func() {
 		if _, err := kr.RunCommand([]string{"delete", "po", busybox}); err != nil {
@@ -63,7 +66,7 @@ func busyBoxPod(t *testing.T, c kubernetes.Interface, kr *util.KubectlRunner) st
 		t.Fatalf("creating busybox pod: %s", err)
 	}
 	// TODO(tstromberg): Refactor WaitForBusyboxRunning to return name of pod.
-	if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
+	if err := util.WaitForBusyboxRunning(t, "default", "minikube"); err != nil {
 		t.Fatalf("Waiting for busybox pod to be up: %v", err)
 	}
 

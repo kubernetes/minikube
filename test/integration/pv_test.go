@@ -40,7 +40,7 @@ var (
 
 func testProvisioning(t *testing.T) {
 	t.Parallel()
-	kubectlRunner := util.NewKubectlRunner(t)
+	kubectlRunner := util.NewKubectlRunner(t, "minikube")
 
 	defer func() {
 		if out, err := kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {

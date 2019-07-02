@@ -25,7 +25,7 @@ import (
 
 func testClusterLogs(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t,"TestFunctional")
+	minikubeRunner := NewMinikubeRunner(t, "")
 	minikubeRunner.EnsureRunning()
 	logsCmdOutput := minikubeRunner.GetLogs()
 

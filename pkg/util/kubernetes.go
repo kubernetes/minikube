@@ -68,10 +68,15 @@ func (s *PodStore) Stop() {
 	close(s.stopCh)
 }
 
-// GetClient gets the client from config
-func GetClient() (kubernetes.Interface, error) {
+// GetClient gets the client from config for the given kubectl context
+func GetClientWithKContext(kCtx string) (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
+	if kCtx != "" {
+		configOverrides = &clientcmd.ConfigOverrides{
+			CurrentContext: kCtx,
+		}
+	}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
@@ -83,6 +88,12 @@ func GetClient() (kubernetes.Interface, error) {
 		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
 	}
 	return client, nil
+
+}
+
+// GetClient gets the client from config
+func GetClient() (kubernetes.Interface, error) {
+	return GetClientWithKContext("")
 }
 
 // NewPodStore creates a new PodStore
