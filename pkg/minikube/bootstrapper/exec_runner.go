@@ -18,7 +18,6 @@ package bootstrapper
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -86,8 +85,6 @@ func (*ExecRunner) CombinedOutputTo(cmd string, out io.Writer) error {
 	if err != nil {
 		return errors.Wrapf(err, "looking up: %s. The executable does not exist in your path", command)
 	}
-
-	fmt.Printf("Command String: %v, Command: %v, Full Path: %v, Arguments: %v \n", cmd, command, commandPath, arguments)
 
 	c := exec.Command(commandPath, arguments...)
 	c.Stdout = out
