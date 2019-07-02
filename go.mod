@@ -26,6 +26,7 @@ require (
 	github.com/google/go-containerregistry v0.0.0-20190318164241-019cdfc6adf9
 	github.com/google/go-github/v25 v25.0.2
 	github.com/google/gofuzz v0.0.0-20161122191042-44d81051d367 // indirect
+	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf
 	github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d // indirect
 	github.com/gorilla/mux v1.7.1 // indirect
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7 // indirect
