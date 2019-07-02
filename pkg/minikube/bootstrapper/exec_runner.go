@@ -24,7 +24,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/golang/glog"
 	"github.com/google/shlex"
@@ -36,16 +35,6 @@ import (
 //
 // It implements the CommandRunner interface.
 type ExecRunner struct{}
-
-// splitCommandString splits a command string like `ls -l` into the command `ls` and `-l`
-func splitCommandString(cmd string) (string, []string) {
-	parts := strings.Split(cmd, " ")
-
-	command := parts[0]
-	arguments := parts[1:]
-
-	return command, arguments
-}
 
 // Run starts the specified command in a bash shell and waits for it to complete.
 func (*ExecRunner) Run(cmd string) error {
