@@ -373,7 +373,7 @@ func validateUser() {
 	// Check if minikube needs to run with sudo or not.
 	if err == nil {
 		if d == constants.DriverNone && u.Name != "root" {
-			exit.Usage("Please run with sudo. vm-driver %s  requires sudo. ", constants.DriverNone)
+			exit.Usage("Please run with sudo. the vm-driver %q requires sudo.", constants.DriverNone)
 
 		} else if u.Name == "root" && !(d == constants.DriverHyperv || d == constants.DriverNone) {
 			console.OutStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with %s driver.", d)
