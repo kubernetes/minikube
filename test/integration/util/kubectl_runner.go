@@ -79,8 +79,8 @@ func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface
 	return nil
 }
 
-// RunCommandWithContext
-func (k *KubectlRunner) RunCommandWithContext(args []string) (stdout []byte, err error) {
+// RunCommandWithKCtx runs the command with kubectl context
+func (k *KubectlRunner) RunCommandWithKCtx(args []string) (stdout []byte, err error) {
 	args = append(args, "--context "+k.KCtx)
 	return k.RunCommand(args)
 }

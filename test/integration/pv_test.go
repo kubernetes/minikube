@@ -43,7 +43,7 @@ func testProvisioning(t *testing.T) {
 	kubectlRunner := util.NewKubectlRunner(t, "minikube")
 
 	defer func() {
-		if out, err := kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
+		if out, err := kubectlRunner.RunCommandWithKCtx([]string{"delete", "pvc", pvcName}); err != nil {
 			t.Logf("delete pvc %s failed: %v\noutput: %s\n", pvcName, err, out)
 		}
 	}()
@@ -95,7 +95,7 @@ func testProvisioning(t *testing.T) {
 	// And check that it gets bound to a PV.
 	checkStorage := func() error {
 		pvc := core.PersistentVolumeClaim{}
-		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc, true); err != nil {
+		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc, false); err != nil {
 			return err
 		}
 		// The test passes if the volume claim gets bound.
