@@ -258,6 +258,10 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	if err != nil {
 		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
 	}
+	if len(urls) == 0 {
+		console.Failure("service %s/%s has no node ports", namespace, service)
+		return nil
+	}
 	for _, bareURLString := range urls {
 		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
 
