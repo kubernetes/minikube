@@ -95,7 +95,7 @@ func testProvisioning(t *testing.T) {
 	// And check that it gets bound to a PV.
 	checkStorage := func() error {
 		pvc := core.PersistentVolumeClaim{}
-		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc, false); err != nil {
+		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc, true); err != nil {
 			return err
 		}
 		// The test passes if the volume claim gets bound.

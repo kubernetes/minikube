@@ -33,7 +33,7 @@ func testClusterStatus(t *testing.T) {
 
 	healthy := func() error {
 		t.Log("Checking if cluster is healthy.")
-		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "cs"}, &cs, false); err != nil {
+		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "cs"}, &cs, true); err != nil {
 			return err
 		}
 		for _, i := range cs.Items {
