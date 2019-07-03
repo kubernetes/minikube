@@ -18,7 +18,6 @@ package integration
 import (
 	"path"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -27,13 +26,13 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	if strings.Contains(miniRunner.StartArgs, "--vm-driver=none") {
+	testName := "TestPersistence"
+	r := NewMinikubeRunner(t, testName)
+	if usingNoneDriver(r) {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
 	t.Parallel()
-	testName = "TestPersistence"
-	miniRunner := NewMinikubeRunner(t, testName)
-	miniRunner.EnsureRunning()
+	r.EnsureRunning()
 
 	kctlRunner := util.NewKubectlRunner(t, testName)
 	curdir, err := filepath.Abs("")
@@ -43,7 +42,7 @@ func TestPersistence(t *testing.T) {
 	podPath := path.Join(curdir, "testdata", "busybox.yaml")
 
 	// Making sure it the context is not changed by other tests
-	// still low chance of race condition in parralel
+	// still low chance of race condition in parallel
 	if _, err := kctlRunner.RunCommand([]string{"config", "use-context", testName}); err != nil {
 		t.Fatalf("Error setting the current context: %v", err)
 	}
@@ -53,7 +52,7 @@ func TestPersistence(t *testing.T) {
 	}
 
 	verify := func(t *testing.T) {
-		if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
+		if err := util.WaitForBusyboxRunning(t, "default", testName); err != nil {
 			t.Fatalf("waiting for busybox to be up: %v", err)
 		}
 
@@ -63,19 +62,19 @@ func TestPersistence(t *testing.T) {
 	verify(t)
 
 	// Now restart minikube and make sure the pod is still there.
-	// miniRunner.RunCommand("stop", true)
-	// miniRunner.CheckStatus("Stopped")
+	// r.RunCommand("stop", true)
+	// r.CheckStatus("Stopped")
 	checkStop := func() error {
-		miniRunner.RunCommand("stop", true)
-		return miniRunner.CheckStatusNoFail(state.Stopped.String())
+		r.RunCommand("stop", true)
+		return r.CheckStatusNoFail(state.Stopped.String())
 	}
 
 	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
 		t.Fatalf("timed out while checking stopped status: %v", err)
 	}
 
-	miniRunner.Start()
-	miniRunner.CheckStatus(state.Running.String())
+	r.Start()
+	r.CheckStatus(state.Running.String())
 
 	// Make sure the same things come up after we've restarted.
 	verify(t)

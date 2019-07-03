@@ -27,13 +27,13 @@ import (
 )
 
 func TestDocker(t *testing.T) {
-	testName:="TestDocker"
+	testName := "TestDocker"
 	r := NewMinikubeRunner(t, testName)
 	if usingNoneDriver(r) {
 		t.Skip("skipping test as none driver does not bundle docker")
 	}
 
-	t.Paralell()
+	t.Parallel()
 
 	// Start a timer for all remaining commands, to display failure output before a panic.
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)

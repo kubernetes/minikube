@@ -88,7 +88,7 @@ func TestStartStop(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Failed to fetch current-context")
 			}
-			if currCtx != "TestStartStop" { 
+			if currCtx != "TestStartStop" {
 				t.Fatalf("got current-context - %q, want  current-context %q", currCtx, "minikube")
 			}
 			checkStop := func() error {
