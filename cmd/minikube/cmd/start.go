@@ -859,8 +859,8 @@ func validateDriverVersion(vmDriver string) {
 		cmd := exec.Command("docker-machine-driver-kvm2", "version")
 		output, err := cmd.Output()
 
-		// we don't want to fail if an error was returned, libmachine has a nice message for the user if
-		// the driver isn't present
+		// we don't want to fail if an error was returned,
+		// libmachine has a nice message for the user if the driver isn't present
 		if err != nil {
 			console.Warning("Error checking driver version: %v", err)
 			return
@@ -868,6 +868,7 @@ func validateDriverVersion(vmDriver string) {
 
 		v := extractVMDriverVersion(string(output))
 
+		// if the driver doesn't have return any version, it is really old, we force a upgrade.
 		if len(v) == 0 {
 			exit.WithCode(exit.Failure, "Please upgrade the 'docker-machine-driver-kvm2'.")
 		}
