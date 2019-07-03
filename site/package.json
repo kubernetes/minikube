@@ -1,0 +1,24 @@
+{
+  "name": "tech-doc-hugo",
+  "version": "0.0.1",
+  "description": "Hugo theme for technical documentation.",
+  "main": "none.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bep/tech-doc-hugo.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bep/tech-doc-hugo/issues"
+  },
+  "homepage": "https://github.com/bep/tech-doc-hugo#readme",
+  "dependencies": {},
+  "devDependencies": {
+    "autoprefixer": "^9.4.6",
+    "postcss-cli": "^5.0.1"
+  }
+}
