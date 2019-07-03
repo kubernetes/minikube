@@ -40,6 +40,11 @@ var blacklist = []string{
 	"%s/%d",
 	"%s=%s",
 	"%v",
+	"GID:      %s",
+	"MSize:    %d",
+	"UID:      %s",
+	"env %s",
+	"opt %s",
 }
 
 // state is a struct that represent the current state of the extraction process

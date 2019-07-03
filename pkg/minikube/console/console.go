@@ -26,8 +26,6 @@ import (
 
 	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
-	"golang.org/x/text/message"
-	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 // By design, this package uses global references to language and output objects, in preference
@@ -59,24 +57,27 @@ type fdWriter interface {
 	Fd() uintptr
 }
 
+// Arg is a convenience wrapper for templating
+type Arg map[string]interface{}
+
 // OutStyle writes a stylized and formatted message to stdout
 func OutStyle(style StyleEnum, format string, a ...interface{}) {
-	outStyled := applyStyle(style, useColor, format, a...)
+	outStyled, a := applyFormatting(style, useColor, format, a...)
+	Out(outStyled, a...)
+}
 
-	// escape any outstanding '%' signs so that they don't get interpreted
-	// as a formatting directive down the line
-	outStyled = strings.Replace(outStyled, "%", "%%", -1)
+func OutStyle2(style StyleEnum, format string, b map[string]interface{}) {
+	outStyled := applyFormatting2(style, useColor, format, b)
 	Out(outStyled)
 }
 
 // Out writes a basic formatted string to stdout
 func Out(format string, a ...interface{}) {
-	p := message.NewPrinter(translate.GetPreferredLanguage())
 	if outFile == nil {
 		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
-	_, err := p.Fprintf(outFile, format, a...)
+	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
 		glog.Errorf("Fprintf failed: %v", err)
 	}
@@ -89,22 +90,22 @@ func OutLn(format string, a ...interface{}) {
 
 // ErrStyle writes a stylized and formatted error message to stderr
 func ErrStyle(style StyleEnum, format string, a ...interface{}) {
-	format = applyStyle(style, useColor, format, a...)
+	errStyled, a := applyFormatting(style, useColor, format, a...)
+	Err(errStyled, a...)
+}
 
-	// escape any outstanding '%' signs so that they don't get interpreted
-	// as a formatting directive down the line
-	format = strings.Replace(format, "%", "%%", -1)
-	Err(format)
+func ErrStyle2(style StyleEnum, format string, b map[string]interface{}) {
+	errStyled := applyFormatting2(style, useColor, format, b)
+	Err(errStyled)
 }
 
 // Err writes a basic formatted string to stderr
 func Err(format string, a ...interface{}) {
-	p := message.NewPrinter(translate.GetPreferredLanguage())
 	if errFile == nil {
 		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
-	_, err := p.Fprintf(errFile, format, a...)
+	_, err := fmt.Fprintf(errFile, format, a...)
 	if err != nil {
 		glog.Errorf("Fprint failed: %v", err)
 	}

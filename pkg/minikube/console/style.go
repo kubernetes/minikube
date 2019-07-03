@@ -17,9 +17,11 @@ limitations under the License.
 package console
 
 import (
+	"bytes"
 	"strings"
+	"text/template"
 
-	"golang.org/x/text/message"
+	"github.com/golang/glog"
 	"golang.org/x/text/number"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
@@ -130,29 +132,62 @@ func lowPrefix(s style) string {
 	return lowBullet
 }
 
-// Apply styling to a format string
-func applyStyle(style StyleEnum, useColor bool, format string, a ...interface{}) string {
-	p := message.NewPrinter(translate.GetPreferredLanguage())
+func applyStyle(style StyleEnum, useColor bool, format string) string {
+	format = translate.T(format)
+
+	s, ok := styles[style]
+	if !s.OmitNewline {
+		format += "\n"
+	}
+
+	// Similar to CSS styles, if no style matches, output an unformatted string.
+	if !ok {
+		return format
+	}
+
+	if !useColor {
+		return applyPrefix(lowPrefix(s), format)
+	}
+	return applyPrefix(s.Prefix, format)
+}
+
+func applyFormatting(style StyleEnum, useColor bool, format string, a ...interface{}) (string, []interface{}) {
+	format = applyStyle(style, useColor, format)
 	for i, x := range a {
 		if _, ok := x.(int); ok {
 			a[i] = number.Decimal(x, number.NoSeparator())
 		}
 	}
-	format = translate.T(format)
-	out := p.Sprintf(format, a...)
+	return format, a
 
-	s, ok := styles[style]
-	if !s.OmitNewline {
-		out += "\n"
+}
+
+func applyFormatting2(style StyleEnum, useColor bool, format string, b map[string]interface{}) string {
+	format = applyStyle(style, useColor, format)
+
+	for k, v := range b {
+		if _, ok := v.(int); ok {
+			b[k] = number.Decimal(v, number.NoSeparator())
+		}
 	}
 
-	// Similar to CSS styles, if no style matches, output an unformatted string.
-	if !ok {
-		return p.Sprintf(format, a...)
+	var buf bytes.Buffer
+	t, err := template.New(format).Parse(format)
+	if err != nil {
+		glog.Infof("Initializing template failed. Returning raw string.")
+		return format
 	}
 
-	if !useColor {
-		return applyPrefix(lowPrefix(s), out)
+	err = t.Execute(&buf, b)
+	if err != nil {
+		glog.Infof("Executing template failed. Returning raw string.")
+		return format
 	}
-	return applyPrefix(s.Prefix, out)
+	outStyled := buf.String()
+
+	// escape any outstanding '%' signs so that they don't get interpreted
+	// as a formatting directive down the line
+	outStyled = strings.Replace(outStyled, "%", "%%", -1)
+
+	return outStyled
 }
