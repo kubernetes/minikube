@@ -31,6 +31,7 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -63,17 +64,18 @@ func TestStartStop(t *testing.T) {
 		}},
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			r := NewMinikubeRunner(t, "TestStartStop")
-			if !strings.Contains(test.name, "docker") && usingNoneDriver(r) {
-				t.Skipf("skipping %s - incompatible with none driver", test.name)
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testName := tc.name
+			r := NewMinikubeRunner(t, testName)
+			if !strings.Contains(testName, "docker") && usingNoneDriver(r) {
+				t.Skipf("skipping %s - incompatible with none driver", testName)
 			}
 
 			r.RunCommand("config set WantReportErrorPrompt false", true)
 			r.RunCommand("delete", false)
 			r.CheckStatus(state.None.String())
-			r.Start(test.args...)
+			r.Start(tc.args...)
 			r.CheckStatus(state.Running.String())
 
 			ip := r.RunCommand("ip", true)
@@ -83,13 +85,13 @@ func TestStartStop(t *testing.T) {
 			}
 
 			// check for the current-context before and after the stop
-			kctlRunner := util.NewKubectlRunner(t, "TestStartStop")
+			kctlRunner := util.NewKubectlRunner(t, testName)
 			currCtx, err := kctlRunner.CurrentContext()
 			if err != nil {
 				t.Fatalf("Failed to fetch current-context")
 			}
-			if currCtx != "TestStartStop" {
-				t.Fatalf("got current-context - %q, want  current-context %q", currCtx, "minikube")
+			if currCtx != testName {
+				t.Fatalf("got current-context - %q, want  current-context %q", currCtx, testName)
 			}
 			checkStop := func() error {
 				r.RunCommand("stop", true)
@@ -104,7 +106,7 @@ func TestStartStop(t *testing.T) {
 				t.Logf("current-context is not set")
 			}
 
-			r.Start(test.args...)
+			r.Start(tc.args...)
 			r.CheckStatus(state.Running.String())
 
 			r.RunCommand("delete", true)

@@ -43,16 +43,10 @@ func TestDocker(t *testing.T) {
 		t.Logf("pre-delete failed (probably ok): %v", err)
 	}
 
-	startCmd := fmt.Sprintf("start %s %s %s", r.StartArgs, r.Args,
-		"--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true --alsologtostderr --v=5")
-	stdout, stderr, err := r.RunWithContext(ctx, startCmd)
-	if err != nil {
-		t.Fatalf("start: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
-	}
-
+	r.Start(fmt.Sprintf("--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true --alsologtostderr --v=5"))
 	r.EnsureRunning()
 
-	stdout, stderr, err = r.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
+	stdout, stderr, err := r.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
 	if err != nil {
 		t.Errorf("docker env: %v\nstderr: %s", err, stderr)
 	}
