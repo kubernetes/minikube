@@ -153,7 +153,7 @@ evictionHard:
 
 var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`
 [Unit]
-{{if or (eq .ContainerRuntime "cri-o") (eq .ContainerRuntime "cri")}}Wants=crio.service{{else}}Wants=docker.socket{{end}}
+{{if or (eq .ContainerRuntime "cri-o") (eq .ContainerRuntime "cri")}}Wants=crio.service{{else if eq .ContainerRuntime "containerd"}}Wants=containerd.service{{else}}Wants=docker.socket{{end}}
 
 [Service]
 ExecStart=
