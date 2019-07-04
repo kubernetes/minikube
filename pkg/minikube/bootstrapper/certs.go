@@ -29,6 +29,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
@@ -42,7 +43,7 @@ var (
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd CommandRunner, k8s config.KubernetesConfig) error {
+func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	localPath := constants.GetMinipath()
 	glog.Infof("Setting up certificates for IP: %s\n", k8s.NodeIP)
 

@@ -25,7 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/console"
 )
 
-// CommandRunner is the subset of bootstrapper.CommandRunner this package consumes
+// CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
 	Run(string) error
 	CombinedOutput(string) (string, error)

@@ -37,7 +37,7 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
@@ -314,7 +314,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 }
 
 func copyHostCerts(authOptions auth.Options) error {
-	execRunner := &bootstrapper.ExecRunner{}
+	execRunner := &command.ExecRunner{}
 	hostCerts := map[string]string{
 		authOptions.CaCertPath:     path.Join(authOptions.StorePath, "ca.pem"),
 		authOptions.ClientCertPath: path.Join(authOptions.StorePath, "cert.pem"),
@@ -345,7 +345,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 	if err != nil {
 		return errors.Wrap(err, "provisioning: error getting ssh client")
 	}
-	sshRunner := bootstrapper.NewSSHRunner(sshClient)
+	sshRunner := command.NewSSHRunner(sshClient)
 	for src, dst := range remoteCerts {
 		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0640")
 		if err != nil {

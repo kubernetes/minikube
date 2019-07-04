@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -94,7 +95,7 @@ var SkipAdditionalPreflights = map[string][]string{}
 
 // Bootstrapper is a bootstrapper using kubeadm
 type Bootstrapper struct {
-	c bootstrapper.CommandRunner
+	c command.Runner
 }
 
 // NewKubeadmBootstrapper creates a new kubeadm.Bootstrapper
@@ -640,7 +641,7 @@ func copyConfig(cfg config.KubernetesConfig, files []assets.CopyableFile, kubead
 	return files
 }
 
-func downloadBinaries(cfg config.KubernetesConfig, c bootstrapper.CommandRunner) error {
+func downloadBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 	var g errgroup.Group
 	for _, bin := range constants.GetKubeadmCachedBinaries() {
 		bin := bin

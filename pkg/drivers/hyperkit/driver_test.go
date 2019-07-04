@@ -67,7 +67,7 @@ func Test_portExtraction(t *testing.T) {
 }
 
 func Test_defaultDiskSize(t *testing.T) {
-	expectedDefaultDiscSize := commonutil.CalculateDiskSizeInMB(constants.DefaultDiskSize)
+	expectedDefaultDiscSize := commonutil.CalculateSizeInMB(constants.DefaultDiskSize)
 	driver := NewDriver("", "")
 	got := driver.DiskSize
 	if got != expectedDefaultDiscSize {
