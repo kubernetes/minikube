@@ -891,6 +891,11 @@ func validateDriverVersion(vmDriver string) {
 	}
 }
 
+// extractVMDriverVersion extracts the driver version.
+// KVM and Hyperkit drivers support the `version` command, that display the information as:
+// version: vX.X.X
+// commit: XXXX
+// This method returns the version 'vX.X.X' or empty if the version isn't found.
 func extractVMDriverVersion(s string) string {
 	versionRegex := regexp.MustCompile(`version:(.*)`)
 	matches := versionRegex.FindStringSubmatch(s)
