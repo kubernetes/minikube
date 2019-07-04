@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -870,7 +870,7 @@ func validateDriverVersion(vmDriver string) {
 
 		// if the driver doesn't have return any version, it is really old, we force a upgrade.
 		if len(v) == 0 {
-			exit.WithCode(exit.Failure, "Please upgrade the 'docker-machine-driver-kvm2'.")
+			exit.WithCode(exit.Failure, "Please upgrade the 'docker-machine-driver-kvm2'. %s", constants.KVMDocumentation)
 		}
 
 		vmDriverVersion, err := semver.Make(v)
@@ -886,13 +886,13 @@ func validateDriverVersion(vmDriver string) {
 		}
 
 		if vmDriverVersion.LT(minikubeVersion) {
-			console.Warning("The 'docker-machine-driver-kvm2' version is old. Please consider upgrading.")
+			console.Warning("The 'docker-machine-driver-kvm2' version is old. Please consider upgrading. %s", constants.KVMDocumentation)
 		}
 	}
 }
 
 // extractVMDriverVersion extracts the driver version.
-// KVM and Hyperkit drivers support the `version` command, that display the information as:
+// KVM and Hyperkit drivers support the 'version' command, that display the information as:
 // version: vX.X.X
 // commit: XXXX
 // This method returns the version 'vX.X.X' or empty if the version isn't found.
