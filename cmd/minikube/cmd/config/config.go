@@ -176,6 +176,12 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "insecure-registry",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:        "registry",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
