@@ -30,6 +30,11 @@ var vmProblems = map[string]match{
 		Advice: "Please make sure the service you are looking for is deployed or is in the correct namespace.",
 		Issues: []int{4599},
 	},
+	"MACHINE_NOT_FOUND": {
+		Regexp: re(`Machine does not exist for api.Exists`),
+		Advice: "Your minikube vm is not running, try minikube start.",
+		Issues: []int{4889},
+	},
 	"HYPERKIT_NO_IP": {
 		Regexp: re(`IP address never found in dhcp leases file Temporary Error: Could not find an IP address for`),
 		Advice: "Install the latest minikube hyperkit driver, and run 'minikube delete'",
