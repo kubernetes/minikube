@@ -204,6 +204,8 @@ pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
 pkg/minikube/translate/translations.go: $(shell find translations/ -type f)
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/translate/translations.go -pkg translate translations/...
+	@#golint: Json should be JSON (compat sed)
+	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
 .PHONY: cross
 cross: out/minikube-linux-$(GOARCH) out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
