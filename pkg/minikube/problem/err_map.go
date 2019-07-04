@@ -36,6 +36,12 @@ var vmProblems = map[string]match{
 		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver",
 		Issues: []int{1926, 4206},
 	},
+	"OLD_HYPERKIT_VERSION": {
+		Regexp: re(`Add warn about old driver version (hyperkit, kvm)`),
+		Advice: "Too old hyperkit version. Jump forward to new valid hyperkit version as a workaround.",
+		URL:	"https://github.com/kubernetes/minikube/blob/master/docs/drivers.md"
+		Issues: []int{4658},
+	},
 	"VBOX_NOT_FOUND": {
 		Regexp: re(`VBoxManage not found. Make sure VirtualBox is installed and VBoxManage is in the path`),
 		Advice: "Install VirtualBox, ensure that VBoxManage is executable and in path, or select an alternative value for --vm-driver",
@@ -118,6 +124,12 @@ var vmProblems = map[string]match{
 		Advice: "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
 		URL:    "http://mikko.repolainen.fi/documents/virtualization-with-kvm",
 		Issues: []int{2991},
+	},
+	"OLD_KVM_VERSION": {
+		Regexp: re(`Too old KVM version found`),
+		Advice: "too old KVM version. Jump forward to new valid KVM version as a workaround.",
+		URL:	"https://github.com/kubernetes/minikube/blob/master/docs/drivers.md"
+		Issues: []int{4658},
 	},
 	"KVM_CONNECTION_ERROR": {
 		Regexp: re(`error connecting to libvirt socket`),
