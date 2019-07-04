@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // deleteCmd represents the delete command
@@ -94,6 +95,11 @@ func runDelete(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to remove profile", err)
 	}
 	console.OutStyle(console.Crushed, "The %q cluster has been deleted.", profile)
+
+	machineName := pkg_config.GetMachineName()
+	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
+		exit.WithError("update config", err)
+	}
 }
 
 func init() {

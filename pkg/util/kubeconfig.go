@@ -344,3 +344,29 @@ func SetCurrentContext(kubeCfgPath, name string) error {
 	}
 	return nil
 }
+
+// DeleteKubeConfigContext deletes the specified machine's kubeconfig context
+func DeleteKubeConfigContext(kubeCfgPath, machineName string) error {
+	kcfg, err := ReadConfigOrNew(kubeCfgPath)
+	if err != nil {
+		return errors.Wrap(err, "Error getting kubeconfig status")
+	}
+
+	if kcfg == nil || api.IsConfigEmpty(kcfg) {
+		glog.V(2).Info("kubeconfig is empty")
+		return nil
+	}
+
+	delete(kcfg.Clusters, machineName)
+	delete(kcfg.AuthInfos, machineName)
+	delete(kcfg.Contexts, machineName)
+
+	if kcfg.CurrentContext == machineName {
+		kcfg.CurrentContext = ""
+	}
+
+	if err := WriteConfig(kcfg, kubeCfgPath); err != nil {
+		return errors.Wrap(err, "writing kubeconfig")
+	}
+	return nil
+}

@@ -370,6 +370,30 @@ func TestGetIPFromKubeConfig(t *testing.T) {
 	}
 }
 
+func TestDeleteKubeConfigContext(t *testing.T) {
+	configFilename := tempFile(t, fakeKubeCfg)
+	if err := DeleteKubeConfigContext(configFilename, "la-croix"); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := ReadConfigOrNew(configFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(cfg.AuthInfos) != 0 {
+		t.Fail()
+	}
+
+	if len(cfg.Clusters) != 0 {
+		t.Fail()
+	}
+
+	if len(cfg.Contexts) != 0 {
+		t.Fail()
+	}
+}
+
 // tempFile creates a temporary with the provided bytes as its contents.
 // The caller is responsible for deleting file after use.
 func tempFile(t *testing.T, data []byte) string {
