@@ -25,8 +25,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
-	pkgdrivers "k8s.io/minikube/pkg/drivers" // TODO(tstromberg): Extract CommandRunner into its own package
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
@@ -47,7 +47,7 @@ type Driver struct {
 	*pkgdrivers.CommonDriver
 	URL     string
 	runtime cruntime.Manager
-	exec    bootstrapper.CommandRunner
+	exec    command.Runner
 }
 
 // Config is configuration for the None driver
@@ -59,7 +59,7 @@ type Config struct {
 
 // NewDriver returns a fully configured None driver
 func NewDriver(c Config) *Driver {
-	runner := &bootstrapper.ExecRunner{}
+	runner := &command.ExecRunner{}
 	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
 	// Libraries shouldn't panic, but there is no way for drivers to return error :(
 	if err != nil {
@@ -216,19 +216,19 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 }
 
 // stopKubelet idempotently stops the kubelet
-func stopKubelet(exec bootstrapper.CommandRunner) error {
+func stopKubelet(exec command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
 	return exec.Run("sudo systemctl stop kubelet.service")
 }
 
 // restartKubelet restarts the kubelet
-func restartKubelet(exec bootstrapper.CommandRunner) error {
+func restartKubelet(exec command.Runner) error {
 	glog.Infof("restarting kubelet.service ...")
 	return exec.Run("sudo systemctl restart kubelet.service")
 }
 
 // checkKubelet returns an error if the kubelet is not running.
-func checkKubelet(exec bootstrapper.CommandRunner) error {
+func checkKubelet(exec command.Runner) error {
 	glog.Infof("checking for running kubelet ...")
 	return exec.Run("systemctl is-active --quiet service kubelet")
 }
