@@ -40,7 +40,7 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -145,15 +145,15 @@ func (api *LocalClient) Close() error {
 }
 
 // CommandRunner returns best available command runner for this host
-func CommandRunner(h *host.Host) (bootstrapper.CommandRunner, error) {
+func CommandRunner(h *host.Host) (command.Runner, error) {
 	if h.DriverName == constants.DriverNone {
-		return &bootstrapper.ExecRunner{}, nil
+		return &command.ExecRunner{}, nil
 	}
 	client, err := sshutil.NewSSHClient(h.Driver)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
 	}
-	return bootstrapper.NewSSHRunner(client), nil
+	return command.NewSSHRunner(client), nil
 }
 
 // Create creates the host

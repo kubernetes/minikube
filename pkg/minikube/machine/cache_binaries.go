@@ -28,6 +28,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -90,7 +91,7 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 }
 
 // CopyBinary copies previously cached binaries into the path
-func CopyBinary(cr bootstrapper.CommandRunner, binary, path string) error {
+func CopyBinary(cr command.Runner, binary, path string) error {
 	f, err := assets.NewFileAsset(path, "/usr/bin", binary, "0755")
 	if err != nil {
 		return errors.Wrap(err, "new file asset")
