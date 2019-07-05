@@ -26,6 +26,7 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -209,6 +210,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err := saveConfig(config); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
+
+	validateDriverVersion(viper.GetString(vmDriver))
 
 	m, err := machine.NewAPIClient()
 	if err != nil {
@@ -849,4 +852,58 @@ func saveConfig(clusterConfig cfg.Config) error {
 		return err
 	}
 	return nil
+}
+
+func validateDriverVersion(vmDriver string) {
+	if vmDriver == constants.DriverKvm2 {
+		cmd := exec.Command("docker-machine-driver-kvm2", "version")
+		output, err := cmd.Output()
+
+		// we don't want to fail if an error was returned,
+		// libmachine has a nice message for the user if the driver isn't present
+		if err != nil {
+			console.Warning("Error checking driver version: %v", err)
+			return
+		}
+
+		v := extractVMDriverVersion(string(output))
+
+		// if the driver doesn't have return any version, it is really old, we force a upgrade.
+		if len(v) == 0 {
+			exit.WithCode(exit.Failure, "Please upgrade the 'docker-machine-driver-kvm2'. %s", constants.KVMDocumentation)
+		}
+
+		vmDriverVersion, err := semver.Make(v)
+		if err != nil {
+			console.Warning("Error parsing vmDriver version: %v", err)
+			return
+		}
+
+		minikubeVersion, err := version.GetSemverVersion()
+		if err != nil {
+			console.Warning("Error parsing minukube version: %v", err)
+			return
+		}
+
+		if vmDriverVersion.LT(minikubeVersion) {
+			console.Warning("The 'docker-machine-driver-kvm2' version is old. Please consider upgrading. %s", constants.KVMDocumentation)
+		}
+	}
+}
+
+// extractVMDriverVersion extracts the driver version.
+// KVM and Hyperkit drivers support the 'version' command, that display the information as:
+// version: vX.X.X
+// commit: XXXX
+// This method returns the version 'vX.X.X' or empty if the version isn't found.
+func extractVMDriverVersion(s string) string {
+	versionRegex := regexp.MustCompile(`version:(.*)`)
+	matches := versionRegex.FindStringSubmatch(s)
+
+	if len(matches) != 2 {
+		return ""
+	}
+
+	v := strings.TrimSpace(matches[1])
+	return strings.TrimPrefix(v, version.VersionPrefix)
 }
