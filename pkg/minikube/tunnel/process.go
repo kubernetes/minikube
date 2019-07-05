@@ -35,13 +35,13 @@ func osGetPid() int {
 	return os.Getpid()
 }
 
-//TODO(balintp): this is vulnerable to pid reuse we should include process name in the check
+// TODO(balintp): this is vulnerable to pid reuse we should include process name in the check
 func osCheckIfRunning(pid int) (bool, error) {
 	p, err := os.FindProcess(pid)
 	if runtime.GOOS == "windows" {
 		return err == nil, nil
 	}
-	//on unix systems further checking is required, as findProcess is noop
+	// on unix systems further checking is required, as findProcess is noop
 	if err != nil {
 		return false, fmt.Errorf("error finding process %d: %s", pid, err)
 	}

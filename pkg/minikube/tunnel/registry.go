@@ -31,9 +31,9 @@ import (
 
 // ID represents a registry ID
 type ID struct {
-	//Route is the key
+	// Route is the key
 	Route *Route
-	//the rest is metadata
+	// the rest is metadata
 	MachineName string
 	Pid         int
 }

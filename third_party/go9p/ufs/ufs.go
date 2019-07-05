@@ -21,7 +21,7 @@ func StartServer(addrVal string, debugVal int, rootVal string) {
 
 	fmt.Print("ufs starting\n")
 	// determined by build tags
-	//extraFuncs()
+	// extraFuncs()
 	err := ufs.StartNetListener("tcp", addrVal)
 	if err != nil {
 		log.Println(err)
