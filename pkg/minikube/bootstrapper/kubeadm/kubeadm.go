@@ -230,7 +230,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
-		//TODO(r2d4): get rid of global here
+		// TODO(r2d4): get rid of global here
 		master = k8s.NodeName
 		if err := util.RetryAfter(200, unmarkMaster, time.Second*1); err != nil {
 			return errors.Wrap(err, "timed out waiting to unmark master")

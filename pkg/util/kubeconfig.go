@@ -313,7 +313,7 @@ func GetPortFromKubeConfig(filename, machineName string) (int, error) {
 	return port, err
 }
 
-//UnsetCurrentContext unsets the current-context from minikube to "" on minikube stop
+// UnsetCurrentContext unsets the current-context from minikube to "" on minikube stop
 func UnsetCurrentContext(filename, machineName string) error {
 	confg, err := ReadConfigOrNew(filename)
 	if err != nil {
@@ -332,7 +332,7 @@ func UnsetCurrentContext(filename, machineName string) error {
 	return nil
 }
 
-//SetCurrentContext sets the kubectl's current-context
+// SetCurrentContext sets the kubectl's current-context
 func SetCurrentContext(kubeCfgPath, name string) error {
 	kcfg, err := ReadConfigOrNew(kubeCfgPath)
 	if err != nil {

@@ -110,7 +110,7 @@ func EnableOrDisableAddon(name string, val string) error {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 
-	//TODO(r2d4): config package should not reference API, pull this out
+	// TODO(r2d4): config package should not reference API, pull this out
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "machine client")
