@@ -955,7 +955,7 @@ func validateDriverVersion(vmDriver string) {
 
 	if vmDriverVersion.LT(minikubeVersion) {
 		out.WarningT(
-			"The '{{.driver_executable}}' version is old. Please consider upgrading. {{.documentation_url}}",
+			"There's a new version for '{{.driver_executable}}'. Please consider upgrading. {{.documentation_url}}",
 			out.V{"driver_executable": driverExecutable, "documentation_url": driverDocumentation},
 		)
 	}
