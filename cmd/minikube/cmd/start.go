@@ -904,39 +904,60 @@ func saveConfig(clusterConfig *cfg.Config) error {
 }
 
 func validateDriverVersion(vmDriver string) {
-	if vmDriver == constants.DriverKvm2 {
-		cmd := exec.Command("docker-machine-driver-kvm2", "version")
-		output, err := cmd.Output()
+	var (
+		driverExecutable    string
+		driverDocumentation string
+	)
 
-		// we don't want to fail if an error was returned,
-		// libmachine has a nice message for the user if the driver isn't present
-		if err != nil {
-			out.WarningT("Error checking driver version: {{.error}}", out.V{"error": err})
-			return
-		}
+	switch vmDriver {
+	case constants.DriverKvm2:
+		driverExecutable = "docker-machine-driver-kvm2"
+		driverDocumentation = fmt.Sprintf("%s#%s", constants.DriverDocumentation, "kvm2-upgrade")
+	case constants.DriverHyperkit:
+		driverExecutable = "docker-machine-driver-hyperkit"
+		driverDocumentation = fmt.Sprintf("%s#%s", constants.DriverDocumentation, "hyperkit-upgrade")
+	default: // driver doesn't support version
+		return
+	}
 
-		v := extractVMDriverVersion(string(output))
+	cmd := exec.Command(driverExecutable, "version")
+	output, err := cmd.Output()
 
-		// if the driver doesn't have return any version, it is really old, we force a upgrade.
-		if len(v) == 0 {
-			exit.WithCodeT(exit.Failure, "Please upgrade the 'docker-machine-driver-kvm2'. {{.documentation_url}}", out.V{"documentation_url": constants.KVMDocumentation})
-		}
+	// we don't want to fail if an error was returned,
+	// libmachine has a nice message for the user if the driver isn't present
+	if err != nil {
+		out.WarningT("Error checking driver version: {{.error}}", out.V{"error": err})
+		return
+	}
 
-		vmDriverVersion, err := semver.Make(v)
-		if err != nil {
-			out.WarningT("Error parsing vmDriver version: {{.error}}", out.V{"error": err})
-			return
-		}
+	v := extractVMDriverVersion(string(output))
 
-		minikubeVersion, err := version.GetSemverVersion()
-		if err != nil {
-			out.WarningT("Error parsing minukube version: {{.error}}", out.V{"error": err})
-			return
-		}
+	// if the driver doesn't have return any version, it is really old, we force a upgrade.
+	if len(v) == 0 {
+		exit.WithCodeT(
+			exit.Failure,
+			"Please upgrade the '{{.driver_executable}}'. {{.documentation_url}}",
+			out.V{"driver_executable": driverExecutable, "documentation_url": driverDocumentation},
+		)
+	}
 
-		if vmDriverVersion.LT(minikubeVersion) {
-			out.WarningT("The 'docker-machine-driver-kvm2' version is old. Please consider upgrading. {{.documentation_url}}", out.V{"documentation_url": constants.KVMDocumentation})
-		}
+	vmDriverVersion, err := semver.Make(v)
+	if err != nil {
+		out.WarningT("Error parsing vmDriver version: {{.error}}", out.V{"error": err})
+		return
+	}
+
+	minikubeVersion, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minukube version: {{.error}}", out.V{"error": err})
+		return
+	}
+
+	if vmDriverVersion.LT(minikubeVersion) {
+		out.WarningT(
+			"The '{{.driver_executable}}' version is old. Please consider upgrading. {{.documentation_url}}",
+			out.V{"driver_executable": driverExecutable, "documentation_url": driverDocumentation},
+		)
 	}
 }
 
