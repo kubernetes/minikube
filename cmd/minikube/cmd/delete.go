@@ -19,6 +19,7 @@ package cmd
 import (
 	"os"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -62,16 +63,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
 	if err == nil && cc.MachineConfig.VMDriver == constants.DriverNone {
-		kc := cc.KubernetesConfig
-		bsName := viper.GetString(cmdcfg.Bootstrapper)
-		console.OutStyle(console.Resetting, "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
-		clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
-		if err != nil {
-			console.ErrLn("Unable to get bootstrapper: %v", err)
-		} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
-			console.ErrLn("Failed to delete cluster: %v", err)
-		}
-
+		uninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper))
 	}
 
 	if err = cluster.DeleteHost(api); err != nil {
@@ -99,6 +91,16 @@ func runDelete(cmd *cobra.Command, args []string) {
 	machineName := pkg_config.GetMachineName()
 	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
 		exit.WithError("update config", err)
+	}
+}
+
+func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsName string) {
+	console.OutStyle(console.Resetting, "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
+	clusterBootstrapper, err := GetClusterBootstrapper(api, bsName)
+	if err != nil {
+		console.ErrLn("Unable to get bootstrapper: %v", err)
+	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
+		console.ErrLn("Failed to delete cluster: %v", err)
 	}
 }
 
