@@ -220,7 +220,7 @@ func testRegistry(t *testing.T) {
 
 		resp, err := retryablehttp.Get(u.String())
 		if err != nil {
-			t.Fatalf("failed get: %v", err)
+			t.Errorf("failed get: %v", err)
 		}
 
 		if resp.StatusCode != http.StatusOK {
