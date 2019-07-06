@@ -37,6 +37,7 @@ import (
 var (
 	kubectlInstallMode   bool
 	kubectlInstallPrefix string
+	kubectlPathMode      bool
 )
 
 const defaultPrefix = "/usr/local"
@@ -76,6 +77,11 @@ var kubectlCmd = &cobra.Command{
 
 		if kubectlInstallMode {
 			installKubectl(binary, version, path, kubectlInstallPrefix)
+			return
+		}
+
+		if kubectlPathMode {
+			console.OutLn(path)
 			return
 		}
 
@@ -120,5 +126,6 @@ func installKubectl(binary, version, path, prefix string) {
 func init() {
 	kubectlCmd.Flags().BoolVar(&kubectlInstallMode, "install", false, "Install kubectl and exit")
 	kubectlCmd.Flags().StringVar(&kubectlInstallPrefix, "prefix", defaultPrefix, "Installation prefix")
+	kubectlCmd.Flags().BoolVar(&kubectlPathMode, "path", false, "Display kubectl path instead of running it")
 	RootCmd.AddCommand(kubectlCmd)
 }
