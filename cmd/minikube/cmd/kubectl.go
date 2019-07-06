@@ -18,8 +18,10 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"syscall"
 
@@ -31,6 +33,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
+
+var (
+	kubectlInstallMode   bool
+	kubectlInstallPrefix string
+)
+
+const defaultPrefix = "/usr/local"
 
 // kubectlCmd represents the kubectl command
 var kubectlCmd = &cobra.Command{
@@ -65,6 +74,11 @@ var kubectlCmd = &cobra.Command{
 			exit.WithError("Failed to download kubectl", err)
 		}
 
+		if kubectlInstallMode {
+			installKubectl(binary, version, path, kubectlInstallPrefix)
+			return
+		}
+
 		glog.Infof("Running %s %v", path, args)
 		c := exec.Command(path, args...)
 		c.Stdin = os.Stdin
@@ -84,6 +98,27 @@ var kubectlCmd = &cobra.Command{
 	},
 }
 
+func installKubectl(binary, version, path, prefix string) {
+	bindir := filepath.Join(prefix, "bin")
+	installpath := filepath.Join(bindir, binary)
+	glog.Infof("Installing %s (%s)", installpath, version)
+
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		exit.WithError("Failed to read kubectl", err)
+	}
+	err = os.MkdirAll(bindir, 0755)
+	if err != nil {
+		exit.WithError("Failed to create directory", err)
+	}
+	err = ioutil.WriteFile(installpath, data, 0755)
+	if err != nil {
+		exit.WithError("Failed to write kubectl", err)
+	}
+}
+
 func init() {
+	kubectlCmd.Flags().BoolVar(&kubectlInstallMode, "install", false, "Install kubectl and exit")
+	kubectlCmd.Flags().StringVar(&kubectlInstallPrefix, "prefix", defaultPrefix, "Installation prefix")
 	RootCmd.AddCommand(kubectlCmd)
 }
