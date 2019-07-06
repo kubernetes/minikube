@@ -119,6 +119,11 @@ func installKubectl(binary, version, path, prefix string) {
 	}
 	err = ioutil.WriteFile(installpath, data, 0755)
 	if err != nil {
+		if os.IsPermission(err) {
+			// Permission denied (common error) is *not* a crash...
+			console.Fatal("%s: %v", "Failed to write kubectl", err)
+			os.Exit(exit.Software)
+		}
 		exit.WithError("Failed to write kubectl", err)
 	}
 }
