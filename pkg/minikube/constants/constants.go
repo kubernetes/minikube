@@ -430,6 +430,9 @@ const (
 	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.1-rc.0/gvisor-containerd-shim-v0.0.1-rc.0.linux-amd64"
 	// GvisorURL is the url to download gvisor
 	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2018-12-07/runsc"
+
+	// MinikubeGvisorAddonImageRepo is the environment variable set by integration tests to change the gvisor image repo.
+	MinikubeGvisorAddonImageRepo = "MINIKUBE_GVISOR_ADDON_IMAGE_REPO"
 )
 
 const (
