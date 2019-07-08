@@ -19,10 +19,15 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -59,10 +64,28 @@ func TestFunctionalContainerd(t *testing.T) {
 	if r.GetStatus() != state.None.String() {
 		r.RunCommand("delete", true)
 	}
+
+	// Build and push new gvisor image for testing.
+	repo := fmt.Sprintf("gcr.io/k8s-minikube/test/gvisor-image/%d", time.Now().Unix())
+	pushGvisorImage(t, repo)
+
+	defer os.Setenv(constants.MinikubeGvisorAddonImageRepo, "")
+	os.Setenv(constants.MinikubeGvisorAddonImageRepo, repo)
+
 	r.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
 	r.RunCommand("delete", true)
+}
+
+func pushGvisorImage(t *testing.T, repo string) {
+	cmd := exec.Command("make", "push-gvisor-addon-image")
+	cmd.Env = append(os.Environ(), []string{fmt.Sprintf("REGISTRY=%s", repo)}...)
+	cmd.Dir = "../../"
+	stdout, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("Error running command: %s %v. Output: %s", cmd.Args, err, string(stdout))
+	}
 }
 
 // usingNoneDriver returns true if using the none driver
