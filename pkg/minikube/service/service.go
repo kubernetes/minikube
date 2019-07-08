@@ -28,7 +28,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -72,11 +71,11 @@ func (k *K8sClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
 // GetClientset returns a clientset
 func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	profile := viper.GetString(config.MachineProfile)
+	contextName := config.GetMachineName()
 	configOverrides := &clientcmd.ConfigOverrides{
 		Context: clientcmdapi.Context{
-			Cluster:  profile,
-			AuthInfo: profile,
+			Cluster:  contextName,
+			AuthInfo: contextName,
 		},
 	}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)

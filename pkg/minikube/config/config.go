@@ -96,15 +96,18 @@ func decode(r io.Reader) (MinikubeConfig, error) {
 
 // GetMachineName gets the machine name for the VM
 func GetMachineName() string {
-	if viper.GetString(MachineProfile) == "" {
+	if viper.GetString(MachineProfile) == "" || viper.GetString(MachineProfile) == constants.DefaultMachineName {
 		return constants.DefaultMachineName
 	}
-	return viper.GetString(MachineProfile)
+	return fmt.Sprintf("%s-%s", constants.MinikubePrefix, viper.GetString(MachineProfile))
 }
 
 // Load loads the kubernetes and machine config for the current machine
 func Load() (*Config, error) {
-	return DefaultLoader.LoadConfigFromFile(GetMachineName())
+	if viper.GetString(MachineProfile) == "" {
+		return DefaultLoader.LoadConfigFromFile(viper.GetString(constants.DefaultMachineName))
+	}
+	return DefaultLoader.LoadConfigFromFile(viper.GetString(MachineProfile))
 }
 
 // Loader loads the kubernetes and machine config based on the machine profile name

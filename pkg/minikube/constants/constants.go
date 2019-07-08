@@ -113,6 +113,9 @@ var KubeconfigPath = clientcmd.RecommendedHomeFile
 // KubeconfigEnvVar is the env var to check for the Kubernetes client config
 var KubeconfigEnvVar = clientcmd.RecommendedConfigPathEnvVar
 
+// MinikubePrefix is the prefix for the kubeconfig context and the VM name
+const MinikubePrefix = "minikube"
+
 // MinikubeContext is the kubeconfig context name used for minikube
 const MinikubeContext = "minikube"
 
