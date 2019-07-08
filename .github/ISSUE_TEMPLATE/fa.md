@@ -6,16 +6,16 @@ about: مشكلی را گرزارش كن
 
 **کامندی که مشکل را به وجود می آورد**:
 
-**خروجی کامل کامند مورد مشکل:**:
-<details><summary><code>خروجی کامل</code></summary><br><pre>
+**خروجی کامل کامند مورد مشکل:**:<details>
 
 
-</pre></details>
 
-**`minikube logs` خروجی کامل دسستور**:
-<details><summary><code>minikube logs</code></summary><br><pre>
+</details>
+
+**`minikube logs` خروجی کامل دسستور**: <details>
 
 
-</pre></details>
+
+</details>
 
 **سیستم عامل مورد استفاده با ذکر ورژن**:
