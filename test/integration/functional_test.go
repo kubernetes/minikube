@@ -19,13 +19,9 @@ limitations under the License.
 package integration
 
 import (
-	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -66,12 +62,8 @@ func TestFunctionalContainerd(t *testing.T) {
 		r.RunCommand("delete", true)
 	}
 
-	// Build and push new gvisor image for testing.
-	repo := fmt.Sprintf("gcr.io/k8s-minikube/test/gvisor-image/%d", time.Now().Unix())
-	pushGvisorImage(t, repo)
-
-	defer os.Setenv(constants.MinikubeGvisorAddonImageRepo, "")
-	os.Setenv(constants.MinikubeGvisorAddonImageRepo, repo)
+	// Build current version of the gvisor image.
+	buildGvisorImage(t)
 
 	r.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	t.Run("Gvisor", testGvisor)
@@ -79,10 +71,9 @@ func TestFunctionalContainerd(t *testing.T) {
 	r.RunCommand("delete", true)
 }
 
-func pushGvisorImage(t *testing.T, repo string) {
-	cmd := exec.Command("make", "push-gvisor-addon-image")
-	cmd.Env = append(os.Environ(), []string{fmt.Sprintf("REGISTRY=%s", repo)}...)
-	cmd.Dir = filepath.Join(os.Getenv("GOPATH"), "src/k8s.io/minikube")
+func buildGvisorImage(t *testing.T) {
+	cmd := exec.Command("docker", "build", "-t", constants.GvisorImage, "-f", "deploy/gvisor/Dockerfile", ".")
+	cmd.Dir = "../../"
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
 		t.Fatalf("Error running command: %s in directory: %s %v. Output: %s", cmd.Args, cmd.Dir, err, string(stdout))

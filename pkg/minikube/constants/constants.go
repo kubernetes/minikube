@@ -431,8 +431,7 @@ const (
 	// GvisorURL is the url to download gvisor
 	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2018-12-07/runsc"
 
-	// MinikubeGvisorAddonImageRepo is the environment variable set by integration tests to change the gvisor image repo.
-	MinikubeGvisorAddonImageRepo = "MINIKUBE_GVISOR_ADDON_IMAGE_REPO"
+	GvisorImage = "gcr.io/k8s-minikube/gvisor-addon:latest"
 )
 
 const (
