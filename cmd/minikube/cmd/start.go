@@ -210,8 +210,10 @@ var startCmd = &cobra.Command{
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
 	out.T(out.Happy, "minikube {{.version}} on {{.os}} ({{.arch}})", out.V{"version": version.GetVersion(), "os": runtime.GOOS, "arch": runtime.GOARCH})
+
 	validateConfig()
 	validateUser()
+	validateDriverVersion(viper.GetString(vmDriver))
 
 	k8sVersion, isUpgrade := getKubernetesVersion()
 	config, err := generateConfig(cmd, k8sVersion)
@@ -235,7 +237,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to save config", err)
 	}
 
-	validateDriverVersion(viper.GetString(vmDriver))
 	// exits here in case of --download-only option.
 	handleDownloadOnly(&cacheGroup, k8sVersion)
 	mRunner, preExists, machineAPI, host := startMachine(&config)
