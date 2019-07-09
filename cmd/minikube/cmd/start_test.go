@@ -55,6 +55,9 @@ func Test_validateOSSupportVMDriver(t *testing.T) {
 		{constants.DriverNone, constants.Darwin, false},
 		{constants.DriverNone, constants.Windows, false},
 		{constants.DriverNone, constants.Linux, true},
+		{constants.DriverVirtualbox, constants.Darwin, true},
+		{constants.DriverVirtualbox, constants.Windows, true},
+		{constants.DriverVirtualbox, constants.Linux, true},
 	}
 
 	for _, test := range tests {
