@@ -72,7 +72,7 @@ func TestOutStyle(t *testing.T) {
 	}
 }
 
-func TestOutTemplateStyle(t *testing.T) {
+func TestOutT(t *testing.T) {
 	// Set the system locale to Arabic and define a dummy translation file.
 	if err := translate.SetPreferredLanguage("ar"); err != nil {
 		t.Fatalf("SetPreferredLanguage: %v", err)
@@ -104,7 +104,7 @@ func TestOutTemplateStyle(t *testing.T) {
 				os.Setenv(OverrideEnv, strconv.FormatBool(override))
 				f := tests.NewFakeFile()
 				SetOutFile(f)
-				OutTemplateStyle(tc.style, tc.message, tc.params)
+				OutT(tc.style, tc.message, tc.params)
 				got := f.String()
 				want := tc.wantASCII
 				if override {
