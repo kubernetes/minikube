@@ -28,7 +28,10 @@ import (
 
 func TestOutStyle(t *testing.T) {
 	// Set the system locale to Arabic and define a dummy translation file.
-	translate.SetPreferredLanguage("ar")
+	err := translate.SetPreferredLanguage("ar")
+	if err != nil {
+		t.Fatalf("SetPreferredLanguage: %v", err)
+	}
 	translate.Translations = map[string]interface{}{
 		"Installing Kubernetes version %s ...": "... %s تثبيت Kubernetes الإصدار",
 	}
