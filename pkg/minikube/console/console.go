@@ -66,8 +66,8 @@ func OutStyle(style StyleEnum, format string, a ...interface{}) {
 	Out(outStyled, a...)
 }
 
-func OutStyle2(style StyleEnum, format string, b map[string]interface{}) {
-	outStyled := applyFormatting2(style, useColor, format, b)
+func OutTemplateStyle(style StyleEnum, format string, b map[string]interface{}) {
+	outStyled := applyTemplateFormatting(style, useColor, format, b)
 	Out(outStyled)
 }
 
@@ -94,8 +94,8 @@ func ErrStyle(style StyleEnum, format string, a ...interface{}) {
 	Err(errStyled, a...)
 }
 
-func ErrStyle2(style StyleEnum, format string, b map[string]interface{}) {
-	errStyled := applyFormatting2(style, useColor, format, b)
+func ErrTemplateStyle(style StyleEnum, format string, b map[string]interface{}) {
+	errStyled := applyTemplateFormatting(style, useColor, format, b)
 	Err(errStyled)
 }
 

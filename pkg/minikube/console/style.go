@@ -156,7 +156,7 @@ func applyFormatting(style StyleEnum, useColor bool, format string, a ...interfa
 
 }
 
-func applyFormatting2(style StyleEnum, useColor bool, format string, b map[string]interface{}) string {
+func applyTemplateFormatting(style StyleEnum, useColor bool, format string, b map[string]interface{}) string {
 	format = applyStyle(style, useColor, format)
 
 	var buf bytes.Buffer

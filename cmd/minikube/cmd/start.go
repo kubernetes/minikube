@@ -179,7 +179,7 @@ assumes you have already installed one of the VM drivers: virtualbox/parallels/v
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
-	console.OutStyle2(console.Happy, "minikube {{.version}} on {{.os}} ({{.arch}})", console.Arg{"version": version.GetVersion(), "os": runtime.GOOS, "arch": runtime.GOARCH})
+	console.OutTemplateStyle(console.Happy, "minikube {{.version}} on {{.os}} ({{.arch}})", console.Arg{"version": version.GetVersion(), "os": runtime.GOOS, "arch": runtime.GOARCH})
 	validateConfig()
 
 	validateUser()
@@ -235,7 +235,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// Bypass proxy for minikube's vm ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
-		console.ErrStyle2(console.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", console.Arg{"ip": ip})
+		console.ErrTemplateStyle(console.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", console.Arg{"ip": ip})
 	}
 
 	// Save IP to configuration file for subsequent use
@@ -293,7 +293,7 @@ func skipCache(config cfg.Config) {
 
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
-	console.OutStyle2(cr.Style(), "Configuring environment for Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}}",
+	console.OutTemplateStyle(cr.Style(), "Configuring environment for Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}}",
 		console.Arg{
 			"k8sVersion":     k8sVersion,
 			"runtime":        cr.Name(),
@@ -309,9 +309,9 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 
 func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	if kubeconfig.KeepContext {
-		console.OutStyle2(console.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", console.Arg{"name": kubeconfig.ClusterName})
+		console.OutTemplateStyle(console.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", console.Arg{"name": kubeconfig.ClusterName})
 	} else {
-		console.OutStyle2(console.Ready, "Done! kubectl is now configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
+		console.OutTemplateStyle(console.Ready, "Done! kubectl is now configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
 	}
 	_, err := exec.LookPath("kubectl")
 	if err != nil {
@@ -381,7 +381,7 @@ func validateUser() {
 			exit.Usage("Please run with sudo. the vm-driver %q requires sudo.", constants.DriverNone)
 
 		} else if u.Name == "root" && !(d == constants.DriverHyperv || d == constants.DriverNone) {
-			console.OutStyle2(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with {{.driver}} driver.", console.Arg{"driver": d})
+			console.OutTemplateStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with {{.driver}} driver.", console.Arg{"driver": d})
 		}
 
 	} else {
@@ -407,7 +407,7 @@ func validateConfig() {
 		exit.Usage("Requested memory allocation (%dMB) is less than the minimum allowed of %dMB", memorySizeMB, pkgutil.CalculateSizeInMB(constants.MinimumMemorySize))
 	}
 	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) {
-		console.OutStyle2(console.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default}}MB. Beware that minikube might not work correctly or crash unexpectedly.", console.Arg{"memory": memorySizeMB, "default": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
+		console.OutTemplateStyle(console.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default}}MB. Beware that minikube might not work correctly or crash unexpectedly.", console.Arg{"memory": memorySizeMB, "default": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
@@ -516,7 +516,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 	}
 
 	if repository != "" {
-		console.OutStyle2(console.SuccessType, "Using image repository {{.name}}", console.Arg{"name": repository})
+		console.OutTemplateStyle(console.SuccessType, "Using image repository {{.name}}", console.Arg{"name": repository})
 	}
 
 	cfg := cfg.Config{
@@ -687,11 +687,11 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	if nvs.LT(ovs) {
 		nv = version.VersionPrefix + ovs.String()
-		console.ErrStyle2(console.Conflict, "Kubernetes downgrade is not supported, will continue to use {{.version}}", console.Arg{"version": nv})
+		console.ErrTemplateStyle(console.Conflict, "Kubernetes downgrade is not supported, will continue to use {{.version}}", console.Arg{"version": nv})
 		return nv, isUpgrade
 	}
 	if nvs.GT(ovs) {
-		console.OutStyle2(console.ThumbsUp, "minikube will upgrade the local cluster from Kubernetes {{.old}} to {{.new}}", console.Arg{"old": ovs, "new": nvs})
+		console.OutTemplateStyle(console.ThumbsUp, "minikube will upgrade the local cluster from Kubernetes {{.old}} to {{.new}}", console.Arg{"old": ovs, "new": nvs})
 		isUpgrade = true
 	}
 	return nv, isUpgrade
@@ -768,12 +768,12 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner b
 	if isUpgrade || !preexisting {
 		console.OutStyle(console.Pulling, "Pulling images ...")
 		if err := bs.PullImages(kc); err != nil {
-			console.OutStyle2(console.FailureType, "Unable to pull images, which may be OK: {{.error}}", console.Arg{"error": err})
+			console.OutTemplateStyle(console.FailureType, "Unable to pull images, which may be OK: {{.error}}", console.Arg{"error": err})
 		}
 	}
 
 	if preexisting {
-		console.OutStyle2(console.Restarting, "Relaunching Kubernetes {{.version}} using {{.bootstrapper}} ... ", console.Arg{"version": kc.KubernetesVersion, "bootstrapper": bsName})
+		console.OutTemplateStyle(console.Restarting, "Relaunching Kubernetes {{.version}} using {{.bootstrapper}} ... ", console.Arg{"version": kc.KubernetesVersion, "bootstrapper": bsName})
 		if err := bs.RestartCluster(kc); err != nil {
 			exit.WithLogEntries("Error restarting cluster", err, logs.FindProblems(r, bs, runner))
 		}
@@ -792,7 +792,7 @@ func configureMounts() {
 		return
 	}
 
-	console.OutStyle2(console.Mounting, "Creating mount {{.name}} ...", console.Arg{"name": viper.GetString(mountString)})
+	console.OutTemplateStyle(console.Mounting, "Creating mount {{.name}} ...", console.Arg{"name": viper.GetString(mountString)})
 	path := os.Args[0]
 	mountDebugVal := 0
 	if glog.V(8) {
