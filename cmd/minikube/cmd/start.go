@@ -212,6 +212,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	out.T(out.Happy, "minikube {{.version}} on {{.os}} ({{.arch}})", out.V{"version": version.GetVersion(), "os": runtime.GOOS, "arch": runtime.GOARCH})
 
 	validateConfig()
+	vmDriver := viper.GetString(vmDriver)
+	if !validateOSSupportVMDriver(runtime.GOOS, vmDriver) {
+		exit.WithCode(exit.Failure, "The driver '%s' is not supported on %s", vmDriver, runtime.GOOS)
+	}
 	validateUser()
 	validateDriverVersion(viper.GetString(vmDriver))
 
@@ -977,4 +981,15 @@ func extractVMDriverVersion(s string) string {
 
 	v := strings.TrimSpace(matches[1])
 	return strings.TrimPrefix(v, version.VersionPrefix)
+}
+
+func validateOSSupportVMDriver(os, vmDriver string) bool {
+	switch vmDriver {
+	case constants.DriverNone:
+		if os != constants.Linux {
+			return false
+		}
+	}
+
+	return true
 }

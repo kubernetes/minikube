@@ -18,6 +18,8 @@ package cmd
 
 import (
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func Test_extractVMDriverVersion(t *testing.T) {
@@ -41,5 +43,24 @@ func Test_extractVMDriverVersion(t *testing.T) {
 	v = extractVMDriverVersion("version: 1.2.3")
 	if expectedVersion != v {
 		t.Errorf("Expected version: %s, got: %s", expectedVersion, v)
+	}
+}
+
+func Test_validateOSSupportVMDriver(t *testing.T) {
+	tests := []struct {
+		driver   string
+		OS       string
+		supports bool
+	}{
+		{constants.DriverNone, constants.Darwin, false},
+		{constants.DriverNone, constants.Windows, false},
+		{constants.DriverNone, constants.Linux, true},
+	}
+
+	for _, test := range tests {
+		s := validateOSSupportVMDriver(test.OS, test.driver)
+		if test.supports != s {
+			t.Errorf("Expected: %t got: %t for driver %s support on %s", test.supports, s, test.driver, test.OS)
+		}
 	}
 }
