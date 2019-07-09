@@ -24,8 +24,8 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -154,7 +154,7 @@ func isAddonAlreadySet(addon *assets.Addon, enable bool) error {
 	return nil
 }
 
-func enableOrDisableAddonInternal(addon *assets.Addon, cmd bootstrapper.CommandRunner, data interface{}, enable bool) error {
+func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
 	var err error
 	// check addon status before enabling/disabling it
 	if err := isAddonAlreadySet(addon, enable); err != nil {

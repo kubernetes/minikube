@@ -28,6 +28,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
@@ -54,7 +55,7 @@ var importantPods = []string{
 const lookBackwardsCount = 200
 
 // Follow follows logs from multiple files in tail(1) format
-func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrapper.CommandRunner) error {
+func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner) error {
 	cs := []string{}
 	for _, v := range logCommands(r, bs, 0, true) {
 		cs = append(cs, v+" &")
@@ -69,7 +70,7 @@ func IsProblem(line string) bool {
 }
 
 // FindProblems finds possible root causes among the logs
-func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrapper.CommandRunner) map[string][]string {
+func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner) map[string][]string {
 	pMap := map[string][]string{}
 	cmds := logCommands(r, bs, lookBackwardsCount, false)
 	for name, cmd := range cmds {
@@ -110,7 +111,7 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 }
 
 // Output displays logs from multiple sources in tail(1) format
-func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrapper.CommandRunner, lines int) error {
+func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner, lines int) error {
 	cmds := logCommands(r, bs, lines, false)
 
 	// These are not technically logs, but are useful to have in bug reports.

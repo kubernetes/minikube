@@ -20,7 +20,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 	core "k8s.io/api/core/v1"
 	"k8s.io/minikube/pkg/minikube/console"
@@ -59,12 +58,7 @@ var serviceListCmd = &cobra.Command{
 
 		}
 
-		table := tablewriter.NewWriter(os.Stdout)
-		table.SetHeader([]string{"Namespace", "Name", "URL"})
-		table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
-		table.SetCenterSeparator("|")
-		table.AppendBulk(data) // Add Bulk Data
-		table.Render()
+		service.PrintServiceList(os.Stdout, data)
 	},
 }
 

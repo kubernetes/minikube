@@ -35,6 +35,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -84,7 +85,7 @@ func CacheImages(images []string, cacheDir string) error {
 }
 
 // LoadImages loads previously cached images into the container runtime
-func LoadImages(cmd bootstrapper.CommandRunner, images []string, cacheDir string) error {
+func LoadImages(cmd command.Runner, images []string, cacheDir string) error {
 	var g errgroup.Group
 	// Load profile cluster config from file
 	cc, err := config.Load()
@@ -194,7 +195,7 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 }
 
 // loadImageFromCache loads a single image from the cache
-func loadImageFromCache(cr bootstrapper.CommandRunner, k8s config.KubernetesConfig, src string) error {
+func loadImageFromCache(cr command.Runner, k8s config.KubernetesConfig, src string) error {
 	glog.Infof("Loading image from cache: %s", src)
 	filename := filepath.Base(src)
 	if _, err := os.Stat(src); err != nil {

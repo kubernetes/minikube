@@ -16,6 +16,8 @@ the host PATH:
 
 ## KVM2 driver
 
+### KVM2 install
+
 To install the KVM2 driver, first install and configure the prerequisites, namely libvirt 1.3.1 or higher, and qemu-kvm:
 
 * Debian or Ubuntu 18.x: `sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm`
@@ -77,7 +79,14 @@ or, to use kvm2 as a default driver for `minikube start`:
 minikube config set vm-driver kvm2
 ```
 
-### Troubleshoot
+### KVM2 upgrade
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
+  && sudo install docker-machine-driver-kvm2 /usr/local/bin/
+```
+
+### KVM2 troubleshoot
 
 If minikube can't start, check if the kvm default network exists.
 
@@ -133,7 +142,7 @@ or, to use hyperkit as a default driver for minikube:
 minikube config set vm-driver hyperkit
 ```
 
-### Troubleshoot
+### Hyperkit troubleshoot
 
 Make sure you are running the lastest version of your driver.
 

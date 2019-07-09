@@ -6,16 +6,14 @@ about: Girêftek gozarîş bike
 
 **Rêk ew kommandey be karit henawe, bo dubara kirdin girifteke**:
 
-**Tewawi berhem (output) kommandeke**:
-<details><summary><code>Output</code></summary><br><pre>
+**Tewawi berhem (output) kommandeke**:<details>
 
 
-</pre></details>
+</details>
 
-**Berhemî kommandi `minikube logs`**:
-<details><summary><code>minikube logs</code></summary><br><pre>
+**Berhemî kommandi `minikube logs`**: <details>
 
 
-</pre></details>
+</details>
 
 **Jor o virjênî operating system**:
