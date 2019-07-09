@@ -28,8 +28,7 @@ import (
 
 func TestOutStyle(t *testing.T) {
 	// Set the system locale to Arabic and define a dummy translation file.
-	err := translate.SetPreferredLanguage("ar")
-	if err != nil {
+	if err := translate.SetPreferredLanguage("ar"); err != nil {
 		t.Fatalf("SetPreferredLanguage: %v", err)
 	}
 	translate.Translations = map[string]interface{}{
@@ -78,24 +77,23 @@ func TestOut(t *testing.T) {
 
 	var testCases = []struct {
 		format string
-		lang   string
 		arg    interface{}
 		want   string
 	}{
 		{format: "xyz123", want: "xyz123"},
-		{format: "Installing Kubernetes version %s ...", lang: "ar", arg: "v1.13", want: "... v1.13 تثبيت Kubernetes الإصدار"},
-		{format: "Installing Kubernetes version %s ...", lang: "en-us", arg: "v1.13", want: "Installing Kubernetes version v1.13 ..."},
+		{format: "Installing Kubernetes version %s ...", arg: "v1.13", want: "Installing Kubernetes version v1.13 ..."},
 		{format: "Parameter encoding: %s", arg: "%s%%%d", want: "Parameter encoding: %s%%%d"},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.format, func(t *testing.T) {
-			if err := translate.SetPreferredLanguage(tc.lang); err != nil {
-				t.Errorf("unexpected error: %q", err)
-			}
 			f := tests.NewFakeFile()
 			SetOutFile(f)
 			ErrLn("unrelated message")
-			Out(tc.format, tc.arg)
+			if tc.arg == nil {
+				Out(tc.format)
+			} else {
+				Out(tc.format, tc.arg)
+			}
 			got := f.String()
 			if got != tc.want {
 				t.Errorf("Out(%s, %s) = %q, want %q", tc.format, tc.arg, got, tc.want)
