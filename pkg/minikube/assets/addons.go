@@ -403,12 +403,10 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 		Arch            string
 		ExoticArch      string
 		ImageRepository string
-		GvisorImageRepo string
 	}{
 		Arch:            a,
 		ExoticArch:      ea,
 		ImageRepository: cfg.ImageRepository,
-		GvisorImageRepo: os.Getenv(constants.MinikubeGvisorAddonImageRepo),
 	}
 
 	return opts

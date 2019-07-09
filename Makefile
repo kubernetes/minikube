@@ -381,7 +381,7 @@ out/gvisor-addon:
 	GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image
-gvisor-addon-image: out/gvisor-addon
+gvisor-addon-image:
 	docker build -t $(REGISTRY)/gvisor-addon:latest -f deploy/gvisor/Dockerfile .
 
 .PHONY: push-gvisor-addon-image
