@@ -989,6 +989,10 @@ func validateOSSupportVMDriver(os, vmDriver string) bool {
 		if os != constants.Linux {
 			return false
 		}
+	case constants.DriverHyperv:
+		if os != constants.Windows {
+			return false
+		}
 	}
 
 	return true
