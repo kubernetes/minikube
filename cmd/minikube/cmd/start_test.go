@@ -64,6 +64,9 @@ func Test_validateOSSupportVMDriver(t *testing.T) {
 		{constants.DriverHyperkit, constants.Darwin, true},
 		{constants.DriverHyperkit, constants.Windows, false},
 		{constants.DriverHyperkit, constants.Linux, false},
+		{constants.DriverKvm2, constants.Darwin, false},
+		{constants.DriverKvm2, constants.Windows, false},
+		{constants.DriverKvm2, constants.Linux, true},
 	}
 
 	for _, test := range tests {

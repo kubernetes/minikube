@@ -997,6 +997,10 @@ func validateOSSupportVMDriver(os, vmDriver string) bool {
 		if os != constants.Darwin {
 			return false
 		}
+	case constants.DriverKvm2:
+		if os != constants.Linux {
+			return false
+		}
 	}
 
 	return true
