@@ -19,12 +19,10 @@ limitations under the License.
 package integration
 
 import (
-	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/docker/machine/libmachine/state"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -62,22 +60,10 @@ func TestFunctionalContainerd(t *testing.T) {
 		r.RunCommand("delete", true)
 	}
 
-	// Build current version of the gvisor image.
-	buildGvisorImage(t)
-
 	r.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
 	r.RunCommand("delete", true)
-}
-
-func buildGvisorImage(t *testing.T) {
-	cmd := exec.Command("docker", "build", "-t", constants.GvisorImage, "-f", "deploy/gvisor/Dockerfile", ".")
-	cmd.Dir = "../../"
-	stdout, err := cmd.CombinedOutput()
-	if err != nil {
-		t.Fatalf("Error running command: %s in directory: %s %v. Output: %s", cmd.Args, cmd.Dir, err, string(stdout))
-	}
 }
 
 // usingNoneDriver returns true if using the none driver
