@@ -36,7 +36,10 @@ import (
 var kubectlCmd = &cobra.Command{
 	Use:   "kubectl",
 	Short: "Run kubectl",
-	Long:  `Run the kubernetes client, download it if necessary.`,
+	Long: `Run the kubernetes client, download it if necessary.
+Examples:
+minikube kubectl -- --help
+kubectl get pods --namespace kube-system`,
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
