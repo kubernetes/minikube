@@ -131,6 +131,7 @@ func lowPrefix(s style) string {
 	return lowBullet
 }
 
+// applyStyle translates the given string if necessary then adds any appropriate style prefix.
 func applyStyle(style StyleEnum, useColor bool, format string) string {
 	format = translate.T(format)
 
@@ -148,12 +149,6 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 		return applyPrefix(lowPrefix(s), format)
 	}
 	return applyPrefix(s.Prefix, format)
-}
-
-func applyFormatting(style StyleEnum, useColor bool, format string, a ...interface{}) (string, []interface{}) {
-	format = applyStyle(style, useColor, format)
-	return format, a
-
 }
 
 func applyTemplateFormatting(style StyleEnum, useColor bool, format string, b map[string]interface{}) string {

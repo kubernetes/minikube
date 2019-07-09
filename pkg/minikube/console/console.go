@@ -62,7 +62,7 @@ type Arg map[string]interface{}
 
 // OutStyle writes a stylized and formatted message to stdout
 func OutStyle(style StyleEnum, format string, a ...interface{}) {
-	outStyled, a := applyFormatting(style, useColor, format, a...)
+	outStyled := applyStyle(style, useColor, format)
 	Out(outStyled, a...)
 }
 
@@ -90,7 +90,7 @@ func OutLn(format string, a ...interface{}) {
 
 // ErrStyle writes a stylized and formatted error message to stderr
 func ErrStyle(style StyleEnum, format string, a ...interface{}) {
-	errStyled, a := applyFormatting(style, useColor, format, a...)
+	errStyled := applyStyle(style, useColor, format)
 	Err(errStyled, a...)
 }
 

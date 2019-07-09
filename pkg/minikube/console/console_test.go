@@ -72,6 +72,52 @@ func TestOutStyle(t *testing.T) {
 	}
 }
 
+func TestOutTemplateStyle(t *testing.T) {
+	// Set the system locale to Arabic and define a dummy translation file.
+	if err := translate.SetPreferredLanguage("ar"); err != nil {
+		t.Fatalf("SetPreferredLanguage: %v", err)
+	}
+	translate.Translations = map[string]interface{}{
+		"Installing Kubernetes version {{.version}} ...": "... {{.version}} تثبيت Kubernetes الإصدار",
+	}
+
+	var testCases = []struct {
+		style     StyleEnum
+		message   string
+		params    Arg
+		want      string
+		wantASCII string
+	}{
+		{Happy, "Happy", nil, "😄  Happy\n", "* Happy\n"},
+		{Option, "Option", nil, "    ▪ Option\n", "  - Option\n"},
+		{WarningType, "Warning", nil, "⚠️  Warning\n", "! Warning\n"},
+		{FatalType, "Fatal: {{.error}}", Arg{"error": "ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
+		{WaitingPods, "wait", nil, "⌛  wait", "* wait"},
+		{Issue, "http://i/{{.number}}", Arg{"number": 10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
+		{Usage, "raw: {{.one}} {{.two}}", Arg{"one": "'%'", "two": "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
+		{Running, "Installing Kubernetes version {{.version}} ...", Arg{"version": "v1.13"}, "🏃  ... v1.13 تثبيت Kubernetes الإصدار\n", "* ... v1.13 تثبيت Kubernetes الإصدار\n"},
+	}
+	for _, tc := range testCases {
+		for _, override := range []bool{true, false} {
+			t.Run(fmt.Sprintf("%s-override-%v", tc.message, override), func(t *testing.T) {
+				// Set MINIKUBE_IN_STYLE=<override>
+				os.Setenv(OverrideEnv, strconv.FormatBool(override))
+				f := tests.NewFakeFile()
+				SetOutFile(f)
+				OutTemplateStyle(tc.style, tc.message, tc.params)
+				got := f.String()
+				want := tc.wantASCII
+				if override {
+					want = tc.want
+				}
+				if got != want {
+					t.Errorf("OutStyle() = %q (%d runes), want %q (%d runes)", got, len(got), want, len(want))
+				}
+			})
+		}
+	}
+}
+
 func TestOut(t *testing.T) {
 	os.Setenv(OverrideEnv, "")
 
