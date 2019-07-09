@@ -22,13 +22,16 @@ import (
 	"strconv"
 	"testing"
 
-	"golang.org/x/text/language"
-	"golang.org/x/text/message"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 func TestOutStyle(t *testing.T) {
+	// Set the system locale to Arabic and define a dummy translation file.
+	translate.SetPreferredLanguage("ar")
+	translate.Translations = map[string]interface{}{
+		"Installing Kubernetes version %s ...": "... %s تثبيت Kubernetes الإصدار",
+	}
 
 	var testCases = []struct {
 		style     StyleEnum
@@ -44,6 +47,7 @@ func TestOutStyle(t *testing.T) {
 		{WaitingPods, "wait", nil, "⌛  wait", "* wait"},
 		{Issue, "http://i/%d", []interface{}{10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
 		{Usage, "raw: %s %s", []interface{}{"'%'", "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
+		{Running, "Installing Kubernetes version %s ...", []interface{}{"v1.13"}, "🏃  ... v1.13 تثبيت Kubernetes الإصدار\n", "* ... v1.13 تثبيت Kubernetes الإصدار\n"},
 	}
 	for _, tc := range testCases {
 		for _, override := range []bool{true, false} {
@@ -68,11 +72,6 @@ func TestOutStyle(t *testing.T) {
 
 func TestOut(t *testing.T) {
 	os.Setenv(OverrideEnv, "")
-	// An example translation just to assert that this code path is executed.
-	err := message.SetString(language.Arabic, "Installing Kubernetes version %s ...", "... %s تثبيت Kubernetes الإصدار")
-	if err != nil {
-		t.Fatalf("setstring: %v", err)
-	}
 
 	var testCases = []struct {
 		format string
@@ -126,35 +125,4 @@ func TestErrStyle(t *testing.T) {
 	if got != want {
 		t.Errorf("ErrStyle() = %q, want %q", got, want)
 	}
-}
-
-func TestSetPreferredLanguage(t *testing.T) {
-	os.Setenv(OverrideEnv, "0")
-	var tests = []struct {
-		input string
-		want  language.Tag
-	}{
-		{"", language.AmericanEnglish},
-		{"C", language.AmericanEnglish},
-		{"zh", language.Chinese},
-		{"fr_FR.utf8", language.French},
-	}
-	for _, tc := range tests {
-		t.Run(tc.input, func(t *testing.T) {
-			// Set something so that we can assert change.
-			if err := translate.SetPreferredLanguage("is"); err != nil {
-				t.Errorf("unexpected error: %q", err)
-			}
-			if err := translate.SetPreferredLanguage(tc.input); err != nil {
-				t.Errorf("unexpected error: %q", err)
-			}
-
-			want, _ := tc.want.Base()
-			got, _ := translate.GetPreferredLanguage().Base()
-			if got != want {
-				t.Errorf("SetPreferredLanguage(%s) = %q, want %q", tc.input, got, want)
-			}
-		})
-	}
-
 }

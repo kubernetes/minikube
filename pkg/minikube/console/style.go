@@ -22,7 +22,6 @@ import (
 	"text/template"
 
 	"github.com/golang/glog"
-	"golang.org/x/text/number"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -153,23 +152,12 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 
 func applyFormatting(style StyleEnum, useColor bool, format string, a ...interface{}) (string, []interface{}) {
 	format = applyStyle(style, useColor, format)
-	for i, x := range a {
-		if _, ok := x.(int); ok {
-			a[i] = number.Decimal(x, number.NoSeparator())
-		}
-	}
 	return format, a
 
 }
 
 func applyFormatting2(style StyleEnum, useColor bool, format string, b map[string]interface{}) string {
 	format = applyStyle(style, useColor, format)
-
-	for k, v := range b {
-		if _, ok := v.(int); ok {
-			b[k] = number.Decimal(v, number.NoSeparator())
-		}
-	}
 
 	var buf bytes.Buffer
 	t, err := template.New(format).Parse(format)
