@@ -993,6 +993,10 @@ func validateOSSupportVMDriver(os, vmDriver string) bool {
 		if os != constants.Windows {
 			return false
 		}
+	case constants.DriverHyperkit:
+		if os != constants.Darwin {
+			return false
+		}
 	}
 
 	return true
