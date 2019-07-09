@@ -168,6 +168,11 @@ func inspectFile(e *state) error {
 		return err
 	}
 
+	if strings.HasSuffix(e.filename, "err_map.go") {
+		extractAdvice(file, e)
+		return nil
+	}
+
 	ast.Inspect(file, func(x ast.Node) bool {
 		if fi, ok := x.(*ast.File); ok {
 			e.currentPackage = fi.Name.String()
@@ -388,4 +393,21 @@ func addParentFuncToList(e *state) {
 		e.funcs[e.parentFunc] = struct{}{}
 		e.fs.Push(e.parentFunc)
 	}
+}
+
+// extractAdvice specifically extracts Advice strings in err_map.go, since they don't conform to our normal translatable string format.
+func extractAdvice(file *ast.File, e *state) {
+	ast.Inspect(file, func(x ast.Node) bool {
+		if kvp, ok := x.(*ast.KeyValueExpr); ok {
+			if i, ok := kvp.Key.(*ast.Ident); ok {
+				if i.Name == "Advice" {
+					// At this point we know the value to the kv pair is guaranteed to be a string
+					advice, _ := kvp.Value.(*ast.BasicLit)
+					addStringToList(advice.Value, e)
+				}
+			}
+
+		}
+		return true
+	})
 }
