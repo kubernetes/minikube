@@ -297,12 +297,7 @@ func skipCache(config cfg.Config) {
 
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
-	console.OutT(cr.Style(), "Configuring environment for Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}}",
-		console.Arg{
-			"k8sVersion":     k8sVersion,
-			"runtime":        cr.Name(),
-			"runtimeVersion": version,
-		})
+	console.OutT(cr.Style(), "Configuring environment for Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}}", console.Arg{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
 	for _, v := range dockerOpt {
 		console.OutStyle(console.Option, "opt %s", v)
 	}
