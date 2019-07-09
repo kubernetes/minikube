@@ -71,7 +71,8 @@ echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out \
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" out
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
 
@@ -87,6 +88,10 @@ if [[ "${procs}" != "" ]]; then
   kill ${procs} || true
   kill -9 ${procs} || true
 fi
+
+# Build gvisor image locally
+echo ">> Building gvisor addon image locally."
+docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile out
 
 # Cleanup stale test outputs.
 echo ""

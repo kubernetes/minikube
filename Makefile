@@ -175,7 +175,7 @@ test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross
+all: cross drivers e2e-cross out/gvisor-addon
 
 .PHONY: drivers
 drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
