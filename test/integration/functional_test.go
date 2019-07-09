@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -81,10 +82,10 @@ func TestFunctionalContainerd(t *testing.T) {
 func pushGvisorImage(t *testing.T, repo string) {
 	cmd := exec.Command("make", "push-gvisor-addon-image")
 	cmd.Env = append(os.Environ(), []string{fmt.Sprintf("REGISTRY=%s", repo)}...)
-	cmd.Dir = "../../"
+	cmd.Dir = filepath.Join(os.Getenv("GOPATH"), "src/k8s.io/minikube")
 	stdout, err := cmd.CombinedOutput()
 	if err != nil {
-		t.Fatalf("Error running command: %s %v. Output: %s", cmd.Args, err, string(stdout))
+		t.Fatalf("Error running command: %s in directory: %s %v. Output: %s", cmd.Args, cmd.Dir, err, string(stdout))
 	}
 }
 
