@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -110,6 +111,10 @@ const (
 	network                 = "network"
 	startNamespace          = "namespace"
 	trace                   = "trace"
+	genericIPAddress        = "generic-ip-address"
+	genericSSHUser          = "generic-ssh-user"
+	genericSSHKey           = "generic-ssh-key"
+	genericSSHPort          = "generic-ssh-port"
 )
 
 var (
@@ -221,6 +226,12 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(serviceCIDR, constants.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringArrayVar(&config.DockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&config.DockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
+
+	// generic
+	startCmd.Flags().String(genericIPAddress, "", "IP address (generic)")
+	startCmd.Flags().String(genericSSHUser, drivers.DefaultSSHUser, "SSH user (generic)")
+	startCmd.Flags().String(genericSSHKey, "", "SSH key (generic)")
+	startCmd.Flags().Int(genericSSHPort, drivers.DefaultSSHPort, "SSH port (generic)")
 }
 
 // ClusterFlagValue returns the current cluster name based on flags
@@ -335,6 +346,10 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			NatNicType:              viper.GetString(natNicType),
 			StartHostTimeout:        viper.GetDuration(waitTimeout),
 			ExposedPorts:            viper.GetStringSlice(ports),
+			GenericIPAddress:        viper.GetString(genericIPAddress),
+			GenericSSHUser:          viper.GetString(genericSSHUser),
+			GenericSSHKey:           viper.GetString(genericSSHKey),
+			GenericSSHPort:          viper.GetInt(genericSSHPort),
 			KubernetesConfig: config.KubernetesConfig{
 				KubernetesVersion:      k8sVersion,
 				ClusterName:            ClusterFlagValue(),
