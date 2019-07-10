@@ -401,7 +401,7 @@ func addParentFuncToList(e *state) {
 }
 
 // extractAdvice specifically extracts Advice strings in err_map.go, since they don't conform to our normal translatable string format.
-func extractAdvice(f *ast.File, e *state) {
+func extractAdvice(f ast.Node, e *state) {
 	ast.Inspect(f, func(x ast.Node) bool {
 		// We want the "Advice: <advice string>" key-value pair
 		// First make sure we're looking at a kvp
@@ -417,7 +417,7 @@ func extractAdvice(f *ast.File, e *state) {
 		}
 
 		if i.Name == "Advice" {
-			// At this point we know the value to the kv pair is guaranteed to be a string
+			// At this point we know the value in the kvp is guaranteed to be a string
 			advice, _ := kvp.Value.(*ast.BasicLit)
 			addStringToList(advice.Value, e)
 		}
