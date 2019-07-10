@@ -25,6 +25,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/console"
 )
 
+// KubernetesContainerPrefix is the prefix of each kubernetes container
+const KubernetesContainerPrefix = "k8s_"
+
 // Docker contains Docker runtime state
 type Docker struct {
 	Socket string
@@ -102,6 +105,7 @@ func (r *Docker) KubeletOptions() map[string]string {
 
 // ListContainers returns a list of containers
 func (r *Docker) ListContainers(filter string) ([]string, error) {
+	filter = KubernetesContainerPrefix + filter
 	content, err := r.Runner.CombinedOutput(fmt.Sprintf(`docker ps -a --filter="name=%s" --format="{{.ID}}"`, filter))
 	if err != nil {
 		return nil, err
