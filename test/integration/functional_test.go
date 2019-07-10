@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"os/exec"
 	"strings"
 	"testing"
 
@@ -61,9 +62,21 @@ func TestFunctionalContainerd(t *testing.T) {
 	}
 
 	r.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+
+	// Build the gvisor image in Minikube
+	buildGvisorImage(t)
+
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
 	r.RunCommand("delete", true)
+}
+
+func buildGvisorImage(t *testing.T) {
+	cmd := exec.Command("sh", "-c", "eval $(minikube docker-env) && docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile out")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("error building gvisor addon image: %v \n %s", err, string(output))
+	}
 }
 
 // usingNoneDriver returns true if using the none driver
