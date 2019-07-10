@@ -58,6 +58,10 @@ type MachineConfig struct {
 	NoVTXCheck          bool   // Only used by virtualbox
 	DNSProxy            bool   // Only used by virtualbox
 	HostDNSResolver     bool   // Only used by virtualbox
+	GenericIPAddress    string // Only used by generic
+	GenericSSHUser      string // Only used by generic
+	GenericSSHKey       string // Only used by generic
+	GenericSSHPort      int    // Only used by generic
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

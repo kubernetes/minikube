@@ -36,6 +36,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -102,6 +103,10 @@ const (
 	downloadOnly          = "download-only"
 	dnsProxy              = "dns-proxy"
 	hostDNSResolver       = "host-dns-resolver"
+	genericIPAddress      = "generic-ip-address"
+	genericSSHUser        = "generic-ssh-user"
+	genericSSHKey         = "generic-ssh-key"
+	genericSSHPort        = "generic-ssh-port"
 )
 
 var (
@@ -164,6 +169,10 @@ func init() {
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
 	startCmd.Flags().Bool(dnsProxy, false, "Enable proxy for NAT DNS requests (virtualbox)")
 	startCmd.Flags().Bool(hostDNSResolver, true, "Enable host resolver for NAT DNS requests (virtualbox)")
+	startCmd.Flags().String(genericIPAddress, "", "IP address (generic)")
+	startCmd.Flags().String(genericSSHUser, drivers.DefaultSSHUser, "SSH user (generic)")
+	startCmd.Flags().String(genericSSHKey, "", "SSH key (generic)")
+	startCmd.Flags().Int(genericSSHPort, drivers.DefaultSSHPort, "SSH port (generic)")
 	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
 	}
@@ -548,6 +557,10 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			NoVTXCheck:          viper.GetBool(noVTXCheck),
 			DNSProxy:            viper.GetBool(dnsProxy),
 			HostDNSResolver:     viper.GetBool(hostDNSResolver),
+			GenericIPAddress:    viper.GetString(genericIPAddress),
+			GenericSSHUser:      viper.GetString(genericSSHUser),
+			GenericSSHKey:       viper.GetString(genericSSHKey),
+			GenericSSHPort:      viper.GetInt(genericSSHPort),
 		},
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,

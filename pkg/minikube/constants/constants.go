@@ -62,6 +62,9 @@ func ArchTag(hasTag bool) string {
 // DriverNone is the none driver.
 const DriverNone = "none"
 
+// DriverGeneric is the generic driver.
+const DriverGeneric = "generic"
+
 // DriverKvmOld is the depricated kvm driver option name
 const DriverKvmOld = "kvm"
 
@@ -101,6 +104,7 @@ var SupportedVMDrivers = [...]string{
 	DriverHyperkit,
 	DriverKvm2,
 	DriverVmware,
+	DriverGeneric,
 	DriverNone,
 }
 
