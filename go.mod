@@ -73,6 +73,7 @@ require (
 	github.com/r2d4/external-storage v0.0.0-20171222174501-8c0e8605dc7b
 	github.com/russross/blackfriday v0.0.0-20151117072312-300106c228d5 // indirect
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
+	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db // indirect
 	github.com/sirupsen/logrus v1.4.1 // indirect
 	github.com/spf13/afero v0.0.0-20160816080757-b28a7effac97 // indirect
