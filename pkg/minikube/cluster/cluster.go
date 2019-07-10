@@ -37,6 +37,9 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
@@ -344,11 +347,21 @@ To disable this message, run [minikube config set ShowDriverDeprecationNotificat
 	}
 }
 
+func megs(bytes uint64) int {
+	return int(bytes / 1024 / 1024)
+}
+
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	preCreateHost(&config)
 	if config.VMDriver != constants.DriverNone {
 		console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
+	} else {
+		i, _ := cpu.Info()
+		v, _ := mem.VirtualMemory()
+		d, _ := disk.Usage("/")
+		console.OutStyle(console.StartingNone, "Running on localhost (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", len(i), megs(v.Total), megs(d.Total))
 	}
+
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
