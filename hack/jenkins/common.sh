@@ -89,12 +89,6 @@ if [[ "${procs}" != "" ]]; then
   kill -9 ${procs} || true
 fi
 
-# Build and push gvisor image
-echo ">> Building gvisor addon image locally."
-export GVISOR_ADDON_REPO="gcr.io/k8s-minikube/integration/${MINIKUBE_LOCATION}"
-docker build -t ${GVISOR_ADDON_REPO}/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile out
-docker push ${GVISOR_ADDON_REPO}/gvisor-addon:latest
-
 # Cleanup stale test outputs.
 echo ""
 echo ">> Cleaning up after previous test runs ..."
