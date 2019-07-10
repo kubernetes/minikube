@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/blang/semver"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -124,6 +125,10 @@ const (
 	natNicType              = "nat-nic-type"
 	nodes                   = "nodes"
 	preload                 = "preload"
+	genericIPAddress        = "generic-ip-address"
+	genericSSHUser          = "generic-ssh-user"
+	genericSSHKey           = "generic-ssh-key"
+	genericSSHPort          = "generic-ssh-port"
 )
 
 var (
@@ -238,6 +243,10 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(serviceCIDR, constants.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringArrayVar(&config.DockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&config.DockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().String(genericIPAddress, "", "IP address (generic)")
+	startCmd.Flags().String(genericSSHUser, drivers.DefaultSSHUser, "SSH user (generic)")
+	startCmd.Flags().String(genericSSHKey, "", "SSH key (generic)")
+	startCmd.Flags().Int(genericSSHPort, drivers.DefaultSSHPort, "SSH port (generic)")
 }
 
 // startCmd represents the start command
@@ -992,6 +1001,10 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 		HostDNSResolver:         viper.GetBool(hostDNSResolver),
 		HostOnlyNicType:         viper.GetString(hostOnlyNicType),
 		NatNicType:              viper.GetString(natNicType),
+		GenericIPAddress:        viper.GetString(genericIPAddress),
+		GenericSSHUser:          viper.GetString(genericSSHUser),
+		GenericSSHKey:           viper.GetString(genericSSHKey),
+		GenericSSHPort:          viper.GetInt(genericSSHPort),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            ClusterFlagValue(),

@@ -37,6 +37,12 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 		return oci.RoutableHostIPFromInside(oci.Docker, host.Name)
 	case driver.Podman:
 		return oci.RoutableHostIPFromInside(oci.Podman, host.Name)
+	case driver.Generic:
+		ip, err := host.Driver.GetIP()
+		if err != nil {
+			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
+		}
+		return net.ParseIP(ip), nil
 	case driver.KVM2:
 		return net.ParseIP("192.168.39.1"), nil
 	case driver.HyperV:

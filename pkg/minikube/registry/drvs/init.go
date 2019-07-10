@@ -19,6 +19,7 @@ package drvs
 import (
 	// Register all of the drvs we know of
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/docker"
+	_ "k8s.io/minikube/pkg/minikube/registry/drvs/generic"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/hyperkit"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/hyperv"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/kvm2"
