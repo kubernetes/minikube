@@ -71,7 +71,7 @@ echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out \
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" out
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
