@@ -39,6 +39,8 @@ const (
 	Mock = "mock"
 	// None driver
 	None = "none"
+	// Generic driver
+	Generic = "generic"
 	// KVM2 driver
 	KVM2 = "kvm2"
 	// VirtualBox driver

@@ -51,6 +51,10 @@ minikube start [flags]
       --feature-gates string              A set of key=value pairs that describe feature gates for alpha/experimental features.
       --force                             Force minikube to perform possibly dangerous operations
       --force-systemd                     If set, force the container runtime to use sytemd as cgroup manager. Currently available for docker and crio. Defaults to false.
+      --generic-ip-address string         IP address (generic)
+      --generic-ssh-key string            SSH key (generic)
+      --generic-ssh-port int              SSH port (generic) (default 22)
+      --generic-ssh-user string           SSH user (generic) (default "root")
   -h, --help                              help for start
       --host-dns-resolver                 Enable host resolver for NAT DNS requests (virtualbox driver only) (default true)
       --host-only-cidr string             The CIDR to be used for the minikube VM (virtualbox driver only) (default "192.168.99.1/24")
