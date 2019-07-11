@@ -91,8 +91,9 @@ fi
 
 # Build the gvisor image and store it as a tarball. This will be copied into minikube and loaded by ctr.
 docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile out
-sudo mkdir -p ${MINIKUBE_HOME}/files
-sudo docker save gcr.io/k8s-minikube/gvisor-addon:latest > ${MINIKUBE_HOME}/files/gvisor-image.tar
+sudo mkdir -p ${HOME}/.minikube/files
+docker save gcr.io/k8s-minikube/gvisor-addon:latest > out/gvisor-image.tar 
+sudo cp out/gvisor-image.tar ${HOME}/.minikube/files/gvisor-image.tar
 
 # Cleanup stale test outputs.
 echo ""
