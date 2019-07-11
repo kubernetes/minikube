@@ -38,7 +38,7 @@ type Manager struct {
 	router   router
 }
 
-//stateCheckInterval defines how frequently the cluster and route states are checked
+// stateCheckInterval defines how frequently the cluster and route states are checked
 const stateCheckInterval = 5 * time.Second
 
 // NewManager creates a new Manager
@@ -68,7 +68,7 @@ func (mgr *Manager) startTunnel(ctx context.Context, tunnel controller) (done ch
 	check := make(chan bool, 1)
 	done = make(chan bool, 1)
 
-	//simulating Ctrl+C so that we can cancel the tunnel programmatically too
+	// simulating Ctrl+C so that we can cancel the tunnel programmatically too
 	go mgr.timerLoop(ready, check)
 	go mgr.run(ctx, tunnel, ready, check, done)
 
