@@ -20,7 +20,6 @@ package integration
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 	"testing"
 
@@ -73,18 +72,8 @@ func TestFunctionalContainerd(t *testing.T) {
 }
 
 func loadGvisorImage(t *testing.T, m util.MinikubeRunner) {
-	localGvisorTarPath := "out/gvisor-image.tar"
-	minikubeGvisorTarPath := "/tmp/gvisor-image.tar"
-	// First, copy this tar into minikube.
-	cmd := exec.Command("sh", "-c", fmt.Sprintf("scp -i $(minikube ssh-key) %s  docker@$(minikube ip):%s", localGvisorTarPath, minikubeGvisorTarPath))
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		pwd := exec.Command("pwd")
-		o, _ := pwd.CombinedOutput()
-		t.Logf("pwd: %s", string(o))
-		t.Fatalf("error building gvisor addon image: %v \n %s", err, string(output))
-	}
-	// Then, load the tar into the containerd daemon.
+	minikubeGvisorTarPath := "/gvisor-image.tar"
+	// Load the gvisor tar into the containerd daemon.
 	out, err := m.SSH(fmt.Sprintf("sudo ctr cri load %s", minikubeGvisorTarPath))
 	if err != nil {
 		t.Fatalf("error loading gvisor addon image: %v \n %s", err, out)
