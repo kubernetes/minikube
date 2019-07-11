@@ -19,6 +19,7 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"os/exec"
 	"strings"
 	"testing"
@@ -63,19 +64,30 @@ func TestFunctionalContainerd(t *testing.T) {
 
 	r.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 
-	// Build the gvisor image in Minikube
-	buildGvisorImage(t)
+	// Load the gvisor image into Minikube
+	loadGvisorImage(t, r)
 
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
 	r.RunCommand("delete", true)
 }
 
-func buildGvisorImage(t *testing.T) {
-	cmd := exec.Command("sh", "-c", "eval $(minikube docker-env) && docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile out")
+func loadGvisorImage(t *testing.T, m util.MinikubeRunner) {
+	localGvisorTarPath := "out/gvisor-image.tar"
+	minikubeGvisorTarPath := "/tmp/gvisor-image.tar"
+	// First, copy this tar into minikube.
+	cmd := exec.Command("sh", "-c", fmt.Sprintf("scp -i $(minikube ssh-key) %s  docker@$(minikube ip):%s", localGvisorTarPath, minikubeGvisorTarPath))
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		pwd := exec.Command("pwd")
+		o, _ := pwd.CombinedOutput()
+		t.Logf("pwd: %s", string(o))
 		t.Fatalf("error building gvisor addon image: %v \n %s", err, string(output))
+	}
+	// Then, load the tar into the containerd daemon.
+	out, err := m.SSH(fmt.Sprintf("sudo ctr cri load %s", minikubeGvisorTarPath))
+	if err != nil {
+		t.Fatalf("error loading gvisor addon image: %v \n %s", err, out)
 	}
 }
 
