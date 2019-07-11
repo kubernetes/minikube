@@ -183,14 +183,9 @@ assumes you have already installed one of the VM drivers: virtualbox/parallels/v
 func runStart(cmd *cobra.Command, args []string) {
 	console.OutT(console.Happy, "minikube {{.version}} on {{.os}} ({{.arch}})", console.Arg{"version": version.GetVersion(), "os": runtime.GOOS, "arch": runtime.GOARCH})
 	validateConfig()
-
 	validateUser()
 
-	oldConfig, err := cfg.Load()
-	if err != nil && !os.IsNotExist(err) {
-		exit.WithCode(exit.Data, "Unable to load config: %v", err)
-	}
-	k8sVersion, isUpgrade := validateKubernetesVersions(oldConfig)
+	k8sVersion, isUpgrade := getKubernetesVersion()
 	config, err := generateConfig(cmd, k8sVersion)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
@@ -200,7 +195,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	downloadISO(config)
 
 	// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
-	skipCache(config)
+	skipCache(&config)
 
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
@@ -213,30 +208,60 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	validateDriverVersion(viper.GetString(vmDriver))
+	// exits here in case of --download-only option.
+	handleDownloadOnly(&cacheGroup, k8sVersion)
+	mRunner, preExists, machineAPI, host := startMachine(config)
+	defer machineAPI.Close()
+	cr := configureRuntimes(mRunner)
+	showVersionInfo(k8sVersion, cr)
+	waitCacheImages(&cacheGroup)
+	// setup kube adm and certs and return bootstrapperx
+	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
 
+	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
+	kubeconfig := updateKubeConfig(host, &config)
+	// pull images or restart cluster
+	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
+	configureMounts()
+	if err = loadCachedImagesInConfigFile(); err != nil {
+		console.Failure("Unable to load cached images from config file.")
+	}
+	// special ops for none driver, like change minikube directory.
+	prepareNone(viper.GetString(vmDriver))
+
+	if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
+		exit.WithError("Wait failed", err)
+	}
+	showKubectlConnectInfo(kubeconfig)
+
+}
+
+func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
+	// If --download-only, complete the remaining downloads and exit.
+	if !viper.GetBool(downloadOnly) {
+		return
+	}
+	if err := doCacheBinaries(k8sVersion); err != nil {
+		exit.WithError("Failed to cache binaries", err)
+	}
+	waitCacheImages(cacheGroup)
+	if err := CacheImagesInConfigFile(); err != nil {
+		exit.WithError("Failed to cache images", err)
+	}
+	console.OutStyle(console.Check, "Download complete!")
+	os.Exit(0)
+
+}
+
+func startMachine(config cfg.Config) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
-	defer m.Close()
-
-	// If --download-only, complete the remaining downloads and exit.
-	if viper.GetBool(downloadOnly) {
-		if err := doCacheBinaries(k8sVersion); err != nil {
-			exit.WithError("Failed to cache binaries", err)
-		}
-		waitCacheImages(&cacheGroup)
-		if err := CacheImagesInConfigFile(); err != nil {
-			exit.WithError("Failed to cache images", err)
-		}
-		console.OutStyle(console.Check, "Download complete!")
-		return
-	}
-
-	host, preexisting := startHost(m, config.MachineConfig)
+	host, preExists = startHost(m, config.MachineConfig)
 
 	ip := validateNetwork(host)
-	// Bypass proxy for minikube's vm ip
+	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
 		console.ErrT(console.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", console.Arg{"ip": ip})
@@ -247,37 +272,20 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err := saveConfig(config); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
-	runner, err := machine.CommandRunner(host)
+	runner, err = machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	cr := configureRuntimes(runner)
-	showVersionInfo(k8sVersion, cr)
+	return runner, preExists, m, host
+}
 
-	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
-	waitCacheImages(&cacheGroup)
-
-	bs := prepareHostEnvironment(m, config.KubernetesConfig)
-
-	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
-	kubeconfig := updateKubeConfig(host, &config)
-	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting, isUpgrade)
-	configureMounts()
-	if err = LoadCachedImagesInConfigFile(); err != nil {
-		console.Failure("Unable to load cached images from config file.")
+func getKubernetesVersion() (k8sVersion string, isUpgrade bool) {
+	oldConfig, err := cfg.Load()
+	if err != nil && !os.IsNotExist(err) {
+		exit.WithCode(exit.Data, "Unable to load config: %v", err)
 	}
-
-	if config.MachineConfig.VMDriver == constants.DriverNone {
-		console.OutStyle(console.StartingNone, "Configuring local host environment ...")
-		prepareNone()
-	}
-
-	if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
-		exit.WithError("Wait failed", err)
-	}
-	showKubectlConnectInfo(kubeconfig)
-
+	return validateKubernetesVersions(oldConfig)
 }
 
 func downloadISO(config cfg.Config) {
@@ -288,11 +296,14 @@ func downloadISO(config cfg.Config) {
 	}
 }
 
-func skipCache(config cfg.Config) {
+func skipCache(config *cfg.Config) {
+	fmt.Println("inside skip cache")
+	config.KubernetesConfig.ShouldLoadCachedImages = false
 	if viper.GetString(vmDriver) == constants.DriverNone {
 		viper.Set(cacheImages, false)
 		config.KubernetesConfig.ShouldLoadCachedImages = false
 	}
+	fmt.Printf("inside skip cache %t", config.KubernetesConfig.ShouldLoadCachedImages)
 }
 
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
@@ -583,7 +594,11 @@ func autoSetOptions(vmDriver string) error {
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver
-func prepareNone() {
+func prepareNone(vmDriver string) {
+	if vmDriver != constants.DriverNone {
+		return
+	}
+	console.OutStyle(console.StartingNone, "Configuring local host environment ...")
 	if viper.GetBool(cfg.WantNoneDriverWarning) {
 		console.OutLn("")
 		console.Warning("The 'none' driver provides limited isolation and may reduce system security and reliability.")
@@ -696,9 +711,9 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 	return nv, isUpgrade
 }
 
-// prepareHostEnvironment adds any requested files into the VM before Kubernetes is started
-func prepareHostEnvironment(api libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Bootstrapper {
-	bs, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+// setupKubeAdm adds any requested files into the VM before Kubernetes is started
+func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Bootstrapper {
+	bs, err := getClusterBootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}
