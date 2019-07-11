@@ -298,13 +298,10 @@ func downloadISO(config cfg.Config) {
 }
 
 func skipCache(config *cfg.Config) {
-	fmt.Println("inside skip cache")
-	config.KubernetesConfig.ShouldLoadCachedImages = false
 	if viper.GetString(vmDriver) == constants.DriverNone {
 		viper.Set(cacheImages, false)
 		config.KubernetesConfig.ShouldLoadCachedImages = false
 	}
-	fmt.Printf("inside skip cache %t", config.KubernetesConfig.ShouldLoadCachedImages)
 }
 
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
