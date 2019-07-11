@@ -57,7 +57,7 @@ var addonsOpenCmd = &cobra.Command{
 			exit.Usage("usage: minikube addons open ADDON_NAME")
 		}
 		addonName := args[0]
-		//TODO(r2d4): config should not reference API, pull this out
+		// TODO(r2d4): config should not reference API, pull this out
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			exit.WithError("Error getting client", err)
