@@ -44,7 +44,10 @@ func TestExtract(t *testing.T) {
 	}
 
 	tempfile := filepath.Join(tempdir, "tmpdata.json")
-	ioutil.WriteFile(tempfile, src, 0666)
+	err = ioutil.WriteFile(tempfile, src, 0666)
+	if err != nil {
+		t.Fatalf("Writing temp json file: %v", err)
+	}
 
 	expected := map[string]interface{}{
 		"Hint: This is not a URL, come on.":         "",
