@@ -1,7 +1,4 @@
 {
-	"Hint: This is not a URL, come on.": "",
 	"Holy cow I'm in a loop!": "Something else",
-	"This is a variable with a string assigned": "",
-	"This was a choice: %s": "Something",
-	"Wow another string: %s": ""
+	"This was a choice: %s": "Something"
 }
