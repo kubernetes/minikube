@@ -47,6 +47,7 @@ spec:
           value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/node/bin
         - name: SYSTEMD_IGNORE_CHROOT
           value: "yes"
+      imagePullPolicy: IfNotPresent
   volumes:
   - name: node
     hostPath:
@@ -70,4 +71,3 @@ spec:
     hostPath:
       path: /tmp/gvisor
   restartPolicy: Always
-  imagePullPolicy: IfNotPresent
