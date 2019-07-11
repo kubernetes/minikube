@@ -203,14 +203,14 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := saveConfig(config); err != nil {
+	if err := saveConfig(&config); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
 	validateDriverVersion(viper.GetString(vmDriver))
 	// exits here in case of --download-only option.
 	handleDownloadOnly(&cacheGroup, k8sVersion)
-	mRunner, preExists, machineAPI, host := startMachine(config)
+	mRunner, preExists, machineAPI, host := startMachine(&config)
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(mRunner)
@@ -254,7 +254,7 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 
 }
 
-func startMachine(config cfg.Config) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
@@ -267,7 +267,6 @@ func startMachine(config cfg.Config) (runner command.Runner, preExists bool, mac
 	if err != nil {
 		console.ErrT(console.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", console.Arg{"ip": ip})
 	}
-
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
@@ -825,7 +824,7 @@ func configureMounts() {
 }
 
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterConfig cfg.Config) error {
+func saveConfig(clusterConfig *cfg.Config) error {
 	data, err := json.MarshalIndent(clusterConfig, "", "    ")
 	if err != nil {
 		return err
