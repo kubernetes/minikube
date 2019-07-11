@@ -25,7 +25,7 @@ import (
 	"github.com/golang/glog"
 )
 
-//reporter that reports the status of a tunnel
+// reporter that reports the status of a tunnel
 type reporter interface {
 	Report(tunnelState *Status)
 }

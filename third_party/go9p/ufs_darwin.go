@@ -225,7 +225,7 @@ func (u *Ufs) Wstat(req *SrvReq) {
 			case true:
 				mt = st.ModTime()
 			default:
-				//at = time.Time(0)//atime(st.Sys().(*syscall.Stat_t))
+				// at = time.Time(0)//atime(st.Sys().(*syscall.Stat_t))
 			}
 		}
 		// macOS filesystem st_mtime values are only accurate to the second

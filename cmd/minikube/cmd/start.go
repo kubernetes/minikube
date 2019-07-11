@@ -421,7 +421,7 @@ func validateConfig() {
 }
 
 // This function validates if the --registry-mirror
-//args match the format of http://localhost
+// args match the format of http://localhost
 func validateRegistryMirror() {
 
 	if len(registryMirror) > 0 {

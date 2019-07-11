@@ -29,7 +29,7 @@ func testClusterLogs(t *testing.T) {
 	minikubeRunner.EnsureRunning()
 	logsCmdOutput := minikubeRunner.GetLogs()
 
-	//check for # of lines or check for strings
+	// check for # of lines or check for strings
 	logWords := []string{"minikube", ".go"}
 	for _, logWord := range logWords {
 		if !strings.Contains(logsCmdOutput, logWord) {
