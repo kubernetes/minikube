@@ -69,7 +69,7 @@ func TestCacheMinikubeISOFromURL(t *testing.T) {
 		t.Fatalf("File not copied. Could not open file at path: %s", isoPath)
 	}
 
-	//test that the ISO is transferred properly
+	// test that the ISO is transferred properly
 	contents := []byte(testISOString)
 	if !bytes.Contains(transferred, contents) {
 		t.Fatalf("Expected transfers to contain: %s. It was: %s", contents, transferred)

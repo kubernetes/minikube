@@ -19,13 +19,16 @@ package service
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/url"
+	"os"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -242,6 +245,17 @@ func OptionallyHTTPSFormattedURLString(bareURLString string, https bool) (string
 	return httpsFormattedString, isHTTPSchemedURL
 }
 
+// PrintServiceList prints a list of services as a table which has
+// "Namespace", "Name" and "URL" columns to a writer
+func PrintServiceList(writer io.Writer, data [][]string) {
+	table := tablewriter.NewWriter(writer)
+	table.SetHeader([]string{"Namespace", "Name", "URL"})
+	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
+	table.SetCenterSeparator("|")
+	table.AppendBulk(data)
+	table.Render()
+}
+
 // WaitAndMaybeOpenService waits for a service, and opens it when running
 func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
 	wait int, interval int) error {
@@ -258,6 +272,22 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	if err != nil {
 		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
 	}
+
+	if !urlMode {
+		var data [][]string
+		if len(urls) == 0 {
+			data = append(data, []string{namespace, service, "No node port"})
+		} else {
+			data = append(data, []string{namespace, service, strings.Join(urls, "\n")})
+		}
+		PrintServiceList(os.Stdout, data)
+	}
+
+	if len(urls) == 0 {
+		console.OutStyle(console.Sad, "service %s/%s has no node port", namespace, service)
+		return nil
+	}
+
 	for _, bareURLString := range urls {
 		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
 
