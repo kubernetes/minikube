@@ -163,12 +163,6 @@ const (
 	MinimumDiskSize = "2000mb"
 	// DefaultVMDriver is the default virtual machine driver name
 	DefaultVMDriver = DriverVirtualbox
-	// DefaultStatusFormat is the default format of a host
-	DefaultStatusFormat = `host: {{.Host}}
-kubelet: {{.Kubelet}}
-apiserver: {{.APIServer}}
-kubectl: {{.Kubeconfig}}
-`
 	// DefaultAddonListFormat is the default format of addon list
 	DefaultAddonListFormat = "- {{.AddonName}}: {{.AddonStatus}}\n"
 	// DefaultConfigViewFormat is the default format of config view
