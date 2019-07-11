@@ -288,7 +288,7 @@ mdlint:
 	@$(MARKDOWNLINT) $(MINIKUBE_MARKDOWN_FILES)
 
 out/docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
-	go run -ldflags="$(MINIKUBE_LDFLAGS)" hack/help_text/gen_help_text.go
+	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
 out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
