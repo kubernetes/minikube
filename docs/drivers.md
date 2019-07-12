@@ -13,6 +13,7 @@ the host PATH:
 * [Hyperkit](#hyperkit-driver)
 * [HyperV](#hyperv-driver)
 * [VMware](#vmware-unified-driver)
+* [Parallels](#parallels-driver)
 
 ## KVM2 driver
 
@@ -212,6 +213,30 @@ and run minikube as usual:
 
 ```shell
 minikube start
+```
+
+## Parallels driver
+
+This driver is useful for users who own Parallels Desktop for Mac that do not have VT-x hardware support required by the hyperkit driver.
+
+Pre-requisites: Parallels Desktop for Mac
+
+Install the [Parallels docker-machine driver](https://github.com/Parallels/docker-machine-parallels) using [brew](https://brew.sh):
+
+```shell
+brew install docker-machine-parallels
+```
+
+To use the driver:
+
+```shell
+minikube start --vm-driver parallels
+```
+
+or, to use parallels as a default driver for minikube:
+
+```shell
+minikube config set vm-driver parallels
 ```
 
 ## Troubleshooting
