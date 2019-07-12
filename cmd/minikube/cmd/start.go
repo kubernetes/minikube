@@ -131,17 +131,16 @@ func initMinikubeFlags() {
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
 	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
+	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
+	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
+	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
 	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
+	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd)")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
-	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
-	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd)")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
-	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
-	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
-
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
