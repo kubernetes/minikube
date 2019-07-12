@@ -47,6 +47,8 @@ var blacklist = []string{
 	"opt %s",
 }
 
+const ERR_MAP_FILE string = "pkg/minikube/problem/err_map.go"
+
 // state is a struct that represent the current state of the extraction process
 type state struct {
 	// The list of functions to check for
@@ -118,8 +120,11 @@ func TranslatableStrings(paths []string, functions []string, output string) erro
 	}
 
 	if strings.Contains(cwd, "cmd") {
-		fmt.Println("Run extract.go from the minikube root directory.")
-		os.Exit(1)
+		return errors.New("Run extract.go from the minikube root directory.")
+	}
+
+	if _, err = os.Stat(ERR_MAP_FILE); os.IsNotExist(err) {
+		return errors.New("err_map.go doesn't exist.")
 	}
 
 	e, err := newExtractor(functions)
@@ -173,9 +178,8 @@ func inspectFile(e *state) error {
 		return err
 	}
 
-	if strings.HasSuffix(e.filename, "err_map.go") {
-		extractAdvice(file, e)
-		return nil
+	if e.filename == ERR_MAP_FILE {
+		return extractAdvice(file, e)
 	}
 
 	ast.Inspect(file, func(x ast.Node) bool {
@@ -401,7 +405,7 @@ func addParentFuncToList(e *state) {
 }
 
 // extractAdvice specifically extracts Advice strings in err_map.go, since they don't conform to our normal translatable string format.
-func extractAdvice(f ast.Node, e *state) {
+func extractAdvice(f ast.Node, e *state) error {
 	ast.Inspect(f, func(x ast.Node) bool {
 		// We want the "Advice: <advice string>" key-value pair
 		// First make sure we're looking at a kvp
@@ -423,4 +427,6 @@ func extractAdvice(f ast.Node, e *state) {
 		}
 		return true
 	})
+
+	return nil
 }
