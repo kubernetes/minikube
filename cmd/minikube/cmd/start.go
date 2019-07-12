@@ -102,6 +102,7 @@ const (
 	downloadOnly          = "download-only"
 	dnsProxy              = "dns-proxy"
 	hostDNSResolver       = "host-dns-resolver"
+	waitUntilHealthy      = "wait"
 )
 
 var (
@@ -163,6 +164,7 @@ func init() {
 	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
 	startCmd.Flags().Bool(dnsProxy, false, "Enable proxy for NAT DNS requests (virtualbox)")
+	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting")
 	startCmd.Flags().Bool(hostDNSResolver, true, "Enable host resolver for NAT DNS requests (virtualbox)")
 	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
@@ -273,8 +275,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 
-	if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
-		exit.WithError("Wait failed", err)
+	if viper.GetBool(waitUntilHealthy) {
+		if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
+			exit.WithError("Wait failed", err)
+		}
 	}
 	showKubectlConnectInfo(kubeconfig)
 
@@ -310,7 +314,11 @@ func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	if kubeconfig.KeepContext {
 		console.OutT(console.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", console.Arg{"name": kubeconfig.ClusterName})
 	} else {
-		console.OutT(console.Ready, "Done! kubectl is now configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
+		if !viper.GetBool(waitUntilHealthy) {
+			console.OutT(console.Ready, "kubectl has been configured configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
+		} else {
+			console.OutT(console.Ready, "Done! kubectl is now configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
+		}
 	}
 	_, err := exec.LookPath("kubectl")
 	if err != nil {

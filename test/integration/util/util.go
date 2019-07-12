@@ -208,7 +208,7 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 	return string(stdout), nil
 }
 
-// Start starts the container runtime
+// Start starts the cluster
 func (m *MinikubeRunner) Start(opts ...string) {
 	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.Args, strings.Join(opts, " "))
 	m.RunCommand(cmd, true)
