@@ -254,4 +254,3 @@ Found binary path at /usr/local/bin/docker-machine-driver-kvm2
 Launching plugin server for driver kvm2
 Error starting plugin binary: fork/exec /usr/local/bin/docker-machine-driver-kvm2: exec format error
 ```
-
