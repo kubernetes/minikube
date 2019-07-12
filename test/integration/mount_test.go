@@ -38,7 +38,7 @@ func testMounting(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("mount tests disabled in darwin due to timeout (issue#3200)")
 	}
-	if strings.Contains(*args, "--vm-driver=none") {
+	if strings.Contains(*globalArgs, "--vm-driver=none") {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
 
