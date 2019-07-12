@@ -35,6 +35,8 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
+var deleteAll bool
+
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
 	Use:   "delete",
@@ -105,5 +107,6 @@ func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsN
 }
 
 func init() {
+	deleteCmd.Flags().BoolVar(&deleteAll, "delete-all", false, "Set flag to delete all profiles")
 	RootCmd.AddCommand(deleteCmd)
 }
