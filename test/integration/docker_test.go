@@ -28,7 +28,7 @@ import (
 
 func TestDocker(t *testing.T) {
 	mk := NewMinikubeRunner(t, "--wait=false")
-	if strings.Contains(mk.StartArgs, "--vm-driver=none") {
+	if usingNoneDriver(mk) {
 		t.Skip("skipping test as none driver does not bundle docker")
 	}
 
@@ -40,7 +40,7 @@ func TestDocker(t *testing.T) {
 		t.Logf("pre-delete failed (probably ok): %v", err)
 	}
 
-	startCmd := fmt.Sprintf("start %s %s %s", mk.StartArgs, mk.Args,
+	startCmd := fmt.Sprintf("start %s %s %s", mk.StartArgs, mk.GlobalArgs,
 		"--docker-env=FOO=BAR --docker-env=BAZ=BAT --docker-opt=debug --docker-opt=icc=true")
 	stdout, stderr, err := mk.RunWithContext(ctx, startCmd)
 	if err != nil {

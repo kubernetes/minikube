@@ -112,7 +112,7 @@ func testProxyWarning(t *testing.T) {
 	r := NewMinikubeRunner(t, "--wait=false")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	startCmd := fmt.Sprintf("start %s %s %s", r.StartArgs, r.Args, "--alsologtostderr --v=5")
+	startCmd := fmt.Sprintf("start %s %s", r.StartArgs, r.GlobalArgs)
 	stdout, stderr, err := r.RunWithContext(ctx, startCmd)
 	if err != nil {
 		t.Fatalf("start: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)

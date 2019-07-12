@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 }
 
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
-var args = flag.String("minikube-args", "", "Arguments to pass to minikube")
+var globalArgs = flag.String("minikube-args", "", "Arguments to pass to minikube")
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
 var mountArgs = flag.String("minikube-mount-args", "", "Arguments to pass to minikube mount")
 var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
@@ -40,9 +40,9 @@ var testdataDir = flag.String("testdata-dir", "testdata", "the directory relativ
 // NewMinikubeRunner creates a new MinikubeRunner
 func NewMinikubeRunner(t *testing.T, extraArgs ...string) util.MinikubeRunner {
 	return util.MinikubeRunner{
-		Args:       *args + strings.Join(extraArgs, " "),
 		BinaryPath: *binaryPath,
-		StartArgs:  *startArgs,
+		StartArgs:  *startArgs + strings.Join(extraArgs, " "),
+		GlobalArgs: *globalArgs,
 		MountArgs:  *mountArgs,
 		T:          t,
 	}
