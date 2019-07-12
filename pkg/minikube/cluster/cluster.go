@@ -99,6 +99,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
 
+	// Check the User if cluster was created in the previous session
+	pkgutil.ValidateUser(h.Driver.DriverName())
+
 	if h.Driver.DriverName() != config.VMDriver {
 		console.Out("\n")
 		console.Warning("Ignoring --vm-driver=%s, as the existing %q VM was created using the %s driver.",
@@ -236,6 +239,7 @@ func StopHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
+	pkgutil.ValidateUser(host.DriverName)
 	console.OutStyle(console.Stopping, "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
@@ -253,6 +257,7 @@ func DeleteHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrap(err, "load")
 	}
+	pkgutil.ValidateUser(host.DriverName)
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
 	if host.Driver.DriverName() == constants.DriverHyperv {
 		trySSHPowerOff(host)
@@ -282,7 +287,7 @@ func GetHostStatus(api libmachine.API) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "load")
 	}
-
+	pkgutil.ValidateUser(host.DriverName)
 	s, err := host.Driver.GetState()
 	if err != nil {
 		return "", errors.Wrap(err, "state")
@@ -296,7 +301,7 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	if err != nil {
 		return nil, err
 	}
-
+	pkgutil.ValidateUser(host.DriverName)
 	ipStr, err := host.Driver.GetIP()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting IP")
@@ -345,6 +350,7 @@ To disable this message, run [minikube config set ShowDriverDeprecationNotificat
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
+	pkgutil.ValidateUser(config.VMDriver)
 	preCreateHost(&config)
 	console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	def, err := registry.Driver(config.VMDriver)
@@ -477,6 +483,7 @@ func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Hos
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error loading store for: %s", machineName)
 	}
+	pkgutil.ValidateUser(host.DriverName)
 	return host, nil
 }
 
@@ -487,7 +494,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "host exists and load")
 	}
-
+	pkgutil.ValidateUser(host.DriverName)
 	currentState, err := host.Driver.GetState()
 	if err != nil {
 		return errors.Wrap(err, "state")

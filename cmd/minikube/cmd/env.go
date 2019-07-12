@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -170,8 +171,10 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 		UsageHint:       generateUsageHint(userShell),
 	}
 
+	host, err := api.Load(config.GetMachineName())
+	pkgutil.ValidateUser(host.DriverName)
 	if noProxy {
-		host, err := api.Load(config.GetMachineName())
+
 		if err != nil {
 			return nil, errors.Wrap(err, "Error getting IP")
 		}

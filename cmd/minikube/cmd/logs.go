@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -62,6 +63,7 @@ var logsCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("api load", err)
 		}
+		pkgutil.ValidateUser(h.DriverName)
 		runner, err := machine.CommandRunner(h)
 		if err != nil {
 			exit.WithError("command runner", err)

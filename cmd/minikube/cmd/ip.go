@@ -24,6 +24,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // ipCmd represents the ip command
@@ -47,6 +48,7 @@ var ipCmd = &cobra.Command{
 				exit.WithError("Error getting host", err)
 			}
 		}
+		pkgutil.ValidateUser(host.DriverName)
 		ip, err := host.Driver.GetIP()
 		if err != nil {
 			exit.WithError("Error getting IP", err)

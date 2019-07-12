@@ -24,7 +24,6 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -184,8 +183,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	console.OutT(console.Happy, "minikube {{.version}} on {{.os}} ({{.arch}})", console.Arg{"version": version.GetVersion(), "os": runtime.GOOS, "arch": runtime.GOARCH})
 	validateConfig()
 
-	validateUser()
-
 	oldConfig, err := cfg.Load()
 	if err != nil && !os.IsNotExist(err) {
 		exit.WithCode(exit.Data, "Unable to load config: %v", err)
@@ -259,7 +256,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	waitCacheImages(&cacheGroup)
 
 	bs := prepareHostEnvironment(m, config.KubernetesConfig)
-
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)
 	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting, isUpgrade)
@@ -368,25 +364,6 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	}
 
 	return false, fallback, nil
-}
-
-// validerUser validates minikube is run by the recommended user (privileged or regular)
-func validateUser() {
-	u, err := user.Current()
-	d := viper.GetString(vmDriver)
-	// Check if minikube needs to run with sudo or not.
-	if err == nil {
-		if d == constants.DriverNone && u.Name != "root" {
-			exit.Usage("Please run with sudo. the vm-driver %q requires sudo.", constants.DriverNone)
-
-		} else if u.Name == "root" && !(d == constants.DriverHyperv || d == constants.DriverNone) {
-			console.OutT(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with {{.driver}} driver.", console.Arg{"driver": d})
-		}
-
-	} else {
-		glog.Errorf("Error getting the current user: %v", err)
-	}
-
 }
 
 // validateConfig validates the supplied configuration against known bad combinations

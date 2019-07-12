@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
@@ -98,7 +99,7 @@ var mountCmd = &cobra.Command{
 		}
 		defer api.Close()
 		host, err := api.Load(config.GetMachineName())
-
+		pkgutil.ValidateUser(host.DriverName)
 		if err != nil {
 			exit.WithError("Error loading api", err)
 		}
