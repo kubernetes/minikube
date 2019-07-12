@@ -19,6 +19,7 @@ package integration
 import (
 	"flag"
 	"os"
+	"strings"
 	"testing"
 
 	"k8s.io/minikube/test/integration/util"
@@ -37,9 +38,9 @@ var mountArgs = flag.String("minikube-mount-args", "", "Arguments to pass to min
 var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
 
 // NewMinikubeRunner creates a new MinikubeRunner
-func NewMinikubeRunner(t *testing.T) util.MinikubeRunner {
+func NewMinikubeRunner(t *testing.T, extraArgs ...string) util.MinikubeRunner {
 	return util.MinikubeRunner{
-		Args:       *args,
+		Args:       *args + strings.Join(extraArgs, " "),
 		BinaryPath: *binaryPath,
 		StartArgs:  *startArgs,
 		MountArgs:  *mountArgs,
