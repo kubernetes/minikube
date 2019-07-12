@@ -256,7 +256,7 @@ func StopHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
-  
+
 	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
 		return errors.Wrap(permissionError, "Permission denied")
 	}
