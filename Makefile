@@ -416,11 +416,13 @@ release-minikube: out/minikube checksum
 out/docker-machine-driver-kvm2:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
+	# make extra sure that we are linking with the older version of libvirt (1.3.1)
+	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
 else
 	go build 																					\
 		-installsuffix "static" 												\
 		-ldflags="$(KVM2_LDFLAGS)" 											\
-		-tags libvirt.1.3.1 														\
+		-tags "libvirt.1.3.1 without_lxc"												\
 		-o $(BUILD_DIR)/docker-machine-driver-kvm2 			\
 		k8s.io/minikube/cmd/drivers/kvm
 endif
