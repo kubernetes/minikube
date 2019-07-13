@@ -17,7 +17,9 @@ limitations under the License.
 package config
 
 import (
+	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -70,4 +72,21 @@ var ProfileCmd = &cobra.Command{
 		}
 		console.Success("minikube profile was successfully set to %s", profile)
 	},
+}
+
+func GetAll() []string {
+	miniPath := constants.GetMinipath()
+	profilesPath := filepath.Join(miniPath, "profiles")
+	fileInfos, err := ioutil.ReadDir(profilesPath)
+	if err != nil {
+		console.ErrLn("Unable to list in dir: %s \n Error: %v", profilesPath, err)
+	}
+
+	var profiles []string
+	for _, fileInfo := range fileInfos {
+		if fileInfo.IsDir() {
+			profiles = append(profiles, fileInfo.Name())
+		}
+	}
+	return profiles
 }
