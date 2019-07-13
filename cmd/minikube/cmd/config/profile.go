@@ -17,17 +17,19 @@ limitations under the License.
 package config
 
 import (
-	"io/ioutil"
-	"os"
-	"path/filepath"
-
+	"encoding/json"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"io/ioutil"
+	"k8s.io/kubernetes/cmd/kube-scheduler/app/config"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"os"
+	"path/filepath"
 )
 
 // ProfileCmd represents the profile command
@@ -74,7 +76,7 @@ var ProfileCmd = &cobra.Command{
 	},
 }
 
-func GetAll() []string {
+func GetAllProfiles() []string {
 	miniPath := constants.GetMinipath()
 	profilesPath := filepath.Join(miniPath, "profiles")
 	fileInfos, err := ioutil.ReadDir(profilesPath)
@@ -85,8 +87,50 @@ func GetAll() []string {
 	var profiles []string
 	for _, fileInfo := range fileInfos {
 		if fileInfo.IsDir() {
-			profiles = append(profiles, fileInfo.Name())
+			profilePath := filepath.Join(profilesPath, fileInfo.Name())
+			if isValidProfile(profilePath) {
+				profiles = append(profiles, fileInfo.Name())
+			}
 		}
 	}
 	return profiles
+}
+
+func isValidProfile(profilePath string) bool {
+	fileInfos, err := ioutil.ReadDir(profilePath)
+	if err != nil {
+		console.ErrLn("Unable to list in dir: %s \n Error: %v", profilePath, err)
+	}
+
+	hasConfigJson := false
+	for _, fileInfo := range fileInfos {
+		if fileInfo.Name() == "config.json" {
+			hasConfigJson = true
+		}
+	}
+
+	if !hasConfigJson {
+		return false
+	}
+
+	// TODO: Use constants?
+	profileConfigPath := filepath.Join(profilePath, "config.json")
+	fmt.Println(profileConfigPath)
+	bytes, err := ioutil.ReadFile(profileConfigPath)
+	if err != nil {
+		console.ErrLn("Unable to read file: %s \n Error: %v", profileConfigPath, err)
+	}
+
+	fileContent := string(bytes)
+	fmt.Println(fileContent)
+
+	var configObject config.Config
+
+	errUnmarshal := json.Unmarshal(bytes, &configObject)
+
+	if errUnmarshal != nil {
+		console.ErrLn("Could not unmarshal config json to config object: %s \n Error: %v", profileConfigPath, err)
+	}
+
+	return &configObject != nil
 }
