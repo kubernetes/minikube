@@ -115,7 +115,7 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
-	mv out/minikube-windows-amd64 out/minikube-windows-amd64.exe
+	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
 out/minikube-%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go  $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -129,7 +129,7 @@ e2e-%-$(GOARCH): out/minikube-%-$(GOARCH)
 	GOOS=$* GOARCH=$(GOARCH) go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
 
 e2e-windows-amd64.exe: e2e-windows-amd64
-	mv $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
+	cp $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
 
 minikube_iso: # old target kept for making tests happy
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
@@ -331,7 +331,7 @@ out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
 	tar -cvf $@ $^
 
 .PHONY: cross-tars
-cross-tars: kvm_in_docker out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
+cross-tars: out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
 
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
@@ -414,12 +414,16 @@ release-minikube: out/minikube checksum
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
 out/docker-machine-driver-kvm2:
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
+else
 	go build 																					\
 		-installsuffix "static" 												\
 		-ldflags="$(KVM2_LDFLAGS)" 											\
 		-tags libvirt.1.3.1 														\
 		-o $(BUILD_DIR)/docker-machine-driver-kvm2 			\
 		k8s.io/minikube/cmd/drivers/kvm
+endif
 	chmod +X $@
 
 out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2
@@ -446,15 +450,15 @@ $(KVM_BUILD_IMAGE): installers/linux/kvm/Dockerfile
 	@echo "$(@) successfully built"
 
 kvm_in_docker:
-	docker inspect $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
+	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
 	rm -f out/docker-machine-driver-kvm2
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 
-.PHONY: install-kvm
-install-kvm: out/docker-machine-driver-kvm2
+.PHONY: install-kvm-driver
+install-kvm-driver: out/docker-machine-driver-kvm2
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
 .PHONY: release-kvm-driver
-release-kvm-driver: kvm_in_docker checksum install-kvm
+release-kvm-driver: install-kvm-driver checksum
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
