@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
-	"k8s.io/kubernetes/cmd/kube-scheduler/app/config"
+	minikubeConfig "k8s.io/minikube/pkg/minikube/config"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -124,7 +124,7 @@ func isValidProfile(profilePath string) bool {
 	fileContent := string(bytes)
 	fmt.Println(fileContent)
 
-	var configObject config.Config
+	var configObject minikubeConfig.Config
 
 	errUnmarshal := json.Unmarshal(bytes, &configObject)
 
