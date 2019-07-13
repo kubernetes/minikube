@@ -121,7 +121,7 @@ func testDashboard(t *testing.T) {
 
 func testIngressController(t *testing.T) {
 	t.Parallel()
-	mk := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t, "--wait=false")
 	kubectlRunner := util.NewKubectlRunner(t)
 
 	mk.RunCommand("addons enable ingress", true)
@@ -192,7 +192,7 @@ func testServicesList(t *testing.T) {
 }
 
 func testGvisor(t *testing.T) {
-	mk := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t, "--wait=false")
 	mk.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")
@@ -224,7 +224,7 @@ func testGvisor(t *testing.T) {
 }
 
 func testGvisorRestart(t *testing.T) {
-	mk := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t, "--wait=false")
 	mk.EnsureRunning()
 	mk.RunCommand("addons enable gvisor", true)
 
