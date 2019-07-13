@@ -356,7 +356,7 @@ TAR_TARGETS_darwin  := out/minikube-darwin-amd64
 TAR_TARGETS_windows := out/minikube-windows-amd64.exe
 TAR_TARGETS_ALL     := $(shell find deploy/addons -type f)
 out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
-	tar -cvf $@ $^
+	tar -cvzf $@ $^
 
 .PHONY: cross-tars
 cross-tars: out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
