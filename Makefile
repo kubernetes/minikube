@@ -72,6 +72,8 @@ $(shell mkdir -p $(BUILD_DIR))
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
+SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
+
 STORAGE_PROVISIONER_TAG := v1.8.1
 
 # Set the version information for the Kubernetes servers
@@ -359,6 +361,7 @@ out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*)
 
 .PHONY: cross-tars
 cross-tars: out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
+	-cd out && $(SHA512SUM) *.tar.gz > SHA512SUM
 
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
