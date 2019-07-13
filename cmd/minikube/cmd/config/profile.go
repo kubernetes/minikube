@@ -115,22 +115,20 @@ func isValidProfile(profilePath string) bool {
 
 	// TODO: Use constants?
 	profileConfigPath := filepath.Join(profilePath, "config.json")
-	fmt.Println(profileConfigPath)
 	bytes, err := ioutil.ReadFile(profileConfigPath)
 	if err != nil {
 		console.ErrLn("Unable to read file: %s \n Error: %v", profileConfigPath, err)
 	}
 
-	fileContent := string(bytes)
-	fmt.Println(fileContent)
-
 	var configObject minikubeConfig.Config
-
 	errUnmarshal := json.Unmarshal(bytes, &configObject)
 
 	if errUnmarshal != nil {
 		console.ErrLn("Could not unmarshal config json to config object: %s \n Error: %v", profileConfigPath, err)
 	}
-
 	return &configObject != nil
+}
+
+func IsProfileConfigValid(configObject minikubeConfig.Config) bool {
+	return true
 }
