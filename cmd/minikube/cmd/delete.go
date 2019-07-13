@@ -51,7 +51,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.Usage("usage: minikube delete")
 	}
-	profile := viper.GetString(pkg_config.MachineProfile)
+	profileName := viper.GetString(pkg_config.MachineProfile)
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Error getting client", err)
@@ -71,7 +71,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if err = cluster.DeleteHost(api); err != nil {
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			console.OutStyle(console.Meh, "%q cluster does not exist", profile)
+			console.OutStyle(console.Meh, "%q cluster does not exist", profileName)
 		default:
 			exit.WithError("Failed to delete cluster", err)
 		}
@@ -83,12 +83,12 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	if err := os.RemoveAll(constants.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {
 		if os.IsNotExist(err) {
-			console.OutStyle(console.Meh, "%q profile does not exist", profile)
+			console.OutStyle(console.Meh, "%q profile does not exist", profileName)
 			os.Exit(0)
 		}
 		exit.WithError("Failed to remove profile", err)
 	}
-	console.OutStyle(console.Crushed, "The %q cluster has been deleted.", profile)
+	console.OutStyle(console.Crushed, "The %q cluster has been deleted.", profileName)
 
 	machineName := pkg_config.GetMachineName()
 	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
