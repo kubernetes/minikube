@@ -66,6 +66,7 @@ func OutStyle(style StyleEnum, format string, a ...interface{}) {
 	Out(outStyled, a...)
 }
 
+// OutT writes a stylized and templated message to stdout
 func OutT(style StyleEnum, format string, a map[string]interface{}) {
 	outStyled := applyTemplateFormatting(style, useColor, format, a)
 	Out(outStyled)
@@ -94,6 +95,7 @@ func ErrStyle(style StyleEnum, format string, a ...interface{}) {
 	Err(errStyled, a...)
 }
 
+// ErrT writes a stylized and templated error message to stderr
 func ErrT(style StyleEnum, format string, a map[string]interface{}) {
 	errStyled := applyTemplateFormatting(style, useColor, format, a)
 	Err(errStyled)
