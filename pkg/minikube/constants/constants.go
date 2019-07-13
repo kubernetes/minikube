@@ -153,7 +153,7 @@ const (
 	SHASuffix = ".sha256"
 	// DefaultMemorySize is the default memory which will be allocated to minikube, in megabytes
 	DefaultMemorySize = "2000mb"
-	//MinimumMemorySize is the minimum memory size, in megabytes
+	// MinimumMemorySize is the minimum memory size, in megabytes
 	MinimumMemorySize = "1024mb"
 	// DefaultCPUS is the default number of cpus of a host
 	DefaultCPUS = 2
@@ -421,7 +421,7 @@ const (
 	// StoredContainerdConfigTomlPath is the path where the default config.toml will be stored
 	StoredContainerdConfigTomlPath = "/tmp/config.toml"
 
-	//GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
+	// GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
 	GvisorConfigTomlTargetName = "gvisor-config.toml"
 	// GvisorContainerdShimTargetName is the go-bindata target name for gvisor-containerd-shim
 	GvisorContainerdShimTargetName = "gvisor-containerd-shim.toml"

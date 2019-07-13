@@ -77,12 +77,12 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 	t := routingTable{}
 	skip := true
 	for _, line := range strings.Split(string(table), "\n") {
-		//header
+		// header
 		if strings.HasPrefix(line, "Destination") {
 			skip = false
 			continue
 		}
-		//don't care about the 0.0.0.0 routes
+		// don't care about the 0.0.0.0 routes
 		if skip || strings.HasPrefix(line, "default") {
 			continue
 		}

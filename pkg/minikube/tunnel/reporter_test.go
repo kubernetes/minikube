@@ -100,7 +100,7 @@ Got:	  "%s"`, tc.name, tc.expectedOutput, out.output)
 		})
 	}
 
-	//testing deduplication
+	// testing deduplication
 	out := &recordingWriter{}
 	reporter := newReporter(out)
 	reporter.Report(testCases[0].tunnelState)
