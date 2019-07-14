@@ -18,7 +18,6 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
@@ -30,6 +29,7 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 	"os"
 	"path/filepath"
+	"reflect"
 )
 
 // ProfileCmd represents the profile command
@@ -126,9 +126,17 @@ func isValidProfile(profilePath string) bool {
 	if errUnmarshal != nil {
 		console.ErrLn("Could not unmarshal config json to config object: %s \n Error: %v", profileConfigPath, err)
 	}
-	return &configObject != nil
+	return IsProfileConfigValid(configObject)
 }
 
 func IsProfileConfigValid(configObject minikubeConfig.Config) bool {
+	machineConfig := configObject.MachineConfig
+	kubernetesConfig := configObject.KubernetesConfig
+	if reflect.DeepEqual(machineConfig, minikubeConfig.MachineConfig{}) || reflect.DeepEqual(kubernetesConfig, minikubeConfig.KubernetesConfig{}) {
+		return false
+	}
+
+	//TODO: Validate MachineConfig and KubernetesConfig?
+
 	return true
 }
