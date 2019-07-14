@@ -93,6 +93,12 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 		return h, nil
 	}
 
+	if h.Driver.DriverName() == driver.Generic {
+		if _, err := h.RunSSHCommand(fmt.Sprintf("sudo usermod -aG docker %s", h.Driver.GetSSHUsername())); err != nil {
+			return h, errors.Wrap(err, "usermod")
+		}
+	}
+
 	return h, ensureSyncedGuestClock(h, driverName)
 }
 
@@ -166,7 +172,6 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	'minikube -p {{.profile_name}} docker-env'
 
 	`, out.V{"profile_name": name})
-
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
