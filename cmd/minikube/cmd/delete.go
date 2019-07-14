@@ -62,7 +62,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
-	if err == nil && cc.MachineConfig.VMDriver == constants.DriverNone {
+	if err == nil && (cc.MachineConfig.VMDriver == constants.DriverNone || cc.MachineConfig.VMDriver == constants.DriverGeneric) {
 		uninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper))
 	}
 
