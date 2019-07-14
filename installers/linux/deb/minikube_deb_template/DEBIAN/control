@@ -4,9 +4,9 @@ Section: base
 Priority: optional
 Architecture: amd64
 Recommends: virtualbox
-Maintainer: Aaron Prindle <aaprindle@gmail.com>
+Maintainer: Thomas Strömberg <t+minikube@stromberg.org>
 Description: Minikube
- Minikube is a tool that makes it easy to run Kubernetes locally.
- Minikube runs a single-node Kubernetes cluster inside a VM on your
+ minikube is a tool that makes it easy to run Kubernetes locally.
+ minikube runs a single-node Kubernetes cluster inside a VM on your
  laptop for users looking to try out Kubernetes or develop with it 
  day-to-day.
