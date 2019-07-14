@@ -347,8 +347,38 @@ To disable this message, run [minikube config set ShowDriverDeprecationNotificat
 	}
 }
 
+type hostInfo struct {
+	Memory   int
+	CPUs     int
+	DiskSize int
+}
+
 func megs(bytes uint64) int {
 	return int(bytes / 1024 / 1024)
+}
+
+func getHostInfo() (*hostInfo, error) {
+	i, err := cpu.Info()
+	if err != nil {
+		glog.Warningf("Unable to get cpu info: %v", err)
+		return nil, err
+	}
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		glog.Warningf("Unable to get mem info: %v", err)
+		return nil, err
+	}
+	d, err := disk.Usage("/")
+	if err != nil {
+		glog.Warningf("Unable to get disk info: %v", err)
+		return nil, err
+	}
+
+	var info hostInfo
+	info.CPUs = len(i)
+	info.Memory = megs(v.Total)
+	info.DiskSize = megs(d.Total)
+	return &info, nil
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
@@ -356,10 +386,10 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	if config.VMDriver != constants.DriverNone {
 		console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	} else {
-		i, _ := cpu.Info()
-		v, _ := mem.VirtualMemory()
-		d, _ := disk.Usage("/")
-		console.OutStyle(console.StartingNone, "Running on localhost (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", len(i), megs(v.Total), megs(d.Total))
+		info, err := getHostInfo()
+		if err == nil {
+			console.OutStyle(console.StartingNone, "Running on localhost (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", info.CPUs, info.Memory, info.DiskSize)
+		}
 	}
 
 	def, err := registry.Driver(config.VMDriver)
