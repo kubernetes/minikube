@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/docker/machine/libmachine"
@@ -51,6 +52,19 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.Usage("usage: minikube delete")
 	}
+
+	profileFlag, _ := cmd.Flags().GetString("profile")
+	deleteAllFlag, _ := cmd.Flags().GetBool("delete-all")
+
+	if profileFlag != constants.DefaultMachineName && deleteAllFlag {
+		exit.Usage("usage: minikube delete --delete-all")
+	}
+
+	if deleteAllFlag {
+		profiles := cmdcfg.GetAllProfiles()
+		deleteAllProfiles(profiles)
+	}
+
 	profileName := viper.GetString(pkg_config.MachineProfile)
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -94,6 +108,13 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
 		exit.WithError("update config", err)
 	}
+}
+
+func deleteAllProfiles(profiles []string) {
+	for _, profile := range profiles {
+		fmt.Println(profile)
+	}
+	os.Exit(0)
 }
 
 func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsName string) {
