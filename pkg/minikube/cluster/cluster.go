@@ -160,6 +160,11 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
+		if h.Driver.DriverName() == constants.DriverGeneric {
+			if _, err := h.RunSSHCommand(fmt.Sprintf("sudo usermod -aG docker %s", h.Driver.GetSSHUsername())); err != nil {
+				return errors.Wrap(err, "usermod")
+			}
+		}
 		return ensureSyncedGuestClock(h)
 	}
 
