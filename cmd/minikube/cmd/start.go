@@ -679,6 +679,20 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 		return nv, isUpgrade
 	}
 
+	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
+	if err != nil {
+		exit.WithCode(exit.Data, "Unable to parse oldest Kubernetes version from constants: %v", err)
+	}
+
+	superOldVersionLimit := semver.Version{Major: 1, Minor: 9, Patch: 0}
+	if nvs.LT(superOldVersionLimit) {
+		exit.WithCode(exit.Data, "Specified Kubernetes version is not supported in minikube: %q", rawVersion)
+	}
+
+	if nvs.LT(oldestVersion) {
+		console.ErrT(console.Conflict, "Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", console.Arg{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
+	}
+
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
 	if err != nil {
 		glog.Errorf("Error parsing old version %q: %v", old.KubernetesConfig.KubernetesVersion, err)
