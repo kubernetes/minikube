@@ -68,6 +68,11 @@ func (p *BuildrootProvisioner) String() string {
 	return "buildroot"
 }
 
+// CompatibleWithHost checks if provisioner is compatible with host
+func (p *BuildrootProvisioner) CompatibleWithHost() bool {
+	return p.OsReleaseInfo.ID == "buildroot"
+}
+
 // escapeSystemdDirectives escapes special characters in the input variables used to create the
 // systemd unit file, which would otherwise be interpreted as systemd directives. An example
 // are template specifiers (e.g. '%i') which are predefined variables that get evaluated dynamically

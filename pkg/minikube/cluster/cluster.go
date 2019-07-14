@@ -149,6 +149,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		if err != nil {
 			return errors.Wrap(err, "detecting provisioner")
 		}
+		glog.Infof("Provisioning with %s...", provisioner.String())
 		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
 			return errors.Wrap(err, "provision")
 		}
