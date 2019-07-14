@@ -415,6 +415,7 @@ release-minikube: out/minikube checksum
 
 out/docker-machine-driver-kvm2:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	docker pull $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
 	# make extra sure that we are linking with the older version of libvirt (1.3.1)
 	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
