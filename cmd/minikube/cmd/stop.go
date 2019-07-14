@@ -52,7 +52,6 @@ func runStop(cmd *cobra.Command, args []string) {
 	defer api.Close()
 
 	nonexistent := false
-
 	stop := func() (err error) {
 		err = cluster.StopHost(api)
 		switch err := errors.Cause(err).(type) {
@@ -64,9 +63,10 @@ func runStop(cmd *cobra.Command, args []string) {
 			return err
 		}
 	}
-	if err := pkgutil.RetryAfter(5, stop, 2*time.Second); err != nil {
+	if err := pkgutil.RetryAfter(3, stop, 2*time.Second); err != nil {
 		exit.WithError("Unable to stop VM", err)
 	}
+
 	if !nonexistent {
 		out.T(out.Stopped, `"{{.profile_name}}" stopped.`, out.V{"profile_name": profile})
 	}

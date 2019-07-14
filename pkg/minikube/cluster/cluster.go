@@ -225,22 +225,23 @@ func adjustGuestClock(h hostRunner, t time.Time) error {
 	return err
 }
 
-// trySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
-func trySSHPowerOff(h *host.Host) {
+// TrySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
+func TrySSHPowerOff(h *host.Host) error {
 	s, err := h.Driver.GetState()
 	if err != nil {
 		glog.Warningf("unable to get state: %v", err)
-		return
+		return err
 	}
 	if s != state.Running {
 		glog.Infof("host is in state %s", s)
-		return
+		return nil
 	}
 
 	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": cfg.GetMachineName()})
 	out, err := h.RunSSHCommand("sudo poweroff")
 	// poweroff always results in an error, since the host disconnects.
 	glog.Infof("poweroff result: out=%s, err=%v", out, err)
+	return nil
 }
 
 // StopHost stops the host VM, saving state to disk.
@@ -249,7 +250,15 @@ func StopHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
+
 	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
+	if host.DriverName == constants.DriverHyperv {
+		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
+		if err := TrySSHPowerOff(host); err != nil {
+			return errors.Wrapf(err, "Unable to Power off cluster on %q using SSH", host.DriverName)
+		}
+	}
+
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
@@ -268,7 +277,9 @@ func DeleteHost(api libmachine.API) error {
 	}
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
 	if host.Driver.DriverName() == constants.DriverHyperv {
-		trySSHPowerOff(host)
+		if err := TrySSHPowerOff(host); err != nil {
+			return errors.Wrap(err, "Unable to power off minikube because the host was not found.")
+		}
 	}
 
 	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
