@@ -340,7 +340,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if driver.IsVM(driverName) {
+	if driver.IsVM(driverName) && driverName != driver.Generic {
 		url, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
 			exit.WithError("Failed to cache ISO", err)
