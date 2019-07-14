@@ -29,6 +29,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -315,6 +316,7 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 		InsecureRegistry: append([]string{pkgutil.DefaultServiceCIDR}, config.InsecureRegistry...),
 		RegistryMirror:   config.RegistryMirror,
 		ArbitraryFlags:   config.DockerOpt,
+		InstallURL:       drivers.DefaultEngineInstallURL,
 	}
 	return &o
 }
