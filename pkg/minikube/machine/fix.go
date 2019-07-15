@@ -33,6 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -132,25 +133,33 @@ func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node
 		}
 	}
 
-	if serr != constants.ErrMachineMissing {
-		glog.Warningf("unexpected machine state, will restart: %v", serr)
-	}
-
-	if s == state.Running {
-		if !recreated {
-			out.T(out.Running, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+	if h.Driver.DriverName() != driver.Generic {
+		if serr != constants.ErrMachineMissing {
+			glog.Warningf("unexpected machine state, will restart: %v", serr)
 		}
-		return h, nil
-	}
 
-	if !recreated {
-		out.T(out.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
-	}
-	if err := h.Driver.Start(); err != nil {
-		return h, errors.Wrap(err, "driver start")
-	}
-	if err := api.Save(h); err != nil {
-		return h, errors.Wrap(err, "save")
+		if s == state.Running {
+			if !recreated {
+				out.T(out.Running, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+			}
+			return h, nil
+		}
+
+		if !recreated {
+			out.T(out.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+		}
+		if err := h.Driver.Start(); err != nil {
+			return h, errors.Wrap(err, "driver start")
+		}
+		if err := api.Save(h); err != nil {
+			return h, errors.Wrap(err, "save")
+		}
+	} else {
+		if s == state.Running {
+			out.T(out.Running, `Using the {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+		} else {
+			exit.WithCodeT(exit.Unavailable, `Unable to reach {{.driver_name}} {{.machine_type}} for "{{.cluster}}"`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+		}
 	}
 	return h, nil
 }
