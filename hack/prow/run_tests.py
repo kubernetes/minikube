@@ -25,7 +25,7 @@ import os, sys, json, re, argparse, calendar, time, subprocess, shlex
 
 def get_classname(test_script):
   """ parse out the test classname from the full path of the test script"""
-  classname = os.path.basename(test).split('.')[0]
+  classname = os.path.basename(test_script).split('.')[0]
   return classname
 
 def write_results(outdir, started, finished, test_results):
