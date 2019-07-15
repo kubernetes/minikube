@@ -20,6 +20,7 @@
    https://k8s-testgrid.appspot.com
 """
 
+from __future__ import print_function
 import os, sys, json, re, argparse, calendar, time, subprocess, shlex
 
 def get_classname(test_script):
@@ -28,7 +29,7 @@ def get_classname(test_script):
   return classname
 
 def write_results(outdir, started, finished, test_results):
-  """ write current results into artifacts/junit_runner.xml 
+  """ write current results into artifacts/junit_runner.xml
       format:
       <testsuite failures="XXX" tests="YYY" time="ZZZ">
          <testcase classname="SUITENAME" name="TESTNAME" time="ZZZ1" />
@@ -36,7 +37,7 @@ def write_results(outdir, started, finished, test_results):
          ...
       </testsuite>
 
-      write the started.json and finish.json files 
+      write the started.json and finish.json files
       format:
       started.json: {"timestamp":STARTTIMEINSECONDSINCEEPOCH}
       finished.json: {"timestamp":FINISHTIMEINSECONDSINCEEPOCH,
@@ -67,9 +68,9 @@ def write_results(outdir, started, finished, test_results):
   junit_xml.write('</testsuite>')
   junit_xml.close()
 
-  started_json.write(json.dumps(started)) 
+  started_json.write(json.dumps(started))
   started_json.close()
-  finished_json.write(json.dumps(finished)) 
+  finished_json.write(json.dumps(finished))
   finished_json.close()
 
   return
@@ -86,12 +87,12 @@ def upload_results(outdir, test_script, buildnum, bucket):
   classname = get_classname(test_script)
   args = shlex.split("gsutil cp -R gcs_out/ gs://%s/logs/%s/%s" % (bucket, classname, buildnum))
   p = subprocess.Popen(args, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-  for line in p.stdout:
-    print line
+  for line in str(p.stdout):
+    print(line)
 
 def run_tests(test_script, log_path, exit_status, started, finished, test_results):
   """ execute the test script, grab the start time, finish time, build logs and exit status
-      Pull test results and important information out of the build log 
+      Pull test results and important information out of the build log
       test results format should be:
       === RUN   TestFunctional/Mounting
       --- PASS: TestFunctional (42.87s)
@@ -109,9 +110,9 @@ def run_tests(test_script, log_path, exit_status, started, finished, test_result
   classname = get_classname(test_script)
   build_log_file = open(log_path, 'w')
   p = subprocess.Popen(['bash','-x',test_script], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-  for line in p.stdout:
+  for line in str(p.stdout):
     build_log_file.write(line)
-    print line.rstrip()
+    print(line.rstrip())
     if '--- PASS' in line:
       match = re.match('.*--- PASS: ([^ ]+) \(([0-9.]+)s\)', line)
       (name, seconds) = match.group(1, 2)
