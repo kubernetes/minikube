@@ -266,7 +266,7 @@ func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, 
 	return nil
 }
 
-//WaitForServiceEndpointsNum waits until the amount of endpoints that implement service to expectNum.
+// WaitForServiceEndpointsNum waits until the amount of endpoints that implement service to expectNum.
 func WaitForServiceEndpointsNum(c kubernetes.Interface, namespace, serviceName string, expectNum int, interval, timeout time.Duration) error {
 	return wait.Poll(interval, timeout, func() (bool, error) {
 		glog.Infof("Waiting for amount of service:%s endpoints to be %d", serviceName, expectNum)

@@ -58,9 +58,9 @@ var (
 	maxClockDesyncSeconds = 2.1
 )
 
-//This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
-//INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
-//see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
+// This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
+// INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
+// see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
 func init() {
 	if err := flag.Set("logtostderr", "false"); err != nil {
 		exit.WithError("unable to set logtostderr", err)

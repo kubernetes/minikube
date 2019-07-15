@@ -32,8 +32,8 @@ func (r *recordingReporter) Report(tunnelState *Status) {
 	r.statesRecorded = append(r.statesRecorded, tunnelState)
 }
 
-//simulating idempotent router behavior
-//without checking for conflicting routes
+// simulating idempotent router behavior
+// without checking for conflicting routes
 type fakeRouter struct {
 	rt            routingTable
 	errorResponse error
