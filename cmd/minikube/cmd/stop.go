@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
 	"time"
 
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -51,24 +52,31 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 	defer api.Close()
 
-	nonexistent := false
+	cc, err := pkg_config.Load()
+	if err != nil && !os.IsNotExist(err) {
+		console.ErrLn("Error loading profile config: %v", err)
+	}
 
-	stop := func() (err error) {
-		err = cluster.StopHost(api)
-		switch err := errors.Cause(err).(type) {
-		case mcnerror.ErrHostDoesNotExist:
-			console.OutStyle(console.Meh, "%q VM does not exist, nothing to stop", profile)
-			nonexistent = true
-			return nil
-		default:
-			return err
+	if err == nil && cc.MachineConfig.VMDriver != constants.DriverNone {
+		nonexistent := false
+
+		stop := func() (err error) {
+			err = cluster.StopHost(api, cc.MachineConfig)
+			switch err := errors.Cause(err).(type) {
+			case mcnerror.ErrHostDoesNotExist:
+				console.OutStyle(console.Meh, "%q VM does not exist, nothing to stop", profile)
+				nonexistent = true
+				return nil
+			default:
+				return err
+			}
 		}
-	}
-	if err := pkgutil.RetryAfter(5, stop, 2*time.Second); err != nil {
-		exit.WithError("Unable to stop VM", err)
-	}
-	if !nonexistent {
-		console.OutStyle(console.Stopped, "%q stopped.", profile)
+		if err := pkgutil.RetryAfter(5, stop, 2*time.Second); err != nil {
+			exit.WithError("Unable to stop VM", err)
+		}
+		if !nonexistent {
+			console.OutStyle(console.Stopped, "%q stopped.", profile)
+		}
 	}
 
 	if err := cmdUtil.KillMountProcess(); err != nil {
