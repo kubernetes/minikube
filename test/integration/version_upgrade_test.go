@@ -75,7 +75,7 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 	defer os.Remove(tf.Name())
 
-	releaseRunner := NewMinikubeRunner(t, "--wait=false")
+	releaseRunner := NewMinikubeRunner(t)
 	releaseRunner.BinaryPath = tf.Name()
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
 	releaseRunner.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
