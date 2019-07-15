@@ -117,15 +117,24 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrap(err, "Error getting state for host")
 	}
 
-	if s == state.Running {
-		console.OutStyle(console.Running, "Re-using the currently running %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
-	} else {
-		console.OutStyle(console.Restarting, "Restarting existing %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
-		if err := h.Driver.Start(); err != nil {
-			return nil, errors.Wrap(err, "start")
+	if config.VMDriver != constants.DriverNone && config.VMDriver != constants.DriverGeneric {
+		if s == state.Running {
+			console.OutStyle(console.Running, "Re-using the currently running %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+		} else {
+			console.OutStyle(console.Restarting, "Restarting existing %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+			if err := h.Driver.Start(); err != nil {
+				return nil, errors.Wrap(err, "start")
+			}
+			if err := api.Save(h); err != nil {
+				return nil, errors.Wrap(err, "save")
+			}
+
 		}
-		if err := api.Save(h); err != nil {
-			return nil, errors.Wrap(err, "save")
+	} else {
+		if s == state.Running {
+			console.OutStyle(console.Running, "Re-using %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+		} else {
+			exit.WithCode(exit.Unavailable, "Unable to reach %s VM for %q", h.Driver.DriverName(), cfg.GetMachineName())
 		}
 	}
 
@@ -238,18 +247,20 @@ func trySSHPowerOff(h *host.Host) {
 }
 
 // StopHost stops the host VM, saving state to disk.
-func StopHost(api libmachine.API) error {
+func StopHost(api libmachine.API, config cfg.MachineConfig) error {
 	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
-	console.OutStyle(console.Stopping, "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
-	if err := host.Stop(); err != nil {
-		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
-		if ok && alreadyInStateError.State == state.Stopped {
-			return nil
+	if config.VMDriver != constants.DriverNone && config.VMDriver != constants.DriverGeneric {
+		console.OutStyle(console.Stopping, "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
+		if err := host.Stop(); err != nil {
+			alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
+			if ok && alreadyInStateError.State == state.Stopped {
+				return nil
+			}
+			return &util.RetriableError{Err: errors.Wrapf(err, "Stop: %s", cfg.GetMachineName())}
 		}
-		return &util.RetriableError{Err: errors.Wrapf(err, "Stop: %s", cfg.GetMachineName())}
 	}
 	return nil
 }
