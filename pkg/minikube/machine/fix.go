@@ -135,26 +135,34 @@ func recreateIfNeeded(api libmachine.API, cc *config.ClusterConfig, n *config.No
 		}
 	}
 
-	if serr != constants.ErrMachineMissing {
-		klog.Warningf("unexpected machine state, will restart: %v", serr)
-	}
-
-	if s == state.Running {
-		if !recreated {
-			out.T(style.Running, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+	if h.Driver.DriverName() != driver.Generic {
+		if serr != constants.ErrMachineMissing {
+			klog.Warningf("unexpected machine state, will restart: %v", serr)
 		}
-		return h, nil
-	}
 
-	if !recreated {
-		out.T(style.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
-	}
-	if err := h.Driver.Start(); err != nil {
-		MaybeDisplayAdvice(err, h.DriverName)
-		return h, errors.Wrap(err, "driver start")
-	}
-	if err := saveHost(api, h, cc, n); err != nil {
-		return h, err
+		if s == state.Running {
+			if !recreated {
+				out.T(style.Running, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+			}
+			return h, nil
+		}
+
+		if !recreated {
+			out.T(style.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": machineName, "machine_type": machineType})
+		}
+		if err := h.Driver.Start(); err != nil {
+			MaybeDisplayAdvice(err, h.DriverName)
+			return h, errors.Wrap(err, "driver start")
+		}
+		if err := saveHost(api, h, cc, n); err != nil {
+			return h, err
+		}
+	} else {
+		if s == state.Running {
+			out.T(style.Running, `Using the {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+		} else {
+			return h, errors.Errorf("not running")
+		}
 	}
 
 	return h, nil

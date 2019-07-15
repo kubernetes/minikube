@@ -55,14 +55,16 @@ func stop(h *host.Host) error {
 		}
 	}
 
-	if err := h.Stop(); err != nil {
-		klog.Infof("stop err: %v", err)
-		st, ok := err.(mcnerror.ErrHostAlreadyInState)
-		if ok && st.State == state.Stopped {
-			klog.Infof("host is already stopped")
-			return nil
+	if h.DriverName != driver.Generic {
+		if err := h.Stop(); err != nil {
+			klog.Infof("stop err: %v", err)
+			st, ok := err.(mcnerror.ErrHostAlreadyInState)
+			if ok && st.State == state.Stopped {
+				klog.Infof("host is already stopped")
+				return nil
+			}
+			return &retry.RetriableError{Err: errors.Wrap(err, "stop")}
 		}
-		return &retry.RetriableError{Err: errors.Wrap(err, "stop")}
 	}
 	klog.Infof("duration metric: stop complete within %s", time.Since(start))
 	return nil
