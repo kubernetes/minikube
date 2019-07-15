@@ -194,15 +194,15 @@ func (d *Driver) deleteNetwork() error {
 
 func (d *Driver) checkDomains(conn *libvirt.Connect) error {
 	type source struct {
-		//XMLName xml.Name `xml:"source"`
+		// XMLName xml.Name `xml:"source"`
 		Network string `xml:"network,attr"`
 	}
 	type iface struct {
-		//XMLName xml.Name `xml:"interface"`
+		// XMLName xml.Name `xml:"interface"`
 		Source source `xml:"source"`
 	}
 	type result struct {
-		//XMLName xml.Name `xml:"domain"`
+		// XMLName xml.Name `xml:"domain"`
 		Name       string  `xml:"name"`
 		Interfaces []iface `xml:"devices>interface"`
 	}

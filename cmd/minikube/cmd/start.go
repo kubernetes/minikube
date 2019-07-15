@@ -421,7 +421,7 @@ func validateConfig() {
 }
 
 // This function validates if the --registry-mirror
-//args match the format of http://localhost
+// args match the format of http://localhost
 func validateRegistryMirror() {
 
 	if len(registryMirror) > 0 {
@@ -751,7 +751,11 @@ func configureRuntimes(runner cruntime.CommandRunner) cruntime.Manager {
 		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
 	}
 
-	err = cr.Enable()
+	disableOthers := true
+	if viper.GetString(vmDriver) == constants.DriverNone {
+		disableOthers = false
+	}
+	err = cr.Enable(disableOthers)
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
 	}

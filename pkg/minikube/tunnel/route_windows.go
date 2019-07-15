@@ -64,14 +64,14 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 	t := routingTable{}
 	skip := true
 	for _, line := range strings.Split(string(table), "\n") {
-		//after first line of header we can start consuming
+		// after first line of header we can start consuming
 		if strings.HasPrefix(line, "Network Destination") {
 			skip = false
 			continue
 		}
 
 		fields := strings.Fields(line)
-		//don't care about the 0.0.0.0 routes
+		// don't care about the 0.0.0.0 routes
 		if skip || len(fields) == 0 || len(fields) > 0 && (fields[0] == "default" || fields[0] == "0.0.0.0") {
 			continue
 		}
