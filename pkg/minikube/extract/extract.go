@@ -47,7 +47,7 @@ var blacklist = []string{
 	"opt %s",
 }
 
-const errMapFile string = "pkg/minikube/problem/err_map.go"
+const ErrMapFile string = "pkg/minikube/problem/err_map.go"
 
 // state is a struct that represent the current state of the extraction process
 type state struct {
@@ -114,19 +114,6 @@ func setParentFunc(e *state, f string) {
 
 // TranslatableStrings finds all strings to that need to be translated in paths and prints them out to all json files in output
 func TranslatableStrings(paths []string, functions []string, output string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return errors.Wrap(err, "Getting current working directory")
-	}
-
-	if strings.Contains(cwd, "cmd") {
-		return errors.New("run extract.go from the minikube root directory")
-	}
-
-	if _, err = os.Stat(errMapFile); os.IsNotExist(err) {
-		return errors.New("err_map.go doesn't exist")
-	}
-
 	e, err := newExtractor(functions)
 
 	if err != nil {
@@ -178,7 +165,7 @@ func inspectFile(e *state) error {
 		return err
 	}
 
-	if e.filename == errMapFile {
+	if e.filename == ErrMapFile {
 		return extractAdvice(file, e)
 	}
 
