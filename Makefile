@@ -413,7 +413,7 @@ release-minikube: out/minikube checksum
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
-out/docker-machine-driver-kvm2:
+out/docker-machine-driver-kvm2: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go build 																					\
 		-installsuffix "static" 												\
 		-ldflags="$(KVM2_LDFLAGS)" 											\
