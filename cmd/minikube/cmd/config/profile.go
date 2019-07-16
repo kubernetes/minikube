@@ -21,7 +21,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
-	minikubeConfig "k8s.io/minikube/pkg/minikube/config"
+	mkConfig "k8s.io/minikube/pkg/minikube/config"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -102,14 +102,14 @@ func isValidProfile(profilePath string) bool {
 		console.ErrLn("Unable to list in dir: %s \n Error: %v", profilePath, err)
 	}
 
-	hasConfigJson := false
+	hasConfigJSON := false
 	for _, fileInfo := range fileInfos {
 		if fileInfo.Name() == "config.json" {
-			hasConfigJson = true
+			hasConfigJSON = true
 		}
 	}
 
-	if !hasConfigJson {
+	if !hasConfigJSON {
 		return false
 	}
 
@@ -120,7 +120,7 @@ func isValidProfile(profilePath string) bool {
 		console.ErrLn("Unable to read file: %s \n Error: %v", profileConfigPath, err)
 	}
 
-	var configObject minikubeConfig.Config
+	var configObject mkConfig.Config
 	errUnmarshal := json.Unmarshal(bytes, &configObject)
 
 	if errUnmarshal != nil {
@@ -129,10 +129,10 @@ func isValidProfile(profilePath string) bool {
 	return IsProfileConfigValid(configObject)
 }
 
-func IsProfileConfigValid(configObject minikubeConfig.Config) bool {
+func IsProfileConfigValid(configObject mkConfig.Config) bool {
 	machineConfig := configObject.MachineConfig
 	kubernetesConfig := configObject.KubernetesConfig
-	if reflect.DeepEqual(machineConfig, minikubeConfig.MachineConfig{}) || reflect.DeepEqual(kubernetesConfig, minikubeConfig.KubernetesConfig{}) {
+	if reflect.DeepEqual(machineConfig, mkConfig.MachineConfig{}) || reflect.DeepEqual(kubernetesConfig, mkConfig.KubernetesConfig{}) {
 		return false
 	}
 
