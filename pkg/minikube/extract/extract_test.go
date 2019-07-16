@@ -17,8 +17,8 @@ limitations under the License.
 package extract
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -82,9 +82,14 @@ func TestExtract(t *testing.T) {
 }
 
 func TestTranslationsUpToDate(t *testing.T) {
-	fmt.Println(os.Getwd())
+	// Move the working dir to where we would run `make extract` from
+	err := os.Chdir("../../..")
+	if err != nil {
+		t.Fatalf("Chdir failed: %v", err)
+	}
+
 	// The translation file we're going to check
-	exampleFile := "../../../translations/fr-FR.json"
+	exampleFile := "translations/fr-FR.json"
 	src, err := ioutil.ReadFile(exampleFile)
 	if err != nil {
 		t.Fatalf("Reading json file: %v", err)
@@ -114,21 +119,7 @@ func TestTranslationsUpToDate(t *testing.T) {
 		t.Fatalf("Reading resulting json file: %v", err)
 	}
 
-	var got map[string]interface{}
-	var expected map[string]interface{}
-
-	err = json.Unmarshal(src, &expected)
-	if err != nil {
-		t.Fatalf("Error unmarshalling source json: %v", err)
-	}
-
-	err = json.Unmarshal(dest, &got)
-	if err != nil {
-		t.Fatalf("Error unmarshalling result json: %v", err)
-	}
-
-	// If the extractor actually changed the tempfile, then we need to run the extractor.
-	if !reflect.DeepEqual(expected, got) {
+	if bytes.Compare(src, dest) != 0 {
 		t.Fatalf("There are changes to the localizable strings in the code base.\n Please run `make extract`.")
 	}
 
