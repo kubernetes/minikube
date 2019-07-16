@@ -118,7 +118,7 @@ func init() {
 	initMinikubeFlags()
 	initKubernetesFlags()
 	initDriverFlags()
-	initNetowrkingFlags()
+	initNetworkingFlags()
 	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
 	}
@@ -191,8 +191,8 @@ func initDriverFlags() {
 
 }
 
-// initNetowrkingFlags inits the commandline flags for connectivity related flags for start
-func initNetowrkingFlags() {
+// initNetworkingFlags inits the commandline flags for connectivity related flags for start
+func initNetworkingFlags() {
 	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
