@@ -49,10 +49,6 @@ associated files.`,
 
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
-	if len(args) > 0 {
-		exit.Usage("usage: minikube delete")
-	}
-
 	profileFlag, _ := cmd.Flags().GetString("profile")
 	deleteAllFlag, _ := cmd.Flags().GetBool("delete-all")
 
@@ -63,9 +59,17 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if deleteAllFlag {
 		profiles := cmdcfg.GetAllProfiles()
 		deleteAllProfiles(profiles)
-	}
+	} else {
+		if len(args) > 0 {
+			exit.Usage("usage: minikube delete")
+		}
 
-	profileName := viper.GetString(pkg_config.MachineProfile)
+		profileName := viper.GetString(pkg_config.MachineProfile)
+		deleteProfile(profileName)
+	}
+}
+
+func deleteProfile(profileName string) {
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Error getting client", err)
