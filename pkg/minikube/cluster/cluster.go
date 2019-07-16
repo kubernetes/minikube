@@ -318,21 +318,15 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 	return &o
 }
 
-func preCreateHost(config *cfg.MachineConfig) {
-	switch config.VMDriver {
-	case constants.DriverVmwareFusion:
-		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-			console.Warning(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
-				Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
-				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
-				To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
-		}
-	}
-}
-
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	preCreateHost(&config)
 	console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
+	if config.VMDriver == constants.DriverVmwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+		console.Warning(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
+			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
+			See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
+			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
+	}
+
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
