@@ -45,7 +45,7 @@ func NewKubectlRunner(t *testing.T, kctx string) *KubectlRunner {
 	return &KubectlRunner{BinaryPath: p, T: t, KCtx: kctx}
 }
 
-// CurrentContext gets the current kubectl current-context
+// ContextName gets the current kubectl current-context
 func (k *KubectlRunner) ContextName() (name string, err error) {
 	args := []string{"config", "current-context"}
 	inner := func() error {

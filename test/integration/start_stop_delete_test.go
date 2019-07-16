@@ -102,7 +102,7 @@ func TestStartStop(t *testing.T) {
 				t.Fatalf("timed out while checking stopped status: %v", err)
 			}
 
-			if _, err := kctlRunner.CurrentContext(); err != nil { // TODO check if it is correct ctx
+			if _, err := kctlRunner.ContextName(); err != nil { // TODO check if it is correct ctx
 				t.Logf("current-context is not set")
 			}
 
