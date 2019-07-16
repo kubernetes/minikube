@@ -11,7 +11,7 @@ the host PATH:
 
 * [KVM2](#kvm2-driver)
 * [Hyperkit](#hyperkit-driver)
-* [HyperV](#hyperv-driver)
+* [Hyper-V](#hyper-v-driver)
 * [VMware](#vmware-unified-driver)
 * [Parallels](#parallels-driver)
 
