@@ -26,8 +26,8 @@ import (
 )
 
 // WaitForBusyboxRunning waits until busybox pod to be running
-func WaitForBusyboxRunning(t *testing.T, namespace string, kCtx string) error {
-	client, err := commonutil.GetClientWithKContext(kCtx)
+func WaitForBusyboxRunning(t *testing.T, namespace string, kubeCtx string) error {
+	client, err := commonutil.Client(kubeCtx)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -36,8 +36,8 @@ func WaitForBusyboxRunning(t *testing.T, namespace string, kCtx string) error {
 }
 
 // WaitForIngressControllerRunning waits until ingress controller pod to be running
-func WaitForIngressControllerRunning(t *testing.T, kCtx string) error {
-	client, err := commonutil.GetClientWithKContext(kCtx)
+func WaitForIngressControllerRunning(t *testing.T, kubeCtx string) error {
+	client, err := commonutil.Client(kubeCtx)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -55,8 +55,8 @@ func WaitForIngressControllerRunning(t *testing.T, kCtx string) error {
 }
 
 // WaitForIngressDefaultBackendRunning waits until ingress default backend pod to be running
-func WaitForIngressDefaultBackendRunning(t *testing.T, kCtx string) error {
-	client, err := commonutil.GetClientWithKContext(kCtx)
+func WaitForIngressDefaultBackendRunning(t *testing.T, kubeCtx string) error {
+	client, err := commonutil.Client(kubeCtx)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -77,8 +77,8 @@ func WaitForIngressDefaultBackendRunning(t *testing.T, kCtx string) error {
 }
 
 // WaitForGvisorControllerRunning waits for the gvisor controller pod to be running
-func WaitForGvisorControllerRunning(t *testing.T, kCtx string) error {
-	client, err := commonutil.GetClientWithKContext(kCtx)
+func WaitForGvisorControllerRunning(t *testing.T, kubeCtx string) error {
+	client, err := commonutil.Client(kubeCtx)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -91,8 +91,8 @@ func WaitForGvisorControllerRunning(t *testing.T, kCtx string) error {
 }
 
 // WaitForGvisorControllerDeleted waits for the gvisor controller pod to be deleted
-func WaitForGvisorControllerDeleted(kCtx string) error {
-	client, err := commonutil.GetClientWithKContext(kCtx)
+func WaitForGvisorControllerDeleted(kubeCtx string) error {
+	client, err := commonutil.Client(kubeCtx)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -105,8 +105,8 @@ func WaitForGvisorControllerDeleted(kCtx string) error {
 }
 
 // WaitForUntrustedNginxRunning waits for the untrusted nginx pod to start running
-func WaitForUntrustedNginxRunning(kCtx string) error {
-	client, err := commonutil.GetClientWithKContext(kCtx)
+func WaitForUntrustedNginxRunning(kubeCtx string) error {
+	client, err := commonutil.Client(kubeCtx)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -119,8 +119,8 @@ func WaitForUntrustedNginxRunning(kCtx string) error {
 }
 
 // WaitForFailedCreatePodSandBoxEvent waits for a FailedCreatePodSandBox event to appear
-func WaitForFailedCreatePodSandBoxEvent(kCtx string) error {
-	client, err := commonutil.GetClientWithKContext(kCtx)
+func WaitForFailedCreatePodSandBoxEvent(kubeCtx string) error {
+	client, err := commonutil.Client(kubeCtx)
 
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
@@ -132,8 +132,8 @@ func WaitForFailedCreatePodSandBoxEvent(kCtx string) error {
 }
 
 // WaitForNginxRunning waits for nginx service to be up
-func WaitForNginxRunning(t *testing.T, kCtx string) error {
-	client, err := commonutil.GetClientWithKContext(kCtx)
+func WaitForNginxRunning(t *testing.T, kubeCtx string) error {
+	client, err := commonutil.Client(kubeCtx)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}

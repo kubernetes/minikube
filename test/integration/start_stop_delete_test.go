@@ -86,7 +86,7 @@ func TestStartStop(t *testing.T) {
 
 			// check for the current-context before and after the stop
 			kctlRunner := util.NewKubectlRunner(t, testName)
-			currCtx, err := kctlRunner.CurrentContext()
+			currCtx, err := kctlRunner.ContextName()
 			if err != nil {
 				t.Fatalf("Failed to fetch current-context")
 			}

@@ -46,12 +46,12 @@ func NewKubectlRunner(t *testing.T, kctx string) *KubectlRunner {
 }
 
 // CurrentContext gets the current kubectl current-context
-func (k *KubectlRunner) CurrentContext() (stdOut string, err error) {
+func (k *KubectlRunner) ContextName() (name string, err error) {
 	args := []string{"config", "current-context"}
 	inner := func() error {
 		cmd := exec.Command(k.BinaryPath, args...)
 		out, err := cmd.CombinedOutput()
-		stdOut = strings.TrimRight(string(out), "\n")
+		name = strings.TrimRight(string(out), "\n")
 		if err != nil {
 			retriable := &commonutil.RetriableError{Err: fmt.Errorf("error getting kubectl current-context: %v . Stdout: \n %s", err, out)}
 			k.T.Log(retriable)
@@ -60,7 +60,7 @@ func (k *KubectlRunner) CurrentContext() (stdOut string, err error) {
 		return nil
 	}
 	err = commonutil.RetryAfter(3, inner, 1*time.Second)
-	return stdOut, err
+	return name, err
 }
 
 // RunCommandParseOutput runs a command and parses the JSON output
