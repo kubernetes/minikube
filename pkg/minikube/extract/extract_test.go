@@ -83,10 +83,16 @@ func TestExtract(t *testing.T) {
 
 func TestTranslationsUpToDate(t *testing.T) {
 	// Move the working dir to where we would run `make extract` from
-	err := os.Chdir("../../..")
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("Getting current working dir: %v", err)
+	}
+
+	err = os.Chdir("../../..")
 	if err != nil {
 		t.Fatalf("Chdir failed: %v", err)
 	}
+	defer os.Chdir(cwd)
 
 	// The translation file we're going to check
 	exampleFile := "translations/fr-FR.json"
