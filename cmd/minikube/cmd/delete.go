@@ -50,10 +50,10 @@ associated files.`,
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
 	profileFlag, _ := cmd.Flags().GetString("profile")
-	deleteAllFlag, _ := cmd.Flags().GetBool("delete-all")
+	deleteAllFlag, _ := cmd.Flags().GetBool("all")
 
 	if profileFlag != constants.DefaultMachineName && deleteAllFlag {
-		exit.Usage("usage: minikube delete --delete-all")
+		exit.Usage("usage: minikube delete --all")
 	}
 
 	if deleteAllFlag {
@@ -132,6 +132,6 @@ func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsN
 }
 
 func init() {
-	deleteCmd.Flags().BoolVar(&deleteAll, "delete-all", false, "Set flag to delete all profiles")
+	deleteCmd.Flags().BoolVar(&deleteAll, "all", false, "Set flag to delete all profiles")
 	RootCmd.AddCommand(deleteCmd)
 }
