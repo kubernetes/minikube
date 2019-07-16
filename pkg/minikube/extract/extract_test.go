@@ -18,6 +18,7 @@ package extract
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -76,6 +77,59 @@ func TestExtract(t *testing.T) {
 
 	if !reflect.DeepEqual(expected, got) {
 		t.Fatalf("Translation JSON not equal: expected %v, got %v", expected, got)
+	}
+
+}
+
+func TestTranslationsUpToDate(t *testing.T) {
+	fmt.Println(os.Getwd())
+	// The translation file we're going to check
+	exampleFile := "../../../translations/fr-FR.json"
+	src, err := ioutil.ReadFile(exampleFile)
+	if err != nil {
+		t.Fatalf("Reading json file: %v", err)
+	}
+
+	// Create a temp file to run the extractor on
+	tempdir, err := ioutil.TempDir("", "temptestdata")
+	if err != nil {
+		t.Fatalf("Creating temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempdir)
+
+	tempfile := filepath.Join(tempdir, "tmpdata.json")
+	err = ioutil.WriteFile(tempfile, src, 0666)
+	if err != nil {
+		t.Fatalf("Writing temp json file: %v", err)
+	}
+
+	// Run the extractor exactly how `make extract` would run, but on the temp file
+	err = TranslatableStrings([]string{"cmd", "pkg"}, []string{"translate.T"}, tempdir)
+	if err != nil {
+		t.Fatalf("Error translating strings: %v", err)
+	}
+
+	dest, err := ioutil.ReadFile(tempfile)
+	if err != nil {
+		t.Fatalf("Reading resulting json file: %v", err)
+	}
+
+	var got map[string]interface{}
+	var expected map[string]interface{}
+
+	err = json.Unmarshal(src, &expected)
+	if err != nil {
+		t.Fatalf("Error unmarshalling source json: %v", err)
+	}
+
+	err = json.Unmarshal(dest, &got)
+	if err != nil {
+		t.Fatalf("Error unmarshalling result json: %v", err)
+	}
+
+	// If the extractor actually changed the tempfile, then we need to run the extractor.
+	if !reflect.DeepEqual(expected, got) {
+		t.Fatalf("There are changes to the localizable strings in the code base.\n Please run `make extract`.")
 	}
 
 }
