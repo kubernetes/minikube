@@ -39,7 +39,6 @@ type MachineConfig struct {
 	ContainerRuntime    string
 	HyperkitVpnKitSock  string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts  []string // Only used by the Hyperkit driver
-	XhyveDiskDriver     string   // Only used by the xhyve driver
 	DockerEnv           []string // Each entry is formatted as KEY=VALUE.
 	InsecureRegistry    []string
 	RegistryMirror      []string
@@ -51,7 +50,7 @@ type MachineConfig struct {
 	KVMHidden           bool               // Only used by kvm2
 	Downloader          util.ISODownloader `json:"-"`
 	DockerOpt           []string           // Each entry is formatted as KEY=VALUE.
-	DisableDriverMounts bool               // Only used by virtualbox and xhyve
+	DisableDriverMounts bool               // Only used by virtualbox
 	NFSShare            []string
 	NFSSharesRoot       string
 	UUID                string // Only used by hyperkit to restore the mac address
