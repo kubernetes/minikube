@@ -393,8 +393,6 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 // GetVMHostIP gets the ip address to be used for mapping host -> VM and VM -> host
 func GetVMHostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
-	case constants.DriverKvmOld:
-		return net.ParseIP("192.168.42.1"), nil
 	case constants.DriverKvm2:
 		return net.ParseIP("192.168.39.1"), nil
 	case constants.DriverHyperv:
@@ -418,7 +416,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
 		return ip, nil
-	case constants.DriverXhyve, constants.DriverHyperkit:
+	case constants.DriverHyperkit:
 		return net.ParseIP("192.168.64.1"), nil
 	case constants.DriverVmware:
 		vmIPString, err := host.Driver.GetIP()
