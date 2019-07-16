@@ -320,20 +320,6 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 
 func preCreateHost(config *cfg.MachineConfig) {
 	switch config.VMDriver {
-	case constants.DriverKvmOld:
-		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-			console.Warning(`The kvm driver is deprecated and support for it will be removed in a future release.
-				Please consider switching to the kvm2 driver, which is intended to replace the kvm driver.
-				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver for more information.
-				To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
-		}
-	case constants.DriverXhyve:
-		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-			console.Warning(`The xhyve driver is deprecated and support for it will be removed in a future release.
-Please consider switching to the hyperkit driver, which is intended to replace the xhyve driver.
-See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver for more information.
-To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
-		}
 	case constants.DriverVmwareFusion:
 		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 			console.Warning(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.

@@ -68,7 +68,6 @@ const (
 	cpus                  = "cpus"
 	humanReadableDiskSize = "disk-size"
 	vmDriver              = "vm-driver"
-	xhyveDiskDriver       = "xhyve-disk-driver"
 	nfsSharesRoot         = "nfs-shares-root"
 	nfsShare              = "nfs-share"
 	kubernetesVersion     = "kubernetes-version"
@@ -118,7 +117,7 @@ func init() {
 	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
-	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors (vboxfs, xhyve-9p)")
+	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors (vboxfs)")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
 	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
@@ -130,7 +129,6 @@ func init() {
 	startCmd.Flags().String(kvmQemuURI, "qemu:///system", "The KVM QEMU connection URI. (works only with kvm2 driver on linux)")
 	startCmd.Flags().Bool(kvmGPU, false, "Enable experimental NVIDIA GPU support in minikube")
 	startCmd.Flags().Bool(kvmHidden, false, "Hide the hypervisor signature from the guest in minikube")
-	startCmd.Flags().String(xhyveDiskDriver, "ahci-hd", "The disk driver to use [ahci-hd|virtio-blk] (only supported with xhyve driver)")
 	startCmd.Flags().StringSlice(nfsShare, []string{}, "Local folders to share with Guest via NFS mounts (Only supported on with hyperkit now)")
 	startCmd.Flags().String(nfsSharesRoot, "/nfsshares", "Where to root the NFS Shares (defaults to /nfsshares, only supported with hyperkit now)")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
@@ -175,7 +173,7 @@ var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts a local kubernetes cluster",
 	Long: `Starts a local kubernetes cluster using VM. This command
-assumes you have already installed one of the VM drivers: virtualbox/parallels/vmwarefusion/kvm/xhyve/hyperv.`,
+assumes you have already installed one of the VM drivers: virtualbox/parallels/vmwarefusion/kvm/hyperv.`,
 	Run: runStart,
 }
 
@@ -529,7 +527,6 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			ContainerRuntime:    viper.GetString(containerRuntime),
 			HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
 			HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
-			XhyveDiskDriver:     viper.GetString(xhyveDiskDriver),
 			NFSShare:            viper.GetStringSlice(nfsShare),
 			NFSSharesRoot:       viper.GetString(nfsSharesRoot),
 			DockerEnv:           dockerEnv,

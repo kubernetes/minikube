@@ -247,7 +247,7 @@ minikube service [command]
 
 ---
 ### start
-**Description -** Starts a local kubernetes cluster using VM. This command assumes you have already installed one of the VM drivers: **virtualbox/parallels/vmwarefusion/kvm/xhyve/hyperv**.
+**Description -** Starts a local kubernetes cluster using VM. This command assumes you have already installed one of the VM drivers: **virtualbox/parallels/vmwarefusion/kvm/hyperv**.
 **Usage -** `minikube start [flags]`
 **Available Flags -**
 ```
@@ -259,7 +259,7 @@ minikube service [command]
       --container-runtime string          The container runtime to be used (docker, crio, containerd) (default "docker")
       --cpus int                          Number of CPUs allocated to the minikube VM (default 2)
       --cri-socket string                 The cri socket path to be used
-      --disable-driver-mounts             Disables the filesystem mounts provided by the hypervisors (vboxfs, xhyve-9p)
+      --disable-driver-mounts             Disables the filesystem mounts provided by the hypervisors (vboxfs)
       --disk-size string                  Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g) (default "20000mb")
       --dns-domain string                 The cluster dns domain name used in the kubernetes cluster (default "cluster.local")
       --docker-env stringArray            Environment variables to pass to the Docker daemon. (format: key=value)
@@ -295,8 +295,7 @@ minikube service [command]
       --registry-mirror strings           Registry mirrors to pass to the Docker daemon
       --service-cluster-ip-range string   The CIDR to be used for service cluster IPs. (default "10.96.0.0/12")
       --uuid string                       Provide VM UUID to restore MAC address (only supported with Hyperkit driver).
-      --vm-driver string                  VM driver is one of: [virtualbox parallels vmwarefusion kvm xhyve hyperv hyperkit kvm2 vmware none] (default "virtualbox")
-      --xhyve-disk-driver string          The disk driver to use [ahci-hd|virtio-blk] (only supported with xhyve driver) (default "ahci-hd")
+      --vm-driver string                  VM driver is one of: [virtualbox parallels vmwarefusion kvm hyperv hyperkit kvm2 vmware none] (default "virtualbox")
 ```
 
 ---
