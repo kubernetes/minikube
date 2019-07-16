@@ -1,4 +1,11 @@
-CONMON_MASTER_VERSION = dde3ccf93f01ce5a3e0f7a2c97053697cc3ed152
+################################################################################
+#
+# conmon
+#
+################################################################################
+
+# HEAD as of 2019-06-13
+CONMON_MASTER_VERSION = 8455ce1ef385120deb827d0f0588c04357bad4c4
 CONMON_MASTER_SITE = https://github.com/containers/conmon/archive
 CONMON_MASTER_SOURCE = $(CONMON_MASTER_VERSION).tar.gz
 CONMON_MASTER_LICENSE = Apache-2.0
