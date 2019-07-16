@@ -26,4 +26,4 @@ import (
 	_ "k8s.io/minikube/pkg/minikube/drivers/virtualbox"
 	_ "k8s.io/minikube/pkg/minikube/drivers/vmware"
 	_ "k8s.io/minikube/pkg/minikube/drivers/vmwarefusion"
-
+)
