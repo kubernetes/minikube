@@ -101,6 +101,7 @@ Other drivers which are not yet part of our continuous integration system are:
 
 * [hyperv](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperV-driver)
 * [vmware](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver)
+* [parallels](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#parallels-driver)
 
 ## Quick Start
 
