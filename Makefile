@@ -41,6 +41,7 @@ ISO_BUCKET ?= minikube/iso
 MINIKUBE_VERSION ?= $(ISO_VERSION)
 MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
+MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.16.14
 
@@ -306,6 +307,20 @@ out/minikube-$(RPM_VERSION).rpm: out/minikube-linux-amd64
 	rpmbuild -bb -D "_rpmdir $(PWD)/out" -D "_rpmfilename minikube-$(RPM_VERSION).rpm" \
 		 out/minikube-$(RPM_VERSION)/minikube.spec
 	rm -rf out/minikube-$(RPM_VERSION)
+
+.PHONY: apt
+apt: out/Release
+
+out/Release: out/minikube_$(DEB_VERSION).deb
+	( cd out && apt-ftparchive packages . ) | gzip -c > out/Packages.gz
+	( cd out && apt-ftparchive release . ) > out/Release
+
+.PHONY: yum
+yum: out/repodata/repomd.xml
+
+out/repodata/repomd.xml: out/minikube-$(RPM_VERSION).rpm
+	createrepo --simple-md-filenames --no-database \
+	-u "$(MINIKUBE_RELEASES_URL)/$(VERSION)/" out
 
 .SECONDEXPANSION:
 TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
