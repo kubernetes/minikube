@@ -912,10 +912,10 @@ func validateDriverVersion(vmDriver string) {
 
 	switch vmDriver {
 	case constants.DriverKvm2:
-		driverExecutable = "docker-machine-driver-kvm2"
+		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverKvm2)
 		driverDocumentation = fmt.Sprintf("%s#%s", constants.DriverDocumentation, "kvm2-upgrade")
 	case constants.DriverHyperkit:
-		driverExecutable = "docker-machine-driver-hyperkit"
+		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverHyperkit)
 		driverDocumentation = fmt.Sprintf("%s#%s", constants.DriverDocumentation, "hyperkit-upgrade")
 	default: // driver doesn't support version
 		return
