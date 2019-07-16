@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/docker/machine/libmachine"
@@ -116,7 +115,9 @@ func deleteProfile(profileName string) {
 
 func deleteAllProfiles(profiles []string) {
 	for _, profile := range profiles {
-		fmt.Println(profile)
+		// TODO: Refactor: viper.Set seems to be in the wrong place
+		viper.Set(pkg_config.MachineProfile, profile)
+		deleteProfile(profile)
 	}
 	os.Exit(0)
 }
