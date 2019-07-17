@@ -118,7 +118,7 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
 // RunCommand executes a command, optionally checking for error
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	if m.Profile != "" {
-		command += fmt.Sprintf(" -p %s", m.Profile)
+		command += fmt.Sprintf("-p=%s", m.Profile)
 	}
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -138,7 +138,7 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 // RunWithContext calls the minikube command with a context, useful for timeouts.
 func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) (string, string, error) {
 	if m.Profile != "" {
-		command += fmt.Sprintf(" -p %s", m.Profile)
+		command += fmt.Sprintf(" -p=%s", m.Profile)
 	}
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -150,7 +150,7 @@ func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) (st
 // RunDaemon executes a command, returning the stdout
 func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 	if m.Profile != "" {
-		command += fmt.Sprintf(" -p %s", m.Profile)
+		command += fmt.Sprintf(" -p=%s", m.Profile)
 	}
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -182,7 +182,7 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 // RunDaemon2 executes a command, returning the stdout and stderr
 func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *bufio.Reader) {
 	if m.Profile != "" {
-		command += fmt.Sprintf(" -p %s", m.Profile)
+		command += fmt.Sprintf(" -p=%s", m.Profile)
 	}
 	commandArr := strings.Split(command, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -206,7 +206,7 @@ func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *
 // SSH returns the output of running a command using SSH
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	if m.Profile != "" {
-		command += fmt.Sprintf(" -p %s", m.Profile)
+		command += fmt.Sprintf(" -p=%s", m.Profile)
 	}
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, "ssh", command)
@@ -222,11 +222,7 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 
 // Start starts the container runtime
 func (m *MinikubeRunner) Start(opts ...string) {
-	p := ""
-	if m.Profile != "" {
-		p = "-p " + m.Profile
-	}
-	cmd := fmt.Sprintf("start %s %s %s %s --alsologtostderr --v=2", m.StartArgs, m.Args, p, strings.Join(opts, " "))
+	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.Args, strings.Join(opts, " "))
 	m.RunCommand(cmd, true)
 }
 
@@ -250,12 +246,12 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 
 // GetStatus returns the status of a service
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s -p %s", m.Args, m.Profile), false)
+	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.Args), false)
 }
 
 // GetLogs returns the logs of a service
 func (m *MinikubeRunner) GetLogs() string {
-	return m.RunCommand(fmt.Sprintf("logs %s -p %s", m.Args, m.Profile), true)
+	return m.RunCommand(fmt.Sprintf("logs %s", m.Args), true)
 }
 
 // CheckStatus makes sure the service has the desired status, or cause fatal error
