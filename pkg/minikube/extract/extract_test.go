@@ -93,7 +93,11 @@ func TestTranslationsUpToDate(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Chdir failed: %v", err)
 	}
-	defer os.Chdir(cwd)
+	defer func() {
+		if err = os.Chdir(cwd); err != nil {
+			t.Logf("Chdir to cwd failed: %v", err)
+		}
+	}()
 
 	// The translation file we're going to check
 	exampleFile := "translations/fr-FR.json"
