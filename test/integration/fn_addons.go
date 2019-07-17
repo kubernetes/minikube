@@ -130,10 +130,6 @@ func testIngressController(t *testing.T) {
 		t.Fatalf("Failed waiting for ingress-controller to be up: %v", err)
 	}
 
-	if err := util.WaitForIngressDefaultBackendRunning(t, p); err != nil {
-		t.Fatalf("Failed waiting for default-http-backend to be up: %v", err)
-	}
-
 	ingressPath := filepath.Join(*testdataDir, "nginx-ing.yaml")
 	if _, err := kr.RunCommand([]string{"create", "-f", ingressPath}); err != nil {
 		t.Fatalf("Failed creating nginx ingress resource: %v", err)

@@ -12,51 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-apiVersion: extensions/v1beta1
-kind: Deployment
-metadata:
-  name: default-http-backend
-  namespace: kube-system
-  labels:
-    app.kubernetes.io/name: default-http-backend
-    app.kubernetes.io/part-of: kube-system
-    addonmanager.kubernetes.io/mode: Reconcile
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: default-http-backend
-      addonmanager.kubernetes.io/mode: Reconcile
-  template:
-    metadata:
-      labels:
-        app.kubernetes.io/name: default-http-backend
-        addonmanager.kubernetes.io/mode: Reconcile
-    spec:
-      terminationGracePeriodSeconds: 60
-      containers:
-      - name: default-http-backend
-        # Any image is permissible as long as:
-        # 1. It serves a 404 page at /
-        # 2. It serves 200 on a /healthz endpoint        
-        image: {{default "gcr.io/google_containers" .ImageRepository}}/defaultbackend{{.ExoticArch}}:1.4
-        imagePullPolicy: IfNotPresent
-        livenessProbe:
-          httpGet:
-            path: /healthz
-            port: 8080
-            scheme: HTTP
-          initialDelaySeconds: 30
-          timeoutSeconds: 5
-        ports:
-        - containerPort: 8080
-        resources:
-          limits:
-            cpu: 20m
-            memory: 30Mi
-          requests:
-            cpu: 20m
-            memory: 30Mi
 ---
 apiVersion: extensions/v1beta1
 kind: Deployment
@@ -121,7 +76,6 @@ spec:
           hostPort: 18080
         args:
         - /nginx-ingress-controller
-        - --default-backend-service=$(POD_NAMESPACE)/default-http-backend
         - --configmap=$(POD_NAMESPACE)/nginx-load-balancer-conf
         - --tcp-services-configmap=$(POD_NAMESPACE)/tcp-services
         - --udp-services-configmap=$(POD_NAMESPACE)/udp-services
