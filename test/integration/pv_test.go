@@ -43,7 +43,7 @@ func testProvisioning(t *testing.T) {
 	kubectlRunner := util.NewKubectlRunner(t, "minikube")
 
 	defer func() {
-		if out, err := kubectlRunner.RunCommandWithKCtx([]string{"delete", "pvc", pvcName}); err != nil {
+		if out, err := kubectlRunner.RunCommandWithKubeCtx([]string{"delete", "pvc", pvcName}); err != nil {
 			t.Logf("delete pvc %s failed: %v\noutput: %s\n", pvcName, err, out)
 		}
 	}()

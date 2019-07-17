@@ -64,11 +64,12 @@ func (k *KubectlRunner) ContextName() (name string, err error) {
 }
 
 // RunCommandParseOutput runs a command and parses the JSON output
-func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}, withCtx bool) error {
-	args = append(args, " -o=json")
-	if withCtx {
-		args = append(args, " --context "+k.KCtx)
+func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}, withKubeCtx bool) error {
+	if withKubeCtx {
+		args = append(args, fmt.Sprintf("--context %s", k.KCtx))
 	}
+	args = append(args, "-o=json")
+
 	output, err := k.RunCommand(args)
 	if err != nil {
 		return err
@@ -80,8 +81,8 @@ func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface
 	return nil
 }
 
-// RunCommandWithKCtx runs the command with kubectl context
-func (k *KubectlRunner) RunCommandWithKCtx(args []string) (stdout []byte, err error) {
+// RunCommandWithKubeCtx runs the command with kubectl context
+func (k *KubectlRunner) RunCommandWithKubeCtx(args []string) (stdout []byte, err error) {
 	args = append(args, "--context", k.KCtx)
 	return k.RunCommand(args)
 }
