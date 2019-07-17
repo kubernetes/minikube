@@ -66,7 +66,7 @@ func (k *KubectlRunner) ContextName() (name string, err error) {
 // RunCommandParseOutput runs a command and parses the JSON output
 func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}, withKubeCtx bool) error {
 	if withKubeCtx {
-		args = append(args, fmt.Sprintf("--context %s", k.KCtx))
+		args = append(args, fmt.Sprintf("--context=%s", k.KCtx))
 	}
 	args = append(args, "-o=json")
 
@@ -83,7 +83,7 @@ func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface
 
 // RunCommandWithKubeCtx runs the command with kubectl context
 func (k *KubectlRunner) RunCommandWithKubeCtx(args []string) (stdout []byte, err error) {
-	args = append(args, "--context", k.KCtx)
+	args = append(args, fmt.Sprintf("--context=%s", k.KCtx))
 	return k.RunCommand(args)
 }
 
@@ -108,7 +108,7 @@ func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 func (k *KubectlRunner) CreateRandomNamespace() string {
 	const strLen = 20
 	name := genRandString(strLen)
-	if _, err := k.RunCommand([]string{"create", "namespace", name, "--context " + k.KCtx}); err != nil {
+	if _, err := k.RunCommand([]string{"create", "namespace", name, fmt.Sprintf("--context=%s", k.KCtx)}); err != nil {
 		k.T.Fatalf("Error creating namespace: %v", err)
 	}
 	return name
@@ -126,6 +126,6 @@ func genRandString(strLen int) string {
 
 // DeleteNamespace deletes the namespace
 func (k *KubectlRunner) DeleteNamespace(namespace string) error {
-	_, err := k.RunCommand([]string{"delete", "namespace", namespace, "--context " + k.KCtx})
+	_, err := k.RunCommand([]string{"delete", "namespace", namespace, fmt.Sprintf("--context=%s", k.KCtx)})
 	return err
 }

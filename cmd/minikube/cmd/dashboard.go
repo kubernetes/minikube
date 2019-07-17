@@ -148,7 +148,7 @@ func kubectlProxy(path string) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
 	// pkg_config.GetMachineName() respects the -p (profile) flag
 
-	cmd := exec.Command(path, "--context", pkg_config.GetMachineName(), "proxy", "--port=0")
+	cmd := exec.Command(path, fmt.Sprintf("--context=%s", pkg_config.GetMachineName()), "proxy", "--port=0")
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
