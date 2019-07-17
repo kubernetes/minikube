@@ -197,6 +197,10 @@ integration-versioned: out/minikube
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	./test.sh
 
+.PHONY: extract
+extract:
+	go run cmd/extract/extract.go
+
 # Regenerates assets.go when template files have been updated
 pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
