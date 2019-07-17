@@ -114,58 +114,87 @@ var (
 )
 
 func init() {
-	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
-	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
-	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
-	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors (vboxfs)")
-	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
-	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
-	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
+	initMinikubeFlags()
+	initKubernetesFlags()
+	initDriverFlags()
+	initNetworkingFlags()
+	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
+		exit.WithError("unable to bind flags", err)
+	}
+
+	RootCmd.AddCommand(startCmd)
+}
+
+// initMinikubeFlags includes commandline flags for minikube.
+func initMinikubeFlags() {
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
+	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
-	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
-	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
-	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
-	startCmd.Flags().String(kvmQemuURI, "qemu:///system", "The KVM QEMU connection URI. (works only with kvm2 driver on linux)")
-	startCmd.Flags().Bool(kvmGPU, false, "Enable experimental NVIDIA GPU support in minikube")
-	startCmd.Flags().Bool(kvmHidden, false, "Hide the hypervisor signature from the guest in minikube")
-	startCmd.Flags().StringSlice(nfsShare, []string{}, "Local folders to share with Guest via NFS mounts (Only supported on with hyperkit now)")
-	startCmd.Flags().String(nfsSharesRoot, "/nfsshares", "Where to root the NFS Shares (defaults to /nfsshares, only supported with hyperkit now)")
-	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
-	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
-	startCmd.Flags().Int(apiServerPort, pkgutil.APIServerPort, "The apiserver listening port")
-	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
-	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
-	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
-	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
-	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
-	startCmd.Flags().String(imageMirrorCountry, "", "Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn")
-	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd)")
-	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
-	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
-	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
-	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
-	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
+	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
+	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
+	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd)")
+	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
+	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
+	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
+	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
+	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
+}
+
+// initKubernetesFlags inits the commandline flags for kubernetes related options
+func initKubernetesFlags() {
+	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
 		Valid kubeadm parameters: `+fmt.Sprintf("%s, %s", strings.Join(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], ", "), strings.Join(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], ",")))
-	startCmd.Flags().String(uuid, "", "Provide VM UUID to restore MAC address (only supported with Hyperkit driver).")
-	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
-	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
-	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
+	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
+	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
+	startCmd.Flags().Int(apiServerPort, pkgutil.APIServerPort, "The apiserver listening port")
+	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
+	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
+	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
+
+}
+
+// initDriverFlags inits the commandline flags for vm drivers
+func initDriverFlags() {
+	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
+
+	// kvm2
+	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
+	startCmd.Flags().String(kvmQemuURI, "qemu:///system", "The KVM QEMU connection URI. (works only with kvm2 driver on linux)")
+	startCmd.Flags().Bool(kvmGPU, false, "Enable experimental NVIDIA GPU support in minikube")
+	startCmd.Flags().Bool(kvmHidden, false, "Hide the hypervisor signature from the guest in minikube")
+
+	// virtualbox
+	startCmd.Flags().String(hostOnlyCIDR, "192.168.99.1/24", "The CIDR to be used for the minikube VM (only supported with Virtualbox driver)")
 	startCmd.Flags().Bool(dnsProxy, false, "Enable proxy for NAT DNS requests (virtualbox)")
 	startCmd.Flags().Bool(hostDNSResolver, true, "Enable host resolver for NAT DNS requests (virtualbox)")
-	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
-		exit.WithError("unable to bind flags", err)
-	}
-	RootCmd.AddCommand(startCmd)
+	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox)")
+
+	// hyperkit
+	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (Only supported on with hyperkit now).")
+	startCmd.Flags().String(uuid, "", "Provide VM UUID to restore MAC address (only supported with Hyperkit driver).")
+	startCmd.Flags().String(vpnkitSock, "", "Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock.")
+	startCmd.Flags().StringSlice(nfsShare, []string{}, "Local folders to share with Guest via NFS mounts (Only supported on with hyperkit now)")
+	startCmd.Flags().String(nfsSharesRoot, "/nfsshares", "Where to root the NFS Shares (defaults to /nfsshares, only supported with hyperkit now)")
+
+	// hyperv
+	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
+}
+
+// initNetworkingFlags inits the commandline flags for connectivity related flags for start
+func initNetworkingFlags() {
+	startCmd.Flags().StringSliceVar(&insecureRegistry, "insecure-registry", nil, "Insecure Docker registries to pass to the Docker daemon.  The default service CIDR range will automatically be added.")
+	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
+	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
+	startCmd.Flags().String(imageMirrorCountry, "", "Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn")
+	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
+	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 }
 
 // startCmd represents the start command
@@ -180,14 +209,9 @@ var startCmd = &cobra.Command{
 func runStart(cmd *cobra.Command, args []string) {
 	console.OutT(console.Happy, "minikube {{.version}} on {{.os}} ({{.arch}})", console.Arg{"version": version.GetVersion(), "os": runtime.GOOS, "arch": runtime.GOARCH})
 	validateConfig()
-
 	validateUser()
 
-	oldConfig, err := cfg.Load()
-	if err != nil && !os.IsNotExist(err) {
-		exit.WithCode(exit.Data, "Unable to load config: %v", err)
-	}
-	k8sVersion, isUpgrade := validateKubernetesVersions(oldConfig)
+	k8sVersion, isUpgrade := getKubernetesVersion()
 	config, err := generateConfig(cmd, k8sVersion)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
@@ -197,7 +221,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	downloadISO(config)
 
 	// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
-	skipCache(config)
+	skipCache(&config)
 
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
@@ -205,76 +229,89 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := saveConfig(config); err != nil {
+	if err := saveConfig(&config); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
 	validateDriverVersion(viper.GetString(vmDriver))
-
-	m, err := machine.NewAPIClient()
-	if err != nil {
-		exit.WithError("Failed to get machine client", err)
-	}
-	defer m.Close()
-
-	// If --download-only, complete the remaining downloads and exit.
-	if viper.GetBool(downloadOnly) {
-		if err := doCacheBinaries(k8sVersion); err != nil {
-			exit.WithError("Failed to cache binaries", err)
-		}
-		waitCacheImages(&cacheGroup)
-		if err := CacheImagesInConfigFile(); err != nil {
-			exit.WithError("Failed to cache images", err)
-		}
-		console.OutStyle(console.Check, "Download complete!")
-		return
-	}
-
-	host, preexisting := startHost(m, config.MachineConfig)
-
-	ip := validateNetwork(host)
-	// Bypass proxy for minikube's vm ip
-	err = proxy.ExcludeIP(ip)
-	if err != nil {
-		console.ErrT(console.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", console.Arg{"ip": ip})
-	}
-
-	// Save IP to configuration file for subsequent use
-	config.KubernetesConfig.NodeIP = ip
-	if err := saveConfig(config); err != nil {
-		exit.WithError("Failed to save config", err)
-	}
-	runner, err := machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
-	}
-
-	cr := configureRuntimes(runner)
+	// exits here in case of --download-only option.
+	handleDownloadOnly(&cacheGroup, k8sVersion)
+	mRunner, preExists, machineAPI, host := startMachine(&config)
+	defer machineAPI.Close()
+	// configure the runtime (docker, containerd, crio)
+	cr := configureRuntimes(mRunner)
 	showVersionInfo(k8sVersion, cr)
-
-	// prepareHostEnvironment uses the downloaded images, so we need to wait for background task completion.
 	waitCacheImages(&cacheGroup)
 
-	bs := prepareHostEnvironment(m, config.KubernetesConfig)
-
+	// setup kube adm and certs and return bootstrapperx
+	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
 	kubeconfig := updateKubeConfig(host, &config)
-	bootstrapCluster(bs, cr, runner, config.KubernetesConfig, preexisting, isUpgrade)
+	// pull images or restart cluster
+	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
 	configureMounts()
-	if err = LoadCachedImagesInConfigFile(); err != nil {
+	if err = loadCachedImagesInConfigFile(); err != nil {
 		console.Failure("Unable to load cached images from config file.")
 	}
-
-	if config.MachineConfig.VMDriver == constants.DriverNone {
-		console.OutStyle(console.StartingNone, "Configuring local host environment ...")
-		prepareNone()
-	}
+	// special ops for none driver, like change minikube directory.
+	prepareNone(viper.GetString(vmDriver))
 
 	if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
 		exit.WithError("Wait failed", err)
 	}
 	showKubectlConnectInfo(kubeconfig)
 
+}
+
+func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
+	// If --download-only, complete the remaining downloads and exit.
+	if !viper.GetBool(downloadOnly) {
+		return
+	}
+	if err := doCacheBinaries(k8sVersion); err != nil {
+		exit.WithError("Failed to cache binaries", err)
+	}
+	waitCacheImages(cacheGroup)
+	if err := CacheImagesInConfigFile(); err != nil {
+		exit.WithError("Failed to cache images", err)
+	}
+	console.OutStyle(console.Check, "Download complete!")
+	os.Exit(0)
+
+}
+
+func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+	m, err := machine.NewAPIClient()
+	if err != nil {
+		exit.WithError("Failed to get machine client", err)
+	}
+	host, preExists = startHost(m, config.MachineConfig)
+
+	ip := validateNetwork(host)
+	// Bypass proxy for minikube's vm host ip
+	err = proxy.ExcludeIP(ip)
+	if err != nil {
+		console.ErrT(console.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", console.Arg{"ip": ip})
+	}
+	// Save IP to configuration file for subsequent use
+	config.KubernetesConfig.NodeIP = ip
+	if err := saveConfig(config); err != nil {
+		exit.WithError("Failed to save config", err)
+	}
+	runner, err = machine.CommandRunner(host)
+	if err != nil {
+		exit.WithError("Failed to get command runner", err)
+	}
+
+	return runner, preExists, m, host
+}
+
+func getKubernetesVersion() (k8sVersion string, isUpgrade bool) {
+	oldConfig, err := cfg.Load()
+	if err != nil && !os.IsNotExist(err) {
+		exit.WithCode(exit.Data, "Unable to load config: %v", err)
+	}
+	return validateKubernetesVersions(oldConfig)
 }
 
 func downloadISO(config cfg.Config) {
@@ -285,7 +322,7 @@ func downloadISO(config cfg.Config) {
 	}
 }
 
-func skipCache(config cfg.Config) {
+func skipCache(config *cfg.Config) {
 	if viper.GetString(vmDriver) == constants.DriverNone {
 		viper.Set(cacheImages, false)
 		config.KubernetesConfig.ShouldLoadCachedImages = false
@@ -579,7 +616,11 @@ func autoSetOptions(vmDriver string) error {
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver
-func prepareNone() {
+func prepareNone(vmDriver string) {
+	if vmDriver != constants.DriverNone {
+		return
+	}
+	console.OutStyle(console.StartingNone, "Configuring local host environment ...")
 	if viper.GetBool(cfg.WantNoneDriverWarning) {
 		console.OutLn("")
 		console.Warning("The 'none' driver provides limited isolation and may reduce system security and reliability.")
@@ -692,9 +733,9 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 	return nv, isUpgrade
 }
 
-// prepareHostEnvironment adds any requested files into the VM before Kubernetes is started
-func prepareHostEnvironment(api libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Bootstrapper {
-	bs, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+// setupKubeAdm adds any requested files into the VM before Kubernetes is started
+func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Bootstrapper {
+	bs, err := getClusterBootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}
@@ -812,7 +853,7 @@ func configureMounts() {
 }
 
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterConfig cfg.Config) error {
+func saveConfig(clusterConfig *cfg.Config) error {
 	data, err := json.MarshalIndent(clusterConfig, "", "    ")
 	if err != nil {
 		return err
