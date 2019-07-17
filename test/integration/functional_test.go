@@ -19,7 +19,7 @@ limitations under the License.
 package integration
 
 import (
-	"fmt"
+	"os"
 	"strings"
 	"testing"
 
@@ -61,23 +61,14 @@ func TestFunctionalContainerd(t *testing.T) {
 		r.RunCommand("delete", true)
 	}
 
-	r.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	t.Log("starting minikube, $MINIKUBE_HOME=", os.Getenv("MINIKUBE_HOME"))
 
-	// Load the gvisor image into Minikube
-	loadGvisorImage(t, r)
+	r.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	r.RunCommand("cache add gcr.io/k8s-minikube/gvisor-addon:latest", true)
 
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
 	r.RunCommand("delete", true)
-}
-
-func loadGvisorImage(t *testing.T, m util.MinikubeRunner) {
-	minikubeGvisorTarPath := "/gvisor-image.tar"
-	// Load the gvisor tar into the containerd daemon.
-	out, err := m.SSH(fmt.Sprintf("sudo ctr cri load %s", minikubeGvisorTarPath))
-	if err != nil {
-		t.Fatalf("error loading gvisor addon image: %v \n %s", err, out)
-	}
 }
 
 // usingNoneDriver returns true if using the none driver
