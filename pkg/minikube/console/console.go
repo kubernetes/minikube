@@ -138,6 +138,26 @@ func Failure(format string, a ...interface{}) {
 	ErrStyle(FailureType, format, a...)
 }
 
+// SuccessT is a shortcut for writing a templated success message to stdout
+func SuccessT(format string, a Arg) {
+	OutT(SuccessType, format, a)
+}
+
+// FatalT is a shortcut for writing a templated fatal message to stderr
+func FatalT(format string, a Arg) {
+	ErrStyle(FatalType, format, a)
+}
+
+// WarningT is a shortcut for writing a templated warning message to stderr
+func WarningT(format string, a Arg) {
+	ErrStyle(WarningType, format, a)
+}
+
+// FailureT is a shortcut for writing a templated failure message to stderr
+func FailureT(format string, a Arg) {
+	ErrStyle(FailureType, format, a)
+}
+
 // SetOutFile configures which writer standard output goes to.
 func SetOutFile(w fdWriter) {
 	glog.Infof("Setting OutFile to fd %d ...", w.Fd())

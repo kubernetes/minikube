@@ -101,6 +101,6 @@ func displayError(msg string, err error) {
 	console.Err("\n")
 	console.Fatal("%s: %v", msg, err)
 	console.Err("\n")
-	console.ErrStyle(console.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
-	console.ErrStyle(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+	console.ErrT(console.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:", console.Arg{})
+	console.ErrT(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose", console.Arg{})
 }
