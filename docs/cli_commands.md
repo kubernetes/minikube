@@ -247,7 +247,7 @@ minikube service [command]
 
 ---
 ### start
-**Description -** Starts a local kubernetes cluster using VM. This command assumes you have already installed one of the VM drivers: **virtualbox/parallels/vmwarefusion/kvm/hyperv**.
+**Description -** Starts a local kubernetes cluster.
 **Usage -** `minikube start [flags]`
 **Available Flags -**
 ```
