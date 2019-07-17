@@ -36,8 +36,7 @@ var addonsDisableCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("disable failed", err)
 		}
-		// console.Success("%s was successfully disabled", addon)
-		console.SuccessT(`"{{.minikube_addon}}" was successfully disabled`, console.Arg("minikube_addon", addon))
+		console.SuccessT(`"{{.minikube_addon}}" was successfully disabled`, console.Arg{"minikube_addon": addon})
 	},
 }
 
