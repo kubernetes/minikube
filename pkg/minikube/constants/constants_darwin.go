@@ -25,7 +25,6 @@ var SupportedVMDrivers = [...]string{
 	DriverVirtualbox,
 	DriverParallels,
 	DriverVmwareFusion,
-	DriverXhyve,
 	DriverHyperkit,
 	DriverVmware,
 }
