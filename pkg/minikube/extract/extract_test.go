@@ -140,7 +140,7 @@ func TestTranslationsUpToDate(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Fatalf("Localized string mismatch (-want, +got):\n%s", diff)
+		t.Fatalf("Localized string mismatch (-want, +got):\n%s\n\nRun `make extract` to fix.", diff)
 	}
 
 }
