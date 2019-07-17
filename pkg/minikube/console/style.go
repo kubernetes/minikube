@@ -151,7 +151,7 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 	return applyPrefix(s.Prefix, format)
 }
 
-func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a map[string]interface{}) string {
+func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...Arg) string {
 	format = applyStyle(style, useColor, format)
 
 	var buf bytes.Buffer
@@ -160,8 +160,10 @@ func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ma
 		glog.Infof("Initializing template failed. Returning raw string.")
 		return format
 	}
-
-	err = t.Execute(&buf, a)
+	if len(a) == 0 {
+		a[0] = Arg{}
+	}
+	err = t.Execute(&buf, a[0])
 	if err != nil {
 		glog.Infof("Executing template failed. Returning raw string.")
 		return format
