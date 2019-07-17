@@ -58,6 +58,12 @@ func WithCode(code int, format string, a ...interface{}) {
 	os.Exit(code)
 }
 
+// WithCodeT outputs a templated fatal error message and exits with the supplied error code.
+func WithCodeT(code int, format string, a ...console.Arg) {
+	console.FatalT(format, a...)
+	os.Exit(code)
+}
+
 // WithError outputs an error and exits.
 func WithError(msg string, err error) {
 	p := problem.FromError(err, runtime.GOOS)
@@ -101,6 +107,6 @@ func displayError(msg string, err error) {
 	console.Err("\n")
 	console.FatalT("{{.msg}}: {{.err}}", console.Arg{"msg": msg, "err": err})
 	console.Err("\n")
-	console.ErrT(console.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:", console.Arg{})
-	console.ErrT(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose", console.Arg{})
+	console.ErrT(console.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
+	console.ErrT(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 }

@@ -67,8 +67,8 @@ func OutStyle(style StyleEnum, format string, a ...interface{}) {
 }
 
 // OutT writes a stylized and templated message to stdout
-func OutT(style StyleEnum, format string, a map[string]interface{}) {
-	outStyled := applyTemplateFormatting(style, useColor, format, a)
+func OutT(style StyleEnum, format string, a ...Arg) {
+	outStyled := applyTemplateFormatting(style, useColor, format, a...)
 	Out(outStyled)
 }
 
@@ -96,8 +96,8 @@ func ErrStyle(style StyleEnum, format string, a ...interface{}) {
 }
 
 // ErrT writes a stylized and templated error message to stderr
-func ErrT(style StyleEnum, format string, a map[string]interface{}) {
-	errStyled := applyTemplateFormatting(style, useColor, format, a)
+func ErrT(style StyleEnum, format string, a ...Arg) {
+	errStyled := applyTemplateFormatting(style, useColor, format, a...)
 	Err(errStyled)
 }
 
@@ -139,23 +139,23 @@ func Failure(format string, a ...interface{}) {
 }
 
 // SuccessT is a shortcut for writing a templated success message to stdout
-func SuccessT(format string, a Arg) {
-	OutT(SuccessType, format, a)
+func SuccessT(format string, a ...Arg) {
+	OutT(SuccessType, format, a...)
 }
 
 // FatalT is a shortcut for writing a templated fatal message to stderr
-func FatalT(format string, a Arg) {
-	ErrStyle(FatalType, format, a)
+func FatalT(format string, a ...Arg) {
+	ErrT(FatalType, format, a...)
 }
 
 // WarningT is a shortcut for writing a templated warning message to stderr
-func WarningT(format string, a Arg) {
-	ErrStyle(WarningType, format, a)
+func WarningT(format string, a ...Arg) {
+	ErrT(WarningType, format, a...)
 }
 
 // FailureT is a shortcut for writing a templated failure message to stderr
-func FailureT(format string, a Arg) {
-	ErrStyle(FailureType, format, a)
+func FailureT(format string, a ...Arg) {
+	ErrT(FailureType, format, a...)
 }
 
 // SetOutFile configures which writer standard output goes to.
