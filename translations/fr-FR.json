@@ -163,6 +163,7 @@
 	"Run 'minikube delete'. If the problem persists, check your proxy or firewall configuration": "",
 	"Run 'sudo modprobe vboxdrv' and reinstall VirtualBox if it fails.": "",
 	"Run minikube from the C: drive.": "",
+	"Running on localhost (CPUs=%d, Memory=%dMB, Disk=%dMB) ...": "",
 	"Set failed": "",
 	"Setting profile failed": "",
 	"Skipped switching kubectl context for %s , because --keep-context": "",
