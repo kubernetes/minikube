@@ -359,6 +359,28 @@ func WaitForIngressControllerRunning(t *testing.T) error {
 	return nil
 }
 
+// WaitForDockerRegistryRunning waits until docker registry pod to be running
+func WaitForDockerRegistryRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	if err := commonutil.WaitForRCToStabilize(client, "kube-system", "registry", time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for registry replicacontroller to stabilize")
+	}
+
+	registrySelector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "registry"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", registrySelector); err != nil {
+		return errors.Wrap(err, "waiting for registry pods")
+	}
+	proxySelector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "registry-proxy"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", proxySelector); err != nil {
+		return errors.Wrap(err, "waiting for registry-proxy pods")
+	}
+	return nil
+}
+
 // WaitForIngressDefaultBackendRunning waits until ingress default backend pod to be running
 func WaitForIngressDefaultBackendRunning(t *testing.T) error {
 	client, err := commonutil.GetClient()

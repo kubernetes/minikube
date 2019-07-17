@@ -47,6 +47,7 @@ var blacklist = []string{
 	"opt %s",
 }
 
+// ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.
 const ErrMapFile string = "pkg/minikube/problem/err_map.go"
 
 // state is a struct that represent the current state of the extraction process
