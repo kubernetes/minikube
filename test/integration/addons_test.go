@@ -190,7 +190,74 @@ func testServicesList(t *testing.T) {
 		t.Fatalf(err.Error())
 	}
 }
+func testRegistry(t *testing.T) {
+	t.Parallel()
+	minikubeRunner := NewMinikubeRunner(t)
+	kubectlRunner := util.NewKubectlRunner(t)
+	minikubeRunner.RunCommand("addons enable registry", true)
+	t.Log("wait for registry to come up")
 
+	if err := util.WaitForDockerRegistryRunning(t); err != nil {
+		t.Fatalf("waiting for registry to be up: %v", err)
+	}
+
+	// Check access from outside the cluster on port 5000, validing connectivity via registry-proxy
+	checkExternalAccess := func() error {
+		t.Log("checking registry access from outside cluster")
+		_, out := minikubeRunner.RunDaemon("ip")
+		s, err := readLineWithTimeout(out, 180*time.Second)
+
+		if err != nil {
+			t.Fatalf("failed to read minikubeIP: %v", err)
+		}
+
+		registryEndpoint := "http://" + strings.TrimSpace(s) + ":5000"
+		u, err := url.Parse(registryEndpoint)
+
+		if err != nil {
+			t.Fatalf("failed to parse %q: %v", s, err)
+		}
+
+		resp, err := retryablehttp.Get(u.String())
+		if err != nil {
+			t.Errorf("failed get: %v", err)
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			t.Errorf("%s returned status code %d, expected %d.\n", registryEndpoint, resp.StatusCode, http.StatusOK)
+		}
+
+		return nil
+	}
+
+	if err := util.Retry(t, checkExternalAccess, 2*time.Second, 5); err != nil {
+		t.Fatalf(err.Error())
+	}
+	// check access from inside the cluster via a busybox container running inside cluster
+	t.Log("checking registry access from inside cluster")
+	expectedStr := "200"
+	out, _ := kubectlRunner.RunCommand([]string{
+		"run",
+		"registry-test",
+		"--restart=Never",
+		"--image=busybox",
+		"-it",
+		"--",
+		"sh",
+		"-c",
+		"wget --spider -S 'http://registry.kube-system.svc.cluster.local' 2>&1 | grep 'HTTP/' | awk '{print $2}'"})
+	internalCheckOutput := string(out)
+	if !strings.Contains(internalCheckOutput, expectedStr) {
+		t.Fatalf("ExpectedStr internalCheckOutput to be: %s. Output was: %s", expectedStr, internalCheckOutput)
+	}
+
+	defer func() {
+		if _, err := kubectlRunner.RunCommand([]string{"delete", "pod", "registry-test"}); err != nil {
+			t.Fatalf("failed to delete pod registry-test")
+		}
+	}()
+	minikubeRunner.RunCommand("addons disable registry", true)
+}
 func testGvisor(t *testing.T) {
 	mk := NewMinikubeRunner(t, "--wait=false")
 	mk.RunCommand("addons enable gvisor", true)
