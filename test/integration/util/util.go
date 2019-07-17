@@ -359,28 +359,6 @@ func WaitForIngressControllerRunning(t *testing.T) error {
 	return nil
 }
 
-// WaitForIngressDefaultBackendRunning waits until ingress default backend pod to be running
-func WaitForIngressDefaultBackendRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
-	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
-	}
-
-	if err := commonutil.WaitForDeploymentToStabilize(client, "kube-system", "default-http-backend", time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for default-http-backend deployment to stabilize")
-	}
-
-	if err := commonutil.WaitForService(client, "kube-system", "default-http-backend", true, time.Millisecond*500, time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for default-http-backend service to be up")
-	}
-
-	if err := commonutil.WaitForServiceEndpointsNum(client, "kube-system", "default-http-backend", 1, time.Second*3, time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for one default-http-backend endpoint to be up")
-	}
-
-	return nil
-}
-
 // WaitForGvisorControllerRunning waits for the gvisor controller pod to be running
 func WaitForGvisorControllerRunning(t *testing.T) error {
 	client, err := commonutil.GetClient()
