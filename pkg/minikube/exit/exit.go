@@ -25,6 +25,7 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/problem"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 // Exit codes based on sysexits(3)
@@ -111,7 +112,7 @@ func displayError(msg string, err error) {
 	// use Warning because Error will display a duplicate message to stderr
 	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
 	console.Err("\n")
-	console.FatalT("{{.msg}}: {{.err}}", console.Arg{"msg": msg, "err": err})
+	console.FatalT("{{.msg}}: {{.err}}", console.Arg{"msg": translate.T(msg), "err": err})
 	console.Err("\n")
 	console.ErrT(console.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
 	console.ErrT(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
