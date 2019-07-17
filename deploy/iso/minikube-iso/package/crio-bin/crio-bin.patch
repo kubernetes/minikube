@@ -1,0 +1,39 @@
+diff --git a/Makefile b/Makefile
+index de79f63..a9ea13b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -136,7 +136,7 @@ crio.conf: bin/crio
+ release-note: ${RELEASE_TOOL}
+ 	${RELEASE_TOOL} -n $(release)
+ 
+-conmon/config.h: git-vars cmd/crio-config/config.go oci/oci.go
++conmon/config.h: cmd/crio-config/config.go oci/oci.go
+ 	$(GO) build $(LDFLAGS) -tags "$(BUILDTAGS)" -o bin/crio-config $(PROJECT)/cmd/crio-config
+ 	( cd conmon && $(CURDIR)/bin/crio-config )
+ 
+diff --git a/cmd/crio/main.go b/cmd/crio/main.go
+index 0bc347a..ab9969f 100644
+--- a/cmd/crio/main.go
++++ b/cmd/crio/main.go
+@@ -207,7 +207,7 @@ func mergeConfig(config *server.Config, ctx *cli.Context) (string, error) {
+ }
+ 
+ func writeCrioGoroutineStacks() {
+-	path := filepath.Join("/tmp", fmt.Sprintf("crio-goroutine-stacks-%s.log", strings.ReplaceAll(time.Now().Format(time.RFC3339), ":", "")))
++	path := filepath.Join("/tmp", fmt.Sprintf("crio-goroutine-stacks-%s.log", strings.Replace(time.Now().Format(time.RFC3339), ":", "", -1)))
+ 	if err := utils.WriteGoroutineStacksToFile(path); err != nil {
+ 		logrus.Warnf("Failed to write goroutine stacks: %s", err)
+ 	}
+diff --git a/oci/runtime_vm.go b/oci/runtime_vm.go
+index 57a1fde..64f853f 100644
+--- a/oci/runtime_vm.go
++++ b/oci/runtime_vm.go
+@@ -172,7 +172,7 @@ func (r *runtimeVM) startRuntimeDaemon(c *Container) error {
+ 	args = append(args, "start")
+ 
+ 	// Modify the runtime path so that it complies with v2 shim API
+-	newRuntimePath := strings.ReplaceAll(r.path, "-", ".")
++	newRuntimePath := strings.Replace(r.path, "-", ".", -1)
+ 
+ 	// Setup default namespace
+ 	r.ctx = namespaces.WithNamespace(r.ctx, namespaces.Default)
