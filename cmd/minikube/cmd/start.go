@@ -172,9 +172,8 @@ func init() {
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts a local kubernetes cluster",
-	Long: `Starts a local kubernetes cluster using VM. This command
-assumes you have already installed one of the VM drivers: virtualbox/parallels/vmwarefusion/kvm/hyperv.`,
-	Run: runStart,
+	Long:  "Starts a local kubernetes cluster",
+	Run:   runStart,
 }
 
 // runStart handles the executes the flow of "minikube start"
