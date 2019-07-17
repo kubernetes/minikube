@@ -69,7 +69,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if err = cluster.DeleteHost(api); err != nil {
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			console.OutT(console.Meh, "{{.name}} cluster does not exist", console.Arg{"name": profile})
+			console.OutT(console.Meh, `"{{.name}}" cluster does not exist`, console.Arg{"name": profile})
 		default:
 			exit.WithError("Failed to delete cluster", err)
 		}

@@ -99,7 +99,7 @@ func displayError(msg string, err error) {
 	// use Warning because Error will display a duplicate message to stderr
 	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
 	console.Err("\n")
-	console.Fatal("%s: %v", msg, err)
+	console.FatalT("{{.msg}}: {{.err}}", console.Arg{"msg": msg, "err": err})
 	console.Err("\n")
 	console.ErrT(console.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:", console.Arg{})
 	console.ErrT(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose", console.Arg{})
