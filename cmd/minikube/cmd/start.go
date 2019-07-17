@@ -309,7 +309,7 @@ func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, ma
 func getKubernetesVersion() (k8sVersion string, isUpgrade bool) {
 	oldConfig, err := cfg.Load()
 	if err != nil && !os.IsNotExist(err) {
-		exit.WithCode(exit.Data, "Unable to load config: %v", err)
+		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", console.Arg{"error":err})
 	}
 	return validateKubernetesVersions(oldConfig)
 }
@@ -333,10 +333,10 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
 	console.OutT(cr.Style(), "Configuring environment for Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}}", console.Arg{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
 	for _, v := range dockerOpt {
-		console.OutStyle(console.Option, "opt %s", v)
+		console.OutStyleT(console.Option, "opt {{.docker_option}}", console.Arg{"docker_option": v})
 	}
 	for _, v := range dockerEnv {
-		console.OutStyle(console.Option, "env %s", v)
+		console.OutStyleT(console.Option, "env {{.docker_env}}", console.Arg{"docker_env": v})
 	}
 }
 
@@ -411,8 +411,7 @@ func validateUser() {
 	// Check if minikube needs to run with sudo or not.
 	if err == nil {
 		if d == constants.DriverNone && u.Name != "root" {
-			exit.Usage("Please run with sudo. the vm-driver %q requires sudo.", constants.DriverNone)
-
+			exit.UsageT(`Please run with sudo. the vm-driver "{{.driver_name}}" requires sudo.`, console.Arg{"driver_name": constants.DriverNone})
 		} else if u.Name == "root" && !(d == constants.DriverHyperv || d == constants.DriverNone) {
 			console.OutT(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with {{.driver}} driver.", console.Arg{"driver": d})
 		}
@@ -427,7 +426,7 @@ func validateUser() {
 func validateConfig() {
 	diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 	if diskSizeMB < pkgutil.CalculateSizeInMB(constants.MinimumDiskSize) {
-		exit.WithCode(exit.Config, "Requested disk size (%dMB) is less than minimum of (%dMB)", diskSizeMB, pkgutil.CalculateSizeInMB(constants.MinimumDiskSize))
+		exit.WithCodeT(exit.Config, "Requested disk size {{.size_in_mb}} is less than minimum of {{.size_in_mb2}}", console.Arg{"size_in_mb":diskSizeMB,"size_in_mb2":pkgutil.CalculateSizeInMB(constants.MinimumDiskSize)})
 	}
 
 	err := autoSetOptions(viper.GetString(vmDriver))
@@ -437,17 +436,17 @@ func validateConfig() {
 
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.MinimumMemorySize) {
-		exit.Usage("Requested memory allocation (%dMB) is less than the minimum allowed of %dMB", memorySizeMB, pkgutil.CalculateSizeInMB(constants.MinimumMemorySize))
+		exit.UsageT("Requested memory allocation {{.size_in_mb}} is less than the minimum allowed of {{.size_in_mb2}}", console.Arg{"size_in_mb":memorySizeMB"size_in_mb2":pkgutil.CalculateSizeInMB(constants.MinimumMemorySize)})
 	}
 	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) {
-		console.OutT(console.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default}}MB. Beware that minikube might not work correctly or crash unexpectedly.", console.Arg{"memory": memorySizeMB, "default": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
+		console.OutT(console.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default_memorysize}}MB. Beware that minikube might not work correctly or crash unexpectedly.", console.Arg{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
 	for param := range extraOptions.AsMap().Get(kubeadm.Kubeadm) {
 		if !pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
 			!pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], param) {
-			exit.Usage("Sorry, the kubeadm.%s parameter is currently not supported by --extra-config", param)
+			exit.UsageT("Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config", console.Arg{"parameter_name", param})
 		}
 	}
 
@@ -465,7 +464,7 @@ func validateRegistryMirror() {
 				glog.Errorln("Error Parsing URL: ", err)
 			}
 			if (URL.Scheme != "http" && URL.Scheme != "https") || URL.Path != "" {
-				exit.Usage("Sorry, url provided with --registry-mirror flag is invalid %q", loc)
+				exit.Usage("Sorry, url provided with --registry-mirror flag is invalid {{.url}}", console.Arg{"url":loc})
 			}
 
 		}
@@ -541,7 +540,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			if autoSelectedRepository == "" {
 				exit.WithCode(exit.Failure, "None of known repositories is accessible. Consider specifying an alternative image repository with --image-repository flag")
 			} else {
-				console.Warning("None of known repositories in your location is accessible. Use %s as fallback.", autoSelectedRepository)
+				console.WarningT("None of known repositories in your location is accessible. Use {{.image_repository_name}} as fallback.", console.Arg{"image_repository_name": autoSelectedRepository})
 			}
 		}
 
@@ -631,20 +630,20 @@ func prepareNone(vmDriver string) {
 
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
 		home := os.Getenv("HOME")
-		console.Warning("kubectl and minikube configuration will be stored in %s", home)
+		console.WarningT("kubectl and minikube configuration will be stored in {{.home_folder}}", consoe.Arg{"home_folder":home})
 		console.Warning("To use kubectl or minikube commands as your own user, you may")
 		console.Warning("need to relocate them. For example, to overwrite your own settings:")
 
 		console.OutLn("")
-		console.OutStyle(console.Command, "sudo mv %s/.kube %s/.minikube $HOME", home, home)
-		console.OutStyle(console.Command, "sudo chown -R $USER $HOME/.kube $HOME/.minikube")
+		console.OutStyleT(console.Command, "sudo mv {{.home_folder}}/.kube {{.home_folder}}/.minikube $HOME",console.Arg{"home_folder": home})
+		console.OutStyleT(console.Command, "sudo chown -R $USER $HOME/.kube $HOME/.minikube")
 		console.OutLn("")
 
 		console.OutStyle(console.Tip, "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
 	}
 
 	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
-		exit.WithCode(exit.Permissions, "Failed to chown %s: %v", constants.GetMinipath(), err)
+		exit.WithCodeT(exit.Permissions, "Failed to chown {{.minikube_dir_path}}: {{.error}}", console.Arg{"minikube_dir_path":constants.GetMinipath(), "error":err})
 	}
 }
 
@@ -684,11 +683,11 @@ func validateNetwork(h *host.Host) string {
 				console.OutStyle(console.Internet, "Found network options:")
 				optSeen = true
 			}
-			console.OutStyle(console.Option, "%s=%s", k, v)
+			console.OutStyleT(console.Option, "{{.key}}={{.value}}", console.Arg{"key":k,"value": v)})
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
 			k = strings.ToUpper(k)               // for http_proxy & https_proxy
 			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
-				console.Warning("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP (%s). Please see https://github.com/kubernetes/minikube/blob/master/docs/http_proxy.md for more details", ip)
+				console.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see https://github.com/kubernetes/minikube/blob/master/docs/http_proxy.md for more details", console.Arg{"ip_address":ip})
 				warnedOnce = true
 			}
 		}
@@ -708,7 +707,7 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	nvs, err := semver.Make(strings.TrimPrefix(rawVersion, version.VersionPrefix))
 	if err != nil {
-		exit.WithCode(exit.Data, "Unable to parse %q: %v", rawVersion, err)
+		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubenretes_version}}": {{.error}}`, console.Arg{"kubenretes_version":rawVersion, "error":err})
 	}
 	nv := version.VersionPrefix + nvs.String()
 
@@ -740,7 +739,7 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 		exit.WithError("Failed to get bootstrapper", err)
 	}
 	for _, eo := range extraOptions {
-		console.OutStyle(console.Option, "%s.%s=%s", eo.Component, eo.Key, eo.Value)
+		console.OutStyleT(console.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", console.Arg{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
 	if err := bs.UpdateCluster(kc); err != nil {
@@ -785,7 +784,7 @@ func configureRuntimes(runner cruntime.CommandRunner) cruntime.Manager {
 	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
 	cr, err := cruntime.New(config)
 	if err != nil {
-		exit.WithError(fmt.Sprintf("Failed runtime for %+v", config), err)
+		exit.WithError("Failed runtime", err)
 	}
 
 	disableOthers := true
@@ -904,7 +903,7 @@ func validateDriverVersion(vmDriver string) {
 		// we don't want to fail if an error was returned,
 		// libmachine has a nice message for the user if the driver isn't present
 		if err != nil {
-			console.Warning("Error checking driver version: %v", err)
+			console.WarningT("Error checking driver version: {{.error}}", console.Arg{"error":err})
 			return
 		}
 
@@ -912,23 +911,23 @@ func validateDriverVersion(vmDriver string) {
 
 		// if the driver doesn't have return any version, it is really old, we force a upgrade.
 		if len(v) == 0 {
-			exit.WithCode(exit.Failure, "Please upgrade the 'docker-machine-driver-kvm2'. %s", constants.KVMDocumentation)
+			exit.WithCodeT(exit.Failure, "Please upgrade the 'docker-machine-driver-kvm2'. {{.documentaiton_url}}", console.Arg{"documentaiton_url":constants.KVMDocumentation})
 		}
 
 		vmDriverVersion, err := semver.Make(v)
 		if err != nil {
-			console.Warning("Error parsing vmDriver version: %v", err)
+			console.WarningT("Error parsing vmDriver version: {{.error}}", console.Arg{"error":err})
 			return
 		}
 
 		minikubeVersion, err := version.GetSemverVersion()
 		if err != nil {
-			console.Warning("Error parsing minukube version: %v", err)
+			console.WarningT("Error parsing minukube version: {{.error}}", console.Arg{"error":err})
 			return
 		}
 
 		if vmDriverVersion.LT(minikubeVersion) {
-			console.Warning("The 'docker-machine-driver-kvm2' version is old. Please consider upgrading. %s", constants.KVMDocumentation)
+			console.WarningT("The 'docker-machine-driver-kvm2' version is old. Please consider upgrading. {{.documentaiton_url}}", console.Arg{"documentaiton_url":constants.KVMDocumentation})
 		}
 	}
 }
