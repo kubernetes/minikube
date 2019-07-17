@@ -28,7 +28,6 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
-// TODO: add --all
 // ProfileCmd represents the profile command
 var ProfileCmd = &cobra.Command{
 	Use:   "profile [MINIKUBE_PROFILE_NAME].  You can return to the default minikube profile by running `minikube profile default`",
