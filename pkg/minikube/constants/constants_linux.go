@@ -30,7 +30,6 @@ var SupportedVMDrivers = [...]string{
 	DriverVirtualbox,
 	DriverParallels,
 	DriverVmwareFusion,
-	DriverKvmOld,
 	DriverKvm2,
 	DriverVmware,
 	DriverNone,

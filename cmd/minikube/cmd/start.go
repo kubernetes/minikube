@@ -68,7 +68,6 @@ const (
 	cpus                  = "cpus"
 	humanReadableDiskSize = "disk-size"
 	vmDriver              = "vm-driver"
-	xhyveDiskDriver       = "xhyve-disk-driver"
 	nfsSharesRoot         = "nfs-shares-root"
 	nfsShare              = "nfs-share"
 	kubernetesVersion     = "kubernetes-version"
@@ -163,7 +162,8 @@ func initKubernetesFlags() {
 // initDriverFlags inits the commandline flags for vm drivers
 func initDriverFlags() {
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
-	// kvm
+
+	// kvm2
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
 	startCmd.Flags().String(kvmQemuURI, "qemu:///system", "The KVM QEMU connection URI. (works only with kvm2 driver on linux)")
 	startCmd.Flags().Bool(kvmGPU, false, "Enable experimental NVIDIA GPU support in minikube")
@@ -184,11 +184,6 @@ func initDriverFlags() {
 
 	// hyperv
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
-
-	// xhyveDiskDriver
-	startCmd.Flags().String(xhyveDiskDriver, "ahci-hd", "The disk driver to use [ahci-hd|virtio-blk] (only supported with xhyve driver)")
-	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors (vboxfs, xhyve-9p)")
-
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -206,9 +201,8 @@ func initNetworkingFlags() {
 var startCmd = &cobra.Command{
 	Use:   "start",
 	Short: "Starts a local kubernetes cluster",
-	Long: `Starts a local kubernetes cluster using VM. This command
-assumes you have already installed one of the VM drivers: virtualbox/parallels/vmwarefusion/kvm/xhyve/hyperv.`,
-	Run: runStart,
+	Long:  "Starts a local kubernetes cluster",
+	Run:   runStart,
 }
 
 // runStart handles the executes the flow of "minikube start"
@@ -569,7 +563,6 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 			ContainerRuntime:    viper.GetString(containerRuntime),
 			HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
 			HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
-			XhyveDiskDriver:     viper.GetString(xhyveDiskDriver),
 			NFSShare:            viper.GetStringSlice(nfsShare),
 			NFSSharesRoot:       viper.GetString(nfsSharesRoot),
 			DockerEnv:           dockerEnv,
