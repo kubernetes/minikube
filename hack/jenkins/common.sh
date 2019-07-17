@@ -105,6 +105,7 @@ for stale_dir in ${TEST_ROOT}/*; do
       "${MINIKUBE_BIN}" delete || true
       # this is to make sure it deletes the left over VMs and their networking
       # TODO: change this after implementation of delete --all
+
       "${MINIKUBE_BIN}" delete -p TestProxy || true
       "${MINIKUBE_BIN}" delete -p TestDocker || true
       "${MINIKUBE_BIN}" delete -p TestVersionUpgrade || true
