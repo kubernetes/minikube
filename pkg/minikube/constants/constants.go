@@ -83,19 +83,6 @@ const DriverHyperv = "hyperv"
 // DriverParallels is the parallels driver option name
 const DriverParallels = "parallels"
 
-// SupportedVMDrivers is a list of supported drivers on all platforms. Currently
-// used in gendocs.
-var SupportedVMDrivers = [...]string{
-	DriverVirtualbox,
-	DriverParallels,
-	DriverVmwareFusion,
-	DriverHyperv,
-	DriverHyperkit,
-	DriverKvm2,
-	DriverVmware,
-	DriverNone,
-}
-
 // DefaultMinipath is the default Minikube path (under the home directory)
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
 

@@ -1,4 +1,4 @@
-// +build linux, !gendocs
+// +build gendocs
 
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
@@ -18,18 +18,15 @@ limitations under the License.
 
 package constants
 
-import (
-	"k8s.io/client-go/util/homedir"
-)
+var DefaultMountDir = "$HOME"
 
-// DefaultMountDir is the default mount dir
-var DefaultMountDir = homedir.HomeDir()
-
-// SupportedVMDrivers is a list of supported drivers on Linux.
+// SupportedVMDrivers is a list of supported drivers on all platforms.
 var SupportedVMDrivers = [...]string{
 	DriverVirtualbox,
 	DriverParallels,
 	DriverVmwareFusion,
+	DriverHyperv,
+	DriverHyperkit,
 	DriverKvm2,
 	DriverVmware,
 	DriverNone,
