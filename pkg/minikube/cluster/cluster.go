@@ -37,6 +37,9 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
@@ -318,13 +321,54 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 	return &o
 }
 
+type hostInfo struct {
+	Memory   int
+	CPUs     int
+	DiskSize int
+}
+
+func megs(bytes uint64) int {
+	return int(bytes / 1024 / 1024)
+}
+
+func getHostInfo() (*hostInfo, error) {
+	i, err := cpu.Info()
+	if err != nil {
+		glog.Warningf("Unable to get cpu info: %v", err)
+		return nil, err
+	}
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		glog.Warningf("Unable to get mem info: %v", err)
+		return nil, err
+	}
+	d, err := disk.Usage("/")
+	if err != nil {
+		glog.Warningf("Unable to get disk info: %v", err)
+		return nil, err
+	}
+
+	var info hostInfo
+	info.CPUs = len(i)
+	info.Memory = megs(v.Total)
+	info.DiskSize = megs(d.Total)
+	return &info, nil
+}
+
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	if config.VMDriver == constants.DriverVmwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 		console.Warning(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
 			See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
+	}
+	if config.VMDriver != constants.DriverNone {
+		console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
+	} else {
+		info, err := getHostInfo()
+		if err == nil {
+			console.OutStyle(console.StartingNone, "Running on localhost (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", info.CPUs, info.Memory, info.DiskSize)
+		}
 	}
 
 	def, err := registry.Driver(config.VMDriver)
