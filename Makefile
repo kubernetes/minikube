@@ -41,6 +41,7 @@ ISO_BUCKET ?= minikube/iso
 MINIKUBE_VERSION ?= $(ISO_VERSION)
 MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
+MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.16.14
 
@@ -307,6 +308,20 @@ out/minikube-$(RPM_VERSION).rpm: out/minikube-linux-amd64
 		 out/minikube-$(RPM_VERSION)/minikube.spec
 	rm -rf out/minikube-$(RPM_VERSION)
 
+.PHONY: apt
+apt: out/Release
+
+out/Release: out/minikube_$(DEB_VERSION).deb
+	( cd out && apt-ftparchive packages . ) | gzip -c > out/Packages.gz
+	( cd out && apt-ftparchive release . ) > out/Release
+
+.PHONY: yum
+yum: out/repodata/repomd.xml
+
+out/repodata/repomd.xml: out/minikube-$(RPM_VERSION).rpm
+	createrepo --simple-md-filenames --no-database \
+	-u "$(MINIKUBE_RELEASES_URL)/$(VERSION)/" out
+
 .SECONDEXPANSION:
 TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
 TAR_TARGETS_darwin  := out/minikube-darwin-amd64
@@ -406,6 +421,23 @@ out/docker-machine-driver-kvm2:
 		-o $(BUILD_DIR)/docker-machine-driver-kvm2 			\
 		k8s.io/minikube/cmd/drivers/kvm
 	chmod +X $@
+
+out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2
+	cp -r installers/linux/deb/kvm2_deb_template out/docker-machine-driver-kvm2_$(DEB_VERSION)
+	chmod 0755 out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN
+	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
+	mkdir -p out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin
+	cp out/docker-machine-driver-kvm2 out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
+	fakeroot dpkg-deb --build out/docker-machine-driver-kvm2_$(DEB_VERSION)
+	rm -rf out/docker-machine-driver-kvm2_$(DEB_VERSION)
+
+out/docker-machine-driver-kvm2-$(RPM_VERSION).rpm: out/docker-machine-driver-kvm2
+	cp -r installers/linux/rpm/kvm2_rpm_template out/docker-machine-driver-kvm2-$(RPM_VERSION)
+	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	rpmbuild -bb -D "_rpmdir $(PWD)/out" -D "_rpmfilename docker-machine-driver-kvm2-$(RPM_VERSION).rpm" \
+		out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	rm -rf out/docker-machine-driver-kvm2-$(RPM_VERSION)
 
 kvm-image: $(KVM_BUILD_IMAGE) # convenient alias to build the docker container
 $(KVM_BUILD_IMAGE): installers/linux/kvm/Dockerfile
