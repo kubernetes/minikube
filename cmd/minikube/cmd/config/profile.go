@@ -36,7 +36,7 @@ var ProfileCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			profile := viper.GetString(pkgConfig.MachineProfile)
-			console.OutLnT("{{.profile_name}}", console.Arg{"profile_name": profile})
+			console.OutLn(profile)
 			os.Exit(0)
 		}
 
