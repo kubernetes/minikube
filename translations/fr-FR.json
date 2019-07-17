@@ -1,4 +1,5 @@
 {
+	"\"{{.name}}\" cluster does not exist": "",
 	"%q VM does not exist, nothing to stop": "",
 	"%q cluster does not exist": "",
 	"%q host does not exist, unable to show an IP": "",
@@ -148,6 +149,7 @@
 	"Please upgrade the 'docker-machine-driver-kvm2'. %s": "",
 	"Powering off %q via SSH ...": "",
 	"Problems detected in %q:": "",
+	"Problems detected in {{.entry}}:": "",
 	"Pulling images ...": "Extrayant les images ... ",
 	"Re-run 'minikube start' with --alsologtostderr -v=8 to see the VM driver error message": "",
 	"Re-using the currently running %s VM for %q ...": "",
@@ -274,5 +276,6 @@
 	"usage: minikube config unset PROPERTY_NAME": "",
 	"usage: minikube delete": "",
 	"usage: minikube profile [MINIKUBE_PROFILE_NAME]": "",
-	"zsh completion failed": ""
+	"zsh completion failed": "",
+	"{{.msg}}: {{.err}}": ""
 }
