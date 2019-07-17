@@ -46,10 +46,10 @@ var configTestCases = []configTestCase{
     "log_dir": "/etc/hosts",
     "show-libmachine-logs": true,
     "v": 5,
-    "vm-driver": "kvm"
+    "vm-driver": "kvm2"
 }`,
 		config: map[string]interface{}{
-			"vm-driver":                 constants.DriverKvmOld,
+			"vm-driver":                 constants.DriverKvm2,
 			"cpus":                      4,
 			"disk-size":                 "20g",
 			"v":                         5,
