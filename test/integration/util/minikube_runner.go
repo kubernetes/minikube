@@ -117,10 +117,11 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
 
 // RunCommand executes a command, optionally checking for error
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
-	if m.Profile != "" {
-		command += fmt.Sprintf("-p=%s", m.Profile)
-	}
 	commandArr := strings.Split(command, " ")
+	if m.Profile != "" {
+		commandArr = append(commandArr, fmt.Sprintf("-p=%s", m.Profile))
+	}
+
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
 	Logf("Run: %s", cmd.Args)
@@ -137,10 +138,10 @@ func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 
 // RunWithContext calls the minikube command with a context, useful for timeouts.
 func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) (string, string, error) {
-	if m.Profile != "" {
-		command += fmt.Sprintf(" -p=%s", m.Profile)
-	}
 	commandArr := strings.Split(command, " ")
+	if m.Profile != "" {
+		commandArr = append(commandArr, fmt.Sprintf("-p=%s", m.Profile))
+	}
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.CommandContext(ctx, path, commandArr...)
 	Logf("Run: %s", cmd.Args)
@@ -149,10 +150,11 @@ func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) (st
 
 // RunDaemon executes a command, returning the stdout
 func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
-	if m.Profile != "" {
-		command += fmt.Sprintf(" -p=%s", m.Profile)
-	}
 	commandArr := strings.Split(command, " ")
+	if m.Profile != "" {
+		commandArr = append(commandArr, fmt.Sprintf("-p=%s", m.Profile))
+	}
+
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
 	stdoutPipe, err := cmd.StdoutPipe()
@@ -181,10 +183,10 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 
 // RunDaemon2 executes a command, returning the stdout and stderr
 func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *bufio.Reader) {
-	if m.Profile != "" {
-		command += fmt.Sprintf(" -p=%s", m.Profile)
-	}
 	commandArr := strings.Split(command, " ")
+	if m.Profile != "" {
+		commandArr = append(commandArr, fmt.Sprintf("-p=%s", m.Profile))
+	}
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, commandArr...)
 	stdoutPipe, err := cmd.StdoutPipe()
