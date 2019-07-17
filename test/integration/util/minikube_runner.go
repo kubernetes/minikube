@@ -223,9 +223,15 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 }
 
 // Start starts the container runtime
-func (m *MinikubeRunner) Start(opts ...string) {
+func (m *MinikubeRunner) Start(opts ...string) (stdOut string) {
 	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.Args, strings.Join(opts, " "))
-	m.RunCommand(cmd, true)
+	return m.RunCommand(cmd, true)
+}
+
+// StartWithContext starts minikube runner with context and returns stdout and stderr
+func (m *MinikubeRunner) StartWithContext(ctx context.Context, opts ...string) (stdOut string, stderr string, err error) {
+	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.Args, strings.Join(opts, " "))
+	return m.RunWithContext(ctx, cmd)
 }
 
 // EnsureRunning makes sure the container runtime is running
