@@ -50,6 +50,12 @@ func Usage(format string, a ...interface{}) {
 	os.Exit(BadUsage)
 }
 
+// UsageT outputs a templated usage error and exits with error code 64
+func UsageT(format string, a ...console.Arg) {
+	console.ErrT(console.Usage, format, a...)
+	os.Exit(BadUsage)
+}
+
 // WithCode outputs a fatal error message and exits with a supplied error code.
 func WithCode(code int, format string, a ...interface{}) {
 	// use Warning because Error will display a duplicate message to stderr
@@ -77,11 +83,11 @@ func WithError(msg string, err error) {
 // WithProblem outputs info related to a known problem and exits.
 func WithProblem(msg string, p *problem.Problem) {
 	console.Err("\n")
-	console.Fatal(msg)
+	console.FatalT(msg)
 	p.Display()
 	console.Err("\n")
-	console.ErrStyle(console.Sad, "If the above advice does not help, please let us know: ")
-	console.ErrStyle(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+	console.ErrT(console.Sad, "If the above advice does not help, please let us know: ")
+	console.ErrT(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 	os.Exit(Config)
 }
 
@@ -90,12 +96,12 @@ func WithLogEntries(msg string, err error, entries map[string][]string) {
 	displayError(msg, err)
 
 	for name, lines := range entries {
-		console.OutStyle(console.FailureType, "Problems detected in %q:", name)
+		console.OutT(console.FailureType, "Problems detected in {{.entry}}:", console.Arg{"entry": name})
 		if len(lines) > MaxLogEntries {
 			lines = lines[:MaxLogEntries]
 		}
 		for _, l := range lines {
-			console.OutStyle(console.LogEntry, l)
+			console.OutT(console.LogEntry, l)
 		}
 	}
 	os.Exit(Software)
