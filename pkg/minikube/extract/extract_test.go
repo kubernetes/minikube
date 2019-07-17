@@ -17,13 +17,14 @@ limitations under the License.
 package extract
 
 import (
-	"bytes"
 	"encoding/json"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestExtract(t *testing.T) {
@@ -125,8 +126,21 @@ func TestTranslationsUpToDate(t *testing.T) {
 		t.Fatalf("Reading resulting json file: %v", err)
 	}
 
-	if bytes.Compare(src, dest) != 0 {
-		t.Fatalf("There are changes to the localizable strings in the code base.\n Please run `make extract`.")
+	var got map[string]interface{}
+	var want map[string]interface{}
+
+	err = json.Unmarshal(dest, &got)
+	if err != nil {
+		t.Fatalf("Populating resulting json: %v", err)
+	}
+
+	err = json.Unmarshal(src, &want)
+	if err != nil {
+		t.Fatalf("Populating original json: %v", err)
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Fatalf("Localized string mismatch (-want, +got):\n%s", diff)
 	}
 
 }
