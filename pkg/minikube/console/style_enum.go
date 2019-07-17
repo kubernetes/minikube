@@ -24,6 +24,7 @@ const (
 	Happy StyleEnum = iota
 	SuccessType
 	FailureType
+	Celebration
 	Conflict
 	FatalType
 	Notice
