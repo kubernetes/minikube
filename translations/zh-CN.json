@@ -255,6 +255,7 @@
 	"failed to open browser: {{.error}}": "",
 	"kube-system": "",
 	"kubectl and minikube configuration will be stored in {{.home_folder}}": "",
+	"kubectl has been configured configured to use {{.name}}": "",
 	"kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/": "",
 	"kubectl proxy": "",
 	"logdir set failed": "",
