@@ -43,6 +43,7 @@ func AllProfiles() (profiles []*Profile) {
 	return profiles
 }
 
+// loadProfile loads type Profile based on its name
 func loadProfile(n string) (*Profile, error) {
 
 	cfg, err := DefaultLoader.LoadConfigFromFile(n)
