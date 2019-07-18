@@ -34,9 +34,10 @@ var addonsEnableCmd = &cobra.Command{
 		addon := args[0]
 		err := Set(addon, "true")
 		if err != nil {
-			exit.WithError("enable failed", err)
+			console.Fatal("enable failed: %v", err)
+		} else {
+			console.Success("%s was successfully enabled", addon)
 		}
-		console.SuccessT("{{.addonName}} was successfully enabled", console.Arg{"addonName": addon})
 	},
 }
 

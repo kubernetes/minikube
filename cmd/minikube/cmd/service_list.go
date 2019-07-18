@@ -43,8 +43,8 @@ var serviceListCmd = &cobra.Command{
 		defer api.Close()
 		serviceURLs, err := service.GetServiceURLs(api, serviceListNamespace, serviceURLTemplate)
 		if err != nil {
-			console.FatalT("Failed to get service URL: {{.error}}", console.Arg{"error": err})
-			console.ErrT(console.Notice, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
+			console.Fatal("Failed to get service URL: %v", err)
+			console.ErrStyle(console.Notice, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")
 			os.Exit(exit.Unavailable)
 		}
 
