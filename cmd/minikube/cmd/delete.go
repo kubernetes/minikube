@@ -97,7 +97,7 @@ func deleteProfile(profileName string) {
 	if err = cluster.DeleteHost(api); err != nil {
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			console.OutStyle(console.Meh, "%q cluster does not exist", profileName)
+			console.OutT(console.Meh, `"{{.name}}" cluster does not exist`, console.Arg{"name": profileName})
 		default:
 			exit.WithError("Failed to delete cluster", err)
 		}
