@@ -88,13 +88,13 @@ minikube addons enable {{.name}}`, console.Arg{"name": addonName})
 			exit.WithCodeT(exit.Unavailable, "Error getting service with namespace: {{.namespace}} and labels {{.labelName}}:{{.addonName}}: {{.error}}", console.Arg{"namespace": namespace, "labelName": key, "addonName": addonName, "error": err})
 		}
 		if len(serviceList.Items) == 0 {
-			exit.WithCode(exit.Config, `This addon does not have an endpoint defined for the 'addons open' command.
-You can add one by annotating a service with the label %s:%s`, key, addonName)
+			exit.WithCodeT(exit.Config, `This addon does not have an endpoint defined for the 'addons open' command.
+You can add one by annotating a service with the label {{.labelName}}:{{.addonName}}`, console.Arg{"labelName": key, "addonName": addonName})
 		}
 		for i := range serviceList.Items {
 			svc := serviceList.Items[i].ObjectMeta.Name
 			if err := service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
-				exit.WithCode(exit.Unavailable, "Wait failed: %v", err)
+				exit.WithCodeT(exit.Unavailable, "Wait failed: {{.error}}", console.Arg{"error": err})
 			}
 		}
 	},
