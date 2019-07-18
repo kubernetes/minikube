@@ -74,19 +74,19 @@ var mountCmd = &cobra.Command{
 		mountString := args[0]
 		idx := strings.LastIndex(mountString, ":")
 		if idx == -1 { // no ":" was present
-			exit.UsageT(`mount argument "{{.value}}" must be in form: <source directory>:<target directory>`, console.Arg{"value": amountString})
+			exit.Usage(`mount argument %q must be in form: <source directory>:<target directory>`, mountString)
 		}
 		hostPath := mountString[:idx]
 		vmPath := mountString[idx+1:]
 		if _, err := os.Stat(hostPath); err != nil {
 			if os.IsNotExist(err) {
-				exit.WithCodeT(exit.NoInput, "Cannot find directory {{.path}} for mount", console.Arg{"path": hostPath})
+				exit.WithCode(exit.NoInput, "Cannot find directory %s for mount", hostPath)
 			} else {
 				exit.WithError("stat failed", err)
 			}
 		}
 		if len(vmPath) == 0 || !strings.HasPrefix(vmPath, "/") {
-			exit.UsageT("Target directory {{.path}} must be an absolute path", console.Arg{"path": vmPath})
+			exit.Usage("Target directory %q must be an absolute path", vmPath)
 		}
 		var debugVal int
 		if glog.V(1) {
@@ -142,27 +142,29 @@ var mountCmd = &cobra.Command{
 			cfg.Options[parts[0]] = parts[1]
 		}
 
-		console.OutT(console.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", console.Arg{"sourcePath": hostPath, "destinationPath": vmPath})
-		console.OutT(console.Option, "Mount type:   {{.name}}", console.Arg{"type": cfg.Type})
-		console.OutT(console.Option, "User ID:      {{.userID}}", console.Arg{"userID", cfg.UID})
-		console.OutT(console.Option, "Group ID:     {{.groupID}}", console.Arg{"groupID", cfg.GID})
-		console.OutT(console.Option, "Version:      {{.version}}", console.Arg{"version", cfg.Version})
-		console.OutT(console.Option, "Message Size: {{.size}}", console.Arg{"size", cfg.MSize})
-		console.OutT(console.Option, "Permissions:  {{.octalMode}} ({{.writtenMode}})", cfg.Mode, cfg.Mode)
-		console.OutT(console.Option, "Options:      {{.options}}", cfg.Options)
+		console.OutStyle(console.Mounting, "Mounting host path %s into VM as %s ...", hostPath, vmPath)
+		console.OutStyle(console.MountOptions, "Mount options:")
+		console.OutStyle(console.Option, "Type:     %s", cfg.Type)
+		console.OutStyle(console.Option, "UID:      %s", cfg.UID)
+		console.OutStyle(console.Option, "GID:      %s", cfg.GID)
+		console.OutStyle(console.Option, "Version:  %s", cfg.Version)
+		console.OutStyle(console.Option, "MSize:    %d", cfg.MSize)
+		console.OutStyle(console.Option, "Mode:     %o (%s)", cfg.Mode, cfg.Mode)
+		console.OutStyle(console.Option, "Options:  %s", cfg.Options)
 
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
 		if !supportedFilesystems[cfg.Type] {
-			console.OutT(console.WarningType, "{{.type}} is not yet a supported filesystem. We will try anyways!", console.Arg{"type": cfg.Type})
+			console.OutLn("")
+			console.OutStyle(console.WarningType, "%s is not yet a supported filesystem. We will try anyways!", cfg.Type)
 		}
 
 		var wg sync.WaitGroup
 		if cfg.Type == nineP {
 			wg.Add(1)
 			go func() {
-				console.OutT(console.Fileserver, "Userspace file server: ")
+				console.OutStyle(console.Fileserver, "Userspace file server: ")
 				ufs.StartServer(net.JoinHostPort(ip.String(), strconv.Itoa(port)), debugVal, hostPath)
-				console.OutT(console.Stopped, "Userspace file server is shutdown")
+				console.OutStyle(console.Stopped, "Userspace file server is shutdown")
 				wg.Done()
 			}()
 		}
@@ -178,12 +180,12 @@ var mountCmd = &cobra.Command{
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			for sig := range c {
-				console.OutT(console.Unmount, "Unmounting {{.path}} ...", console.Arg{"path": vmPath})
+				console.OutStyle(console.Unmount, "Unmounting %s ...", vmPath)
 				err := cluster.Unmount(runner, vmPath)
 				if err != nil {
-					console.ErrT(console.FailureType, "Failed unmount: {{.error}}", console.Arg{"error": err})
+					console.ErrStyle(console.FailureType, "Failed unmount: %v", err)
 				}
-				exit.WithCode(exit.Interrupted, "Received {{.name}} signal", console.Arg{"name": sig})
+				exit.WithCode(exit.Interrupted, "Exiting due to %s signal", sig)
 			}
 		}()
 
@@ -191,9 +193,9 @@ var mountCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("mount failed", err)
 		}
-		console.OutT(console.SuccessType, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", console.Arg{"sourcePath": hostPath, "destinationPath": vmPath})
+		console.OutStyle(console.SuccessType, "Successfully mounted %s to %s", hostPath, vmPath)
 		console.OutLn("")
-		console.OutT(console.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
+		console.OutStyle(console.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
 		wg.Wait()
 	},
 }

@@ -41,7 +41,6 @@ import (
 	"github.com/docker/machine/libmachine/version"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -270,7 +269,7 @@ func registerDriver(driverName string) {
 	def, err := registry.Driver(driverName)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
-			exit.UsageT("unsupported driver: {{.name}}", console.Arg{"name": driverName})
+			exit.Usage("unsupported driver: %s", driverName)
 		}
 		exit.WithError("error getting driver", err)
 	}
