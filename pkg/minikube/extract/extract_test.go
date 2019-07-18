@@ -23,8 +23,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"testing"
-
-	"github.com/google/go-cmp/cmp"
 )
 
 func TestExtract(t *testing.T) {
@@ -78,73 +76,6 @@ func TestExtract(t *testing.T) {
 
 	if !reflect.DeepEqual(expected, got) {
 		t.Fatalf("Translation JSON not equal: expected %v, got %v", expected, got)
-	}
-
-}
-
-func TestTranslationsUpToDate(t *testing.T) {
-	// Move the working dir to where we would run `make extract` from
-	cwd, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("Getting current working dir: %v", err)
-	}
-
-	err = os.Chdir("../../..")
-	if err != nil {
-		t.Fatalf("Chdir failed: %v", err)
-	}
-	defer func() {
-		if err = os.Chdir(cwd); err != nil {
-			t.Logf("Chdir to cwd failed: %v", err)
-		}
-	}()
-
-	// The translation file we're going to check
-	exampleFile := "translations/fr-FR.json"
-	src, err := ioutil.ReadFile(exampleFile)
-	if err != nil {
-		t.Fatalf("Reading json file: %v", err)
-	}
-
-	// Create a temp file to run the extractor on
-	tempdir, err := ioutil.TempDir("", "temptestdata")
-	if err != nil {
-		t.Fatalf("Creating temp dir: %v", err)
-	}
-	defer os.RemoveAll(tempdir)
-
-	tempfile := filepath.Join(tempdir, "tmpdata.json")
-	err = ioutil.WriteFile(tempfile, src, 0666)
-	if err != nil {
-		t.Fatalf("Writing temp json file: %v", err)
-	}
-
-	// Run the extractor exactly how `make extract` would run, but on the temp file
-	err = TranslatableStrings([]string{"cmd", "pkg"}, []string{"translate.T"}, tempdir)
-	if err != nil {
-		t.Fatalf("Error translating strings: %v", err)
-	}
-
-	dest, err := ioutil.ReadFile(tempfile)
-	if err != nil {
-		t.Fatalf("Reading resulting json file: %v", err)
-	}
-
-	var got map[string]interface{}
-	var want map[string]interface{}
-
-	err = json.Unmarshal(dest, &got)
-	if err != nil {
-		t.Fatalf("Populating resulting json: %v", err)
-	}
-
-	err = json.Unmarshal(src, &want)
-	if err != nil {
-		t.Fatalf("Populating original json: %v", err)
-	}
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Fatalf("Localized string mismatch (-want, +got):\n%s\n\nRun `make extract` to fix.", diff)
 	}
 
 }
