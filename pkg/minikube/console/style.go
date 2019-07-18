@@ -49,6 +49,7 @@ type style struct {
 // styles is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var styles = map[StyleEnum]style{
+	Empty:         {Prefix: "", LowPrefix: ""},
 	Happy:         {Prefix: "😄  "},
 	SuccessType:   {Prefix: "✅  "},
 	FailureType:   {Prefix: "❌  "},
@@ -78,7 +79,6 @@ var styles = map[StyleEnum]style{
 	Issues:        {Prefix: "⁉️   "},
 	Issue:         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	Check:         {Prefix: "✔️  "},
-	Empty:         {Prefix: ""},
 	Celebration:   {Prefix: "🎉  "},
 
 	// Specialized purpose styles
