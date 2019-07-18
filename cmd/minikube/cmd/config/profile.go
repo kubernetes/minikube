@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"io/ioutil"
@@ -29,7 +30,6 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 	"os"
 	"path/filepath"
-	"reflect"
 )
 
 // ProfileCmd represents the profile command
@@ -76,30 +76,34 @@ var ProfileCmd = &cobra.Command{
 	},
 }
 
-func GetAllProfiles() []string {
+func GetAllProfiles() ([]string, error) {
 	miniPath := constants.GetMinipath()
 	profilesPath := filepath.Join(miniPath, "profiles")
 	fileInfos, err := ioutil.ReadDir(profilesPath)
 	if err != nil {
-		console.ErrLn("Unable to list in dir: %s \n Error: %v", profilesPath, err)
+		return nil, fmt.Errorf("Unable to list in dir: %s \n Error: %v", profilesPath, err)
 	}
 
 	var profiles []string
 	for _, fileInfo := range fileInfos {
 		if fileInfo.IsDir() {
 			profilePath := filepath.Join(profilesPath, fileInfo.Name())
-			if isValidProfile(profilePath) {
+			isValidProfile, err := isValidProfile(profilePath)
+			if err != nil {
+				return nil, err
+			}
+			if isValidProfile {
 				profiles = append(profiles, fileInfo.Name())
 			}
 		}
 	}
-	return profiles
+	return profiles, nil
 }
 
-func isValidProfile(profilePath string) bool {
+func isValidProfile(profilePath string) (bool, error) {
 	fileInfos, err := ioutil.ReadDir(profilePath)
 	if err != nil {
-		console.ErrLn("Unable to list in dir: %s \n Error: %v", profilePath, err)
+		return false, fmt.Errorf("Unable to list in dir: %s \n Error: %v", profilePath, err)
 	}
 
 	hasConfigJSON := false
@@ -110,33 +114,22 @@ func isValidProfile(profilePath string) bool {
 	}
 
 	if !hasConfigJSON {
-		return false
+		return false, nil
 	}
 
 	// TODO: Use constants?
 	profileConfigPath := filepath.Join(profilePath, "config.json")
 	bytes, err := ioutil.ReadFile(profileConfigPath)
 	if err != nil {
-		console.ErrLn("Unable to read file: %s \n Error: %v", profileConfigPath, err)
+		return false, fmt.Errorf("Unable to read file: %s \n Error: %v", profileConfigPath, err)
 	}
 
 	var configObject mkConfig.Config
 	errUnmarshal := json.Unmarshal(bytes, &configObject)
 
 	if errUnmarshal != nil {
-		console.ErrLn("Could not unmarshal config json to config object: %s \n Error: %v", profileConfigPath, err)
+		return false, fmt.Errorf("Could not unmarshal config json to config object: %s \n Error: %v", profileConfigPath, err)
+	} else {
+		return true, nil
 	}
-	return IsProfileConfigValid(configObject)
-}
-
-func IsProfileConfigValid(configObject mkConfig.Config) bool {
-	machineConfig := configObject.MachineConfig
-	kubernetesConfig := configObject.KubernetesConfig
-	if reflect.DeepEqual(machineConfig, mkConfig.MachineConfig{}) || reflect.DeepEqual(kubernetesConfig, mkConfig.KubernetesConfig{}) {
-		return false
-	}
-
-	//TODO: Validate MachineConfig and KubernetesConfig?
-
-	return true
 }
