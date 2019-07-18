@@ -47,7 +47,7 @@ associated files.`,
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
-		exit.Usage("usage: minikube delete")
+		exit.UsageT("usage: minikube delete")
 	}
 	profile := viper.GetString(pkg_config.MachineProfile)
 	api, err := machine.NewAPIClient()
@@ -76,7 +76,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if err := cmdUtil.KillMountProcess(); err != nil {
-		console.Fatal("Failed to kill mount process: %v", err)
+		console.FatalT("Failed to kill mount process: {{.error}}", console.Arg{"error": err})
 	}
 
 	if err := os.RemoveAll(constants.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {

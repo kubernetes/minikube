@@ -103,12 +103,12 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if h.Driver.DriverName() != config.VMDriver {
-		console.Out("\n")
+		console.OutT(console.Empty, "\n")
 		console.WarningT(`Ignoring --vm-driver={{.driver_name}}, as the existing "{{.profile_name}}" VM was created using the {{.driver_name2}} driver.`,
 			console.Arg{"driver_name": config.VMDriver, "profile_name": cfg.GetMachineName(), "driver_name2": h.Driver.DriverName()})
 		console.WarningT("To switch drivers, you may create a new VM using `minikube start -p <name> --vm-driver={{.driver_name}}`", console.Arg{"driver_name": config.VMDriver})
 		console.WarningT("Alternatively, you may delete the existing VM using `minikube delete -p {{.profile_name}}`", console.Arg{"profile_name": cfg.GetMachineName()})
-		console.Out("\n")
+		console.OutT(console.Empty, "\n")
 	} else if exists && cfg.GetMachineName() == constants.DefaultMachineName {
 		console.OutT(console.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
@@ -144,7 +144,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
 	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
-	console.OutT(console.Waiting, "Waiting for SSH access ...")
+	console.OutT(console.Waiting, "Waiting for SSH access ...", console.Arg{})
 
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
@@ -535,6 +535,6 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 		exit.WithError("Error getting machine status", err)
 	}
 	if s != state.Running.String() {
-		exit.WithCode(exit.Unavailable, "minikube is not running, so the service cannot be accessed")
+		exit.WithCodeT(exit.Unavailable, "minikube is not running, so the service cannot be accessed")
 	}
 }
