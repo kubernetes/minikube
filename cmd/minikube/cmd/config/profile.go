@@ -19,17 +19,18 @@ package config
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"io/ioutil"
 	mkConfig "k8s.io/minikube/pkg/minikube/config"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	pkgutil "k8s.io/minikube/pkg/util"
-	"os"
-	"path/filepath"
 )
 
 // ProfileCmd represents the profile command
