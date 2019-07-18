@@ -62,9 +62,6 @@ func ArchTag(hasTag bool) string {
 // DriverNone is the none driver.
 const DriverNone = "none"
 
-// DriverKvmOld is the depricated kvm driver option name
-const DriverKvmOld = "kvm"
-
 // DriverKvm2 is the kvm2 driver option name for in linux
 const DriverKvm2 = "kvm2"
 
@@ -83,26 +80,8 @@ const DriverVmwareFusion = "vmwarefusion"
 // DriverHyperv is the hyperv driver option for windows
 const DriverHyperv = "hyperv"
 
-// DriverXhyve is the depricated xhyve driver option name
-const DriverXhyve = "xhyve"
-
 // DriverParallels is the parallels driver option name
 const DriverParallels = "parallels"
-
-// SupportedVMDrivers is a list of supported drivers on all platforms. Currently
-// used in gendocs.
-var SupportedVMDrivers = [...]string{
-	DriverVirtualbox,
-	DriverParallels,
-	DriverVmwareFusion,
-	DriverKvmOld,
-	DriverXhyve,
-	DriverHyperv,
-	DriverHyperkit,
-	DriverKvm2,
-	DriverVmware,
-	DriverNone,
-}
 
 // DefaultMinipath is the default Minikube path (under the home directory)
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
