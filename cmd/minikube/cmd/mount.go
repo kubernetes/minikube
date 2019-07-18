@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -74,7 +75,7 @@ var mountCmd = &cobra.Command{
 		mountString := args[0]
 		idx := strings.LastIndex(mountString, ":")
 		if idx == -1 { // no ":" was present
-			exit.UsageT(`mount argument "{{.value}}" must be in form: <source directory>:<target directory>`, console.Arg{"value": amountString})
+			exit.UsageT(`mount argument "{{.value}}" must be in form: <source directory>:<target directory>`, console.Arg{"value": mountString})
 		}
 		hostPath := mountString[:idx]
 		vmPath := mountString[idx+1:]
@@ -144,12 +145,12 @@ var mountCmd = &cobra.Command{
 
 		console.OutT(console.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", console.Arg{"sourcePath": hostPath, "destinationPath": vmPath})
 		console.OutT(console.Option, "Mount type:   {{.name}}", console.Arg{"type": cfg.Type})
-		console.OutT(console.Option, "User ID:      {{.userID}}", console.Arg{"userID", cfg.UID})
-		console.OutT(console.Option, "Group ID:     {{.groupID}}", console.Arg{"groupID", cfg.GID})
-		console.OutT(console.Option, "Version:      {{.version}}", console.Arg{"version", cfg.Version})
-		console.OutT(console.Option, "Message Size: {{.size}}", console.Arg{"size", cfg.MSize})
-		console.OutT(console.Option, "Permissions:  {{.octalMode}} ({{.writtenMode}})", cfg.Mode, cfg.Mode)
-		console.OutT(console.Option, "Options:      {{.options}}", cfg.Options)
+		console.OutT(console.Option, "User ID:      {{.userID}}", console.Arg{"userID": cfg.UID})
+		console.OutT(console.Option, "Group ID:     {{.groupID}}", console.Arg{"groupID": cfg.GID})
+		console.OutT(console.Option, "Version:      {{.version}}", console.Arg{"version": cfg.Version})
+		console.OutT(console.Option, "Message Size: {{.size}}", console.Arg{"size": cfg.MSize})
+		console.OutT(console.Option, "Permissions:  {{.octalMode}} ({{.writtenMode}})", console.Arg{"octalMode": fmt.Sprintf("%o", cfg.Mode), "writtenMode": cfg.Mode})
+		console.OutT(console.Option, "Options:      {{.options}}", console.Arg{"options": cfg.Options})
 
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
 		if !supportedFilesystems[cfg.Type] {
@@ -183,7 +184,7 @@ var mountCmd = &cobra.Command{
 				if err != nil {
 					console.ErrT(console.FailureType, "Failed unmount: {{.error}}", console.Arg{"error": err})
 				}
-				exit.WithCode(exit.Interrupted, "Received {{.name}} signal", console.Arg{"name": sig})
+				exit.WithCodeT(exit.Interrupted, "Received {{.name}} signal", console.Arg{"name": sig})
 			}
 		}()
 

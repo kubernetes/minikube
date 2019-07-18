@@ -129,7 +129,7 @@ var dashboardCmd = &cobra.Command{
 		if dashboardURLMode {
 			console.OutLn(url)
 		} else {
-			console.ErrT(console.Celebrate, "Opening %s in your default browser...", url)
+			console.ErrT(console.Celebrate, "Opening %s in your default browser...", console.Arg{"url": url})
 			if err = browser.OpenURL(url); err != nil {
 				exit.WithCodeT(exit.Software, "failed to open browser: {{.error}}", console.Arg{"error": err})
 			}
