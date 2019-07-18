@@ -153,9 +153,6 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 }
 
 func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...Arg) string {
-	if a == nil {
-		a = []Arg{Arg{}}
-	}
 	format = applyStyle(style, useColor, format)
 
 	var buf bytes.Buffer
@@ -163,6 +160,9 @@ func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ..
 	if err != nil {
 		glog.Infof("Initializing template failed. Returning raw string.")
 		return format
+	}
+	if len(a) == 0 {
+		a[0] = Arg{}
 	}
 	err = t.Execute(&buf, a[0])
 	if err != nil {
