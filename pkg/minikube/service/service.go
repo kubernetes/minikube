@@ -292,7 +292,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
 
 		if urlMode || !isHTTPSchemedURL {
-			console.OutLn(urlString)
+			console.OutT(console.Empty, urlString)
 		} else {
 			console.OutT(console.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", console.Arg{"namespace_name": namespace, "service_name": service})
 			if err := browser.OpenURL(urlString); err != nil {

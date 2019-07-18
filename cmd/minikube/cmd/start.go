@@ -251,7 +251,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
 	configureMounts()
 	if err = loadCachedImagesInConfigFile(); err != nil {
-		console.Failure("Unable to load cached images from config file.")
+		console.OutT(console.FailureType, "Unable to load cached images from config file.")
 	}
 	// special ops for none driver, like change minikube directory.
 	prepareNone(viper.GetString(vmDriver))
@@ -275,7 +275,7 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 	if err := CacheImagesInConfigFile(); err != nil {
 		exit.WithError("Failed to cache images", err)
 	}
-	console.OutStyle(console.Check, "Download complete!")
+	console.OutT(console.Check, "Download complete!")
 	os.Exit(0)
 
 }
@@ -348,7 +348,7 @@ func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	}
 	_, err := exec.LookPath("kubectl")
 	if err != nil {
-		console.OutStyle(console.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		console.OutT(console.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 	}
 }
 
@@ -465,7 +465,7 @@ func validateRegistryMirror() {
 				glog.Errorln("Error Parsing URL: ", err)
 			}
 			if (URL.Scheme != "http" && URL.Scheme != "https") || URL.Path != "" {
-				exit.Usage("Sorry, url provided with --registry-mirror flag is invalid {{.url}}", console.Arg{"url": loc})
+				exit.UsageT("Sorry, url provided with --registry-mirror flag is invalid {{.url}}", console.Arg{"url": loc})
 			}
 
 		}
@@ -620,25 +620,25 @@ func prepareNone(vmDriver string) {
 	if vmDriver != constants.DriverNone {
 		return
 	}
-	console.OutStyle(console.StartingNone, "Configuring local host environment ...")
+	console.OutT(console.StartingNone, "Configuring local host environment ...")
 	if viper.GetBool(cfg.WantNoneDriverWarning) {
-		console.OutLn("")
-		console.Warning("The 'none' driver provides limited isolation and may reduce system security and reliability.")
-		console.Warning("For more information, see:")
-		console.OutStyle(console.URL, "https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md")
-		console.OutLn("")
+		console.OutT(console.Empty, "")
+		console.WarningT("The 'none' driver provides limited isolation and may reduce system security and reliability.")
+		console.WarningT("For more information, see:")
+		console.OutT(console.URL, "https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md")
+		console.OutT(console.Empty, "")
 	}
 
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
 		home := os.Getenv("HOME")
 		console.WarningT("kubectl and minikube configuration will be stored in {{.home_folder}}", console.Arg{"home_folder": home})
-		console.Warning("To use kubectl or minikube commands as your own user, you may")
-		console.Warning("need to relocate them. For example, to overwrite your own settings:")
+		console.WarningT("To use kubectl or minikube commands as your own user, you may")
+		console.WarningT("need to relocate them. For example, to overwrite your own settings:")
 
-		console.OutLn("")
+		console.OutT(console.Empty, "")
 		console.OutT(console.Command, "sudo mv {{.home_folder}}/.kube {{.home_folder}}/.minikube $HOME", console.Arg{"home_folder": home})
 		console.OutT(console.Command, "sudo chown -R $USER $HOME/.kube $HOME/.minikube")
-		console.OutLn("")
+		console.OutT(console.Empty, "")
 
 		console.OutT(console.Tip, "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
 	}
@@ -806,7 +806,7 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner c
 	bsName := viper.GetString(cmdcfg.Bootstrapper)
 
 	if isUpgrade || !preexisting {
-		console.OutStyle(console.Pulling, "Pulling images ...")
+		console.OutT(console.Pulling, "Pulling images ...")
 		if err := bs.PullImages(kc); err != nil {
 			console.OutT(console.FailureType, "Unable to pull images, which may be OK: {{.error}}", console.Arg{"error": err})
 		}
@@ -820,7 +820,7 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner c
 		return
 	}
 
-	console.OutStyle(console.Launch, "Launching Kubernetes ... ")
+	console.OutT(console.Launch, "Launching Kubernetes ... ")
 	if err := bs.StartCluster(kc); err != nil {
 		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
 	}

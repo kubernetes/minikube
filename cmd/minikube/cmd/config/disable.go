@@ -28,7 +28,7 @@ var addonsDisableCmd = &cobra.Command{
 	Long:  "Disables the addon w/ADDON_NAME within minikube (example: minikube addons disable dashboard). For a list of available addons use: minikube addons list ",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			exit.Usage("usage: minikube addons disable ADDON_NAME")
+			exit.UsageT("usage: minikube addons disable ADDON_NAME")
 		}
 
 		addon := args[0]

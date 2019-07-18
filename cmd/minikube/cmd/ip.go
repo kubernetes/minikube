@@ -51,7 +51,7 @@ var ipCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting IP", err)
 		}
-		console.OutLn(ip)
+		console.OutT(console.Empty, ip)
 	},
 }
 

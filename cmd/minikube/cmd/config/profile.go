@@ -36,12 +36,12 @@ var ProfileCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			profile := viper.GetString(pkgConfig.MachineProfile)
-			console.OutLn(profile)
+			console.OutT(console.Empty, profile)
 			os.Exit(0)
 		}
 
 		if len(args) > 1 {
-			exit.Usage("usage: minikube profile [MINIKUBE_PROFILE_NAME]")
+			exit.UsageT("usage: minikube profile [MINIKUBE_PROFILE_NAME]")
 		}
 
 		profile := args[0]
