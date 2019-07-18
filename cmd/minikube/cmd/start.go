@@ -101,6 +101,7 @@ const (
 	downloadOnly          = "download-only"
 	dnsProxy              = "dns-proxy"
 	hostDNSResolver       = "host-dns-resolver"
+	waitUntilHealthy      = "wait"
 )
 
 var (
@@ -140,6 +141,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
+	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -255,9 +257,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	// special ops for none driver, like change minikube directory.
 	prepareNone(viper.GetString(vmDriver))
-
-	if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
-		exit.WithError("Wait failed", err)
+	if viper.GetBool(waitUntilHealthy) {
+		if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
+			exit.WithError("Wait failed", err)
+		}
 	}
 	showKubectlConnectInfo(kubeconfig)
 
@@ -344,7 +347,11 @@ func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	if kubeconfig.KeepContext {
 		console.OutT(console.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", console.Arg{"name": kubeconfig.ClusterName})
 	} else {
-		console.OutT(console.Ready, "Done! kubectl is now configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
+		if !viper.GetBool(waitUntilHealthy) {
+			console.OutT(console.Ready, "kubectl has been configured configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
+		} else {
+			console.OutT(console.Ready, "Done! kubectl is now configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
+		}
 	}
 	_, err := exec.LookPath("kubectl")
 	if err != nil {
