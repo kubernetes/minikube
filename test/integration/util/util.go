@@ -43,7 +43,7 @@ const kubectlBinary = "kubectl"
 type MinikubeRunner struct {
 	T          *testing.T
 	BinaryPath string
-	Args       string
+	GlobalArgs string
 	StartArgs  string
 	MountArgs  string
 	Runtime    string
@@ -208,9 +208,9 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 	return string(stdout), nil
 }
 
-// Start starts the container runtime
+// Start starts the cluster
 func (m *MinikubeRunner) Start(opts ...string) {
-	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.Args, strings.Join(opts, " "))
+	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
 	m.RunCommand(cmd, true)
 }
 
@@ -234,12 +234,12 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 
 // GetStatus returns the status of a service
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.Args), false)
+	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.GlobalArgs), false)
 }
 
 // GetLogs returns the logs of a service
 func (m *MinikubeRunner) GetLogs() string {
-	return m.RunCommand(fmt.Sprintf("logs %s", m.Args), true)
+	return m.RunCommand(fmt.Sprintf("logs %s", m.GlobalArgs), true)
 }
 
 // CheckStatus makes sure the service has the desired status, or cause fatal error

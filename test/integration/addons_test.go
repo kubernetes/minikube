@@ -76,8 +76,8 @@ func readLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error)
 
 func testDashboard(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t)
-	cmd, out := minikubeRunner.RunDaemon("dashboard --url")
+	mk := NewMinikubeRunner(t, "--wait=false")
+	cmd, out := mk.RunDaemon("dashboard --url")
 	defer func() {
 		err := cmd.Process.Kill()
 		if err != nil {
@@ -121,10 +121,10 @@ func testDashboard(t *testing.T) {
 
 func testIngressController(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t, "--wait=false")
 	kubectlRunner := util.NewKubectlRunner(t)
 
-	minikubeRunner.RunCommand("addons enable ingress", true)
+	mk.RunCommand("addons enable ingress", true)
 	if err := util.WaitForIngressControllerRunning(t); err != nil {
 		t.Fatalf("waiting for ingress-controller to be up: %v", err)
 	}
@@ -154,7 +154,7 @@ func testIngressController(t *testing.T) {
 	checkIngress := func() error {
 		expectedStr := "Welcome to nginx!"
 		runCmd := fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'")
-		sshCmdOutput, _ := minikubeRunner.SSH(runCmd)
+		sshCmdOutput, _ := mk.SSH(runCmd)
 		if !strings.Contains(sshCmdOutput, expectedStr) {
 			return fmt.Errorf("ExpectedStr sshCmdOutput to be: %s. Output was: %s", expectedStr, sshCmdOutput)
 		}
@@ -172,15 +172,15 @@ func testIngressController(t *testing.T) {
 			}
 		}
 	}()
-	minikubeRunner.RunCommand("addons disable ingress", true)
+	mk.RunCommand("addons disable ingress", true)
 }
 
 func testServicesList(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t)
 
 	checkServices := func() error {
-		output := minikubeRunner.RunCommand("service list", false)
+		output := mk.RunCommand("service list", false)
 		if !strings.Contains(output, "kubernetes") {
 			return fmt.Errorf("Error, kubernetes service missing from output %s", output)
 		}
@@ -259,8 +259,8 @@ func testRegistry(t *testing.T) {
 	minikubeRunner.RunCommand("addons disable registry", true)
 }
 func testGvisor(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
-	minikubeRunner.RunCommand("addons enable gvisor", true)
+	mk := NewMinikubeRunner(t, "--wait=false")
+	mk.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")
 	if err := util.WaitForGvisorControllerRunning(t); err != nil {
@@ -275,7 +275,7 @@ func testGvisor(t *testing.T) {
 	}
 
 	t.Log("disabling gvisor addon")
-	minikubeRunner.RunCommand("addons disable gvisor", true)
+	mk.RunCommand("addons disable gvisor", true)
 	t.Log("waiting for gvisor controller pod to be deleted")
 	if err := util.WaitForGvisorControllerDeleted(); err != nil {
 		t.Fatalf("waiting for gvisor controller to be deleted: %v", err)
@@ -291,9 +291,9 @@ func testGvisor(t *testing.T) {
 }
 
 func testGvisorRestart(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
-	minikubeRunner.EnsureRunning()
-	minikubeRunner.RunCommand("addons enable gvisor", true)
+	mk := NewMinikubeRunner(t, "--wait=false")
+	mk.EnsureRunning()
+	mk.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")
 	if err := util.WaitForGvisorControllerRunning(t); err != nil {
@@ -301,10 +301,10 @@ func testGvisorRestart(t *testing.T) {
 	}
 
 	// TODO: @priyawadhwa to add test for stop as well
-	minikubeRunner.RunCommand("delete", false)
-	minikubeRunner.CheckStatus(state.None.String())
-	minikubeRunner.Start()
-	minikubeRunner.CheckStatus(state.Running.String())
+	mk.RunCommand("delete", false)
+	mk.CheckStatus(state.None.String())
+	mk.Start()
+	mk.CheckStatus(state.Running.String())
 
 	t.Log("waiting for gvisor controller to come up")
 	if err := util.WaitForGvisorControllerRunning(t); err != nil {

@@ -26,10 +26,10 @@ import (
 
 func TestISO(t *testing.T) {
 
-	minikubeRunner := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t, "--wait=false")
 
-	minikubeRunner.RunCommand("delete", false)
-	minikubeRunner.Start()
+	mk.RunCommand("delete", false)
+	mk.Start()
 
 	t.Run("permissions", testMountPermissions)
 	t.Run("packages", testPackages)
@@ -37,14 +37,14 @@ func TestISO(t *testing.T) {
 }
 
 func testMountPermissions(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t, "--wait=false")
 	// test mount permissions
 	mountPoints := []string{"/Users", "/hosthome"}
 	perms := "drwxr-xr-x"
 	foundMount := false
 
 	for _, dir := range mountPoints {
-		output, err := minikubeRunner.SSH(fmt.Sprintf("ls -l %s", dir))
+		output, err := mk.SSH(fmt.Sprintf("ls -l %s", dir))
 		if err != nil {
 			continue
 		}
@@ -59,7 +59,7 @@ func testMountPermissions(t *testing.T) {
 }
 
 func testPackages(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t, "--wait=false")
 
 	packages := []string{
 		"git",
@@ -73,7 +73,7 @@ func testPackages(t *testing.T) {
 	}
 
 	for _, pkg := range packages {
-		if output, err := minikubeRunner.SSH(fmt.Sprintf("which %s", pkg)); err != nil {
+		if output, err := mk.SSH(fmt.Sprintf("which %s", pkg)); err != nil {
 			t.Errorf("Error finding package: %s. Error: %v. Output: %s", pkg, err, output)
 		}
 	}
@@ -81,7 +81,7 @@ func testPackages(t *testing.T) {
 }
 
 func testPersistence(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t, "--wait=false")
 
 	for _, dir := range []string{
 		"/data",
@@ -92,7 +92,7 @@ func testPersistence(t *testing.T) {
 		"/var/lib/toolbox",
 		"/var/lib/boot2docker",
 	} {
-		output, err := minikubeRunner.SSH(fmt.Sprintf("df %s | tail -n 1 | awk '{print $1}'", dir))
+		output, err := mk.SSH(fmt.Sprintf("df %s | tail -n 1 | awk '{print $1}'", dir))
 		if err != nil {
 			t.Errorf("Error checking device for %s. Error: %v", dir, err)
 		}
