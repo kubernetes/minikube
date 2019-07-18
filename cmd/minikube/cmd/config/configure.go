@@ -109,7 +109,7 @@ var addonsConfigureCmd = &cobra.Command{
 				})
 
 			if err != nil {
-				console.Failure("ERROR creating `registry-creds-ecr` secret: %v", err)
+				console.FailureT("ERROR creating `registry-creds-ecr` secret: {{.error}}", console.Arg{"error": err})
 			}
 
 			// Create GCR Secret
@@ -127,7 +127,7 @@ var addonsConfigureCmd = &cobra.Command{
 				})
 
 			if err != nil {
-				console.Failure("ERROR creating `registry-creds-gcr` secret: %v", err)
+				console.FailureT("ERROR creating `registry-creds-gcr` secret: {{.error}}", console.Arg{"error": err})
 			}
 
 			// Create Docker Secret
@@ -146,14 +146,14 @@ var addonsConfigureCmd = &cobra.Command{
 				})
 
 			if err != nil {
-				console.Warning("ERROR creating `registry-creds-dpr` secret")
+				console.WarningT("ERROR creating `registry-creds-dpr` secret")
 			}
 		default:
-			console.Failure("%s has no available configuration options", addon)
+			console.FailureT("{{.name}} has no available configuration options", console.Arg{"name": addon})
 			return
 		}
 
-		console.Success("%s was successfully configured", addon)
+		console.SuccessT("{{.name}} was successfully configured", console.Arg{"name": addon})
 	},
 }
 
