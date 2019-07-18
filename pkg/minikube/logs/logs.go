@@ -100,12 +100,12 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner comma
 // OutputProblems outputs discovered problems.
 func OutputProblems(problems map[string][]string, maxLines int) {
 	for name, lines := range problems {
-		console.OutStyle(console.FailureType, "Problems detected in %q:", name)
+		console.OutT(console.FailureType, "Problems detected in {{.name}}:", console.Arg{"name": name})
 		if len(lines) > maxLines {
 			lines = lines[len(lines)-maxLines:]
 		}
 		for _, l := range lines {
-			console.OutStyle(console.LogEntry, l)
+			console.OutT(console.LogEntry, l)
 		}
 	}
 }
@@ -126,9 +126,9 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
-			console.OutLn("")
+			console.OutT(console.Empty, "")
 		}
-		console.OutLn("==> %s <==", name)
+		console.OutT(console.Empty, "==> {{.name}} <==", console.Arg{"name": name})
 		var b bytes.Buffer
 		err := runner.CombinedOutputTo(cmds[name], &b)
 		if err != nil {
@@ -138,7 +138,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 		}
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
-			console.OutLn(scanner.Text())
+			console.OutT(console.Empty, scanner.Text())
 		}
 	}
 	if len(failed) > 0 {
