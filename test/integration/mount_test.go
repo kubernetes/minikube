@@ -38,12 +38,12 @@ func testMounting(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("mount tests disabled in darwin due to timeout (issue#3200)")
 	}
-	if strings.Contains(*args, "--vm-driver=none") {
+	if strings.Contains(*globalArgs, "--vm-driver=none") {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
 
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t, "--wait=false")
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
@@ -51,8 +51,8 @@ func testMounting(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	mountCmd := getMountCmd(minikubeRunner, tempDir)
-	cmd, _, _ := minikubeRunner.RunDaemon2(mountCmd)
+	mountCmd := getMountCmd(mk, tempDir)
+	cmd, _, _ := mk.RunDaemon2(mountCmd)
 	defer func() {
 		err := cmd.Process.Kill()
 		if err != nil {
@@ -99,7 +99,7 @@ func testMounting(t *testing.T) {
 	t.Logf("Pods appear to be running")
 
 	mountTest := func() error {
-		if err := verifyFiles(minikubeRunner, kubectlRunner, tempDir, podName, expected); err != nil {
+		if err := verifyFiles(mk, kubectlRunner, tempDir, podName, expected); err != nil {
 			t.Fatalf(err.Error())
 		}
 
@@ -111,10 +111,10 @@ func testMounting(t *testing.T) {
 
 }
 
-func getMountCmd(minikubeRunner util.MinikubeRunner, mountDir string) string {
+func getMountCmd(mk util.MinikubeRunner, mountDir string) string {
 	var mountCmd string
-	if len(minikubeRunner.MountArgs) > 0 {
-		mountCmd = fmt.Sprintf("mount %s %s:/mount-9p", minikubeRunner.MountArgs, mountDir)
+	if len(mk.MountArgs) > 0 {
+		mountCmd = fmt.Sprintf("mount %s %s:/mount-9p", mk.MountArgs, mountDir)
 	} else {
 		mountCmd = fmt.Sprintf("mount %s:/mount-9p", mountDir)
 	}
@@ -144,7 +144,7 @@ func waitForPods(s map[string]string) error {
 	return nil
 }
 
-func verifyFiles(minikubeRunner util.MinikubeRunner, kubectlRunner *util.KubectlRunner, tempDir string, podName string, expected string) error {
+func verifyFiles(mk util.MinikubeRunner, kubectlRunner *util.KubectlRunner, tempDir string, podName string, expected string) error {
 	path := filepath.Join(tempDir, "frompod")
 	out, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -167,7 +167,7 @@ func verifyFiles(minikubeRunner util.MinikubeRunner, kubectlRunner *util.Kubectl
 	files := []string{"fromhost", "frompod"}
 	for _, file := range files {
 		statCmd := fmt.Sprintf("stat /mount-9p/%s", file)
-		statOutput, err := minikubeRunner.SSH(statCmd)
+		statOutput, err := mk.SSH(statCmd)
 		if err != nil {
 			return fmt.Errorf("Unable to stat %s via SSH. error %v, %s", file, err, statOutput)
 		}

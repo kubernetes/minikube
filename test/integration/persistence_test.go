@@ -21,7 +21,6 @@ package integration
 import (
 	"path"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -30,11 +29,11 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
-	if strings.Contains(minikubeRunner.StartArgs, "--vm-driver=none") {
+	mk := NewMinikubeRunner(t, "--wait=false")
+	if usingNoneDriver(mk) {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
-	minikubeRunner.EnsureRunning()
+	mk.EnsureRunning()
 
 	kubectlRunner := util.NewKubectlRunner(t)
 	curdir, err := filepath.Abs("")
@@ -59,19 +58,19 @@ func TestPersistence(t *testing.T) {
 	verify(t)
 
 	// Now restart minikube and make sure the pod is still there.
-	// minikubeRunner.RunCommand("stop", true)
-	// minikubeRunner.CheckStatus("Stopped")
+	// mk.RunCommand("stop", true)
+	// mk.CheckStatus("Stopped")
 	checkStop := func() error {
-		minikubeRunner.RunCommand("stop", true)
-		return minikubeRunner.CheckStatusNoFail(state.Stopped.String())
+		mk.RunCommand("stop", true)
+		return mk.CheckStatusNoFail(state.Stopped.String())
 	}
 
 	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
 		t.Fatalf("timed out while checking stopped status: %v", err)
 	}
 
-	minikubeRunner.Start()
-	minikubeRunner.CheckStatus(state.Running.String())
+	mk.Start()
+	mk.CheckStatus(state.Running.String())
 
 	// Make sure the same things come up after we've restarted.
 	verify(t)
