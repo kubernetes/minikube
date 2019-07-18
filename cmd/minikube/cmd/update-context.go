@@ -49,9 +49,9 @@ var updateContextCmd = &cobra.Command{
 			exit.WithError("update config", err)
 		}
 		if updated {
-			console.OutStyle(console.Celebrate, "%s IP has been updated to point at %s", machineName, ip)
+			console.OutT(console.Celebrate, "{{.machine}} IP has been updated to point at {{.ip}}", console.Arg{"machine": machineName, "ip": ip})
 		} else {
-			console.OutStyle(console.Meh, "%s IP was already correctly configured for %s", machineName, ip)
+			console.OutT(console.Meh, "{{.machine}} IP was already correctly configured for {{.ip}}", console.Arg{"machine": machineName, "ip": ip})
 		}
 
 	},

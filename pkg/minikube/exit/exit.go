@@ -83,10 +83,10 @@ func WithError(msg string, err error) {
 
 // WithProblem outputs info related to a known problem and exits.
 func WithProblem(msg string, p *problem.Problem) {
-	console.Err("\n")
+	console.ErrT(console.Empty, "")
 	console.FatalT(msg)
 	p.Display()
-	console.Err("\n")
+	console.ErrT(console.Empty, "")
 	console.ErrT(console.Sad, "If the above advice does not help, please let us know: ")
 	console.ErrT(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 	os.Exit(Config)
@@ -111,9 +111,9 @@ func WithLogEntries(msg string, err error, entries map[string][]string) {
 func displayError(msg string, err error) {
 	// use Warning because Error will display a duplicate message to stderr
 	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
-	console.Err("\n")
+	console.ErrT(console.Empty, "")
 	console.FatalT("{{.msg}}: {{.err}}", console.Arg{"msg": translate.T(msg), "err": err})
-	console.Err("\n")
+	console.ErrT(console.Empty, "")
 	console.ErrT(console.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
 	console.ErrT(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 }
