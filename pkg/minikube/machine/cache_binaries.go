@@ -78,7 +78,7 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 	options.Checksum = constants.GetKubernetesReleaseURLSHA1(binary, version, osName, archName)
 	options.ChecksumHash = crypto.SHA1
 
-	console.OutStyle(console.FileDownload, "Downloading %s %s", binary, version)
+	console.OutT(console.FileDownload, "Downloading {{.name}} {{.version}}", console.Arg{"name": binary, "version": version})
 	if err := download.ToFile(url, targetFilepath, options); err != nil {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
 	}

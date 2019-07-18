@@ -231,7 +231,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
-		//TODO(r2d4): get rid of global here
+		// TODO(r2d4): get rid of global here
 		master = k8s.NodeName
 		if err := util.RetryAfter(200, unmarkMaster, time.Second*1); err != nil {
 			return errors.Wrap(err, "timed out waiting to unmark master")
@@ -305,7 +305,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
-	console.OutStyle(console.WaitingPods, "Verifying:")
+	console.OutT(console.WaitingPods, "Verifying:")
 	client, err := util.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
@@ -483,7 +483,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	_, images := constants.GetKubeadmCachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
 	if cfg.ShouldLoadCachedImages {
 		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
-			console.Failure("Unable to load cached images: %v", err)
+			console.FailureT("Unable to load cached images: {{.error}}", console.Arg{"error": err})
 		}
 	}
 	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket})

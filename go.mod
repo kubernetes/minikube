@@ -6,6 +6,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/Parallels/docker-machine-parallels v1.3.0
 	github.com/Sirupsen/logrus v0.0.0-20170822132746-89742aefa4b2 // indirect
+	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/blang/semver v3.5.0+incompatible
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
@@ -18,6 +19,7 @@ require (
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/fatih/color v1.7.0 // indirect
 	github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680 // indirect
+	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang/glog v0.0.0-20141105023935-44145f04b68c
@@ -73,6 +75,7 @@ require (
 	github.com/r2d4/external-storage v0.0.0-20171222174501-8c0e8605dc7b
 	github.com/russross/blackfriday v0.0.0-20151117072312-300106c228d5 // indirect
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
+	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db // indirect
 	github.com/sirupsen/logrus v1.4.1 // indirect
 	github.com/spf13/afero v0.0.0-20160816080757-b28a7effac97 // indirect

@@ -11,8 +11,9 @@ the host PATH:
 
 * [KVM2](#kvm2-driver)
 * [Hyperkit](#hyperkit-driver)
-* [HyperV](#hyperv-driver)
+* [Hyper-V](#hyper-v-driver)
 * [VMware](#vmware-unified-driver)
+* [Parallels](#parallels-driver)
 
 ## KVM2 driver
 
@@ -150,11 +151,11 @@ Make sure you are running the lastest version of your driver.
 docker-machine-driver-hyperkit version
 ```
 
-## HyperV driver
+## Hyper-V driver
 
-Hyper-v users may need to create a new external network switch as described [here](https://docs.docker.com/machine/drivers/hyper-v/). This step may prevent a problem in which `minikube start` hangs indefinitely, unable to ssh into the minikube virtual machine. In this add, add the `--hyperv-virtual-switch=switch-name` argument to the `minikube start` command.
+Hyper-V users will need to create a new external network switch as described [here](https://docs.docker.com/machine/drivers/hyper-v/). This step may prevent a problem in which `minikube start` hangs indefinitely, unable to ssh into the minikube virtual machine. In this add, add the `--hyperv-virtual-switch=switch-name` argument to the `minikube start` command.
 
-On some machines, having **dynamic memory management** turned on for the minikube VM can cause problems of unexpected and random restarts which manifests itself in simply losing the connection to the cluster, after which `minikube status` would simply state `stopped`. Machine restarts are caused due to following Hyper-V error: `The dynamic memory balancer could not add memory to the virtual machine 'minikube' because its configured maximum has been reached`. **Solution**: turned the dynamic memory management in hyper-v settings off (and allocate a fixed amount of memory to the machine).
+Older Hyper-V VM's may have  **dynamic memory management** enabled, which can cause problems of unexpected and random restarts which manifests itself in simply losing the connection to the cluster, after which `minikube status` would simply state `stopped`. **Solution**: run `minikube delete` to delete the old VM.
 
 To use the driver:
 
@@ -212,6 +213,30 @@ and run minikube as usual:
 
 ```shell
 minikube start
+```
+
+## Parallels driver
+
+This driver is useful for users who own Parallels Desktop for Mac that do not have VT-x hardware support required by the hyperkit driver.
+
+Pre-requisites: Parallels Desktop for Mac
+
+Install the [Parallels docker-machine driver](https://github.com/Parallels/docker-machine-parallels) using [brew](https://brew.sh):
+
+```shell
+brew install docker-machine-parallels
+```
+
+To use the driver:
+
+```shell
+minikube start --vm-driver parallels
+```
+
+or, to use parallels as a default driver for minikube:
+
+```shell
+minikube config set vm-driver parallels
 ```
 
 ## Troubleshooting

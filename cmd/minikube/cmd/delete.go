@@ -69,7 +69,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if err = cluster.DeleteHost(api); err != nil {
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			console.OutStyle(console.Meh, "%q cluster does not exist", profile)
+			console.OutT(console.Meh, `"{{.name}}" cluster does not exist`, console.Arg{"name": profile})
 		default:
 			exit.WithError("Failed to delete cluster", err)
 		}
@@ -96,7 +96,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsName string) {
 	console.OutStyle(console.Resetting, "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
-	clusterBootstrapper, err := GetClusterBootstrapper(api, bsName)
+	clusterBootstrapper, err := getClusterBootstrapper(api, bsName)
 	if err != nil {
 		console.ErrLn("Unable to get bootstrapper: %v", err)
 	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {

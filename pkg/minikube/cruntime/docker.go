@@ -78,9 +78,11 @@ func (r *Docker) Active() bool {
 }
 
 // Enable idempotently enables Docker on a host
-func (r *Docker) Enable() error {
-	if err := disableOthers(r, r.Runner); err != nil {
-		glog.Warningf("disableOthers: %v", err)
+func (r *Docker) Enable(disOthers bool) error {
+	if disOthers {
+		if err := disableOthers(r, r.Runner); err != nil {
+			glog.Warningf("disableOthers: %v", err)
+		}
 	}
 	return r.Runner.Run("sudo systemctl start docker")
 }

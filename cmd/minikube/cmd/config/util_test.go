@@ -25,7 +25,7 @@ import (
 )
 
 var minikubeConfig = pkgConfig.MinikubeConfig{
-	"vm-driver":            constants.DriverKvmOld,
+	"vm-driver":            constants.DriverKvm2,
 	"cpus":                 12,
 	"show-libmachine-logs": true,
 }

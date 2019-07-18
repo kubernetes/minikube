@@ -38,6 +38,9 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/disk"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
@@ -59,9 +62,9 @@ var (
 	maxClockDesyncSeconds = 2.1
 )
 
-//This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
-//INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
-//see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
+// This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
+// INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
+// see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
 func init() {
 	if err := flag.Set("logtostderr", "false"); err != nil {
 		exit.WithError("unable to set logtostderr", err)
@@ -337,35 +340,56 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 	return &o
 }
 
-func preCreateHost(config *cfg.MachineConfig) {
-	switch config.VMDriver {
-	case constants.DriverKvmOld:
-		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-			console.Warning(`The kvm driver is deprecated and support for it will be removed in a future release.
-				Please consider switching to the kvm2 driver, which is intended to replace the kvm driver.
-				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver for more information.
-				To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
-		}
-	case constants.DriverXhyve:
-		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-			console.Warning(`The xhyve driver is deprecated and support for it will be removed in a future release.
-Please consider switching to the hyperkit driver, which is intended to replace the xhyve driver.
-See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver for more information.
-To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
-		}
-	case constants.DriverVmwareFusion:
-		if viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-			console.Warning(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
-				Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
-				See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
-				To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
-		}
+type hostInfo struct {
+	Memory   int
+	CPUs     int
+	DiskSize int
+}
+
+func megs(bytes uint64) int {
+	return int(bytes / 1024 / 1024)
+}
+
+func getHostInfo() (*hostInfo, error) {
+	i, err := cpu.Info()
+	if err != nil {
+		glog.Warningf("Unable to get cpu info: %v", err)
+		return nil, err
 	}
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		glog.Warningf("Unable to get mem info: %v", err)
+		return nil, err
+	}
+	d, err := disk.Usage("/")
+	if err != nil {
+		glog.Warningf("Unable to get disk info: %v", err)
+		return nil, err
+	}
+
+	var info hostInfo
+	info.CPUs = len(i)
+	info.Memory = megs(v.Total)
+	info.DiskSize = megs(d.Total)
+	return &info, nil
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	preCreateHost(&config)
-	console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
+	if config.VMDriver == constants.DriverVmwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+		console.Warning(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
+			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
+			See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
+			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
+	}
+	if config.VMDriver != constants.DriverNone {
+		console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
+	} else {
+		info, err := getHostInfo()
+		if err == nil {
+			console.OutStyle(console.StartingNone, "Running on localhost (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", info.CPUs, info.Memory, info.DiskSize)
+		}
+	}
+
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
@@ -432,8 +456,6 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
 		return net.ParseIP(ip), nil
-	case constants.DriverKvmOld:
-		return net.ParseIP("192.168.42.1"), nil
 	case constants.DriverKvm2:
 		return net.ParseIP("192.168.39.1"), nil
 	case constants.DriverHyperv:
@@ -457,7 +479,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
 		return ip, nil
-	case constants.DriverXhyve, constants.DriverHyperkit:
+	case constants.DriverHyperkit:
 		return net.ParseIP("192.168.64.1"), nil
 	case constants.DriverVmware:
 		vmIPString, err := host.Driver.GetIP()
