@@ -80,7 +80,6 @@ var styles = map[StyleEnum]style{
 	Check:         {Prefix: "✔️  "},
 	Empty:         {Prefix: ""},
 	Celebration:   {Prefix: "🎉  "},
-	Empty:         {Prefix: ""},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},
