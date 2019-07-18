@@ -68,9 +68,6 @@ func OutStyle(style StyleEnum, format string, a ...interface{}) {
 
 // OutT writes a stylized and templated message to stdout
 func OutT(style StyleEnum, format string, a ...Arg) {
-	if a == nil {
-		a = []Arg{Arg{}}
-	}
 	outStyled := applyTemplateFormatting(style, useColor, format, a...)
 	Out(outStyled)
 }
