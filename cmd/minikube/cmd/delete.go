@@ -48,15 +48,21 @@ associated files.`,
 
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
-	profileFlag, _ := cmd.Flags().GetString("profile")
-	deleteAllFlag, _ := cmd.Flags().GetBool("all")
-
-	if profileFlag != constants.DefaultMachineName && deleteAllFlag {
-		exit.Usage("usage: minikube delete --all")
+	profileFlag, err := cmd.Flags().GetString("profile")
+	if err != nil {
+		exit.WithError("Could not get profile flag", err)
 	}
 
-	if deleteAllFlag {
-		profiles := cmdcfg.GetAllProfiles()
+	if deleteAll {
+		if profileFlag != constants.DefaultMachineName {
+			exit.Usage("usage: minikube delete --all")
+		}
+
+		profiles, err := cmdcfg.GetAllProfiles()
+		if err != nil {
+			exit.WithError("Error getting profiles to delete", err)
+		}
+
 		deleteAllProfiles(profiles)
 	} else {
 		if len(args) > 0 {
@@ -68,7 +74,10 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 }
 
+//TODO Refactor: Return errors?
 func deleteProfile(profileName string) {
+	viper.Set(pkg_config.MachineProfile, profileName)
+
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Error getting client", err)
@@ -115,13 +124,11 @@ func deleteProfile(profileName string) {
 
 func deleteAllProfiles(profiles []string) {
 	for _, profile := range profiles {
-		// TODO: Refactor: viper.Set seems to be in the wrong place
-		viper.Set(pkg_config.MachineProfile, profile)
 		deleteProfile(profile)
 	}
-	os.Exit(0)
 }
 
+// TODO: Return errors?
 func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsName string) {
 	console.OutStyle(console.Resetting, "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
 	clusterBootstrapper, err := getClusterBootstrapper(api, bsName)
