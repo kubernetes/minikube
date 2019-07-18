@@ -81,7 +81,7 @@ func GetAllProfiles() ([]string, error) {
 	profilesPath := filepath.Join(miniPath, "profiles")
 	fileInfos, err := ioutil.ReadDir(profilesPath)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to list in dir: %s \n Error: %v", profilesPath, err)
+		return nil, fmt.Errorf("unable to list in dir: %s \n error: %v", profilesPath, err)
 	}
 
 	var profiles []string
@@ -103,7 +103,7 @@ func GetAllProfiles() ([]string, error) {
 func isValidProfile(profilePath string) (bool, error) {
 	fileInfos, err := ioutil.ReadDir(profilePath)
 	if err != nil {
-		return false, fmt.Errorf("Unable to list in dir: %s \n Error: %v", profilePath, err)
+		return false, fmt.Errorf("unable to list in dir: %s \n error: %v", profilePath, err)
 	}
 
 	hasConfigJSON := false
@@ -121,15 +121,14 @@ func isValidProfile(profilePath string) (bool, error) {
 	profileConfigPath := filepath.Join(profilePath, "config.json")
 	bytes, err := ioutil.ReadFile(profileConfigPath)
 	if err != nil {
-		return false, fmt.Errorf("Unable to read file: %s \n Error: %v", profileConfigPath, err)
+		return false, fmt.Errorf("unable to read file: %s \n Error: %v", profileConfigPath, err)
 	}
 
 	var configObject mkConfig.Config
 	errUnmarshal := json.Unmarshal(bytes, &configObject)
 
 	if errUnmarshal != nil {
-		return false, fmt.Errorf("Could not unmarshal config json to config object: %s \n Error: %v", profileConfigPath, err)
-	} else {
-		return true, nil
+		return false, fmt.Errorf("could not unmarshal config json to config object: %s \n error: %v", profileConfigPath, err)
 	}
+	return true, nil
 }
