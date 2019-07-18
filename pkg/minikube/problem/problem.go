@@ -56,7 +56,7 @@ func (p *Problem) Display() {
 	console.ErrT(console.FailureType, "Error: [{{.id}}] {{.error}}", console.Arg{"id": p.ID, "error": p.Err})
 	console.ErrT(console.Tip, "Suggestion: {{.advice}}", console.Arg{"advice": translate.T(p.Advice)})
 	if p.URL != "" {
-		console.ErrT(console.Documentation, "Documentation: {{.url}}", console.Arg{"url": p.URL})
+		console.ErrT(console.Documentation, "Documentation: {{.url}}", p.URL)
 	}
 	if len(p.Issues) == 0 {
 		return
@@ -67,7 +67,7 @@ func (p *Problem) Display() {
 		issues = issues[0:3]
 	}
 	for _, i := range issues {
-		console.ErrT(console.Issue, "{{.url}}", console.Arg{"url": fmt.Sprintf("%s/%d", issueBase, i)})
+		console.ErrT(console.Issue, "{{.url}}", console.Arg{"url": fmt.Sprintf("%s/%s", issueBase, i)})
 	}
 }
 
