@@ -25,15 +25,15 @@ import (
 )
 
 func TestNewSSHClient(t *testing.T) {
-	s, err := tests.NewSSHServer()
+	s, err := tests.NewSSHServer(t)
 	if err != nil {
 		t.Fatalf("NewSSHServer: %v", err)
 	}
-	l, port, err := s.Start()
+	port, err := s.Start()
 	if err != nil {
 		t.Fatalf("Error starting ssh server: %v", err)
 	}
-	defer l.Close()
+	defer s.Stop()
 
 	d := &tests.MockDriver{
 		Port: port,
@@ -41,7 +41,6 @@ func TestNewSSHClient(t *testing.T) {
 			IPAddress:  "127.0.0.1",
 			SSHKeyPath: "",
 		},
-		T: t,
 	}
 	c, err := NewSSHClient(d)
 	if err != nil {
