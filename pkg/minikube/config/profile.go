@@ -20,32 +20,47 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// AllProfiles returns all minikube profiles
-func AllProfiles() (profiles []*Profile) {
+// isValid checks if the profile has the essential info needed for a profile
+func (p *Profile) isValid() bool {
+	if p.Config.MachineConfig.VMDriver == "" {
+		return false
+	}
+	if p.Config.KubernetesConfig.KubernetesVersion == "" {
+		return false
+	}
+	return true
+}
 
-	pDirs, err := allProfileDirs()
+// ListProfiles returns all valid and invalid (if any) minikube profiles
+// invalidPs are the profiles that have a directory or config file but not usable
+// invalidPs would be suggeted to be deleted
+func ListProfiles() (validPs []*Profile, inValidPs []*Profile, err error) {
+
+	pDirs, err := profileDirs()
 	if err != nil {
-		glog.Infof("Error getting profile directories %v", err)
+		return nil, nil, err
 	}
 	for _, n := range pDirs {
 		p, err := loadProfile(n)
 		if err != nil {
-			// TODO warn user to delete this folder or maybe do it for them
-			glog.Errorf("Invalid profile config in profiles folder (%s):\n error: %v", n, err)
+			inValidPs = append(inValidPs, p)
 			continue
 		}
-		profiles = append(profiles, p)
+		if !p.isValid() {
+			inValidPs = append(inValidPs, p)
+			continue
+
+		}
+		validPs = append(validPs, p)
 	}
-	return profiles
+	return validPs, inValidPs, nil
 }
 
 // loadProfile loads type Profile based on its name
 func loadProfile(n string) (*Profile, error) {
-
 	cfg, err := DefaultLoader.LoadConfigFromFile(n)
 	profile := &Profile{
 		Name:   n,
@@ -54,8 +69,8 @@ func loadProfile(n string) (*Profile, error) {
 	return profile, err
 }
 
-// allProfileDirs gets all the folders in the user's profiles folder
-func allProfileDirs() (dirs []string, err error) {
+// profileDirs gets all the folders in the user's profiles folder
+func profileDirs() (dirs []string, err error) {
 	root := filepath.Join(constants.GetMinipath(), "profiles")
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {

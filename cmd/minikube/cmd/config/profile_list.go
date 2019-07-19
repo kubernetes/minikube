@@ -17,10 +17,13 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/exit"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -28,25 +31,40 @@ import (
 
 var profileListCmd = &cobra.Command{
 	Use:   "list",
-	Short: "Lists all minikube profiles",
-	Long:  "Lists all valid minikube profiles",
+	Short: "Lists all minikube profiles.",
+	Long:  "Lists all minikube profiles.",
 	Run: func(cmd *cobra.Command, args []string) {
 
-		var tData [][]string
+		var validData [][]string
 
 		table := tablewriter.NewWriter(os.Stdout)
 		table.SetHeader([]string{"Profile", "VM Driver", "NodeIP", "Node Port", "Kubernetes Version"})
 		table.SetAutoFormatHeaders(false)
 		table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 		table.SetCenterSeparator("|")
+		validProfiles, invalidProfiles, err := config.ListProfiles()
 
-		for _, p := range config.AllProfiles() {
-			tData = append(tData, []string{p.Name, p.Config.MachineConfig.VMDriver, p.Config.KubernetesConfig.NodeIP, strconv.Itoa(p.Config.KubernetesConfig.NodePort), p.Config.KubernetesConfig.KubernetesVersion})
+		for _, p := range validProfiles {
+			validData = append(validData, []string{p.Name, p.Config.MachineConfig.VMDriver, p.Config.KubernetesConfig.NodeIP, strconv.Itoa(p.Config.KubernetesConfig.NodePort), p.Config.KubernetesConfig.KubernetesVersion})
 		}
 
-		table.AppendBulk(tData) // Add Bulk Data
+		table.AppendBulk(validData)
 		table.Render()
 
+		if invalidProfiles != nil {
+			console.OutT(console.WarningType, "Found {{.number}} invalid profile(s) ! ", console.Arg{"number": len(invalidProfiles)})
+			for _, p := range invalidProfiles {
+				console.OutT(console.Empty,"\t "+p.Name)
+			}
+			console.OutT(console.Tip, "You can delete them using the following command(s): ")
+			for _, p := range invalidProfiles {
+				console.Out(fmt.Sprintf("\t $ minikube delete -p %s \n", p.Name))
+			}
+
+		}
+		if err != nil {
+			exit.WithCode(exit.Config, fmt.Sprintf("error loading profiles: %v", err))
+		}
 	},
 }
 
