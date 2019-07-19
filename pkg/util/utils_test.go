@@ -85,12 +85,6 @@ func TestRetryNotRetriableError(t *testing.T) {
 	}
 }
 
-type getTestArgs struct {
-	input         string
-	expected      string
-	expectedError bool
-}
-
 func TestMultiError(t *testing.T) {
 	m := MultiError{}
 
