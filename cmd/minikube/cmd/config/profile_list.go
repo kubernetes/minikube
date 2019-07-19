@@ -32,7 +32,7 @@ import (
 var profileListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "Lists all minikube profiles.",
-	Long:  "Lists all minikube profiles.",
+	Long:  "Lists all valid minikube profiles and detects all possible invalid profiles.",
 	Run: func(cmd *cobra.Command, args []string) {
 
 		var validData [][]string
@@ -44,6 +44,9 @@ var profileListCmd = &cobra.Command{
 		table.SetCenterSeparator("|")
 		validProfiles, invalidProfiles, err := config.ListProfiles()
 
+		if len(validProfiles) == 0 {
+			exit.UsageT("No minikube profile was found. you could create one using: `minikube start`")
+		}
 		for _, p := range validProfiles {
 			validData = append(validData, []string{p.Name, p.Config.MachineConfig.VMDriver, p.Config.KubernetesConfig.NodeIP, strconv.Itoa(p.Config.KubernetesConfig.NodePort), p.Config.KubernetesConfig.KubernetesVersion})
 		}
