@@ -21,8 +21,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -32,7 +30,6 @@ import (
 
 	units "github.com/docker/go-units"
 	"github.com/golang/glog"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
