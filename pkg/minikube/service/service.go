@@ -284,7 +284,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	}
 
 	if len(urls) == 0 {
-		console.OutStyle(console.Sad, "service %s/%s has no node port", namespace, service)
+		console.OutT(console.Sad, "service {{.namespace_name}}/{{.service_name}} has no node port", console.Arg{"namespace_name": namespace, "service_name": service})
 		return nil
 	}
 
@@ -292,11 +292,11 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
 
 		if urlMode || !isHTTPSchemedURL {
-			console.OutLn(urlString)
+			console.OutT(console.Empty, urlString)
 		} else {
-			console.OutStyle(console.Celebrate, "Opening kubernetes service %s/%s in default browser...", namespace, service)
+			console.OutT(console.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", console.Arg{"namespace_name": namespace, "service_name": service})
 			if err := browser.OpenURL(urlString); err != nil {
-				console.Err("browser failed to open url: %v", err)
+				console.ErrT(console.Empty, "browser failed to open url: {{.error}}", console.Arg{"error": err})
 			}
 		}
 	}
