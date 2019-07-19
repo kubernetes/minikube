@@ -25,6 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/swarm"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 )
@@ -51,6 +52,15 @@ func NewMockAPI(t *testing.T) *MockAPI {
 	return &m
 }
 
+// Logf logs mock interactions
+func (api *MockAPI) Logf(format string, args ...interface{}) {
+	if api.t == nil {
+		glog.Infof(format, args...)
+		return
+	}
+	api.t.Logf(format, args...)
+}
+
 // Close closes the API.
 func (api *MockAPI) Close() error {
 	return nil
@@ -75,23 +85,23 @@ func (api *MockAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, er
 	}
 
 	// HACK: Make future calls to config.GetMachineName() work properly.
-	api.T.Logf("MockAPI.NewHost: Setting profile=%q", h.Name)
+	api.Logf("MockAPI.NewHost: Setting profile=%q", h.Name)
 	viper.Set("profile", h.Name)
 
-	api.t.Logf("MockAPI.NewHost: %+v", h)
+	api.Logf("MockAPI.NewHost: %+v", h)
 	return h, nil
 }
 
 // Load a created mock
 func (api *MockAPI) Load(name string) (*host.Host, error) {
 	h, err := api.FakeStore.Load(name)
-	api.t.Logf("MockAPI.Load: %+v - %v", h, err)
+	api.Logf("MockAPI.Load: %+v - %v", h, err)
 	return h, err
 }
 
 // Create creates the actual host.
 func (api *MockAPI) Create(h *host.Host) error {
-	api.t.Logf("MockAPI.Create: %+v", h)
+	api.Logf("MockAPI.Create: %+v", h)
 	if api.CreateError {
 		return errors.New("error creating host")
 	}
@@ -110,7 +120,7 @@ func (api *MockAPI) List() ([]string, error) {
 
 // Remove a host.
 func (api *MockAPI) Remove(name string) error {
-	api.t.Logf("MockAPI.Delete: %s", name)
+	api.Logf("MockAPI.Delete: %s", name)
 	if api.RemoveError {
 		return fmt.Errorf("error removing %s", name)
 	}
@@ -122,7 +132,7 @@ func (api *MockAPI) Remove(name string) error {
 // Save saves a host to disk.
 func (api *MockAPI) Save(host *host.Host) error {
 	api.SaveCalled = true
-	api.t.Logf("MockAPI.Save: %+v", host)
+	api.Logf("MockAPI.Save: %+v", host)
 	return api.FakeStore.Save(host)
 }
 

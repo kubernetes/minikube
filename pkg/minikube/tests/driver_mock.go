@@ -24,6 +24,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -38,16 +39,25 @@ type MockDriver struct {
 	T            *testing.T
 }
 
+// Logf logs mock interactions
+func (driver *MockDriver) Logf(format string, args ...interface{}) {
+	if driver.T == nil {
+		glog.Infof(format, args...)
+		return
+	}
+	driver.T.Logf(format, args...)
+}
+
 // Create creates a MockDriver instance
 func (driver *MockDriver) Create() error {
-	driver.T.Logf("MockDriver.Create")
+	driver.Logf("MockDriver.Create")
 	driver.CurrentState = state.Running
 	return nil
 }
 
 // GetIP returns the IP address
 func (driver *MockDriver) GetIP() (string, error) {
-	driver.T.Logf("MockDriver.GetIP")
+	driver.Logf("MockDriver.GetIP")
 	if driver.IP != "" {
 		return driver.IP, nil
 	}
@@ -82,7 +92,7 @@ func (driver *MockDriver) GetSSHKeyPath() string {
 
 // GetState returns the state of the driver
 func (driver *MockDriver) GetState() (state.State, error) {
-	driver.T.Logf("MockDriver.GetState: %v", driver.CurrentState)
+	driver.Logf("MockDriver.GetState: %v", driver.CurrentState)
 	return driver.CurrentState, nil
 }
 
@@ -93,14 +103,14 @@ func (driver *MockDriver) GetURL() (string, error) {
 
 // Kill kills the machine
 func (driver *MockDriver) Kill() error {
-	driver.T.Logf("MockDriver.Kill")
+	driver.Logf("MockDriver.Kill")
 	driver.CurrentState = state.Stopped
 	return nil
 }
 
 // Remove removes the machine
 func (driver *MockDriver) Remove() error {
-	driver.T.Logf("MockDriver.Remove")
+	driver.Logf("MockDriver.Remove")
 	if driver.RemoveError {
 		return errors.New("error deleting machine")
 	}
@@ -109,7 +119,7 @@ func (driver *MockDriver) Remove() error {
 
 // Restart restarts the machine
 func (driver *MockDriver) Restart() error {
-	driver.T.Logf("MockDriver.Restart")
+	driver.Logf("MockDriver.Restart")
 	driver.CurrentState = state.Running
 	return nil
 }
@@ -121,20 +131,20 @@ func (driver *MockDriver) SetConfigFromFlags(opts drivers.DriverOptions) error {
 
 // Start starts the machine
 func (driver *MockDriver) Start() error {
-	driver.T.Logf("MockDriver.Start")
+	driver.Logf("MockDriver.Start")
 	driver.CurrentState = state.Running
 	return nil
 }
 
 // Stop stops the machine
 func (driver *MockDriver) Stop() error {
-	driver.T.Logf("MockDriver.Stop")
+	driver.Logf("MockDriver.Stop")
 	driver.CurrentState = state.Stopped
 	return nil
 }
 
 // DriverName returns the name of the driver
 func (driver *MockDriver) DriverName() string {
-	driver.T.Logf("MockDriver.Name")
+	driver.Logf("MockDriver.Name")
 	return constants.DriverMock
 }

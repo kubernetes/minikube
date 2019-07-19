@@ -42,7 +42,13 @@ func createMockDriverHost(c config.MachineConfig) interface{} {
 }
 
 func RegisterMockDriver(t *testing.T) {
-	registry.Register(registry.DriverDef{
+	t.Helper()
+	_, err := registry.Driver(constants.DriverMock)
+	// Already registered
+	if err == nil {
+		return
+	}
+	err = registry.Register(registry.DriverDef{
 		Name:          constants.DriverMock,
 		Builtin:       true,
 		ConfigCreator: createMockDriverHost,
@@ -50,6 +56,9 @@ func RegisterMockDriver(t *testing.T) {
 			return &tests.MockDriver{T: t}
 		},
 	})
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
 }
 
 var defaultMachineConfig = config.MachineConfig{

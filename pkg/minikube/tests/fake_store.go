@@ -32,7 +32,6 @@ type FakeStore struct {
 // Exists determines if the host already exists.
 func (s *FakeStore) Exists(name string) (bool, error) {
 	_, ok := s.Hosts[name]
-	s.T.Logf("FakeStore.Exists(%q): %v", name, ok)
 	return ok, nil
 }
 
@@ -42,7 +41,6 @@ func (s *FakeStore) List() ([]string, error) {
 	for h := range s.Hosts {
 		hostNames = append(hostNames, h)
 	}
-	s.T.Logf("FakeStore.List(): %v", hostNames)
 	return hostNames, nil
 }
 
@@ -55,14 +53,12 @@ func (s *FakeStore) Load(name string) (*host.Host, error) {
 		}
 
 	}
-	s.T.Logf("FakeStore.Load(): %v", h)
 	return h, nil
 }
 
 // Remove removes a machine from the store
 func (s *FakeStore) Remove(name string) error {
 	_, ok := s.Hosts[name]
-	s.T.Logf("FakeStore.Remove(%q): %v", name, ok)
 	if !ok {
 		return mcnerror.ErrHostDoesNotExist{
 			Name: name,
@@ -75,7 +71,6 @@ func (s *FakeStore) Remove(name string) error {
 
 // Save persists a machine in the store
 func (s *FakeStore) Save(h *host.Host) error {
-	s.T.Logf("FakeStore.Save(): %v", h)
 	s.Hosts[h.Name] = h
 	return nil
 }
