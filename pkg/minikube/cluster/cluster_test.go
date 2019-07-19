@@ -359,7 +359,7 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 func TestCreateSSHShell(t *testing.T) {
 	api := tests.NewMockAPI()
 
-	s, _ := tests.NewSSHServer()
+	s, _ := tests.NewSSHServer(t)
 	port, err := s.Start()
 	if err != nil {
 		t.Fatalf("Error starting ssh server: %v", err)
