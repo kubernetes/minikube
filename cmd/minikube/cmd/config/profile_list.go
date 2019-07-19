@@ -44,7 +44,7 @@ var profileListCmd = &cobra.Command{
 		table.SetCenterSeparator("|")
 		validProfiles, invalidProfiles, err := config.ListProfiles()
 
-		if len(validProfiles) == 0 {
+		if len(validProfiles) == 0 || err == nil {
 			exit.UsageT("No minikube profile was found. you could create one using: `minikube start`")
 		}
 		for _, p := range validProfiles {
