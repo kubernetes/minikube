@@ -36,6 +36,7 @@ func TestNewSSHClient(t *testing.T) {
 			IPAddress:  "127.0.0.1",
 			SSHKeyPath: "",
 		},
+		T: t,
 	}
 	c, err := NewSSHClient(d)
 	if err != nil {
@@ -50,7 +51,7 @@ func TestNewSSHClient(t *testing.T) {
 	defer sess.Close()
 
 	if err := sess.Run(cmd); err != nil {
-		t.Fatalf("Error running command: %s", cmd)
+		t.Fatalf("Error running %q: %v", cmd, err)
 	}
 	if !s.Connected {
 		t.Fatalf("Error!")
