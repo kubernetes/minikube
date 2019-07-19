@@ -57,7 +57,7 @@ func runStop(cmd *cobra.Command, args []string) {
 		err = cluster.StopHost(api)
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			console.OutStyle(console.Meh, "%q VM does not exist, nothing to stop", profile)
+			console.OutT(console.Meh, `"{{.profile_name}}" VM does not exist, nothing to stop`, console.Arg{"profile_name": profile})
 			nonexistent = true
 			return nil
 		default:
@@ -68,11 +68,11 @@ func runStop(cmd *cobra.Command, args []string) {
 		exit.WithError("Unable to stop VM", err)
 	}
 	if !nonexistent {
-		console.OutStyle(console.Stopped, "%q stopped.", profile)
+		console.OutT(console.Stopped, `"{{.profile_name}}" stopped.`, console.Arg{"profile_name": profile})
 	}
 
 	if err := cmdUtil.KillMountProcess(); err != nil {
-		console.OutStyle(console.WarningType, "Unable to kill mount process: %s", err)
+		console.OutT(console.WarningType, "Unable to kill mount process: {{.error}}", console.Arg{"error": err})
 	}
 
 	machineName := pkg_config.GetMachineName()
