@@ -348,7 +348,7 @@ func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 		console.OutT(console.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", console.Arg{"name": kubeconfig.ClusterName})
 	} else {
 		if !viper.GetBool(waitUntilHealthy) {
-			console.OutT(console.Ready, "kubectl has been configured configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
+			console.OutT(console.Ready, "kubectl has been configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
 		} else {
 			console.OutT(console.Ready, "Done! kubectl is now configured to use {{.name}}", console.Arg{"name": cfg.GetMachineName()})
 		}

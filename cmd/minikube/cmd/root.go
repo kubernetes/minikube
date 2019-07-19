@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/notify"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 var dirs = [...]string{
@@ -100,6 +101,20 @@ var RootCmd = &cobra.Command{
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	for _, c := range RootCmd.Commands() {
+		c.Use = translate.T(c.Use)
+		c.Short = translate.T(c.Short)
+		c.Long = translate.T(c.Long)
+		c.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Usage = translate.T(flag.Usage)
+		})
+	}
+	RootCmd.Use = translate.T(RootCmd.Use)
+	RootCmd.Short = translate.T(RootCmd.Short)
+	RootCmd.Long = translate.T(RootCmd.Long)
+	RootCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		flag.Usage = translate.T(flag.Usage)
+	})
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
 		os.Exit(exit.BadUsage)
@@ -126,6 +141,7 @@ func setFlagsUsingViper() {
 }
 
 func init() {
+	translate.DetermineLocale()
 	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", constants.DefaultClusterBootstrapper, "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
 	RootCmd.AddCommand(configCmd.ConfigCmd)
@@ -135,7 +151,6 @@ func init() {
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
 		exit.WithError("Unable to bind flags", err)
 	}
-
 	cobra.OnInitialize(initConfig)
 
 }
