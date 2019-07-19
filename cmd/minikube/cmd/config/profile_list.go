@@ -22,8 +22,8 @@ import (
 	"strconv"
 
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
@@ -52,18 +52,18 @@ var profileListCmd = &cobra.Command{
 		table.Render()
 
 		if invalidProfiles != nil {
-			console.OutT(console.WarningType, "Found {{.number}} invalid profile(s) ! ", console.Arg{"number": len(invalidProfiles)})
+			out.T(out.WarningType, "Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})
 			for _, p := range invalidProfiles {
-				console.OutT(console.Empty, "\t "+p.Name)
+				out.T(out.Empty, "\t "+p.Name)
 			}
-			console.OutT(console.Tip, "You can delete them using the following command(s): ")
+			out.T(out.Tip, "You can delete them using the following command(s): ")
 			for _, p := range invalidProfiles {
-				console.Out(fmt.Sprintf("\t $ minikube delete -p %s \n", p.Name))
+				out.String(fmt.Sprintf("\t $ minikube delete -p %s \n", p.Name))
 			}
 
 		}
 		if err != nil {
-			exit.WithCode(exit.Config, fmt.Sprintf("error loading profiles: %v", err))
+			exit.WithCodeT(exit.Config, fmt.Sprintf("error loading profiles: %v", err))
 		}
 	},
 }
