@@ -193,23 +193,18 @@ func testServicesList(t *testing.T) {
 func testRegistry(t *testing.T) {
 	t.Parallel()
 	mk := NewMinikubeRunner(t)
-	t.Log("enabling registry")
 	mk.RunCommand("addons enable registry", true)
-	t.Log("enabled")
 	client, err := pkgutil.GetClient()
 	if err != nil {
 		t.Fatalf("getting kubernetes client: %v", err)
 	}
-	t.Log("wait for registry replicacontroller")
 	if err := pkgutil.WaitForRCToStabilize(client, "kube-system", "registry", time.Minute*5); err != nil {
 		t.Fatalf("waiting for registry replicacontroller to stabilize: %v", err)
 	}
-	t.Log("wait for registry pod")
 	rs := labels.SelectorFromSet(labels.Set(map[string]string{"actual-registry": "true"}))
 	if err := pkgutil.WaitForPodsWithLabelRunning(client, "kube-system", rs); err != nil {
 		t.Fatalf("waiting for registry pods: %v", err)
 	}
-	t.Log("wait for registry-proxy pod")
 	ps, err := labels.Parse("kubernetes.io/minikube-addons=registry,actual-registry!=true")
 	if err != nil {
 		t.Fatalf("Unable to parse selector: %v", err)
@@ -220,7 +215,6 @@ func testRegistry(t *testing.T) {
 
 	ip := strings.TrimSpace(mk.RunCommand("ip", true))
 	endpoint := fmt.Sprintf("http://%s:%d", ip, 5000)
-	t.Logf("registry URL: %s", endpoint)
 	u, err := url.Parse(endpoint)
 	if err != nil {
 		t.Fatalf("failed to parse %q: %v", endpoint, err)
