@@ -122,7 +122,7 @@ func testDashboard(t *testing.T) {
 func testIngressController(t *testing.T) {
 	t.Parallel()
 	mk := NewMinikubeRunner(t, "--wait=false")
-	kubectlRunner := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t)
 
 	mk.RunCommand("addons enable ingress", true)
 	if err := util.WaitForIngressControllerRunning(t); err != nil {
@@ -138,12 +138,12 @@ func testIngressController(t *testing.T) {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)
 	}
 	ingressPath := path.Join(curdir, "testdata", "nginx-ing.yaml")
-	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", ingressPath}); err != nil {
+	if _, err := kr.RunCommand([]string{"create", "-f", ingressPath}); err != nil {
 		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
 
 	podPath := path.Join(curdir, "testdata", "nginx-pod-svc.yaml")
-	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
+	if _, err := kr.RunCommand([]string{"create", "-f", podPath}); err != nil {
 		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
 
@@ -167,7 +167,7 @@ func testIngressController(t *testing.T) {
 
 	defer func() {
 		for _, p := range []string{podPath, ingressPath} {
-			if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", p}); err != nil {
+			if out, err := kr.RunCommand([]string{"delete", "-f", p}); err != nil {
 				t.Logf("delete -f %s failed: %v\noutput: %s\n", p, err, out)
 			}
 		}
@@ -192,51 +192,61 @@ func testServicesList(t *testing.T) {
 }
 func testRegistry(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t)
-	kubectlRunner := util.NewKubectlRunner(t)
-	minikubeRunner.RunCommand("addons enable registry", true)
-	t.Log("wait for registry to come up")
-
-	if err := util.WaitForDockerRegistryRunning(t); err != nil {
-		t.Fatalf("waiting for registry to be up: %v", err)
+	mk := NewMinikubeRunner(t)
+	t.Log("enabling registry")
+	mk.RunCommand("addons enable registry", true)
+	t.Log("enabled")
+	client, err := pkgutil.GetClient()
+	if err != nil {
+		t.Fatalf("getting kubernetes client: %v", err)
 	}
+	t.Log("wait for registry replicacontroller")
+	if err := pkgutil.WaitForRCToStabilize(client, "kube-system", "registry", time.Minute*5); err != nil {
+		t.Fatalf("waiting for registry replicacontroller to stabilize: %v", err)
+	}
+	t.Log("wait for registry pod")
+	rs := labels.SelectorFromSet(labels.Set(map[string]string{"actual-registry": "true"}))
+	if err := pkgutil.WaitForPodsWithLabelRunning(client, "kube-system", rs); err != nil {
+		t.Fatalf("waiting for registry pods: %v", err)
+	}
+	t.Log("wait for registry-proxy pod")
+	ps, err := labels.Parse("kubernetes.io/minikube-addons=registry,actual-registry!=true")
+	if err != nil {
+		t.Fatalf("Unable to parse selector: %v", err)
+	}
+	if err := pkgutil.WaitForPodsWithLabelRunning(client, "kube-system", ps); err != nil {
+		t.Fatalf("waiting for registry-proxy pods: %v", err)
+	}
+
+	ip := strings.TrimSpace(mk.RunCommand("ip", true))
+	endpoint := fmt.Sprintf("http://%s:%d", ip, 5000)
+	t.Logf("registry URL: %s", endpoint)
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", endpoint, err)
+	}
+	t.Log("checking registry access from outside cluster")
 
 	// Check access from outside the cluster on port 5000, validing connectivity via registry-proxy
 	checkExternalAccess := func() error {
-		t.Log("checking registry access from outside cluster")
-		_, out := minikubeRunner.RunDaemon("ip")
-		s, err := readLineWithTimeout(out, 180*time.Second)
-
-		if err != nil {
-			t.Fatalf("failed to read minikubeIP: %v", err)
-		}
-
-		registryEndpoint := "http://" + strings.TrimSpace(s) + ":5000"
-		u, err := url.Parse(registryEndpoint)
-
-		if err != nil {
-			t.Fatalf("failed to parse %q: %v", s, err)
-		}
-
 		resp, err := retryablehttp.Get(u.String())
 		if err != nil {
 			t.Errorf("failed get: %v", err)
 		}
 
 		if resp.StatusCode != http.StatusOK {
-			t.Errorf("%s returned status code %d, expected %d.\n", registryEndpoint, resp.StatusCode, http.StatusOK)
+			t.Errorf("%s returned status code %d, expected %d.\n", u, resp.StatusCode, http.StatusOK)
 		}
-
 		return nil
 	}
 
 	if err := util.Retry(t, checkExternalAccess, 2*time.Second, 5); err != nil {
 		t.Fatalf(err.Error())
 	}
-	// check access from inside the cluster via a busybox container running inside cluster
+
 	t.Log("checking registry access from inside cluster")
-	expectedStr := "200"
-	out, _ := kubectlRunner.RunCommand([]string{
+	kr := util.NewKubectlRunner(t)
+	out, _ := kr.RunCommand([]string{
 		"run",
 		"registry-test",
 		"--restart=Never",
@@ -247,16 +257,17 @@ func testRegistry(t *testing.T) {
 		"-c",
 		"wget --spider -S 'http://registry.kube-system.svc.cluster.local' 2>&1 | grep 'HTTP/' | awk '{print $2}'"})
 	internalCheckOutput := string(out)
+	expectedStr := "200"
 	if !strings.Contains(internalCheckOutput, expectedStr) {
 		t.Fatalf("ExpectedStr internalCheckOutput to be: %s. Output was: %s", expectedStr, internalCheckOutput)
 	}
 
 	defer func() {
-		if _, err := kubectlRunner.RunCommand([]string{"delete", "pod", "registry-test"}); err != nil {
+		if _, err := kr.RunCommand([]string{"delete", "pod", "registry-test"}); err != nil {
 			t.Fatalf("failed to delete pod registry-test")
 		}
 	}()
-	minikubeRunner.RunCommand("addons disable registry", true)
+	mk.RunCommand("addons disable registry", true)
 }
 func testGvisor(t *testing.T) {
 	mk := NewMinikubeRunner(t, "--wait=false")
@@ -320,26 +331,26 @@ func testGvisorRestart(t *testing.T) {
 }
 
 func createUntrustedWorkload(t *testing.T) {
-	kubectlRunner := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t)
 	curdir, err := filepath.Abs("")
 	if err != nil {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)
 	}
 	untrustedPath := path.Join(curdir, "testdata", "nginx-untrusted.yaml")
 	t.Log("creating pod with untrusted workload annotation")
-	if _, err := kubectlRunner.RunCommand([]string{"replace", "-f", untrustedPath, "--force"}); err != nil {
+	if _, err := kr.RunCommand([]string{"replace", "-f", untrustedPath, "--force"}); err != nil {
 		t.Fatalf("creating untrusted nginx resource: %v", err)
 	}
 }
 
 func deleteUntrustedWorkload(t *testing.T) {
-	kubectlRunner := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t)
 	curdir, err := filepath.Abs("")
 	if err != nil {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)
 	}
 	untrustedPath := path.Join(curdir, "testdata", "nginx-untrusted.yaml")
-	if _, err := kubectlRunner.RunCommand([]string{"delete", "-f", untrustedPath}); err != nil {
+	if _, err := kr.RunCommand([]string{"delete", "-f", untrustedPath}); err != nil {
 		t.Logf("error deleting untrusted nginx resource: %v", err)
 	}
 }
