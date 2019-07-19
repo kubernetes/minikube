@@ -21,8 +21,6 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -32,7 +30,6 @@ import (
 
 	units "github.com/docker/go-units"
 	"github.com/golang/glog"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -134,24 +131,6 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 		time.Sleep(d)
 	}
 	return m.ToError()
-}
-
-// ParseSHAFromURL downloads and reads a SHA checksum from an URL
-func ParseSHAFromURL(url string) (string, error) {
-	r, err := retryablehttp.Get(url)
-	if err != nil {
-		return "", errors.Wrap(err, "Error downloading checksum.")
-	} else if r.StatusCode != http.StatusOK {
-		return "", errors.Errorf("Error downloading checksum. Got HTTP Error: %s", r.Status)
-	}
-
-	defer r.Body.Close()
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return "", errors.Wrap(err, "Error reading checksum.")
-	}
-
-	return strings.Trim(string(body), "\n"), nil
 }
 
 // GetBinaryDownloadURL returns a suitable URL for the platform

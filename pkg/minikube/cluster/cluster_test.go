@@ -37,14 +37,40 @@ type MockDownloader struct{}
 func (d MockDownloader) GetISOFileURI(isoURL string) string          { return "" }
 func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return nil }
 
+func createMockDriverHost(c config.MachineConfig) interface{} {
+	return nil
+}
+
+func RegisterMockDriver(t *testing.T) {
+	t.Helper()
+	_, err := registry.Driver(constants.DriverMock)
+	// Already registered
+	if err == nil {
+		return
+	}
+	err = registry.Register(registry.DriverDef{
+		Name:          constants.DriverMock,
+		Builtin:       true,
+		ConfigCreator: createMockDriverHost,
+		DriverCreator: func() drivers.Driver {
+			return &tests.MockDriver{T: t}
+		},
+	})
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
+}
+
 var defaultMachineConfig = config.MachineConfig{
-	VMDriver:    constants.DefaultVMDriver,
+	VMDriver:    constants.DriverMock,
 	MinikubeISO: constants.DefaultISOURL,
 	Downloader:  MockDownloader{},
+	DockerEnv:   []string{"MOCK_MAKE_IT_PROVISION=true"},
 }
 
 func TestCreateHost(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 
 	exists, _ := api.Exists(config.GetMachineName())
 	if exists {
@@ -54,9 +80,12 @@ func TestCreateHost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	exists, _ = api.Exists(config.GetMachineName())
+	exists, err = api.Exists(config.GetMachineName())
+	if err != nil {
+		t.Fatalf("exists failed for %q: %v", config.GetMachineName(), err)
+	}
 	if !exists {
-		t.Fatal("Machine does not exist, but should.")
+		t.Fatalf("%q does not exist, but should.", config.GetMachineName())
 	}
 
 	h, err := api.Load(config.GetMachineName())
@@ -82,7 +111,8 @@ func TestCreateHost(t *testing.T) {
 }
 
 func TestStartHostExists(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 	// Create an initial host.
 	_, err := createHost(api, defaultMachineConfig)
 	if err != nil {
@@ -101,10 +131,10 @@ func TestStartHostExists(t *testing.T) {
 	// This should pass without calling Create because the host exists already.
 	h, err := StartHost(api, defaultMachineConfig)
 	if err != nil {
-		t.Fatal("Error starting host.")
+		t.Fatalf("Error starting host: %v", err)
 	}
 	if h.Name != config.GetMachineName() {
-		t.Fatalf("Machine created with incorrect name: %s", h.Name)
+		t.Fatalf("GetMachineName()=%q, want %q", config.GetMachineName(), h.Name)
 	}
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
@@ -115,13 +145,14 @@ func TestStartHostExists(t *testing.T) {
 }
 
 func TestStartStoppedHost(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 	// Create an initial host.
 	h, err := createHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	d := tests.MockDriver{}
+	d := tests.MockDriver{T: t}
 	h.Driver = &d
 	d.CurrentState = state.Stopped
 
@@ -149,7 +180,8 @@ func TestStartStoppedHost(t *testing.T) {
 }
 
 func TestStartHost(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
@@ -159,7 +191,7 @@ func TestStartHost(t *testing.T) {
 		t.Fatal("Error starting host.")
 	}
 	if h.Name != config.GetMachineName() {
-		t.Fatalf("Machine created with incorrect name: %s", h.Name)
+		t.Fatalf("GetMachineName()=%q, want %q", config.GetMachineName(), h.Name)
 	}
 	if exists, _ := api.Exists(h.Name); !exists {
 		t.Fatal("Machine not saved.")
@@ -176,7 +208,8 @@ func TestStartHost(t *testing.T) {
 }
 
 func TestStartHostConfig(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
@@ -208,14 +241,16 @@ func TestStartHostConfig(t *testing.T) {
 }
 
 func TestStopHostError(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 	if err := StopHost(api); err == nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
 }
 
 func TestStopHost(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 	h, err := createHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
@@ -230,7 +265,8 @@ func TestStopHost(t *testing.T) {
 }
 
 func TestDeleteHost(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 	if _, err := createHost(api, defaultMachineConfig); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
@@ -241,14 +277,14 @@ func TestDeleteHost(t *testing.T) {
 }
 
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 	h, err := createHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	d := &tests.MockDriver{RemoveError: true}
-
+	d := &tests.MockDriver{RemoveError: true, T: t}
 	h.Driver = d
 
 	if err := DeleteHost(api); err == nil {
@@ -257,7 +293,8 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 }
 
 func TestDeleteHostErrorDeletingFiles(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 	api.RemoveError = true
 	if _, err := createHost(api, defaultMachineConfig); err != nil {
 		t.Errorf("createHost failed: %v", err)
@@ -269,7 +306,8 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 }
 
 func TestGetHostStatus(t *testing.T) {
-	api := tests.NewMockAPI()
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
 
 	checkState := func(expected string) {
 		s, err := GetHostStatus(api)
@@ -296,10 +334,11 @@ func TestGetHostStatus(t *testing.T) {
 }
 
 func TestGetHostDockerEnv(t *testing.T) {
+	RegisterMockDriver(t)
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
-	api := tests.NewMockAPI()
+	api := tests.NewMockAPI(t)
 	h, err := createHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
@@ -308,6 +347,7 @@ func TestGetHostDockerEnv(t *testing.T) {
 		BaseDriver: drivers.BaseDriver{
 			IPAddress: "127.0.0.1",
 		},
+		T: t,
 	}
 	h.Driver = d
 
@@ -332,7 +372,7 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
-	api := tests.NewMockAPI()
+	api := tests.NewMockAPI(t)
 	h, err := createHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
@@ -341,6 +381,7 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 		BaseDriver: drivers.BaseDriver{
 			IPAddress: "fe80::215:5dff:fe00:a903",
 		},
+		T: t,
 	}
 	h.Driver = d
 
@@ -357,7 +398,7 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 }
 
 func TestCreateSSHShell(t *testing.T) {
-	api := tests.NewMockAPI()
+	api := tests.NewMockAPI(t)
 
 	s, _ := tests.NewSSHServer(t)
 	port, err := s.Start()
@@ -372,6 +413,7 @@ func TestCreateSSHShell(t *testing.T) {
 			IPAddress:  "127.0.0.1",
 			SSHKeyPath: "",
 		},
+		T: t,
 	}
 	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
 

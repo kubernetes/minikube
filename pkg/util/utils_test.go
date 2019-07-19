@@ -19,9 +19,6 @@ package util
 import (
 	"bytes"
 	"fmt"
-	"io"
-	"net/http"
-	"net/http/httptest"
 	"strings"
 	"sync"
 	"testing"
@@ -85,45 +82,6 @@ func TestRetryNotRetriableError(t *testing.T) {
 	f = errorGenerator(0, false)
 	if err := Retry(5, f); err != nil {
 		t.Fatalf("Error should not have been raised by retry.")
-	}
-}
-
-type getTestArgs struct {
-	input         string
-	expected      string
-	expectedError bool
-}
-
-var testSHAString = "test"
-
-func TestParseSHAFromURL(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if _, err := io.WriteString(w, testSHAString); err != nil {
-			t.Fatalf("WriteString: %v", err)
-		}
-	}))
-	serverBadResponse := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusInternalServerError)
-		if _, err := w.Write([]byte("500 HTTP status code returned!")); err != nil {
-			t.Fatalf("Write: %v", err)
-		}
-	}))
-
-	argsList := [...]getTestArgs{
-		{server.URL, testSHAString, false},
-		{serverBadResponse.URL, "", true},
-		{"abc", "", true},
-	}
-	for _, args := range argsList {
-		url, err := ParseSHAFromURL(args.input)
-		wasError := err != nil
-		if wasError != args.expectedError {
-			t.Errorf("ParseSHAFromURL Expected error was: %t, Actual Error was: %s",
-				args.expectedError, err)
-		}
-		if url != args.expected {
-			t.Errorf("ParseSHAFromURL: Expected %s, Actual: %s", args.expected, url)
-		}
 	}
 }
 
