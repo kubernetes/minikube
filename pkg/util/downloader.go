@@ -25,8 +25,8 @@ import (
 	"github.com/golang/glog"
 	download "github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 const fileScheme = "file"
@@ -76,7 +76,7 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
 		options.ChecksumHash = crypto.SHA256
 	}
 
-	console.OutStyle(console.ISODownload, "Downloading Minikube ISO ...")
+	out.T(out.ISODownload, "Downloading Minikube ISO ...")
 	if err := download.ToFile(isoURL, f.GetISOCacheFilepath(isoURL), options); err != nil {
 		return errors.Wrap(err, isoURL)
 	}

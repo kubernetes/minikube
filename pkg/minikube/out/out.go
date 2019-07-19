@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package console provides a mechanism for sending localized, stylized output to the console.
-package console
+// Package out provides a mechanism for sending localized, stylized output to the out.
+package out
 
 import (
 	"fmt"
@@ -31,12 +31,12 @@ import (
 // By design, this package uses global references to language and output objects, in preference
 // to passing a console object throughout the code base. Typical usage is:
 //
-// console.SetOutFile(os.Stdout)
-// console.Out("Starting up!")
-// console.OutStyle(console.StatusChange, "Configuring things")
+// out.SetOutFile(os.Stdout)
+// out.Out("Starting up!")
+// out.OutStyle(out.StatusChange, "Configuring things")
 
-// console.SetErrFile(os.Stderr)
-// console.Fatal("Oh no, everything failed.")
+// out.SetErrFile(os.Stderr)
+// out.Fatal("Oh no, everything failed.")
 
 // NOTE: If you do not want colorized output, set MINIKUBE_IN_STYLE=false in your environment.
 
@@ -57,17 +57,11 @@ type fdWriter interface {
 	Fd() uintptr
 }
 
-// Arg is a convenience wrapper for templating
-type Arg map[string]interface{}
+// V is a convenience wrapper for templating, it represents the variable key/value pair.
+type V map[string]interface{}
 
-// OutStyle writes a stylized and formatted message to stdout
-func OutStyle(style StyleEnum, format string, a ...interface{}) {
-	outStyled := applyStyle(style, useColor, format)
-	Out(outStyled, a...)
-}
-
-// OutT writes a stylized and templated message to stdout
-func OutT(style StyleEnum, format string, a ...Arg) {
+// T writes a stylized and templated message to stdout
+func T(style StyleEnum, format string, a ...V) {
 	outStyled := applyTemplateFormatting(style, useColor, format, a...)
 	Out(outStyled)
 }
@@ -84,19 +78,13 @@ func Out(format string, a ...interface{}) {
 	}
 }
 
-// OutLn writes a basic formatted string with a newline to stdout
-func OutLn(format string, a ...interface{}) {
+// Ln writes a basic formatted string with a newline to stdout
+func Ln(format string, a ...interface{}) {
 	Out(format+"\n", a...)
 }
 
-// ErrStyle writes a stylized and formatted error message to stderr
-func ErrStyle(style StyleEnum, format string, a ...interface{}) {
-	errStyled := applyStyle(style, useColor, format)
-	Err(errStyled, a...)
-}
-
 // ErrT writes a stylized and templated error message to stderr
-func ErrT(style StyleEnum, format string, a ...Arg) {
+func ErrT(style StyleEnum, format string, a ...V) {
 	errStyled := applyTemplateFormatting(style, useColor, format, a...)
 	Err(errStyled)
 }
@@ -118,43 +106,23 @@ func ErrLn(format string, a ...interface{}) {
 	Err(format+"\n", a...)
 }
 
-// Success is a shortcut for writing a styled success message to stdout
-func Success(format string, a ...interface{}) {
-	OutStyle(SuccessType, format, a...)
-}
-
-// Fatal is a shortcut for writing a styled fatal message to stderr
-func Fatal(format string, a ...interface{}) {
-	ErrStyle(FatalType, format, a...)
-}
-
-// Warning is a shortcut for writing a styled warning message to stderr
-func Warning(format string, a ...interface{}) {
-	ErrStyle(WarningType, format, a...)
-}
-
-// Failure is a shortcut for writing a styled failure message to stderr
-func Failure(format string, a ...interface{}) {
-	ErrStyle(FailureType, format, a...)
-}
-
 // SuccessT is a shortcut for writing a templated success message to stdout
-func SuccessT(format string, a ...Arg) {
-	OutT(SuccessType, format, a...)
+func SuccessT(format string, a ...V) {
+	T(SuccessType, format, a...)
 }
 
 // FatalT is a shortcut for writing a templated fatal message to stderr
-func FatalT(format string, a ...Arg) {
+func FatalT(format string, a ...V) {
 	ErrT(FatalType, format, a...)
 }
 
 // WarningT is a shortcut for writing a templated warning message to stderr
-func WarningT(format string, a ...Arg) {
+func WarningT(format string, a ...V) {
 	ErrT(WarningType, format, a...)
 }
 
 // FailureT is a shortcut for writing a templated failure message to stderr
-func FailureT(format string, a ...Arg) {
+func FailureT(format string, a ...V) {
 	ErrT(FailureType, format, a...)
 }
 

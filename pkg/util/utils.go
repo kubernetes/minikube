@@ -34,8 +34,8 @@ import (
 	"github.com/golang/glog"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // ErrPrefix notes an error
@@ -63,7 +63,7 @@ func CalculateSizeInMB(humanReadableSize string) int {
 	}
 	size, err := units.FromHumanSize(humanReadableSize)
 	if err != nil {
-		exit.WithCodeT(exit.Config, "Invalid size passed in argument: {{.error}}", console.Arg{"error": err})
+		exit.WithCodeT(exit.Config, "Invalid size passed in argument: {{.error}}", out.V{"error": err})
 	}
 
 	return int(size / units.MB)

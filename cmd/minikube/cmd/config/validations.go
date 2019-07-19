@@ -28,9 +28,9 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // containerdOnlyMsg is the message shown when a containerd-only addon is enabled
@@ -55,7 +55,7 @@ func IsValidDriver(string, driver string) error {
 
 // RequiresRestartMsg returns the "requires restart" message
 func RequiresRestartMsg(string, string) error {
-	console.OutStyle(console.WarningType, "These changes will take effect upon a minikube delete and then a minikube start")
+	out.T(out.WarningType, "These changes will take effect upon a minikube delete and then a minikube start")
 	return nil
 }
 

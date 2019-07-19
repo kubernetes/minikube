@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // Containerd contains containerd runtime state
@@ -36,8 +36,8 @@ func (r *Containerd) Name() string {
 }
 
 // Style is the console style for containerd
-func (r *Containerd) Style() console.StyleEnum {
-	return console.Containerd
+func (r *Containerd) Style() out.StyleEnum {
+	return out.Containerd
 }
 
 // Version retrieves the current version of this runtime

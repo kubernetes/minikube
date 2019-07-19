@@ -25,7 +25,7 @@ import (
 
 	"github.com/golang/glog"
 	"golang.org/x/crypto/ssh/terminal"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // AskForYesNoConfirmation asks the user for confirmation. A user must type in "yes" or "no" and
@@ -36,7 +36,7 @@ func AskForYesNoConfirmation(s string, posResponses, negResponses []string) bool
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
-		console.Out("%s [y/n]: ", s)
+		out.Out("%s [y/n]: ", s)
 
 		response, err := reader.ReadString('\n')
 		if err != nil {
@@ -49,7 +49,7 @@ func AskForYesNoConfirmation(s string, posResponses, negResponses []string) bool
 		case containsString(negResponses, r):
 			return false
 		default:
-			console.Err("Please type yes or no:")
+			out.Err("Please type yes or no:")
 		}
 	}
 }
@@ -63,7 +63,7 @@ func AskForStaticValue(s string) string {
 
 		// Can't have zero length
 		if len(response) == 0 {
-			console.Err("--Error, please enter a value:")
+			out.Err("--Error, please enter a value:")
 			continue
 		}
 		return response
@@ -78,7 +78,7 @@ func AskForStaticValueOptional(s string) string {
 }
 
 func getStaticValue(reader *bufio.Reader, s string) string {
-	console.Out("%s", s)
+	out.Out("%s", s)
 
 	response, err := reader.ReadString('\n')
 	if err != nil {
@@ -110,7 +110,7 @@ func concealableAskForStaticValue(readWriter io.ReadWriter, promptString string,
 		}
 		response = strings.TrimSpace(response)
 		if len(response) == 0 {
-			console.Warning("Please enter a value:")
+			out.WarningT("Please enter a value:")
 			continue
 		}
 		return response, nil

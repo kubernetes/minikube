@@ -18,8 +18,8 @@ package config
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var addonsDisableCmd = &cobra.Command{
@@ -36,7 +36,7 @@ var addonsDisableCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("disable failed", err)
 		}
-		console.SuccessT(`"{{.minikube_addon}}" was successfully disabled`, console.Arg{"minikube_addon": addon})
+		out.SuccessT(`"{{.minikube_addon}}" was successfully disabled`, out.V{"minikube_addon": addon})
 	},
 }
 
