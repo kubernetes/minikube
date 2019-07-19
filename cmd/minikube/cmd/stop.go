@@ -57,7 +57,7 @@ func runStop(cmd *cobra.Command, args []string) {
 		console.ErrLn("Error loading profile config: %v", err)
 	}
 
-	if err == nil && (cc.MachineConfig.VMDriver != constants.DriverNone || cc.MachineConfig.VMDriver != constants.DriverGeneric) {
+	if err == nil && (cc.MachineConfig.VMDriver != constants.DriverNone && cc.MachineConfig.VMDriver != constants.DriverGeneric) {
 		nonexistent := false
 
 		stop := func() (err error) {
