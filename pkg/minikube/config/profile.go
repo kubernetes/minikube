@@ -17,7 +17,7 @@ limitations under the License.
 package config
 
 import (
-	"os"
+	"io/ioutil"
 	"path/filepath"
 
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -58,30 +58,27 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 }
 
 // loadProfile loads type Profile based on its name
-func loadProfile(n string, miniHome ...string) (*Profile, error) {
-	cfg, err := DefaultLoader.LoadConfigFromFile(n, miniHome...)
-	profile := &Profile{
-		Name:   n,
+func loadProfile(name string, miniHome ...string) (*Profile, error) {
+	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
+	p := &Profile{
+		Name:   name,
 		Config: cfg,
 	}
-	return profile, err
+	return p, err
 }
 
-// profileDirs gets all the folders in the user's profiles folder
+// profileDirs gets all the folders in the user's profiles folder regardless of valid or invalid config
 func profileDirs(miniHome ...string) (dirs []string, err error) {
 	miniPath := constants.GetMinipath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
-	root := filepath.Join(miniPath, "profiles")
-	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if info.IsDir() {
-			if path != root {
-				dirs = append(dirs, filepath.Base(path))
-			}
+	pRootDir := filepath.Join(miniPath, "profiles")
+	items, err := ioutil.ReadDir(pRootDir)
+	for _, f := range items {
+		if f.IsDir() {
+			dirs = append(dirs, f.Name())
 		}
-		return nil
-	})
+	}
 	return dirs, err
-
 }
