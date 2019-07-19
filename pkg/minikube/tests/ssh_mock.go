@@ -44,9 +44,9 @@ type SSHServer struct {
 	// Only access this with atomic ops
 	commandToOutput atomic.Value
 
-	quit bool
+	quit     bool
 	listener net.Listener
-	t *testing.T
+	t        *testing.T
 }
 
 // NewSSHServer returns a NewSSHServer instance, ready for use.
