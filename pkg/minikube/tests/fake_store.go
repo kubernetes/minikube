@@ -17,6 +17,8 @@ limitations under the License.
 package tests
 
 import (
+	"testing"
+
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
 )
@@ -24,6 +26,7 @@ import (
 // FakeStore implements persist.Store from libmachine
 type FakeStore struct {
 	Hosts map[string]*host.Host
+	T     *testing.T
 }
 
 // Exists determines if the host already exists.
@@ -67,7 +70,7 @@ func (s *FakeStore) Remove(name string) error {
 }
 
 // Save persists a machine in the store
-func (s *FakeStore) Save(host *host.Host) error {
-	s.Hosts[host.Name] = host
+func (s *FakeStore) Save(h *host.Host) error {
+	s.Hosts[h.Name] = h
 	return nil
 }

@@ -41,6 +41,7 @@ func TestNewSSHClient(t *testing.T) {
 			IPAddress:  "127.0.0.1",
 			SSHKeyPath: "",
 		},
+		T: t,
 	}
 	c, err := NewSSHClient(d)
 	if err != nil {
