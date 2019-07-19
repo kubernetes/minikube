@@ -68,7 +68,7 @@
 	"Error opening service": "",
 	"Error parsing minukube version: {{.error}}": "",
 	"Error parsing vmDriver version: {{.error}}": "",
-	"Error reading %s: %v": "",
+	"Error reading {{.path}}: {{.error}}": "",
 	"Error restarting cluster": "",
 	"Error setting shell variables": "",
 	"Error starting cluster": "",

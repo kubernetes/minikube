@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package out provides a mechanism for sending localized, stylized output to the out.
+// Package out provides a mechanism for sending localized, stylized output to the console.
 package out
 
 import (
