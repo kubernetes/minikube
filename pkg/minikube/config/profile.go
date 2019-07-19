@@ -37,14 +37,13 @@ func (p *Profile) isValid() bool {
 // ListProfiles returns all valid and invalid (if any) minikube profiles
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggeted to be deleted
-func ListProfiles() (validPs []*Profile, inValidPs []*Profile, err error) {
-
-	pDirs, err := profileDirs()
+func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
+	pDirs, err := profileDirs(miniHome...)
 	if err != nil {
 		return nil, nil, err
 	}
 	for _, n := range pDirs {
-		p, err := loadProfile(n)
+		p, err := loadProfile(n, miniHome...)
 		if err != nil {
 			inValidPs = append(inValidPs, p)
 			continue
@@ -52,7 +51,6 @@ func ListProfiles() (validPs []*Profile, inValidPs []*Profile, err error) {
 		if !p.isValid() {
 			inValidPs = append(inValidPs, p)
 			continue
-
 		}
 		validPs = append(validPs, p)
 	}
@@ -60,8 +58,8 @@ func ListProfiles() (validPs []*Profile, inValidPs []*Profile, err error) {
 }
 
 // loadProfile loads type Profile based on its name
-func loadProfile(n string) (*Profile, error) {
-	cfg, err := DefaultLoader.LoadConfigFromFile(n)
+func loadProfile(n string, miniHome ...string) (*Profile, error) {
+	cfg, err := DefaultLoader.LoadConfigFromFile(n, miniHome...)
 	profile := &Profile{
 		Name:   n,
 		Config: cfg,
@@ -70,8 +68,12 @@ func loadProfile(n string) (*Profile, error) {
 }
 
 // profileDirs gets all the folders in the user's profiles folder
-func profileDirs() (dirs []string, err error) {
-	root := filepath.Join(constants.GetMinipath(), "profiles")
+func profileDirs(miniHome ...string) (dirs []string, err error) {
+	miniPath := constants.GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	root := filepath.Join(miniPath, "profiles")
 	err = filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			if path != root {
