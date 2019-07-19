@@ -32,8 +32,8 @@ import (
 // to passing a console object throughout the code base. Typical usage is:
 //
 // out.SetOutFile(os.Stdout)
-// out.Out("Starting up!")
-// out.OutStyle(out.StatusChange, "Configuring things")
+// out.String("Starting up!")
+// out.T(out.StatusChange, "Configuring things")
 
 // out.SetErrFile(os.Stderr)
 // out.Fatal("Oh no, everything failed.")
@@ -63,11 +63,11 @@ type V map[string]interface{}
 // T writes a stylized and templated message to stdout
 func T(style StyleEnum, format string, a ...V) {
 	outStyled := applyTemplateFormatting(style, useColor, format, a...)
-	Out(outStyled)
+	String(outStyled)
 }
 
-// Out writes a basic formatted string to stdout
-func Out(format string, a ...interface{}) {
+// String writes a basic formatted string to stdout
+func String(format string, a ...interface{}) {
 	if outFile == nil {
 		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
@@ -80,7 +80,7 @@ func Out(format string, a ...interface{}) {
 
 // Ln writes a basic formatted string with a newline to stdout
 func Ln(format string, a ...interface{}) {
-	Out(format+"\n", a...)
+	String(format+"\n", a...)
 }
 
 // ErrT writes a stylized and templated error message to stderr

@@ -313,7 +313,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 
 	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
 	// pod shows up as registered, but need the webserver for all subsequent queries.
-	out.Out(" apiserver")
+	out.String(" apiserver")
 	if err := k.waitForAPIServer(k8s); err != nil {
 		return errors.Wrap(err, "waiting for apiserver")
 	}
@@ -323,7 +323,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 			continue
 		}
 
-		out.Out(" %s", p.name)
+		out.String(" %s", p.name)
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
 		if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))

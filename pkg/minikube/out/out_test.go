@@ -90,9 +90,9 @@ func TestOut(t *testing.T) {
 			SetOutFile(f)
 			ErrLn("unrelated message")
 			if tc.arg == nil {
-				Out(tc.format)
+				String(tc.format)
 			} else {
-				Out(tc.format, tc.arg)
+				String(tc.format, tc.arg)
 			}
 			got := f.String()
 			if got != tc.want {
