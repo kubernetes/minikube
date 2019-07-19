@@ -54,7 +54,7 @@ var profileListCmd = &cobra.Command{
 		if invalidProfiles != nil {
 			console.OutT(console.WarningType, "Found {{.number}} invalid profile(s) ! ", console.Arg{"number": len(invalidProfiles)})
 			for _, p := range invalidProfiles {
-				console.OutT(console.Empty,"\t "+p.Name)
+				console.OutT(console.Empty, "\t "+p.Name)
 			}
 			console.OutT(console.Tip, "You can delete them using the following command(s): ")
 			for _, p := range invalidProfiles {
