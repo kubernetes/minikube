@@ -363,12 +363,12 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
 	if config.VMDriver != constants.DriverNone {
-		console.OutT(console.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}MB, Disk={{.disk_size}}MB) ...", console.Arg{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
+		console.OutT(console.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", console.Arg{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
 
 	} else {
 		info, err := getHostInfo()
 		if err == nil {
-			console.OutT(console.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}MB, Disk={{.disk_size}}MB) ...", console.Arg{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
+			console.OutT(console.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", console.Arg{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
 	}
 

@@ -108,6 +108,8 @@ func Execute() {
 		c.Flags().VisitAll(func(flag *pflag.Flag) {
 			flag.Usage = translate.T(flag.Usage)
 		})
+
+		c.SetUsageTemplate(usageTemplate())
 	}
 	RootCmd.Use = translate.T(RootCmd.Use)
 	RootCmd.Short = translate.T(RootCmd.Short)
@@ -115,10 +117,41 @@ func Execute() {
 	RootCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 		flag.Usage = translate.T(flag.Usage)
 	})
+	RootCmd.SetUsageTemplate(usageTemplate())
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
 		os.Exit(exit.BadUsage)
 	}
+}
+
+// usageTemplate just calls translate.T on the default usage template
+// explicitly using the raw string instead of calling c.UsageTemplate()
+// so the extractor can find this monstrosity of a string
+func usageTemplate() string {
+	return translate.T(`Usage:{{if .Runnable}}
+	{{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+	{{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+  
+  Aliases:
+	{{.NameAndAliases}}{{end}}{{if .HasExample}}
+  
+  Examples:
+  {{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+  
+  Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+	{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+  
+  Flags:
+  {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+  
+  Global Flags:
+  {{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+  
+  Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+	{{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+  
+  Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
+  `)
 }
 
 // Handle config values for flags used in external packages (e.g. glog)
