@@ -80,4 +80,5 @@ const (
 	Unmount
 	MountOptions
 	Fileserver
+	Empty
 )

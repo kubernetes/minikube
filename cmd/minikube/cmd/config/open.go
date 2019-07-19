@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"os"
 	"text/template"
 
 	"github.com/spf13/cobra"
@@ -48,13 +47,13 @@ var addonsOpenCmd = &cobra.Command{
 	PreRun: func(cmd *cobra.Command, args []string) {
 		t, err := template.New("addonsURL").Parse(addonsURLFormat)
 		if err != nil {
-			exit.Usage("The value passed to --format is invalid: %s", err)
+			exit.UsageT("The value passed to --format is invalid: {{.error}}", console.Arg{"error": err})
 		}
 		addonsURLTemplate = t
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			exit.Usage("usage: minikube addons open ADDON_NAME")
+			exit.UsageT("usage: minikube addons open ADDON_NAME")
 		}
 		addonName := args[0]
 		// TODO(r2d4): config should not reference API, pull this out
@@ -67,19 +66,18 @@ var addonsOpenCmd = &cobra.Command{
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
 		addon, ok := assets.Addons[addonName] // validate addon input
 		if !ok {
-			exit.WithCode(exit.Data, `addon '%s' is not a valid addon packaged with minikube.
+			exit.WithCodeT(exit.Data, `addon '{{.name}}' is not a valid addon packaged with minikube.
 To see the list of available addons run:
-minikube addons list`, addonName)
+minikube addons list`, console.Arg{"name": addonName})
 		}
 		ok, err = addon.IsEnabled()
 		if err != nil {
 			exit.WithError("IsEnabled failed", err)
 		}
 		if !ok {
-			console.ErrStyle(console.Conflict, `addon '%s' is currently not enabled.
+			exit.WithCodeT(exit.Unavailable, `addon '{{.name}}' is currently not enabled.
 To enable this addon run:
-minikube addons enable %s`, addonName, addonName)
-			os.Exit(exit.Unavailable)
+minikube addons enable {{.name}}`, console.Arg{"name": addonName})
 		}
 
 		namespace := "kube-system"
@@ -87,16 +85,16 @@ minikube addons enable %s`, addonName, addonName)
 
 		serviceList, err := service.GetServiceListByLabel(namespace, key, addonName)
 		if err != nil {
-			exit.WithCode(exit.Unavailable, "Error getting service with namespace: %s and labels %s:%s: %v", namespace, key, addonName, err)
+			exit.WithCodeT(exit.Unavailable, "Error getting service with namespace: {{.namespace}} and labels {{.labelName}}:{{.addonName}}: {{.error}}", console.Arg{"namespace": namespace, "labelName": key, "addonName": addonName, "error": err})
 		}
 		if len(serviceList.Items) == 0 {
-			exit.WithCode(exit.Config, `This addon does not have an endpoint defined for the 'addons open' command.
-You can add one by annotating a service with the label %s:%s`, key, addonName)
+			exit.WithCodeT(exit.Config, `This addon does not have an endpoint defined for the 'addons open' command.
+You can add one by annotating a service with the label {{.labelName}}:{{.addonName}}`, console.Arg{"labelName": key, "addonName": addonName})
 		}
 		for i := range serviceList.Items {
 			svc := serviceList.Items[i].ObjectMeta.Name
 			if err := service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
-				exit.WithCode(exit.Unavailable, "Wait failed: %v", err)
+				exit.WithCodeT(exit.Unavailable, "Wait failed: {{.error}}", console.Arg{"error": err})
 			}
 		}
 	},

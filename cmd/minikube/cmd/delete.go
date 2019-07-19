@@ -47,7 +47,7 @@ associated files.`,
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
-		exit.Usage("usage: minikube delete")
+		exit.UsageT("usage: minikube delete")
 	}
 	profile := viper.GetString(pkg_config.MachineProfile)
 	api, err := machine.NewAPIClient()
@@ -58,7 +58,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	cc, err := pkg_config.Load()
 	if err != nil && !os.IsNotExist(err) {
-		console.ErrLn("Error loading profile config: %v", err)
+		console.ErrT(console.Sad, "Error loading profile config: {{.error}}", console.Arg{"name": profile})
 	}
 
 	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
@@ -76,17 +76,17 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if err := cmdUtil.KillMountProcess(); err != nil {
-		console.Fatal("Failed to kill mount process: %v", err)
+		console.FatalT("Failed to kill mount process: {{.error}}", console.Arg{"error": err})
 	}
 
 	if err := os.RemoveAll(constants.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {
 		if os.IsNotExist(err) {
-			console.OutStyle(console.Meh, "%q profile does not exist", profile)
+			console.OutT(console.Meh, `"{{.profile_name}}" profile does not exist`, console.Arg{"profile_name": profile})
 			os.Exit(0)
 		}
 		exit.WithError("Failed to remove profile", err)
 	}
-	console.OutStyle(console.Crushed, "The %q cluster has been deleted.", profile)
+	console.OutT(console.Crushed, `The "{{.cluster_name}}" cluster has been deleted.`, console.Arg{"cluster_name": profile})
 
 	machineName := pkg_config.GetMachineName()
 	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
@@ -95,12 +95,12 @@ func runDelete(cmd *cobra.Command, args []string) {
 }
 
 func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsName string) {
-	console.OutStyle(console.Resetting, "Uninstalling Kubernetes %s using %s ...", kc.KubernetesVersion, bsName)
+	console.OutT(console.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", console.Arg{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
 	clusterBootstrapper, err := getClusterBootstrapper(api, bsName)
 	if err != nil {
-		console.ErrLn("Unable to get bootstrapper: %v", err)
+		console.ErrT(console.Empty, "Unable to get bootstrapper: {{.error}}", console.Arg{"error": err})
 	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
-		console.ErrLn("Failed to delete cluster: %v", err)
+		console.ErrT(console.Empty, "Failed to delete cluster: {{.error}}", console.Arg{"error": err})
 	}
 }
 
