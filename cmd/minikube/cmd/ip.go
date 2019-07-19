@@ -42,7 +42,7 @@ var ipCmd = &cobra.Command{
 		if err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
-				exit.WithCode(exit.NoInput, "%q host does not exist, unable to show an IP", config.GetMachineName())
+				exit.WithCodeT(exit.NoInput, `"{{.profile_name}}" host does not exist, unable to show an IP`, console.Arg{"profile_name": config.GetMachineName()})
 			default:
 				exit.WithError("Error getting host", err)
 			}
@@ -51,7 +51,7 @@ var ipCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting IP", err)
 		}
-		console.OutLn(ip)
+		console.Out(ip)
 	},
 }
 
