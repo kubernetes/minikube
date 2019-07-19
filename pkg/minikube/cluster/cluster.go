@@ -75,12 +75,10 @@ func init() {
 
 // CacheISO downloads and caches ISO.
 func CacheISO(config cfg.MachineConfig) error {
-	if config.VMDriver != constants.DriverNone {
-		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
-			return err
-		}
+	if localDriver(config.VMDriver) {
+		return nil
 	}
-	return nil
+	return config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO)
 }
 
 // StartHost starts a host VM.
@@ -141,23 +139,35 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	return h, nil
 }
 
+// localDriver returns whether or not the driver should be considered local
+func localDriver(name string) bool {
+	if name == constants.DriverNone || name == constants.DriverMock {
+		return true
+	}
+	return false
+}
+
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
+	glog.Infof("configureHost: %T %+v", h, h)
 	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
 	out.T(out.Waiting, "Waiting for SSH access ...", out.V{})
 
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
+		glog.Infof("Detecting provisioner ...")
 		provisioner, err := provision.DetectProvisioner(h.Driver)
 		if err != nil {
 			return errors.Wrap(err, "detecting provisioner")
 		}
+		glog.Infof("Provisioning: %+v", *h.HostOptions)
 		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
 			return errors.Wrap(err, "provision")
 		}
 	}
 
-	if h.Driver.DriverName() != constants.DriverNone {
+	if !localDriver(h.Driver.DriverName()) {
+		glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
@@ -362,9 +372,8 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 			See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	if config.VMDriver != constants.DriverNone {
-		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
-
+	if !localDriver(config.VMDriver) {
+		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}MB, Disk={{.disk_size}}MB) ...", console.Arg{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
 	} else {
 		info, err := getHostInfo()
 		if err == nil {
@@ -375,9 +384,9 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
-			exit.UsageT("unsupported driver: {{.driver_name}}", out.V{"driver_name": config.VMDriver})
+			return nil, fmt.Errorf("unsupported driver: %s", config.VMDriver)
 		}
-		exit.WithError("error getting driver", err)
+		return nil, errors.Wrap(err, "error getting driver")
 	}
 
 	driver := def.ConfigCreator(config)

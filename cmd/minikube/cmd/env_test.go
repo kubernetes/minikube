@@ -20,7 +20,6 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -71,7 +70,7 @@ func newShellCfg(shell, prefix, suffix, delim string) *ShellConfig {
 func TestShellCfgSet(t *testing.T) {
 	var tests = []struct {
 		description      string
-		api              libmachine.API
+		api              *tests.MockAPI
 		shell            string
 		noProxyVar       string
 		noProxyValue     string
@@ -236,7 +235,7 @@ func TestShellCfgSet(t *testing.T) {
 			defaultShellDetector = &FakeShellDetector{test.shell}
 			defaultNoProxyGetter = &FakeNoProxyGetter{test.noProxyVar, test.noProxyValue}
 			noProxy = test.noProxyFlag
-
+			test.api.T = t
 			shellCfg, err := shellCfgSet(test.api)
 			if !reflect.DeepEqual(shellCfg, test.expectedShellCfg) {
 				t.Errorf("Shell cfgs differ: expected %+v, \n\n got %+v", test.expectedShellCfg, shellCfg)

@@ -59,6 +59,9 @@ func ArchTag(hasTag bool) string {
 	return "-" + runtime.GOARCH + ":"
 }
 
+// DriverMock is a mock driver.
+const DriverMock = "mock-driver"
+
 // DriverNone is the none driver.
 const DriverNone = "none"
 

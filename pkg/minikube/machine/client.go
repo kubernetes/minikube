@@ -147,6 +147,9 @@ func (api *LocalClient) Close() error {
 
 // CommandRunner returns best available command runner for this host
 func CommandRunner(h *host.Host) (command.Runner, error) {
+	if h.DriverName == constants.DriverMock {
+		return &command.FakeCommandRunner{}, nil
+	}
 	if h.DriverName == constants.DriverNone {
 		return &command.ExecRunner{}, nil
 	}
