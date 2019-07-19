@@ -26,7 +26,7 @@ func TestListProfiles(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
-
+	// test cases for valid profiles
 	var testCasesValidProfs = []struct {
 		index      int
 		expectName string
@@ -35,6 +35,8 @@ func TestListProfiles(t *testing.T) {
 		{0, "p1", "hyperkit"},
 		{1, "p2", "virtualbox"},
 	}
+
+	// test cases for invalid profiles
 	var testCasesInValidProfs = []struct {
 		index      int
 		expectName string
