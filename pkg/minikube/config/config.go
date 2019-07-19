@@ -96,6 +96,7 @@ func decode(r io.Reader) (MinikubeConfig, error) {
 
 // GetMachineName gets the machine name for the VM
 func GetMachineName() string {
+	// REFACTOR NECESSARY: This function should not rely on globals.
 	if viper.GetString(MachineProfile) == "" {
 		return constants.DefaultMachineName
 	}
