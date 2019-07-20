@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package bootstrapper
+package command
 
 import (
 	"fmt"
@@ -24,8 +24,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
-// CommandRunner represents an interface to run commands.
-type CommandRunner interface {
+// Runner represents an interface to run commands.
+type Runner interface {
 	// Run starts the specified command and waits for it to complete.
 	Run(cmd string) error
 

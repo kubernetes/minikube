@@ -126,8 +126,7 @@ func setFlagsUsingViper() {
 }
 
 func init() {
-	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used.  
-	This can be modified to allow for multiple minikube instances to be run independently`)
+	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", constants.DefaultClusterBootstrapper, "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
 	RootCmd.AddCommand(configCmd.ConfigCmd)
 	RootCmd.AddCommand(configCmd.AddonsCmd)
@@ -171,8 +170,8 @@ func setupViper() {
 	setFlagsUsingViper()
 }
 
-// GetClusterBootstrapper returns a new bootstrapper for the cluster
-func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
+// getClusterBootstrapper returns a new bootstrapper for the cluster
+func getClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
 	var b bootstrapper.Bootstrapper
 	var err error
 	switch bootstrapperName {

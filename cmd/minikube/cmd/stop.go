@@ -26,10 +26,10 @@ import (
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
@@ -39,44 +39,47 @@ var stopCmd = &cobra.Command{
 	Short: "Stops a running local kubernetes cluster",
 	Long: `Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
 itself, leaving all files intact. The cluster can be started again with the "start" command.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		profile := viper.GetString(pkg_config.MachineProfile)
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
+	Run: runStop,
+}
 
-		nonexistent := false
+// runStop handles the executes the flow of "minikube stop"
+func runStop(cmd *cobra.Command, args []string) {
+	profile := viper.GetString(pkg_config.MachineProfile)
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		exit.WithError("Error getting client", err)
+	}
+	defer api.Close()
 
-		stop := func() (err error) {
-			err = cluster.StopHost(api)
-			switch err := errors.Cause(err).(type) {
-			case mcnerror.ErrHostDoesNotExist:
-				console.OutStyle(console.Meh, "%q VM does not exist, nothing to stop", profile)
-				nonexistent = true
-				return nil
-			default:
-				return err
-			}
-		}
-		if err := pkgutil.RetryAfter(5, stop, 1*time.Second); err != nil {
-			exit.WithError("Unable to stop VM", err)
-		}
-		if !nonexistent {
-			console.OutStyle(console.Stopped, "%q stopped.", profile)
-		}
+	nonexistent := false
 
-		if err := cmdUtil.KillMountProcess(); err != nil {
-			console.OutStyle(console.WarningType, "Unable to kill mount process: %s", err)
+	stop := func() (err error) {
+		err = cluster.StopHost(api)
+		switch err := errors.Cause(err).(type) {
+		case mcnerror.ErrHostDoesNotExist:
+			out.T(out.Meh, `"{{.profile_name}}" VM does not exist, nothing to stop`, out.V{"profile_name": profile})
+			nonexistent = true
+			return nil
+		default:
+			return err
 		}
+	}
+	if err := pkgutil.RetryAfter(5, stop, 2*time.Second); err != nil {
+		exit.WithError("Unable to stop VM", err)
+	}
+	if !nonexistent {
+		out.T(out.Stopped, `"{{.profile_name}}" stopped.`, out.V{"profile_name": profile})
+	}
 
-		machineName := pkg_config.GetMachineName()
-		err = pkgutil.UnsetCurrentContext(constants.KubeconfigPath, machineName)
-		if err != nil {
-			exit.WithError("update config", err)
-		}
-	},
+	if err := cmdUtil.KillMountProcess(); err != nil {
+		out.T(out.WarningType, "Unable to kill mount process: {{.error}}", out.V{"error": err})
+	}
+
+	machineName := pkg_config.GetMachineName()
+	err = pkgutil.UnsetCurrentContext(constants.KubeconfigPath, machineName)
+	if err != nil {
+		exit.WithError("update config", err)
+	}
 }
 
 func init() {

@@ -153,7 +153,7 @@ evictionHard:
 
 var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`
 [Unit]
-{{if or (eq .ContainerRuntime "cri-o") (eq .ContainerRuntime "cri")}}Wants=crio.service{{else}}Wants=docker.socket{{end}}
+{{if or (eq .ContainerRuntime "cri-o") (eq .ContainerRuntime "cri")}}Wants=crio.service{{else if eq .ContainerRuntime "containerd"}}Wants=containerd.service{{else}}Wants=docker.socket{{end}}
 
 [Service]
 ExecStart=
@@ -171,7 +171,8 @@ Documentation=http://kubernetes.io/docs/
 ExecStart=/usr/bin/kubelet
 Restart=always
 StartLimitInterval=0
-RestartSec=10
+# Tuned for local dev: faster than upstream default (10s), but slower than systemd default (100ms)
+RestartSec=600ms
 
 [Install]
 WantedBy=multi-user.target

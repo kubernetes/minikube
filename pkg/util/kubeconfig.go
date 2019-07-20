@@ -313,26 +313,58 @@ func GetPortFromKubeConfig(filename, machineName string) (int, error) {
 	return port, err
 }
 
-//UnsetCurrentContext unsets the current-context from minikube to "" on minikube stop
+// UnsetCurrentContext unsets the current-context from minikube to "" on minikube stop
 func UnsetCurrentContext(filename, machineName string) error {
 	confg, err := ReadConfigOrNew(filename)
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubeconfig status")
 	}
-	confg.CurrentContext = ""
-	if err := WriteConfig(confg, filename); err != nil {
-		return errors.Wrap(err, "writing kubeconfig")
+
+	// Unset current-context only if profile is the current-context
+	if confg.CurrentContext == machineName {
+		confg.CurrentContext = ""
+		if err := WriteConfig(confg, filename); err != nil {
+			return errors.Wrap(err, "writing kubeconfig")
+		}
+		return nil
 	}
+
 	return nil
 }
 
-//SetCurrentContext sets the kubectl's current-context
+// SetCurrentContext sets the kubectl's current-context
 func SetCurrentContext(kubeCfgPath, name string) error {
 	kcfg, err := ReadConfigOrNew(kubeCfgPath)
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubeconfig status")
 	}
 	kcfg.CurrentContext = name
+	if err := WriteConfig(kcfg, kubeCfgPath); err != nil {
+		return errors.Wrap(err, "writing kubeconfig")
+	}
+	return nil
+}
+
+// DeleteKubeConfigContext deletes the specified machine's kubeconfig context
+func DeleteKubeConfigContext(kubeCfgPath, machineName string) error {
+	kcfg, err := ReadConfigOrNew(kubeCfgPath)
+	if err != nil {
+		return errors.Wrap(err, "Error getting kubeconfig status")
+	}
+
+	if kcfg == nil || api.IsConfigEmpty(kcfg) {
+		glog.V(2).Info("kubeconfig is empty")
+		return nil
+	}
+
+	delete(kcfg.Clusters, machineName)
+	delete(kcfg.AuthInfos, machineName)
+	delete(kcfg.Contexts, machineName)
+
+	if kcfg.CurrentContext == machineName {
+		kcfg.CurrentContext = ""
+	}
+
 	if err := WriteConfig(kcfg, kubeCfgPath); err != nil {
 		return errors.Wrap(err, "writing kubeconfig")
 	}

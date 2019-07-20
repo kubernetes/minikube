@@ -28,8 +28,9 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
@@ -77,7 +78,7 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 	options.Checksum = constants.GetKubernetesReleaseURLSHA1(binary, version, osName, archName)
 	options.ChecksumHash = crypto.SHA1
 
-	console.OutStyle(console.FileDownload, "Downloading %s %s", binary, version)
+	out.T(out.FileDownload, "Downloading {{.name}} {{.version}}", out.V{"name": binary, "version": version})
 	if err := download.ToFile(url, targetFilepath, options); err != nil {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
 	}
@@ -90,7 +91,7 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 }
 
 // CopyBinary copies previously cached binaries into the path
-func CopyBinary(cr bootstrapper.CommandRunner, binary, path string) error {
+func CopyBinary(cr command.Runner, binary, path string) error {
 	f, err := assets.NewFileAsset(path, "/usr/bin", binary, "0755")
 	if err != nil {
 		return errors.Wrap(err, "new file asset")

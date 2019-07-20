@@ -28,7 +28,7 @@ make -s lint && echo ok || ((exitcode+=4))
 echo "= boilerplate ==========================================================="
 readonly PYTHON=$(type -P python || echo docker run --rm -it -v $(pwd):/minikube -w /minikube python python)
 readonly BDIR="./hack/boilerplate"
-missing="$($PYTHON ${BDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BDIR} | egrep -v '/assets.go|/site/themes/|/site/node_modules' || true)"
+missing="$($PYTHON ${BDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules' || true)"
 if [[ -n "${missing}" ]]; then
     echo "boilerplate missing: $missing"
     echo "consider running: ${BDIR}/fix.sh"

@@ -40,7 +40,15 @@ var blacklist = []string{
 	"%s/%d",
 	"%s=%s",
 	"%v",
+	"GID:      %s",
+	"MSize:    %d",
+	"UID:      %s",
+	"env %s",
+	"opt %s",
 }
+
+// ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.
+const ErrMapFile string = "pkg/minikube/problem/err_map.go"
 
 // state is a struct that represent the current state of the extraction process
 type state struct {
@@ -107,16 +115,6 @@ func setParentFunc(e *state, f string) {
 
 // TranslatableStrings finds all strings to that need to be translated in paths and prints them out to all json files in output
 func TranslatableStrings(paths []string, functions []string, output string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return errors.Wrap(err, "Getting current working directory")
-	}
-
-	if strings.Contains(cwd, "cmd") {
-		fmt.Println("Run extract.go from the minikube root directory.")
-		os.Exit(1)
-	}
-
 	e, err := newExtractor(functions)
 
 	if err != nil {
@@ -166,6 +164,10 @@ func inspectFile(e *state) error {
 	file, err := parser.ParseFile(fset, "", r, parser.ParseComments)
 	if err != nil {
 		return err
+	}
+
+	if e.filename == ErrMapFile {
+		return extractAdvice(file, e)
 	}
 
 	ast.Inspect(file, func(x ast.Node) bool {
@@ -237,6 +239,10 @@ func checkCallExpression(s *ast.CallExpr, e *state) {
 		return
 	}
 
+	checkArguments(s, e)
+}
+
+func checkArguments(s *ast.CallExpr, e *state) {
 	matched := false
 	for _, arg := range s.Args {
 		// This argument is an identifier.
@@ -384,4 +390,31 @@ func addParentFuncToList(e *state) {
 		e.funcs[e.parentFunc] = struct{}{}
 		e.fs.Push(e.parentFunc)
 	}
+}
+
+// extractAdvice specifically extracts Advice strings in err_map.go, since they don't conform to our normal translatable string format.
+func extractAdvice(f ast.Node, e *state) error {
+	ast.Inspect(f, func(x ast.Node) bool {
+		// We want the "Advice: <advice string>" key-value pair
+		// First make sure we're looking at a kvp
+		kvp, ok := x.(*ast.KeyValueExpr)
+		if !ok {
+			return true
+		}
+
+		// Now make sure we're looking at an Advice kvp
+		i, ok := kvp.Key.(*ast.Ident)
+		if !ok {
+			return true
+		}
+
+		if i.Name == "Advice" {
+			// At this point we know the value in the kvp is guaranteed to be a string
+			advice, _ := kvp.Value.(*ast.BasicLit)
+			addStringToList(advice.Value, e)
+		}
+		return true
+	})
+
+	return nil
 }

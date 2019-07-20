@@ -29,7 +29,7 @@ import (
 
 func TestTunnelManagerEventHandling(t *testing.T) {
 	tcs := []struct {
-		//tunnel inputs
+		// tunnel inputs
 		name   string
 		repeat int
 		test   func(tunnel *tunnelStub, cancel context.CancelFunc, ready, check, done chan bool) error
@@ -120,7 +120,7 @@ func TestTunnelManagerEventHandling(t *testing.T) {
 		},
 	}
 
-	//t.Parallel()
+	// t.Parallel()
 	for _, tc := range tcs {
 		t.Run(tc.name, func(t *testing.T) {
 			var err error

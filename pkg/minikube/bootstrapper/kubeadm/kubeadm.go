@@ -36,11 +36,12 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -94,7 +95,7 @@ var SkipAdditionalPreflights = map[string][]string{}
 
 // Bootstrapper is a bootstrapper using kubeadm
 type Bootstrapper struct {
-	c bootstrapper.CommandRunner
+	c command.Runner
 }
 
 // NewKubeadmBootstrapper creates a new kubeadm.Bootstrapper
@@ -230,7 +231,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
-		//TODO(r2d4): get rid of global here
+		// TODO(r2d4): get rid of global here
 		master = k8s.NodeName
 		if err := util.RetryAfter(200, unmarkMaster, time.Second*1); err != nil {
 			return errors.Wrap(err, "timed out waiting to unmark master")
@@ -304,7 +305,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
-	console.OutStyle(console.WaitingPods, "Verifying:")
+	out.T(out.WaitingPods, "Verifying:")
 	client, err := util.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
@@ -312,7 +313,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 
 	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
 	// pod shows up as registered, but need the webserver for all subsequent queries.
-	console.Out(" apiserver")
+	out.String(" apiserver")
 	if err := k.waitForAPIServer(k8s); err != nil {
 		return errors.Wrap(err, "waiting for apiserver")
 	}
@@ -322,13 +323,13 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 			continue
 		}
 
-		console.Out(" %s", p.name)
+		out.String(" %s", p.name)
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
 		if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))
 		}
 	}
-	console.OutLn("")
+	out.Ln("")
 	return nil
 }
 
@@ -482,7 +483,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	_, images := constants.GetKubeadmCachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
 	if cfg.ShouldLoadCachedImages {
 		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
-			console.Failure("Unable to load cached images: %v", err)
+			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}
 	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket})
@@ -640,7 +641,7 @@ func copyConfig(cfg config.KubernetesConfig, files []assets.CopyableFile, kubead
 	return files
 }
 
-func downloadBinaries(cfg config.KubernetesConfig, c bootstrapper.CommandRunner) error {
+func downloadBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 	var g errgroup.Group
 	for _, bin := range constants.GetKubeadmCachedBinaries() {
 		bin := bin

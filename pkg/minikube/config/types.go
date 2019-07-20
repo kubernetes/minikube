@@ -22,6 +22,12 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+// Profile represents a minikube profile
+type Profile struct {
+	Name   string
+	Config *Config
+}
+
 // Config contains machine and k8s config
 type Config struct {
 	MachineConfig    MachineConfig
@@ -39,22 +45,24 @@ type MachineConfig struct {
 	ContainerRuntime    string
 	HyperkitVpnKitSock  string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts  []string // Only used by the Hyperkit driver
-	XhyveDiskDriver     string   // Only used by the xhyve driver
 	DockerEnv           []string // Each entry is formatted as KEY=VALUE.
 	InsecureRegistry    []string
 	RegistryMirror      []string
 	HostOnlyCIDR        string // Only used by the virtualbox driver
 	HypervVirtualSwitch string
-	KvmNetwork          string             // Only used by the KVM driver
+	KVMNetwork          string             // Only used by the KVM driver
+	KVMQemuURI          string             // Only used by kvm2
+	KVMGPU              bool               // Only used by kvm2
+	KVMHidden           bool               // Only used by kvm2
 	Downloader          util.ISODownloader `json:"-"`
 	DockerOpt           []string           // Each entry is formatted as KEY=VALUE.
-	DisableDriverMounts bool               // Only used by virtualbox and xhyve
+	DisableDriverMounts bool               // Only used by virtualbox
 	NFSShare            []string
 	NFSSharesRoot       string
 	UUID                string // Only used by hyperkit to restore the mac address
-	GPU                 bool   // Only used by kvm2
-	Hidden              bool   // Only used by kvm2
 	NoVTXCheck          bool   // Only used by virtualbox
+	DNSProxy            bool   // Only used by virtualbox
+	HostDNSResolver     bool   // Only used by virtualbox
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

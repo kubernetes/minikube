@@ -24,13 +24,13 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/storageclass"
 )
 
@@ -110,7 +110,7 @@ func EnableOrDisableAddon(name string, val string) error {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
 
-	//TODO(r2d4): config package should not reference API, pull this out
+	// TODO(r2d4): config package should not reference API, pull this out
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "machine client")
@@ -130,7 +130,7 @@ func EnableOrDisableAddon(name string, val string) error {
 
 	cfg, err := config.Load()
 	if err != nil && !os.IsNotExist(err) {
-		exit.WithCode(exit.Data, "Unable to load config: %v", err)
+		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
 	data := assets.GenerateTemplateData(cfg.KubernetesConfig)
@@ -154,11 +154,11 @@ func isAddonAlreadySet(addon *assets.Addon, enable bool) error {
 	return nil
 }
 
-func enableOrDisableAddonInternal(addon *assets.Addon, cmd bootstrapper.CommandRunner, data interface{}, enable bool) error {
+func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
 	var err error
 	// check addon status before enabling/disabling it
 	if err := isAddonAlreadySet(addon, enable); err != nil {
-		console.ErrStyle(console.Conflict, "%v", err)
+		out.ErrT(out.Conflict, "{{.error}}", out.V{"error": err})
 		os.Exit(0)
 	}
 

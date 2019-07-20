@@ -30,7 +30,7 @@ const defaultVirtualboxNicType = "virtio"
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          "virtualbox",
+		Name:          constants.DriverVirtualbox,
 		Builtin:       true,
 		ConfigCreator: createVirtualboxHost,
 		DriverCreator: func() drivers.Driver {
@@ -54,8 +54,8 @@ func createVirtualboxHost(config cfg.MachineConfig) interface{} {
 	d.NoVTXCheck = config.NoVTXCheck
 	d.NatNicType = defaultVirtualboxNicType
 	d.HostOnlyNicType = defaultVirtualboxNicType
-	d.DNSProxy = false
-	d.HostDNSResolver = true
+	d.DNSProxy = config.DNSProxy
+	d.HostDNSResolver = config.HostDNSResolver
 
 	return d
 }

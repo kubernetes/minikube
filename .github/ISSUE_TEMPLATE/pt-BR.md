@@ -7,8 +7,15 @@ labels: l/pt-BR
  
 **Os comandos necessários para reproduzir o problema**:
  
-**A saída completa do comando que apresentou falha**:
- 
-**A saída do comando `minikube logs`**:
- 
+**A saída completa do comando que apresentou falha**: <details>
+
+
+
+</details>
+
+**A saída do comando `minikube logs`**:<details>
+
+
+</details>
+
 **A versão do sistema operacional usado**:

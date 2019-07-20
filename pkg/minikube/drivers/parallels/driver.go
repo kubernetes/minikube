@@ -30,7 +30,7 @@ import (
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          "parallels",
+		Name:          constants.DriverParallels,
 		Builtin:       true,
 		ConfigCreator: createParallelsHost,
 		DriverCreator: func() drivers.Driver {

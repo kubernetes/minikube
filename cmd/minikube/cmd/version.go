@@ -18,7 +18,7 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -31,7 +31,11 @@ var versionCmd = &cobra.Command{
 		enableUpdateNotification = false
 	},
 	Run: func(command *cobra.Command, args []string) {
-		console.OutLn("minikube version: %v", version.GetVersion())
+		out.Ln("minikube version: %v", version.GetVersion())
+		gitCommitID := version.GetGitCommitID()
+		if gitCommitID != "" {
+			out.Ln("commit: %v", gitCommitID)
+		}
 	},
 }
 

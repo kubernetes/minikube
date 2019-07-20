@@ -25,6 +25,11 @@ func re(s string) *regexp.Regexp {
 
 // vmProblems are VM related problems
 var vmProblems = map[string]match{
+	"SERVICE_NOT_FOUND": {
+		Regexp: re(`Could not find finalized endpoint being pointed to by`),
+		Advice: "Please make sure the service you are looking for is deployed or is in the correct namespace.",
+		Issues: []int{4599},
+	},
 	"HYPERKIT_NO_IP": {
 		Regexp: re(`IP address never found in dhcp leases file Temporary Error: Could not find an IP address for`),
 		Advice: "Install the latest minikube hyperkit driver, and run 'minikube delete'",
@@ -86,6 +91,11 @@ var vmProblems = map[string]match{
 		Advice: "Please install the minikube kvm2 VM driver, or select an alternative --vm-driver",
 		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver",
 	},
+	"HYPERKIT_NOT_FOUND": {
+		Regexp: re(`Driver "hyperkit" not found. Do you have the plugin binary .* accessible in your PATH?`),
+		Advice: "Please install the minikube hyperkit VM driver, or select an alternative --vm-driver",
+		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver",
+	},
 	"KVM2_RESTART_NO_IP": {
 		Regexp: re(`Error starting stopped host: Machine didn't return an IP after 120 seconds`),
 		Advice: "The KVM driver is unable to resurrect this old VM. Please run `minikube delete` to delete it and try again.",
@@ -113,6 +123,11 @@ var vmProblems = map[string]match{
 		Advice: "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
 		URL:    "http://mikko.repolainen.fi/documents/virtualization-with-kvm",
 		Issues: []int{2991},
+	},
+	"KVM_CONNECTION_ERROR": {
+		Regexp: re(`error connecting to libvirt socket`),
+		Advice: "Have you set up libvirt correctly?",
+		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver",
 	},
 	"DRIVER_CRASHED": {
 		Regexp: re(`Error attempting to get plugin server address for RPC`),

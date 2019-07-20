@@ -7,8 +7,16 @@ labels: l/es
 
 **Los comandos necesarios para reproducir la incidencia**:
 
-**El resultado completo del comando que ha fallado**:
+**El resultado completo del comando que ha fallado**: <details>
 
-**El resultado del comando `minikube logs`**:
+
+
+</details>
+
+**El resultado del comando `minikube logs`**: <details>
+
+
+
+</details>
 
 **La versión del sistema operativo que utilizaste**:

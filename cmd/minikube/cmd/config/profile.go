@@ -22,9 +22,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
@@ -36,12 +36,12 @@ var ProfileCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			profile := viper.GetString(pkgConfig.MachineProfile)
-			console.OutLn("%s", profile)
+			out.T(out.Empty, profile)
 			os.Exit(0)
 		}
 
 		if len(args) > 1 {
-			exit.Usage("usage: minikube profile [MINIKUBE_PROFILE_NAME]")
+			exit.UsageT("usage: minikube profile [MINIKUBE_PROFILE_NAME]")
 		}
 
 		profile := args[0]
@@ -55,19 +55,19 @@ var ProfileCmd = &cobra.Command{
 		cc, err := pkgConfig.Load()
 		// might err when loading older version of cfg file that doesn't have KeepContext field
 		if err != nil && !os.IsNotExist(err) {
-			console.ErrLn("Error loading profile config: %v", err)
+			out.ErrT(out.Sad, `Error loading profile config: {{.error}}`, out.V{"error": err})
 		}
 		if err == nil {
 			if cc.MachineConfig.KeepContext {
-				console.Success("Skipped switching kubectl context for %s , because --keep-context", profile)
-				console.Success("To connect to this cluster, use: kubectl --context=%s", profile)
+				out.SuccessT("Skipped switching kubectl context for {{.profile_name}} , because --keep-context", out.V{"profile_name": profile})
+				out.SuccessT("To connect to this cluster, use: kubectl --context={{.profile_name}}", out.V{"profile_name": profile})
 			} else {
 				err := pkgutil.SetCurrentContext(constants.KubeconfigPath, profile)
 				if err != nil {
-					console.ErrLn("Error while setting kubectl current context :  %v", err)
+					out.ErrT(out.Sad, `Error while setting kubectl current context :  {{.error}}`, out.V{"error": err})
 				}
 			}
 		}
-		console.Success("minikube profile was successfully set to %s", profile)
+		out.SuccessT("minikube profile was successfully set to {{.profile_name}}", out.V{"profile_name": profile})
 	},
 }

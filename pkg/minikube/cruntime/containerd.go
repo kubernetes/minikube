@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // Containerd contains containerd runtime state
@@ -35,8 +35,9 @@ func (r *Containerd) Name() string {
 	return "containerd"
 }
 
-func (r *Containerd) Style() console.StyleEnum {
-	return console.Containerd
+// Style is the console style for containerd
+func (r *Containerd) Style() out.StyleEnum {
+	return out.Containerd
 }
 
 // Version retrieves the current version of this runtime
@@ -79,9 +80,11 @@ func (r *Containerd) Available() error {
 }
 
 // Enable idempotently enables containerd on a host
-func (r *Containerd) Enable() error {
-	if err := disableOthers(r, r.Runner); err != nil {
-		glog.Warningf("disableOthers: %v", err)
+func (r *Containerd) Enable(disOthers bool) error {
+	if disOthers {
+		if err := disableOthers(r, r.Runner); err != nil {
+			glog.Warningf("disableOthers: %v", err)
+		}
 	}
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
