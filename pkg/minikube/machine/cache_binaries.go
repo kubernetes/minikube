@@ -29,8 +29,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
@@ -78,7 +78,7 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 	options.Checksum = constants.GetKubernetesReleaseURLSHA1(binary, version, osName, archName)
 	options.ChecksumHash = crypto.SHA1
 
-	console.OutT(console.FileDownload, "Downloading {{.name}} {{.version}}", console.Arg{"name": binary, "version": version})
+	out.T(out.FileDownload, "Downloading {{.name}} {{.version}}", out.V{"name": binary, "version": version})
 	if err := download.ToFile(url, targetFilepath, options); err != nil {
 		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
 	}

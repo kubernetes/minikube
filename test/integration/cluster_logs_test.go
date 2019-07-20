@@ -25,9 +25,9 @@ import (
 
 func testClusterLogs(t *testing.T) {
 	t.Parallel()
-	minikubeRunner := NewMinikubeRunner(t)
-	minikubeRunner.EnsureRunning()
-	logsCmdOutput := minikubeRunner.GetLogs()
+	mk := NewMinikubeRunner(t)
+	mk.EnsureRunning()
+	logsCmdOutput := mk.GetLogs()
 
 	// check for # of lines or check for strings
 	logWords := []string{"minikube", ".go"}
