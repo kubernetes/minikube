@@ -48,39 +48,36 @@ associated files.`,
 
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
-	if len(args) > 0 {
-		exit.UsageT("usage: minikube delete")
-		profileFlag, err := cmd.Flags().GetString("profile")
+	profileFlag, err := cmd.Flags().GetString("profile")
+	if err != nil {
+		exit.WithError("Could not get profile flag", err)
+	}
+
+	if deleteAll {
+		if profileFlag != constants.DefaultMachineName {
+			exit.UsageT("usage: minikube delete --all")
+		}
+
+		validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
+		profilesToDelete := append(validProfiles, invalidProfiles...)
+
 		if err != nil {
-			exit.WithError("Could not get profile flag", err)
+			exit.WithError("Error getting profiles to delete", err)
 		}
 
-		if deleteAll {
-			if profileFlag != constants.DefaultMachineName {
-				exit.UsageT("usage: minikube delete --all")
-			}
-
-			validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
-			profilesToDelete := append(validProfiles, invalidProfiles...)
-
-			if err != nil {
-				exit.WithError("Error getting profiles to delete", err)
-			}
-
-			deleteAllProfiles(profilesToDelete)
-		} else {
-			if len(args) > 0 {
-				exit.UsageT("usage: minikube delete")
-			}
-
-			profileName := viper.GetString(pkg_config.MachineProfile)
-			profile, err := pkg_config.LoadProfile(profileName)
-
-			if err != nil {
-				exit.WithError("Could not load profile", err)
-			}
-			deleteProfile(profile)
+		deleteAllProfiles(profilesToDelete)
+	} else {
+		if len(args) > 0 {
+			exit.UsageT("usage: minikube delete")
 		}
+
+		profileName := viper.GetString(pkg_config.MachineProfile)
+		profile, err := pkg_config.LoadProfile(profileName)
+
+		if err != nil {
+			exit.WithError("Could not load profile", err)
+		}
+		deleteProfile(profile)
 	}
 }
 
