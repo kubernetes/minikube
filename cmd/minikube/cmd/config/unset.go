@@ -28,7 +28,7 @@ var configUnsetCmd = &cobra.Command{
 	Long:  "unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags or environmental variables",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			exit.Usage("usage: minikube config unset PROPERTY_NAME")
+			exit.UsageT("usage: minikube config unset PROPERTY_NAME")
 		}
 		err := unset(args[0])
 		if err != nil {

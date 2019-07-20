@@ -23,7 +23,7 @@ import (
 	"runtime"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/problem"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
@@ -45,29 +45,15 @@ const (
 	MaxLogEntries = 3
 )
 
-// Usage outputs a usage error and exits with error code 64
-func Usage(format string, a ...interface{}) {
-	console.ErrStyle(console.Usage, format, a...)
-	os.Exit(BadUsage)
-}
-
 // UsageT outputs a templated usage error and exits with error code 64
-func UsageT(format string, a ...console.Arg) {
-	console.ErrT(console.Usage, format, a...)
+func UsageT(format string, a ...out.V) {
+	out.ErrT(out.Usage, format, a...)
 	os.Exit(BadUsage)
-}
-
-// WithCode outputs a fatal error message and exits with a supplied error code.
-func WithCode(code int, format string, a ...interface{}) {
-	// use Warning because Error will display a duplicate message to stderr
-	glog.Warningf(format, a...)
-	console.Fatal(format, a...)
-	os.Exit(code)
 }
 
 // WithCodeT outputs a templated fatal error message and exits with the supplied error code.
-func WithCodeT(code int, format string, a ...console.Arg) {
-	console.FatalT(format, a...)
+func WithCodeT(code int, format string, a ...out.V) {
+	out.FatalT(format, a...)
 	os.Exit(code)
 }
 
@@ -83,12 +69,12 @@ func WithError(msg string, err error) {
 
 // WithProblem outputs info related to a known problem and exits.
 func WithProblem(msg string, p *problem.Problem) {
-	console.ErrT(console.Empty, "")
-	console.FatalT(msg)
+	out.ErrT(out.Empty, "")
+	out.FatalT(msg)
 	p.Display()
-	console.ErrT(console.Empty, "")
-	console.ErrT(console.Sad, "If the above advice does not help, please let us know: ")
-	console.ErrT(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+	out.ErrT(out.Empty, "")
+	out.ErrT(out.Sad, "If the above advice does not help, please let us know: ")
+	out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 	os.Exit(Config)
 }
 
@@ -97,12 +83,12 @@ func WithLogEntries(msg string, err error, entries map[string][]string) {
 	displayError(msg, err)
 
 	for name, lines := range entries {
-		console.OutT(console.FailureType, "Problems detected in {{.entry}}:", console.Arg{"entry": name})
+		out.T(out.FailureType, "Problems detected in {{.entry}}:", out.V{"entry": name})
 		if len(lines) > MaxLogEntries {
 			lines = lines[:MaxLogEntries]
 		}
 		for _, l := range lines {
-			console.OutT(console.LogEntry, l)
+			out.T(out.LogEntry, l)
 		}
 	}
 	os.Exit(Software)
@@ -111,9 +97,9 @@ func WithLogEntries(msg string, err error, entries map[string][]string) {
 func displayError(msg string, err error) {
 	// use Warning because Error will display a duplicate message to stderr
 	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
-	console.ErrT(console.Empty, "")
-	console.FatalT("{{.msg}}: {{.err}}", console.Arg{"msg": translate.T(msg), "err": err})
-	console.ErrT(console.Empty, "")
-	console.ErrT(console.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
-	console.ErrT(console.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+	out.ErrT(out.Empty, "")
+	out.FatalT("{{.msg}}: {{.err}}", out.V{"msg": translate.T(msg), "err": err})
+	out.ErrT(out.Empty, "")
+	out.ErrT(out.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
+	out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 }
