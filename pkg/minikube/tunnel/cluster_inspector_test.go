@@ -34,7 +34,7 @@ import (
 func TestAPIError(t *testing.T) {
 	machineName := "nonexistentmachine"
 
-	machineAPI := tests.NewMockAPI()
+	machineAPI := tests.NewMockAPI(t)
 	configLoader := &stubConfigLoader{}
 	inspector := &clusterInspector{
 		machineAPI, configLoader, machineName,

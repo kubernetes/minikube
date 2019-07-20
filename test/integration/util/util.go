@@ -43,7 +43,7 @@ const kubectlBinary = "kubectl"
 type MinikubeRunner struct {
 	T          *testing.T
 	BinaryPath string
-	Args       string
+	GlobalArgs string
 	StartArgs  string
 	MountArgs  string
 	Runtime    string
@@ -208,9 +208,9 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 	return string(stdout), nil
 }
 
-// Start starts the container runtime
+// Start starts the cluster
 func (m *MinikubeRunner) Start(opts ...string) {
-	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.Args, strings.Join(opts, " "))
+	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
 	m.RunCommand(cmd, true)
 }
 
@@ -234,12 +234,12 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 
 // GetStatus returns the status of a service
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.Args), false)
+	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.GlobalArgs), false)
 }
 
 // GetLogs returns the logs of a service
 func (m *MinikubeRunner) GetLogs() string {
-	return m.RunCommand(fmt.Sprintf("logs %s", m.Args), true)
+	return m.RunCommand(fmt.Sprintf("logs %s", m.GlobalArgs), true)
 }
 
 // CheckStatus makes sure the service has the desired status, or cause fatal error
@@ -356,28 +356,6 @@ func WaitForIngressControllerRunning(t *testing.T) error {
 		return errors.Wrap(err, "waiting for ingress-controller pods")
 	}
 
-	return nil
-}
-
-// WaitForDockerRegistryRunning waits until docker registry pod to be running
-func WaitForDockerRegistryRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
-	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
-	}
-
-	if err := commonutil.WaitForRCToStabilize(client, "kube-system", "registry", time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for registry replicacontroller to stabilize")
-	}
-
-	registrySelector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "registry"}))
-	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", registrySelector); err != nil {
-		return errors.Wrap(err, "waiting for registry pods")
-	}
-	proxySelector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "registry-proxy"}))
-	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", proxySelector); err != nil {
-		return errors.Wrap(err, "waiting for registry-proxy pods")
-	}
 	return nil
 }
 

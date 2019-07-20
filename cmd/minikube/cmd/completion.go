@@ -23,8 +23,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 const longDescription = `
@@ -73,7 +73,7 @@ var completionCmd = &cobra.Command{
 			exit.UsageT("Usage: minikube completion SHELL")
 		}
 		if args[0] != "bash" && args[0] != "zsh" {
-			exit.UsageT("Sorry, completion support is not yet implemented for {{.name}}", console.Arg{"name": args[0]})
+			exit.UsageT("Sorry, completion support is not yet implemented for {{.name}}", out.V{"name": args[0]})
 		} else if args[0] == "bash" {
 			err := GenerateBashCompletion(os.Stdout, cmd.Parent())
 			if err != nil {

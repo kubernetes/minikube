@@ -42,9 +42,9 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
 	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -75,12 +75,10 @@ func init() {
 
 // CacheISO downloads and caches ISO.
 func CacheISO(config cfg.MachineConfig) error {
-	if config.VMDriver != constants.DriverNone {
-		if err := config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO); err != nil {
-			return err
-		}
+	if localDriver(config.VMDriver) {
+		return nil
 	}
-	return nil
+	return config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO)
 }
 
 // StartHost starts a host VM.
@@ -103,14 +101,14 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if h.Driver.DriverName() != config.VMDriver {
-		console.Out("\n")
-		console.Warning("Ignoring --vm-driver=%s, as the existing %q VM was created using the %s driver.",
-			config.VMDriver, cfg.GetMachineName(), h.Driver.DriverName())
-		console.Warning("To switch drivers, you may create a new VM using `minikube start -p <name> --vm-driver=%s`", config.VMDriver)
-		console.Warning("Alternatively, you may delete the existing VM using `minikube delete -p %s`", cfg.GetMachineName())
-		console.Out("\n")
+		out.T(out.Empty, "\n")
+		out.WarningT(`Ignoring --vm-driver={{.driver_name}}, as the existing "{{.profile_name}}" VM was created using the {{.driver_name2}} driver.`,
+			out.V{"driver_name": config.VMDriver, "profile_name": cfg.GetMachineName(), "driver_name2": h.Driver.DriverName()})
+		out.WarningT("To switch drivers, you may create a new VM using `minikube start -p <name> --vm-driver={{.driver_name}}`", out.V{"driver_name": config.VMDriver})
+		out.WarningT("Alternatively, you may delete the existing VM using `minikube delete -p {{.profile_name}}`", out.V{"profile_name": cfg.GetMachineName()})
+		out.T(out.Empty, "\n")
 	} else if exists && cfg.GetMachineName() == constants.DefaultMachineName {
-		console.OutStyle(console.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
+		out.T(out.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 
 	s, err := h.Driver.GetState()
@@ -120,9 +118,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s == state.Running {
-		console.OutStyle(console.Running, "Re-using the currently running %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+		out.T(out.Running, `Re-using the currently running {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
 	} else {
-		console.OutStyle(console.Restarting, "Restarting existing %s VM for %q ...", h.Driver.DriverName(), cfg.GetMachineName())
+		out.T(out.Restarting, `Restarting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -141,23 +139,35 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	return h, nil
 }
 
+// localDriver returns whether or not the driver should be considered local
+func localDriver(name string) bool {
+	if name == constants.DriverNone || name == constants.DriverMock {
+		return true
+	}
+	return false
+}
+
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
+	glog.Infof("configureHost: %T %+v", h, h)
 	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
-	console.OutStyle(console.Waiting, "Waiting for SSH access ...")
+	out.T(out.Waiting, "Waiting for SSH access ...", out.V{})
 
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
+		glog.Infof("Detecting provisioner ...")
 		provisioner, err := provision.DetectProvisioner(h.Driver)
 		if err != nil {
 			return errors.Wrap(err, "detecting provisioner")
 		}
+		glog.Infof("Provisioning: %+v", *h.HostOptions)
 		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
 			return errors.Wrap(err, "provision")
 		}
 	}
 
-	if h.Driver.DriverName() != constants.DriverNone {
+	if !localDriver(h.Driver.DriverName()) {
+		glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
 		if err := h.ConfigureAuth(); err != nil {
 			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
@@ -227,7 +237,7 @@ func trySSHPowerOff(h *host.Host) {
 		return
 	}
 
-	console.OutStyle(console.Shutdown, "Powering off %q via SSH ...", cfg.GetMachineName())
+	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": cfg.GetMachineName()})
 	out, err := h.RunSSHCommand("sudo poweroff")
 	// poweroff always results in an error, since the host disconnects.
 	glog.Infof("poweroff result: out=%s, err=%v", out, err)
@@ -239,7 +249,7 @@ func StopHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
-	console.OutStyle(console.Stopping, "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
+	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
@@ -261,7 +271,7 @@ func DeleteHost(api libmachine.API) error {
 		trySSHPowerOff(host)
 	}
 
-	console.OutStyle(console.DeletingHost, "Deleting %q from %s ...", cfg.GetMachineName(), host.DriverName)
+	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
 	if err := host.Driver.Remove(); err != nil {
 		return errors.Wrap(err, "host remove")
 	}
@@ -357,26 +367,26 @@ func getHostInfo() (*hostInfo, error) {
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	if config.VMDriver == constants.DriverVmwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-		console.Warning(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
+		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
 			See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	if config.VMDriver != constants.DriverNone {
-		console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
+	if !localDriver(config.VMDriver) {
+		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
 	} else {
 		info, err := getHostInfo()
 		if err == nil {
-			console.OutStyle(console.StartingNone, "Running on localhost (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", info.CPUs, info.Memory, info.DiskSize)
+			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
 	}
 
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
-			exit.Usage("unsupported driver: %s", config.VMDriver)
+			return nil, fmt.Errorf("unsupported driver: %s", config.VMDriver)
 		}
-		exit.WithError("error getting driver", err)
+		return nil, errors.Wrap(err, "error getting driver")
 	}
 
 	driver := def.ConfigCreator(config)
@@ -534,6 +544,6 @@ func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
 		exit.WithError("Error getting machine status", err)
 	}
 	if s != state.Running.String() {
-		exit.WithCode(exit.Unavailable, "minikube is not running, so the service cannot be accessed")
+		exit.WithCodeT(exit.Unavailable, "minikube is not running, so the service cannot be accessed")
 	}
 }

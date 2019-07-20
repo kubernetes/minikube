@@ -96,6 +96,7 @@ func decode(r io.Reader) (MinikubeConfig, error) {
 
 // GetMachineName gets the machine name for the VM
 func GetMachineName() string {
+	// REFACTOR NECESSARY: This function should not rely on globals.
 	if viper.GetString(MachineProfile) == "" {
 		return constants.DefaultMachineName
 	}
@@ -109,7 +110,7 @@ func Load() (*Config, error) {
 
 // Loader loads the kubernetes and machine config based on the machine profile name
 type Loader interface {
-	LoadConfigFromFile(profile string) (*Config, error)
+	LoadConfigFromFile(profile string, miniHome ...string) (*Config, error)
 }
 
 type simpleConfigLoader struct{}
@@ -117,10 +118,10 @@ type simpleConfigLoader struct{}
 // DefaultLoader is the default config loader
 var DefaultLoader Loader = &simpleConfigLoader{}
 
-func (c *simpleConfigLoader) LoadConfigFromFile(profile string) (*Config, error) {
+func (c *simpleConfigLoader) LoadConfigFromFile(profile string, miniHome ...string) (*Config, error) {
 	var cc Config
 
-	path := constants.GetProfileFile(profile)
+	path := constants.GetProfileFile(profile, miniHome...)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err

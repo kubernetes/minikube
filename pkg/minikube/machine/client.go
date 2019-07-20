@@ -41,9 +41,9 @@ import (
 	"github.com/docker/machine/libmachine/version"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/provision"
@@ -147,6 +147,9 @@ func (api *LocalClient) Close() error {
 
 // CommandRunner returns best available command runner for this host
 func CommandRunner(h *host.Host) (command.Runner, error) {
+	if h.DriverName == constants.DriverMock {
+		return &command.FakeCommandRunner{}, nil
+	}
 	if h.DriverName == constants.DriverNone {
 		return &command.ExecRunner{}, nil
 	}
@@ -270,7 +273,7 @@ func registerDriver(driverName string) {
 	def, err := registry.Driver(driverName)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
-			exit.UsageT("unsupported driver: {{.name}}", console.Arg{"name": driverName})
+			exit.UsageT("unsupported driver: {{.name}}", out.V{"name": driverName})
 		}
 		exit.WithError("error getting driver", err)
 	}

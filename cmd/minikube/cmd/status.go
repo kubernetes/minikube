@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
@@ -61,7 +62,7 @@ var statusCmd = &cobra.Command{
 		var returnCode = 0
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			exit.WithCode(exit.Unavailable, "Error getting client: %v", err)
+			exit.WithCodeT(exit.Unavailable, "Error getting client: {{.error}}", out.V{"error": err})
 		}
 		defer api.Close()
 

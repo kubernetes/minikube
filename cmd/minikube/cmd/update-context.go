@@ -20,10 +20,10 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -49,9 +49,9 @@ var updateContextCmd = &cobra.Command{
 			exit.WithError("update config", err)
 		}
 		if updated {
-			console.OutStyle(console.Celebrate, "%s IP has been updated to point at %s", machineName, ip)
+			out.T(out.Celebrate, "{{.machine}} IP has been updated to point at {{.ip}}", out.V{"machine": machineName, "ip": ip})
 		} else {
-			console.OutStyle(console.Meh, "%s IP was already correctly configured for %s", machineName, ip)
+			out.T(out.Meh, "{{.machine}} IP was already correctly configured for {{.ip}}", out.V{"machine": machineName, "ip": ip})
 		}
 
 	},

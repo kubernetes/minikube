@@ -55,7 +55,7 @@ var serviceCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 || len(args) > 1 {
-			exit.Usage("You must specify a service name")
+			exit.UsageT("You must specify a service name")
 		}
 
 		svc := args[0]
