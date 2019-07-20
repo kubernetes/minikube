@@ -20,8 +20,8 @@ import (
 	"io/ioutil"
 
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
 )
 
@@ -31,7 +31,7 @@ var addonsConfigureCmd = &cobra.Command{
 	Long:  "Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list ",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			exit.Usage("usage: minikube addons configure ADDON_NAME")
+			exit.UsageT("usage: minikube addons configure ADDON_NAME")
 		}
 
 		addon := args[0]
@@ -77,7 +77,7 @@ var addonsConfigureCmd = &cobra.Command{
 				dat, err := ioutil.ReadFile(gcrPath)
 
 				if err != nil {
-					console.Failure("Error reading %s: %v", gcrPath, err)
+					out.FailureT("Error reading {{.path}}: {{.error}}", out.V{"path": gcrPath, "error": err})
 				} else {
 					gcrApplicationDefaultCredentials = string(dat)
 				}
@@ -109,7 +109,7 @@ var addonsConfigureCmd = &cobra.Command{
 				})
 
 			if err != nil {
-				console.FailureT("ERROR creating `registry-creds-ecr` secret: {{.error}}", console.Arg{"error": err})
+				out.FailureT("ERROR creating `registry-creds-ecr` secret: {{.error}}", out.V{"error": err})
 			}
 
 			// Create GCR Secret
@@ -127,7 +127,7 @@ var addonsConfigureCmd = &cobra.Command{
 				})
 
 			if err != nil {
-				console.FailureT("ERROR creating `registry-creds-gcr` secret: {{.error}}", console.Arg{"error": err})
+				out.FailureT("ERROR creating `registry-creds-gcr` secret: {{.error}}", out.V{"error": err})
 			}
 
 			// Create Docker Secret
@@ -146,14 +146,14 @@ var addonsConfigureCmd = &cobra.Command{
 				})
 
 			if err != nil {
-				console.WarningT("ERROR creating `registry-creds-dpr` secret")
+				out.WarningT("ERROR creating `registry-creds-dpr` secret")
 			}
 		default:
-			console.FailureT("{{.name}} has no available configuration options", console.Arg{"name": addon})
+			out.FailureT("{{.name}} has no available configuration options", out.V{"name": addon})
 			return
 		}
 
-		console.SuccessT("{{.name}} was successfully configured", console.Arg{"name": addon})
+		out.SuccessT("{{.name}} was successfully configured", out.V{"name": addon})
 	},
 }
 

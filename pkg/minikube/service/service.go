@@ -41,8 +41,8 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
 )
@@ -284,7 +284,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	}
 
 	if len(urls) == 0 {
-		console.OutT(console.Sad, "service {{.namespace_name}}/{{.service_name}} has no node port", console.Arg{"namespace_name": namespace, "service_name": service})
+		out.T(out.Sad, "service {{.namespace_name}}/{{.service_name}} has no node port", out.V{"namespace_name": namespace, "service_name": service})
 		return nil
 	}
 
@@ -292,11 +292,11 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
 
 		if urlMode || !isHTTPSchemedURL {
-			console.OutT(console.Empty, urlString)
+			out.T(out.Empty, urlString)
 		} else {
-			console.OutT(console.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", console.Arg{"namespace_name": namespace, "service_name": service})
+			out.T(out.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": service})
 			if err := browser.OpenURL(urlString); err != nil {
-				console.ErrT(console.Empty, "browser failed to open url: {{.error}}", console.Arg{"error": err})
+				out.ErrT(out.Empty, "browser failed to open url: {{.error}}", out.V{"error": err})
 			}
 		}
 	}
