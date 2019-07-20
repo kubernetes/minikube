@@ -14,13 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package console
+package out
 
 import (
+	"bytes"
 	"strings"
+	"text/template"
 
-	"golang.org/x/text/message"
-	"golang.org/x/text/number"
+	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -48,6 +49,7 @@ type style struct {
 // styles is a map of style name to style struct
 // For consistency, ensure that emojis added render with the same width across platforms.
 var styles = map[StyleEnum]style{
+	Empty:         {Prefix: "", LowPrefix: ""},
 	Happy:         {Prefix: "😄  "},
 	SuccessType:   {Prefix: "✅  "},
 	FailureType:   {Prefix: "❌  "},
@@ -77,6 +79,7 @@ var styles = map[StyleEnum]style{
 	Issues:        {Prefix: "⁉️   "},
 	Issue:         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	Check:         {Prefix: "✔️  "},
+	Celebration:   {Prefix: "🎉  "},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},
@@ -130,29 +133,48 @@ func lowPrefix(s style) string {
 	return lowBullet
 }
 
-// Apply styling to a format string
-func applyStyle(style StyleEnum, useColor bool, format string, a ...interface{}) string {
-	p := message.NewPrinter(translate.GetPreferredLanguage())
-	for i, x := range a {
-		if _, ok := x.(int); ok {
-			a[i] = number.Decimal(x, number.NoSeparator())
-		}
-	}
+// applyStyle translates the given string if necessary then adds any appropriate style prefix.
+func applyStyle(style StyleEnum, useColor bool, format string) string {
 	format = translate.T(format)
-	out := p.Sprintf(format, a...)
 
 	s, ok := styles[style]
 	if !s.OmitNewline {
-		out += "\n"
+		format += "\n"
 	}
 
 	// Similar to CSS styles, if no style matches, output an unformatted string.
 	if !ok {
-		return p.Sprintf(format, a...)
+		return format
 	}
 
 	if !useColor {
-		return applyPrefix(lowPrefix(s), out)
+		return applyPrefix(lowPrefix(s), format)
 	}
-	return applyPrefix(s.Prefix, out)
+	return applyPrefix(s.Prefix, format)
+}
+
+func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...V) string {
+	if a == nil {
+		a = []V{V{}}
+	}
+	format = applyStyle(style, useColor, format)
+
+	var buf bytes.Buffer
+	t, err := template.New(format).Parse(format)
+	if err != nil {
+		glog.Infof("Initializing template failed. Returning raw string.")
+		return format
+	}
+	err = t.Execute(&buf, a[0])
+	if err != nil {
+		glog.Infof("Executing template failed. Returning raw string.")
+		return format
+	}
+	outStyled := buf.String()
+
+	// escape any outstanding '%' signs so that they don't get interpreted
+	// as a formatting directive down the line
+	outStyled = strings.Replace(outStyled, "%", "%%", -1)
+
+	return outStyled
 }

@@ -28,8 +28,9 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // rootCauseRe is a regular expression that matches known failure root causes
@@ -54,7 +55,7 @@ var importantPods = []string{
 const lookBackwardsCount = 200
 
 // Follow follows logs from multiple files in tail(1) format
-func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrapper.CommandRunner) error {
+func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner) error {
 	cs := []string{}
 	for _, v := range logCommands(r, bs, 0, true) {
 		cs = append(cs, v+" &")
@@ -69,7 +70,7 @@ func IsProblem(line string) bool {
 }
 
 // FindProblems finds possible root causes among the logs
-func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrapper.CommandRunner) map[string][]string {
+func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner) map[string][]string {
 	pMap := map[string][]string{}
 	cmds := logCommands(r, bs, lookBackwardsCount, false)
 	for name, cmd := range cmds {
@@ -99,18 +100,18 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner boots
 // OutputProblems outputs discovered problems.
 func OutputProblems(problems map[string][]string, maxLines int) {
 	for name, lines := range problems {
-		console.OutStyle(console.FailureType, "Problems detected in %q:", name)
+		out.T(out.FailureType, "Problems detected in {{.name}}:", out.V{"name": name})
 		if len(lines) > maxLines {
 			lines = lines[len(lines)-maxLines:]
 		}
 		for _, l := range lines {
-			console.OutStyle(console.LogEntry, l)
+			out.T(out.LogEntry, l)
 		}
 	}
 }
 
 // Output displays logs from multiple sources in tail(1) format
-func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrapper.CommandRunner, lines int) error {
+func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner, lines int) error {
 	cmds := logCommands(r, bs, lines, false)
 
 	// These are not technically logs, but are useful to have in bug reports.
@@ -125,9 +126,9 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrappe
 	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
-			console.OutLn("")
+			out.T(out.Empty, "")
 		}
-		console.OutLn("==> %s <==", name)
+		out.T(out.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
 		err := runner.CombinedOutputTo(cmds[name], &b)
 		if err != nil {
@@ -137,7 +138,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrappe
 		}
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
-			console.OutLn(scanner.Text())
+			out.T(out.Empty, scanner.Text())
 		}
 	}
 	if len(failed) > 0 {

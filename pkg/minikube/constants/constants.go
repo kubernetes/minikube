@@ -59,20 +59,32 @@ func ArchTag(hasTag bool) string {
 	return "-" + runtime.GOARCH + ":"
 }
 
-// SupportedVMDrivers is a list of supported drivers on all platforms. Currently
-// used in gendocs.
-var SupportedVMDrivers = [...]string{
-	"virtualbox",
-	"parallels",
-	"vmwarefusion",
-	"kvm",
-	"xhyve",
-	"hyperv",
-	"hyperkit",
-	"kvm2",
-	"vmware",
-	"none",
-}
+// DriverMock is a mock driver.
+const DriverMock = "mock-driver"
+
+// DriverNone is the none driver.
+const DriverNone = "none"
+
+// DriverKvm2 is the kvm2 driver option name for in linux
+const DriverKvm2 = "kvm2"
+
+// DriverVirtualbox is the virtualbox driver option name
+const DriverVirtualbox = "virtualbox"
+
+// DriverHyperkit is the hyperkit driver option name for mac os
+const DriverHyperkit = "hyperkit"
+
+// DriverVmware is the vmware driver option name
+const DriverVmware = "vmware"
+
+// DriverVmwareFusion is the vmware fusion driver option
+const DriverVmwareFusion = "vmwarefusion"
+
+// DriverHyperv is the hyperv driver option for windows
+const DriverHyperv = "hyperv"
+
+// DriverParallels is the parallels driver option name
+const DriverParallels = "parallels"
 
 // DefaultMinipath is the default Minikube path (under the home directory)
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
@@ -121,16 +133,18 @@ const (
 	DefaultKeepContext = false
 	// SHASuffix is the suffix of a SHA-256 checksum file
 	SHASuffix = ".sha256"
-	// DefaultMemory is the default memory of a host, in megabytes
-	DefaultMemory = 2048
+	// DefaultMemorySize is the default memory which will be allocated to minikube, in megabytes
+	DefaultMemorySize = "2000mb"
+	// MinimumMemorySize is the minimum memory size, in megabytes
+	MinimumMemorySize = "1024mb"
 	// DefaultCPUS is the default number of cpus of a host
 	DefaultCPUS = 2
-	// DefaultDiskSize is the default disk image size, parseable
-	DefaultDiskSize = "20g"
-	// MinimumDiskSizeMB is the minimum disk image size, in megabytes
-	MinimumDiskSizeMB = 2000
+	// DefaultDiskSize is the default disk image size, in megabytes
+	DefaultDiskSize = "20000mb"
+	// MinimumDiskSize is the minimum disk image size, in megabytes
+	MinimumDiskSize = "2000mb"
 	// DefaultVMDriver is the default virtual machine driver name
-	DefaultVMDriver = "virtualbox"
+	DefaultVMDriver = DriverVirtualbox
 	// DefaultStatusFormat is the default format of a host
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
@@ -177,8 +191,21 @@ var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
 
 // GetProfileFile returns the Minikube profile config file
-func GetProfileFile(profile string) string {
-	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
+func GetProfileFile(profile string, miniHome ...string) string {
+	miniPath := GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "profiles", profile, "config.json")
+}
+
+// GetProfilePath returns the Minikube profile path of config file
+func GetProfilePath(profile string, miniHome ...string) string {
+	miniPath := GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "profiles", profile)
 }
 
 // AddonsPath is the default path of the addons configuration
@@ -229,9 +256,6 @@ func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) s
 
 // IsMinikubeChildProcess is the name of "is minikube child process" variable
 const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
-
-// DriverNone is the none driver
-const DriverNone = "none"
 
 // FileScheme is the file scheme
 const FileScheme = "file"
@@ -387,7 +411,7 @@ const (
 	// StoredContainerdConfigTomlPath is the path where the default config.toml will be stored
 	StoredContainerdConfigTomlPath = "/tmp/config.toml"
 
-	//GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
+	// GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
 	GvisorConfigTomlTargetName = "gvisor-config.toml"
 	// GvisorContainerdShimTargetName is the go-bindata target name for gvisor-containerd-shim
 	GvisorContainerdShimTargetName = "gvisor-containerd-shim.toml"
@@ -396,4 +420,9 @@ const (
 	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.1-rc.0/gvisor-containerd-shim-v0.0.1-rc.0.linux-amd64"
 	// GvisorURL is the url to download gvisor
 	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2018-12-07/runsc"
+)
+
+const (
+	// KVMDocumentation the documentation of the KVM driver
+	KVMDocumentation = "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver"
 )

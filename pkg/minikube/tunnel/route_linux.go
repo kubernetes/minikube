@@ -74,7 +74,7 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 
 		fields := strings.Fields(line)
 
-		//don't care about the routes that 0.0.0.0
+		// don't care about the routes that 0.0.0.0
 		if len(fields) == 0 ||
 			len(fields) > 0 && (fields[0] == "default" || fields[0] == "0.0.0.0") {
 			continue
@@ -82,12 +82,12 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 
 		if len(fields) > 2 {
 
-			//assuming "10.96.0.0/12 via 192.168.39.47 dev virbr1"
+			// assuming "10.96.0.0/12 via 192.168.39.47 dev virbr1"
 			dstCIDRString := fields[0]
 			gatewayIPString := fields[2]
 			gatewayIP := net.ParseIP(gatewayIPString)
 
-			//if not via format, then gateway is assumed to be 0.0.0.0
+			// if not via format, then gateway is assumed to be 0.0.0.0
 			// "1.2.3.0/24 dev eno1 proto kernel scope link src 1.2.3.54 metric 100"
 			if fields[1] != "via" {
 				gatewayIP = net.ParseIP("0.0.0.0")

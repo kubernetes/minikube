@@ -6,8 +6,17 @@ about: Report an issue
 
 **The exact command to reproduce the issue**:
 
-**The full output of the command that failed**:
 
-**The output of the `minikube logs` command**:
+**The full output of the command that failed**:<details>
+
+
+
+</details>
+
+**The output of the `minikube logs` command**:<details>
+
+
+
+</details>
 
 **The operating system version**:

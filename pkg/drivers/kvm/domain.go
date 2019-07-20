@@ -88,26 +88,6 @@ const domainTmpl = `
 </domain>
 `
 
-const connectionErrorText = `
-Error connecting to libvirt socket.  Have you set up libvirt correctly?
-
-# Install libvirt and qemu-kvm on your system, e.g.
-# Debian/Ubuntu (for older Debian/Ubuntu versions, you may have to use libvirt-bin instead of libvirt-clients and libvirt-daemon-system)
-$ sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm
-# Fedora/CentOS/RHEL
-$ sudo yum install libvirt-daemon-kvm qemu-kvm
-
-# Add yourself to the libvirt group so you don't need to sudo
-# NOTE: For older Debian/Ubuntu versions change the group to [libvirtd]
-$ sudo usermod -a -G libvirt $(whoami)
-
-# Update your current session for the group change to take effect
-# NOTE: For older Debian/Ubuntu versions change the group to [libvirtd]
-$ newgrp libvirt
-
-Visit https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver for more information.
-`
-
 func randomMAC() (net.HardwareAddr, error) {
 	buf := make([]byte, 6)
 	_, err := rand.Read(buf)
@@ -128,7 +108,7 @@ func randomMAC() (net.HardwareAddr, error) {
 }
 
 func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
-	conn, err := getConnection()
+	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "getting domain")
 	}
@@ -141,10 +121,10 @@ func (d *Driver) getDomain() (*libvirt.Domain, *libvirt.Connect, error) {
 	return dom, conn, nil
 }
 
-func getConnection() (*libvirt.Connect, error) {
-	conn, err := libvirt.NewConnect(qemusystem)
+func getConnection(connectionURI string) (*libvirt.Connect, error) {
+	conn, err := libvirt.NewConnect(connectionURI)
 	if err != nil {
-		return nil, errors.Wrap(err, connectionErrorText)
+		return nil, errors.Wrap(err, "error connecting to libvirt socket.")
 	}
 
 	return conn, nil
@@ -156,7 +136,7 @@ func closeDomain(dom *libvirt.Domain, conn *libvirt.Connect) error {
 	}
 	res, err := conn.Close()
 	if res != 0 {
-		return fmt.Errorf("CloseConnection() == %d, expected 0", res)
+		return fmt.Errorf("conn.Close() == %d, expected 0", res)
 	}
 	return err
 }
@@ -186,16 +166,16 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 		return nil, errors.Wrap(err, "executing domain xml")
 	}
 
-	conn, err := getConnection()
+	conn, err := getConnection(d.ConnectionURI)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error getting libvirt connection")
+		return nil, errors.Wrap(err, "error getting libvirt connection")
 	}
 	defer conn.Close()
 
 	// define the domain in libvirt using the generated XML
 	dom, err := conn.DomainDefineXML(domainXML.String())
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error defining domain xml: %s", domainXML.String())
+		return nil, errors.Wrapf(err, "error defining domain xml: %s", domainXML.String())
 	}
 
 	return dom, nil

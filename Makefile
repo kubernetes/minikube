@@ -26,6 +26,10 @@ INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2018.05.3
 REGISTRY?=gcr.io/k8s-minikube
 
+# Get git commit id
+COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
+COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
+
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
 # NOTE: "latest" as of 2019-05-09. kube-cross images aren't updated as often as Kubernetes
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.12.5-1
@@ -37,6 +41,7 @@ ISO_BUCKET ?= minikube/iso
 MINIKUBE_VERSION ?= $(ISO_VERSION)
 MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
+MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.16.14
 
@@ -57,7 +62,7 @@ BUILD_OS := $(shell uname -s)
 STORAGE_PROVISIONER_TAG := v1.8.1
 
 # Set the version information for the Kubernetes servers
-MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET)
+MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT)
 PROVISIONER_LDFLAGS := "$(MINIKUBE_LDFLAGS) -s -w"
 
 MINIKUBEFILES := ./cmd/minikube/
@@ -78,6 +83,12 @@ MINIKUBE_INTEGRATION_BUILD_TAGS := integration $(MINIKUBE_BUILD_TAGS)
 CMD_SOURCE_DIRS = cmd pkg
 SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
+
+# kvm2 ldflags
+KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT) 
+
+# hyperkit ldflags
+HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/hyperkit.gitCommitID=$(COMMIT)
 
 # $(call DOCKER, image, command)
 define DOCKER
@@ -106,7 +117,7 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
 
-out/minikube-%: pkg/minikube/assets/assets.go $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
+out/minikube-%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go  $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
@@ -118,7 +129,7 @@ e2e-%-$(GOARCH): out/minikube-%-$(GOARCH)
 	GOOS=$* GOARCH=$(GOARCH) go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
 
 e2e-windows-amd64.exe: e2e-windows-amd64
-	mv $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
+	cp $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
 
 minikube_iso: # old target kept for making tests happy
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
@@ -157,11 +168,11 @@ iso_in_docker:
 		--user $(shell id -u):$(shell id -g) --env HOME=/tmp --env IN_DOCKER=1 \
 		$(ISO_BUILD_IMAGE) /bin/bash
 
-test-iso: pkg/minikube/assets/assets.go
+test-iso: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go test -v ./test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
 .PHONY: test-pkg
-test-pkg/%: pkg/minikube/assets/assets.go
+test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
@@ -183,16 +194,37 @@ integration-versioned: out/minikube
 	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
-test: pkg/minikube/assets/assets.go
+test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	./test.sh
+
+.PHONY: extract
+extract:
+	go run cmd/extract/extract.go
 
 # Regenerates assets.go when template files have been updated
 pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
+	-gofmt -s -w $@
+
+pkg/minikube/translate/translations.go: $(shell find translations/ -type f)
+	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
+	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/translate/translations.go -pkg translate translations/...
+	-gofmt -s -w $@
+	@#golint: Json should be JSON (compat sed)
+	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
 .PHONY: cross
 cross: out/minikube-linux-$(GOARCH) out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+
+.PHONY: windows
+windows: out/minikube-windows-amd64.exe
+
+.PHONY: darwin
+darwin: out/minikube-darwin-amd64
+
+.PHONY: linux
+linux: out/minikube-linux-$(GOARCH)
 
 .PHONY: e2e-cross
 e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
@@ -210,6 +242,7 @@ checksum:
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f pkg/minikube/assets/assets.go
+	rm -f pkg/minikube/translate/translations.go
 	rm -rf ./vendor
 
 .PHONY: gendocs
@@ -241,7 +274,7 @@ out/linters/golangci-lint:
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b out/linters $(GOLINT_VERSION)
 
 .PHONY: lint
-lint: pkg/minikube/assets/assets.go out/linters/golangci-lint
+lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint
 	./out/linters/golangci-lint run \
 	  --deadline 4m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
@@ -259,8 +292,8 @@ reportcard:
 mdlint:
 	@$(MARKDOWNLINT) $(MINIKUBE_MARKDOWN_FILES)
 
-out/docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go
-	go run -ldflags="$(MINIKUBE_LDFLAGS)" hack/help_text/gen_help_text.go
+out/docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
 out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
 	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
@@ -279,6 +312,20 @@ out/minikube-$(RPM_VERSION).rpm: out/minikube-linux-amd64
 		 out/minikube-$(RPM_VERSION)/minikube.spec
 	rm -rf out/minikube-$(RPM_VERSION)
 
+.PHONY: apt
+apt: out/Release
+
+out/Release: out/minikube_$(DEB_VERSION).deb
+	( cd out && apt-ftparchive packages . ) | gzip -c > out/Packages.gz
+	( cd out && apt-ftparchive release . ) > out/Release
+
+.PHONY: yum
+yum: out/repodata/repomd.xml
+
+out/repodata/repomd.xml: out/minikube-$(RPM_VERSION).rpm
+	createrepo --simple-md-filenames --no-database \
+	-u "$(MINIKUBE_RELEASES_URL)/$(VERSION)/" out
+
 .SECONDEXPANSION:
 TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
 TAR_TARGETS_darwin  := out/minikube-darwin-amd64
@@ -288,7 +335,7 @@ out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
 	tar -cvf $@ $^
 
 .PHONY: cross-tars
-cross-tars: kvm_in_docker out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
+cross-tars: out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
 
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
@@ -308,7 +355,9 @@ out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
 else
-	GOOS=darwin CGO_ENABLED=1 go build -o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
+	GOOS=darwin CGO_ENABLED=1 go build \
+		-ldflags="$(HYPERKIT_LDFLAGS)"   \
+		-o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
 endif
 
 .PHONY: install-hyperkit-driver
@@ -369,13 +418,37 @@ release-minikube: out/minikube checksum
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
 out/docker-machine-driver-kvm2:
-	go build 																		\
-		-installsuffix "static" 													\
-		-ldflags "-X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION)" 	\
-		-tags libvirt.1.3.1 														\
-		-o $(BUILD_DIR)/docker-machine-driver-kvm2 									\
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	docker pull $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
+	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
+	# make extra sure that we are linking with the older version of libvirt (1.3.1)
+	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
+else
+	go build 																					\
+		-installsuffix "static" 												\
+		-ldflags="$(KVM2_LDFLAGS)" 											\
+		-tags "libvirt.1.3.1 without_lxc"												\
+		-o $(BUILD_DIR)/docker-machine-driver-kvm2 			\
 		k8s.io/minikube/cmd/drivers/kvm
+endif
 	chmod +X $@
+
+out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2
+	cp -r installers/linux/deb/kvm2_deb_template out/docker-machine-driver-kvm2_$(DEB_VERSION)
+	chmod 0755 out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN
+	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
+	mkdir -p out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin
+	cp out/docker-machine-driver-kvm2 out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
+	fakeroot dpkg-deb --build out/docker-machine-driver-kvm2_$(DEB_VERSION)
+	rm -rf out/docker-machine-driver-kvm2_$(DEB_VERSION)
+
+out/docker-machine-driver-kvm2-$(RPM_VERSION).rpm: out/docker-machine-driver-kvm2
+	cp -r installers/linux/rpm/kvm2_rpm_template out/docker-machine-driver-kvm2-$(RPM_VERSION)
+	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	rpmbuild -bb -D "_rpmdir $(PWD)/out" -D "_rpmfilename docker-machine-driver-kvm2-$(RPM_VERSION).rpm" \
+		out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	rm -rf out/docker-machine-driver-kvm2-$(RPM_VERSION)
 
 kvm-image: $(KVM_BUILD_IMAGE) # convenient alias to build the docker container
 $(KVM_BUILD_IMAGE): installers/linux/kvm/Dockerfile
@@ -384,15 +457,15 @@ $(KVM_BUILD_IMAGE): installers/linux/kvm/Dockerfile
 	@echo "$(@) successfully built"
 
 kvm_in_docker:
-	docker inspect $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
+	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
 	rm -f out/docker-machine-driver-kvm2
-	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2)
+	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 
-.PHONY: install-kvm
-install-kvm: out/docker-machine-driver-kvm2
+.PHONY: install-kvm-driver
+install-kvm-driver: out/docker-machine-driver-kvm2
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
 .PHONY: release-kvm-driver
-release-kvm-driver: kvm_in_docker checksum install-kvm
+release-kvm-driver: install-kvm-driver checksum
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/

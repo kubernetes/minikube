@@ -46,7 +46,7 @@ func testTunnel(t *testing.T) {
 	}
 
 	t.Log("starting tunnel test...")
-	runner := NewMinikubeRunner(t)
+	runner := NewMinikubeRunner(t, "--wait=false")
 	go func() {
 		output := runner.RunCommand("tunnel --alsologtostderr -v 8 --logtostderr", true)
 		if t.Failed() {
@@ -89,30 +89,13 @@ func testTunnel(t *testing.T) {
 
 	t.Log("getting nginx ingress...")
 
-	nginxIP := ""
-
-	err = wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
-		cmd := []string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"}
-		stdout, err := kubectlRunner.RunCommand(cmd)
-		switch {
-		case err == nil:
-			nginxIP = string(stdout)
-			return len(stdout) != 0, nil
-		case !commonutil.IsRetryableAPIError(err):
-			t.Errorf("`%s` failed with non retriable error: %v", cmd, err)
-			return false, err
-		default:
-			t.Errorf("`%s` failed: %v", cmd, err)
-			return false, nil
-		}
-	})
-
+	nginxIP, err := getIngress(kubectlRunner)
 	if err != nil {
 		t.Errorf("error getting ingress IP for nginx: %s", err)
 	}
 
 	if len(nginxIP) == 0 {
-		stdout, err := kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status}"})
+		stdout, err := describeIngress(kubectlRunner)
 
 		if err != nil {
 			t.Errorf("error debugging nginx service: %s", err)
@@ -128,6 +111,34 @@ func testTunnel(t *testing.T) {
 	if !strings.Contains(responseBody, "Welcome to nginx!") {
 		t.Fatalf("response body doesn't seem like an nginx response:\n%s", responseBody)
 	}
+}
+
+func getIngress(kubectlRunner *util.KubectlRunner) (string, error) {
+	nginxIP := ""
+	var ret error
+	err := wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
+		cmd := []string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"}
+		stdout, err := kubectlRunner.RunCommand(cmd)
+		switch {
+		case err == nil:
+			nginxIP = string(stdout)
+			return len(stdout) != 0, nil
+		case !commonutil.IsRetryableAPIError(err):
+			ret = fmt.Errorf("`%s` failed with non retriable error: %v", cmd, err)
+			return false, err
+		default:
+			ret = fmt.Errorf("`%s` failed: %v", cmd, err)
+			return false, nil
+		}
+	})
+	if err != nil {
+		return "", err
+	}
+	return nginxIP, ret
+}
+
+func describeIngress(kubectlRunner *util.KubectlRunner) ([]byte, error) {
+	return kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status}"})
 }
 
 // getResponseBody returns the contents of a URL

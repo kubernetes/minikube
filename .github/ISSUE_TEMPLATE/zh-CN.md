@@ -7,8 +7,16 @@ labels: l/zh-CN
 
 **重现问题所需的命令**：
 
-**失败的命令的完整输出**：
+**失败的命令的完整输出**：<details>
 
-**`minikube logs`命令的输出**：
+
+</details>
+
+
+**`minikube logs`命令的输出**： <details>
+
+
+</details>
+
 
 **使用的操作系统版本**：

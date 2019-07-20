@@ -19,13 +19,16 @@ package service
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"net/url"
+	"os"
 	"strings"
 	"text/template"
 	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -38,8 +41,8 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
 )
@@ -242,10 +245,26 @@ func OptionallyHTTPSFormattedURLString(bareURLString string, https bool) (string
 	return httpsFormattedString, isHTTPSchemedURL
 }
 
+// PrintServiceList prints a list of services as a table which has
+// "Namespace", "Name" and "URL" columns to a writer
+func PrintServiceList(writer io.Writer, data [][]string) {
+	table := tablewriter.NewWriter(writer)
+	table.SetHeader([]string{"Namespace", "Name", "URL"})
+	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
+	table.SetCenterSeparator("|")
+	table.AppendBulk(data)
+	table.Render()
+}
+
 // WaitAndMaybeOpenService waits for a service, and opens it when running
 func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
 	wait int, interval int) error {
-	if err := util.RetryAfter(wait, func() error { return CheckService(namespace, service) }, time.Duration(interval)*time.Second); err != nil {
+	// Convert "Amount of time to wait" and "interval of each check" to attempts
+	if interval == 0 {
+		interval = 1
+	}
+	attempts := wait/interval + 1
+	if err := util.RetryAfter(attempts, func() error { return CheckService(namespace, service) }, time.Duration(interval)*time.Second); err != nil {
 		return errors.Wrapf(err, "Could not find finalized endpoint being pointed to by %s", service)
 	}
 
@@ -253,15 +272,31 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	if err != nil {
 		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
 	}
+
+	if !urlMode {
+		var data [][]string
+		if len(urls) == 0 {
+			data = append(data, []string{namespace, service, "No node port"})
+		} else {
+			data = append(data, []string{namespace, service, strings.Join(urls, "\n")})
+		}
+		PrintServiceList(os.Stdout, data)
+	}
+
+	if len(urls) == 0 {
+		out.T(out.Sad, "service {{.namespace_name}}/{{.service_name}} has no node port", out.V{"namespace_name": namespace, "service_name": service})
+		return nil
+	}
+
 	for _, bareURLString := range urls {
 		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
 
 		if urlMode || !isHTTPSchemedURL {
-			console.OutLn(urlString)
+			out.T(out.Empty, urlString)
 		} else {
-			console.OutStyle(console.Celebrate, "Opening kubernetes service %s/%s in default browser...", namespace, service)
+			out.T(out.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": service})
 			if err := browser.OpenURL(urlString); err != nil {
-				console.Err("browser failed to open url: %v", err)
+				out.ErrT(out.Empty, "browser failed to open url: {{.error}}", out.V{"error": err})
 			}
 		}
 	}

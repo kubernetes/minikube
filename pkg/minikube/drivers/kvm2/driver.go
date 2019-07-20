@@ -30,7 +30,7 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          "kvm2",
+		Name:          constants.DriverKvm2,
 		Builtin:       false,
 		ConfigCreator: createKVM2Host,
 	}); err != nil {
@@ -53,6 +53,7 @@ type kvmDriver struct {
 	DiskPath       string
 	GPU            bool
 	Hidden         bool
+	ConnectionURI  string
 }
 
 func createKVM2Host(config cfg.MachineConfig) interface{} {
@@ -64,13 +65,14 @@ func createKVM2Host(config cfg.MachineConfig) interface{} {
 		},
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
-		Network:        config.KvmNetwork,
+		Network:        config.KVMNetwork,
 		PrivateNetwork: "minikube-net",
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
 		DiskSize:       config.DiskSize,
 		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
 		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
-		GPU:            config.GPU,
-		Hidden:         config.Hidden,
+		GPU:            config.KVMGPU,
+		Hidden:         config.KVMHidden,
+		ConnectionURI:  config.KVMQemuURI,
 	}
 }

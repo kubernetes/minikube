@@ -7,8 +7,14 @@ labels: l/id
 
 **Perintah yang diperlukan untuk merekonstruksi masalah**:
 
-**Output penuh dari perintah yang gagal**:
+**Output penuh dari perintah yang gagal**:<details>
 
-**Output dari perintah `minikube logs`**:
+
+</details>
+
+**Output dari perintah `minikube logs`**: <details>
+
+
+</details>
 
 **Versi sistem operasi yang digunakan**:

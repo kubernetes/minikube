@@ -19,6 +19,8 @@ package extract
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
+	"path/filepath"
 	"reflect"
 	"testing"
 )
@@ -30,8 +32,22 @@ func TestExtract(t *testing.T) {
 	// The function we care about
 	functions := []string{"extract.PrintToScreen"}
 
-	// The directory where the sample translation file is in
-	output := "testdata/"
+	tempdir, err := ioutil.TempDir("", "temptestdata")
+	if err != nil {
+		t.Fatalf("Creating temp dir: %v", err)
+	}
+	defer os.RemoveAll(tempdir)
+
+	src, err := ioutil.ReadFile("testdata/test.json")
+	if err != nil {
+		t.Fatalf("Reading json file: %v", err)
+	}
+
+	tempfile := filepath.Join(tempdir, "tmpdata.json")
+	err = ioutil.WriteFile(tempfile, src, 0666)
+	if err != nil {
+		t.Fatalf("Writing temp json file: %v", err)
+	}
 
 	expected := map[string]interface{}{
 		"Hint: This is not a URL, come on.":         "",
@@ -41,17 +57,17 @@ func TestExtract(t *testing.T) {
 		"Wow another string: %s":                    "",
 	}
 
-	err := TranslatableStrings(paths, functions, output)
-
+	err = TranslatableStrings(paths, functions, tempdir)
 	if err != nil {
 		t.Fatalf("Error translating strings: %v", err)
 	}
 
-	var got map[string]interface{}
-	f, err := ioutil.ReadFile("testdata/test.json")
+	f, err := ioutil.ReadFile(tempfile)
 	if err != nil {
-		t.Fatalf("Reading json file: %s", err)
+		t.Fatalf("Reading resulting json file: %v", err)
 	}
+
+	var got map[string]interface{}
 
 	err = json.Unmarshal(f, &got)
 	if err != nil {

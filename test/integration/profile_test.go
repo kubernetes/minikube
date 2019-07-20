@@ -1,5 +1,7 @@
+// +build integration
+
 /*
-Copyright 2018 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,6 +16,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kvm
+package integration
 
-// doc...
+import (
+	"strings"
+	"testing"
+)
+
+// testProfileList tests the `minikube profile list` command
+func testProfileList(t *testing.T) {
+	t.Parallel()
+	profile := "minikube"
+	mk := NewMinikubeRunner(t, "--wait=false")
+	out := mk.RunCommand("profile list", true)
+	if !strings.Contains(out, profile) {
+		t.Errorf("Error , failed to read profile name (%s) in `profile list` command output : \n %q ", profile, out)
+	}
+}

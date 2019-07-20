@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // CRIO contains CRIO runtime state
@@ -35,9 +35,9 @@ func (r *CRIO) Name() string {
 	return "CRI-O"
 }
 
-// Name is a human readable name for CRIO
-func (r *CRIO) Style() console.StyleEnum {
-	return console.CRIO
+// Style is the console style for CRIO
+func (r *CRIO) Style() out.StyleEnum {
+	return out.CRIO
 }
 
 // Version retrieves the current version of this runtime
@@ -78,9 +78,11 @@ func (r *CRIO) Active() bool {
 }
 
 // Enable idempotently enables CRIO on a host
-func (r *CRIO) Enable() error {
-	if err := disableOthers(r, r.Runner); err != nil {
-		glog.Warningf("disableOthers: %v", err)
+func (r *CRIO) Enable(disOthers bool) error {
+	if disOthers {
+		if err := disableOthers(r, r.Runner); err != nil {
+			glog.Warningf("disableOthers: %v", err)
+		}
 	}
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err

@@ -26,17 +26,20 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // kubectlCmd represents the kubectl command
 var kubectlCmd = &cobra.Command{
 	Use:   "kubectl",
 	Short: "Run kubectl",
-	Long:  `Run the kubernetes client, download it if necessary.`,
+	Long: `Run the kubernetes client, download it if necessary.
+Examples:
+minikube kubectl -- --help
+kubectl get pods --namespace kube-system`,
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
@@ -47,7 +50,7 @@ var kubectlCmd = &cobra.Command{
 
 		cc, err := pkg_config.Load()
 		if err != nil && !os.IsNotExist(err) {
-			console.ErrLn("Error loading profile config: %v", err)
+			out.ErrLn("Error loading profile config: %v", err)
 		}
 
 		binary := "kubectl"
