@@ -17,15 +17,10 @@ limitations under the License.
 package config
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	mkConfig "k8s.io/minikube/pkg/minikube/config"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -75,61 +70,4 @@ var ProfileCmd = &cobra.Command{
 		}
 		out.SuccessT("minikube profile was successfully set to {{.profile_name}}", out.V{"profile_name": profile})
 	},
-}
-
-func GetAllProfiles() ([]string, error) {
-	miniPath := constants.GetMinipath()
-	profilesPath := filepath.Join(miniPath, "profiles")
-	fileInfos, err := ioutil.ReadDir(profilesPath)
-	if err != nil {
-		return nil, fmt.Errorf("unable to list in dir: %s \n error: %v", profilesPath, err)
-	}
-
-	var profiles []string
-	for _, fileInfo := range fileInfos {
-		if fileInfo.IsDir() {
-			profilePath := filepath.Join(profilesPath, fileInfo.Name())
-			isValidProfile, err := isValidProfile(profilePath)
-			if err != nil {
-				return nil, err
-			}
-			if isValidProfile {
-				profiles = append(profiles, fileInfo.Name())
-			}
-		}
-	}
-	return profiles, nil
-}
-
-func isValidProfile(profilePath string) (bool, error) {
-	fileInfos, err := ioutil.ReadDir(profilePath)
-	if err != nil {
-		return false, fmt.Errorf("unable to list in dir: %s \n error: %v", profilePath, err)
-	}
-
-	hasConfigJSON := false
-	for _, fileInfo := range fileInfos {
-		if fileInfo.Name() == "config.json" {
-			hasConfigJSON = true
-		}
-	}
-
-	if !hasConfigJSON {
-		return false, nil
-	}
-
-	// TODO: Use constants?
-	profileConfigPath := filepath.Join(profilePath, "config.json")
-	bytes, err := ioutil.ReadFile(profileConfigPath)
-	if err != nil {
-		return false, fmt.Errorf("unable to read file: %s \n Error: %v", profileConfigPath, err)
-	}
-
-	var configObject mkConfig.Config
-	errUnmarshal := json.Unmarshal(bytes, &configObject)
-
-	if errUnmarshal != nil {
-		return false, fmt.Errorf("could not unmarshal config json to config object: %s \n error: %v", profileConfigPath, err)
-	}
-	return true, nil
 }

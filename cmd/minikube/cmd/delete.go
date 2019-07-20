@@ -60,26 +60,33 @@ func runDelete(cmd *cobra.Command, args []string) {
 				exit.UsageT("usage: minikube delete --all")
 			}
 
-			profiles, err := cmdcfg.GetAllProfiles()
+			validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
+			profilesToDelete := append(validProfiles, invalidProfiles...)
+
 			if err != nil {
 				exit.WithError("Error getting profiles to delete", err)
 			}
 
-			deleteAllProfiles(profiles)
+			deleteAllProfiles(profilesToDelete)
 		} else {
 			if len(args) > 0 {
 				exit.UsageT("usage: minikube delete")
 			}
 
 			profileName := viper.GetString(pkg_config.MachineProfile)
-			deleteProfile(profileName)
+			profile, err := pkg_config.LoadProfile(profileName)
+
+			if err != nil {
+				exit.WithError("Could not load profile", err)
+			}
+			deleteProfile(profile)
 		}
 	}
 }
 
-//TODO Refactor: Return errors?
-func deleteProfile(profileName string) {
-	viper.Set(pkg_config.MachineProfile, profileName)
+//TODO Return errors and handle in runDelete?
+func deleteProfile(profile *pkg_config.Profile) {
+	viper.Set(pkg_config.MachineProfile, profile.Name)
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -89,7 +96,7 @@ func deleteProfile(profileName string) {
 
 	cc, err := pkg_config.Load()
 	if err != nil && !os.IsNotExist(err) {
-		out.ErrT(out.Sad, "Error loading profile config: {{.error}}", out.V{"name": profileName})
+		out.ErrT(out.Sad, "Error loading profile config: {{.error}}", out.V{"name": profile.Name})
 	}
 
 	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
@@ -100,7 +107,7 @@ func deleteProfile(profileName string) {
 	if err = cluster.DeleteHost(api); err != nil {
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.name}}" cluster does not exist`, out.V{"name": profileName})
+			out.T(out.Meh, `"{{.name}}" cluster does not exist`, out.V{"name": profile.Name})
 		default:
 			exit.WithError("Failed to delete cluster", err)
 		}
@@ -112,12 +119,12 @@ func deleteProfile(profileName string) {
 
 	if err := os.RemoveAll(constants.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {
 		if os.IsNotExist(err) {
-			out.T(out.Meh, `"{{.profile_name}}" profile does not exist`, out.V{"profile_name": profileName})
+			out.T(out.Meh, `"{{.profile_name}}" profile does not exist`, out.V{"profile_name": profile.Name})
 			os.Exit(0)
 		}
 		exit.WithError("Failed to remove profile", err)
 	}
-	out.T(out.Crushed, `The "{{.cluster_name}}" cluster has been deleted.`, out.V{"cluster_name": profileName})
+	out.T(out.Crushed, `The "{{.cluster_name}}" cluster has been deleted.`, out.V{"cluster_name": profile.Name})
 
 	machineName := pkg_config.GetMachineName()
 	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
@@ -125,13 +132,13 @@ func deleteProfile(profileName string) {
 	}
 }
 
-func deleteAllProfiles(profiles []string) {
+func deleteAllProfiles(profiles []*pkg_config.Profile) {
 	for _, profile := range profiles {
 		deleteProfile(profile)
 	}
 }
 
-// TODO: Return errors?
+//TODO Return errors and handle in deleteProfile?
 func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsName string) {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
 	clusterBootstrapper, err := getClusterBootstrapper(api, bsName)

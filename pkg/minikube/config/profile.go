@@ -43,7 +43,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		return nil, nil, err
 	}
 	for _, n := range pDirs {
-		p, err := loadProfile(n, miniHome...)
+		p, err := LoadProfile(n, miniHome...)
 		if err != nil {
 			inValidPs = append(inValidPs, p)
 			continue
@@ -58,7 +58,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 }
 
 // loadProfile loads type Profile based on its name
-func loadProfile(name string, miniHome ...string) (*Profile, error) {
+func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
 	p := &Profile{
 		Name:   name,
