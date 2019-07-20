@@ -381,7 +381,7 @@ func showLocalOsRelease() {
 		return
 	}
 
-	out.T(out.Provisioner, "Distribution is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
+	out.T(out.Provisioner, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
 }
 
 // showRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM
