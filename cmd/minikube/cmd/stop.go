@@ -27,10 +27,10 @@ import (
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
@@ -54,7 +54,7 @@ func runStop(cmd *cobra.Command, args []string) {
 
 	cc, err := pkg_config.Load()
 	if err != nil && !os.IsNotExist(err) {
-		console.ErrLn("Error loading profile config: %v", err)
+		out.ErrLn("Error loading profile config: %v", err)
 	}
 
 	if err == nil && (cc.MachineConfig.VMDriver != constants.DriverNone && cc.MachineConfig.VMDriver != constants.DriverGeneric) {
@@ -64,7 +64,7 @@ func runStop(cmd *cobra.Command, args []string) {
 			err = cluster.StopHost(api, cc.MachineConfig)
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
-				console.OutT(console.Meh, `"{{.profile_name}}" VM does not exist, nothing to stop`, console.Arg{"profile_name": profile})
+				out.T(out.Meh, `"{{.profile_name}}" VM does not exist, nothing to stop`, out.V{"profile_name": profile})
 				nonexistent = true
 				return nil
 			default:
@@ -75,12 +75,12 @@ func runStop(cmd *cobra.Command, args []string) {
 			exit.WithError("Unable to stop VM", err)
 		}
 		if !nonexistent {
-			console.OutT(console.Stopped, `"{{.profile_name}}" stopped.`, console.Arg{"profile_name": profile})
+			out.T(out.Stopped, `"{{.profile_name}}" stopped.`, out.V{"profile_name": profile})
 		}
 	}
 
 	if err := cmdUtil.KillMountProcess(); err != nil {
-		console.OutT(console.WarningType, "Unable to kill mount process: {{.error}}", console.Arg{"error": err})
+		out.T(out.WarningType, "Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
 	machineName := pkg_config.GetMachineName()

@@ -30,8 +30,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -67,8 +67,8 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) {
 			glog.Errorf("write time failed: %v", err)
 		}
 		url := fmt.Sprintf("%s/%s", updateLinkPrefix, latestVersion)
-		console.ErrT(console.WarningType, `minikube {{.version}} is available! Download it: {{.url}}`, console.Arg{"version": latestVersion, "url": url})
-		console.OutT(console.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'")
+		out.ErrT(out.WarningType, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
+		out.T(out.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'")
 	}
 }
 

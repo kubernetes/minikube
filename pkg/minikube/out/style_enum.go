@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package console
+package out
 
 // StyleEnum is an enumeration of Style
 type StyleEnum int

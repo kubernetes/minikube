@@ -24,6 +24,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -45,7 +46,7 @@ func createGenericHost(config cfg.MachineConfig) interface{} {
 	d := generic.NewDriver(cfg.GetMachineName(), constants.GetMinipath())
 
 	if config.GenericIPAddress == "" {
-		exit.Usage("Please provide an IP address. the vm-driver %q requires it.", constants.DriverGeneric)
+		exit.UsageT(`Please provide an IP address. the vm-driver "{{.driver_name}}" requires it.`, out.V{"driver_name": constants.DriverGeneric})
 	}
 
 	d.(*generic.Driver).IPAddress = config.GenericIPAddress

@@ -22,6 +22,12 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+// Profile represents a minikube profile
+type Profile struct {
+	Name   string
+	Config *Config
+}
+
 // Config contains machine and k8s config
 type Config struct {
 	MachineConfig    MachineConfig
