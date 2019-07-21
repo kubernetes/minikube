@@ -26,10 +26,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // kubectlCmd represents the kubectl command
@@ -50,7 +50,7 @@ kubectl get pods --namespace kube-system`,
 
 		cc, err := pkg_config.Load()
 		if err != nil && !os.IsNotExist(err) {
-			console.ErrLn("Error loading profile config: %v", err)
+			out.ErrLn("Error loading profile config: %v", err)
 		}
 
 		binary := "kubectl"

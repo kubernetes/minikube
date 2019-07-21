@@ -5,6 +5,8 @@ github.com/Parallels/docker-machine-parallels v1.3.0 h1:RG1fyf3v1GwXMCeHRiZkB4tL
 github.com/Parallels/docker-machine-parallels v1.3.0/go.mod h1:HCOMm3Hulq/xuEVQMyZOuQlA+dSZpFY5kdCTZWjMVis=
 github.com/Sirupsen/logrus v0.0.0-20170822132746-89742aefa4b2 h1:k1A7eIeUk6rnX2yuagwljW/pDezkK8oSpvPumT9zdZY=
 github.com/Sirupsen/logrus v0.0.0-20170822132746-89742aefa4b2/go.mod h1:rmk17hk6i8ZSAJkSDa7nOxamrG+SP4P0mm+DAvExv4U=
+github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d h1:G0m3OIz70MZUWq3EgK3CesDbo8upS2Vm9/P3FtgI+Jk=
+github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
 github.com/blang/semver v3.5.0+incompatible h1:CGxCgetQ64DKk7rdZ++Vfnb1+ogGNnB17OJKJXD2Cfs=
 github.com/blang/semver v3.5.0+incompatible/go.mod h1:kRBLl5iJ+tD4TcOOxsy/0fnwebNt5EWlYSAyrTnjyyk=
 github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 h1:+ziP/wVJWuAORkjv7386TRidVKY57X0bXBZFMeFlW+U=
@@ -24,8 +26,8 @@ github.com/docker/docker v1.13.1 h1:IkZjBSIc8hBjLpqeAbeE5mca5mNgeatLHBy3GO78BWo=
 github.com/docker/docker v1.13.1/go.mod h1:eEKB0N0r5NX/I1kEveEz05bcu8tLC/8azJZsviup8Sk=
 github.com/docker/go-units v0.0.0-20170127094116-9e638d38cf69 h1:N4WAsrRIb+4U1yIwJO3FMrLnrr61ael894nygpViQTU=
 github.com/docker/go-units v0.0.0-20170127094116-9e638d38cf69/go.mod h1:fgPhTUdO+D/Jk86RDLlptpiXQzgHJF7gydDDbaIK4Dk=
-github.com/docker/machine v0.16.1 h1:zrgroZounGVkxLmBqMyc1uT2GgapXVjIWHCfBf0udrA=
-github.com/docker/machine v0.16.1/go.mod h1:I8mPNDeK1uH+JTcUU7X0ZW8KiYz0jyAgNaeSJ1rCfDI=
+github.com/docker/machine v0.16.1-0.20190718054102-a555e4f7a8f5 h1:5OiV/JwT55JRKNJsM9HZrTlJH/TRp97Ee89ahtB78+w=
+github.com/docker/machine v0.16.1-0.20190718054102-a555e4f7a8f5/go.mod h1:I8mPNDeK1uH+JTcUU7X0ZW8KiYz0jyAgNaeSJ1rCfDI=
 github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f h1:8GDPb0tCY8LQ+OJ3dbHb5sA6YZWXFORQYZx5sdsTlMs=
 github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f h1:AUj1VoZUfhPhOPHULCQQDnGhRelpFWHMLhQVWDsS0v4=
@@ -36,6 +38,8 @@ github.com/fsnotify/fsnotify v1.4.7 h1:IXs+QLmnXW2CcXuY+8Mzv/fWEsPGWxqefPtCP5CnV
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680 h1:ZktWZesgun21uEDrwW7iEV1zPCGQldM2atlJZ3TdvVM=
 github.com/ghodss/yaml v0.0.0-20150909031657-73d445a93680/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
+github.com/go-ole/go-ole v1.2.4 h1:nNBDSCOigTSiarFpYE9J/KtEA1IOW4CNeqT9TQDqCxI=
+github.com/go-ole/go-ole v1.2.4/go.mod h1:XCwSNxSkXRo4vlyPy93sltvi/qJq0jqQhjqQNIwKuxM=
 github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e h1:ago6fNuQ6IhszPsXkeU7qRCyfsIX7L67WDybsAPkLl8=
 github.com/gogo/protobuf v0.0.0-20170330071051-c0656edd0d9e/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
 github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3 h1:zN2lZNZRflqFyxVaTIU61KNKQ9C0055u9CAfpmqUvo4=
@@ -161,6 +165,8 @@ github.com/russross/blackfriday v0.0.0-20151117072312-300106c228d5 h1:+6eORf9Bt4
 github.com/russross/blackfriday v0.0.0-20151117072312-300106c228d5/go.mod h1:JO/DiYxRf+HjHt06OyowR9PTA263kcR/rfWxYHBV53g=
 github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 h1:XRl74t6xHKI5EVIjDI5nPlHRq0bHED9/TjQuD8/UMkE=
 github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859/go.mod h1:yeYR4SlaRZJct6lwNRKR+qd0CocnxxWDE7Vh5dxsn/w=
+github.com/shirou/gopsutil v2.18.12+incompatible h1:1eaJvGomDnH74/5cF4CTmTbLHAriGFsTZppLXDX93OM=
+github.com/shirou/gopsutil v2.18.12+incompatible/go.mod h1:5b4v6he4MtMOwMlS0TUMTu2PcXUg8+E1lC7eC3UO/RA=
 github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db h1:lrOUn8raSZS/V52c7elGaEyuogqSkEo/Qj2Auo2G1ik=
 github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db/go.mod h1:1NzhyTcUVG4SuEtjjoZeVRXNmyL/1OwPU0+IJeTBvfc=
 github.com/sirupsen/logrus v1.4.1 h1:GL2rEmy6nsikmW0r8opw9JIRScdMF5hA8cOYLH7In1k=

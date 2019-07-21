@@ -29,7 +29,7 @@ var configSetCmd = &cobra.Command{
 	These values can be overwritten by flags or environment variables at runtime.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 2 {
-			exit.Usage("usage: minikube config set PROPERTY_NAME PROPERTY_VALUE")
+			exit.UsageT("usage: minikube config set PROPERTY_NAME PROPERTY_VALUE")
 		}
 		err := Set(args[0], args[1])
 		if err != nil {

@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -32,10 +33,10 @@ import (
 	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
@@ -70,25 +71,25 @@ var mountCmd = &cobra.Command{
 		}
 
 		if len(args) != 1 {
-			exit.Usage(`Please specify the directory to be mounted: 
+			exit.UsageT(`Please specify the directory to be mounted: 
 	minikube mount <source directory>:<target directory>   (example: "/host-home:/vm-home")`)
 		}
 		mountString := args[0]
 		idx := strings.LastIndex(mountString, ":")
 		if idx == -1 { // no ":" was present
-			exit.Usage(`mount argument %q must be in form: <source directory>:<target directory>`, mountString)
+			exit.UsageT(`mount argument "{{.value}}" must be in form: <source directory>:<target directory>`, out.V{"value": mountString})
 		}
 		hostPath := mountString[:idx]
 		vmPath := mountString[idx+1:]
 		if _, err := os.Stat(hostPath); err != nil {
 			if os.IsNotExist(err) {
-				exit.WithCode(exit.NoInput, "Cannot find directory %s for mount", hostPath)
+				exit.WithCodeT(exit.NoInput, "Cannot find directory {{.path}} for mount", out.V{"path": hostPath})
 			} else {
 				exit.WithError("stat failed", err)
 			}
 		}
 		if len(vmPath) == 0 || !strings.HasPrefix(vmPath, "/") {
-			exit.Usage("Target directory %q must be an absolute path", vmPath)
+			exit.UsageT("Target directory {{.path}} must be an absolute path", out.V{"path": vmPath})
 		}
 		var debugVal int
 		if glog.V(1) {
@@ -107,7 +108,7 @@ var mountCmd = &cobra.Command{
 			exit.WithError("Error loading api", err)
 		}
 		if host.Driver.DriverName() == constants.DriverNone {
-			exit.Usage(`'none' driver does not support 'minikube mount' command`)
+			exit.UsageT(`'none' driver does not support 'minikube mount' command`)
 		}
 		var ip net.IP
 		if mountIP == "" {
@@ -118,7 +119,7 @@ var mountCmd = &cobra.Command{
 		} else {
 			ip = net.ParseIP(mountIP)
 			if ip == nil {
-				exit.WithCode(exit.Data, "error parsing the input ip address for mount")
+				exit.WithCodeT(exit.Data, "error parsing the input ip address for mount")
 			}
 		}
 		port, err := cmdUtil.GetPort()
@@ -146,29 +147,27 @@ var mountCmd = &cobra.Command{
 			cfg.Options[parts[0]] = parts[1]
 		}
 
-		console.OutStyle(console.Mounting, "Mounting host path %s into VM as %s ...", hostPath, vmPath)
-		console.OutStyle(console.MountOptions, "Mount options:")
-		console.OutStyle(console.Option, "Type:     %s", cfg.Type)
-		console.OutStyle(console.Option, "UID:      %s", cfg.UID)
-		console.OutStyle(console.Option, "GID:      %s", cfg.GID)
-		console.OutStyle(console.Option, "Version:  %s", cfg.Version)
-		console.OutStyle(console.Option, "MSize:    %d", cfg.MSize)
-		console.OutStyle(console.Option, "Mode:     %o (%s)", cfg.Mode, cfg.Mode)
-		console.OutStyle(console.Option, "Options:  %s", cfg.Options)
+		out.T(out.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
+		out.T(out.Option, "Mount type:   {{.name}}", out.V{"type": cfg.Type})
+		out.T(out.Option, "User ID:      {{.userID}}", out.V{"userID": cfg.UID})
+		out.T(out.Option, "Group ID:     {{.groupID}}", out.V{"groupID": cfg.GID})
+		out.T(out.Option, "Version:      {{.version}}", out.V{"version": cfg.Version})
+		out.T(out.Option, "Message Size: {{.size}}", out.V{"size": cfg.MSize})
+		out.T(out.Option, "Permissions:  {{.octalMode}} ({{.writtenMode}})", out.V{"octalMode": fmt.Sprintf("%o", cfg.Mode), "writtenMode": cfg.Mode})
+		out.T(out.Option, "Options:      {{.options}}", out.V{"options": cfg.Options})
 
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
 		if !supportedFilesystems[cfg.Type] {
-			console.OutLn("")
-			console.OutStyle(console.WarningType, "%s is not yet a supported filesystem. We will try anyways!", cfg.Type)
+			out.T(out.WarningType, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
 		}
 
 		var wg sync.WaitGroup
 		if cfg.Type == nineP {
 			wg.Add(1)
 			go func() {
-				console.OutStyle(console.Fileserver, "Userspace file server: ")
+				out.T(out.Fileserver, "Userspace file server: ")
 				ufs.StartServer(net.JoinHostPort(ip.String(), strconv.Itoa(port)), debugVal, hostPath)
-				console.OutStyle(console.Stopped, "Userspace file server is shutdown")
+				out.T(out.Stopped, "Userspace file server is shutdown")
 				wg.Done()
 			}()
 		}
@@ -184,12 +183,12 @@ var mountCmd = &cobra.Command{
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			for sig := range c {
-				console.OutStyle(console.Unmount, "Unmounting %s ...", vmPath)
+				out.T(out.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
 				err := cluster.Unmount(runner, vmPath)
 				if err != nil {
-					console.ErrStyle(console.FailureType, "Failed unmount: %v", err)
+					out.ErrT(out.FailureType, "Failed unmount: {{.error}}", out.V{"error": err})
 				}
-				exit.WithCode(exit.Interrupted, "Exiting due to %s signal", sig)
+				exit.WithCodeT(exit.Interrupted, "Received {{.name}} signal", out.V{"name": sig})
 			}
 		}()
 
@@ -197,9 +196,9 @@ var mountCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("mount failed", err)
 		}
-		console.OutStyle(console.SuccessType, "Successfully mounted %s to %s", hostPath, vmPath)
-		console.OutLn("")
-		console.OutStyle(console.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
+		out.T(out.SuccessType, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
+		out.Ln("")
+		out.T(out.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
 		wg.Wait()
 	},
 }

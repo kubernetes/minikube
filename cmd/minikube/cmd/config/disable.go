@@ -18,8 +18,8 @@ package config
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var addonsDisableCmd = &cobra.Command{
@@ -28,7 +28,7 @@ var addonsDisableCmd = &cobra.Command{
 	Long:  "Disables the addon w/ADDON_NAME within minikube (example: minikube addons disable dashboard). For a list of available addons use: minikube addons list ",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 1 {
-			exit.Usage("usage: minikube addons disable ADDON_NAME")
+			exit.UsageT("usage: minikube addons disable ADDON_NAME")
 		}
 
 		addon := args[0]
@@ -36,7 +36,7 @@ var addonsDisableCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("disable failed", err)
 		}
-		console.Success("%s was successfully disabled", addon)
+		out.SuccessT(`"{{.minikube_addon}}" was successfully disabled`, out.V{"minikube_addon": addon})
 	},
 }
 

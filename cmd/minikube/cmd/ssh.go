@@ -24,10 +24,10 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // sshCmd represents the docker-ssh command
@@ -49,12 +49,12 @@ var sshCmd = &cobra.Command{
 			exit.WithError( "Permission denied", permissionError)
 		}
 		if host.Driver.DriverName() == constants.DriverNone {
-			exit.Usage("'none' driver does not support 'minikube ssh' command")
+			exit.UsageT("'none' driver does not support 'minikube ssh' command")
 		}
 		err = cluster.CreateSSHShell(api, args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
-			console.ErrLn("ssh: %v", err)
+			out.ErrLn("ssh: %v", err)
 			// It'd be nice if we could pass up the correct error code here :(
 			os.Exit(exit.Failure)
 		}

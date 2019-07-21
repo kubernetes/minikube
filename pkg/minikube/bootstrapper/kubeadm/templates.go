@@ -171,7 +171,8 @@ Documentation=http://kubernetes.io/docs/
 ExecStart=/usr/bin/kubelet
 Restart=always
 StartLimitInterval=0
-RestartSec=10
+# Tuned for local dev: faster than upstream default (10s), but slower than systemd default (100ms)
+RestartSec=600ms
 
 [Install]
 WantedBy=multi-user.target

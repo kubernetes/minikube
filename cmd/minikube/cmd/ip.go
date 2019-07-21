@@ -22,9 +22,9 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // ipCmd represents the ip command
@@ -43,7 +43,7 @@ var ipCmd = &cobra.Command{
 		if err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
-				exit.WithCode(exit.NoInput, "%q host does not exist, unable to show an IP", config.GetMachineName())
+				exit.WithCodeT(exit.NoInput, `"{{.profile_name}}" host does not exist, unable to show an IP`, out.V{"profile_name": config.GetMachineName()})
 			default:
 				exit.WithError("Error getting host", err)
 			}
@@ -55,7 +55,7 @@ var ipCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting IP", err)
 		}
-		console.OutLn(ip)
+		out.Ln(ip)
 	},
 }
 
