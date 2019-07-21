@@ -14,7 +14,7 @@ require (
 	github.com/cpuguy83/go-md2man v1.0.4 // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-units v0.0.0-20170127094116-9e638d38cf69
-	github.com/docker/machine v0.16.1
+	github.com/docker/machine v0.16.1-0.20190718054102-a555e4f7a8f5
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/fatih/color v1.7.0 // indirect
