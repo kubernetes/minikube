@@ -20,11 +20,11 @@ import (
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // ipCmd represents the ip command
@@ -48,7 +48,9 @@ var ipCmd = &cobra.Command{
 				exit.WithError("Error getting host", err)
 			}
 		}
-		pkgutil.ValidateUser(host.DriverName)
+		if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+			exit.WithError( "Permission denied", permissionError)
+		}
 		ip, err := host.Driver.GetIP()
 		if err != nil {
 			exit.WithError("Error getting IP", err)

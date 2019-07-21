@@ -25,6 +25,8 @@ import (
 	"sync"
 	"syscall"
 
+	"k8s.io/minikube/pkg/drivers"
+
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdUtil "k8s.io/minikube/cmd/util"
@@ -34,7 +36,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
@@ -99,7 +100,9 @@ var mountCmd = &cobra.Command{
 		}
 		defer api.Close()
 		host, err := api.Load(config.GetMachineName())
-		pkgutil.ValidateUser(host.DriverName)
+		if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+			exit.WithError( "Permission denied", permissionError)
+		}
 		if err != nil {
 			exit.WithError("Error loading api", err)
 		}

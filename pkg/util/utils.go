@@ -34,8 +34,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/console"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
@@ -292,32 +290,4 @@ func ContainsString(slice []string, s string) bool {
 		}
 	}
 	return false
-}
-
-// ValidateUser validates minikube is run by the recommended user (privileged or regular)
-func ValidateUser(driverName string) {
-	u, err := user.Current()
-	// Check if minikube needs to run with sudo or not.
-	if err == nil {
-		if driverName == constants.DriverNone && u.Name != "root" {
-			exit.Usage("Please run with sudo. The vm-driver %q requires sudo.", constants.DriverNone)
-
-		} else if u.Name == "root" && !(driverName == constants.DriverHyperv || driverName == constants.DriverNone) {
-			console.OutStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with %s driver.", driverName)
-		}
-
-		// If Hyper-V, ensure we are having Administrator Privilleges.
-		if driverName == constants.DriverHyperv {
-			// This tries opening the first disk attached to the system for a direct I/O operation. This operation requires Administrator privileges and will fail without that.
-			rawDisk, err := os.Open("\\\\.\\PHYSICALDRIVE0")
-			if err != nil {
-				exit.Usage("You need to run minikube with Administrator privileges as interacting with %q requires them.", constants.DriverHyperv)
-			} else {
-				console.OutStyle(console.Permissions, "Got administrator privilleges. I can handle Hyper-V now...")
-				rawDisk.Close()
-			}
-		}
-	} else {
-		glog.Errorf("Error getting the current user: %v", err)
-	}
 }

@@ -28,6 +28,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/minikube/pkg/drivers"
+
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
@@ -100,7 +102,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	// Check the User if cluster was created in the previous session
-	pkgutil.ValidateUser(h.Driver.DriverName())
+	if permissionError := drivers.ValidatePermissions(h.DriverName); permissionError != nil {
+		return nil, errors.Wrap(permissionError, "Permission denied")
+	}
 
 	if h.Driver.DriverName() != config.VMDriver {
 		console.Out("\n")
@@ -239,7 +243,9 @@ func StopHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
-	pkgutil.ValidateUser(host.DriverName)
+	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+		return errors.Wrap(permissionError, "Permission denied")
+	}
 	console.OutStyle(console.Stopping, "Stopping %q in %s ...", cfg.GetMachineName(), host.DriverName)
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
@@ -257,7 +263,9 @@ func DeleteHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrap(err, "load")
 	}
-	pkgutil.ValidateUser(host.DriverName)
+	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+		return errors.Wrap(permissionError, "Permission denied")
+	}
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
 	if host.Driver.DriverName() == constants.DriverHyperv {
 		trySSHPowerOff(host)
@@ -287,7 +295,9 @@ func GetHostStatus(api libmachine.API) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "load")
 	}
-	pkgutil.ValidateUser(host.DriverName)
+	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+		return "", errors.Wrap(permissionError, "Permission denied")
+	}
 	s, err := host.Driver.GetState()
 	if err != nil {
 		return "", errors.Wrap(err, "state")
@@ -301,7 +311,9 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	if err != nil {
 		return nil, err
 	}
-	pkgutil.ValidateUser(host.DriverName)
+	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+		return nil, errors.Wrap(permissionError, "Permission denied")
+	}
 	ipStr, err := host.Driver.GetIP()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting IP")
@@ -350,7 +362,10 @@ To disable this message, run [minikube config set ShowDriverDeprecationNotificat
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	pkgutil.ValidateUser(config.VMDriver)
+	if permissionError := drivers.ValidatePermissions(config.VMDriver); permissionError != nil {
+		return nil, errors.Wrap(permissionError, "Permission denied")
+	}
+
 	preCreateHost(&config)
 	console.OutStyle(console.StartingVM, "Creating %s VM (CPUs=%d, Memory=%dMB, Disk=%dMB) ...", config.VMDriver, config.CPUs, config.Memory, config.DiskSize)
 	def, err := registry.Driver(config.VMDriver)
@@ -483,7 +498,9 @@ func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Hos
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error loading store for: %s", machineName)
 	}
-	pkgutil.ValidateUser(host.DriverName)
+	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+		return nil, errors.Wrap(permissionError, "Permission denied")
+	}
 	return host, nil
 }
 
@@ -494,7 +511,9 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "host exists and load")
 	}
-	pkgutil.ValidateUser(host.DriverName)
+	if permissionError := drivers.ValidatePermissions(host.DriverName); err != permissionError {
+		return errors.Wrap( permissionError, "Permission denied")
+	}
 	currentState, err := host.Driver.GetState()
 	if err != nil {
 		return errors.Wrap(err, "state")

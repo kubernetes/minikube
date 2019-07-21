@@ -20,6 +20,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/user"
 	"path/filepath"
 	"syscall"
 
@@ -29,6 +30,8 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // GetDiskPath returns the path of the machine disk image
@@ -133,6 +136,35 @@ func fixPermissions(path string) error {
 		if err := os.Chown(fp, syscall.Getuid(), syscall.Getegid()); err != nil {
 			return errors.Wrap(err, "chown file")
 		}
+	}
+	return nil
+}
+
+// ValidatePermissions validates minikube is run by the recommended user (privileged or regular)
+func ValidatePermissions(driverName string) error {
+	u, err := user.Current()
+	// Check if minikube needs to run with sudo or not.
+	if err == nil {
+		if driverName == constants.DriverNone && u.Uid != "0" {
+			return errors.Errorf( "Please run with sudo. The vm-driver %q requires sudo.", constants.DriverNone)
+
+		} else if !(driverName == constants.DriverHyperv || driverName == constants.DriverNone) {
+			console.OutStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with %s driver.", driverName)
+		}
+
+		// If Hyper-V, ensure we are having Administrator Privilleges.
+		if driverName == constants.DriverHyperv {
+			// This tries opening the first disk attached to the system for a direct I/O operation. This operation requires Administrator privileges and will fail without that.
+			rawDisk, err := os.Open("\\\\.\\PHYSICALDRIVE0")
+			if err != nil {
+				return errors.Errorf("You need to run minikube with Administrator privileges as interacting with %q requires them.", constants.DriverHyperv)
+			} else {
+				glog.Infof("Got administrator privilleges. I can handle Hyper-V now...")
+				defer rawDisk.Close()
+			}
+		}
+	} else {
+		return errors.Errorf("Error getting the current user: %v", err)
 	}
 	return nil
 }

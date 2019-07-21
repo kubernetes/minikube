@@ -19,6 +19,8 @@ package cmd
 import (
 	"os"
 
+	"k8s.io/minikube/pkg/drivers"
+
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -26,7 +28,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // sshCmd represents the docker-ssh command
@@ -44,7 +45,9 @@ var sshCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
-		pkgutil.ValidateUser(host.DriverName)
+		if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+			exit.WithError( "Permission denied", permissionError)
+		}
 		if host.Driver.DriverName() == constants.DriverNone {
 			exit.Usage("'none' driver does not support 'minikube ssh' command")
 		}

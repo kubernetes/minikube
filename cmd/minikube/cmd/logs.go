@@ -20,12 +20,12 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -63,7 +63,9 @@ var logsCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("api load", err)
 		}
-		pkgutil.ValidateUser(h.DriverName)
+		if permissionError := drivers.ValidatePermissions(h.DriverName); permissionError != nil {
+			exit.WithError( "Permission denied", permissionError)
+		}
 		runner, err := machine.CommandRunner(h)
 		if err != nil {
 			exit.WithError("command runner", err)

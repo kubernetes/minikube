@@ -33,12 +33,12 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -172,7 +172,11 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 	}
 
 	host, err := api.Load(config.GetMachineName())
-	pkgutil.ValidateUser(host.DriverName)
+
+	if permissionError := pkgdrivers.ValidatePermissions(host.DriverName); permissionError != nil {
+		return nil, errors.Wrap(permissionError, "Permission denied")
+	}
+
 	if noProxy {
 
 		if err != nil {
