@@ -30,7 +30,7 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -149,7 +149,7 @@ func ValidatePermissions(driverName string) error {
 			return errors.Errorf( "Please run with sudo. The vm-driver %q requires sudo.", constants.DriverNone)
 
 		} else if !(driverName == constants.DriverHyperv || driverName == constants.DriverNone) {
-			console.OutStyle(console.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with %s driver.", driverName)
+			out.T(out.WarningType,"Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with {{.driver}} driver.",out.V{"driver": driverName})
 		}
 
 		// If Hyper-V, ensure we are having Administrator Privilleges.
