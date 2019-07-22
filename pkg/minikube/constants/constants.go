@@ -423,6 +423,6 @@ const (
 )
 
 const (
-	// DriverDocumentation the documentation of the KVM driver
-	DriverDocumentation = "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md"
+	// KVMDocumentation the documentation of the KVM driver
+	KVMDocumentation = "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver"
 )
