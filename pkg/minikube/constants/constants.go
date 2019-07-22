@@ -426,12 +426,3 @@ const (
 	// DriverDocumentation the documentation of the KVM driver
 	DriverDocumentation = "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md"
 )
-
-const (
-	// Windows OS
-	Windows = "windows"
-	// Darwin OS
-	Darwin = "darwin"
-	// Linux OS
-	Linux = "linux"
-)
