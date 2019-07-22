@@ -143,6 +143,13 @@ or, to use hyperkit as a default driver for minikube:
 minikube config set vm-driver hyperkit
 ```
 
+### Hyperkit upgrade
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
+&& sudo install -o root -g wheel -m 4755 docker-machine-driver-hyperkit /usr/local/bin/
+```
+
 ### Hyperkit troubleshoot
 
 Make sure you are running the lastest version of your driver.
