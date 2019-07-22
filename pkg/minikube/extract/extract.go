@@ -35,16 +35,15 @@ import (
 
 // blacklist is a list of strings to explicitly omit from translation files.
 var blacklist = []string{
-	"%s: %v",
-	"%s.%s=%s",
-	"%s/%d",
-	"%s=%s",
-	"%v",
-	"GID:      %s",
-	"MSize:    %d",
-	"UID:      %s",
-	"env %s",
-	"opt %s",
+	"{{.error}}",
+	"{{.url}}",
+	"{{.msg}}: {{.err}}",
+	"{{.key}}={{.value}}",
+	"opt {{.docker_option}}",
+	"kube-system",
+	"env {{.docker_env}}",
+	"\\n",
+	"==\u003e {{.name}} \u003c==",
 }
 
 // ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.
