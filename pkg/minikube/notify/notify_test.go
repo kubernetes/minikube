@@ -29,7 +29,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/version"
 )
@@ -151,7 +151,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	viper.Set(config.ReminderWaitPeriodInHours, 24)
 
 	outputBuffer := tests.NewFakeFile()
-	console.SetErrFile(outputBuffer)
+	out.SetErrFile(outputBuffer)
 	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
 	// test that no update text is printed if the latest version is lower/equal to the current version

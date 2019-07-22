@@ -86,6 +86,6 @@ type stubConfigLoader struct {
 	e error
 }
 
-func (l *stubConfigLoader) LoadConfigFromFile(profile string) (*config.Config, error) {
+func (l *stubConfigLoader) LoadConfigFromFile(profile string, miniHome ...string) (*config.Config, error) {
 	return l.c, l.e
 }

@@ -26,9 +26,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/profile"
 	"k8s.io/minikube/cmd/minikube/cmd"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	_ "k8s.io/minikube/pkg/provision"
 )
 
@@ -44,8 +44,8 @@ func main() {
 	if os.Getenv(constants.IsMinikubeChildProcess) == "" {
 		machine.StartDriver()
 	}
-	console.SetOutFile(os.Stdout)
-	console.SetErrFile(os.Stderr)
+	out.SetOutFile(os.Stdout)
+	out.SetErrFile(os.Stderr)
 	cmd.Execute()
 }
 

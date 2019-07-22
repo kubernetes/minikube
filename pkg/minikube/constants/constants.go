@@ -59,6 +59,9 @@ func ArchTag(hasTag bool) string {
 	return "-" + runtime.GOARCH + ":"
 }
 
+// DriverMock is a mock driver.
+const DriverMock = "mock-driver"
+
 // DriverNone is the none driver.
 const DriverNone = "none"
 
@@ -188,13 +191,21 @@ var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
 
 // GetProfileFile returns the Minikube profile config file
-func GetProfileFile(profile string) string {
-	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
+func GetProfileFile(profile string, miniHome ...string) string {
+	miniPath := GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "profiles", profile, "config.json")
 }
 
 // GetProfilePath returns the Minikube profile path of config file
-func GetProfilePath(profile string) string {
-	return filepath.Join(GetMinipath(), "profiles", profile)
+func GetProfilePath(profile string, miniHome ...string) string {
+	miniPath := GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "profiles", profile)
 }
 
 // AddonsPath is the default path of the addons configuration

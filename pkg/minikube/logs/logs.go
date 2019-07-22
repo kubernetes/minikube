@@ -29,8 +29,8 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // rootCauseRe is a regular expression that matches known failure root causes
@@ -100,12 +100,12 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner comma
 // OutputProblems outputs discovered problems.
 func OutputProblems(problems map[string][]string, maxLines int) {
 	for name, lines := range problems {
-		console.OutT(console.FailureType, "Problems detected in {{.name}}:", console.Arg{"name": name})
+		out.T(out.FailureType, "Problems detected in {{.name}}:", out.V{"name": name})
 		if len(lines) > maxLines {
 			lines = lines[len(lines)-maxLines:]
 		}
 		for _, l := range lines {
-			console.OutT(console.LogEntry, l)
+			out.T(out.LogEntry, l)
 		}
 	}
 }
@@ -126,9 +126,9 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
-			console.OutT(console.Empty, "")
+			out.T(out.Empty, "")
 		}
-		console.OutT(console.Empty, "==> {{.name}} <==", console.Arg{"name": name})
+		out.T(out.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
 		err := runner.CombinedOutputTo(cmds[name], &b)
 		if err != nil {
@@ -138,7 +138,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 		}
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
-			console.OutT(console.Empty, scanner.Text())
+			out.T(out.Empty, scanner.Text())
 		}
 	}
 	if len(failed) > 0 {

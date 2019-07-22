@@ -21,7 +21,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -53,21 +53,21 @@ type match struct {
 
 // Display problem metadata to the console
 func (p *Problem) Display() {
-	console.ErrT(console.FailureType, "Error: [{{.id}}] {{.error}}", console.Arg{"id": p.ID, "error": p.Err})
-	console.ErrT(console.Tip, "Suggestion: {{.advice}}", console.Arg{"advice": translate.T(p.Advice)})
+	out.ErrT(out.FailureType, "Error: [{{.id}}] {{.error}}", out.V{"id": p.ID, "error": p.Err})
+	out.ErrT(out.Tip, "Suggestion: {{.advice}}", out.V{"advice": translate.T(p.Advice)})
 	if p.URL != "" {
-		console.ErrT(console.Documentation, "Documentation: {{.url}}", console.Arg{"url": p.URL})
+		out.ErrT(out.Documentation, "Documentation: {{.url}}", out.V{"url": p.URL})
 	}
 	if len(p.Issues) == 0 {
 		return
 	}
-	console.ErrT(console.Issues, "Related issues:")
+	out.ErrT(out.Issues, "Related issues:")
 	issues := p.Issues
 	if len(issues) > 3 {
 		issues = issues[0:3]
 	}
 	for _, i := range issues {
-		console.ErrT(console.Issue, "{{.url}}", console.Arg{"url": fmt.Sprintf("%s/%d", issueBase, i)})
+		out.ErrT(out.Issue, "{{.url}}", out.V{"url": fmt.Sprintf("%s/%d", issueBase, i)})
 	}
 }
 
