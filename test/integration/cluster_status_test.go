@@ -28,12 +28,12 @@ import (
 )
 
 func testClusterStatus(t *testing.T) {
-	kubectlRunner := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t)
 	cs := api.ComponentStatusList{}
 
 	healthy := func() error {
 		t.Log("Checking if cluster is healthy.")
-		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "cs"}, &cs); err != nil {
+		if err := kr.RunCommandParseOutput([]string{"get", "cs"}, &cs); err != nil {
 			return err
 		}
 		for _, i := range cs.Items {
