@@ -72,10 +72,10 @@ func TestProxy(t *testing.T) {
 	}
 
 	// making sure there is no running minikube to avoid https://github.com/kubernetes/minikube/issues/4132
-	r := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	_, _, err = r.RunWithContext(ctx, "delete")
+	_, _, err = mk.RunWithContext(ctx, "delete")
 	if err != nil {
 		t.Logf("Error deleting minikube before test setup %s : ", err)
 	}
@@ -96,7 +96,7 @@ func TestProxy(t *testing.T) {
 			t.Errorf("Error shutting down the http proxy")
 		}
 
-		_, _, err = r.RunWithContext(ctx, "delete")
+		_, _, err = mk.RunWithContext(ctx, "delete")
 		if err != nil {
 			t.Logf("Error deleting minikube when cleaning up proxy setup: %s", err)
 		}
@@ -109,11 +109,11 @@ func TestProxy(t *testing.T) {
 
 // testProxyWarning checks user is warned correctly about the proxy related env vars
 func testProxyWarning(t *testing.T) {
-	r := NewMinikubeRunner(t, "--wait=false")
+	mk := NewMinikubeRunner(t, "--wait=false")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	startCmd := fmt.Sprintf("start %s %s", r.StartArgs, r.GlobalArgs)
-	stdout, stderr, err := r.RunWithContext(ctx, startCmd)
+	startCmd := fmt.Sprintf("start %s %s", mk.StartArgs, mk.GlobalArgs)
+	stdout, stderr, err := mk.RunWithContext(ctx, startCmd)
 	if err != nil {
 		t.Fatalf("start: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
 	}

@@ -66,26 +66,26 @@ func downloadMinikubeBinary(version string) (*os.File, error) {
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
-	currentRunner := NewMinikubeRunner(t)
-	currentRunner.RunCommand("delete", true)
-	currentRunner.CheckStatus(state.None.String())
+	mkCurrent := NewMinikubeRunner(t)
+	mkCurrent.RunCommand("delete", true)
+	mkCurrent.CheckStatus(state.None.String())
 	tf, err := downloadMinikubeBinary("latest")
 	if err != nil || tf == nil {
 		t.Fatal(errors.Wrap(err, "Failed to download minikube binary."))
 	}
 	defer os.Remove(tf.Name())
 
-	releaseRunner := NewMinikubeRunner(t)
-	releaseRunner.BinaryPath = tf.Name()
+	mkRelease := NewMinikubeRunner(t)
+	mkRelease.BinaryPath = tf.Name()
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
-	releaseRunner.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
-	releaseRunner.CheckStatus(state.Running.String())
-	releaseRunner.RunCommand("stop", true)
-	releaseRunner.CheckStatus(state.Stopped.String())
+	mkRelease.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
+	mkRelease.CheckStatus(state.Running.String())
+	mkRelease.RunCommand("stop", true)
+	mkRelease.CheckStatus(state.Stopped.String())
 
 	// Trim the leading "v" prefix to assert that we handle it properly.
-	currentRunner.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
-	currentRunner.CheckStatus(state.Running.String())
-	currentRunner.RunCommand("delete", true)
-	currentRunner.CheckStatus(state.None.String())
+	mkCurrent.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
+	mkCurrent.CheckStatus(state.Running.String())
+	mkCurrent.RunCommand("delete", true)
+	mkCurrent.CheckStatus(state.None.String())
 }
