@@ -101,10 +101,13 @@ func TestStartStop(t *testing.T) {
 				t.Fatalf("timed out while checking stopped status: %v", err)
 			}
 
+			// TODO medyagh:  the commented code beollow was not correct ! I leave it for another PR
+			// https://github.com/kubernetes/minikube/issues/4854
+
 			// running this command results in error when the current-context is not set
-			if err := mk.Run("config current-context"); err != nil {
-				t.Logf("current-context is not set to minikube")
-			}
+			// if err := mk.Run("config current-context"); err != nil {
+			// 	t.Logf("current-context is not set to minikube")
+			// }
 
 			mk.Start(test.args...)
 			mk.CheckStatus(state.Running.String())
