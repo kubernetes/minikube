@@ -27,8 +27,8 @@ import (
 )
 
 func TestFunctional(t *testing.T) {
-	r := NewMinikubeRunner(t)
-	r.EnsureRunning()
+	mk := NewMinikubeRunner(t)
+	mk.EnsureRunning()
 	// This one is not parallel, and ensures the cluster comes up
 	// before we run any other tests.
 	t.Run("Status", testClusterStatus)
@@ -42,7 +42,7 @@ func TestFunctional(t *testing.T) {
 	t.Run("Provisioning", testProvisioning)
 	t.Run("Tunnel", testTunnel)
 
-	if !usingNoneDriver(r) {
+	if !usingNoneDriver(mk) {
 		t.Run("EnvVars", testClusterEnv)
 		t.Run("SSH", testClusterSSH)
 		t.Run("IngressController", testIngressController)
@@ -51,19 +51,19 @@ func TestFunctional(t *testing.T) {
 }
 
 func TestFunctionalContainerd(t *testing.T) {
-	r := NewMinikubeRunner(t)
+	mk := NewMinikubeRunner(t)
 
-	if usingNoneDriver(r) {
+	if usingNoneDriver(mk) {
 		t.Skip("Can't run containerd backend with none driver")
 	}
 
-	if r.GetStatus() != state.None.String() {
-		r.RunCommand("delete", true)
+	if mk.GetStatus() != state.None.String() {
+		mk.RunCommand("delete", true)
 	}
-	r.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	mk.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
-	r.RunCommand("delete", true)
+	mk.RunCommand("delete", true)
 }
 
 // usingNoneDriver returns true if using the none driver
