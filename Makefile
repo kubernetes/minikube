@@ -49,6 +49,9 @@ GO_VERSION ?= $(shell go version | cut -d' ' -f3 | sed -e 's/go//')
 GOLINT_VERSION ?= v1.17.1
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 1
+# see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
+GOLINT_GOGC ?= 10
+
 export GO111MODULE := on
 
 GOOS ?= $(shell go env GOOS)
@@ -277,7 +280,7 @@ out/linters/golangci-lint:
 
 .PHONY: lint
 lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint
-	./out/linters/golangci-lint run \
+	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint run \
 	  --concurrency ${GOLINT_JOBS} \
 	  --deadline 4m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
