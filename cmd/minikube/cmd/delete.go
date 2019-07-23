@@ -52,8 +52,7 @@ type typeOfError int
 const (
 	Fatal          typeOfError = 0
 	MissingProfile typeOfError = 1
-	MissingCluster typeOfError = 2
-	Usage          typeOfError = 3
+	Usage          typeOfError = 2
 )
 
 type deletionError struct {
@@ -95,14 +94,13 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 		profileName := viper.GetString(pkg_config.MachineProfile)
 		profile, err := pkg_config.LoadProfile(profileName)
-
-		if err != nil {
-			exit.WithError("Could not load profile", err)
-		}
-
-		err = deleteProfile(profile)
-		if err != nil {
-			handleDeletionErrors([]error{err})
+		if err == nil {
+			err = deleteProfile(profile)
+			if err != nil {
+				handleDeletionErrors([]error{err})
+			}
+		} else {
+			out.ErrT(out.Sad, "Error loading profile: {{.name}} {{.error}}", out.V{"name": profileName, "error": err})
 		}
 	}
 }
@@ -116,18 +114,15 @@ func handleDeletionErrors(errors []error) {
 				out.FatalT("Error deleting profile: {{.error}}", out.V{"error": deletionError})
 			case MissingProfile:
 				out.ErrT(out.Sad, "Error deleting profile: {{.error}}", out.V{"error": deletionError})
-			case MissingCluster:
-				out.T(out.Meh, `Error deleting profile: {{.error}}`, out.V{"error": deletionError})
 			case Usage:
 				out.ErrT(out.Usage, "usage: minikube delete or minikube delete -p foo or minikube delete --all")
 			default:
 				out.FatalT("Error deleting profile: {{.error}}", out.V{"error": deletionError})
 			}
 		} else {
-			exit.WithError("Could not process errors from failed deletion", nil)
+			exit.WithError("Could not process errors from failed deletion", err)
 		}
 	}
-	os.Exit(0)
 }
 
 func deleteAllProfiles(profiles []*pkg_config.Profile) []error {
@@ -165,7 +160,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	if err = cluster.DeleteHost(api); err != nil {
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			return deletionError{fmt.Errorf("%s cluster does not exist", profile.Name), MissingCluster}
+			out.T(out.Meh, `"{{.name}}" cluster does not exist`, out.V{"name": profile.Name})
 		default:
 			return deletionError{fmt.Errorf("failed to delete cluster %v", err), Fatal}
 		}
