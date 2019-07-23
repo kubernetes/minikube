@@ -256,7 +256,7 @@ func checkArguments(s *ast.CallExpr, e *state) {
 	for _, arg := range s.Args {
 		// This argument is an identifier.
 		if i, ok := arg.(*ast.Ident); ok {
-			if s := checkIdentForStringValue(i, e); s != "" {
+			if s := checkIdentForStringValue(i); s != "" {
 				e.translations[s] = ""
 				matched = true
 				break
@@ -265,7 +265,7 @@ func checkArguments(s *ast.CallExpr, e *state) {
 
 		// This argument is a string.
 		if argString, ok := arg.(*ast.BasicLit); ok {
-			if s := checkString(argString.Value, e); s != "" {
+			if s := checkString(argString.Value); s != "" {
 				e.translations[s] = ""
 				matched = true
 				break
@@ -281,7 +281,7 @@ func checkArguments(s *ast.CallExpr, e *state) {
 }
 
 // checkIdentForStringValye takes a identifier and sees if it's a variable assigned to a string
-func checkIdentForStringValue(i *ast.Ident, e *state) string {
+func checkIdentForStringValue(i *ast.Ident) string {
 	// This identifier is nil
 	if i.Obj == nil {
 		return ""
@@ -313,12 +313,12 @@ func checkIdentForStringValue(i *ast.Ident, e *state) string {
 		}
 	}
 
-	return checkString(s, e)
+	return checkString(s)
 
 }
 
 // checkString checks if a string is meant to be translated
-func checkString(s string, e *state) string {
+func checkString(s string) string {
 	// Empty strings don't need translating
 	if len(s) <= 2 {
 		return ""
@@ -365,7 +365,7 @@ func checkKeyValueExpression(kvp *ast.KeyValueExpr, e *state) {
 	if i.Name == "Short" || i.Name == "Long" {
 		// The help text is directly a string, the most common case
 		if help, ok := kvp.Value.(*ast.BasicLit); ok {
-			s := checkString(help.Value, e)
+			s := checkString(help.Value)
 			if s != "" {
 				e.translations[s] = ""
 			}
@@ -373,7 +373,7 @@ func checkKeyValueExpression(kvp *ast.KeyValueExpr, e *state) {
 
 		// The help text is assigned to a variable, only happens if it's very long
 		if help, ok := kvp.Value.(*ast.Ident); ok {
-			s := checkIdentForStringValue(help, e)
+			s := checkIdentForStringValue(help)
 			if s != "" {
 				e.translations[s] = ""
 			}
@@ -394,13 +394,13 @@ func checkBinaryExpression(b *ast.BinaryExpr, e *state) string {
 	// Check the left side
 	var s string
 	if l, ok := b.X.(*ast.BasicLit); ok {
-		if x := checkString(l.Value, e); x != "" {
+		if x := checkString(l.Value); x != "" {
 			s += x
 		}
 	}
 
 	if i, ok := b.X.(*ast.Ident); ok {
-		if x := checkIdentForStringValue(i, e); x != "" {
+		if x := checkIdentForStringValue(i); x != "" {
 			s += x
 		}
 	}
@@ -413,13 +413,13 @@ func checkBinaryExpression(b *ast.BinaryExpr, e *state) string {
 
 	//Check the right side
 	if l, ok := b.Y.(*ast.BasicLit); ok {
-		if x := checkString(l.Value, e); x != "" {
+		if x := checkString(l.Value); x != "" {
 			s += x
 		}
 	}
 
 	if i, ok := b.Y.(*ast.Ident); ok {
-		if x := checkIdentForStringValue(i, e); x != "" {
+		if x := checkIdentForStringValue(i); x != "" {
 			s += x
 		}
 	}
@@ -511,7 +511,7 @@ func extractAdvice(f ast.Node, e *state) error {
 		if i.Name == "Advice" {
 			// At this point we know the value in the kvp is guaranteed to be a string
 			advice, _ := kvp.Value.(*ast.BasicLit)
-			s := checkString(advice.Value, e)
+			s := checkString(advice.Value)
 			if s != "" {
 				e.translations[s] = ""
 			}
@@ -540,7 +540,7 @@ func extractFlagHelpText(c *ast.CallExpr, sfc *ast.CallExpr, e *state) {
 		// Something has gone wrong, abort
 		return
 	}
-	s := checkString(usage.Value, e)
+	s := checkString(usage.Value)
 	if s != "" {
 		e.translations[s] = ""
 	}
