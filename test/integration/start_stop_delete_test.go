@@ -65,18 +65,18 @@ func TestStartStop(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r := NewMinikubeRunner(t)
-			if !strings.Contains(test.name, "docker") && usingNoneDriver(r) {
+			mk := NewMinikubeRunner(t)
+			if !strings.Contains(test.name, "docker") && usingNoneDriver(mk) {
 				t.Skipf("skipping %s - incompatible with none driver", test.name)
 			}
 
-			r.RunCommand("config set WantReportErrorPrompt false", true)
-			r.RunCommand("delete", false)
-			r.CheckStatus(state.None.String())
-			r.Start(test.args...)
-			r.CheckStatus(state.Running.String())
+			mk.RunCommand("config set WantReportErrorPrompt false", true)
+			mk.RunCommand("delete", false)
+			mk.CheckStatus(state.None.String())
+			mk.Start(test.args...)
+			mk.CheckStatus(state.Running.String())
 
-			ip := r.RunCommand("ip", true)
+			ip := mk.RunCommand("ip", true)
 			ip = strings.TrimRight(ip, "\n")
 			if net.ParseIP(ip) == nil {
 				t.Fatalf("IP command returned an invalid address: %s", ip)
@@ -93,8 +93,8 @@ func TestStartStop(t *testing.T) {
 			}
 
 			checkStop := func() error {
-				r.RunCommand("stop", true)
-				return r.CheckStatusNoFail(state.Stopped.String())
+				mk.RunCommand("stop", true)
+				return mk.CheckStatusNoFail(state.Stopped.String())
 			}
 
 			if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
@@ -102,15 +102,15 @@ func TestStartStop(t *testing.T) {
 			}
 
 			// running this command results in error when the current-context is not set
-			if err := r.Run("config current-context"); err != nil {
+			if err := mk.Run("config current-context"); err != nil {
 				t.Logf("current-context is not set to minikube")
 			}
 
-			r.Start(test.args...)
-			r.CheckStatus(state.Running.String())
+			mk.Start(test.args...)
+			mk.CheckStatus(state.Running.String())
 
-			r.RunCommand("delete", true)
-			r.CheckStatus(state.None.String())
+			mk.RunCommand("delete", true)
+			mk.CheckStatus(state.None.String())
 		})
 	}
 }
