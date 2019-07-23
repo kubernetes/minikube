@@ -22,7 +22,7 @@ import (
 )
 
 func TestListProfiles(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube")
+	miniDir, err := filepath.Abs("./testdata/profile/.minikube")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
