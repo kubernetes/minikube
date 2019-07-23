@@ -52,7 +52,8 @@ type typeOfError int
 const (
 	Fatal          typeOfError = 0
 	MissingProfile typeOfError = 1
-	Usage          typeOfError = 2
+	MissingCluster typeOfError = 2
+	Usage          typeOfError = 3
 )
 
 type deletionError struct {
@@ -94,13 +95,13 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 		profileName := viper.GetString(pkg_config.MachineProfile)
 		profile, err := pkg_config.LoadProfile(profileName)
-		if err == nil {
-			err = deleteProfile(profile)
-			if err != nil {
-				handleDeletionErrors([]error{err})
-			}
-		} else {
-			out.ErrT(out.Sad, "Error loading profile: {{.name}} {{.error}}", out.V{"name": profileName, "error": err})
+		if err != nil {
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
+		}
+
+		err = deleteProfile(profile)
+		if err != nil {
+			handleDeletionErrors([]error{err})
 		}
 	}
 }
@@ -111,13 +112,15 @@ func handleDeletionErrors(errors []error) {
 		if ok {
 			switch deletionError.errtype {
 			case Fatal:
-				out.FatalT("Error deleting profile: {{.error}}", out.V{"error": deletionError})
+				out.FatalT(deletionError.Error())
 			case MissingProfile:
-				out.ErrT(out.Sad, "Error deleting profile: {{.error}}", out.V{"error": deletionError})
+				out.ErrT(out.Sad, deletionError.Error())
+			case MissingCluster:
+				out.ErrT(out.Meh, deletionError.Error())
 			case Usage:
 				out.ErrT(out.Usage, "usage: minikube delete or minikube delete -p foo or minikube delete --all")
 			default:
-				out.FatalT("Error deleting profile: {{.error}}", out.V{"error": deletionError})
+				out.FatalT(deletionError.Error())
 			}
 		} else {
 			exit.WithError("Could not process errors from failed deletion", err)
@@ -141,46 +144,52 @@ func deleteProfile(profile *pkg_config.Profile) error {
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		return deletionError{fmt.Errorf("error getting client %v", err), Fatal}
+		return deletionError{fmt.Errorf("error deleting profile \"%s\": error getting client %v", profile.Name, err), Fatal}
 	}
 	defer api.Close()
 
 	cc, err := pkg_config.Load()
 	if err != nil && !os.IsNotExist(err) {
-		return deletionError{fmt.Errorf("error loading profile config: %s", profile.Name), Usage}
+		return deletionError{fmt.Errorf("error deleting profile \"%s\": error loading profile config: %s", profile.Name, profile.Name), Usage}
 	}
 
 	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
 	if err == nil && cc.MachineConfig.VMDriver == constants.DriverNone {
 		if err := uninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
-			return err
+			deletionError, ok := err.(deletionError)
+			if ok {
+				deletionError.err = fmt.Errorf("error deleting profile \"%s\": %v", profile.Name, err)
+				return deletionError
+			} else {
+				return err
+			}
 		}
 	}
 
 	if err = cluster.DeleteHost(api); err != nil {
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.name}}" cluster does not exist`, out.V{"name": profile.Name})
+			return deletionError{fmt.Errorf("error deleting profile \"%s\": \"%s\" cluster does not exist", profile.Name, profile.Name), MissingCluster}
 		default:
-			return deletionError{fmt.Errorf("failed to delete cluster %v", err), Fatal}
+			return deletionError{fmt.Errorf("error deleting profile \"%s\": failed to delete cluster %v", profile.Name, err), Fatal}
 		}
 	}
 
 	if err := cmdUtil.KillMountProcess(); err != nil {
-		return deletionError{fmt.Errorf("failed to kill mount process: %v", err), Fatal}
+		return deletionError{fmt.Errorf("error deleting profile \"%s\": failed to kill mount process: %v", profile.Name, err), Fatal}
 	}
 
 	if err := os.RemoveAll(constants.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {
 		if os.IsNotExist(err) {
-			return deletionError{fmt.Errorf("%s profile does not exist", profile.Name), MissingProfile}
+			return deletionError{fmt.Errorf("error deleting profile \"%s\": %s profile does not exist", profile.Name, profile.Name), MissingProfile}
 		}
-		return deletionError{fmt.Errorf("failed to remove profile %v", err), Fatal}
+		return deletionError{fmt.Errorf("error deleting profile \"%s\": failed to remove profile %v", profile.Name, err), Fatal}
 	}
 	out.T(out.Crushed, `The "{{.cluster_name}}" cluster has been deleted.`, out.V{"cluster_name": profile.Name})
 
 	machineName := pkg_config.GetMachineName()
 	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
-		return deletionError{fmt.Errorf("update config %v", err), Fatal}
+		return deletionError{fmt.Errorf("error deleting profile \"%s\": update config %v", profile.Name, err), Fatal}
 	}
 	return nil
 }
