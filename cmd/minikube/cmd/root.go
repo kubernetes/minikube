@@ -102,7 +102,6 @@ var RootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	for _, c := range RootCmd.Commands() {
-		c.Use = translate.T(c.Use)
 		c.Short = translate.T(c.Short)
 		c.Long = translate.T(c.Long)
 		c.Flags().VisitAll(func(flag *pflag.Flag) {
@@ -111,7 +110,6 @@ func Execute() {
 
 		c.SetUsageTemplate(usageTemplate())
 	}
-	RootCmd.Use = translate.T(RootCmd.Use)
 	RootCmd.Short = translate.T(RootCmd.Short)
 	RootCmd.Long = translate.T(RootCmd.Long)
 	RootCmd.Flags().VisitAll(func(flag *pflag.Flag) {
