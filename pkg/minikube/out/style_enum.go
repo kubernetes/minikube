@@ -56,6 +56,7 @@ const (
 	Caching
 	StartingVM
 	StartingNone
+	Provisioner
 	Resetting
 	DeletingHost
 	Copying
