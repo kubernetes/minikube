@@ -48,9 +48,9 @@ KERNEL_VERSION ?= 4.16.14
 GO_VERSION ?= $(shell go version | cut -d' ' -f3 | sed -e 's/go//')
 GOLINT_VERSION ?= v1.17.1
 # Limit number of default jobs, to avoid the CI builds running out of memory
-GOLINT_JOBS ?= 2
+GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
-GOLINT_GOGC ?= 5
+GOLINT_GOGC ?= 8
 
 export GO111MODULE := on
 
