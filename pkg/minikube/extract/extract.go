@@ -250,6 +250,7 @@ func checkCallExpression(s *ast.CallExpr, e *state) {
 	checkArguments(s, e)
 }
 
+// checkArguments checks the arguments of a function call for strings
 func checkArguments(s *ast.CallExpr, e *state) {
 	matched := false
 	for _, arg := range s.Args {
@@ -272,6 +273,7 @@ func checkArguments(s *ast.CallExpr, e *state) {
 		}
 	}
 
+	// No string arguments were found, check everything the calls this function for strings
 	if !matched {
 		addParentFuncToList(e)
 	}
@@ -387,6 +389,7 @@ func checkKeyValueExpression(kvp *ast.KeyValueExpr, e *state) {
 	}
 }
 
+// checkBinaryExpression checks binary expressions, stuff of the form x + y, for strings and concats them
 func checkBinaryExpression(b *ast.BinaryExpr, e *state) string {
 	// Check the left side
 	var s string
