@@ -35,7 +35,7 @@ func TestPersistence(t *testing.T) {
 	}
 	mk.EnsureRunning()
 
-	kubectlRunner := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t)
 	curdir, err := filepath.Abs("")
 	if err != nil {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)
@@ -43,7 +43,7 @@ func TestPersistence(t *testing.T) {
 	podPath := path.Join(curdir, "testdata", "busybox.yaml")
 
 	// Create a pod and wait for it to be running.
-	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
+	if _, err := kr.RunCommand([]string{"create", "-f", podPath}); err != nil {
 		t.Fatalf("Error creating test pod: %v", err)
 	}
 

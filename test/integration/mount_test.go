@@ -60,7 +60,7 @@ func testMounting(t *testing.T) {
 		}
 	}()
 
-	kubectlRunner := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t)
 	podName := "busybox-mount"
 	curdir, err := filepath.Abs("")
 	if err != nil {
@@ -77,14 +77,14 @@ func testMounting(t *testing.T) {
 	// Create the pods we need outside the main test loop.
 	setupTest := func() error {
 		t.Logf("Deploying pod from: %s", podPath)
-		if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
+		if _, err := kr.RunCommand([]string{"create", "-f", podPath}); err != nil {
 			return err
 		}
 		return nil
 	}
 	defer func() {
 		t.Logf("Deleting pod from: %s", podPath)
-		if out, err := kubectlRunner.RunCommand([]string{"delete", "-f", podPath}); err != nil {
+		if out, err := kr.RunCommand([]string{"delete", "-f", podPath}); err != nil {
 			t.Logf("delete -f %s failed: %v\noutput: %s\n", podPath, err, out)
 		}
 	}()
@@ -99,7 +99,7 @@ func testMounting(t *testing.T) {
 	t.Logf("Pods appear to be running")
 
 	mountTest := func() error {
-		if err := verifyFiles(mk, kubectlRunner, tempDir, podName, expected); err != nil {
+		if err := verifyFiles(mk, kr, tempDir, podName, expected); err != nil {
 			t.Fatalf(err.Error())
 		}
 
@@ -144,7 +144,7 @@ func waitForPods(s map[string]string) error {
 	return nil
 }
 
-func verifyFiles(mk util.MinikubeRunner, kubectlRunner *util.KubectlRunner, tempDir string, podName string, expected string) error {
+func verifyFiles(mk util.MinikubeRunner, kr *util.KubectlRunner, tempDir string, podName string, expected string) error {
 	path := filepath.Join(tempDir, "frompod")
 	out, err := ioutil.ReadFile(path)
 	if err != nil {
@@ -156,7 +156,7 @@ func verifyFiles(mk util.MinikubeRunner, kubectlRunner *util.KubectlRunner, temp
 	}
 
 	// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
-	if out, err = kubectlRunner.RunCommand([]string{"logs", podName}); err != nil {
+	if out, err = kr.RunCommand([]string{"logs", podName}); err != nil {
 		return err
 	}
 	if string(out) != expected {
