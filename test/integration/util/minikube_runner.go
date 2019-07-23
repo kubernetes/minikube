@@ -34,6 +34,7 @@ import (
 
 // MinikubeRunner runs a command
 type MinikubeRunner struct {
+	Profile    string
 	T          *testing.T
 	BinaryPath string
 	GlobalArgs string
@@ -42,23 +43,12 @@ type MinikubeRunner struct {
 	Runtime    string
 }
 
-// Run executes a command
-func (m *MinikubeRunner) Run(cmd string) error {
-	_, err := m.SSH(cmd)
-	return err
-}
-
 // Copy copies a file
 func (m *MinikubeRunner) Copy(f assets.CopyableFile) error {
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command("/bin/bash", "-c", path, "ssh", "--", fmt.Sprintf("cat >> %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
 	Logf("Running: %s", cmd.Args)
 	return cmd.Run()
-}
-
-// CombinedOutput executes a command, returning the combined stdout and stderr
-func (m *MinikubeRunner) CombinedOutput(cmd string) (string, error) {
-	return m.SSH(cmd)
 }
 
 // Remove removes a file
@@ -102,6 +92,7 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
 	return outB.String(), errB.String(), err
 }
 
+// TODO medya
 // RunCommand executes a command, optionally checking for error
 func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
 	commandArr := strings.Split(command, " ")
@@ -178,6 +169,7 @@ func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *
 	return cmd, bufio.NewReader(stdoutPipe), bufio.NewReader(stderrPipe)
 }
 
+// TODO Medya
 // SSH returns the output of running a command using SSH
 func (m *MinikubeRunner) SSH(command string) (string, error) {
 	path, _ := filepath.Abs(m.BinaryPath)
