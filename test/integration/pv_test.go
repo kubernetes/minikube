@@ -40,10 +40,10 @@ var (
 
 func testProvisioning(t *testing.T) {
 	t.Parallel()
-	kubectlRunner := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t)
 
 	defer func() {
-		if out, err := kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
+		if out, err := kr.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
 			t.Logf("delete pvc %s failed: %v\noutput: %s\n", pvcName, err, out)
 		}
 	}()
@@ -53,7 +53,7 @@ func testProvisioning(t *testing.T) {
 
 	checkStorageClass := func() error {
 		scl := storage.StorageClassList{}
-		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "storageclass"}, &scl); err != nil {
+		if err := kr.RunCommandParseOutput([]string{"get", "storageclass"}, &scl); err != nil {
 			return fmt.Errorf("get storageclass: %v", err)
 		}
 
@@ -88,14 +88,14 @@ func testProvisioning(t *testing.T) {
 
 	// Now create the PVC
 	pvcPath := filepath.Join(*testdataDir, "pvc.yaml")
-	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", pvcPath}); err != nil {
+	if _, err := kr.RunCommand([]string{"create", "-f", pvcPath}); err != nil {
 		t.Fatalf("Error creating pvc: %v", err)
 	}
 
 	// And check that it gets bound to a PV.
 	checkStorage := func() error {
 		pvc := core.PersistentVolumeClaim{}
-		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc); err != nil {
+		if err := kr.RunCommandParseOutput(pvcCmd, &pvc); err != nil {
 			return err
 		}
 		// The test passes if the volume claim gets bound.

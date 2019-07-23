@@ -83,8 +83,8 @@ func TestStartStop(t *testing.T) {
 			}
 
 			// check for the current-context before and after the stop
-			kubectlRunner := util.NewKubectlRunner(t)
-			currentContext, err := kubectlRunner.RunCommand([]string{"config", "current-context"})
+			kr := util.NewKubectlRunner(t)
+			currentContext, err := kr.RunCommand([]string{"config", "current-context"})
 			if err != nil {
 				t.Fatalf("Failed to fetch current-context")
 			}
