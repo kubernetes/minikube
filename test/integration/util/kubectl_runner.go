@@ -28,6 +28,8 @@ import (
 	commonutil "k8s.io/minikube/pkg/util"
 )
 
+const kubectlBinary = "kubectl"
+
 // KubectlRunner runs a command using kubectl
 type KubectlRunner struct {
 	T          *testing.T
