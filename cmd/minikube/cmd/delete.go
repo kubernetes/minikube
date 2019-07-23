@@ -160,9 +160,8 @@ func deleteProfile(profile *pkg_config.Profile) error {
 			if ok {
 				deletionError.err = fmt.Errorf("error deleting profile \"%s\": %v", profile.Name, err)
 				return deletionError
-			} else {
-				return err
 			}
+			return err
 		}
 	}
 
