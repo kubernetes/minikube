@@ -31,7 +31,8 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
-	p := t.Name() // profile name
+	p := "TestStartStop" // profile name
+	t.Parallel()
 	tests := []struct {
 		name string
 		args []string
@@ -66,7 +67,6 @@ func TestStartStop(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			mk := NewMinikubeRunner(t, p)
 			if !strings.Contains(test.name, "docker") && usingNoneDriver(mk) {
 				t.Skipf("skipping %s - incompatible with none driver", test.name)
