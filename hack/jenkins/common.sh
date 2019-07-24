@@ -82,7 +82,7 @@ chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
 procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
 if [[ "${procs}" != "" ]]; then
-  echo "ERROR: found stale test processes to kill:"
+  echo "Warning: found stale test processes to kill:"
   ps -f -p ${procs} || true
   kill ${procs} || true
   kill -9 ${procs} || true
