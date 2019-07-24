@@ -229,16 +229,7 @@ func handleMultipleDeletionErrors(errors []error) {
 		deletionError, ok := err.(DeletionError)
 
 		if ok {
-			switch deletionError.Errtype {
-			case Fatal:
-				glog.Errorln(deletionError.Error())
-			case MissingProfile:
-				glog.Errorln(deletionError.Error())
-			case MissingCluster:
-				glog.Errorln(deletionError.Error())
-			default:
-				glog.Errorln(deletionError.Error())
-			}
+			glog.Errorln(deletionError.Error())
 		} else {
 			exit.WithError("Could not process errors from failed deletion", err)
 		}
