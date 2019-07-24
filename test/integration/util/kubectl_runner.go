@@ -32,6 +32,7 @@ const kubectlBinary = "kubectl"
 
 // KubectlRunner runs a command using kubectl
 type KubectlRunner struct {
+	Profile    string // kube-context maps to a minikube profile
 	T          *testing.T
 	BinaryPath string
 }
@@ -42,11 +43,13 @@ func NewKubectlRunner(t *testing.T) *KubectlRunner {
 	if err != nil {
 		t.Fatalf("Couldn't find kubectl on path.")
 	}
-	return &KubectlRunner{BinaryPath: p, T: t}
+	return &KubectlRunner{Profile: "minikube", BinaryPath: p, T: t}
 }
 
 // RunCommandParseOutput runs a command and parses the JSON output
 func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}) error {
+	kubecContextArg := fmt.Sprintf(" --context=%s", k.Profile)
+	args = append(args, kubecContextArg)
 	args = append(args, "-o=json")
 	output, err := k.RunCommand(args)
 	if err != nil {
@@ -61,6 +64,8 @@ func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface
 
 // RunCommand runs a command, returning stdout
 func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
+	kubecContextArg := fmt.Sprintf(" --context=%s", k.Profile)
+	args = append(args, kubecContextArg)
 	inner := func() error {
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()
