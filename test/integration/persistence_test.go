@@ -29,7 +29,6 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	t.Parallel()
 	p := t.Name() // profile name
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	if usingNoneDriver(mk) {
