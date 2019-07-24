@@ -280,6 +280,16 @@ out/linters/golangci-lint:
 
 .PHONY: lint
 lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint
+	GOGC=100 ./out/linters/golangci-lint run \
+	  --deadline 4m \
+	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
+	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
+	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
+	  ./...
+
+# lint-ci is slower than lint and is meant to be used in ci (travis) to avoid out of memory leaks.
+.PHONY: lint-ci
+lint-ci: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint
 	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint run \
 	  --concurrency ${GOLINT_JOBS} \
 	  --deadline 4m \
