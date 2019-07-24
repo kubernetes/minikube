@@ -92,45 +92,53 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
 	return outB.String(), errB.String(), err
 }
 
-// TODO medya
 // RunCommand executes a command, optionally checking for error
-func (m *MinikubeRunner) RunCommand(command string, checkError bool) string {
-	commandArr := strings.Split(command, " ")
+func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool) string {
+	profileArg := fmt.Sprintf(" -p=%s", m.Profile)
+	cmdStr += profileArg
+	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
-	cmd := exec.Command(path, commandArr...)
+
+	cmd := exec.Command(path, cmdArgs...)
 	Logf("Run: %s", cmd.Args)
 	stdout, stderr, err := m.teeRun(cmd)
-	if checkError && err != nil {
+	if failError && err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			m.T.Fatalf("Error running command: %s %s. Output: %s", command, exitError.Stderr, stdout)
+			m.T.Fatalf("Error running command: %s %s. Output: %s", cmdStr, exitError.Stderr, stdout)
 		} else {
-			m.T.Fatalf("Error running command: %s %v. Output: %s", command, err, stderr)
+			m.T.Fatalf("Error running command: %s %v. Output: %s", cmdStr, err, stderr)
 		}
 	}
 	return stdout
 }
 
 // RunWithContext calls the minikube command with a context, useful for timeouts.
-func (m *MinikubeRunner) RunWithContext(ctx context.Context, command string) (string, string, error) {
-	commandArr := strings.Split(command, " ")
+func (m *MinikubeRunner) RunWithContext(ctx context.Context, cmdStr string) (string, string, error) {
+	profileArg := fmt.Sprintf(" -p=%s", m.Profile)
+	cmdStr += profileArg
+	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
-	cmd := exec.CommandContext(ctx, path, commandArr...)
+
+	cmd := exec.CommandContext(ctx, path, cmdArgs...)
 	Logf("Run: %s", cmd.Args)
 	return m.teeRun(cmd)
 }
 
 // RunDaemon executes a command, returning the stdout
-func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
-	commandArr := strings.Split(command, " ")
+func (m *MinikubeRunner) RunDaemon(cmdStr string) (*exec.Cmd, *bufio.Reader) {
+	profileArg := fmt.Sprintf(" -p=%s", m.Profile)
+	cmdStr += profileArg
+	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
-	cmd := exec.Command(path, commandArr...)
+
+	cmd := exec.Command(path, cmdArgs...)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
+		m.T.Fatalf("stdout pipe failed: %s %v", cmdStr, err)
 	}
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		m.T.Fatalf("stderr pipe failed: %s %v", command, err)
+		m.T.Fatalf("stderr pipe failed: %s %v", cmdStr, err)
 	}
 
 	var errB bytes.Buffer
@@ -142,40 +150,44 @@ func (m *MinikubeRunner) RunDaemon(command string) (*exec.Cmd, *bufio.Reader) {
 
 	err = cmd.Start()
 	if err != nil {
-		m.T.Fatalf("Error running command: %s %v", command, err)
+		m.T.Fatalf("Error running command: %s %v", cmdStr, err)
 	}
 	return cmd, bufio.NewReader(stdoutPipe)
 
 }
 
 // RunDaemon2 executes a command, returning the stdout and stderr
-func (m *MinikubeRunner) RunDaemon2(command string) (*exec.Cmd, *bufio.Reader, *bufio.Reader) {
-	commandArr := strings.Split(command, " ")
+func (m *MinikubeRunner) RunDaemon2(cmdStr string) (*exec.Cmd, *bufio.Reader, *bufio.Reader) {
+	profileArg := fmt.Sprintf(" -p=%s", m.Profile)
+	cmdStr += profileArg
+	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
-	cmd := exec.Command(path, commandArr...)
+	cmd := exec.Command(path, cmdArgs...)
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
-		m.T.Fatalf("stdout pipe failed: %s %v", command, err)
+		m.T.Fatalf("stdout pipe failed: %s %v", cmdStr, err)
 	}
 	stderrPipe, err := cmd.StderrPipe()
 	if err != nil {
-		m.T.Fatalf("stderr pipe failed: %s %v", command, err)
+		m.T.Fatalf("stderr pipe failed: %s %v", cmdStr, err)
 	}
 
 	err = cmd.Start()
 	if err != nil {
-		m.T.Fatalf("Error running command: %s %v", command, err)
+		m.T.Fatalf("Error running command: %s %v", cmdStr, err)
 	}
 	return cmd, bufio.NewReader(stdoutPipe), bufio.NewReader(stderrPipe)
 }
 
-// TODO Medya
 // SSH returns the output of running a command using SSH
-func (m *MinikubeRunner) SSH(command string) (string, error) {
-	path, _ := filepath.Abs(m.BinaryPath)
-	cmd := exec.Command(path, "ssh", command)
-	Logf("SSH: %s", command)
+func (m *MinikubeRunner) SSH(cmdStr string) (string, error) {
+	profileArg := fmt.Sprintf(" -p=%s", m.Profile)
+	cmdStr += profileArg
 
+	path, _ := filepath.Abs(m.BinaryPath)
+
+	cmd := exec.Command(path, profileArg, "ssh", cmdStr)
+	Logf("SSH: %s", cmdStr)
 	stdout, err := cmd.CombinedOutput()
 	Logf("Output: %s", stdout)
 	if err, ok := err.(*exec.ExitError); ok {
@@ -186,7 +198,8 @@ func (m *MinikubeRunner) SSH(command string) (string, error) {
 
 // Start starts the cluster
 func (m *MinikubeRunner) Start(opts ...string) {
-	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
+	profileArg := fmt.Sprintf("-p=%s", m.Profile)
+	cmd := fmt.Sprintf("start %s %s %s %s --alsologtostderr --v=2", profileArg, m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
 	m.RunCommand(cmd, true)
 }
 
@@ -210,12 +223,12 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 
 // GetStatus returns the status of a service
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.GlobalArgs), false)
+	return m.RunCommand(fmt.Sprintf("status -p=%s --format={{.Host}} %s", m.Profile, m.GlobalArgs), false)
 }
 
 // GetLogs returns the logs of a service
 func (m *MinikubeRunner) GetLogs() string {
-	return m.RunCommand(fmt.Sprintf("logs %s", m.GlobalArgs), true)
+	return m.RunCommand(fmt.Sprintf("logs -p=%s %s", m.Profile, m.GlobalArgs), true)
 }
 
 // CheckStatus makes sure the service has the desired status, or cause fatal error
