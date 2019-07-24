@@ -29,7 +29,7 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	p := "minikube"
+	p := t.Name() // profile name
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	if usingNoneDriver(mk) {
 		t.Skip("skipping test as none driver does not support persistence")
@@ -49,7 +49,7 @@ func TestPersistence(t *testing.T) {
 	}
 
 	verify := func(t *testing.T) {
-		if err := util.WaitForBusyboxRunning(t, "default", "minikube"); err != nil {
+		if err := util.WaitForBusyboxRunning(t, "default", p); err != nil {
 			t.Fatalf("waiting for busybox to be up: %v", err)
 		}
 

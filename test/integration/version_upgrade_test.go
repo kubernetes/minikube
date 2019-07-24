@@ -66,7 +66,7 @@ func downloadMinikubeBinary(version string) (*os.File, error) {
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
-	p := "minikube"
+	p := t.Name()
 	mkCurrent := NewMinikubeRunner(t, p)
 	mkCurrent.RunCommand("delete", true)
 	mkCurrent.CheckStatus(state.None.String())

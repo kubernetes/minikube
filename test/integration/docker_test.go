@@ -27,7 +27,7 @@ import (
 )
 
 func TestDocker(t *testing.T) {
-	p := "minikube"
+	p := t.Name()
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	if usingNoneDriver(mk) {
 		t.Skip("skipping test as none driver does not bundle docker")
