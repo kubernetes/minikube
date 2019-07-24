@@ -31,6 +31,7 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
+	p := t.Name() // profile name
 	tests := []struct {
 		name string
 		args []string
@@ -65,7 +66,6 @@ func TestStartStop(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			p := "Test" + test.name // adding Test to profile name for easier VM clean up
 			t.Parallel()
 			mk := NewMinikubeRunner(t, p)
 			if !strings.Contains(test.name, "docker") && usingNoneDriver(mk) {
