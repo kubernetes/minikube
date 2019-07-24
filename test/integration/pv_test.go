@@ -71,7 +71,7 @@ func testProvisioning(t *testing.T) {
 	// Check that the storage provisioner pod is running
 
 	checkPodRunning := func() error {
-		client, err := commonutil.GetClient()
+		client, err := commonutil.GetClient(p)
 		if err != nil {
 			return errors.Wrap(err, "getting kubernetes client")
 		}
