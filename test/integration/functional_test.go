@@ -27,7 +27,8 @@ import (
 )
 
 func TestFunctional(t *testing.T) {
-	mk := NewMinikubeRunner(t)
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p)
 	mk.EnsureRunning()
 	// This one is not parallel, and ensures the cluster comes up
 	// before we run any other tests.
@@ -51,7 +52,8 @@ func TestFunctional(t *testing.T) {
 }
 
 func TestFunctionalContainerd(t *testing.T) {
-	mk := NewMinikubeRunner(t)
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p)
 
 	if usingNoneDriver(mk) {
 		t.Skip("Can't run containerd backend with none driver")

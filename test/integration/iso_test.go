@@ -25,8 +25,8 @@ import (
 )
 
 func TestISO(t *testing.T) {
-
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	mk.RunCommand("delete", false)
 	mk.Start()
@@ -37,7 +37,8 @@ func TestISO(t *testing.T) {
 }
 
 func testMountPermissions(t *testing.T) {
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	// test mount permissions
 	mountPoints := []string{"/Users", "/hosthome"}
 	perms := "drwxr-xr-x"
@@ -59,7 +60,8 @@ func testMountPermissions(t *testing.T) {
 }
 
 func testPackages(t *testing.T) {
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	packages := []string{
 		"git",
@@ -81,7 +83,8 @@ func testPackages(t *testing.T) {
 }
 
 func testPersistence(t *testing.T) {
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	for _, dir := range []string{
 		"/data",

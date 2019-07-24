@@ -65,7 +65,8 @@ func TestStartStop(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			mk := NewMinikubeRunner(t)
+			p := "minikube"
+			mk := NewMinikubeRunner(t, p)
 			if !strings.Contains(test.name, "docker") && usingNoneDriver(mk) {
 				t.Skipf("skipping %s - incompatible with none driver", test.name)
 			}
@@ -83,7 +84,7 @@ func TestStartStop(t *testing.T) {
 			}
 
 			// check for the current-context before and after the stop
-			kr := util.NewKubectlRunner(t)
+			kr := util.NewKubectlRunner(t, p)
 			currentContext, err := kr.RunCommand([]string{"config", "current-context"})
 			if err != nil {
 				t.Fatalf("Failed to fetch current-context")

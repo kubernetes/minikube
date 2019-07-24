@@ -43,7 +43,8 @@ func testMounting(t *testing.T) {
 	}
 
 	t.Parallel()
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
@@ -60,7 +61,7 @@ func testMounting(t *testing.T) {
 		}
 	}()
 
-	kr := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t, p)
 	podName := "busybox-mount"
 	curdir, err := filepath.Abs("")
 	if err != nil {
