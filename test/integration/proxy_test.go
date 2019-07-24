@@ -72,7 +72,7 @@ func TestProxy(t *testing.T) {
 	}
 
 	// making sure there is no running minikube to avoid https://github.com/kubernetes/minikube/issues/4132
-	p := "minikube"
+	p := t.Name()
 	mk := NewMinikubeRunner(t, p)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
@@ -111,7 +111,7 @@ func TestProxy(t *testing.T) {
 
 // testProxyWarning checks user is warned correctly about the proxy related env vars
 func testProxyWarning(t *testing.T) {
-	p := "minikube"
+	p := "TestProxy"
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
@@ -134,7 +134,7 @@ func testProxyWarning(t *testing.T) {
 
 // testProxyDashboard checks if dashboard URL is accessible if proxy is set
 func testProxyDashboard(t *testing.T) {
-	p := "minikube"
+	p := "TestProxy" // profile name
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	cmd, out := mk.RunDaemon("dashboard --url")
 	defer func() {
