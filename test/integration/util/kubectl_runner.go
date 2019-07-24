@@ -38,18 +38,23 @@ type KubectlRunner struct {
 }
 
 // NewKubectlRunner creates a new KubectlRunner
-func NewKubectlRunner(t *testing.T, profile string) *KubectlRunner {
+func NewKubectlRunner(t *testing.T, profile ...string) *KubectlRunner {
+	if profile == nil {
+		profile = []string{"minikube"}
+	}
+
 	p, err := exec.LookPath(kubectlBinary)
 	if err != nil {
 		t.Fatalf("Couldn't find kubectl on path.")
 	}
-	return &KubectlRunner{Profile: profile, BinaryPath: p, T: t}
+	return &KubectlRunner{Profile: profile[0], BinaryPath: p, T: t}
 }
 
 // RunCommandParseOutput runs a command and parses the JSON output
-func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}) error {
+func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}, setKubeContext ...bool) error {
 	kubecContextArg := fmt.Sprintf(" --context=%s", k.Profile)
-	args = append(args, kubecContextArg)
+	args = append([]string{kubecContextArg}, args...) // prepending --context so it can be with with -- space
+
 	args = append(args, "-o=json")
 	output, err := k.RunCommand(args)
 	if err != nil {
@@ -65,7 +70,8 @@ func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface
 // RunCommand runs a command, returning stdout
 func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
 	kubecContextArg := fmt.Sprintf(" --context=%s", k.Profile)
-	args = append(args, kubecContextArg)
+	args = append([]string{kubecContextArg}, args...) // prepending --context so it can be with with -- space
+
 	inner := func() error {
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()
