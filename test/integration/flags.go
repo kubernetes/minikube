@@ -40,6 +40,7 @@ var testdataDir = flag.String("testdata-dir", "testdata", "the directory relativ
 // NewMinikubeRunner creates a new MinikubeRunner
 func NewMinikubeRunner(t *testing.T, extraArgs ...string) util.MinikubeRunner {
 	return util.MinikubeRunner{
+		Profile:    "minikube",
 		BinaryPath: *binaryPath,
 		StartArgs:  *startArgs + strings.Join(extraArgs, " "),
 		GlobalArgs: *globalArgs,
