@@ -85,12 +85,12 @@ func TestStartStop(t *testing.T) {
 
 			// check for the current-context before and after the stop
 			kr := util.NewKubectlRunner(t, p)
-			currentContext, err := kr.RunCommand([]string{"config", "current-context"})
+			currentContext, err := kr.RunCommand([]string{"config", "current-context"}, false)
 			if err != nil {
 				t.Fatalf("Failed to fetch current-context")
 			}
-			if strings.TrimRight(string(currentContext), "\n") != "minikube" {
-				t.Fatalf("got current-context - %q, want  current-context %q", string(currentContext), "minikube")
+			if strings.TrimRight(string(currentContext), "\n") != p {
+				t.Fatalf("got current-context - %q, want  current-context %q", string(currentContext), p)
 			}
 
 			checkStop := func() error {
