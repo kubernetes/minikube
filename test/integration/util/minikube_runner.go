@@ -94,7 +94,7 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
 
 // RunCommand executes a command, optionally checking for error
 func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool) string {
-	profileArg := fmt.Sprintf(" -p=%s ", m.Profile)
+	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -114,7 +114,7 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool) string {
 
 // RunWithContext calls the minikube command with a context, useful for timeouts.
 func (m *MinikubeRunner) RunWithContext(ctx context.Context, cmdStr string) (string, string, error) {
-	profileArg := fmt.Sprintf(" -p=%s ", m.Profile)
+	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -126,7 +126,7 @@ func (m *MinikubeRunner) RunWithContext(ctx context.Context, cmdStr string) (str
 
 // RunDaemon executes a command, returning the stdout
 func (m *MinikubeRunner) RunDaemon(cmdStr string) (*exec.Cmd, *bufio.Reader) {
-	profileArg := fmt.Sprintf(" -p=%s ", m.Profile)
+	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -158,7 +158,7 @@ func (m *MinikubeRunner) RunDaemon(cmdStr string) (*exec.Cmd, *bufio.Reader) {
 
 // RunDaemon2 executes a command, returning the stdout and stderr
 func (m *MinikubeRunner) RunDaemon2(cmdStr string) (*exec.Cmd, *bufio.Reader, *bufio.Reader) {
-	profileArg := fmt.Sprintf(" -p=%s ", m.Profile)
+	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
