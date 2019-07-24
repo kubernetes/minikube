@@ -29,6 +29,9 @@ import (
 func TestFunctional(t *testing.T) {
 	p := "minikube"
 	mk := NewMinikubeRunner(t, p)
+	if !usingNoneDriver(mk) {
+		t.Parallel()
+	}
 	mk.EnsureRunning()
 	// This one is not parallel, and ensures the cluster comes up
 	// before we run any other tests.

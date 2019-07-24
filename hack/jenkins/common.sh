@@ -140,6 +140,8 @@ if type -P virsh; then
   virsh -c qemu:///system list --all || true
 
 
+  echo ">> Virsh VM list after clean up (should be empty) :"
+  virsh -c qemu:///system list --all || true
 fi
 
 if type -P vboxmanage; then
@@ -166,6 +168,8 @@ if type -P vboxmanage; then
   vboxmanage list vms || true
 
 
+  echo ">> Vbox VM list after clean up (should be empty) :"
+  vboxmanage list vms || true
 fi
 
 if type -P hdiutil; then
