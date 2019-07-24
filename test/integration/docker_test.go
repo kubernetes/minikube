@@ -27,6 +27,7 @@ import (
 )
 
 func TestDocker(t *testing.T) {
+	t.Parallel()
 	p := t.Name()
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	if usingNoneDriver(mk) {
