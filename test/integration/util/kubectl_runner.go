@@ -71,7 +71,7 @@ func (k *KubectlRunner) RunCommand(args []string, useKubeContext ...bool) (stdou
 		useKubeContext = []bool{true}
 	}
 	if useKubeContext[0] {
-		kubecContextArg := fmt.Sprintf(" --context=%s", k.Profile)
+		kubecContextArg := fmt.Sprintf("--context=%s", k.Profile)
 		args = append([]string{kubecContextArg}, args...) // prepending --context so it can be with with -- space
 	}
 
