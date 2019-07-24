@@ -40,7 +40,8 @@ import (
 
 func testAddons(t *testing.T) {
 	t.Parallel()
-	client, err := pkgutil.GetClient()
+	p := "minikube"
+	client, err := pkgutil.GetClient(p)
 	if err != nil {
 		t.Fatalf("Could not get kubernetes client: %v", err)
 	}
@@ -76,7 +77,8 @@ func readLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error)
 
 func testDashboard(t *testing.T) {
 	t.Parallel()
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	cmd, out := mk.RunDaemon("dashboard --url")
 	defer func() {
 		err := cmd.Process.Kill()

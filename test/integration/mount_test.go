@@ -94,7 +94,7 @@ func testMounting(t *testing.T) {
 		t.Fatal("mountTest failed with error:", err)
 	}
 
-	if err := waitForPods(map[string]string{"integration-test": "busybox-mount"}); err != nil {
+	if err := waitForPods(map[string]string{"integration-test": "busybox-mount"}, p); err != nil {
 		t.Fatalf("Error waiting for busybox mount pod to be up: %v", err)
 	}
 	t.Logf("Pods appear to be running")
@@ -133,8 +133,8 @@ func writeFilesFromHost(mountedDir string, files []string, content string) error
 	return nil
 }
 
-func waitForPods(s map[string]string) error {
-	client, err := pkgutil.GetClient()
+func waitForPods(s map[string]string, profile string) error {
+	client, err := pkgutil.GetClient(profile)
 	if err != nil {
 		return fmt.Errorf("getting kubernetes client: %v", err)
 	}

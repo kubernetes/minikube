@@ -73,7 +73,7 @@ func testTunnel(t *testing.T) {
 		t.Fatalf("creating nginx ingress resource: %s", err)
 	}
 
-	client, err := commonutil.GetClient()
+	client, err := commonutil.GetClient(p)
 
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "getting kubernetes client"))

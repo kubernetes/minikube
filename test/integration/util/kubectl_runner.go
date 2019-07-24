@@ -51,12 +51,9 @@ func NewKubectlRunner(t *testing.T, profile ...string) *KubectlRunner {
 }
 
 // RunCommandParseOutput runs a command and parses the JSON output
-func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}, setKubeContext ...bool) error {
-	kubecContextArg := fmt.Sprintf(" --context=%s", k.Profile)
-	args = append([]string{kubecContextArg}, args...) // prepending --context so it can be with with -- space
-
+func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface{}, useKubeContext ...bool) error {
 	args = append(args, "-o=json")
-	output, err := k.RunCommand(args)
+	output, err := k.RunCommand(args, useKubeContext...)
 	if err != nil {
 		return err
 	}
@@ -68,9 +65,15 @@ func (k *KubectlRunner) RunCommandParseOutput(args []string, outputObj interface
 }
 
 // RunCommand runs a command, returning stdout
-func (k *KubectlRunner) RunCommand(args []string) (stdout []byte, err error) {
-	kubecContextArg := fmt.Sprintf(" --context=%s", k.Profile)
-	args = append([]string{kubecContextArg}, args...) // prepending --context so it can be with with -- space
+func (k *KubectlRunner) RunCommand(args []string, useKubeContext ...bool) (stdout []byte, err error) {
+
+	if useKubeContext == nil {
+		useKubeContext = []bool{true}
+	}
+	if useKubeContext[0] {
+		kubecContextArg := fmt.Sprintf("--context=%s", k.Profile)
+		args = append([]string{kubecContextArg}, args...) // prepending --context so it can be with with -- space
+	}
 
 	inner := func() error {
 		cmd := exec.Command(k.BinaryPath, args...)
