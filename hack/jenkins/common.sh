@@ -130,6 +130,12 @@ if type -P virsh; then
     | awk '{ print $2 }' \
     | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
     || true
+  virsh -c qemu:///system list --all \
+    | grep Test \
+    | awk '{ print $2 }' \
+    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
+    || true
+
 fi
 
 if type -P vboxmanage; then
@@ -139,6 +145,12 @@ if type -P vboxmanage; then
     | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
+  vboxmanage list vms \
+    | grep Test \
+    | cut -d'"' -f2 \
+    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
+    || true
+
 fi
 
 if type -P hdiutil; then
