@@ -20,25 +20,35 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/test/integration/util"
 )
 
-func downloadMinikubeBinary(version string) (*os.File, error) {
+func downloadMinikubeBinary(t *testing.T, version string) (*os.File, error) {
 	// Grab latest release binary
 	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
-	resp, err := retryablehttp.Get(url)
-	if err != nil {
+	var resp *http.Response
+	var err error
+	download := func() error {
+		resp, err = retryablehttp.Get(url)
+		return err
+	}
+
+	if err := util.Retry(t, download, 3*time.Second, 13); err != nil {
 		return nil, errors.Wrap(err, "Failed to get latest release binary")
 	}
+
 	defer resp.Body.Close()
 
 	tf, err := ioutil.TempFile("", "minikube")
@@ -66,15 +76,19 @@ func downloadMinikubeBinary(version string) (*os.File, error) {
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
-	t.Parallel()
 	p := t.Name()
 	mkCurrent := NewMinikubeRunner(t, p)
 	mkCurrent.RunCommand("delete", true)
 	mkCurrent.CheckStatus(state.None.String())
-	tf, err := downloadMinikubeBinary("latest")
+	tf, err := downloadMinikubeBinary(t, "latest")
 	if err != nil || tf == nil {
 		t.Fatal(errors.Wrap(err, "Failed to download minikube binary."))
 	}
+
+	if !usingNoneDriver(mkCurrent) {
+		t.Parallel()
+	}
+
 	defer os.Remove(tf.Name())
 
 	mkRelease := NewMinikubeRunner(t, p)

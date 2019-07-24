@@ -26,6 +26,9 @@ import (
 
 func TestISO(t *testing.T) {
 	p := t.Name()
+	if !usingNoneDriver(mk) {
+		t.Parallel()
+	}
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	mk.RunCommand("delete", false)
