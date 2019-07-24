@@ -38,12 +38,12 @@ type KubectlRunner struct {
 }
 
 // NewKubectlRunner creates a new KubectlRunner
-func NewKubectlRunner(t *testing.T) *KubectlRunner {
+func NewKubectlRunner(t *testing.T, profile string) *KubectlRunner {
 	p, err := exec.LookPath(kubectlBinary)
 	if err != nil {
 		t.Fatalf("Couldn't find kubectl on path.")
 	}
-	return &KubectlRunner{Profile: "minikube", BinaryPath: p, T: t}
+	return &KubectlRunner{Profile: profile, BinaryPath: p, T: t}
 }
 
 // RunCommandParseOutput runs a command and parses the JSON output

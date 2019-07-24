@@ -27,8 +27,8 @@ import (
 )
 
 // WaitForBusyboxRunning waits until busybox pod to be running
-func WaitForBusyboxRunning(t *testing.T, namespace string) error {
-	client, err := commonutil.GetClient()
+func WaitForBusyboxRunning(t *testing.T, namespace string, miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -37,8 +37,8 @@ func WaitForBusyboxRunning(t *testing.T, namespace string) error {
 }
 
 // WaitForIngressControllerRunning waits until ingress controller pod to be running
-func WaitForIngressControllerRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
+func WaitForIngressControllerRunning(t *testing.T, miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -56,8 +56,8 @@ func WaitForIngressControllerRunning(t *testing.T) error {
 }
 
 // WaitForIngressDefaultBackendRunning waits until ingress default backend pod to be running
-func WaitForIngressDefaultBackendRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
+func WaitForIngressDefaultBackendRunning(t *testing.T, miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -78,8 +78,8 @@ func WaitForIngressDefaultBackendRunning(t *testing.T) error {
 }
 
 // WaitForGvisorControllerRunning waits for the gvisor controller pod to be running
-func WaitForGvisorControllerRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
+func WaitForGvisorControllerRunning(t *testing.T, miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -92,8 +92,8 @@ func WaitForGvisorControllerRunning(t *testing.T) error {
 }
 
 // WaitForGvisorControllerDeleted waits for the gvisor controller pod to be deleted
-func WaitForGvisorControllerDeleted() error {
-	client, err := commonutil.GetClient()
+func WaitForGvisorControllerDeleted(miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -106,8 +106,8 @@ func WaitForGvisorControllerDeleted() error {
 }
 
 // WaitForUntrustedNginxRunning waits for the untrusted nginx pod to start running
-func WaitForUntrustedNginxRunning() error {
-	client, err := commonutil.GetClient()
+func WaitForUntrustedNginxRunning(miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -120,8 +120,8 @@ func WaitForUntrustedNginxRunning() error {
 }
 
 // WaitForFailedCreatePodSandBoxEvent waits for a FailedCreatePodSandBox event to appear
-func WaitForFailedCreatePodSandBoxEvent() error {
-	client, err := commonutil.GetClient()
+func WaitForFailedCreatePodSandBoxEvent(miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -132,8 +132,8 @@ func WaitForFailedCreatePodSandBoxEvent() error {
 }
 
 // WaitForNginxRunning waits for nginx service to be up
-func WaitForNginxRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
+func WaitForNginxRunning(t *testing.T, miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
 
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")

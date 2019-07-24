@@ -121,15 +121,16 @@ func testDashboard(t *testing.T) {
 
 func testIngressController(t *testing.T) {
 	t.Parallel()
-	mk := NewMinikubeRunner(t, "--wait=false")
-	kr := util.NewKubectlRunner(t)
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
+	kr := util.NewKubectlRunner(t, p)
 
 	mk.RunCommand("addons enable ingress", true)
-	if err := util.WaitForIngressControllerRunning(t); err != nil {
+	if err := util.WaitForIngressControllerRunning(t, p); err != nil {
 		t.Fatalf("waiting for ingress-controller to be up: %v", err)
 	}
 
-	if err := util.WaitForIngressDefaultBackendRunning(t); err != nil {
+	if err := util.WaitForIngressDefaultBackendRunning(t, p); err != nil {
 		t.Fatalf("waiting for default-http-backend to be up: %v", err)
 	}
 
@@ -147,7 +148,7 @@ func testIngressController(t *testing.T) {
 		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
 
-	if err := util.WaitForNginxRunning(t); err != nil {
+	if err := util.WaitForNginxRunning(t, p); err != nil {
 		t.Fatalf("waiting for nginx to be up: %v", err)
 	}
 
@@ -177,7 +178,8 @@ func testIngressController(t *testing.T) {
 
 func testServicesList(t *testing.T) {
 	t.Parallel()
-	mk := NewMinikubeRunner(t)
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p)
 
 	checkServices := func() error {
 		output := mk.RunCommand("service list", false)
@@ -192,9 +194,10 @@ func testServicesList(t *testing.T) {
 }
 func testRegistry(t *testing.T) {
 	t.Parallel()
-	mk := NewMinikubeRunner(t)
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p)
 	mk.RunCommand("addons enable registry", true)
-	client, err := pkgutil.GetClient()
+	client, err := pkgutil.GetClient(p)
 	if err != nil {
 		t.Fatalf("getting kubernetes client: %v", err)
 	}
@@ -239,7 +242,8 @@ func testRegistry(t *testing.T) {
 	}
 
 	t.Log("checking registry access from inside cluster")
-	kr := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t, p)
+	// TODO: Fix this
 	out, _ := kr.RunCommand([]string{
 		"run",
 		"registry-test",
@@ -264,44 +268,46 @@ func testRegistry(t *testing.T) {
 	mk.RunCommand("addons disable registry", true)
 }
 func testGvisor(t *testing.T) {
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	mk.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")
-	if err := util.WaitForGvisorControllerRunning(t); err != nil {
+	if err := util.WaitForGvisorControllerRunning(t, p); err != nil {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
-	createUntrustedWorkload(t)
+	createUntrustedWorkload(t, p)
 
 	t.Log("making sure untrusted workload is Running")
-	if err := util.WaitForUntrustedNginxRunning(); err != nil {
+	if err := util.WaitForUntrustedNginxRunning(p); err != nil {
 		t.Fatalf("waiting for nginx to be up: %v", err)
 	}
 
 	t.Log("disabling gvisor addon")
 	mk.RunCommand("addons disable gvisor", true)
 	t.Log("waiting for gvisor controller pod to be deleted")
-	if err := util.WaitForGvisorControllerDeleted(); err != nil {
+	if err := util.WaitForGvisorControllerDeleted(p); err != nil {
 		t.Fatalf("waiting for gvisor controller to be deleted: %v", err)
 	}
 
-	createUntrustedWorkload(t)
+	createUntrustedWorkload(t, p)
 
 	t.Log("waiting for FailedCreatePodSandBox event")
-	if err := util.WaitForFailedCreatePodSandBoxEvent(); err != nil {
+	if err := util.WaitForFailedCreatePodSandBoxEvent(p); err != nil {
 		t.Fatalf("waiting for FailedCreatePodSandBox event: %v", err)
 	}
-	deleteUntrustedWorkload(t)
+	deleteUntrustedWorkload(t, p)
 }
 
 func testGvisorRestart(t *testing.T) {
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	mk.EnsureRunning()
 	mk.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")
-	if err := util.WaitForGvisorControllerRunning(t); err != nil {
+	if err := util.WaitForGvisorControllerRunning(t, p); err != nil {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
@@ -312,20 +318,20 @@ func testGvisorRestart(t *testing.T) {
 	mk.CheckStatus(state.Running.String())
 
 	t.Log("waiting for gvisor controller to come up")
-	if err := util.WaitForGvisorControllerRunning(t); err != nil {
+	if err := util.WaitForGvisorControllerRunning(t, p); err != nil {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
-	createUntrustedWorkload(t)
+	createUntrustedWorkload(t, p)
 	t.Log("making sure untrusted workload is Running")
-	if err := util.WaitForUntrustedNginxRunning(); err != nil {
+	if err := util.WaitForUntrustedNginxRunning(p); err != nil {
 		t.Fatalf("waiting for nginx to be up: %v", err)
 	}
-	deleteUntrustedWorkload(t)
+	deleteUntrustedWorkload(t, p)
 }
 
-func createUntrustedWorkload(t *testing.T) {
-	kr := util.NewKubectlRunner(t)
+func createUntrustedWorkload(t *testing.T, profile string) {
+	kr := util.NewKubectlRunner(t, profile)
 	curdir, err := filepath.Abs("")
 	if err != nil {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)
@@ -337,8 +343,8 @@ func createUntrustedWorkload(t *testing.T) {
 	}
 }
 
-func deleteUntrustedWorkload(t *testing.T) {
-	kr := util.NewKubectlRunner(t)
+func deleteUntrustedWorkload(t *testing.T, profile string) {
+	kr := util.NewKubectlRunner(t, profile)
 	curdir, err := filepath.Abs("")
 	if err != nil {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)

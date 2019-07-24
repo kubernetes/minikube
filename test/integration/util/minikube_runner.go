@@ -181,9 +181,7 @@ func (m *MinikubeRunner) RunDaemon2(cmdStr string) (*exec.Cmd, *bufio.Reader, *b
 
 // SSH returns the output of running a command using SSH
 func (m *MinikubeRunner) SSH(cmdStr string) (string, error) {
-	profileArg := fmt.Sprintf(" -p=%s", m.Profile)
-	cmdStr += profileArg
-
+	profileArg := fmt.Sprintf("-p=%s", m.Profile)
 	path, _ := filepath.Abs(m.BinaryPath)
 
 	cmd := exec.Command(path, profileArg, "ssh", cmdStr)

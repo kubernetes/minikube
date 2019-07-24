@@ -26,10 +26,10 @@ import (
 // testProfileList tests the `minikube profile list` command
 func testProfileList(t *testing.T) {
 	t.Parallel()
-	profile := "minikube"
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	out := mk.RunCommand("profile list", true)
-	if !strings.Contains(out, profile) {
-		t.Errorf("Error , failed to read profile name (%s) in `profile list` command output : \n %q ", profile, out)
+	if !strings.Contains(out, p) {
+		t.Errorf("Error , failed to read profile name (%s) in `profile list` command output : \n %q ", p, out)
 	}
 }

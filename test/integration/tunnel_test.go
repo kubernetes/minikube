@@ -46,7 +46,8 @@ func testTunnel(t *testing.T) {
 	}
 
 	t.Log("starting tunnel test...")
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	go func() {
 		output := mk.RunCommand("tunnel --alsologtostderr -v 8 --logtostderr", true)
 		if t.Failed() {
@@ -60,7 +61,7 @@ func testTunnel(t *testing.T) {
 		t.Fatal(errors.Wrap(err, "cleaning up tunnels"))
 	}
 
-	kr := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t, p)
 
 	t.Log("deploying nginx...")
 	curdir, err := filepath.Abs("")
