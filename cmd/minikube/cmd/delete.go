@@ -22,6 +22,7 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -53,7 +54,6 @@ const (
 	Fatal          typeOfError = 0
 	MissingProfile typeOfError = 1
 	MissingCluster typeOfError = 2
-	Usage          typeOfError = 3
 )
 
 type deletionError struct {
@@ -107,20 +107,48 @@ func runDelete(cmd *cobra.Command, args []string) {
 }
 
 func handleDeletionErrors(errors []error) {
+	if len(errors) == 1 {
+		handleSingleDeletionError(errors[0])
+	} else {
+		handleMultipleDeletionErrors(errors)
+	}
+}
+
+func handleSingleDeletionError(err error) {
+	deletionError, ok := err.(deletionError)
+
+	if ok {
+		switch deletionError.errtype {
+		case Fatal:
+			out.FatalT(deletionError.Error())
+		case MissingProfile:
+			out.ErrT(out.Sad, deletionError.Error())
+		case MissingCluster:
+			out.ErrT(out.Meh, deletionError.Error())
+		default:
+			out.FatalT(deletionError.Error())
+		}
+	} else {
+		exit.WithError("Could not process error from failed deletion", err)
+	}
+}
+
+func handleMultipleDeletionErrors(errors []error) {
+	out.ErrT(out.Sad, "Multiple errors deleting profiles")
+
 	for _, err := range errors {
 		deletionError, ok := err.(deletionError)
+
 		if ok {
 			switch deletionError.errtype {
 			case Fatal:
-				out.FatalT(deletionError.Error())
+				glog.Errorln(deletionError.Error())
 			case MissingProfile:
-				out.ErrT(out.Sad, deletionError.Error())
+				glog.Errorln(deletionError.Error())
 			case MissingCluster:
-				out.ErrT(out.Meh, deletionError.Error())
-			case Usage:
-				out.ErrT(out.Usage, "usage: minikube delete or minikube delete -p foo or minikube delete --all")
+				glog.Errorln(deletionError.Error())
 			default:
-				out.FatalT(deletionError.Error())
+				glog.Errorln(deletionError.Error())
 			}
 		} else {
 			exit.WithError("Could not process errors from failed deletion", err)
@@ -150,7 +178,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 
 	cc, err := pkg_config.Load()
 	if err != nil && !os.IsNotExist(err) {
-		return deletionError{fmt.Errorf("error deleting profile \"%s\": error loading profile config: %s", profile.Name, profile.Name), Usage}
+		return deletionError{fmt.Errorf("error deleting profile \"%s\": error loading profile config: %v", profile.Name, err), MissingProfile}
 	}
 
 	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
