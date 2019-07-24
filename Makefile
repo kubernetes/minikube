@@ -51,6 +51,12 @@ GOLINT_VERSION ?= v1.17.1
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
 GOLINT_GOGC ?= 8
+# options for lint (golangci-lint)
+GOLINT_OPTIONS = --deadline 4m \
+	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
+	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
+	  --exclude 'variable on range scope.*in function literal|ifElseChain' 
+
 
 export GO111MODULE := on
 
@@ -79,6 +85,7 @@ MINIKUBE_TEST_FILES := ./cmd/... ./pkg/...
 
 # npm install -g markdownlint-cli
 MARKDOWNLINT ?= markdownlint
+
 
 MINIKUBE_MARKDOWN_FILES := README.md docs CONTRIBUTING.md CHANGELOG.md
 
@@ -278,25 +285,16 @@ out/linters/golangci-lint:
 	mkdir -p out/linters
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b out/linters $(GOLINT_VERSION)
 
+# this one is meant for local use
 .PHONY: lint
 lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint
-	GOGC=100 ./out/linters/golangci-lint run \
-	  --deadline 4m \
-	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
-	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
-	  ./...
+	./out/linters/golangci-lint run ${GOLINT_OPTIONS} ./...
 
-# lint-ci is slower than lint and is meant to be used in ci (travis) to avoid out of memory leaks.
+# lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
 .PHONY: lint-ci
 lint-ci: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint
 	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint run \
-	  --concurrency ${GOLINT_JOBS} \
-	  --deadline 4m \
-	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
-	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
-	  ./...
+	--concurrency ${GOLINT_JOBS} ${GOLINT_OPTIONS} ./...
 
 .PHONY: reportcard
 reportcard:
