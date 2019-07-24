@@ -25,7 +25,8 @@ import (
 
 func testClusterSSH(t *testing.T) {
 	t.Parallel()
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	expectedStr := "hello"
 	sshCmdOutput := mk.RunCommand("ssh echo "+expectedStr, true)
 	if !strings.Contains(sshCmdOutput, expectedStr) {

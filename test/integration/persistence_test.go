@@ -29,13 +29,14 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := "minikube"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	if usingNoneDriver(mk) {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
 	mk.EnsureRunning()
 
-	kr := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t, p)
 	curdir, err := filepath.Abs("")
 	if err != nil {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)
@@ -48,7 +49,7 @@ func TestPersistence(t *testing.T) {
 	}
 
 	verify := func(t *testing.T) {
-		if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
+		if err := util.WaitForBusyboxRunning(t, "default", "minikube"); err != nil {
 			t.Fatalf("waiting for busybox to be up: %v", err)
 		}
 

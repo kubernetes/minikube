@@ -28,7 +28,8 @@ import (
 )
 
 func testClusterStatus(t *testing.T) {
-	kr := util.NewKubectlRunner(t)
+	p := "minikube"
+	kr := util.NewKubectlRunner(t, p)
 	cs := api.ComponentStatusList{}
 
 	healthy := func() error {

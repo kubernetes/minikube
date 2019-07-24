@@ -39,8 +39,9 @@ var (
 )
 
 func testProvisioning(t *testing.T) {
+	p := "minikube"
 	t.Parallel()
-	kr := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t, p)
 
 	defer func() {
 		if out, err := kr.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
