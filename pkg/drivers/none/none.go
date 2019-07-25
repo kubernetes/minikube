@@ -19,6 +19,7 @@ package none
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
@@ -29,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/util"
 )
 
 const driverName = constants.DriverNone
@@ -218,7 +220,26 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 // stopKubelet idempotently stops the kubelet
 func stopKubelet(exec command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
-	return exec.Run("sudo systemctl stop kubelet.service")
+	stop := func() error {
+		err := exec.Run("sudo systemctl stop kubelet.service")
+		out, errStatus := exec.CombinedOutput("sudo systemctl show -p SubState --value kubelet")
+		if err != nil {
+			glog.Errorf("Temporary Error: getting systemctl status for kubelet:", errStatus)
+		}
+		if errStatus != nil {
+			glog.Errorf("Temporary Error: failed to get systemctl status for kubelet:", errStatus)
+		}
+		if !strings.Contains(out, "dead") {
+			return fmt.Errorf("expected to kublet to be dead but it got %s", out)
+		}
+		return nil
+	}
+
+	if err := util.RetryAfter(3, stop, 2*time.Second); err != nil {
+		return errors.Wrapf(err, "Error stopping kubelet")
+	}
+
+	return nil
 }
 
 // restartKubelet restarts the kubelet
