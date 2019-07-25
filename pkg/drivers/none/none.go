@@ -225,11 +225,11 @@ func stopKubelet(exec command.Runner) error {
 		cmdCheck := "sudo systemctl show -p SubState --value kubelet"
 		err := exec.Run(cmdStop)
 		if err != nil {
-			glog.Errorf("Temporary Error: %q", cmdStop, err)
+			glog.Errorf("Temporary Error for %q : %v", cmdStop, err)
 		}
 		out, errStatus := exec.CombinedOutput(cmdCheck)
 		if errStatus != nil {
-			glog.Errorf("Temporary Error: failed to run %q:", cmdCheck, errStatus)
+			glog.Errorf("Temporary Error: for %q : %v", cmdCheck, errStatus)
 		}
 		if !strings.Contains(out, "dead") {
 			return fmt.Errorf("expected to kubelet to be dead but it got : %q", out)
