@@ -20,26 +20,25 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"syscall"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// kubectlCmd represents the kubectl command
-var kubectlCmd = &cobra.Command{
-	Use:   "kubectl",
-	Short: "Run kubectl",
-	Long: `Run the kubernetes client, download it if necessary.
+// buildCmd represents the build command
+var buildCmd = &cobra.Command{
+	Use:   "build",
+	Short: "Build a container image",
+	Long: `Run the docker client, download it if necessary.
 Examples:
-minikube kubectl -- --help
-kubectl get pods --namespace kube-system`,
+minikube build .`,
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
@@ -48,25 +47,48 @@ kubectl get pods --namespace kube-system`,
 		}
 		defer api.Close()
 
-		cc, err := pkg_config.Load()
-		if err != nil && !os.IsNotExist(err) {
-			out.ErrLn("Error loading profile config: %v", err)
-		}
-
-		binary := "kubectl"
+		version := constants.DefaultBuildDockerVersion
 		if runtime.GOOS == "windows" {
-			binary = "kubectl.exe"
+			version = constants.FallbackBuildDockerVersion
 		}
-
-		version := constants.DefaultKubernetesVersion
-		if cc != nil {
-			version = cc.KubernetesConfig.KubernetesVersion
-		}
-
-		path, err := machine.CacheKubernetesBinary(binary, version, runtime.GOOS, runtime.GOARCH)
+		archive, err := machine.CacheDockerArchive("docker", version, runtime.GOOS, runtime.GOARCH)
 		if err != nil {
-			exit.WithError("Failed to download kubectl", err)
+			exit.WithError("Failed to download docker", err)
 		}
+
+		binary := "docker"
+		if runtime.GOOS == "windows" {
+			binary = "docker.exe"
+		}
+		path := filepath.Join(filepath.Dir(archive), binary)
+
+		err = machine.ExtractBinary(archive, path, fmt.Sprintf("docker/%s", binary))
+		if err != nil {
+			exit.WithError("Failed to extract docker", err)
+		}
+
+		envMap, err := cluster.GetHostDockerEnv(api)
+		if err != nil {
+			exit.WithError("Failed to get docker env", err)
+		}
+
+		tlsVerify := envMap["DOCKER_TLS_VERIFY"]
+		certPath := envMap["DOCKER_CERT_PATH"]
+		dockerHost := envMap["DOCKER_HOST"]
+
+		options := []string{}
+		if tlsVerify != "" {
+			options = append(options, "--tlsverify")
+		}
+		if certPath != "" {
+			options = append(options, "--tlscacert", filepath.Join(certPath, "ca.pem"))
+			options = append(options, "--tlscert", filepath.Join(certPath, "cert.pem"))
+			options = append(options, "--tlskey", filepath.Join(certPath, "key.pem"))
+		}
+		options = append(options, "-H", dockerHost)
+
+		options = append(options, "build")
+		args = append(options, args...)
 
 		glog.Infof("Running %s %v", path, args)
 		c := exec.Command(path, args...)
@@ -88,5 +110,5 @@ kubectl get pods --namespace kube-system`,
 }
 
 func init() {
-	RootCmd.AddCommand(kubectlCmd)
+	RootCmd.AddCommand(buildCmd)
 }
