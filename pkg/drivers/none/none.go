@@ -232,7 +232,7 @@ func stopKubelet(exec command.Runner) error {
 			glog.Errorf("Temporary Error: failed to run %q:", cmdCheck, errStatus)
 		}
 		if !strings.Contains(out, "dead") {
-			return fmt.Errorf("expected to kublet to be dead but it got %s", out)
+			return fmt.Errorf("expected to kubelet to be dead but it got : %q", out)
 		}
 		return nil
 	}
