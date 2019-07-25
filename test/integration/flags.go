@@ -22,6 +22,8 @@ import (
 	"strings"
 	"testing"
 
+	_ "k8s.io/minikube/pkg/initflag"
+
 	"k8s.io/minikube/test/integration/util"
 )
 

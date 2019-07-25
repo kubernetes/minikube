@@ -28,6 +28,8 @@ import (
 	"testing"
 	"time"
 
+	_ "k8s.io/minikube/pkg/initflag"
+
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/pkg/errors"
