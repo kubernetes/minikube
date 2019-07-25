@@ -17,6 +17,7 @@ limitations under the License.
 package none
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
 	"time"
@@ -227,11 +228,12 @@ func stopKubelet(exec command.Runner) error {
 		if err != nil {
 			glog.Errorf("Temporary Error for %q : %v", cmdStop, err)
 		}
-		out, errStatus := exec.CombinedOutput(cmdCheck)
+		var out bytes.Buffer
+		errStatus := exec.CombinedOutputTo(cmdCheck, &out)
 		if errStatus != nil {
 			glog.Errorf("Temporary Error: for %q : %v", cmdCheck, errStatus)
 		}
-		if !strings.Contains(out, "dead") {
+		if !strings.Contains(out.String(), "dead") {
 			return fmt.Errorf("expected to kubelet to be dead but it got : %q", out)
 		}
 		return nil
