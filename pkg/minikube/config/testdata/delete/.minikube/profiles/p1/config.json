@@ -9,7 +9,6 @@
         "ContainerRuntime": "docker",
         "HyperkitVpnKitSock": "",
         "HyperkitVSockPorts": [],
-        "XhyveDiskDriver": "ahci-hd",
         "DockerEnv": null,
         "InsecureRegistry": null,
         "RegistryMirror": null,
@@ -30,7 +29,7 @@
     },
     "KubernetesConfig": {
         "KubernetesVersion": "v1.15.0",
-        "NodeIP": "192.168.64.75",
+        "NodeIP": "192.168.64.50",
         "NodePort": 8443,
         "NodeName": "minikube",
         "APIServerName": "minikubeCA",
