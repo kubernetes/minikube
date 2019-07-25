@@ -18,9 +18,6 @@ package integration
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"runtime"
 	"strings"
@@ -28,48 +25,29 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
-func downloadMinikubeBinary(t *testing.T, version string) (*os.File, error) {
+func downloadMinikubeBinary(t *testing.T, dest string, version string) error {
 	// Grab latest release binary
 	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
-	var resp *http.Response
-	var err error
 	download := func() error {
-		resp, err = retryablehttp.Get(url)
-		return err
+		return getter.GetFile(dest, url)
 	}
 
 	if err := util.Retry(t, download, 3*time.Second, 13); err != nil {
-		return nil, errors.Wrap(err, "Failed to get latest release binary")
+		return errors.Wrap(err, "Failed to get latest release binary")
 	}
-
-	defer resp.Body.Close()
-
-	tf, err := ioutil.TempFile("", "minikube")
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create binary file")
-	}
-	_, err = io.Copy(tf, resp.Body)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to populate temp file")
-	}
-	if err := tf.Close(); err != nil {
-		return nil, errors.Wrap(err, "Failed to close temp file")
-	}
-
 	if runtime.GOOS != "windows" {
-		if err := os.Chmod(tf.Name(), 0700); err != nil {
-			return nil, err
-			// t.Fatal(errors.Wrap(err, "Failed to make binary executable."))
+		if err := os.Chmod(dest, 0700); err != nil {
+			return err
 		}
 	}
-	return tf, err
+	return nil
 }
 
 // TestVersionUpgrade downloads latest version of minikube and runs with
@@ -80,27 +58,28 @@ func TestVersionUpgrade(t *testing.T) {
 	mkCurrent := NewMinikubeRunner(t, p)
 	mkCurrent.RunCommand("delete", true)
 	mkCurrent.CheckStatus(state.None.String())
-	tf, err := downloadMinikubeBinary(t, "latest")
-	if err != nil || tf == nil {
+
+	fname := "minikube_latest_binary"
+	err := downloadMinikubeBinary(t, fname, "latest")
+	if err != nil {
 		t.Fatal(errors.Wrap(err, "Failed to download minikube binary."))
 	}
-
-	if !usingNoneDriver(mkCurrent) {
-		t.Parallel()
-	}
-
-	defer os.Remove(tf.Name())
+	defer os.Remove(fname)
 
 	mkRelease := NewMinikubeRunner(t, p)
-	mkRelease.BinaryPath = tf.Name()
+	mkRelease.BinaryPath = fname
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
 	mkRelease.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 	mkRelease.CheckStatus(state.Running.String())
 	mkRelease.RunCommand("stop", true)
 	mkRelease.CheckStatus(state.Stopped.String())
 
+	opts := ""
+	if usingNoneDriver(mkCurrent) { // to avoid https://github.com/kubernetes/minikube/issues/4418
+		opts = "--apiserver-port=8444"
+	}
 	// Trim the leading "v" prefix to assert that we handle it properly.
-	mkCurrent.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
+	mkCurrent.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")), opts)
 	mkCurrent.CheckStatus(state.Running.String())
 	mkCurrent.RunCommand("delete", true)
 	mkCurrent.CheckStatus(state.None.String())
