@@ -63,8 +63,11 @@ func TestFunctionalContainerd(t *testing.T) {
 
 	t.Log("starting minikube, $MINIKUBE_HOME=", os.Getenv("MINIKUBE_HOME"))
 
-	r.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	output := r.RunCommand("cache list", true)
+	t.Log("Cache list:", string(output))
+
 	r.RunCommand("cache add gcr.io/k8s-minikube/gvisor-addon:latest", true)
+	r.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
