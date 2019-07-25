@@ -5,12 +5,12 @@
         "MachineName": "p2",
         "SSHUser": "docker",
         "SSHPort": 22,
-        "SSHKeyPath": "/Users/marekschwarz/.minikube/machines/p2/id_rsa",
-        "StorePath": "/Users/marekschwarz/.minikube",
+        "SSHKeyPath": "/Users/someuser/.minikube/machines/p2/id_rsa",
+        "StorePath": "/Users/someuser/.minikube",
         "SwarmMaster": false,
         "SwarmHost": "",
         "SwarmDiscovery": "",
-        "Boot2DockerURL": "file:///Users/marekschwarz/.minikube/cache/iso/minikube-v1.2.0.iso",
+        "Boot2DockerURL": "file:///Users/someuser/.minikube/cache/iso/minikube-v1.2.0.iso",
         "DiskSize": 20000,
         "CPU": 2,
         "Memory": 2000,
@@ -18,8 +18,8 @@
         "NFSShares": [],
         "NFSSharesRoot": "/nfsshares",
         "UUID": "a83fbd30-aecc-11e9-a55f-8c8590c3b8b4",
-        "BootKernel": "/Users/marekschwarz/.minikube/machines/p2/b2d-image/boot/bzImage",
-        "BootInitrd": "/Users/marekschwarz/.minikube/machines/p2/b2d-image/boot/initrd",
+        "BootKernel": "/Users/someuser/.minikube/machines/p2/b2d-image/boot/bzImage",
+        "BootInitrd": "/Users/someuser/.minikube/machines/p2/b2d-image/boot/initrd",
         "Initrd": "initrd",
         "Vmlinuz": "bzImage"
     },
@@ -62,18 +62,18 @@
             "IsExperimental": false
         },
         "AuthOptions": {
-            "CertDir": "/Users/marekschwarz/.minikube",
-            "CaCertPath": "/Users/marekschwarz/.minikube/certs/ca.pem",
-            "CaPrivateKeyPath": "/Users/marekschwarz/.minikube/certs/ca-key.pem",
+            "CertDir": "/Users/someuser/.minikube",
+            "CaCertPath": "/Users/someuser/.minikube/certs/ca.pem",
+            "CaPrivateKeyPath": "/Users/someuser/.minikube/certs/ca-key.pem",
             "CaCertRemotePath": "",
-            "ServerCertPath": "/Users/marekschwarz/.minikube/machines/server.pem",
-            "ServerKeyPath": "/Users/marekschwarz/.minikube/machines/server-key.pem",
-            "ClientKeyPath": "/Users/marekschwarz/.minikube/certs/key.pem",
+            "ServerCertPath": "/Users/someuser/.minikube/machines/server.pem",
+            "ServerKeyPath": "/Users/someuser/.minikube/machines/server-key.pem",
+            "ClientKeyPath": "/Users/someuser/.minikube/certs/key.pem",
             "ServerCertRemotePath": "",
             "ServerKeyRemotePath": "",
-            "ClientCertPath": "/Users/marekschwarz/.minikube/certs/cert.pem",
+            "ClientCertPath": "/Users/someuser/.minikube/certs/cert.pem",
             "ServerCertSANs": null,
-            "StorePath": "/Users/marekschwarz/.minikube"
+            "StorePath": "/Users/someuser/.minikube"
         }
     },
     "Name": "p2"
