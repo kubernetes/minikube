@@ -5,7 +5,7 @@
         "Memory": 2000,
         "CPUs": 2,
         "DiskSize": 20000,
-        "VMDriver": "virtualbox",
+        "VMDriver": "hyperkit",
         "ContainerRuntime": "docker",
         "HyperkitVpnKitSock": "",
         "HyperkitVSockPorts": [],
@@ -29,7 +29,7 @@
     },
     "KubernetesConfig": {
         "KubernetesVersion": "v1.15.0",
-        "NodeIP": "192.168.99.136",
+        "NodeIP": "192.168.64.51",
         "NodePort": 8443,
         "NodeName": "minikube",
         "APIServerName": "minikubeCA",
