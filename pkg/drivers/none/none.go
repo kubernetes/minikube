@@ -224,7 +224,7 @@ func stopKubelet(exec command.Runner) error {
 		err := exec.Run("sudo systemctl stop kubelet.service")
 		out, errStatus := exec.CombinedOutput("sudo systemctl show -p SubState --value kubelet")
 		if err != nil {
-			glog.Errorf("Temporary Error: getting systemctl status for kubelet:", errStatus)
+			glog.Errorf("Temporary Error:  sudo systemctl stop kubelet.service ", err)
 		}
 		if errStatus != nil {
 			glog.Errorf("Temporary Error: failed to get systemctl status for kubelet:", errStatus)
