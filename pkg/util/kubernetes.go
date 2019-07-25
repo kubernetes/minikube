@@ -68,7 +68,7 @@ func (s *PodStore) Stop() {
 	close(s.stopCh)
 }
 
-// GetClient gkets the client from config
+// GetClient gets the client from config
 func GetClient(kubectlContext ...string) (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
