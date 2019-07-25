@@ -2,10 +2,10 @@
     "ConfigVersion": 3,
     "Driver": {
         "IPAddress": "192.168.64.52",
-        "MachineName": "p3",
+        "MachineName": "p3_empty",
         "SSHUser": "docker",
         "SSHPort": 22,
-        "SSHKeyPath": "/Users/someuser/.minikube/machines/p3/id_rsa",
+        "SSHKeyPath": "/Users/someuser/.minikube/machines/p3_empty/id_rsa",
         "StorePath": "/Users/someuser/.minikube",
         "SwarmMaster": false,
         "SwarmHost": "",
@@ -14,12 +14,12 @@
         "DiskSize": 20000,
         "CPU": 2,
         "Memory": 2000,
-        "Cmdline": "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=p3",
+        "Cmdline": "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=p3_empty",
         "NFSShares": [],
         "NFSSharesRoot": "/nfsshares",
         "UUID": "ddd37c1c-aedf-11e9-afa7-8c8590c3b8b4",
-        "BootKernel": "/Users/someuser/.minikube/machines/p3/b2d-image/boot/bzImage",
-        "BootInitrd": "/Users/someuser/.minikube/machines/p3/b2d-image/boot/initrd",
+        "BootKernel": "/Users/someuser/.minikube/machines/p3_empty/b2d-image/boot/bzImage",
+        "BootInitrd": "/Users/someuser/.minikube/machines/p3_empty/b2d-image/boot/initrd",
         "Initrd": "initrd",
         "Vmlinuz": "bzImage"
     },
@@ -76,5 +76,5 @@
             "StorePath": "/Users/someuser/.minikube"
         }
     },
-    "Name": "p3"
+    "Name": "p3_empty"
 }

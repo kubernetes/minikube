@@ -2,10 +2,10 @@
     "ConfigVersion": 3,
     "Driver": {
         "IPAddress": "192.168.64.58",
-        "MachineName": "p9",
+        "MachineName": "p9_empty_driver",
         "SSHUser": "docker",
         "SSHPort": 22,
-        "SSHKeyPath": "/Users/someuser/.minikube/machines/p9/id_rsa",
+        "SSHKeyPath": "/Users/someuser/.minikube/machines/p9_empty_driver/id_rsa",
         "StorePath": "/Users/someuser/.minikube",
         "SwarmMaster": false,
         "SwarmHost": "",
@@ -14,12 +14,12 @@
         "DiskSize": 20000,
         "CPU": 2,
         "Memory": 2000,
-        "Cmdline": "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=p9",
+        "Cmdline": "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=p9_empty_driver",
         "NFSShares": [],
         "NFSSharesRoot": "/nfsshares",
         "UUID": "bc3426d0-aee7-11e9-b24a-8c8590c3b8b4",
-        "BootKernel": "/Users/someuser/.minikube/machines/p9/b2d-image/boot/bzImage",
-        "BootInitrd": "/Users/someuser/.minikube/machines/p9/b2d-image/boot/initrd",
+        "BootKernel": "/Users/someuser/.minikube/machines/p9_empty_driver/b2d-image/boot/bzImage",
+        "BootInitrd": "/Users/someuser/.minikube/machines/p9_empty_driver/b2d-image/boot/initrd",
         "Initrd": "initrd",
         "Vmlinuz": "bzImage"
     },
@@ -76,5 +76,5 @@
             "StorePath": "/Users/someuser/.minikube"
         }
     },
-    "Name": "p9"
+    "Name": "p9_empty_driver"
 }
