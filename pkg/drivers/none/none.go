@@ -221,13 +221,15 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 func stopKubelet(exec command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
 	stop := func() error {
-		err := exec.Run("sudo systemctl stop kubelet.service")
-		out, errStatus := exec.CombinedOutput("sudo systemctl show -p SubState --value kubelet")
+		cmdStop := "sudo systemctl stop kubelet.service"
+		cmdCheck := "sudo systemctl show -p SubState --value kubelet"
+		err := exec.Run(cmdStop)
 		if err != nil {
-			glog.Errorf("Temporary Error:  sudo systemctl stop kubelet.service ", err)
+			glog.Errorf("Temporary Error: %q", cmdStop, err)
 		}
+		out, errStatus := exec.CombinedOutput(cmdCheck)
 		if errStatus != nil {
-			glog.Errorf("Temporary Error: failed to get systemctl status for kubelet:", errStatus)
+			glog.Errorf("Temporary Error: failed to run %q:", cmdCheck, errStatus)
 		}
 		if !strings.Contains(out, "dead") {
 			return fmt.Errorf("expected to kublet to be dead but it got %s", out)
