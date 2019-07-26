@@ -26,7 +26,6 @@ import (
 
 func TestContainerd(t *testing.T) {
 	p := t.Name()
-	t.Parallel()
 	if isTestNoneDriver() {
 		p = "minikube"
 	} else {
