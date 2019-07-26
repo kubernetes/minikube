@@ -74,7 +74,8 @@ func fileExists(fname string) error {
 func TestVersionUpgrade(t *testing.T) {
 	p := t.Name()
 	// this gets downloaded by common.sh in the CI
-	fname := filepath.Join(*testdataDir, fmt.Sprint("minikube-"+runtime.GOOS+"-latest-stable"))
+
+	fname := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%-latest-stable", runtime.GOOS, runtime.GOARCH))
 	err := fileExists(fname)
 	if err != nil {
 		t.Fail()
