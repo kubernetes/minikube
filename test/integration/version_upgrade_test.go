@@ -19,36 +19,36 @@ package integration
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
-	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
-func downloadMinikubeBinary(dest string, version string) error {
-	// Grab latest release binary
-	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
-	download := func() error {
-		return getter.GetFile(dest, url)
-	}
+// This is moved to common.sh
+// func downloadMinikubeBinary(dest string, version string) error {
+// 	// Grab latest release binary
+// 	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
+// 	download := func() error {
+// 		return getter.GetFile(dest, url)
+// 	}
 
-	if err := util.Retry2(download, 3*time.Second, 13); err != nil {
-		return errors.Wrap(err, "Failed to get latest release binary")
-	}
-	if runtime.GOOS != "windows" {
-		if err := os.Chmod(dest, 0700); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+// 	if err := util.Retry2(download, 3*time.Second, 13); err != nil {
+// 		return errors.Wrap(err, "Failed to get latest release binary")
+// 	}
+// 	if runtime.GOOS != "windows" {
+// 		if err := os.Chmod(dest, 0700); err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
 
 func fileExists(fname string) error {
 	check := func() error {
@@ -73,7 +73,9 @@ func fileExists(fname string) error {
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
 	p := t.Name()
-	err := fileExists("minikube_latest_binary")
+	// this gets downloaded by common.sh in the CI
+	fname := filepath.Join(*testdataDir, fmt.Sprint("minikube-"+runtime.GOOS+"-latest-stable"))
+	err := fileExists(fname)
 	if err != nil {
 		t.Fail()
 	}
@@ -85,7 +87,6 @@ func TestVersionUpgrade(t *testing.T) {
 	mkCurrent.RunCommand("delete", true)
 	mkCurrent.CheckStatus(state.None.String())
 
-	fname := "minikube_latest_binary"
 	defer os.Remove(fname)
 
 	mkRelease := NewMinikubeRunner(t, p)
@@ -96,12 +97,8 @@ func TestVersionUpgrade(t *testing.T) {
 	mkRelease.RunCommand("stop", true)
 	mkRelease.CheckStatus(state.Stopped.String())
 
-	opts := ""
-	if usingNoneDriver(mkCurrent) { // to avoid https://github.com/kubernetes/minikube/issues/4418
-		opts = "--apiserver-port=8444"
-	}
 	// Trim the leading "v" prefix to assert that we handle it properly.
-	mkCurrent.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")), opts)
+	mkCurrent.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
 	mkCurrent.CheckStatus(state.Running.String())
 	mkCurrent.RunCommand("delete", true)
 	mkCurrent.CheckStatus(state.None.String())
