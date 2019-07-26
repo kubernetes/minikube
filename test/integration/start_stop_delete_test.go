@@ -32,7 +32,11 @@ import (
 
 func TestStartStop(t *testing.T) {
 	p := "TestStartStop" // profile name
-	t.Parallel()
+	if isTestNoneDriver() {
+		p = "minikube"
+	} else {
+		t.Parallel()
+	}
 
 	tests := []struct {
 		name string
@@ -68,8 +72,9 @@ func TestStartStop(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			mk := NewMinikubeRunner(t, p+tc.name)
-			if !strings.Contains(tc.name, "docker") && usingNoneDriver(mk) {
+			mk := NewMinikubeRunner(t, p)
+			// TODO : check does this ever happen ?
+			if !strings.Contains(tc.name, "docker") && isTestNoneDriver() {
 				t.Skipf("skipping %s - incompatible with none driver", tc.name)
 			}
 
@@ -101,7 +106,7 @@ func TestStartStop(t *testing.T) {
 				return mk.CheckStatusNoFail(state.Stopped.String())
 			}
 
-			if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
+			if err := util.Retry(t, checkStop, 10*time.Second, 3); err != nil {
 				t.Fatalf("timed out while checking stopped status: %v", err)
 			}
 

@@ -135,6 +135,11 @@ func testProxyWarning(t *testing.T) {
 // testProxyDashboard checks if dashboard URL is accessible if proxy is set
 func testProxyDashboard(t *testing.T) {
 	p := "TestProxy" // profile name
+	if isTestNoneDriver() {
+		p = "minikube"
+	} else {
+		t.Parallel()
+	}
 	mk := NewMinikubeRunner(t, p)
 	cmd, out := mk.RunDaemon("dashboard --url")
 	defer func() {

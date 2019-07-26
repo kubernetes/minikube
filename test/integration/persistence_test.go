@@ -30,8 +30,13 @@ import (
 
 func TestPersistence(t *testing.T) {
 	p := t.Name() // profile name
+	if isTestNoneDriver() {
+		p = "minikube"
+	} else {
+		t.Parallel()
+	}
 	mk := NewMinikubeRunner(t, p, "--wait=false")
-	if usingNoneDriver(mk) {
+	if isTestNoneDriver() {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
 	mk.EnsureRunning()
