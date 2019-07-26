@@ -30,8 +30,6 @@ import (
 	"net/http"
 	"net/url"
 
-	_ "k8s.io/minikube/pkg/initflag"
-
 	"github.com/elazarl/goproxy"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/phayes/freeport"

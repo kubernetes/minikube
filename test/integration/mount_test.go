@@ -29,8 +29,6 @@ import (
 	"testing"
 	"time"
 
-	_ "k8s.io/minikube/pkg/initflag"
-
 	"k8s.io/apimachinery/pkg/labels"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
