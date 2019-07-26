@@ -62,7 +62,7 @@ func fileExists(fname string) error {
 		return nil
 	}
 
-	if err := util.Retry2(check, 3*time.Second, 13); err != nil {
+	if err := util.Retry2(check, 3*time.Second, 3); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Failed check if file (%q) exists,", fname))
 	}
 	return nil
