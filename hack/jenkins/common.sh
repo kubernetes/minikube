@@ -161,8 +161,11 @@ kprocs=$(pgrep kubectl || true)
 if [[ "${kprocs}" != "" ]]; then
   echo "error: killing hung kubectl processes ..."
   ps -f -p ${kprocs} || true
-  ${SUDO_PREFIX} kill ${kprocs} || true
+  sudo -E kill ${kprocs} || true
 fi
+
+# clean up none drivers binding on 8443
+lsof -P | grep ':8443' | awk '{print $2}' | xargs sudo -E kill -9
 
 function cleanup_stale_routes() {
   local show="netstat -rn -f inet"
