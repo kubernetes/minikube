@@ -25,8 +25,6 @@ import (
 	"strings"
 	"testing"
 
-	_ "k8s.io/minikube/pkg/initflag"
-
 	"github.com/docker/machine/libmachine/state"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"

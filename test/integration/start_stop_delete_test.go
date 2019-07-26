@@ -25,8 +25,6 @@ import (
 	"testing"
 	"time"
 
-	_ "k8s.io/minikube/pkg/initflag"
-
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/test/integration/util"

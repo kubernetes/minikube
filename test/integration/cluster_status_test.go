@@ -23,8 +23,6 @@ import (
 	"testing"
 	"time"
 
-	_ "k8s.io/minikube/pkg/initflag"
-
 	api "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/minikube/test/integration/util"
 )
