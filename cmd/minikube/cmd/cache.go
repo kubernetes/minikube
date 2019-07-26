@@ -108,5 +108,4 @@ func loadCachedImagesInConfigFile() error {
 func init() {
 	cacheCmd.AddCommand(addCacheCmd)
 	cacheCmd.AddCommand(deleteCacheCmd)
-	RootCmd.AddCommand(cacheCmd)
 }

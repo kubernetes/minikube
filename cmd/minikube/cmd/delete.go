@@ -103,7 +103,3 @@ func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsN
 		out.ErrT(out.Empty, "Failed to delete cluster: {{.error}}", out.V{"error": err})
 	}
 }
-
-func init() {
-	RootCmd.AddCommand(deleteCmd)
-}

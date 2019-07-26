@@ -81,7 +81,3 @@ func runStop(cmd *cobra.Command, args []string) {
 		exit.WithError("update config", err)
 	}
 }
-
-func init() {
-	RootCmd.AddCommand(stopCmd)
-}
