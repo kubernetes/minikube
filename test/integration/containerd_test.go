@@ -20,10 +20,12 @@ package integration
 
 import (
 	"testing"
+
+	"github.com/docker/machine/libmachine/state"
 )
 
-func TestFunctional(t *testing.T) {
-	p := "minikube" // for functional test we use default profile name
+func TestContainerd(t *testing.T) {
+	p := t.Name()
 	if isTestNoneDriver() {
 		p = "minikube"
 	} else {
@@ -31,24 +33,15 @@ func TestFunctional(t *testing.T) {
 	}
 
 	mk := NewMinikubeRunner(t, p)
-	mk.EnsureRunning()
-	// This one is not parallel, and ensures the cluster comes up
-	// before we run any other tests.
-	t.Run("Status", testClusterStatus)
-	t.Run("ProfileList", testProfileList)
-	t.Run("DNS", testClusterDNS)
-	t.Run("Logs", testClusterLogs)
-	t.Run("Addons", testAddons)
-	t.Run("Registry", testRegistry)
-	t.Run("Dashboard", testDashboard)
-	t.Run("ServicesList", testServicesList)
-	t.Run("Provisioning", testProvisioning)
-	t.Run("Tunnel", testTunnel)
-
-	if !isTestNoneDriver() {
-		t.Run("EnvVars", testClusterEnv)
-		t.Run("SSH", testClusterSSH)
-		t.Run("IngressController", testIngressController)
-		t.Run("Mounting", testMounting)
+	if isTestNoneDriver() {
+		t.Skip("Can't run containerd backend with none driver")
 	}
+
+	if mk.GetStatus() != state.None.String() {
+		mk.RunCommand("delete", true)
+	}
+	mk.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	t.Run("Gvisor", testGvisor)
+	t.Run("GvisorRestart", testGvisorRestart)
+	mk.RunCommand("delete", true)
 }

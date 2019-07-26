@@ -27,10 +27,14 @@ import (
 )
 
 func TestDocker(t *testing.T) {
-	t.Parallel()
 	p := t.Name()
+	if isTestNoneDriver() {
+		p = "minikube"
+	} else {
+		t.Parallel()
+	}
 	mk := NewMinikubeRunner(t, p, "--wait=false")
-	if usingNoneDriver(mk) {
+	if isTestNoneDriver() {
 		t.Skip("skipping test as none driver does not bundle docker")
 	}
 
