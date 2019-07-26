@@ -41,6 +41,7 @@ func TestPersistence(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)
 	}
+	// TODO change all testdata path to get from flag vs hardcode
 	podPath := path.Join(curdir, "testdata", "busybox.yaml")
 
 	// Create a pod and wait for it to be running.
