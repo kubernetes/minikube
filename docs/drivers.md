@@ -23,7 +23,7 @@ To install the KVM2 driver, first install and configure the prerequisites, namel
 
 * Debian or Ubuntu 18.x: `sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm`
 * Ubuntu 16.x or older: `sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm`
-* Fedora/CentOS/RHEL: `sudo yum install libvirt-daemon-kvm qemu-kvm`
+* Fedora/CentOS/RHEL: `sudo yum install libvirt libvirt-daemon-kvm qemu-kvm`
 * openSUSE/SLES: `sudo zypper install libvirt qemu-kvm`
 
 Check your installed virsh version:
@@ -141,6 +141,13 @@ or, to use hyperkit as a default driver for minikube:
 
 ```shell
 minikube config set vm-driver hyperkit
+```
+
+### Hyperkit upgrade
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
+&& sudo install -o root -g wheel -m 4755 docker-machine-driver-hyperkit /usr/local/bin/
 ```
 
 ### Hyperkit troubleshoot

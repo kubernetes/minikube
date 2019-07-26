@@ -81,7 +81,7 @@ func (provisioner *MockProvisioner) SetOsReleaseInfo(info *provision.OsRelease) 
 
 // GetOsReleaseInfo gets the os-release info
 func (provisioner *MockProvisioner) GetOsReleaseInfo() (*provision.OsRelease, error) {
-	return nil, nil
+	return &provision.OsRelease{}, nil
 }
 
 // AttemptIPContact attempts to contact an IP and port
