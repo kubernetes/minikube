@@ -25,11 +25,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/profile"
-
-	// initflag must be imported before any other minikube pkg.
-	// Fix for https://github.com/kubernetes/minikube/issues/4866
-	_ "k8s.io/minikube/pkg/initflag"
-
 	"k8s.io/minikube/cmd/minikube/cmd"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
