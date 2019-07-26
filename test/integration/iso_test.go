@@ -26,11 +26,13 @@ import (
 
 func TestISO(t *testing.T) {
 	p := t.Name()
-	if !usingNoneDriver(mk) {
+	if isTestNoneDriver() {
+		p = "minikube"
+	} else {
 		t.Parallel()
 	}
-	mk := NewMinikubeRunner(t, p, "--wait=false")
 
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	mk.RunCommand("delete", false)
 	mk.Start()
 

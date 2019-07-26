@@ -48,3 +48,8 @@ func NewMinikubeRunner(t *testing.T, profile string, extraArgs ...string) util.M
 		T:          t,
 	}
 }
+
+// isTestNoneDriver checks if the current test is for none driver
+func isTestNoneDriver() bool {
+	return strings.Contains(*startArgs, "--vm-driver=none")
+}
