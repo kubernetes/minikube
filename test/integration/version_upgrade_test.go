@@ -80,15 +80,11 @@ func TestVersionUpgrade(t *testing.T) {
 	mkCurrent := NewMinikubeRunner(t, p)
 	mkCurrent.RunCommand("delete", true)
 	mkCurrent.CheckStatus(state.None.String())
+
 	tf, err := downloadMinikubeBinary(t, "latest")
 	if err != nil || tf == nil {
 		t.Fatal(errors.Wrap(err, "Failed to download minikube binary."))
 	}
-
-	if !usingNoneDriver(mkCurrent) {
-		t.Parallel()
-	}
-
 	defer os.Remove(tf.Name())
 
 	mkRelease := NewMinikubeRunner(t, p)
