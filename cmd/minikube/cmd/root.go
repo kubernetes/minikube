@@ -102,7 +102,6 @@ var RootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	for _, c := range RootCmd.Commands() {
-		c.Use = translate.T(c.Use)
 		c.Short = translate.T(c.Short)
 		c.Long = translate.T(c.Long)
 		c.Flags().VisitAll(func(flag *pflag.Flag) {
@@ -111,7 +110,6 @@ func Execute() {
 
 		c.SetUsageTemplate(usageTemplate())
 	}
-	RootCmd.Use = translate.T(RootCmd.Use)
 	RootCmd.Short = translate.T(RootCmd.Short)
 	RootCmd.Long = translate.T(RootCmd.Long)
 	RootCmd.Flags().VisitAll(func(flag *pflag.Flag) {
@@ -128,30 +126,30 @@ func Execute() {
 // explicitly using the raw string instead of calling c.UsageTemplate()
 // so the extractor can find this monstrosity of a string
 func usageTemplate() string {
-	return translate.T(`Usage:{{if .Runnable}}
-	{{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
-	{{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
-  
-  Aliases:
-	{{.NameAndAliases}}{{end}}{{if .HasExample}}
-  
-  Examples:
-  {{.Example}}{{end}}{{if .HasAvailableSubCommands}}
-  
-  Available Commands:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
-	{{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
-  
-  Flags:
-  {{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
-  
-  Global Flags:
-  {{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
-  
-  Additional help topics:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
-	{{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
-  
-  Use "{{.CommandPath}} [command] --help" for more information about a command.{{end}}
-  `)
+	return fmt.Sprintf(`%s:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+%s:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+%s:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+
+%s:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+%s:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+%s:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+%s:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+%s{{end}}
+`, translate.T("Usage"), translate.T("Aliases"), translate.T("Examples"), translate.T("Available Commands"), translate.T("Flags"), translate.T("Global Flags"), translate.T("Additional help topics"), translate.T(`Use "{{.CommandPath}} [command] --help" for more information about a command.`))
 }
 
 // Handle config values for flags used in external packages (e.g. glog)
