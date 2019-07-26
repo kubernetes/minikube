@@ -32,14 +32,14 @@ import (
 	"k8s.io/minikube/test/integration/util"
 )
 
-func downloadMinikubeBinary(t *testing.T, dest string, version string) error {
+func downloadMinikubeBinary(dest string, version string) error {
 	// Grab latest release binary
 	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
 	download := func() error {
 		return getter.GetFile(dest, url)
 	}
 
-	if err := util.Retry(t, download, 3*time.Second, 13); err != nil {
+	if err := util.Retry2(download, 3*time.Second, 13); err != nil {
 		return errors.Wrap(err, "Failed to get latest release binary")
 	}
 	if runtime.GOOS != "windows" {
@@ -50,20 +50,42 @@ func downloadMinikubeBinary(t *testing.T, dest string, version string) error {
 	return nil
 }
 
+func fileExists(fname string) error {
+	check := func() error {
+		info, err := os.Stat(fname)
+		if os.IsNotExist(err) {
+			return err
+		}
+		if info.IsDir() {
+			return fmt.Errorf("Error expect file got dir")
+		}
+		return nil
+	}
+
+	if err := util.Retry2(check, 3*time.Second, 13); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("Failed check if file (%q) exists,", fname))
+	}
+	return nil
+}
+
 // TestVersionUpgrade downloads latest version of minikube and runs with
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
 	p := t.Name()
+	err := fileExists("minikube_latest_binary")
+	if err != nil {
+		t.Fail()
+	}
+
 	mkCurrent := NewMinikubeRunner(t, p)
+	if usingNoneDriver(mkCurrent) { // TODO (medyagh@): bring back once soled https://github.com/kubernetes/minikube/issues/4418
+		t.Skip("skipping test as none driver does not support persistence")
+	}
 	mkCurrent.RunCommand("delete", true)
 	mkCurrent.CheckStatus(state.None.String())
 
 	fname := "minikube_latest_binary"
-	err := downloadMinikubeBinary(t, fname, "latest")
-	if err != nil {
-		t.Fatal(errors.Wrap(err, "Failed to download minikube binary."))
-	}
 	defer os.Remove(fname)
 
 	mkRelease := NewMinikubeRunner(t, p)

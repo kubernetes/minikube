@@ -162,6 +162,18 @@ func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (
 	return err
 }
 
+// Retry2 tries the callback for a number of attempts, with a delay without *testing.T
+func Retry2(callback func() error, d time.Duration, attempts int) (err error) {
+	for i := 0; i < attempts; i++ {
+		err = callback()
+		if err == nil {
+			return nil
+		}
+		time.Sleep(d)
+	}
+	return err
+}
+
 // Logf writes logs to stdout if -v is set.
 func Logf(str string, args ...interface{}) {
 	if !testing.Verbose() {

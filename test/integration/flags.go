@@ -22,11 +22,23 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/glog"
+
 	"k8s.io/minikube/test/integration/util"
 )
 
+func preSetup() {
+	// to be used in TestVersionUpgrade
+	// to enable parallel tests
+	err := downloadMinikubeBinary("minikube_latest_binary", "latest")
+	if err != nil {
+		glog.Errorf("Failed to downliad minikube_latest_binary for TestVersionUpgrade : %v", err)
+	}
+}
+
 // TestMain is the test main
 func TestMain(m *testing.M) {
+	preSetup()
 	flag.Parse()
 	os.Exit(m.Run())
 }

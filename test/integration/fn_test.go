@@ -32,6 +32,7 @@ func TestFunctional(t *testing.T) {
 	if !usingNoneDriver(mk) {
 		t.Parallel()
 	}
+
 	mk.EnsureRunning()
 	// This one is not parallel, and ensures the cluster comes up
 	// before we run any other tests.
