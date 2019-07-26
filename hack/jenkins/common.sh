@@ -187,11 +187,16 @@ export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export MINIKUBE_WANTREPORTERRORPROMPT=False
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
  
+
 # Display the default image URL
 echo ""
 echo ">> ISO URL"
 "${MINIKUBE_BIN}" start -h | grep iso-url || true
- 
+echo ""
+echo ">> MINIKUBE VERSION"
+"${MINIKUBE_BIN}" version || true
+
+
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
