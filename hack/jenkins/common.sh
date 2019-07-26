@@ -14,7 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
 # This script downloads the test files from the build bucket and makes some executable.
 
 # The script expects the following env variables:
@@ -24,7 +23,6 @@
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
 #
-
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
@@ -42,11 +40,11 @@ echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 
 case "${VM_DRIVER}" in
-  kvm2)
-    echo "virsh:     $(virsh --version)"
+kvm2)
+  echo "virsh:     $(virsh --version)"
   ;;
-  virtualbox)
-    echo "vbox:      $(vboxmanage --version)"
+virtualbox)
+  echo "vbox:      $(vboxmanage --version)"
   ;;
 esac
 
@@ -76,8 +74,8 @@ gsutil -qm cp \
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
 
 # Set the executable bit on the e2e binary and out binary
-export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
-export E2E_BIN="out/e2e-${OS_ARCH}"
+export MINIKUBE_BIN="$(pwd)/out/minikube-${OS_ARCH}"
+export E2E_BIN="$(pwd)/out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
 procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
@@ -104,8 +102,8 @@ for stale_dir in ${TEST_ROOT}/*; do
     fi
     echo "Shutting down stale minikube instance ..."
     if [[ -w "${MINIKUBE_HOME}" ]]; then
-        "${MINIKUBE_BIN}" delete || true
-        rm -Rf "${MINIKUBE_HOME}"
+      "${MINIKUBE_BIN}" delete || true
+      rm -Rf "${MINIKUBE_HOME}"
     else
       sudo -E "${MINIKUBE_BIN}" delete || true
       sudo rm -Rf "${MINIKUBE_HOME}"
@@ -125,29 +123,29 @@ done
 
 if type -P virsh; then
   virsh -c qemu:///system list --all
-  virsh -c qemu:///system list --all \
-    | grep minikube \
-    | awk '{ print $2 }' \
-    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
-    || true
+  virsh -c qemu:///system list --all |
+    grep minikube |
+    awk '{ print $2 }' |
+    xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" ||
+    true
 fi
 
 if type -P vboxmanage; then
   vboxmanage list vms || true
-  vboxmanage list vms \
-    | grep minikube \
-    | cut -d'"' -f2 \
-    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
-    || true
+  vboxmanage list vms |
+    grep minikube |
+    cut -d'"' -f2 |
+    xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" ||
+    true
 fi
 
 if type -P hdiutil; then
   hdiutil info | grep -E "/dev/disk[1-9][^s]" || true
-  hdiutil info \
-      | grep -E "/dev/disk[1-9][^s]" \
-      | awk '{print $1}' \
-      | xargs -I {} sh -c "hdiutil detach {}" \
-      || true
+  hdiutil info |
+    grep -E "/dev/disk[1-9][^s]" |
+    awk '{print $1}' |
+    xargs -I {} sh -c "hdiutil detach {}" ||
+    true
 fi
 
 if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
@@ -223,8 +221,8 @@ echo ">> ${TEST_HOME} completed at $(date)"
 if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
   readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
   curl -s "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  -d "{\"state\": \"$status\", \"description\": \"Jenkins\", \"target_url\": \"$target_url\", \"context\": \"${JOB_NAME}\"}"
+    -H "Content-Type: application/json" \
+    -X POST \
+    -d "{\"state\": \"$status\", \"description\": \"Jenkins\", \"target_url\": \"$target_url\", \"context\": \"${JOB_NAME}\"}"
 fi
 exit $result
