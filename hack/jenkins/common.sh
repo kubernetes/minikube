@@ -165,7 +165,7 @@ if [[ "${kprocs}" != "" ]]; then
 fi
 
 # clean up none drivers binding on 8443
-lsof -P | grep ':8443' | awk '{print $2}' | xargs sudo -E kill -9
+sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' | xargs sudo -E kill -9
 
 function cleanup_stale_routes() {
   local show="netstat -rn -f inet"
