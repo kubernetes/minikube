@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -35,6 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	watchtools "k8s.io/client-go/tools/watch"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/proxy"
 )
@@ -196,7 +198,11 @@ func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.
 	if err != nil {
 		return err
 	}
-	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
+
+	ctx, cancel := watchtools.ContextWithOptionalTimeout(context.Background(), timeout)
+	defer cancel()
+
+	_, err = watchtools.UntilWithoutRetry(ctx, w, func(event watch.Event) (bool, error) {
 		if event.Type == watch.Deleted {
 			return false, apierr.NewNotFound(schema.GroupResource{Resource: "replicationcontrollers"}, "")
 		}
@@ -226,7 +232,11 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 	if err != nil {
 		return err
 	}
-	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
+
+	ctx, cancel := watchtools.ContextWithOptionalTimeout(context.Background(), timeout)
+	defer cancel()
+
+	_, err = watchtools.UntilWithoutRetry(ctx, w, func(event watch.Event) (bool, error) {
 		if event.Type == watch.Deleted {
 			return false, apierr.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
 		}
