@@ -150,6 +150,23 @@ if type -P hdiutil; then
       || true
 fi
 
+# cleaning up stale hyperkits
+if type -P hyperkit; then
+  # find all hyperkits excluding com.docker
+  hyper_procs=$(ps aux | grep hyperkit | grep -v com.docker | grep -v grep | awk '{print $2}' || true)
+  if [[ "${hyper_procs}" != "" ]]; then
+    echo "Found stale hyperkits test processes to kill : "
+    for p in $hyper_procs
+    do
+    echo "Killing stale hyperkit $p"
+    ps -f -p $p || true
+    kill $p || true
+    kill -9 $p || true
+    done
+  fi
+fi
+
+
 if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   if [[ -e out/docker-machine-driver-hyperkit ]]; then
     sudo chown root:wheel out/docker-machine-driver-hyperkit || true
@@ -165,7 +182,17 @@ if [[ "${kprocs}" != "" ]]; then
 fi
 
 # clean up none drivers binding on 8443
-# sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' | xargs sudo -E kill -9
+  none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
+  if [[ "${none_procs}" != "" ]]; then
+    echo "Found stale api servers listening on 8443 processes to kill: "
+    for p in $none_procs
+    do
+    echo "Kiling stale none driver:  $p"
+    sudo ps -f -p $p || true
+    sudo kill $p || true
+    sudo kill -9 $p || true
+    done
+  fi
 
 function cleanup_stale_routes() {
   local show="netstat -rn -f inet"
