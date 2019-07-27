@@ -75,13 +75,6 @@ func TestProxy(t *testing.T) {
 	p := t.Name()
 	mk := NewMinikubeRunner(t, p)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-	_, _, err = mk.RunWithContext(ctx, "delete")
-	if err != nil {
-		t.Logf("Error deleting minikube before test setup %s : ", err)
-	}
-
 	// Clean up after setting up proxy
 	defer func(t *testing.T) {
 		err = os.Setenv("HTTP_PROXY", origHP)
@@ -97,11 +90,7 @@ func TestProxy(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
-
-		_, _, err = mk.RunWithContext(ctx, "delete")
-		if err != nil {
-			t.Logf("Error deleting minikube when cleaning up proxy setup: %s", err)
-		}
+		mk.RunCommand("delete", true)
 	}(t)
 
 	t.Run("Proxy Console Warnning", testProxyWarning)
@@ -112,13 +101,10 @@ func TestProxy(t *testing.T) {
 // testProxyWarning checks user is warned correctly about the proxy related env vars
 func testProxyWarning(t *testing.T) {
 	p := "TestProxy"
-	mk := NewMinikubeRunner(t, p, "--wait=false")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-	startCmd := fmt.Sprintf("start %s %s", mk.StartArgs, mk.GlobalArgs)
-	stdout, stderr, err := mk.RunWithContext(ctx, startCmd)
+	mk := NewMinikubeRunner(t, p)
+	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
 	if err != nil {
-		t.Fatalf("start: %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
+		t.Fatalf("TestProxy minikube start failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
 	}
 
 	msg := "Found network options:"
@@ -137,8 +123,6 @@ func testProxyDashboard(t *testing.T) {
 	p := "TestProxy" // profile name
 	if isTestNoneDriver() {
 		p = "minikube"
-	} else {
-		t.Parallel()
 	}
 	mk := NewMinikubeRunner(t, p)
 	cmd, out := mk.RunDaemon("dashboard --url")
