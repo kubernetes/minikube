@@ -19,9 +19,12 @@ limitations under the License.
 package integration
 
 import (
+	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/test/integration/util"
 )
 
 func TestContainerd(t *testing.T) {
@@ -108,7 +111,6 @@ func testGvisorRestart(t *testing.T) {
 	}
 	deleteUntrustedWorkload(t, p)
 }
-
 
 func createUntrustedWorkload(t *testing.T, profile string) {
 	kr := util.NewKubectlRunner(t, profile)

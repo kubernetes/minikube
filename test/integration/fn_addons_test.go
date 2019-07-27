@@ -31,7 +31,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/machine/libmachine/state"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/apimachinery/pkg/labels"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -269,4 +268,3 @@ func testRegistry(t *testing.T) {
 	}()
 	mk.RunCommand("addons disable registry", true)
 }
-
