@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net"
 	"os/exec"
@@ -29,6 +30,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -365,6 +367,40 @@ func getHostInfo() (*hostInfo, error) {
 	return &info, nil
 }
 
+// showLocalOsRelease shows systemd information about the current linux distribution, on the local host
+func showLocalOsRelease() {
+	osReleaseOut, err := ioutil.ReadFile("/etc/os-release")
+	if err != nil {
+		glog.Errorf("ReadFile: %v", err)
+		return
+	}
+
+	osReleaseInfo, err := provision.NewOsRelease(osReleaseOut)
+	if err != nil {
+		glog.Errorf("NewOsRelease: %v", err)
+		return
+	}
+
+	out.T(out.Provisioner, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
+}
+
+// showRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM
+func showRemoteOsRelease(driver drivers.Driver) {
+	provisioner, err := provision.DetectProvisioner(driver)
+	if err != nil {
+		glog.Errorf("DetectProvisioner: %v", err)
+		return
+	}
+
+	osReleaseInfo, err := provisioner.GetOsReleaseInfo()
+	if err != nil {
+		glog.Errorf("GetOsReleaseInfo: %v", err)
+		return
+	}
+
+	out.T(out.Provisioner, "Provisioned with {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
+}
+
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	if config.VMDriver == constants.DriverVmwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
@@ -408,6 +444,12 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		// Wait for all the logs to reach the client
 		time.Sleep(2 * time.Second)
 		return nil, errors.Wrap(err, "create")
+	}
+
+	if !localDriver(config.VMDriver) {
+		showRemoteOsRelease(h.Driver)
+	} else {
+		showLocalOsRelease()
 	}
 
 	if err := api.Save(h); err != nil {
