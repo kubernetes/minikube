@@ -38,11 +38,11 @@ var mountArgs = flag.String("minikube-mount-args", "", "Arguments to pass to min
 var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
 
 // NewMinikubeRunner creates a new MinikubeRunner
-func NewMinikubeRunner(t *testing.T, profile string, extraArgs ...string) util.MinikubeRunner {
+func NewMinikubeRunner(t *testing.T, profile string, extraStartArgs ...string) util.MinikubeRunner {
 	return util.MinikubeRunner{
 		Profile:    profile,
 		BinaryPath: *binaryPath,
-		StartArgs:  *startArgs + strings.Join(extraArgs, " "),
+		StartArgs:  *startArgs + strings.Join(extraStartArgs, " "),
 		GlobalArgs: *globalArgs,
 		MountArgs:  *mountArgs,
 		T:          t,

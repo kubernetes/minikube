@@ -75,13 +75,6 @@ func TestProxy(t *testing.T) {
 	p := t.Name()
 	mk := NewMinikubeRunner(t, p)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
-	defer cancel()
-	_, _, err = mk.RunWithContext(ctx, "delete")
-	if err != nil {
-		t.Logf("Error deleting minikube before test setup %s : ", err)
-	}
-
 	// Clean up after setting up proxy
 	defer func(t *testing.T) {
 		err = os.Setenv("HTTP_PROXY", origHP)

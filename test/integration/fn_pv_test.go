@@ -64,7 +64,7 @@ func testProvisioning(t *testing.T) {
 		return fmt.Errorf("no default StorageClass yet")
 	}
 
-	if err := util.Retry(t, checkStorageClass, 5*time.Second, 20); err != nil {
+	if err := util.Retry(t, checkStorageClass, 10*time.Second, 10); err != nil {
 		t.Fatalf("no default storage class after retry: %v", err)
 	}
 
@@ -83,7 +83,7 @@ func testProvisioning(t *testing.T) {
 		return nil
 	}
 
-	if err := checkPodRunning(); err != nil {
+	if err := util.Retry(t, checkPodRunning, 2*time.Second, 5); err != nil {
 		t.Fatalf("Check storage-provisioner pod running failed with error: %v", err)
 	}
 

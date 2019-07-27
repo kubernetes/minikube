@@ -24,9 +24,7 @@ import (
 
 func TestFunctional(t *testing.T) {
 	p := "minikube" // for functional test we use default profile name
-	if isTestNoneDriver() {
-		p = "minikube"
-	} else {
+	if !isTestNoneDriver() {
 		t.Parallel()
 	}
 
