@@ -19,7 +19,6 @@ limitations under the License.
 package integration
 
 import (
-	"path"
 	"path/filepath"
 	"testing"
 	"time"
@@ -35,50 +34,39 @@ func TestPersistence(t *testing.T) {
 	} else {
 		t.Parallel()
 	}
-	mk := NewMinikubeRunner(t, p, "--wait=false")
+	mk := NewMinikubeRunner(t, p)
 	if isTestNoneDriver() {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
 	mk.EnsureRunning()
 
 	kr := util.NewKubectlRunner(t, p)
-	curdir, err := filepath.Abs("")
-	if err != nil {
-		t.Errorf("Error getting the file path for current directory: %s", curdir)
-	}
-	// TODO change all testdata path to get from flag vs hardcode
-	podPath := path.Join(curdir, "testdata", "busybox.yaml")
 
-	// Create a pod and wait for it to be running.
-	if _, err := kr.RunCommand([]string{"create", "-f", podPath}); err != nil {
-		t.Fatalf("Error creating test pod: %v", err)
+	if _, err := kr.RunCommand([]string{"create", "-f", filepath.Join(*testdataDir, "busybox.yaml")}); err != nil {
+		t.Fatalf("creating busybox pod: %s", err)
 	}
 
-	verify := func(t *testing.T) {
+	verifyBusybox := func(t *testing.T) {
 		if err := util.WaitForBusyboxRunning(t, "default", p); err != nil {
 			t.Fatalf("waiting for busybox to be up: %v", err)
 		}
 
 	}
-
 	// Make sure everything is up before we stop.
-	verify(t)
+	verifyBusybox(t)
 
 	// Now restart minikube and make sure the pod is still there.
-	// mk.RunCommand("stop", true)
-	// mk.CheckStatus("Stopped")
 	checkStop := func() error {
-		mk.RunCommand("stop", true)
+		mk.RunCommand("stop", false)
 		return mk.CheckStatusNoFail(state.Stopped.String())
 	}
-
 	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
-		t.Fatalf("timed out while checking stopped status: %v", err)
+		t.Fatalf("TestPersistence Failed to stop minikube : %v", err)
 	}
 
 	mk.Start()
 	mk.CheckStatus(state.Running.String())
 
 	// Make sure the same things come up after we've restarted.
-	verify(t)
+	verifyBusybox(t)
 }
