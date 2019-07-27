@@ -25,7 +25,6 @@ import (
 	"net"
 	"net/http"
 	"net/url"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -135,16 +134,12 @@ func testIngressController(t *testing.T) {
 		t.Fatalf("waiting for default-http-backend to be up: %v", err)
 	}
 
-	curdir, err := filepath.Abs("")
-	if err != nil {
-		t.Errorf("Error getting the file path for current directory: %s", curdir)
-	}
-	ingressPath := path.Join(curdir, "testdata", "nginx-ing.yaml")
+	ingressPath := filepath.Join(*testdataDir, "nginx-ing.yaml")
 	if _, err := kr.RunCommand([]string{"create", "-f", ingressPath}); err != nil {
 		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
 
-	podPath := path.Join(curdir, "testdata", "nginx-pod-svc.yaml")
+	podPath := filepath.Join(*testdataDir, "nginx-pod-svc.yaml")
 	if _, err := kr.RunCommand([]string{"create", "-f", podPath}); err != nil {
 		t.Fatalf("creating nginx ingress resource: %v", err)
 	}
