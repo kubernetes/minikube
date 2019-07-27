@@ -19,9 +19,12 @@ limitations under the License.
 package integration
 
 import (
+	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/docker/machine/libmachine/state"
+	"k8s.io/minikube/test/integration/util"
 )
 
 func TestContainerd(t *testing.T) {
@@ -44,4 +47,92 @@ func TestContainerd(t *testing.T) {
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
 	mk.RunCommand("delete", true)
+}
+
+func testGvisor(t *testing.T) {
+	p := "TestContainerd"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
+	mk.RunCommand("addons enable gvisor", true)
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := util.WaitForGvisorControllerRunning(t, p); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	createUntrustedWorkload(t, p)
+
+	t.Log("making sure untrusted workload is Running")
+	if err := util.WaitForUntrustedNginxRunning(p); err != nil {
+		t.Fatalf("waiting for nginx to be up: %v", err)
+	}
+
+	t.Log("disabling gvisor addon")
+	mk.RunCommand("addons disable gvisor", true)
+	t.Log("waiting for gvisor controller pod to be deleted")
+	if err := util.WaitForGvisorControllerDeleted(p); err != nil {
+		t.Fatalf("waiting for gvisor controller to be deleted: %v", err)
+	}
+
+	createUntrustedWorkload(t, p)
+
+	t.Log("waiting for FailedCreatePodSandBox event")
+	if err := util.WaitForFailedCreatePodSandBoxEvent(p); err != nil {
+		t.Fatalf("waiting for FailedCreatePodSandBox event: %v", err)
+	}
+	deleteUntrustedWorkload(t, p)
+}
+
+func testGvisorRestart(t *testing.T) {
+	p := "TestContainerd"
+	mk := NewMinikubeRunner(t, p, "--wait=false")
+	mk.EnsureRunning()
+	mk.RunCommand("addons enable gvisor", true)
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := util.WaitForGvisorControllerRunning(t, p); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	// TODO: @priyawadhwa to add test for stop as well
+	mk.RunCommand("delete", false)
+	mk.CheckStatus(state.None.String())
+	mk.Start()
+	mk.CheckStatus(state.Running.String())
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := util.WaitForGvisorControllerRunning(t, p); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	createUntrustedWorkload(t, p)
+	t.Log("making sure untrusted workload is Running")
+	if err := util.WaitForUntrustedNginxRunning(p); err != nil {
+		t.Fatalf("waiting for nginx to be up: %v", err)
+	}
+	deleteUntrustedWorkload(t, p)
+}
+
+func createUntrustedWorkload(t *testing.T, profile string) {
+	kr := util.NewKubectlRunner(t, profile)
+	curdir, err := filepath.Abs("")
+	if err != nil {
+		t.Errorf("Error getting the file path for current directory: %s", curdir)
+	}
+	untrustedPath := path.Join(curdir, "testdata", "nginx-untrusted.yaml")
+	t.Log("creating pod with untrusted workload annotation")
+	if _, err := kr.RunCommand([]string{"replace", "-f", untrustedPath, "--force"}); err != nil {
+		t.Fatalf("creating untrusted nginx resource: %v", err)
+	}
+}
+
+func deleteUntrustedWorkload(t *testing.T, profile string) {
+	kr := util.NewKubectlRunner(t, profile)
+	curdir, err := filepath.Abs("")
+	if err != nil {
+		t.Errorf("Error getting the file path for current directory: %s", curdir)
+	}
+	untrustedPath := path.Join(curdir, "testdata", "nginx-untrusted.yaml")
+	if _, err := kr.RunCommand([]string{"delete", "-f", untrustedPath}); err != nil {
+		t.Logf("error deleting untrusted nginx resource: %v", err)
+	}
 }
