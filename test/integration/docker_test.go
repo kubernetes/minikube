@@ -39,7 +39,7 @@ func TestDocker(t *testing.T) {
 	}
 
 	// Start a timer for all remaining commands, to display failure output before a panic.
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 13*time.Minute)
 	defer cancel()
 
 	if _, _, err := mk.RunWithContext(ctx, "delete"); err != nil {
