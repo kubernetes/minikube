@@ -21,8 +21,9 @@ import (
 )
 
 func init() {
+	// Workaround for "ERROR: logging before flag.Parse"
+	// See: https://github.com/kubernetes/kubernetes/issues/17162
 	fs := flag.NewFlagSet("", flag.ContinueOnError)
-
 	_ = fs.Parse([]string{})
 	flag.CommandLine = fs
 }
