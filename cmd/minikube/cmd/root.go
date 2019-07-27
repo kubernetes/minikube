@@ -132,17 +132,16 @@ func init() {
 
 	groups := templates.CommandGroups{
 		{
-			Message: "Basic Commands",
+			Message: "Basic Commands:",
 			Commands: []*cobra.Command{
 				startCmd,
 				statusCmd,
 				stopCmd,
 				deleteCmd,
-				dashboardCmd,
 			},
 		},
 		{
-			Message: "Images Commands",
+			Message: "Images Commands:",
 			Commands: []*cobra.Command{
 				dockerEnvCmd,
 				cacheCmd,
@@ -150,8 +149,9 @@ func init() {
 		},
 
 		{
-			Message: "Usability Commands",
+			Message: "Usability Commands:",
 			Commands: []*cobra.Command{
+				dashboardCmd,
 				serviceCmd,
 				configCmd.AddonsCmd,
 				configCmd.ConfigCmd,
@@ -168,7 +168,7 @@ func init() {
 			},
 		},
 		{
-			Message: "Troubleshooting Commands",
+			Message: "Troubleshooting Commands:",
 			Commands: []*cobra.Command{
 				updateContextCmd,
 				sshKeyCmd,
