@@ -139,6 +139,13 @@ if type -P vboxmanage; then
     | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
+
+  # remove inaccessible stale VMs https://github.com/kubernetes/minikube/issues/4872
+  vboxmanage list vms \
+    | grep inaccessible \
+    | cut -d'"' -f3 \
+    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
+    || true
 fi
 
 if type -P hdiutil; then
