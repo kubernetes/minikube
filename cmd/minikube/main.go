@@ -23,6 +23,8 @@ import (
 	"os"
 	"strconv"
 
+	_ "k8s.io/minikube/pkg/initflag"
+
 	"github.com/golang/glog"
 	"github.com/pkg/profile"
 	"k8s.io/minikube/cmd/minikube/cmd"
