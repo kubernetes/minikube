@@ -90,11 +90,7 @@ func TestProxy(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
-
-		_, _, err = mk.RunWithContext(ctx, "delete")
-		if err != nil {
-			t.Logf("Error deleting minikube when cleaning up proxy setup: %s", err)
-		}
+		mk.RunCommand("delete", true)
 	}(t)
 
 	t.Run("Proxy Console Warnning", testProxyWarning)
