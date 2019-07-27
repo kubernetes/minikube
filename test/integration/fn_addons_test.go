@@ -85,7 +85,7 @@ func testDashboard(t *testing.T) {
 		}
 	}()
 
-	s, err := readLineWithTimeout(out, 180*time.Second)
+	s, err := readLineWithTimeout(out, 240*time.Second)
 	if err != nil {
 		t.Fatalf("failed to read url: %v", err)
 	}
@@ -127,25 +127,25 @@ func testIngressController(t *testing.T) {
 
 	mk.RunCommand("addons enable ingress", true)
 	if err := util.WaitForIngressControllerRunning(t, p); err != nil {
-		t.Fatalf("waiting for ingress-controller to be up: %v", err)
+		t.Fatalf("Failed waiting for ingress-controller to be up: %v", err)
 	}
 
 	if err := util.WaitForIngressDefaultBackendRunning(t, p); err != nil {
-		t.Fatalf("waiting for default-http-backend to be up: %v", err)
+		t.Fatalf("Failed waiting for default-http-backend to be up: %v", err)
 	}
 
 	ingressPath := filepath.Join(*testdataDir, "nginx-ing.yaml")
 	if _, err := kr.RunCommand([]string{"create", "-f", ingressPath}); err != nil {
-		t.Fatalf("creating nginx ingress resource: %v", err)
+		t.Fatalf("Failed creating nginx ingress resource: %v", err)
 	}
 
 	podPath := filepath.Join(*testdataDir, "nginx-pod-svc.yaml")
 	if _, err := kr.RunCommand([]string{"create", "-f", podPath}); err != nil {
-		t.Fatalf("creating nginx ingress resource: %v", err)
+		t.Fatalf("Failed creating nginx ingress resource: %v", err)
 	}
 
 	if err := util.WaitForNginxRunning(t, p); err != nil {
-		t.Fatalf("waiting for nginx to be up: %v", err)
+		t.Fatalf("Failed waiting for nginx to be up: %v", err)
 	}
 
 	checkIngress := func() error {
@@ -158,7 +158,7 @@ func testIngressController(t *testing.T) {
 		return nil
 	}
 
-	if err := util.Retry(t, checkIngress, 3*time.Second, 5); err != nil {
+	if err := util.Retry(t, checkIngress, 2*time.Second, 5); err != nil {
 		t.Fatalf(err.Error())
 	}
 

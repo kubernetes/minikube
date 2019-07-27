@@ -25,8 +25,8 @@ import (
 
 // testProfileList tests the `minikube profile list` command
 func testProfileList(t *testing.T) {
-	t.Parallel()
 	p := "minikube"
+	t.Parallel()
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	out := mk.RunCommand("profile list", true)
 	if !strings.Contains(out, p) {

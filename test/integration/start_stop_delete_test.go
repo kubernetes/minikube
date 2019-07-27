@@ -81,7 +81,12 @@ func TestStartStop(t *testing.T) {
 			mk.RunCommand("config set WantReportErrorPrompt false", true)
 			mk.RunCommand("delete", false)
 			mk.CheckStatus(state.None.String())
-			mk.Start(tc.args...)
+
+			stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
+			if err != nil {
+				t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
+			}
+
 			mk.CheckStatus(state.Running.String())
 
 			ip := mk.RunCommand("ip", true)

@@ -23,7 +23,7 @@
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
-#
+# PARALLEL_COUNT: number of tests to run in parallel
 
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
@@ -140,11 +140,6 @@ if type -P virsh; then
     | awk '{ print $2 }' \
     | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
     || true
-
-  # list again after clean up
-  virsh -c qemu:///system list --all || true
-
-
   echo ">> Virsh VM list after clean up (should be empty) :"
   virsh -c qemu:///system list --all || true
 fi
@@ -156,6 +151,11 @@ if type -P vboxmanage; then
     | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
+  vboxmanage list vms \
+    | grep Test \
+    | cut -d'"' -f2 \
+    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
+    || true
 
   # remove inaccessible stale VMs https://github.com/kubernetes/minikube/issues/4872
   vboxmanage list vms \
@@ -163,17 +163,8 @@ if type -P vboxmanage; then
     | cut -d'"' -f3 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
+
   # list them again after clean up
-  vboxmanage list vms \
-    | grep Test \
-    | cut -d'"' -f2 \
-    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
-    || true
-
-  vboxmanage list vms || true
-
-
-  echo ">> Vbox VM list after clean up (should be empty) :"
   vboxmanage list vms || true
 fi
 
@@ -263,7 +254,7 @@ echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
-  -test.v -test.timeout=100m -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+  -test.v -test.timeout=100m -test.parallel=${PARALLEL_COUNT}  -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 

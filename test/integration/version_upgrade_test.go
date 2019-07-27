@@ -97,6 +97,7 @@ func TestVersionUpgrade(t *testing.T) {
 	mkRelease := NewMinikubeRunner(t, p)
 	mkRelease.BinaryPath = fname
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
+
 	mkRelease.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 	mkRelease.CheckStatus(state.Running.String())
 	mkRelease.RunCommand("stop", true)
