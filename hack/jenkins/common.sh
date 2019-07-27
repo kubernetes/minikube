@@ -188,9 +188,9 @@ fi
     for p in $none_procs
     do
     echo "Kiling stale none driver:  $p"
-    sudo ps -f -p $p || true
-    sudo kill $p || true
-    sudo kill -9 $p || true
+    sudo -E ps -f -p $p || true
+    sudo -E kill $p || true
+    sudo -E kill -9 $p || true
     done
   fi
 
