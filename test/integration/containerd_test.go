@@ -19,7 +19,6 @@ limitations under the License.
 package integration
 
 import (
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -114,11 +113,7 @@ func testGvisorRestart(t *testing.T) {
 
 func createUntrustedWorkload(t *testing.T, profile string) {
 	kr := util.NewKubectlRunner(t, profile)
-	curdir, err := filepath.Abs("")
-	if err != nil {
-		t.Errorf("Error getting the file path for current directory: %s", curdir)
-	}
-	untrustedPath := path.Join(curdir, "testdata", "nginx-untrusted.yaml")
+	untrustedPath := filepath.Join(*testdataDir, "nginx-untrusted.yaml")
 	t.Log("creating pod with untrusted workload annotation")
 	if _, err := kr.RunCommand([]string{"replace", "-f", untrustedPath, "--force"}); err != nil {
 		t.Fatalf("creating untrusted nginx resource: %v", err)
@@ -127,11 +122,7 @@ func createUntrustedWorkload(t *testing.T, profile string) {
 
 func deleteUntrustedWorkload(t *testing.T, profile string) {
 	kr := util.NewKubectlRunner(t, profile)
-	curdir, err := filepath.Abs("")
-	if err != nil {
-		t.Errorf("Error getting the file path for current directory: %s", curdir)
-	}
-	untrustedPath := path.Join(curdir, "testdata", "nginx-untrusted.yaml")
+	untrustedPath := filepath.Join(*testdataDir, "nginx-untrusted.yaml")
 	if _, err := kr.RunCommand([]string{"delete", "-f", untrustedPath}); err != nil {
 		t.Logf("error deleting untrusted nginx resource: %v", err)
 	}
