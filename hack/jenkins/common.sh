@@ -164,7 +164,7 @@ fi
 # cleaning up stale hyperkits
 if type -P hyperkit; then
   # find all hyperkits excluding com.docker
-  hyper_procs=$(ps aux | grep hyperkit | grep -v com.docker | grep -v grep | awk '{print $2}' || true)
+  hyper_procs=$(ps aux | grep hyperkit | grep -v com.docker | grep -v grep | grep -v osx_integration_tests_hyperkit.sh | awk '{print $2}' || true)
   if [[ "${hyper_procs}" != "" ]]; then
     echo "Found stale hyperkits test processes to kill : "
     for p in $hyper_procs
