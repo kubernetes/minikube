@@ -10,7 +10,7 @@ If all cluster IP addresses and Load Balancers were made available on the miniku
 
 Tools like telepresence.io, sshuttle, and the OpenVPN chart provide similar capabilities already.
 
-Also, Steve Sloka has provided a very detailed guide on how to setup a similar configuration [manually](https://stevesloka.com/2017/06/12/access-minikube-service-from-linux-host/).
+Also, Steve Sloka has provided a very detailed guide on how to setup a similar configuration [manually](https://stevesloka.com/access-minikube-service-from-linux-host/).
 
 Elson Rodriguez has provided a similar guide, including a Minikube [external LB controller](https://github.com/elsonrodriguez/minikube-lb-patch).
 
