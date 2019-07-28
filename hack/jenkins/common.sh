@@ -130,6 +130,8 @@ if type -P virsh; then
     | awk '{ print $2 }' \
     | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
     || true
+  # list again after clean up
+  virsh -c qemu:///system list --all
 fi
 
 if type -P vboxmanage; then
@@ -146,6 +148,8 @@ if type -P vboxmanage; then
     | cut -d'"' -f3 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
+  # list them again after clean up
+  vboxmanage list vms || true
 fi
 
 if type -P hdiutil; then
