@@ -27,6 +27,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	commonutil "k8s.io/minikube/pkg/util"
@@ -195,9 +196,17 @@ func (m *MinikubeRunner) SSH(cmdStr string) (string, error) {
 }
 
 // Start starts the cluster
-func (m *MinikubeRunner) Start(opts ...string) {
+func (m *MinikubeRunner) Start(opts ...string) string {
 	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
-	m.RunCommand(cmd, true)
+	return m.RunCommand(cmd, true)
+}
+
+// StartWithOutput starts the cluster with console output without verbose log
+func (m *MinikubeRunner) StartWithStd(timeout time.Duration, opts ...string) (stdout string, stderr string, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd := fmt.Sprintf("start %s %s %s", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
+	return m.RunWithContext(ctx, cmd)
 }
 
 // EnsureRunning makes sure the container runtime is running
