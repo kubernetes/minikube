@@ -141,6 +141,15 @@ if type -P vboxmanage; then
     || true
 fi
 
+if type -P vboxmanage; then
+  vboxmanage list vms || true
+  vboxmanage list vms \
+    | grep inaccessible \
+    | cut -d'"' -f3 \
+    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
+    || true
+fi
+
 if type -P hdiutil; then
   hdiutil info | grep -E "/dev/disk[1-9][^s]" || true
   hdiutil info \
