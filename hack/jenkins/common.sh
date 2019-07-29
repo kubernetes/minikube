@@ -151,16 +151,11 @@ if type -P vboxmanage; then
     | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
-<<<<<<< HEAD
   vboxmanage list vms \
     | grep Test \
     | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
-  echo ">> Vbox VM list after clean up (should be empty) :"
-  vboxmanage list vms || true
-||||||| merged common ancestors
-=======
 
   # remove inaccessible stale VMs https://github.com/kubernetes/minikube/issues/4872
   vboxmanage list vms \
@@ -168,9 +163,9 @@ if type -P vboxmanage; then
     | cut -d'"' -f3 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
+
   # list them again after clean up
   vboxmanage list vms || true
->>>>>>> upstream/master
 fi
 
 if type -P hdiutil; then
@@ -259,13 +254,7 @@ echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
-<<<<<<< HEAD
-  -test.v -test.timeout=90m -test.parallel=1 -binary="${MINIKUBE_BIN}" && result=$? || result=$?
-||||||| merged common ancestors
-  -test.v -test.timeout=90m -binary="${MINIKUBE_BIN}" && result=$? || result=$?
-=======
   -test.v -test.timeout=100m -binary="${MINIKUBE_BIN}" && result=$? || result=$?
->>>>>>> upstream/master
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
