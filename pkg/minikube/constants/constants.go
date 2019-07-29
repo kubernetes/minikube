@@ -208,6 +208,15 @@ func GetProfilePath(profile string, miniHome ...string) string {
 	return filepath.Join(miniPath, "profiles", profile)
 }
 
+// GetMachinePath returns the Minikube machine path of a machine
+func GetMachinePath(machine string, miniHome ...string) string {
+	miniPath := GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "machines", machine)
+}
+
 // AddonsPath is the default path of the addons configuration
 const AddonsPath = "/etc/kubernetes/addons"
 

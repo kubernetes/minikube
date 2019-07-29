@@ -1,0 +1,412 @@
+/*
+Copyright 2016 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
+package cmd
+
+import (
+	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
+)
+
+func TestDeleteProfileWithValidConfig(t *testing.T) {
+	testMinikubeDir := "../../../pkg/minikube/config/testdata/delete-single/.minikube"
+	miniDir, err := filepath.Abs(testMinikubeDir)
+
+	if err != nil {
+		t.Errorf("error getting dir path for %s : %v", testMinikubeDir, err)
+	}
+
+	err = os.Setenv(constants.MinikubeHome, miniDir)
+	if err != nil {
+		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+	}
+
+	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
+	numberOfProfileDirs := len(files)
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	numberOfMachineDirs := len(files)
+
+	profileToDelete := "p1"
+	profile, _ := config.LoadProfile(profileToDelete)
+
+	errs := DeleteProfiles([]*config.Profile{profile})
+
+	if len(errs) > 0 {
+		HandleDeletionErrors(errs)
+		t.Fatal("Errors while deleting profiles")
+	}
+
+	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles")); len(files) != (numberOfProfileDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+}
+
+func TestDeleteProfileWithEmptyProfileConfig(t *testing.T) {
+	testMinikubeDir := "../../../pkg/minikube/config/testdata/delete-single/.minikube"
+	miniDir, err := filepath.Abs(testMinikubeDir)
+
+	if err != nil {
+		t.Errorf("error getting dir path for %s : %v", testMinikubeDir, err)
+	}
+
+	err = os.Setenv(constants.MinikubeHome, miniDir)
+	if err != nil {
+		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+	}
+
+	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
+	numberOfProfileDirs := len(files)
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	numberOfMachineDirs := len(files)
+
+	profileToDelete := "p2_empty_profile_config"
+	profile, _ := config.LoadProfile(profileToDelete)
+
+	errs := DeleteProfiles([]*config.Profile{profile})
+
+	if len(errs) > 0 {
+		HandleDeletionErrors(errs)
+		t.Fatal("Errors while deleting profiles")
+	}
+
+	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles")); len(files) != (numberOfProfileDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+}
+
+func TestDeleteProfileWithInvalidProfileConfig(t *testing.T) {
+	testMinikubeDir := "../../../pkg/minikube/config/testdata/delete-single/.minikube"
+	miniDir, err := filepath.Abs(testMinikubeDir)
+
+	if err != nil {
+		t.Errorf("error getting dir path for %s : %v", testMinikubeDir, err)
+	}
+
+	err = os.Setenv(constants.MinikubeHome, miniDir)
+	if err != nil {
+		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+	}
+
+	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
+	numberOfProfileDirs := len(files)
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	numberOfMachineDirs := len(files)
+
+	profileToDelete := "p3_invalid_profile_config"
+	profile, _ := config.LoadProfile(profileToDelete)
+
+	errs := DeleteProfiles([]*config.Profile{profile})
+
+	if len(errs) > 0 {
+		HandleDeletionErrors(errs)
+		t.Fatal("Errors while deleting profiles")
+	}
+
+	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles")); len(files) != (numberOfProfileDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+}
+
+func TestDeleteProfileWithPartialProfileConfig(t *testing.T) {
+	testMinikubeDir := "../../../pkg/minikube/config/testdata/delete-single/.minikube"
+	miniDir, err := filepath.Abs(testMinikubeDir)
+
+	if err != nil {
+		t.Errorf("error getting dir path for %s : %v", testMinikubeDir, err)
+	}
+
+	err = os.Setenv(constants.MinikubeHome, miniDir)
+	if err != nil {
+		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+	}
+
+	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
+	numberOfProfileDirs := len(files)
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	numberOfMachineDirs := len(files)
+
+	profileToDelete := "p4_partial_profile_config"
+	profile, _ := config.LoadProfile(profileToDelete)
+
+	errs := DeleteProfiles([]*config.Profile{profile})
+
+	if len(errs) > 0 {
+		HandleDeletionErrors(errs)
+		t.Fatal("Errors while deleting profiles")
+	}
+
+	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles")); len(files) != (numberOfProfileDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+}
+
+func TestDeleteProfileWithMissingMachineConfig(t *testing.T) {
+	testMinikubeDir := "../../../pkg/minikube/config/testdata/delete-single/.minikube"
+	miniDir, err := filepath.Abs(testMinikubeDir)
+
+	if err != nil {
+		t.Errorf("error getting dir path for %s : %v", testMinikubeDir, err)
+	}
+
+	err = os.Setenv(constants.MinikubeHome, miniDir)
+	if err != nil {
+		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+	}
+
+	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
+	numberOfProfileDirs := len(files)
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	numberOfMachineDirs := len(files)
+
+	profileToDelete := "p5_missing_machine_config"
+	profile, _ := config.LoadProfile(profileToDelete)
+
+	errs := DeleteProfiles([]*config.Profile{profile})
+
+	if len(errs) > 0 {
+		HandleDeletionErrors(errs)
+		t.Fatal("Errors while deleting profiles")
+	}
+
+	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles")); len(files) != (numberOfProfileDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines")); len(files) != numberOfMachineDirs {
+		t.Fatal("Deleted a machine config when it should not")
+	}
+}
+
+func TestDeleteProfileWithEmptyMachineConfig(t *testing.T) {
+	testMinikubeDir := "../../../pkg/minikube/config/testdata/delete-single/.minikube"
+	miniDir, err := filepath.Abs(testMinikubeDir)
+
+	if err != nil {
+		t.Errorf("error getting dir path for %s : %v", testMinikubeDir, err)
+	}
+
+	err = os.Setenv(constants.MinikubeHome, miniDir)
+	if err != nil {
+		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+	}
+
+	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
+	numberOfProfileDirs := len(files)
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	numberOfMachineDirs := len(files)
+
+	profileToDelete := "p6_empty_machine_config"
+	profile, _ := config.LoadProfile(profileToDelete)
+
+	errs := DeleteProfiles([]*config.Profile{profile})
+
+	if len(errs) > 0 {
+		HandleDeletionErrors(errs)
+		t.Fatal("Errors while deleting profiles")
+	}
+
+	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles")); len(files) != (numberOfProfileDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+}
+
+func TestDeleteProfileWithInvalidMachineConfig(t *testing.T) {
+	testMinikubeDir := "../../../pkg/minikube/config/testdata/delete-single/.minikube"
+	miniDir, err := filepath.Abs(testMinikubeDir)
+
+	if err != nil {
+		t.Errorf("error getting dir path for %s : %v", testMinikubeDir, err)
+	}
+
+	err = os.Setenv(constants.MinikubeHome, miniDir)
+	if err != nil {
+		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+	}
+
+	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
+	numberOfProfileDirs := len(files)
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	numberOfMachineDirs := len(files)
+
+	profileToDelete := "p7_invalid_machine_config"
+	profile, _ := config.LoadProfile(profileToDelete)
+
+	errs := DeleteProfiles([]*config.Profile{profile})
+
+	if len(errs) > 0 {
+		HandleDeletionErrors(errs)
+		t.Fatal("Errors while deleting profiles")
+	}
+
+	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles")); len(files) != (numberOfProfileDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+}
+
+func TestDeleteProfileWithPartialMachineConfig(t *testing.T) {
+	testMinikubeDir := "../../../pkg/minikube/config/testdata/delete-single/.minikube"
+	miniDir, err := filepath.Abs(testMinikubeDir)
+
+	if err != nil {
+		t.Errorf("error getting dir path for %s : %v", testMinikubeDir, err)
+	}
+
+	err = os.Setenv(constants.MinikubeHome, miniDir)
+	if err != nil {
+		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+	}
+
+	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
+	numberOfProfileDirs := len(files)
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	numberOfMachineDirs := len(files)
+
+	profileToDelete := "p8_partial_machine_config"
+	profile, _ := config.LoadProfile(profileToDelete)
+
+	errs := DeleteProfiles([]*config.Profile{profile})
+
+	if len(errs) > 0 {
+		HandleDeletionErrors(errs)
+		t.Fatal("Errors while deleting profiles")
+	}
+
+	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
+		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles")); len(files) != (numberOfProfileDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+
+	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
+		t.Fatal("Did not delete exactly one profile")
+	}
+}
