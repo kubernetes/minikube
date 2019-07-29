@@ -29,7 +29,7 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/minikube/pkg/drivers"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/drivers"
@@ -105,7 +105,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	// Check the User if cluster was created in the previous session
-	if permissionError := drivers.ValidatePermissions(h.DriverName); permissionError != nil {
+	if permissionError := pkgdrivers.ValidatePermissions(h.DriverName); permissionError != nil {
 		return nil, errors.Wrap(permissionError, "Permission denied")
 	}
 
@@ -259,7 +259,7 @@ func StopHost(api libmachine.API) error {
 		return errors.Wrapf(err, "load")
 	}
 
-	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+	if permissionError := pkgdrivers.ValidatePermissions(host.DriverName); permissionError != nil {
 		return errors.Wrap(permissionError, "Permission denied")
 	}
 	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
@@ -280,7 +280,7 @@ func DeleteHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrap(err, "load")
 	}
-	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+	if permissionError := pkgdrivers.ValidatePermissions(host.DriverName); permissionError != nil {
 		return errors.Wrap(permissionError, "Permission denied")
 	}
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
@@ -312,7 +312,7 @@ func GetHostStatus(api libmachine.API) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "load")
 	}
-	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+	if permissionError := pkgdrivers.ValidatePermissions(host.DriverName); permissionError != nil {
 		return "", errors.Wrap(permissionError, "Permission denied")
 	}
 	s, err := host.Driver.GetState()
@@ -328,7 +328,7 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	if err != nil {
 		return nil, err
 	}
-	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+	if permissionError := pkgdrivers.ValidatePermissions(host.DriverName); permissionError != nil {
 		return nil, errors.Wrap(permissionError, "Permission denied")
 	}
 	ipStr, err := host.Driver.GetIP()
@@ -421,7 +421,7 @@ func showRemoteOsRelease(driver drivers.Driver) {
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	if permissionError := drivers.ValidatePermissions(config.VMDriver); permissionError != nil {
+	if permissionError := pkgdrivers.ValidatePermissions(config.VMDriver); permissionError != nil {
 		return nil, errors.Wrap(permissionError, "Permission denied")
 	}
 
@@ -574,7 +574,7 @@ func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Hos
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error loading store for: %s", machineName)
 	}
-	if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
+	if permissionError := pkgdrivers.ValidatePermissions(host.DriverName); permissionError != nil {
 		return nil, errors.Wrap(permissionError, "Permission denied")
 	}
 	return host, nil
@@ -587,7 +587,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	if err != nil {
 		return errors.Wrap(err, "host exists and load")
 	}
-	if permissionError := drivers.ValidatePermissions(host.DriverName); err != permissionError {
+	if permissionError := pkgdrivers.ValidatePermissions(host.DriverName); err != permissionError {
 		return errors.Wrap( permissionError, "Permission denied")
 	}
 	currentState, err := host.Driver.GetState()
