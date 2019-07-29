@@ -41,6 +41,7 @@ var (
 func testProvisioning(t *testing.T) {
 	p := "minikube"
 	t.Parallel()
+
 	kr := util.NewKubectlRunner(t, p)
 
 	defer func() {

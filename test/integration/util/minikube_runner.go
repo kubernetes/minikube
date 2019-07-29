@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
 	commonutil "k8s.io/minikube/pkg/util"
 )
@@ -201,8 +202,8 @@ func (m *MinikubeRunner) Start(opts ...string) string {
 	return m.RunCommand(cmd, true)
 }
 
-// StartWithOutput starts the cluster with console output without verbose log
-func (m *MinikubeRunner) StartWithStd(timeout time.Duration, opts ...string) (stdout string, stderr string, err error) {
+// StartWithStds starts the cluster with console output without verbose log
+func (m *MinikubeRunner) StartWithStds(timeout time.Duration, opts ...string) (stdout string, stderr string, err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	cmd := fmt.Sprintf("start %s %s %s", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
@@ -210,11 +211,11 @@ func (m *MinikubeRunner) StartWithStd(timeout time.Duration, opts ...string) (st
 }
 
 // EnsureRunning makes sure the container runtime is running
-func (m *MinikubeRunner) EnsureRunning() {
-	if m.GetStatus() != "Running" {
-		m.Start()
+func (m *MinikubeRunner) EnsureRunning(opts ...string) {
+	if m.GetStatus() != state.Running.String() {
+		m.Start(opts...)
 	}
-	m.CheckStatus("Running")
+	m.CheckStatus(state.Running.String())
 }
 
 // ParseEnvCmdOutput parses the output of `env` (assumes bash)
@@ -229,12 +230,12 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 
 // GetStatus returns the status of a service
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("status -p=%s --format={{.Host}} %s", m.Profile, m.GlobalArgs), false)
+	return m.RunCommand(fmt.Sprintf("--format={{.Host}} %s", m.GlobalArgs), false)
 }
 
 // GetLogs returns the logs of a service
 func (m *MinikubeRunner) GetLogs() string {
-	return m.RunCommand(fmt.Sprintf("logs -p=%s %s", m.Profile, m.GlobalArgs), true)
+	return m.RunCommand(fmt.Sprintf("logs %s", m.GlobalArgs), true)
 }
 
 // CheckStatus makes sure the service has the desired status, or cause fatal error

@@ -42,7 +42,7 @@ func NewMinikubeRunner(t *testing.T, profile string, extraStartArgs ...string) u
 	return util.MinikubeRunner{
 		Profile:    profile,
 		BinaryPath: *binaryPath,
-		StartArgs:  *startArgs + strings.Join(extraStartArgs, " "),
+		StartArgs:  *startArgs + " " + strings.Join(extraStartArgs, " "),
 		GlobalArgs: *globalArgs,
 		MountArgs:  *mountArgs,
 		T:          t,
