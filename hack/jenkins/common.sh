@@ -151,6 +151,7 @@ if type -P vboxmanage; then
     | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
+<<<<<<< HEAD
   vboxmanage list vms \
     | grep Test \
     | cut -d'"' -f2 \
@@ -158,6 +159,18 @@ if type -P vboxmanage; then
     || true
   echo ">> Vbox VM list after clean up (should be empty) :"
   vboxmanage list vms || true
+||||||| merged common ancestors
+=======
+
+  # remove inaccessible stale VMs https://github.com/kubernetes/minikube/issues/4872
+  vboxmanage list vms \
+    | grep inaccessible \
+    | cut -d'"' -f3 \
+    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
+    || true
+  # list them again after clean up
+  vboxmanage list vms || true
+>>>>>>> upstream/master
 fi
 
 if type -P hdiutil; then
@@ -168,6 +181,23 @@ if type -P hdiutil; then
       | xargs -I {} sh -c "hdiutil detach {}" \
       || true
 fi
+
+# cleaning up stale hyperkits
+if type -P hyperkit; then
+  # find all hyperkits excluding com.docker
+  hyper_procs=$(ps aux | grep hyperkit | grep -v com.docker | grep -v grep | grep -v osx_integration_tests_hyperkit.sh | awk '{print $2}' || true)
+  if [[ "${hyper_procs}" != "" ]]; then
+    echo "Found stale hyperkits test processes to kill : "
+    for p in $hyper_procs
+    do
+    echo "Killing stale hyperkit $p"
+    ps -f -p $p || true
+    kill $p || true
+    kill -9 $p || true
+    done
+  fi
+fi
+
 
 if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   if [[ -e out/docker-machine-driver-hyperkit ]]; then
@@ -180,8 +210,21 @@ kprocs=$(pgrep kubectl || true)
 if [[ "${kprocs}" != "" ]]; then
   echo "error: killing hung kubectl processes ..."
   ps -f -p ${kprocs} || true
-  ${SUDO_PREFIX} kill ${kprocs} || true
+  sudo -E kill ${kprocs} || true
 fi
+
+# clean up none drivers binding on 8443
+  none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
+  if [[ "${none_procs}" != "" ]]; then
+    echo "Found stale api servers listening on 8443 processes to kill: "
+    for p in $none_procs
+    do
+    echo "Kiling stale none driver:  $p"
+    sudo -E ps -f -p $p || true
+    sudo -E kill $p || true
+    sudo -E kill -9 $p || true
+    done
+  fi
 
 function cleanup_stale_routes() {
   local show="netstat -rn -f inet"
@@ -216,7 +259,13 @@ echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
+<<<<<<< HEAD
   -test.v -test.timeout=90m -test.parallel=1 -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+||||||| merged common ancestors
+  -test.v -test.timeout=90m -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+=======
+  -test.v -test.timeout=100m -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+>>>>>>> upstream/master
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
