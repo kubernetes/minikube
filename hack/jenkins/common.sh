@@ -130,6 +130,8 @@ if type -P virsh; then
     | awk '{ print $2 }' \
     | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
     || true
+  # list again after clean up
+  virsh -c qemu:///system list --all
 fi
 
 if type -P vboxmanage; then
@@ -139,6 +141,15 @@ if type -P vboxmanage; then
     | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
+
+  # remove inaccessible stale VMs https://github.com/kubernetes/minikube/issues/4872
+  vboxmanage list vms \
+    | grep inaccessible \
+    | cut -d'"' -f3 \
+    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
+    || true
+  # list them again after clean up
+  vboxmanage list vms || true
 fi
 
 if type -P hdiutil; then
@@ -149,6 +160,23 @@ if type -P hdiutil; then
       | xargs -I {} sh -c "hdiutil detach {}" \
       || true
 fi
+
+# cleaning up stale hyperkits
+if type -P hyperkit; then
+  # find all hyperkits excluding com.docker
+  hyper_procs=$(ps aux | grep hyperkit | grep -v com.docker | grep -v grep | grep -v osx_integration_tests_hyperkit.sh | awk '{print $2}' || true)
+  if [[ "${hyper_procs}" != "" ]]; then
+    echo "Found stale hyperkits test processes to kill : "
+    for p in $hyper_procs
+    do
+    echo "Killing stale hyperkit $p"
+    ps -f -p $p || true
+    kill $p || true
+    kill -9 $p || true
+    done
+  fi
+fi
+
 
 if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   if [[ -e out/docker-machine-driver-hyperkit ]]; then
@@ -165,7 +193,17 @@ if [[ "${kprocs}" != "" ]]; then
 fi
 
 # clean up none drivers binding on 8443
-# sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' | xargs sudo -E kill -9
+  none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
+  if [[ "${none_procs}" != "" ]]; then
+    echo "Found stale api servers listening on 8443 processes to kill: "
+    for p in $none_procs
+    do
+    echo "Kiling stale none driver:  $p"
+    sudo -E ps -f -p $p || true
+    sudo -E kill $p || true
+    sudo -E kill -9 $p || true
+    done
+  fi
 
 function cleanup_stale_routes() {
   local show="netstat -rn -f inet"
@@ -200,7 +238,7 @@ echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
-  -test.v -test.timeout=90m -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+  -test.v -test.timeout=100m -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
