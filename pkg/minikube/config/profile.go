@@ -23,8 +23,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// isValid checks if the profile has the essential info needed for a profile
-func (p *Profile) isValid() bool {
+// IsValid checks if the profile has the essential info needed for a profile
+func (p *Profile) IsValid() bool {
+	if p.Config == nil {
+		return false
+	}
+
 	if p.Config.MachineConfig.VMDriver == "" {
 		return false
 	}
@@ -48,7 +52,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 			inValidPs = append(inValidPs, p)
 			continue
 		}
-		if !p.isValid() {
+		if !p.IsValid() {
 			inValidPs = append(inValidPs, p)
 			continue
 		}

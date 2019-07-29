@@ -84,7 +84,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.WithError("Error getting profiles to delete", err)
 		}
 
-		errs := DeleteAllProfiles(profilesToDelete)
+		errs := DeleteProfiles(profilesToDelete)
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		}
@@ -99,25 +99,33 @@ func runDelete(cmd *cobra.Command, args []string) {
 			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
 		}
 
-		err = DeleteProfile(profile)
+		errs := DeleteProfiles([]*pkg_config.Profile{profile})
 		if err != nil {
-			HandleDeletionErrors([]error{err})
+			HandleDeletionErrors(errs)
 		}
 	}
 }
 
-func DeleteAllProfiles(profiles []*pkg_config.Profile) []error {
+func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 	var errs []error
 	for _, profile := range profiles {
-		err := DeleteProfile(profile)
-		if err != nil {
+		err := deleteProfile(profile)
+
+		_, errStat := os.Stat(constants.GetMachinePath(profile.Name, constants.GetMinipath()))
+		// TODO: if (err != nil && !profile.IsValid()) || (err != nil && !machineConfig.IsValid()) {
+		if (err != nil && !profile.IsValid()) || (err != nil && os.IsNotExist(errStat)) {
+			invalidProfileDeletionErrs := DeleteInvalidProfile(profile)
+			if len(invalidProfileDeletionErrs) > 0 {
+				errs = append(errs, invalidProfileDeletionErrs...)
+			}
+		} else if err != nil {
 			errs = append(errs, err)
 		}
 	}
 	return errs
 }
 
-func DeleteProfile(profile *pkg_config.Profile) error {
+func deleteProfile(profile *pkg_config.Profile) error {
 	viper.Set(pkg_config.MachineProfile, profile.Name)
 
 	api, err := machine.NewAPIClient()
@@ -178,6 +186,28 @@ func DeleteProfile(profile *pkg_config.Profile) error {
 		return DeletionError{Err: delErr, Errtype: Fatal}
 	}
 	return nil
+}
+
+func DeleteInvalidProfile(profile *pkg_config.Profile) []error {
+	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
+
+	var errs []error
+	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
+		err := os.RemoveAll(pathToProfile)
+		if err != nil {
+			errs = append(errs, DeletionError{err, Fatal})
+		}
+	}
+
+	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
+		err := os.RemoveAll(pathToMachine)
+		if err != nil {
+			errs = append(errs, DeletionError{err, Fatal})
+		}
+	}
+	return errs
 }
 
 func profileDeletionErr(profileName string, additionalInfo string) error {
