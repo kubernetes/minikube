@@ -46,7 +46,7 @@ func testClusterStatus(t *testing.T) {
 				status = c.Status
 			}
 			if status != api.ConditionTrue {
-				err := fmt.Errorf("Component %s is not Healthy! Status: %s", i.GetName(), status)
+				err := fmt.Errorf("component %s is not Healthy! Status: %s", i.GetName(), status)
 				t.Logf("Retrying, %v", err)
 				return err
 			}

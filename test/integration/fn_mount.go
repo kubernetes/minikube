@@ -40,7 +40,7 @@ func testMounting(t *testing.T) {
 	if isTestNoneDriver() {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
-	
+
 	t.Parallel()
 	p := "minikube"
 	mk := NewMinikubeRunner(t, p, "--wait=false")
@@ -121,7 +121,7 @@ func writeFilesFromHost(mountedDir string, files []string, content string) error
 		path := filepath.Join(mountedDir, file)
 		err := ioutil.WriteFile(path, []byte(content), 0644)
 		if err != nil {
-			return fmt.Errorf("Unexpected error while writing file %s: %v", path, err)
+			return fmt.Errorf("unexpected error while writing file %s: %v", path, err)
 		}
 	}
 	return nil
@@ -164,30 +164,30 @@ func verifyFiles(mk util.MinikubeRunner, kr *util.KubectlRunner, tempDir string,
 		statCmd := fmt.Sprintf("stat /mount-9p/%s", file)
 		statOutput, err := mk.SSH(statCmd)
 		if err != nil {
-			return fmt.Errorf("Unable to stat %s via SSH. error %v, %s", file, err, statOutput)
+			return fmt.Errorf("inable to stat %s via SSH. error %v, %s", file, err, statOutput)
 		}
 
 		if runtime.GOOS == "windows" {
 			if strings.Contains(statOutput, "Access: 1970-01-01") {
-				return fmt.Errorf("Invalid access time\n%s", statOutput)
+				return fmt.Errorf("invalid access time\n%s", statOutput)
 			}
 		}
 
 		if strings.Contains(statOutput, "Modify: 1970-01-01") {
-			return fmt.Errorf("Invalid modify time\n%s", statOutput)
+			return fmt.Errorf("invalid modify time\n%s", statOutput)
 		}
 	}
 
 	// test that fromhostremove was deleted by the pod from the mount via rm /mount-9p/fromhostremove
 	path = filepath.Join(tempDir, "fromhostremove")
 	if _, err := os.Stat(path); err == nil {
-		return fmt.Errorf("Expected file %s to be removed", path)
+		return fmt.Errorf("expected file %s to be removed", path)
 	}
 
 	// test that frompodremove can be deleted on the host
 	path = filepath.Join(tempDir, "frompodremove")
 	if err := os.Remove(path); err != nil {
-		return fmt.Errorf("Unexpected error removing file %s: %v", path, err)
+		return fmt.Errorf("unexpected error removing file %s: %v", path, err)
 	}
 
 	return nil

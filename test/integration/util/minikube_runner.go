@@ -230,7 +230,7 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 
 // GetStatus returns the status of a service
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("--format={{.Host}} %s", m.GlobalArgs), false)
+	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.GlobalArgs), false)
 }
 
 // GetLogs returns the logs of a service
