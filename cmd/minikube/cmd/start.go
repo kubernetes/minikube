@@ -123,7 +123,6 @@ func init() {
 		exit.WithError("unable to bind flags", err)
 	}
 
-	RootCmd.AddCommand(startCmd)
 }
 
 // initMinikubeFlags includes commandline flags for minikube.

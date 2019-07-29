@@ -67,6 +67,7 @@ require (
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
+	k8s.io/kubectl v0.0.0-00010101000000-000000000000
 	k8s.io/kubernetes v1.15.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner v4.0.0+incompatible
 )

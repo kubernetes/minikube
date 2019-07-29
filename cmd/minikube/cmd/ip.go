@@ -54,7 +54,3 @@ var ipCmd = &cobra.Command{
 		out.Ln(ip)
 	},
 }
-
-func init() {
-	RootCmd.AddCommand(ipCmd)
-}

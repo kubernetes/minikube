@@ -209,5 +209,4 @@ func init() {
 	mountCmd.Flags().UintVar(&mode, "mode", 0755, "File permissions used for the mount")
 	mountCmd.Flags().StringSliceVar(&options, "options", []string{}, "Additional mount options, such as cache=fscache")
 	mountCmd.Flags().IntVar(&mSize, "msize", constants.DefaultMsize, "The number of bytes to use for 9p packet payload")
-	RootCmd.AddCommand(mountCmd)
 }
