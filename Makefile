@@ -31,8 +31,8 @@ COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
 COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
 
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
-# NOTE: "latest" as of 2019-05-09. kube-cross images aren't updated as often as Kubernetes
-BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.12.5-1
+# NOTE: "latest" as of 2019-07-12. kube-cross images aren't updated as often as Kubernetes
+BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.12.7-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image
 
@@ -215,14 +215,22 @@ extract:
 
 # Regenerates assets.go when template files have been updated
 pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
+else
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
 	-gofmt -s -w $@
+endif
 
 pkg/minikube/translate/translations.go: $(shell find translations/ -type f)
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
+else
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/translate/translations.go -pkg translate translations/...
 	-gofmt -s -w $@
+endif
 	@#golint: Json should be JSON (compat sed)
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
@@ -365,7 +373,7 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	mv out/windows_tmp/minikube-installer.exe out/minikube-installer.exe
 	rm -rf out/windows_tmp
 
-out/docker-machine-driver-hyperkit:
+out/docker-machine-driver-hyperkit: pkg/minikube/translate/translations.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
 else
@@ -431,7 +439,7 @@ release-minikube: out/minikube checksum
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
-out/docker-machine-driver-kvm2:
+out/docker-machine-driver-kvm2: pkg/minikube/translate/translations.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker pull $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
