@@ -210,6 +210,17 @@ var startCmd = &cobra.Command{
 func runStart(cmd *cobra.Command, args []string) {
 	out.T(out.Happy, "minikube {{.version}} on {{.os}} ({{.arch}})", out.V{"version": version.GetVersion(), "os": runtime.GOOS, "arch": runtime.GOARCH})
 
+	vmDriver := viper.GetString(vmDriver)
+	if err := cmdcfg.IsValidDriver(runtime.GOOS, vmDriver); err != nil {
+		exit.WithCodeT(
+			exit.Failure,
+			"The driver '{{.driver}}' is not supported on {{.os}}",
+			out.V{"driver": vmDriver, "os": runtime.GOOS},
+		)
+	}
+	validateConfig()
+	validateDriverVersion(viper.GetString(vmDriver))
+
 	k8sVersion, isUpgrade := getKubernetesVersion()
 	config, err := generateConfig(cmd, k8sVersion)
 	if err != nil {
