@@ -12,7 +12,7 @@
 :: See the License for the specific language governing permissions and
 :: limitations under the License.
 
-:: Periodically cleanip and reboot if no Jenkins subprocesses are running.
+:: Periodically cleanup and reboot if no Jenkins subprocesses are running.
 
 @echo off
 call :jenkins

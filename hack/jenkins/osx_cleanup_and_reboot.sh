@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Periodically cleanip and reboot if no Jenkins subprocesses are running.
+# Periodically cleanup and reboot if no Jenkins subprocesses are running.
 set -uf -o pipefail
 
 PATH=/usr/local/bin:/sbin:/usr/local/sbin:$PATH
