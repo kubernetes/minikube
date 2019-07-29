@@ -1,0 +1,89 @@
+---
+title: "minikube"
+resources:
+- src: "logo.png"
+  title: "logo"
+
+- src: "start.jpg"
+  title: "start"
+---
+{{< blocks/cover title="Welcome to minikube" image_anchor="top" height="full" color="orange" >}}
+<div class="mx-auto">
+	<a class="btn btn-lg btn-primary mr-3 mb-4" href="{{< relref "/docs" >}}">
+		Read the docs! <i class="fas fa-arrow-alt-circle-right ml-2"></i>
+	</a>
+	<a class="btn btn-lg btn-secondary mr-3 mb-4" href="https://github.com/google/docsy-example">
+		Download <i class="fab fa-github ml-2 "></i>
+	</a>
+	<p class="lead mt-5">The local Kubernetes environment for macOS, Linux, and Windows.</p>
+	<div class="mx-auto mt-5">
+		{{< blocks/link-down color="info" >}}
+	</div>
+</div>
+{{< /blocks/cover >}}
+
+
+{{% blocks/lead color="primary" %}}
+
+minikube is a local Kubernetes environment focused on application developers.
+
+{{< imgproc "start" Fit "730x239" >}}{{< /imgproc >}}
+
+Kubernetes certified, mother approved.
+{{% /blocks/lead %}}
+
+{{< blocks/section color="dark" >}}
+{{% blocks/feature icon="fa-lightbulb" title="Developer focused" %}}
+
+with unique features, such as:
+
+- [Addons](https://github.com/kubernetes/minikube/blob/master/docs/addons.md)
+- [LoadBalancer emulation](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md)
+- [Swappable container runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md)
+- [Integrated Dashboard](https://github.com/kubernetes/minikube/blob/master/docs/dashboard.md) 
+- [Advanced Configuration](https://github.com/kubernetes/minikube/blob/master/docs/configuring_kubernetes.md)
+- [GPU support](https://github.com/kubernetes/minikube/blob/master/docs/gpu.md)
+- [Filesystem mounts](https://github.com/kubernetes/minikube/blob/master/docs/host_folder_mount.md)
+- Reusable Docker daemon
+{{% /blocks/feature %}}
+
+
+{{% blocks/feature icon="fab fa-twitter" title="Works everywhere" %}}
+A consistent environment, regardless of operating system or virtualization technology.
+
+- Linux
+- macOS
+- Windows
+
+{{% /blocks/feature %}}
+
+
+{{% blocks/feature icon="fab fa-github" title="Contributions welcome!" url="https://github.com/gohugoio/hugo" %}}
+We do a [Pull Request](https://github.com/gohugoio/hugo/pulls) contributions workflow on **GitHub**. New contributors are
+always welcome!
+{{% /blocks/feature %}}
+{{< /blocks/section >}}
+
+
+{{< blocks/section >}}
+<div class="col">
+	<h1 class="text-center">Recent News</h1>
+	TBD.
+</div>
+{{< /blocks/section >}}
+
+
+{{< blocks/section >}}
+<div class="col">
+<h1 class="text-center">Want more?</h1>
+
+<div class="d-flex justify-content-center">
+	<a class="btn btn-lg btn-primary mr-3 mb-4" href="{{< relref "/docs" >}}">
+		Read the docs!<i class="fas fa-arrow-alt-circle-right ml-2"></i>
+	</a>
+	<a class="btn btn-lg btn-secondary mr-3 mb-4" href="https://github.com/google/docsy-example">
+		Download <i class="fab fa-github ml-2 "></i>
+	</a>
+</div>	
+</div>
+{{< /blocks/section >}}
