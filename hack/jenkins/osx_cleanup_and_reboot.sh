@@ -1,4 +1,4 @@
-#!/bin.sh
+#!/bin/sh
 
 # Copyright 2019 The Kubernetes Authors All rights reserved.
 #
