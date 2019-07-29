@@ -279,7 +279,3 @@ __minikube_bash_source <(__minikube_convert_bash_to_zsh)
 
 	return nil
 }
-
-func init() {
-	RootCmd.AddCommand(completionCmd)
-}

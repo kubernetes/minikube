@@ -228,5 +228,4 @@ func checkURL(url string) error {
 
 func init() {
 	dashboardCmd.Flags().BoolVar(&dashboardURLMode, "url", false, "Display dashboard URL instead of opening a browser")
-	RootCmd.AddCommand(dashboardCmd)
 }

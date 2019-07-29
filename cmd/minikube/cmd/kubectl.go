@@ -86,7 +86,3 @@ kubectl get pods --namespace kube-system`,
 		}
 	},
 }
-
-func init() {
-	RootCmd.AddCommand(kubectlCmd)
-}
