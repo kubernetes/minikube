@@ -138,6 +138,7 @@ func init() {
 				statusCmd,
 				stopCmd,
 				deleteCmd,
+				dashboardCmd,
 			},
 		},
 		{
@@ -147,21 +148,25 @@ func init() {
 				cacheCmd,
 			},
 		},
-
 		{
-			Message: "Usability Commands:",
+			Message: "Configuration and Management Commands:",
 			Commands: []*cobra.Command{
-				dashboardCmd,
-				serviceCmd,
 				configCmd.AddonsCmd,
 				configCmd.ConfigCmd,
 				configCmd.ProfileCmd,
+				updateContextCmd,
+			},
+		},
+		{
+			Message: "Networking and Connectivity Commands:",
+			Commands: []*cobra.Command{
+				serviceCmd,
+				tunnelCmd,
 			},
 		},
 		{
 			Message: "Advanced Commands:",
 			Commands: []*cobra.Command{
-				tunnelCmd,
 				mountCmd,
 				sshCmd,
 				kubectlCmd,
@@ -170,12 +175,11 @@ func init() {
 		{
 			Message: "Troubleshooting Commands:",
 			Commands: []*cobra.Command{
-				updateContextCmd,
 				sshKeyCmd,
 				ipCmd,
 				logsCmd,
-				versionCmd,
 				updateCheckCmd,
+				versionCmd,
 			},
 		},
 	}
