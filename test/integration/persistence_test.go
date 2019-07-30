@@ -66,10 +66,11 @@ func TestPersistence(t *testing.T) {
 
 	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
 	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name() err, stdout, stderr)
+		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 	mk.CheckStatus(state.Running.String())
 
 	// Make sure the same things come up after we've restarted.
 	verifyBusybox(t)
+	mk.Delete()
 }

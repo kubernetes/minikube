@@ -57,7 +57,7 @@ func isTestNoneDriver() bool {
 // profile chooses a profile name based on the test name
 // for i.e, TestFunctional/SSH returns TestFunctional
 func profile(t *testing.T) string {
-	p := profile(t)
+	p := t.Name()
 	if strings.Contains(p, "/") {
 		p = strings.Split(p, "/")[0]
 	}

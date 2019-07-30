@@ -21,6 +21,7 @@ package integration
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/test/integration/util"
@@ -45,7 +46,7 @@ func TestContainerd(t *testing.T) {
 	mk.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
-	mk.RunCommand("delete", true)
+	mk.Delete()
 }
 
 func testGvisor(t *testing.T) {
@@ -97,7 +98,7 @@ func testGvisorRestart(t *testing.T) {
 	mk.CheckStatus(state.None.String())
 	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
 	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name() err, stdout, stderr)
+		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 	mk.CheckStatus(state.Running.String())
 

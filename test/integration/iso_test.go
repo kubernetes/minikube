@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestISO(t *testing.T) {
@@ -36,12 +37,13 @@ func TestISO(t *testing.T) {
 	mk.RunCommand("delete", false)
 	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
 	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name() err, stdout, stderr)
+		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 
 	t.Run("permissions", testMountPermissions)
 	t.Run("packages", testPackages)
 	t.Run("persistence", testPersistence)
+	mk.Delete()
 }
 
 func testMountPermissions(t *testing.T) {
