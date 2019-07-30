@@ -33,11 +33,12 @@ func TestDownloadOnly(t *testing.T) {
 
 	}
 	mk := NewMinikubeRunner(t, p)
+	defer mk.Delete()
+
 	stdout, stderr, err := mk.StartWithStds(15*time.Minute, "--download-only")
 	if err != nil {
 		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
 	}
 	// TODO: add test to check if files are downloaded
 
-	mk.Delete()
 }
