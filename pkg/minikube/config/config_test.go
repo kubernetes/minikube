@@ -60,7 +60,7 @@ var configTestCases = []configTestCase{
 	},
 }
 
-func TestReadConfig(t *testing.T) {
+func Test_decode(t *testing.T) {
 	for _, tt := range configTestCases {
 		r := bytes.NewBufferString(tt.data)
 		config, err := decode(r)
