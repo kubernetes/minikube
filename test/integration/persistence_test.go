@@ -64,7 +64,10 @@ func TestPersistence(t *testing.T) {
 		t.Fatalf("TestPersistence Failed to stop minikube : %v", err)
 	}
 
-	mk.Start()
+	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
+	if err != nil {
+		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name() err, stdout, stderr)
+	}
 	mk.CheckStatus(state.Running.String())
 
 	// Make sure the same things come up after we've restarted.

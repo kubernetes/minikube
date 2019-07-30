@@ -95,7 +95,10 @@ func testGvisorRestart(t *testing.T) {
 	// TODO: @priyawadhwa to add test for stop as well
 	mk.RunCommand("delete", false)
 	mk.CheckStatus(state.None.String())
-	mk.Start()
+	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
+	if err != nil {
+		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name() err, stdout, stderr)
+	}
 	mk.CheckStatus(state.Running.String())
 
 	t.Log("waiting for gvisor controller to come up")
