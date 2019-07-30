@@ -43,7 +43,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.16.14
+KERNEL_VERSION ?= 4.15
 
 GO_VERSION ?= $(shell go version | cut -d' ' -f3 | sed -e 's/go//')
 GOLINT_VERSION ?= v1.17.1
