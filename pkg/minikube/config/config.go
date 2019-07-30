@@ -71,7 +71,11 @@ func get(name string, config MinikubeConfig) (string, error) {
 
 // ReadConfig reads in the JSON minikube config
 func ReadConfig() (MinikubeConfig, error) {
-	f, err := os.Open(constants.ConfigFile)
+	return readConfig(constants.ConfigFile)
+}
+
+func readConfig(configFile string) (MinikubeConfig, error) {
+	f, err := os.Open(configFile)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return make(map[string]interface{}), nil
