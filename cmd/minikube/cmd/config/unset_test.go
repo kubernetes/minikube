@@ -25,7 +25,7 @@ func TestUnsetConfig(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to set the property %q", propName)
 	}
-	err = unset(propName)
+	err = Unset(propName)
 	if err != nil {
 		t.Errorf("Failed to unset property %q", err)
 	}
