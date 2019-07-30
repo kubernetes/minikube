@@ -101,3 +101,43 @@ func TestGet(t *testing.T) {
 		}
 	}
 }
+
+func Test_readConfig(t *testing.T) {
+	// non existing file
+	mkConfig, err := readConfig("non_existing_file")
+	if err != nil {
+		t.Fatalf("Error not exepected but got %v", err)
+	}
+
+	if len(mkConfig) != 0 {
+		t.Errorf("Expected empty map but got %v", mkConfig)
+	}
+
+	// invalid config file
+	mkConfig, err = readConfig("./testdata/.minikube/config/invalid_config.json")
+	if err == nil {
+		t.Fatalf("Error expected but got none")
+	}
+
+	if mkConfig != nil {
+		t.Errorf("Expected nil but got %v", mkConfig)
+	}
+
+	// valid config file
+	mkConfig, err = readConfig("./testdata/.minikube/config/valid_config.json")
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+
+	expectedConfig := map[string]interface{}{
+		"vm-driver":            constants.DriverKvm2,
+		"cpus":                 4,
+		"disk-size":            "20g",
+		"show-libmachine-logs": true,
+		"log_dir":              "/etc/hosts",
+	}
+
+	if reflect.DeepEqual(expectedConfig, mkConfig) || err != nil {
+		t.Errorf("Did not read config correctly,\n\n wanted %+v, \n\n got %+v", expectedConfig, mkConfig)
+	}
+}
