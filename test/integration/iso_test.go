@@ -40,7 +40,7 @@ func TestISO(t *testing.T) {
 		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 	if !isTestNoneDriver() { // none driver doesn't need to be deleted
-		defer mk.Delete()
+		defer mk.TearDown(t)
 	}
 
 	t.Run("permissions", testMountPermissions)

@@ -34,7 +34,7 @@ func TestPersistence(t *testing.T) {
 	t.Parallel()
 	p := profile(t) // profile name
 	mk := NewMinikubeRunner(t, p)
-	defer mk.Delete()
+	defer mk.TearDown(t)
 	mk.EnsureRunning()
 
 	kr := util.NewKubectlRunner(t, p)
