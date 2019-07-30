@@ -31,7 +31,7 @@ func TestFunctional(t *testing.T) {
 		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 	if !isTestNoneDriver() { // none driver doesn't need to be deleted
-		defer mk.Delete()
+		defer mk.TearDown(t)
 	}
 
 	// group is needed to make sure tear down runs after parallel runs

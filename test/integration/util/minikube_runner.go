@@ -219,9 +219,15 @@ func (m *MinikubeRunner) StartWithStds(timeout time.Duration, opts ...string) (s
 	return m.RunWithContext(ctx, cmd)
 }
 
-// Delete deletes the minikube profile to be used to clean up after a test
-func (m *MinikubeRunner) Delete(wait ...bool) string {
-	return m.RunCommand("delete", true, wait...)
+// TearDown deletes minikube without waiting for it. used to free up ram/cpu after each test
+func (m *MinikubeRunner) TearDown(t *testing.T) {
+	profileArg := fmt.Sprintf("-p=%s", m.Profile)
+	path, _ := filepath.Abs(m.BinaryPath)
+	cmd := exec.Command(path, profileArg, "delete")
+	err := cmd.Start()
+	if err != nil {
+		t.Errorf("error tearing down minikube %s : %v", profileArg, err)
+	}
 }
 
 // EnsureRunning makes sure the container runtime is running
