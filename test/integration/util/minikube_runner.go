@@ -60,7 +60,12 @@ func (m *MinikubeRunner) Remove(f assets.CopyableFile) error {
 }
 
 // teeRun runs a command, streaming stdout, stderr to console
-func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
+func (m *MinikubeRunner) teeRun(cmd *exec.Cmd, wait ...bool) (string, string, error) {
+	w := true
+	if wait != nil {
+		w = wait[0]
+	}
+
 	errPipe, err := cmd.StderrPipe()
 	if err != nil {
 		return "", "", err
@@ -73,29 +78,33 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd) (string, string, error) {
 	if err := cmd.Start(); err != nil {
 		return "", "", err
 	}
-	var outB bytes.Buffer
-	var errB bytes.Buffer
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		if err := commonutil.TeePrefix(commonutil.ErrPrefix, errPipe, &errB, Logf); err != nil {
-			m.T.Logf("tee: %v", err)
-		}
-		wg.Done()
-	}()
-	go func() {
-		if err := commonutil.TeePrefix(commonutil.OutPrefix, outPipe, &outB, Logf); err != nil {
-			m.T.Logf("tee: %v", err)
-		}
-		wg.Done()
-	}()
-	err = cmd.Wait()
-	wg.Wait()
-	return outB.String(), errB.String(), err
+	if w {
+		var outB bytes.Buffer
+		var errB bytes.Buffer
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			if err := commonutil.TeePrefix(commonutil.ErrPrefix, errPipe, &errB, Logf); err != nil {
+				m.T.Logf("tee: %v", err)
+			}
+			wg.Done()
+		}()
+		go func() {
+			if err := commonutil.TeePrefix(commonutil.OutPrefix, outPipe, &outB, Logf); err != nil {
+				m.T.Logf("tee: %v", err)
+			}
+			wg.Done()
+		}()
+		err = cmd.Wait()
+		wg.Wait()
+		return outB.String(), errB.String(), err
+
+	}
+	return "", "", err
 }
 
 // RunCommand executes a command, optionally checking for error
-func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool) string {
+func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, wait ...bool) string {
 	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
@@ -103,7 +112,7 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool) string {
 
 	cmd := exec.Command(path, cmdArgs...)
 	Logf("Run: %s", cmd.Args)
-	stdout, stderr, err := m.teeRun(cmd)
+	stdout, stderr, err := m.teeRun(cmd, wait...)
 	if failError && err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			m.T.Fatalf("Error running command: %s %s. Output: %s", cmdStr, exitError.Stderr, stdout)
@@ -115,7 +124,7 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool) string {
 }
 
 // RunWithContext calls the minikube command with a context, useful for timeouts.
-func (m *MinikubeRunner) RunWithContext(ctx context.Context, cmdStr string) (string, string, error) {
+func (m *MinikubeRunner) RunWithContext(ctx context.Context, cmdStr string, wait ...bool) (string, string, error) {
 	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
@@ -123,7 +132,7 @@ func (m *MinikubeRunner) RunWithContext(ctx context.Context, cmdStr string) (str
 
 	cmd := exec.CommandContext(ctx, path, cmdArgs...)
 	Logf("Run: %s", cmd.Args)
-	return m.teeRun(cmd)
+	return m.teeRun(cmd, wait...)
 }
 
 // RunDaemon executes a command, returning the stdout

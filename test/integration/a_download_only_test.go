@@ -17,7 +17,7 @@ limitations under the License.
 */
 
 package integration
-
+// this file name has to start with a so it be run before all other tests
 import (
 	"testing"
 	"time"
