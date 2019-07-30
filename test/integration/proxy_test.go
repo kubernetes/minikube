@@ -65,11 +65,11 @@ func setUpProxy(t *testing.T) (*http.Server, error) {
 
 func TestProxy(t *testing.T) {
 	origHP := os.Getenv("HTTP_PROXY")
-	origNP := os.Getenv("NO_PROXY")	
+	origNP := os.Getenv("NO_PROXY")
 	p := profile(t) // profile name
 	if isTestNoneDriver() {
 		p = "minikube"
-	} 
+	}
 
 	srv, err := setUpProxy(t)
 	if err != nil {
@@ -78,8 +78,6 @@ func TestProxy(t *testing.T) {
 
 	// making sure there is no running minikube to avoid https://github.com/kubernetes/minikube/issues/4132
 	mk := NewMinikubeRunner(t, p)
-	defer mk.TearDown(t)
-
 	// Clean up after setting up proxy
 	defer func(t *testing.T) {
 		err = os.Setenv("HTTP_PROXY", origHP)
@@ -95,7 +93,10 @@ func TestProxy(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
-		mk.RunCommand("delete", true)
+		if !isTestNoneDriver() {
+			mk.TearDown(t)
+		}
+
 	}(t)
 
 	t.Run("ProxyConsoleWarnning", testProxyWarning)
@@ -108,7 +109,7 @@ func testProxyWarning(t *testing.T) {
 	p := profile(t) // profile name
 	if isTestNoneDriver() {
 		p = "minikube"
-	} 
+	}
 	mk := NewMinikubeRunner(t, p)
 	stdout, stderr, err := mk.Start()
 	if err != nil {
