@@ -73,69 +73,71 @@ func TestStartStop(t *testing.T) {
 			"kubeadm.ignore-preflight-errors=SystemVerification",
 		}},
 	}
+	t.Run("group", func(t *testing.T) {
+		for _, tc := range tests {
+			t.Run(tc.name, func(t *testing.T) {
+				t.Parallel()
+				mk := NewMinikubeRunner(t, p+tc.name)
+				// TODO : redundant first clause, this test never happens for none
+				if !strings.Contains(tc.name, "docker") && isTestNoneDriver() {
+					t.Skipf("skipping %s - incompatible with none driver", tc.name)
+				}
 
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			mk := NewMinikubeRunner(t, p)
-			// TODO : check does this ever happen ?
-			if !strings.Contains(tc.name, "docker") && isTestNoneDriver() {
-				t.Skipf("skipping %s - incompatible with none driver", tc.name)
-			}
+				mk.RunCommand("config set WantReportErrorPrompt false", true)
+				mk.RunCommand("delete", false)
+				mk.CheckStatus(state.None.String())
 
-			mk.RunCommand("config set WantReportErrorPrompt false", true)
-			mk.RunCommand("delete", false)
-			mk.CheckStatus(state.None.String())
+				stdout, stderr, err := mk.Start(tc.args...)
+				if err != nil {
+					t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
+				}
 
-			stdout, stderr, err := mk.Start(tc.args...)
-			if err != nil {
-				t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
-			}
+				mk.CheckStatus(state.Running.String())
 
-			mk.CheckStatus(state.Running.String())
+				ip := mk.RunCommand("ip", true)
+				ip = strings.TrimRight(ip, "\n")
+				if net.ParseIP(ip) == nil {
+					t.Fatalf("IP command returned an invalid address: %s", ip)
+				}
 
-			ip := mk.RunCommand("ip", true)
-			ip = strings.TrimRight(ip, "\n")
-			if net.ParseIP(ip) == nil {
-				t.Fatalf("IP command returned an invalid address: %s", ip)
-			}
+				// check for the current-context before and after the stop
+				// TODO: medya move this test to a non-parallel test so we can do more parallel
+				// kr := util.NewKubectlRunner(t, p)
+				// currentContext, err := kr.RunCommand([]string{"config", "current-context"}, false)
+				// if err != nil {
+				// 	t.Fatalf("Failed to fetch current-context")
+				// }
+				// if strings.TrimRight(string(currentContext), "\n") != p {
+				// 	t.Fatalf("got current-context - %q, want  current-context %q", string(currentContext), p)
+				// }
 
-			// check for the current-context before and after the stop
-			// TODO: medya move this test to a non-parallel test so we can do more parallel
-			// kr := util.NewKubectlRunner(t, p)
-			// currentContext, err := kr.RunCommand([]string{"config", "current-context"}, false)
-			// if err != nil {
-			// 	t.Fatalf("Failed to fetch current-context")
-			// }
-			// if strings.TrimRight(string(currentContext), "\n") != p {
-			// 	t.Fatalf("got current-context - %q, want  current-context %q", string(currentContext), p)
-			// }
+				checkStop := func() error {
+					mk.RunCommand("stop", true)
+					return mk.CheckStatusNoFail(state.Stopped.String())
+				}
 
-			checkStop := func() error {
-				mk.RunCommand("stop", true)
-				return mk.CheckStatusNoFail(state.Stopped.String())
-			}
+				if err := util.Retry(t, checkStop, 10*time.Second, 3); err != nil {
+					t.Fatalf("timed out while checking stopped status: %v", err)
+				}
 
-			if err := util.Retry(t, checkStop, 10*time.Second, 3); err != nil {
-				t.Fatalf("timed out while checking stopped status: %v", err)
-			}
+				// TODO medyagh:  the commented code beollow was not correct ! I leave it for another PR
+				// https://github.com/kubernetes/minikube/issues/4854
 
-			// TODO medyagh:  the commented code beollow was not correct ! I leave it for another PR
-			// https://github.com/kubernetes/minikube/issues/4854
+				// running this command results in error when the current-context is not set
+				// if err := mk.Run("config current-context"); err != nil {
+				// 	t.Logf("current-context is not set to minikube")
+				// }
 
-			// running this command results in error when the current-context is not set
-			// if err := mk.Run("config current-context"); err != nil {
-			// 	t.Logf("current-context is not set to minikube")
-			// }
+				stdout, stderr, err = mk.Start(tc.args...)
+				if err != nil {
+					t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+				}
 
-			stdout, stderr, err = mk.Start(tc.args...)
-			if err != nil {
-				t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
-			}
+				mk.CheckStatus(state.Running.String())
 
-			mk.CheckStatus(state.Running.String())
-
-			mk.RunCommand("delete", true)
-			mk.CheckStatus(state.None.String())
-		})
-	}
+				mk.RunCommand("delete", true)
+				mk.CheckStatus(state.None.String())
+			})
+		}
+	})
 }
