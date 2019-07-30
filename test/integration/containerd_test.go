@@ -36,7 +36,10 @@ func TestContainerd(t *testing.T) {
 	}
 
 	mk := NewMinikubeRunner(t, p)
-	defer mk.Delete()
+	if !isTestNoneDriver() { // none driver doesnt need to be deleted
+		defer mk.Delete()
+	}
+
 	if isTestNoneDriver() {
 		t.Skip("Can't run containerd backend with none driver")
 	}

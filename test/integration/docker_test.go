@@ -28,16 +28,13 @@ import (
 )
 
 func TestDocker(t *testing.T) {
-	p := profile(t)
-	if isTestNoneDriver() {
-		p = "minikube"
-	} else {
-		t.Parallel()
-	}
-	mk := NewMinikubeRunner(t, p, "--wait=false")
 	if isTestNoneDriver() {
 		t.Skip("skipping test as none driver does not bundle docker")
 	}
+	p := profile(t)
+	t.Parallel()
+	mk := NewMinikubeRunner(t, p, "--wait=false")
+	defer mk.Delete()
 
 	// Start a timer for all remaining commands, to display failure output before a panic.
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
@@ -74,6 +71,4 @@ func TestDocker(t *testing.T) {
 			t.Fatalf("Option %s missing from ExecStart: %s.", opt, stdout)
 		}
 	}
-
-	defer mk.Delete()
 }

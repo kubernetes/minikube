@@ -33,7 +33,9 @@ func TestDownloadOnly(t *testing.T) {
 
 	}
 	mk := NewMinikubeRunner(t, p)
-	defer mk.Delete()
+	if !isTestNoneDriver() { // none driver doesnt need to be deleted
+		defer mk.Delete()
+	}
 
 	stdout, stderr, err := mk.StartWithStds(15*time.Minute, "--download-only")
 	if err != nil {
