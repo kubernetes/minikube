@@ -443,6 +443,7 @@ release-minikube: out/minikube checksum
 
 out/docker-machine-driver-kvm2: pkg/minikube/translate/translations.go
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || \
 	docker pull $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
 	# make extra sure that we are linking with the older version of libvirt (1.3.1)
@@ -481,7 +482,8 @@ $(KVM_BUILD_IMAGE): installers/linux/kvm/Dockerfile
 	@echo "$(@) successfully built"
 
 kvm_in_docker:
-	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
+	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || \
+	docker pull $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
 	rm -f out/docker-machine-driver-kvm2
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 
