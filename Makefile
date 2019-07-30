@@ -45,7 +45,9 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.16.14
 
-GO_VERSION ?= $(shell go version | cut -d' ' -f3 | sed -e 's/go//')
+# Currently *only* used for the KVM_BUILD_IMAGE, see also BUILD_IMAGE above
+GO_VERSION ?= 1.12.7
+
 GOLINT_VERSION ?= v1.17.1
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
