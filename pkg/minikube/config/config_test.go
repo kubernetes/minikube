@@ -70,7 +70,7 @@ func Test_decode(t *testing.T) {
 	}
 }
 
-func TestGet(t *testing.T) {
+func Test_get(t *testing.T) {
 	cfg := `{
 		"key": "val"
 	}`
