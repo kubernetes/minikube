@@ -49,4 +49,5 @@ func TestFunctional(t *testing.T) {
 		t.Run("IngressController", testIngressController)
 		t.Run("Mounting", testMounting)
 	}
+	mk.Delete()
 }

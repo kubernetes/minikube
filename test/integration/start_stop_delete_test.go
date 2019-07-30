@@ -37,6 +37,8 @@ func TestStartStop(t *testing.T) {
 	} else {
 		t.Parallel()
 	}
+	mk := NewMinikubeRunner(t, p)
+	defer mk.Delete()
 
 	tests := []struct {
 		name string

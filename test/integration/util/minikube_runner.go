@@ -219,6 +219,11 @@ func (m *MinikubeRunner) StartWithStds(timeout time.Duration, opts ...string) (s
 	return m.RunWithContext(ctx, cmd)
 }
 
+// Delete deletes the minikube profile to be used to clean up after a test
+func (m *MinikubeRunner) Delete(wait ...bool) string {
+	return m.RunCommand("delete", true, wait...)
+}
+
 // EnsureRunning makes sure the container runtime is running
 func (m *MinikubeRunner) EnsureRunning(opts ...string) {
 	if m.GetStatus() != state.Running.String() {
