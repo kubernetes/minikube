@@ -20,7 +20,10 @@ limitations under the License.
 package integration
 
 import (
+	"fmt"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // TestDownloadOnly downloads ISOs also tests the --download-only option
@@ -36,10 +39,21 @@ func TestDownloadOnly(t *testing.T) {
 		defer mk.TearDown(t)
 	}
 
-	stdout, stderr, err := mk.Start("--download-only")
-	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
-	}
-	// TODO: add test to check if files are downloaded
+	t.Run("Oldest", func(t *testing.T) {
+		stdout, stderr, err := mk.Start("--download-only", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
+		if err != nil {
+			t.Fatalf("%s minikube --download-only failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
+		}
+	})
+
+	t.Run("Newest", func(t *testing.T) {
+		stdout, stderr, err := mk.Start("--download-only", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
+		if err != nil {
+			t.Fatalf("%s minikube --download-only failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
+		}
+		// TODO: add test to check if files are downloaded
+	})
+
+	// TODO: download latest binary to test data here
 
 }

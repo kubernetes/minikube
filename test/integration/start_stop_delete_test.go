@@ -46,7 +46,7 @@ func TestStartStop(t *testing.T) {
 		name string
 		args []string
 	}{
-		{"nocache_oldest", []string{
+		{"oldest", []string{ // nocache_oldest
 			"--cache-images=false",
 			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
 			// default is the network created by libvirt, if we change the name minikube won't boot
@@ -54,7 +54,7 @@ func TestStartStop(t *testing.T) {
 			"--kvm-network=default",
 			"--kvm-qemu-uri=qemu:///system",
 		}},
-		{"feature_gates_newest_cni", []string{
+		{"cni", []string{ // feature_gates_newest_cni
 			"--feature-gates",
 			"ServerSideApply=true",
 			"--network-plugin=cni",
@@ -62,25 +62,28 @@ func TestStartStop(t *testing.T) {
 			"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
 		}},
-		{"containerd_and_non_default_apiserver_port", []string{
+		{"containerd", []string{ // containerd_and_non_default_apiserver_port
 			"--container-runtime=containerd",
 			"--docker-opt containerd=/var/run/containerd/containerd.sock",
 			"--apiserver-port=8444",
 		}},
-		{"crio_ignore_preflights", []string{
+		{"crio", []string{ // crio_ignore_preflights
 			"--container-runtime=crio",
 			"--extra-config",
 			"kubeadm.ignore-preflight-errors=SystemVerification",
 		}},
 	}
 	t.Run("group", func(t *testing.T) {
+		t.Parallel()
 		for _, tc := range tests {
+			n := tc.name // because similar to https://golang.org/doc/faq#closures_and_goroutines
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
-				mk := NewMinikubeRunner(t, p+tc.name)
+				p = p + n
+				mk := NewMinikubeRunner(t, p)
 				// TODO : redundant first clause, this test never happens for none
-				if !strings.Contains(tc.name, "docker") && isTestNoneDriver() {
-					t.Skipf("skipping %s - incompatible with none driver", tc.name)
+				if !strings.Contains(p, "docker") && isTestNoneDriver() {
+					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
 
 				mk.RunCommand("config set WantReportErrorPrompt false", true)
