@@ -39,11 +39,12 @@ func TestISO(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
+	defer mk.Delete()
 
 	t.Run("permissions", testMountPermissions)
 	t.Run("packages", testPackages)
 	t.Run("persistence", testPersistence)
-	mk.Delete()
+	
 }
 
 func testMountPermissions(t *testing.T) {

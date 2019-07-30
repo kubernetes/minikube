@@ -20,16 +20,22 @@ package integration
 
 import (
 	"testing"
+	"time"
 )
 
 func TestFunctional(t *testing.T) {
-	p := "minikube" // for functional test we use default profile name
+	p := "minikube"
+	// for functional test we use default profile name
 	// if !isTestNoneDriver() {
 	// 	t.Parallel()
 	// }
 
 	mk := NewMinikubeRunner(t, p)
-	mk.EnsureRunning()
+	defer mk.Delete()
+	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
+	if err != nil {
+		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+	}
 	// This one is not parallel, and ensures the cluster comes up
 	// before we run any other tests.
 	t.Run("Status", testClusterStatus)
@@ -49,5 +55,4 @@ func TestFunctional(t *testing.T) {
 		t.Run("IngressController", testIngressController)
 		t.Run("Mounting", testMounting)
 	}
-	mk.Delete()
 }

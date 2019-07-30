@@ -36,6 +36,7 @@ func TestContainerd(t *testing.T) {
 	}
 
 	mk := NewMinikubeRunner(t, p)
+	defer mk.Delete()
 	if isTestNoneDriver() {
 		t.Skip("Can't run containerd backend with none driver")
 	}
@@ -46,7 +47,6 @@ func TestContainerd(t *testing.T) {
 	mk.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
-	mk.Delete()
 }
 
 func testGvisor(t *testing.T) {

@@ -74,6 +74,7 @@ func TestProxy(t *testing.T) {
 	// making sure there is no running minikube to avoid https://github.com/kubernetes/minikube/issues/4132
 	p := profile(t)
 	mk := NewMinikubeRunner(t, p)
+	defer mk.Delete()
 
 	// Clean up after setting up proxy
 	defer func(t *testing.T) {
@@ -95,7 +96,6 @@ func TestProxy(t *testing.T) {
 
 	t.Run("Proxy Console Warnning", testProxyWarning)
 	t.Run("Proxy Dashboard", testProxyDashboard)
-	mk.Delete()
 
 }
 

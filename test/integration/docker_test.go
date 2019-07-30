@@ -75,5 +75,5 @@ func TestDocker(t *testing.T) {
 		}
 	}
 
-	mk.Delete()
+	defer mk.Delete()
 }
