@@ -30,7 +30,7 @@ var configUnsetCmd = &cobra.Command{
 		if len(args) != 1 {
 			exit.UsageT("usage: minikube config unset PROPERTY_NAME")
 		}
-		err := unset(args[0])
+		err := Unset(args[0])
 		if err != nil {
 			exit.WithError("unset failed", err)
 		}
@@ -41,7 +41,8 @@ func init() {
 	ConfigCmd.AddCommand(configUnsetCmd)
 }
 
-func unset(name string) error {
+// Unset unsets a property
+func Unset(name string) error {
 	m, err := pkgConfig.ReadConfig()
 	if err != nil {
 		return err
