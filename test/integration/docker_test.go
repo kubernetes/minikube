@@ -52,7 +52,7 @@ func TestDocker(t *testing.T) {
 		t.Fatalf("TestDocker minikube start failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
 	}
 
-	mk.CheckStatus(state.None.String())
+	mk.CheckStatus(state.Running.String())
 
 	stdout, stderr, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
 	if err != nil {

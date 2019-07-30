@@ -180,7 +180,7 @@ func testServicesList(t *testing.T) {
 	checkServices := func() error {
 		output := mk.RunCommand("service list", false)
 		if !strings.Contains(output, "kubernetes") {
-			return fmt.Errorf("Error, kubernetes service missing from output %s", output)
+			return fmt.Errorf("error, kubernetes service missing from output %s", output)
 		}
 		return nil
 	}
