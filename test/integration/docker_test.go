@@ -44,7 +44,7 @@ func TestDocker(t *testing.T) {
 		t.Logf("pre-delete failed (probably ok): %v", err)
 	}
 
-	stdout, stderr, err := mk.StartWithStds(13*time.Minute, "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", " --docker-opt=icc=true")
+	stdout, stderr, err := mk.Start("--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", " --docker-opt=icc=true")
 	if err != nil {
 		t.Fatalf("TestDocker minikube start failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
 	}

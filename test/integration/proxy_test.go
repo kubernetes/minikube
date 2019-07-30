@@ -103,7 +103,7 @@ func TestProxy(t *testing.T) {
 func testProxyWarning(t *testing.T) {
 	p := profile(t)
 	mk := NewMinikubeRunner(t, p)
-	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
+	stdout, stderr, err := mk.Start()
 	if err != nil {
 		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
