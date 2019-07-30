@@ -28,7 +28,7 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	p := t.Name() // profile name
+	p := profile(t) // profile name
 	if isTestNoneDriver() {
 		p = "minikube"
 	} else {
