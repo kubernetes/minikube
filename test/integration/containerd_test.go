@@ -37,7 +37,7 @@ func TestContainerd(t *testing.T) {
 
 	mk := NewMinikubeRunner(t, p)
 	if !isTestNoneDriver() { // none driver doesnt need to be deleted
-		defer mk.Delete()
+		defer mk.TearDown(t)
 	}
 
 	if isTestNoneDriver() {

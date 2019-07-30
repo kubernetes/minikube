@@ -34,7 +34,7 @@ func TestDocker(t *testing.T) {
 	p := profile(t)
 	t.Parallel()
 	mk := NewMinikubeRunner(t, p, "--wait=false")
-	defer mk.Delete()
+	defer mk.TearDown(t)
 
 	// Start a timer for all remaining commands, to display failure output before a panic.
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
