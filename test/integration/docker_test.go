@@ -28,7 +28,7 @@ import (
 )
 
 func TestDocker(t *testing.T) {
-	p := t.Name()
+	p := profile(t)
 	if isTestNoneDriver() {
 		p = "minikube"
 	} else {

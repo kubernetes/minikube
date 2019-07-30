@@ -26,7 +26,7 @@ import (
 // TestDownloadOnly downloads ISOs also tests the --download-only option
 // Note this test runs before all tests (because of file name) and caches images for them
 func TestDownloadOnly(t *testing.T) {
-	p := t.Name()
+	p := profile(t)
 	if isTestNoneDriver() {
 		t.Skip()
 

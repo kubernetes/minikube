@@ -31,7 +31,7 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
-	p := "TestStartStop" // profile name
+	p := profile(t) // profile name
 	if isTestNoneDriver() {
 		p = "minikube"
 	} else {

@@ -27,7 +27,7 @@ import (
 )
 
 func TestContainerd(t *testing.T) {
-	p := t.Name()
+	p := profile(t)
 	if isTestNoneDriver() {
 		p = "minikube"
 	} else {
@@ -49,7 +49,7 @@ func TestContainerd(t *testing.T) {
 }
 
 func testGvisor(t *testing.T) {
-	p := "TestContainerd"
+	p := profile(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	mk.RunCommand("addons enable gvisor", true)
 
@@ -82,7 +82,7 @@ func testGvisor(t *testing.T) {
 }
 
 func testGvisorRestart(t *testing.T) {
-	p := "TestContainerd"
+	p := profile(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	mk.EnsureRunning()
 	mk.RunCommand("addons enable gvisor", true)
