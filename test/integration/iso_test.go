@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestISO(t *testing.T) {
@@ -35,7 +34,7 @@ func TestISO(t *testing.T) {
 
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	mk.RunCommand("delete", false)
-	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
+	stdout, stderr, err := mk.Start()
 	if err != nil {
 		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}

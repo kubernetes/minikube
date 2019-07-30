@@ -36,13 +36,14 @@ import (
 
 // MinikubeRunner runs a command
 type MinikubeRunner struct {
-	Profile    string
-	T          *testing.T
-	BinaryPath string
-	GlobalArgs string
-	StartArgs  string
-	MountArgs  string
-	Runtime    string
+	Profile      string
+	T            *testing.T
+	BinaryPath   string
+	GlobalArgs   string
+	StartArgs    string
+	MountArgs    string
+	Runtime      string
+	TimeOutStart time.Duration // time to wait for minikube start before killing it
 }
 
 // Copy copies a file
@@ -205,15 +206,9 @@ func (m *MinikubeRunner) SSH(cmdStr string) (string, error) {
 	return string(stdout), nil
 }
 
-// Start starts the cluster
-func (m *MinikubeRunner) Start(opts ...string) string {
-	cmd := fmt.Sprintf("start %s %s %s --alsologtostderr --v=2", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
-	return m.RunCommand(cmd, true)
-}
-
-// StartWithStds starts the cluster with console output without verbose log
-func (m *MinikubeRunner) StartWithStds(timeout time.Duration, opts ...string) (stdout string, stderr string, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+// Start starts the cluster with console output without verbose log
+func (m *MinikubeRunner) Start(opts ...string) (stdout string, stderr string, err error) {
+	ctx, cancel := context.WithTimeout(context.Background(), m.TimeOutStart)
 	defer cancel()
 	cmd := fmt.Sprintf("start %s %s %s", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
 	return m.RunWithContext(ctx, cmd)
@@ -233,7 +228,10 @@ func (m *MinikubeRunner) TearDown(t *testing.T) {
 // EnsureRunning makes sure the container runtime is running
 func (m *MinikubeRunner) EnsureRunning(opts ...string) {
 	if m.GetStatus() != state.Running.String() {
-		m.Start(opts...)
+		_, _, err := m.Start(opts...)
+		if err != nil {
+			m.T.Errorf("error starting while running EnsureRunning : %v", err)
+		}
 	}
 	m.CheckStatus(state.Running.String())
 }

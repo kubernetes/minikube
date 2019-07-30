@@ -21,6 +21,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"k8s.io/minikube/test/integration/util"
 )
@@ -31,6 +32,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
+var startTimeout = flag.Int("timeout", 18, "number of minutes to wait for minikube start")
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
 var globalArgs = flag.String("minikube-args", "", "Arguments to pass to minikube")
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
@@ -40,12 +42,13 @@ var testdataDir = flag.String("testdata-dir", "testdata", "the directory relativ
 // NewMinikubeRunner creates a new MinikubeRunner
 func NewMinikubeRunner(t *testing.T, profile string, extraStartArgs ...string) util.MinikubeRunner {
 	return util.MinikubeRunner{
-		Profile:    profile,
-		BinaryPath: *binaryPath,
-		StartArgs:  *startArgs + " " + strings.Join(extraStartArgs, " "),
-		GlobalArgs: *globalArgs,
-		MountArgs:  *mountArgs,
-		T:          t,
+		Profile:      profile,
+		BinaryPath:   *binaryPath,
+		StartArgs:    *startArgs + " " + strings.Join(extraStartArgs, " "),
+		GlobalArgs:   *globalArgs,
+		MountArgs:    *mountArgs,
+		TimeOutStart: time.Duration(*startTimeout) * time.Minute,
+		T:            t,
 	}
 }
 
