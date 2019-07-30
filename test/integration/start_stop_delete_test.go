@@ -37,52 +37,50 @@ func TestStartStop(t *testing.T) {
 	} else {
 		t.Parallel()
 	}
-	mk := NewMinikubeRunner(t, p)
-	if !isTestNoneDriver() { // none driver doesn't need to be deleted
-		defer mk.TearDown(t)
-	}
-
-	tests := []struct {
-		name string
-		args []string
-	}{
-		{"oldest", []string{ // nocache_oldest
-			"--cache-images=false",
-			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
-			// default is the network created by libvirt, if we change the name minikube won't boot
-			// because the given network doesn't exist
-			"--kvm-network=default",
-			"--kvm-qemu-uri=qemu:///system",
-		}},
-		{"cni", []string{ // feature_gates_newest_cni
-			"--feature-gates",
-			"ServerSideApply=true",
-			"--network-plugin=cni",
-			"--extra-config=kubelet.network-plugin=cni",
-			"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
-			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
-		}},
-		{"containerd", []string{ // containerd_and_non_default_apiserver_port
-			"--container-runtime=containerd",
-			"--docker-opt containerd=/var/run/containerd/containerd.sock",
-			"--apiserver-port=8444",
-		}},
-		{"crio", []string{ // crio_ignore_preflights
-			"--container-runtime=crio",
-			"--extra-config",
-			"kubeadm.ignore-preflight-errors=SystemVerification",
-		}},
-	}
 	t.Run("group", func(t *testing.T) {
-		t.Parallel()
+		if !isTestNoneDriver() {
+			t.Parallel()
+		}
+		tests := []struct {
+			name string
+			args []string
+		}{
+			{"oldest", []string{ // nocache_oldest
+				"--cache-images=false",
+				fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
+				// default is the network created by libvirt, if we change the name minikube won't boot
+				// because the given network doesn't exist
+				"--kvm-network=default",
+				"--kvm-qemu-uri=qemu:///system",
+			}},
+			{"cni", []string{ // feature_gates_newest_cni
+				"--feature-gates",
+				"ServerSideApply=true",
+				"--network-plugin=cni",
+				"--extra-config=kubelet.network-plugin=cni",
+				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
+				fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
+			}},
+			{"containerd", []string{ // containerd_and_non_default_apiserver_port
+				"--container-runtime=containerd",
+				"--docker-opt containerd=/var/run/containerd/containerd.sock",
+				"--apiserver-port=8444",
+			}},
+			{"crio", []string{ // crio_ignore_preflights
+				"--container-runtime=crio",
+				"--extra-config",
+				"kubeadm.ignore-preflight-errors=SystemVerification",
+			}},
+		}
+
 		for _, tc := range tests {
 			n := tc.name // because similar to https://golang.org/doc/faq#closures_and_goroutines
 			t.Run(tc.name, func(t *testing.T) {
 				t.Parallel()
-				p = p + n
-				mk := NewMinikubeRunner(t, p)
+				pn := p + n
+				mk := NewMinikubeRunner(t, pn)
 				// TODO : redundant first clause, this test never happens for none
-				if !strings.Contains(p, "docker") && isTestNoneDriver() {
+				if !strings.Contains(pn, "docker") && isTestNoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
 
@@ -92,7 +90,7 @@ func TestStartStop(t *testing.T) {
 
 				stdout, stderr, err := mk.Start(tc.args...)
 				if err != nil {
-					t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
+					t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", pn, err, stdout, stderr)
 				}
 
 				mk.CheckStatus(state.Running.String())
