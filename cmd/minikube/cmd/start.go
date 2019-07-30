@@ -235,7 +235,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			out.V{"driver": vmDriver, "os": runtime.GOOS},
 		)
 	}
-  
+
 	validateConfig()
 	validateUser()
 	validateDriverVersion(viper.GetString(vmDriver))
