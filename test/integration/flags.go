@@ -53,3 +53,13 @@ func NewMinikubeRunner(t *testing.T, profile string, extraStartArgs ...string) u
 func isTestNoneDriver() bool {
 	return strings.Contains(*startArgs, "--vm-driver=none")
 }
+
+// profile chooses a profile name based on the test name
+// for i.e, TestFunctional/SSH returns TestFunctional
+func profile(t *testing.T) string {
+	p := profile(t)
+	if strings.Contains(p, "/") {
+		p = strings.Split(p, "/")[0]
+	}
+	return p
+}
