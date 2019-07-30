@@ -86,7 +86,7 @@ func TestStartStop(t *testing.T) {
 			mk.RunCommand("delete", false)
 			mk.CheckStatus(state.None.String())
 
-			stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
+			stdout, stderr, err := mk.Start()
 			if err != nil {
 				t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
 			}
@@ -127,7 +127,11 @@ func TestStartStop(t *testing.T) {
 			// 	t.Logf("current-context is not set to minikube")
 			// }
 
-			mk.Start(tc.args...)
+			stdout, stderr, err = mk.Start(tc.args...)
+			if err != nil {
+				t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+			}
+
 			mk.CheckStatus(state.Running.String())
 
 			mk.RunCommand("delete", true)

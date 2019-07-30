@@ -19,10 +19,8 @@ limitations under the License.
 // a_download_only_test.go filename starts with a, for the purpose that it runs before all parallel tests and downloads the images and caches them.
 package integration
 
-
 import (
 	"testing"
-	"time"
 )
 
 // TestDownloadOnly downloads ISOs also tests the --download-only option
@@ -38,7 +36,7 @@ func TestDownloadOnly(t *testing.T) {
 		defer mk.TearDown(t)
 	}
 
-	stdout, stderr, err := mk.StartWithStds(15*time.Minute, "--download-only")
+	stdout, stderr, err := mk.Start("--download-only")
 	if err != nil {
 		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
 	}

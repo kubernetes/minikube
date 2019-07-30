@@ -20,13 +20,16 @@ package integration
 
 import (
 	"testing"
-	"time"
 )
 
 func TestFunctional(t *testing.T) {
 	p := "minikube"
+	// if !isTestNoneDriver() {
+	// 	t.Parallel()
+	// }
+
 	mk := NewMinikubeRunner(t, p)
-	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
+	stdout, stderr, err := mk.Start()
 	if err != nil {
 		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}

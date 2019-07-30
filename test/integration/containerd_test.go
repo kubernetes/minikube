@@ -21,7 +21,6 @@ package integration
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/test/integration/util"
@@ -30,24 +29,22 @@ import (
 func TestContainerd(t *testing.T) {
 	p := profile(t)
 	if isTestNoneDriver() {
-		p = "minikube"
-	} else {
-		t.Parallel()
-	}
-
-	mk := NewMinikubeRunner(t, p)
-	if !isTestNoneDriver() { // none driver doesnt need to be deleted
-		defer mk.TearDown(t)
-	}
-
-	if isTestNoneDriver() {
 		t.Skip("Can't run containerd backend with none driver")
+	}
+	t.Parallel()
+	mk := NewMinikubeRunner(t, p)
+	if !isTestNoneDriver() { // none driver doesn't need to be deleted
+		defer mk.TearDown(t)
 	}
 
 	if mk.GetStatus() != state.None.String() {
 		mk.RunCommand("delete", true)
 	}
-	mk.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	stdout, stderr, err := mk.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	if err != nil {
+		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+	}
+
 	t.Run("Gvisor", testGvisor)
 	t.Run("GvisorRestart", testGvisorRestart)
 }
@@ -99,7 +96,7 @@ func testGvisorRestart(t *testing.T) {
 	// TODO: @priyawadhwa to add test for stop as well
 	mk.RunCommand("delete", false)
 	mk.CheckStatus(state.None.String())
-	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
+	stdout, stderr, err := mk.Start()
 	if err != nil {
 		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
