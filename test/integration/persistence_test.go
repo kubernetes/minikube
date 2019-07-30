@@ -28,17 +28,13 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	p := profile(t) // profile name
-	if isTestNoneDriver() {
-		p = "minikube"
-	} else {
-		t.Parallel()
-	}
-	mk := NewMinikubeRunner(t, p)
-	defer mk.Delete()
 	if isTestNoneDriver() {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
+	t.Parallel()
+	p := profile(t) // profile name
+	mk := NewMinikubeRunner(t, p)
+	defer mk.Delete()
 	mk.EnsureRunning()
 
 	kr := util.NewKubectlRunner(t, p)
