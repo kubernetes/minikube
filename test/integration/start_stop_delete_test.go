@@ -86,7 +86,7 @@ func TestStartStop(t *testing.T) {
 			mk.RunCommand("delete", false)
 			mk.CheckStatus(state.None.String())
 
-			stdout, stderr, err := mk.Start()
+			stdout, stderr, err := mk.Start(tc.args...)
 			if err != nil {
 				t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
 			}
@@ -100,7 +100,7 @@ func TestStartStop(t *testing.T) {
 			}
 
 			// check for the current-context before and after the stop
-			// TODO: medya move this test to its own test so we can do more parallel
+			// TODO: medya move this test to a non-parallel test so we can do more parallel
 			// kr := util.NewKubectlRunner(t, p)
 			// currentContext, err := kr.RunCommand([]string{"config", "current-context"}, false)
 			// if err != nil {
