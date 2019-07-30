@@ -24,9 +24,9 @@ import (
 
 func TestFunctional(t *testing.T) {
 	p := "minikube"
-	if !isTestNoneDriver() {
-		t.Parallel()
-	}
+	// if !isTestNoneDriver() {
+	// 	t.Parallel()
+	// }
 
 	mk := NewMinikubeRunner(t, p)
 	stdout, stderr, err := mk.Start()

@@ -32,7 +32,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-var startTimeout = flag.Int("timeout", 17, "number of minutes to wait for minikube start")
+var startTimeout = flag.Int("timeout", 18, "number of minutes to wait for minikube start")
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
 var globalArgs = flag.String("minikube-args", "", "Arguments to pass to minikube")
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")

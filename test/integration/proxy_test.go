@@ -65,14 +65,18 @@ func setUpProxy(t *testing.T) (*http.Server, error) {
 
 func TestProxy(t *testing.T) {
 	origHP := os.Getenv("HTTP_PROXY")
-	origNP := os.Getenv("NO_PROXY")
+	origNP := os.Getenv("NO_PROXY")	
+	p := profile(t) // profile name
+	if isTestNoneDriver() {
+		p = "minikube"
+	} 
+
 	srv, err := setUpProxy(t)
 	if err != nil {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
 
 	// making sure there is no running minikube to avoid https://github.com/kubernetes/minikube/issues/4132
-	p := profile(t)
 	mk := NewMinikubeRunner(t, p)
 	defer mk.TearDown(t)
 
@@ -94,14 +98,17 @@ func TestProxy(t *testing.T) {
 		mk.RunCommand("delete", true)
 	}(t)
 
-	t.Run("Proxy Console Warnning", testProxyWarning)
-	t.Run("Proxy Dashboard", testProxyDashboard)
+	t.Run("ProxyConsoleWarnning", testProxyWarning)
+	t.Run("ProxyDashboard", testProxyDashboard)
 
 }
 
 // testProxyWarning checks user is warned correctly about the proxy related env vars
 func testProxyWarning(t *testing.T) {
-	p := profile(t)
+	p := profile(t) // profile name
+	if isTestNoneDriver() {
+		p = "minikube"
+	} 
 	mk := NewMinikubeRunner(t, p)
 	stdout, stderr, err := mk.Start()
 	if err != nil {
