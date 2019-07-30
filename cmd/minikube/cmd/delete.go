@@ -92,6 +92,10 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
 		exit.WithError("update config", err)
 	}
+
+	if err := cmdcfg.Unset(pkg_config.MachineProfile); err != nil {
+		exit.WithError("unset minikube profile", err)
+	}
 }
 
 func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsName string) {
