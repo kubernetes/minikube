@@ -29,6 +29,7 @@ func TestFunctional(t *testing.T) {
 	// }
 
 	mk := NewMinikubeRunner(t, p)
+	defer mk.Delete()
 	mk.EnsureRunning()
 	// This one is not parallel, and ensures the cluster comes up
 	// before we run any other tests.
@@ -49,5 +50,4 @@ func TestFunctional(t *testing.T) {
 		t.Run("IngressController", testIngressController)
 		t.Run("Mounting", testMounting)
 	}
-	mk.Delete()
 }

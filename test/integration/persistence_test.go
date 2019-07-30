@@ -35,6 +35,7 @@ func TestPersistence(t *testing.T) {
 		t.Parallel()
 	}
 	mk := NewMinikubeRunner(t, p)
+	defer mk.Delete()
 	if isTestNoneDriver() {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
@@ -72,5 +73,4 @@ func TestPersistence(t *testing.T) {
 
 	// Make sure the same things come up after we've restarted.
 	verifyBusybox(t)
-	mk.Delete()
 }
