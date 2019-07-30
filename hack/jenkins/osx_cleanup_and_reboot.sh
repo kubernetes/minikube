@@ -20,12 +20,12 @@ set -uf -o pipefail
 PATH=/usr/local/bin:/sbin:/usr/local/sbin:$PATH
 
 exit_if_jenkins() {
-	jenkins=$(pgrep java)
-	if [[ "$jenkins" -- "" ]]; then
-		echo "no java, no jenkins"
-		return 0
-	fi
-	pstree $jenkins | grep -v java && echo "jenkins is running..." && exit 1
+  jenkins=$(pgrep java)
+  if [[ "$jenkins" -- "" ]]; then
+    echo "no java, no jenkins"
+    return 0
+  fi
+  pstree $jenkins | grep -v java && echo "jenkins is running..." && exit 1
 }
 
 exit_if_jenkins
@@ -35,5 +35,5 @@ exit_if_jenkins
 echo "doing it"
 killall java
 sudo rm -Rf ~jenkins/.minikube || echo "could not delete minikube"
-sudo rm -Rf ~/jenkins/minikube-integration/*
+sudo rm -Rf ~/jenkins/minikube-integration/* || true
 sudo reboot

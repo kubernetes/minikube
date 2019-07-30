@@ -22,7 +22,7 @@ call :jenkins
 echo doing it
 taskkill /IM putty.exe
 taskkill /F /IM java.exe
-powershell -Command "Stop-VM minikiube"
+powershell -Command "Stop-VM minikube"
 powershell -Command "Delete-VM minikube"
 rmdir /S /Q C:\Users\admin\.minikube
 shutdown /r
