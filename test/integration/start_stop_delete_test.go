@@ -38,7 +38,9 @@ func TestStartStop(t *testing.T) {
 		t.Parallel()
 	}
 	mk := NewMinikubeRunner(t, p)
-	defer mk.Delete()
+	if !isTestNoneDriver() { // none driver doesn't need to be deleted
+		defer mk.Delete()
+	}
 
 	tests := []struct {
 		name string

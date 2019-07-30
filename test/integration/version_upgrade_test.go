@@ -78,7 +78,7 @@ func TestVersionUpgrade(t *testing.T) {
 	} else {
 		t.Parallel()
 	}
-	// this file been pre-downloaded before test by hacks/jenkins/common.sh
+	// fname is the filename for the minikube's latetest binary. this file been pre-downloaded before test by hacks/jenkins/common.sh
 	fname := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
 	err := fileExists(fname)
 	if err != nil {
@@ -86,9 +86,6 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 
 	mkCurrent := NewMinikubeRunner(t, p)
-	if isTestNoneDriver() { // TODO (medyagh@): bring back once solved https://github.com/kubernetes/minikube/issues/4418
-		t.Skip("skipping test as none driver does not support persistence")
-	}
 	mkCurrent.RunCommand("delete", true)
 	mkCurrent.CheckStatus(state.None.String())
 
