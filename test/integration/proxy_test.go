@@ -95,6 +95,7 @@ func TestProxy(t *testing.T) {
 
 	t.Run("Proxy Console Warnning", testProxyWarning)
 	t.Run("Proxy Dashboard", testProxyDashboard)
+	mk.Delete()
 
 }
 
@@ -104,7 +105,7 @@ func testProxyWarning(t *testing.T) {
 	mk := NewMinikubeRunner(t, p)
 	stdout, stderr, err := mk.StartWithStds(15 * time.Minute)
 	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name() err, stdout, stderr)
+		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 
 	msg := "Found network options:"

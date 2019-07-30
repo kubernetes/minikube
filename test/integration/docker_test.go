@@ -74,4 +74,6 @@ func TestDocker(t *testing.T) {
 			t.Fatalf("Option %s missing from ExecStart: %s.", opt, stdout)
 		}
 	}
+
+	mk.Delete()
 }

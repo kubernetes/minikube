@@ -17,6 +17,7 @@ limitations under the License.
 */
 
 package integration
+
 // this file name has to start with a so it be run before all other tests
 import (
 	"testing"
@@ -38,5 +39,5 @@ func TestDownloadOnly(t *testing.T) {
 	}
 	// TODO: add test to check if files are downloaded
 
-	mk.RunCommand("delete", true)
+	mk.Delete()
 }

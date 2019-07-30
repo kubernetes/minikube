@@ -130,4 +130,5 @@ func TestStartStop(t *testing.T) {
 			mk.CheckStatus(state.None.String())
 		})
 	}
+	mk.Delete()
 }
