@@ -20,10 +20,11 @@ package integration
 
 import (
 	"testing"
+	"time"
 )
 
 func TestFunctional(t *testing.T) {
-	p := "minikube" 
+	p := "minikube"
 	// for functional test we use default profile name
 	// if !isTestNoneDriver() {
 	// 	t.Parallel()

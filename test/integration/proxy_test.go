@@ -96,7 +96,6 @@ func TestProxy(t *testing.T) {
 
 	t.Run("Proxy Console Warnning", testProxyWarning)
 	t.Run("Proxy Dashboard", testProxyDashboard)
-	
 
 }
 
