@@ -95,10 +95,10 @@ func TestStartStop(t *testing.T) {
 
 				mk.CheckStatus(state.Running.String())
 
-				ip := mk.RunCommand("ip", true)
+				ip, stderr := mk.RunCommand("ip", true)
 				ip = strings.TrimRight(ip, "\n")
 				if net.ParseIP(ip) == nil {
-					t.Fatalf("IP command returned an invalid address: %s", ip)
+					t.Fatalf("IP command returned an invalid address: %s \n %s", ip, stderr)
 				}
 
 				// check for the current-context before and after the stop

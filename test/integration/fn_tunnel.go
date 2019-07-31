@@ -48,9 +48,10 @@ func testTunnel(t *testing.T) {
 	p := "minikube"
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	go func() {
-		output := mk.RunCommand("tunnel --alsologtostderr -v 8 --logtostderr", true)
+		output, stderr := mk.RunCommand("tunnel --alsologtostderr -v 8 --logtostderr", true)
 		if t.Failed() {
-			fmt.Println(output)
+			t.Errorf("tunnel stderr : %s", stderr)
+			t.Errorf("tunnel output : %s", output)
 		}
 	}()
 

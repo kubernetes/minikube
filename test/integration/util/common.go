@@ -21,10 +21,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cenkalti/backoff"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	commonutil "k8s.io/minikube/pkg/util"
-	"github.com/cenkalti/backoff"
 )
 
 // WaitForBusyboxRunning waits until busybox pod to be running
@@ -175,14 +175,16 @@ func Retry2(callback func() error, d time.Duration, attempts int) (err error) {
 	return err
 }
 
-// RetryX is expontntial back off retrying
-func RetryX(cb func() error) error {
+// RetryX is expontential backoff retry
+func RetryX(callback func() error, maxTime time.Duration) error {
 	b := backoff.NewExponentialBackOff()
-	b.MaxElapsedTime = time.Second * 15
-
-	return backoff.Retry(cb, b)
+	b.MaxElapsedTime = maxTime
+	b.InitialInterval = 1 * time.Minute
+	b.RandomizationFactor = 0.5
+	b.Multiplier = 1.5
+	b.Reset()
+	return backoff.Retry(callback, b)
 }
-
 
 // Logf writes logs to stdout if -v is set.
 func Logf(str string, args ...interface{}) {
