@@ -33,9 +33,7 @@ func TestContainerd(t *testing.T) {
 	}
 	t.Parallel()
 	mk := NewMinikubeRunner(t, p)
-	if !isTestNoneDriver() { // none driver doesn't need to be deleted
-		defer mk.TearDown(t)
-	}
+	defer mk.TearDown(t)
 
 	stdout, stderr, err := mk.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	if err != nil {
@@ -43,51 +41,13 @@ func TestContainerd(t *testing.T) {
 	}
 
 	t.Run("group", func(t *testing.T) {
-		t.Run("Gvisor", testGvisor)
 		t.Run("GvisorRestart", testGvisorRestart)
 	})
-}
-
-func testGvisor(t *testing.T) {
-	p := profile(t)
-	mk := NewMinikubeRunner(t, p, "--wait=false")
-	mk.RunCommand("addons enable gvisor", true)
-
-	t.Log("waiting for gvisor controller to come up")
-	if err := util.WaitForGvisorControllerRunning(t, p); err != nil {
-		t.Fatalf("waiting for gvisor controller to be up: %v", err)
-	}
-
-	createUntrustedWorkload(t, p)
-
-	t.Log("making sure untrusted workload is Running")
-	if err := util.WaitForUntrustedNginxRunning(p); err != nil {
-		t.Fatalf("waiting for nginx to be up: %v", err)
-	}
-
-	t.Log("disabling gvisor addon")
-	mk.RunCommand("addons disable gvisor", true)
-	t.Log("waiting for gvisor controller pod to be deleted")
-	if err := util.WaitForGvisorControllerDeleted(p); err != nil {
-		t.Fatalf("waiting for gvisor controller to be deleted: %v", err)
-	}
-
-	createUntrustedWorkload(t, p)
-
-	t.Log("waiting for FailedCreatePodSandBox event")
-	if err := util.WaitForFailedCreatePodSandBoxEvent(p); err != nil {
-		t.Fatalf("waiting for FailedCreatePodSandBox event: %v", err)
-	}
-	deleteUntrustedWorkload(t, p)
 }
 
 func testGvisorRestart(t *testing.T) {
 	p := profile(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
-	stdout, stderr, err := mk.Start()
-	if err != nil {
-		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
-	}
 
 	mk.RunCommand("addons enable gvisor", true)
 
@@ -96,9 +56,8 @@ func testGvisorRestart(t *testing.T) {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
-	// TODO: @priyawadhwa to add test for stop as well
-	mk.RunCommand("delete", false)
-	mk.CheckStatus(state.None.String())
+	mk.RunCommand("stop", false)
+	mk.CheckStatus(state.Stopped.String())
 	stdout, stderr, err = mk.Start()
 	if err != nil {
 		t.Fatalf("failed to start minikube (for profile %s) failed : %v \nstdout: %s \nstderr: %s", t.Name(), err, stdout, stderr)
