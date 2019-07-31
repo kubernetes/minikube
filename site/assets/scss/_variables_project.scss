@@ -1,7 +1,107 @@
-/*
+// minkube CSS overrides ///
 
-Add styles or override variables from the theme here.
+// minikube colors
+$mk-dark: #306EE5;
+$mk-medium: #1FC3CF;
+$mk-light:#C7EAEC;
 
-*/
+// bootstrap colors
+$primary: #403F4C !default;
+$primary-light: $mk-light;
+$secondary: $mk-medium;
+$success: #3772FF !default;
+$info: #C0E0DE !default;
+$warning: #ED6A5A !default;
+$danger: #ED6A5A !default;
+$white: #fff !default;
+$light: $mk-light;
+$medium: $mk-medium;
+$dark: #403F4C !default;
+$blue: #72A1E5 !default;
+$orange: #BA5A31 !default;
+$gray-100: #f8f9fa !default;
+$gray-200: #eee !default;
+$gray-300: #dee2e6 !default;
+$gray-400: #ccc !default;
+$gray-500: #adb5bd !default;
+$gray-600: #888 !default;
+$gray-700: #495057 !default;
+$gray-800: #333 !default;
+$gray-900: #222 !default;
+$black: #000 !default;
 
-$primary: #326DE6;
+// Navigation bar
+$navbar-dark-color: $mk-dark;
+$navbar-dark-hover-color: $mk-light !default;
+$navbar-dark-active-color: $mk-light !default;
+$navbar-dark-disabled-color: rgba($white, 0.25) !default;
+.td-navbar {
+    background: $white !important;
+    border-bottom: 1px solid $mk-light;
+
+    .navbar-logo {
+        svg {
+            display: inline-block;
+            height: 50px;
+            width: auto;
+            margin-right: 10px;
+        }
+    }
+    a.navbar-brand {
+        color: $gray-900 !important;
+    }
+    span.text-uppercase {
+        text-transform: none !important;
+    }
+}
+
+// Inline images
+div.card.rounded {
+    border: none;
+}
+
+// Links
+$link-color: $mk-dark !default;
+$link-decoration: none !default;
+$link-hover-color: darken($link-color, 15%) !default;
+$link-hover-decoration: none !default;
+
+
+// Sales pitch box
+.td-box--1 {
+    background-color: $mk-dark !important;
+    .p-2 {
+        padding: 0 !important;
+    }
+    .td-arrow-down::before {
+        border-color: $mk-dark transparent transparent transparent !important;
+    }
+    .text-center {
+        text-align: left !important;
+    }
+}
+
+// Features box
+.td-box--white {
+    // Center-aligned bullets look bad.
+    .text-center ul {
+        text-align: left;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 15em;
+    }
+    div.mb-5:nth-child(3) ul {
+        max-width: 10em;
+    }
+}
+
+// If we're using icons for bullets, de-ident
+.fa-ul {
+    padding-left: 0em !important;
+    margin-left: 1em !important;
+}
+
+// Reduce section padding by 1rem
+section.td-box--height-auto {
+    padding-bottom: 3rem !important;
+}

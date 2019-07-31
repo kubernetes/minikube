@@ -7,83 +7,99 @@ resources:
 - src: "start.jpg"
   title: "start"
 ---
-{{< blocks/cover title="Welcome to minikube" image_anchor="top" height="full" color="orange" >}}
-<div class="mx-auto">
-	<a class="btn btn-lg btn-primary mr-3 mb-4" href="{{< relref "/docs" >}}">
-		Read the docs! <i class="fas fa-arrow-alt-circle-right ml-2"></i>
-	</a>
-	<a class="btn btn-lg btn-secondary mr-3 mb-4" href="https://github.com/google/docsy-example">
-		Download <i class="fab fa-github ml-2 "></i>
-	</a>
-	<p class="lead mt-5">The local Kubernetes environment for macOS, Linux, and Windows.</p>
-	<div class="mx-auto mt-5">
-		{{< blocks/link-down color="info" >}}
+
+<!-- Welcome to minikube -->
+<section class="row td-box td-box--white position-relative td-box--gradient td-box--height-auto">
+	<div class="container td-arrow-down">
+		<div class="row">
+			<div class="col-sm-8">
+				<h1>Welcome to minikube!</h1>
+				<p class="lead mt-5" style="text: nowrap">Local Kubernetes, focused on application development &amp; education</p>
+				<a class="btn btn-lg btn-primary mr-3 mb-4" href="/docs/">
+					Learn More <i class="fas fa-arrow-alt-circle-right ml-2"></i>
+				</a>
+				<a class="btn btn-lg btn-secondary mr-3 mb-4" href="https://github.com/kubernetes/minikube">
+					View Repository <i class="fab fa-github ml-2 "></i>
+				</a>
+			</div>
+			<div class="col">
+				{{< imgproc "logo" Fit "220x220" >}}{{< /imgproc >}}
+			</div>
+		</div>
 	</div>
-</div>
-{{< /blocks/cover >}}
+</section>
 
 
-{{% blocks/lead color="primary" %}}
+<!-- Sales pitch -->
+{{< blocks/lead >}}
 
-minikube is a local Kubernetes environment focused on application developers.
+<div class="container">
+<h2>Instantly productive.</h2>
+
+A single command away from reproducing your production environment, from the comfort of localhost.
 
 {{< imgproc "start" Fit "730x239" >}}{{< /imgproc >}}
 
-Kubernetes certified, mother approved.
-{{% /blocks/lead %}}
+<h3>Highlights</h3>
+<ul class="fa-ul">
+<li><i class="fas fa-check"></i> Always supports the latest Kubernetes release, as well as previous versions</li>
+<li><i class="fas fa-check"></i> Cross-platform (Linux, macOS, Windows)</li>
+<li><i class="fas fa-check"></i> Provides a Docker API endpoint</li>
+<li><i class="fas fa-check"></i> Infinitely configurable local development environment</li>
+<li><i class="fas fa-check"></i> Kubernetes certified, mother approved</li>
+</ul>
+</div>
 
-{{< blocks/section color="dark" >}}
-{{% blocks/feature icon="fa-lightbulb" title="Developer focused" %}}
+{{< /blocks/lead >}}
 
-with unique features, such as:
 
-- [Addons](https://github.com/kubernetes/minikube/blob/master/docs/addons.md)
+{{< blocks/section color="white" >}}
+{{% blocks/feature icon="fa-star" title="Developer focused" %}}
 - [LoadBalancer emulation](https://github.com/kubernetes/minikube/blob/master/docs/tunnel.md)
-- [Swappable container runtimes](https://github.com/kubernetes/minikube/blob/master/docs/alternative_runtimes.md)
-- [Integrated Dashboard](https://github.com/kubernetes/minikube/blob/master/docs/dashboard.md) 
-- [Advanced Configuration](https://github.com/kubernetes/minikube/blob/master/docs/configuring_kubernetes.md)
+- [Addons Marketplace](https://github.com/kubernetes/minikube/blob/master/docs/addons.md)
+- [Integrated Dashboard](https://github.com/kubernetes/minikube/blob/master/docs/dashboard.md)
 - [GPU support](https://github.com/kubernetes/minikube/blob/master/docs/gpu.md)
-- [Filesystem mounts](https://github.com/kubernetes/minikube/blob/master/docs/host_folder_mount.md)
 - Reusable Docker daemon
 {{% /blocks/feature %}}
 
-
-{{% blocks/feature icon="fab fa-twitter" title="Works everywhere" %}}
-A consistent environment, regardless of operating system or virtualization technology.
-
-- Linux
-- macOS
-- Windows
-
+{{% blocks/feature icon="fa-cogs" title="Infinitely configurable" %}}
+- Any container runtime
+- Any Kubernetes version
+- Any apiserver, kubelet, controller, etcd, proxy, or scheduler option
 {{% /blocks/feature %}}
 
-
-{{% blocks/feature icon="fab fa-github" title="Contributions welcome!" url="https://github.com/gohugoio/hugo" %}}
-We do a [Pull Request](https://github.com/gohugoio/hugo/pulls) contributions workflow on **GitHub**. New contributors are
-always welcome!
+{{% blocks/feature icon="fa-thumbs-up" title="Cross-platform" %}}
+- Bare-metal
+- HyperKit
+- Hyper-V
+- KVM
+- VirtualBox
+- VMware
 {{% /blocks/feature %}}
 {{< /blocks/section >}}
 
+{{< blocks/section color="light" >}}
+{{% blocks/feature icon="fab fa-slack" title="Chat with us on Slack" %}}
+  <a class="text-white" href="http://slack.kubernetes.io">
+    <button type="button" class="btn btn-secondary" style="width:150px; margin-top: 12px;">Chat</button>
+  </a>
 
-{{< blocks/section >}}
-<div class="col">
-	<h1 class="text-center">Recent News</h1>
-	TBD.
-</div>
-{{< /blocks/section >}}
+The #minikube channel is ready to answer your questions.
+{{% /blocks/feature %}}
 
+{{% blocks/feature icon="fab fa-github" title="Contributions welcome" %}}
+  <a class="text-white" href="/docs/contribute">
+    <button type="button" class="btn btn-secondary" style="width:150px; margin-top: 12px;">Contribute</button>
+  </a>
 
-{{< blocks/section >}}
-<div class="col">
-<h1 class="text-center">Want more?</h1>
+Want to join the fun on Github? New users are always welcome!
+{{% /blocks/feature %}}
 
-<div class="d-flex justify-content-center">
-	<a class="btn btn-lg btn-primary mr-3 mb-4" href="{{< relref "/docs" >}}">
-		Read the docs!<i class="fas fa-arrow-alt-circle-right ml-2"></i>
-	</a>
-	<a class="btn btn-lg btn-secondary mr-3 mb-4" href="https://github.com/google/docsy-example">
-		Download <i class="fab fa-github ml-2 "></i>
-	</a>
-</div>	
-</div>
+{{% blocks/feature icon="fa-calendar" title="Office Hours" %}}
+ <a class="text-white" href="http://tinyurl.com/minikube-oh">
+    <button type="button" class="btn btn-secondary" style="width:150px; margin-top: 12px;">Join us</button>
+ </a>
+
+Bi-weekly videoconference with the developers
+{{% /blocks/feature %}}
 {{< /blocks/section >}}

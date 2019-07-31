@@ -71,7 +71,7 @@ time_format_blog = "02.01.2006"
 # Everything below this are Site Params
 
 [params]
-copyright = "The Linux Foundation"
+copyright = "The Kubernetes Authors -- "
 privacy_policy = ""
 
 # Menu title if your navbar has a versions selector to access old versions of your site.
