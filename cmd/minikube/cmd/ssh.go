@@ -46,7 +46,7 @@ var sshCmd = &cobra.Command{
 			exit.WithError("Error getting host", err)
 		}
 		if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
-			exit.WithError( "Permission denied", permissionError)
+			exit.WithError("Permission denied", permissionError)
 		}
 		if host.Driver.DriverName() == constants.DriverNone {
 			exit.UsageT("'none' driver does not support 'minikube ssh' command")

@@ -49,7 +49,7 @@ var ipCmd = &cobra.Command{
 			}
 		}
 		if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
-			exit.WithError( "Permission denied", permissionError)
+			exit.WithError("Permission denied", permissionError)
 		}
 		ip, err := host.Driver.GetIP()
 		if err != nil {

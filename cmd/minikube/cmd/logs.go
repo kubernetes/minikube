@@ -64,7 +64,7 @@ var logsCmd = &cobra.Command{
 			exit.WithError("api load", err)
 		}
 		if permissionError := drivers.ValidatePermissions(h.DriverName); permissionError != nil {
-			exit.WithError( "Permission denied", permissionError)
+			exit.WithError("Permission denied", permissionError)
 		}
 		runner, err := machine.CommandRunner(h)
 		if err != nil {

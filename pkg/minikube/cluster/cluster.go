@@ -597,7 +597,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 		return errors.Wrap(err, "host exists and load")
 	}
 	if permissionError := pkgdrivers.ValidatePermissions(host.DriverName); err != permissionError {
-		return errors.Wrap( permissionError, "Permission denied")
+		return errors.Wrap(permissionError, "Permission denied")
 	}
 	currentState, err := host.Driver.GetState()
 	if err != nil {

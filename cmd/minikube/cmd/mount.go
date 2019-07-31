@@ -102,7 +102,7 @@ var mountCmd = &cobra.Command{
 		defer api.Close()
 		host, err := api.Load(config.GetMachineName())
 		if permissionError := drivers.ValidatePermissions(host.DriverName); permissionError != nil {
-			exit.WithError( "Permission denied", permissionError)
+			exit.WithError("Permission denied", permissionError)
 		}
 		if err != nil {
 			exit.WithError("Error loading api", err)
