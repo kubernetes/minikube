@@ -31,7 +31,7 @@ VM_DRIVER="hyperkit"
 JOB_NAME="OSX-Hyperkit"
 EXTRA_ARGS="--bootstrapper=kubeadm"
 EXTRA_START_ARGS=""
-PARALLEL_COUNT=4
+PARALLEL_COUNT=3
 
 # Download files and set permissions
 source common.sh
