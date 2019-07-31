@@ -31,25 +31,6 @@ import (
 	"k8s.io/minikube/test/integration/util"
 )
 
-// This is moved to common.sh
-// func downloadMinikubeBinary(dest string, version string) error {
-// 	// Grab latest release binary
-// 	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
-// 	download := func() error {
-// 		return getter.GetFile(dest, url)
-// 	}
-
-// 	if err := util.Retry2(download, 3*time.Second, 13); err != nil {
-// 		return errors.Wrap(err, "Failed to get latest release binary")
-// 	}
-// 	if runtime.GOOS != "windows" {
-// 		if err := os.Chmod(dest, 0700); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
-
 func fileExists(fname string) error {
 	check := func() error {
 		info, err := os.Stat(fname)

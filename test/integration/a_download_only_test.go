@@ -57,3 +57,22 @@ func TestDownloadOnly(t *testing.T) {
 	// TODO: download latest binary to test data here
 
 }
+
+// func downloadMinikubeBinary(dest string, version string) error {
+// 	// Grab latest release binary
+// 	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
+// 	download := func() error {
+// 		return getter.GetFile(dest, url)
+// 	}
+
+// 	if err := util.Retry2(download, 3*time.Second, 13); err != nil {
+// 		return errors.Wrap(err, "Failed to get latest release binary")
+// 	}
+// 	if runtime.GOOS != "windows" {
+// 		if err := os.Chmod(dest, 0700); err != nil {
+// 			return err
+// 		}
+// 	}
+// 	return nil
+// }
+
