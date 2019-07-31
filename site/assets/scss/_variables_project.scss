@@ -70,12 +70,33 @@ $link-hover-decoration: none !default;
 // Sales pitch box
 .td-box--1 {
     background-color: $mk-dark !important;
+
+    // Increase from 1.25 for improved readability
+    .h4 {
+        line-height: 1.5 !important;
+    }
+
+    // Control the presentation of the screenshot
     .p-2 {
         padding: 0 !important;
+        margin-left: auto;
+        margin-right: auto;
     }
+    .card {
+        border-radius: 0 !important;
+        border: 2px solid $gray-700 !important;
+    }
+    .card-img-top {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+
+    // Make sure the arrow color matches our override
     .td-arrow-down::before {
         border-color: $mk-dark transparent transparent transparent !important;
     }
+
+    // Left is best.
     .text-center {
         text-align: left !important;
     }
