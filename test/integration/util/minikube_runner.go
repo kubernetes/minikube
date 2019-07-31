@@ -256,7 +256,8 @@ func (m *MinikubeRunner) GetLogs() string {
 
 // CheckStatus makes sure the service has the desired status, or cause fatal error
 func (m *MinikubeRunner) CheckStatus(desired string) {
-	if err := m.CheckStatusNoFail(desired); err != nil {
+	err := m.CheckStatusNoFail(desired)
+	if err != nil && desired != state.None.String() { // none status returns 1 exit code
 		m.T.Fatalf("%v", err)
 	}
 }
