@@ -283,14 +283,17 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 }
 
 // Status returns the status of a service
-func (m *MinikubeRunner) Status() (stdout string, stderr string, err error) {
+func (m *MinikubeRunner) Status() (status string, stderr string, err error) {
 	cmd := fmt.Sprintf("status --format={{.Host}} %s", m.GlobalArgs)
 	s := func() error {
-		stdout, stderr, err = m.RunCommandRetriable(cmd)
+		status, stderr, err = m.RunCommandRetriable(cmd)
 		return err
 	}
 	err = RetryX(s, 2*time.Minute)
-	return stdout, stderr, err
+	if err != nil && status != state.None.String() {
+		err = nil // because https://github.com/kubernetes/minikube/issues/4932
+	}
+	return status, stderr, err
 }
 
 // GetLogs returns the logs of a service
@@ -303,7 +306,7 @@ func (m *MinikubeRunner) GetLogs() string {
 // CheckStatus makes sure the service has the desired status, or cause fatal error
 func (m *MinikubeRunner) CheckStatus(desired string) {
 	err := m.CheckStatusNoFail(desired)
-	if err != nil && desired != state.None.String() { // none status returns 1 exit code
+	if err != nil { // none status returns 1 exit code
 		m.T.Fatalf("%v", err)
 	}
 }
@@ -314,6 +317,7 @@ func (m *MinikubeRunner) CheckStatusNoFail(desired string) error {
 	if s != desired {
 		return fmt.Errorf("got state: %q, expected %q : stderr: %s err: %v ", s, desired, stderr, err)
 	}
+
 	if err != nil {
 		err = errors.Wrapf(err, stderr)
 	}
