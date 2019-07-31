@@ -145,9 +145,9 @@ func (m *MinikubeRunner) RunCommandRetriable(cmdStr string, waitForRun ...bool) 
 	stdout, stderr, err = m.teeRun(cmd, waitForRun...)
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
-			m.T.Logf("temproary error running command: %s %s. Output: \n%s", cmdStr, exitError.Stderr, stdout)
+			m.T.Logf("temporary error: running command: %s %s. Output: \n%s", cmdStr, exitError.Stderr, stdout)
 		} else {
-			m.T.Logf("temproary error: running command: %s %s. Output: \n%s", cmdStr, stderr, stdout)
+			m.T.Logf("temporary error: running command: %s %s. Output: \n%s", cmdStr, stderr, stdout)
 		}
 	}
 	return stdout, stderr, err
