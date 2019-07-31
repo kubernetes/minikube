@@ -178,9 +178,9 @@ func testServicesList(t *testing.T) {
 	mk := NewMinikubeRunner(t, p)
 
 	checkServices := func() error {
-		output := mk.RunCommand("service list", false)
+		output, stderr := mk.RunCommand("service list", false)
 		if !strings.Contains(output, "kubernetes") {
-			return fmt.Errorf("error, kubernetes service missing from output %s", output)
+			return fmt.Errorf("error, kubernetes service missing from output: %s, \n stderr: %s", output, stderr)
 		}
 		return nil
 	}
@@ -211,12 +211,12 @@ func testRegistry(t *testing.T) {
 	if err := pkgutil.WaitForPodsWithLabelRunning(client, "kube-system", ps); err != nil {
 		t.Fatalf("waiting for registry-proxy pods: %v", err)
 	}
-
-	ip := strings.TrimSpace(mk.RunCommand("ip", true))
+	ip, stderr := mk.RunCommand("ip", true)
+	ip = strings.TrimSpace(ip)
 	endpoint := fmt.Sprintf("http://%s:%d", ip, 5000)
 	u, err := url.Parse(endpoint)
 	if err != nil {
-		t.Fatalf("failed to parse %q: %v", endpoint, err)
+		t.Fatalf("failed to parse %q: %v stderr : %s", endpoint, err, stderr)
 	}
 	t.Log("checking registry access from outside cluster")
 

@@ -61,10 +61,10 @@ func (m *MinikubeRunner) Remove(f assets.CopyableFile) error {
 }
 
 // teeRun runs a command, streaming stdout, stderr to console
-func (m *MinikubeRunner) teeRun(cmd *exec.Cmd, wait ...bool) (string, string, error) {
+func (m *MinikubeRunner) teeRun(cmd *exec.Cmd, waitForRun ...bool) (string, string, error) {
 	w := true
-	if wait != nil {
-		w = wait[0]
+	if waitForRun != nil {
+		w = waitForRun[0]
 	}
 
 	errPipe, err := cmd.StderrPipe()
@@ -104,8 +104,8 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd, wait ...bool) (string, string, er
 	return "", "", err
 }
 
-// RunCommand executes a command, optionally checking for error
-func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, wait ...bool) string {
+// RunCommand executes a command, optionally checking for error and by default waits for run to finish
+func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ...bool) (string, string) {
 	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
@@ -113,15 +113,43 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, wait ...bool)
 
 	cmd := exec.Command(path, cmdArgs...)
 	Logf("Run: %s", cmd.Args)
-	stdout, stderr, err := m.teeRun(cmd, wait...)
-	if failError && err != nil {
+	stdout, stderr, err := m.teeRun(cmd, waitForRun...)
+	if err != nil {
+		errMsg := ""
 		if exitError, ok := err.(*exec.ExitError); ok {
-			m.T.Fatalf("Error running command: %s %s. Output: %s", cmdStr, exitError.Stderr, stdout)
+			errMsg = fmt.Sprintf("Error running command: %s %s. Output: %s Stderr: %s", cmdStr, exitError.Stderr, stdout, stderr)
 		} else {
-			m.T.Fatalf("Error running command: %s %v. Output: %s", cmdStr, err, stderr)
+			errMsg = fmt.Sprintf("Error running command: %s %s. Output: %s", cmdStr, stderr, stdout)
+		}
+		if failError {
+			m.T.Fatalf(errMsg)
+		} else {
+			m.T.Errorf(errMsg)
 		}
 	}
-	return stdout
+	return stdout, stderr
+}
+
+// RunCommandRetriable Error  executes a command, returns error
+// the purpose of this command is to make it retriable and
+// better logging for retrying
+func (m *MinikubeRunner) RunCommandRetriable(cmdStr string, waitForRun ...bool) (stdout string, stderr string, err error) {
+	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
+	cmdStr = profileArg + cmdStr
+	cmdArgs := strings.Split(cmdStr, " ")
+	path, _ := filepath.Abs(m.BinaryPath)
+
+	cmd := exec.Command(path, cmdArgs...)
+	Logf("Run: %s", cmd.Args)
+	stdout, stderr, err = m.teeRun(cmd, waitForRun...)
+	if err != nil {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			m.T.Logf("temproary error running command: %s %s. Output: \n%s", cmdStr, exitError.Stderr, stdout)
+		} else {
+			m.T.Logf("temproary error: running command: %s %s. Output: \n%s", cmdStr, stderr, stdout)
+		}
+	}
+	return stdout, stderr, err
 }
 
 // RunWithContext calls the minikube command with a context, useful for timeouts.
@@ -206,15 +234,15 @@ func (m *MinikubeRunner) SSH(cmdStr string) (string, error) {
 	return string(stdout), nil
 }
 
-// Start starts the cluster with console output without verbose log
+// Start starts the cluster
 func (m *MinikubeRunner) Start(opts ...string) (stdout string, stderr string, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), m.TimeOutStart)
-	defer cancel()
 	cmd := fmt.Sprintf("start %s %s %s", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
-	
-	m.RunWithContext(ctx, cmd)
-	
-	return "", "", nil
+	s := func() error {
+		stdout, stderr, err = m.RunCommandRetriable(cmd)
+		return nil
+	}
+	err = RetryX(s, m.TimeOutStart)
+	return stdout, stderr, err
 }
 
 // TearDown deletes minikube without waiting for it. used to free up ram/cpu after each test
@@ -251,12 +279,15 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 
 // GetStatus returns the status of a service
 func (m *MinikubeRunner) GetStatus() string {
-	return m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.GlobalArgs), false)
+	stdout, _ := m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.GlobalArgs), false)
+	return stdout
 }
 
 // GetLogs returns the logs of a service
 func (m *MinikubeRunner) GetLogs() string {
-	return m.RunCommand(fmt.Sprintf("logs %s", m.GlobalArgs), true)
+	// TODO: this test needs to check sterr too !
+	stdout, _ := m.RunCommand(fmt.Sprintf("logs %s", m.GlobalArgs), true)
+	return stdout
 }
 
 // CheckStatus makes sure the service has the desired status, or cause fatal error
