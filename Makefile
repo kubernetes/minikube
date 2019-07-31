@@ -127,16 +127,16 @@ ifeq ($(GOOS),windows)
 endif
 
 
-.PHONY: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe
-minikube-linux-amd64: out/minikube-linux-amd64
-minikube-darwin-amd64: out/minikube-darwin-amd64
-minikube-windows-amd64.exe: out/minikube-windows-amd64.exe
-
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp $< $@
+
+.PHONY: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe
+minikube-linux-amd64: out/minikube-linux-amd64
+minikube-darwin-amd64: out/minikube-darwin-amd64
+minikube-windows-amd64.exe: out/minikube-windows-amd64.exe
 
 out/minikube-%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go  $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
