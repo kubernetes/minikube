@@ -211,7 +211,10 @@ func (m *MinikubeRunner) Start(opts ...string) (stdout string, stderr string, er
 	ctx, cancel := context.WithTimeout(context.Background(), m.TimeOutStart)
 	defer cancel()
 	cmd := fmt.Sprintf("start %s %s %s", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
-	return m.RunWithContext(ctx, cmd)
+	
+	m.RunWithContext(ctx, cmd)
+	
+	return "", "", nil
 }
 
 // TearDown deletes minikube without waiting for it. used to free up ram/cpu after each test
