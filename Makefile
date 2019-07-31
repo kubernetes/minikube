@@ -43,7 +43,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.16.14
+KERNEL_VERSION ?= 4.15
 
 # Currently *only* used for the KVM_BUILD_IMAGE, see also BUILD_IMAGE above
 GO_VERSION ?= 1.12.7
