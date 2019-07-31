@@ -4,6 +4,7 @@
 $mk-dark: #306EE5;
 $mk-medium: #1FC3CF;
 $mk-light:#C7EAEC;
+$mk-verydark: darken($mk-dark, 15%);
 
 // bootstrap colors
 $primary: #403F4C !default;
@@ -84,7 +85,7 @@ $link-hover-decoration: none !default;
     }
     .card {
         border-radius: 0 !important;
-        border: 2px solid $gray-700 !important;
+        border: 2px solid $mk-verydark !important;
     }
     .card-img-top {
         border-top-left-radius: 0;
