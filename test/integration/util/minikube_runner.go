@@ -239,7 +239,7 @@ func (m *MinikubeRunner) Start(opts ...string) (stdout string, stderr string, er
 	cmd := fmt.Sprintf("start %s %s %s", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
 	s := func() error {
 		stdout, stderr, err = m.RunCommandRetriable(cmd)
-		return nil
+		return err
 	}
 	err = RetryX(s, m.TimeOutStart)
 	return stdout, stderr, err
