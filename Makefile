@@ -127,11 +127,16 @@ ifeq ($(GOOS),windows)
 endif
 
 
+.PHONY: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe
+minikube-linux-amd64: out/minikube-linux-amd64
+minikube-darwin-amd64: out/minikube-darwin-amd64
+minikube-windows-amd64.exe: out/minikube-windows-amd64.exe
+
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
-	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
+	cp $< $@
 
 out/minikube-%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go  $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -140,12 +145,16 @@ else
 	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
-.PHONY: e2e-%-$(GOARCH)
-e2e-%-$(GOARCH): out/minikube-%-$(GOARCH)
-	GOOS=$* GOARCH=$(GOARCH) go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
+.PHONY: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
+e2e-linux-amd64: out/e2e-linux-amd64
+e2e-darwin-amd64: out/e2e-darwin-amd64
+e2e-windows-amd64.exe: out/e2e-windows-amd64.exe
 
-e2e-windows-amd64.exe: e2e-windows-amd64
-	cp $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
+out/e2e-%: out/minikube-%
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
+
+out/e2e-windows-amd64.exe: out/e2e-windows-amd64
+	cp $< $@
 
 minikube_iso: # old target kept for making tests happy
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
@@ -239,23 +248,23 @@ endif
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
 .PHONY: cross
-cross: out/minikube-linux-$(GOARCH) out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe
 
 .PHONY: windows
-windows: out/minikube-windows-amd64.exe
+windows: minikube-windows-amd64.exe
 
 .PHONY: darwin
-darwin: out/minikube-darwin-amd64
+darwin: minikube-darwin-amd64
 
 .PHONY: linux
-linux: out/minikube-linux-$(GOARCH)
+linux: minikube-linux-amd64
 
 .PHONY: e2e-cross
 e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
 
 .PHONY: checksum
 checksum:
-	for f in out/minikube-linux-$(GOARCH) out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso \
+	for f in out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso \
 		 out/docker-machine-driver-kvm2 out/docker-machine-driver-hyperkit; do \
 		if [ -f "$${f}" ]; then \
 			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
