@@ -90,7 +90,7 @@ func TestStartStop(t *testing.T) {
 
 				stdout, stderr, err := mk.Start(tc.args...)
 				if err != nil {
-					t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", pn, err, stdout, stderr)
+					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", pn, err, stdout, stderr)
 				}
 
 				mk.CheckStatus(state.Running.String())
@@ -131,7 +131,7 @@ func TestStartStop(t *testing.T) {
 
 				stdout, stderr, err = mk.Start(tc.args...)
 				if err != nil {
-					t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 				}
 
 				mk.CheckStatus(state.Running.String())

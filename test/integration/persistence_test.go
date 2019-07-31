@@ -37,9 +37,8 @@ func TestPersistence(t *testing.T) {
 	defer mk.TearDown(t)
 	stdout, stderr, err := mk.Start()
 	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
-
 
 	kr := util.NewKubectlRunner(t, p)
 
@@ -56,18 +55,18 @@ func TestPersistence(t *testing.T) {
 	// Make sure everything is up before we stop.
 	verifyBusybox(t)
 
-	// Now restart minikube and make sure the pod is still there.
 	checkStop := func() error {
-		mk.RunCommand("stop", false)
+		stdout, stderr, err = mk.RunCommandRetriable("stop")
 		return mk.CheckStatusNoFail(state.Stopped.String())
 	}
-	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
+
+	if err = util.RetryX(checkStop, 5*time.Minute); err != nil {
 		t.Fatalf("TestPersistence Failed to stop minikube : %v", err)
 	}
 
-	stdout, stderr, err := mk.Start()
+	stdout, stderr, err = mk.Start()
 	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 	mk.CheckStatus(state.Running.String())
 

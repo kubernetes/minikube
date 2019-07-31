@@ -117,7 +117,7 @@ func testProxyWarning(t *testing.T) {
 	mk := NewMinikubeRunner(t, p)
 	stdout, stderr, err := mk.Start()
 	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 
 	msg := "Found network options:"
