@@ -42,7 +42,7 @@ func TestContainerd(t *testing.T) {
 	}
 	stdout, stderr, err := mk.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 
 	t.Run("Gvisor", testGvisor)
@@ -87,7 +87,7 @@ func testGvisorRestart(t *testing.T) {
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	stdout, stderr, err := mk.Start()
 	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 	mk.RunCommand("addons enable gvisor", true)
 
@@ -99,9 +99,9 @@ func testGvisorRestart(t *testing.T) {
 	// TODO: @priyawadhwa to add test for stop as well
 	mk.RunCommand("delete", false)
 	mk.CheckStatus(state.None.String())
-	stdout, stderr, err := mk.Start()
+	stdout, stderr, err = mk.Start()
 	if err != nil {
-		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+		t.Fatalf("failed to start minikube (for profile %s) failed : %v \nstdout: %s \nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 	mk.CheckStatus(state.Running.String())
 
