@@ -29,7 +29,7 @@ OS_ARCH="darwin-amd64"
 VM_DRIVER="virtualbox"
 JOB_NAME="OSX-Virtualbox"
 EXTRA_ARGS="--bootstrapper=kubeadm"
-PARALLEL_COUNT=6
+PARALLEL_COUNT=4
 
 # Download files and set permissions
 source common.sh
