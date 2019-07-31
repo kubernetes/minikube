@@ -232,7 +232,7 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
+	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
 	-gofmt -s -w $@
 endif
 
@@ -241,7 +241,7 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/translate/translations.go -pkg translate translations/...
+	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
 	-gofmt -s -w $@
 endif
 	@#golint: Json should be JSON (compat sed)
@@ -392,7 +392,7 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 else
 	GOOS=darwin CGO_ENABLED=1 go build \
 		-ldflags="$(HYPERKIT_LDFLAGS)"   \
-		-o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
+		-o $@ k8s.io/minikube/cmd/drivers/hyperkit
 endif
 
 hyperkit_in_docker:
@@ -421,7 +421,7 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo "$(@) successfully built"
 
 out/storage-provisioner:
-	GOOS=linux go build -o $(BUILD_DIR)/storage-provisioner -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+	GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner
@@ -472,7 +472,7 @@ else
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
 		-tags "libvirt.1.3.1 without_lxc" \
-		-o $(BUILD_DIR)/docker-machine-driver-kvm2 \
+		-o $@ \
 		k8s.io/minikube/cmd/drivers/kvm
 endif
 	chmod +X $@
