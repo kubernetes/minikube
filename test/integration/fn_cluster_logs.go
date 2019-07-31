@@ -27,7 +27,6 @@ func testClusterLogs(t *testing.T) {
 	t.Parallel()
 	p := "minikube"
 	mk := NewMinikubeRunner(t, p)
-	// mk.EnsureRunning() // not needed since caller does it
 	logsCmdOutput := mk.GetLogs()
 
 	// check for # of lines or check for strings

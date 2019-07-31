@@ -85,7 +85,10 @@ func testGvisor(t *testing.T) {
 func testGvisorRestart(t *testing.T) {
 	p := profile(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
-	mk.EnsureRunning()
+	stdout, stderr, err := mk.Start()
+	if err != nil {
+		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+	}
 	mk.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")

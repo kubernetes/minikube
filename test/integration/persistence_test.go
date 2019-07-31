@@ -35,7 +35,11 @@ func TestPersistence(t *testing.T) {
 	p := profile(t) // profile name
 	mk := NewMinikubeRunner(t, p)
 	defer mk.TearDown(t)
-	mk.EnsureRunning()
+	stdout, stderr, err := mk.Start()
+	if err != nil {
+		t.Fatalf("%s minikube start failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+	}
+
 
 	kr := util.NewKubectlRunner(t, p)
 
