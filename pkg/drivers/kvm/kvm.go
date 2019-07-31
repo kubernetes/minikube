@@ -90,18 +90,10 @@ const (
 )
 
 // NewDriver creates a new driver for a host
+// This is only used to create the default server config, which gets overridden when the client starts.
+// No need to set any defaults.
 func NewDriver(hostName, storePath string) *Driver {
-	return &Driver{
-		BaseDriver: &drivers.BaseDriver{
-			MachineName: hostName,
-			StorePath:   storePath,
-			SSHUser:     "docker",
-		},
-		CommonDriver:   &pkgdrivers.CommonDriver{},
-		PrivateNetwork: defaultPrivateNetworkName,
-		Network:        defaultNetworkName,
-		ConnectionURI:  qemusystem,
-	}
+	return &Driver{}
 }
 
 // PreCommandCheck checks the connection before issuing a command
