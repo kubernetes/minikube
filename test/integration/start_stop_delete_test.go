@@ -79,7 +79,7 @@ func TestStartStop(t *testing.T) {
 				t.Parallel()
 				pn := p + n
 				mk := NewMinikubeRunner(t, pn)
-				// TODO : redundant first clause, this test never happens for none
+				// TODO : redundant first clause, never happens
 				if !strings.Contains(pn, "docker") && isTestNoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}

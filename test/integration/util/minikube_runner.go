@@ -30,6 +30,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	commonutil "k8s.io/minikube/pkg/util"
 )
@@ -258,10 +259,14 @@ func (m *MinikubeRunner) TearDown(t *testing.T) {
 
 // EnsureRunning makes sure the container runtime is running
 func (m *MinikubeRunner) EnsureRunning(opts ...string) {
-	if m.GetStatus() != state.Running.String() {
-		_, _, err := m.Start(opts...)
+	s, _, err := m.Status()
+	if err != nil {
+		m.T.Errorf("error getting status for ensure running: %v", err)
+	}
+	if s != state.Running.String() {
+		stdout, stderr, err := m.Start(opts...)
 		if err != nil {
-			m.T.Errorf("error starting while running EnsureRunning : %v", err)
+			m.T.Errorf("error starting while running EnsureRunning : %v , stdout %s stderr %s", err, stdout, stderr)
 		}
 	}
 	m.CheckStatus(state.Running.String())
@@ -277,10 +282,15 @@ func (m *MinikubeRunner) ParseEnvCmdOutput(out string) map[string]string {
 	return env
 }
 
-// GetStatus returns the status of a service
-func (m *MinikubeRunner) GetStatus() string {
-	stdout, _ := m.RunCommand(fmt.Sprintf("status --format={{.Host}} %s", m.GlobalArgs), false)
-	return stdout
+// Status returns the status of a service
+func (m *MinikubeRunner) Status() (stdout string, stderr string, err error) {
+	cmd := fmt.Sprintf("status --format={{.Host}} %s", m.GlobalArgs)
+	s := func() error {
+		stdout, stderr, err = m.RunCommandRetriable(cmd)
+		return err
+	}
+	err = RetryX(s, 2*time.Minute)
+	return stdout, stderr, err
 }
 
 // GetLogs returns the logs of a service
@@ -299,9 +309,12 @@ func (m *MinikubeRunner) CheckStatus(desired string) {
 
 // CheckStatusNoFail makes sure the service has the desired status, returning error
 func (m *MinikubeRunner) CheckStatusNoFail(desired string) error {
-	s := m.GetStatus()
+	s, stderr, err := m.Status()
 	if s != desired {
-		return fmt.Errorf("got state: %q, expected %q", s, desired)
+		return fmt.Errorf("got state: %q, expected %q : stderr: %s err: %v ", s, desired, stderr, err)
 	}
-	return nil
+	if err != nil {
+		err = errors.Wrapf(err, stderr)
+	}
+	return err
 }
