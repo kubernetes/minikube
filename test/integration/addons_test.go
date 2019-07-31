@@ -129,10 +129,6 @@ func testIngressController(t *testing.T) {
 		t.Fatalf("waiting for ingress-controller to be up: %v", err)
 	}
 
-	if err := util.WaitForIngressDefaultBackendRunning(t); err != nil {
-		t.Fatalf("waiting for default-http-backend to be up: %v", err)
-	}
-
 	curdir, err := filepath.Abs("")
 	if err != nil {
 		t.Errorf("Error getting the file path for current directory: %s", curdir)

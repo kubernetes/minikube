@@ -23,6 +23,10 @@ import (
 	"os"
 	"strconv"
 
+	// initflag must be imported before any other minikube pkg.
+	// Fix for https://github.com/kubernetes/minikube/issues/4866
+	_ "k8s.io/minikube/pkg/initflag"
+
 	"github.com/golang/glog"
 	"github.com/pkg/profile"
 	"k8s.io/minikube/cmd/minikube/cmd"

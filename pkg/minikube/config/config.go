@@ -50,6 +50,11 @@ const (
 	ShowBootstrapperDeprecationNotification = "ShowBootstrapperDeprecationNotification"
 )
 
+var (
+	// ErrKeyNotFound is the error returned when a key doesn't exist in the config file
+	ErrKeyNotFound = errors.New("specified key could not be found in config")
+)
+
 // MinikubeConfig represents minikube config
 type MinikubeConfig map[string]interface{}
 
@@ -66,12 +71,16 @@ func get(name string, config MinikubeConfig) (string, error) {
 	if val, ok := config[name]; ok {
 		return fmt.Sprintf("%v", val), nil
 	}
-	return "", errors.New("specified key could not be found in config")
+	return "", ErrKeyNotFound
 }
 
 // ReadConfig reads in the JSON minikube config
 func ReadConfig() (MinikubeConfig, error) {
-	f, err := os.Open(constants.ConfigFile)
+	return readConfig(constants.ConfigFile)
+}
+
+func readConfig(configFile string) (MinikubeConfig, error) {
+	f, err := os.Open(configFile)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return make(map[string]interface{}), nil

@@ -83,5 +83,4 @@ func init() {
 
 	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time.")
 
-	RootCmd.AddCommand(serviceCmd)
 }

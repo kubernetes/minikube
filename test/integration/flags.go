@@ -41,7 +41,7 @@ var testdataDir = flag.String("testdata-dir", "testdata", "the directory relativ
 func NewMinikubeRunner(t *testing.T, extraArgs ...string) util.MinikubeRunner {
 	return util.MinikubeRunner{
 		BinaryPath: *binaryPath,
-		StartArgs:  *startArgs + strings.Join(extraArgs, " "),
+		StartArgs:  *startArgs + " " + strings.Join(extraArgs, " "),
 		GlobalArgs: *globalArgs,
 		MountArgs:  *mountArgs,
 		T:          t,

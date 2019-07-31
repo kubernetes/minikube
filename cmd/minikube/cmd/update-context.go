@@ -56,7 +56,3 @@ var updateContextCmd = &cobra.Command{
 
 	},
 }
-
-func init() {
-	RootCmd.AddCommand(updateContextCmd)
-}
