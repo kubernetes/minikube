@@ -37,16 +37,22 @@ func TestContainerd(t *testing.T) {
 		defer mk.TearDown(t)
 	}
 
-	if mk.GetStatus() != state.None.String() {
+	s, stderr, err := mk.Status()
+	if err != nil {
+		mk.T.Errorf("error getting status %s test: %v stdout: %s stder: %s", t.Name(), s, stderr, err)
+	}
+
+	if s != state.None.String() {
 		mk.RunCommand("delete", true)
 	}
 	stdout, stderr, err := mk.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	if err != nil {
-		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
 	}
-
-	t.Run("Gvisor", testGvisor)
-	t.Run("GvisorRestart", testGvisorRestart)
+	t.Run("group", func(t *testing.T) {
+		t.Run("Gvisor", testGvisor)
+		t.Run("GvisorRestart", testGvisorRestart)
+	})
 }
 
 func testGvisor(t *testing.T) {
