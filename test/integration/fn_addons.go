@@ -30,8 +30,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pkg/errors"
+
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/apimachinery/pkg/labels"
+	commonutil "k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
@@ -126,7 +129,7 @@ func testIngressController(t *testing.T) {
 	kr := util.NewKubectlRunner(t, p)
 
 	mk.RunCommand("addons enable ingress", true)
-	if err := util.WaitForIngressControllerRunning(t, p); err != nil {
+	if err := waitForIngressControllerRunning(p); err != nil {
 		t.Fatalf("Failed waiting for ingress-controller to be up: %v", err)
 	}
 
@@ -140,7 +143,7 @@ func testIngressController(t *testing.T) {
 		t.Fatalf("Failed creating nginx ingress resource: %v", err)
 	}
 
-	if err := util.WaitForNginxRunning(t, p); err != nil {
+	if err := waitForNginxRunning(t, p); err != nil {
 		t.Fatalf("Failed waiting for nginx to be up: %v", err)
 	}
 
@@ -258,4 +261,42 @@ func testRegistry(t *testing.T) {
 		}
 	}()
 	mk.RunCommand("addons disable registry", true)
+}
+
+// waitForNginxRunning waits for nginx service to be up
+func waitForNginxRunning(t *testing.T, miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
+
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		return errors.Wrap(err, "waiting for nginx pods")
+	}
+
+	if err := commonutil.WaitForService(client, "default", "nginx", true, time.Millisecond*500, time.Minute*10); err != nil {
+		t.Errorf("Error waiting for nginx service to be up")
+	}
+	return nil
+}
+
+// waitForIngressControllerRunning waits until ingress controller pod to be running
+func waitForIngressControllerRunning(miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	if err := commonutil.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", time.Minute*10); err != nil {
+		return errors.Wrap(err, "waiting for ingress-controller deployment to stabilize")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app.kubernetes.io/name": "nginx-ingress-controller"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for ingress-controller pods")
+	}
+
+	return nil
 }

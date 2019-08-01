@@ -23,6 +23,9 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/state"
+	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/labels"
+	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -53,7 +56,7 @@ func testGvisorRestart(t *testing.T) {
 	mk.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")
-	if err := waitForGvisorControllerRunning(t, p); err != nil {
+	if err := waitForGvisorControllerRunning(p); err != nil {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
@@ -72,13 +75,13 @@ func testGvisorRestart(t *testing.T) {
 	mk.CheckStatus(state.Running.String())
 
 	t.Log("waiting for gvisor controller to come up")
-	if err := util.WaitForGvisorControllerRunning(t, p); err != nil {
+	if err := waitForGvisorControllerRunning(p); err != nil {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
 	createUntrustedWorkload(t, p)
 	t.Log("making sure untrusted workload is Running")
-	if err := util.WaitForUntrustedNginxRunning(p); err != nil {
+	if err := waitForUntrustedNginxRunning(p); err != nil {
 		t.Fatalf("waiting for nginx to be up: %v", err)
 	}
 	deleteUntrustedWorkload(t, p)
@@ -102,8 +105,8 @@ func deleteUntrustedWorkload(t *testing.T, profile string) {
 }
 
 // waitForGvisorControllerRunning waits for the gvisor controller pod to be running
-func waitForGvisorControllerRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
+func waitForGvisorControllerRunning(p string) error {
+	client, err := commonutil.GetClient(p)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
@@ -111,6 +114,20 @@ func waitForGvisorControllerRunning(t *testing.T) error {
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
 	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 		return errors.Wrap(err, "waiting for gvisor controller pod to stabilize")
+	}
+	return nil
+}
+
+// waitForUntrustedNginxRunning waits for the untrusted nginx pod to start running
+func waitForUntrustedNginxRunning(miniProfile string) error {
+	client, err := commonutil.GetClient(miniProfile)
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		return errors.Wrap(err, "waiting for nginx pods")
 	}
 	return nil
 }
