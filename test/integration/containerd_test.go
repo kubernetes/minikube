@@ -53,13 +53,13 @@ func testGvisorRestart(t *testing.T) {
 	mk.RunCommand("addons enable gvisor", true)
 
 	t.Log("waiting for gvisor controller to come up")
-	if err := util.WaitForGvisorControllerRunning(t, p); err != nil {
+	if err := waitForGvisorControllerRunning(t, p); err != nil {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
 	createUntrustedWorkload(t, p)
 	t.Log("making sure untrusted workload is Running")
-	if err := util.WaitForUntrustedNginxRunning(p); err != nil {
+	if err := waitForUntrustedNginxRunning(p); err != nil {
 		t.Fatalf("waiting for nginx to be up: %v", err)
 	}
 	deleteUntrustedWorkload(t, p)
@@ -99,4 +99,18 @@ func deleteUntrustedWorkload(t *testing.T, profile string) {
 	if _, err := kr.RunCommand([]string{"delete", "-f", untrustedPath}); err != nil {
 		t.Logf("error deleting untrusted nginx resource: %v", err)
 	}
+}
+
+// waitForGvisorControllerRunning waits for the gvisor controller pod to be running
+func waitForGvisorControllerRunning(t *testing.T) error {
+	client, err := commonutil.GetClient()
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
+	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		return errors.Wrap(err, "waiting for gvisor controller pod to stabilize")
+	}
+	return nil
 }
