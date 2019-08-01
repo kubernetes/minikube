@@ -54,9 +54,7 @@ func fileExists(fname string) error {
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
 	p := profile(t)
-	if isTestNoneDriver() {
-		p = "minikube"
-	} else {
+	if toParallel() {
 		t.Parallel()
 	}
 	// fname is the filename for the minikube's latetest binary. this file been pre-downloaded before test by hacks/jenkins/common.sh
@@ -65,12 +63,10 @@ func TestVersionUpgrade(t *testing.T) {
 	if err != nil {
 		t.Fail()
 	}
+	defer os.Remove(fname)
 
 	mkCurrent := NewMinikubeRunner(t, p)
-	mkCurrent.RunCommand("delete", true)
-	mkCurrent.CheckStatus(state.None.String())
-
-	defer os.Remove(fname)
+	defer mkCurrent.TearDown(t)
 
 	mkRelease := NewMinikubeRunner(t, p)
 	mkRelease.BinaryPath = fname
@@ -87,9 +83,7 @@ func TestVersionUpgrade(t *testing.T) {
 	// Trim the leading "v" prefix to assert that we handle it properly.
 	stdout, stderr, err = mkCurrent.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
 	if err != nil {
-		t.Fatalf("TestVersionUpgrade minikube start failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
+		t.Fatalf("TestVersionUpgrade mkCurrent.Start start failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
 	}
 	mkCurrent.CheckStatus(state.Running.String())
-	mkCurrent.RunCommand("delete", true)
-	mkCurrent.CheckStatus(state.None.String())
 }

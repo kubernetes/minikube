@@ -39,8 +39,11 @@ func TestContainerd(t *testing.T) {
 
 func testGvisorRestart(t *testing.T) {
 	p := profile(t)
-
+	if toParallel() {
+		t.Parallel()
+	}
 	mk := NewMinikubeRunner(t, p, "--wait=false")
+	defer mk.TearDown(t)
 
 	stdout, stderr, err := mk.Start("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	if err != nil {

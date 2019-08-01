@@ -21,7 +21,6 @@ package integration
 import (
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/test/integration/util"
@@ -56,14 +55,7 @@ func TestPersistence(t *testing.T) {
 	// Make sure everything is up before we stop.
 	verifyBusybox(t)
 
-	checkStop := func() error {
-		stdout, stderr, err = mk.RunCommandRetriable("stop")
-		return err
-	}
-
-	if err = util.RetryX(checkStop, 5*time.Second, 3*time.Minute); err != nil {
-		t.Fatalf("TestPersistence Failed to stop minikube : %v", err)
-	}
+	mk.RunCommand("stop", true)
 	mk.CheckStatus(state.Stopped.String())
 
 	stdout, stderr, err = mk.Start()

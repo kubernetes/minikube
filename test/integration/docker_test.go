@@ -35,7 +35,6 @@ func TestDocker(t *testing.T) {
 	if toParallel() {
 		t.Parallel()
 	}
-
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	defer mk.TearDown(t)
 
