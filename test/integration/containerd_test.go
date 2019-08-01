@@ -56,8 +56,7 @@ func testGvisorRestart(t *testing.T) {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
-	mk.RunCommand("stop", false)
-	mk.CheckStatus(state.Stopped.String())
+	mk.RunCommand("stop", true)
 	stdout, stderr, err := mk.Start()
 	if err != nil {
 		t.Fatalf("failed to start minikube (for profile %s) failed : %v \nstdout: %s \nstderr: %s", t.Name(), err, stdout, stderr)
