@@ -31,7 +31,7 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
-	p := profile(t) // gets profile name used for minikube and kube context
+	p := profileName(t) // gets profile name used for minikube and kube context
 	if toParallel() {
 		t.Parallel()
 	}

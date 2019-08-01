@@ -25,7 +25,7 @@ import (
 
 func testClusterSSH(t *testing.T) {
 	t.Parallel()
-	p := "minikube"
+	p := profileName(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	expectedStr := "hello"
 	sshCmdOutput, stderr := mk.RunCommand("ssh echo "+expectedStr, true)

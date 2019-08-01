@@ -38,7 +38,7 @@ import (
 // is used to cache images and binaries used by other parallel tests to avoid redownloading.
 // TestDownloadOnly tests the --download-only option
 func TestDownloadOnly(t *testing.T) {
-	p := profile(t)
+	p := profileName(t)
 	mk := NewMinikubeRunner(t, p)
 	if !isTestNoneDriver() { // none driver doesnt need to be deleted
 		defer mk.TearDown(t)

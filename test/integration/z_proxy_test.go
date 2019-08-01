@@ -67,10 +67,8 @@ func setUpProxy(t *testing.T) (*http.Server, error) {
 func TestProxy(t *testing.T) {
 	origHP := os.Getenv("HTTP_PROXY")
 	origNP := os.Getenv("NO_PROXY")
-	p := profile(t) // profile name
-	if isTestNoneDriver() {
-		p = "minikube"
-	}
+	p := profileName(t) // profile name
+
 	if isTestNoneDriver() {
 		// TODO fix this later
 		t.Skip("Skipping proxy warning for none")
@@ -110,7 +108,7 @@ func TestProxy(t *testing.T) {
 
 // testProxyWarning checks user is warned correctly about the proxy related env vars
 func testProxyWarning(t *testing.T) {
-	p := profile(t) // profile name
+	p := profileName(t) // profile name
 	mk := NewMinikubeRunner(t, p)
 	stdout, stderr, err := mk.Start()
 	if err != nil {
@@ -130,7 +128,7 @@ func testProxyWarning(t *testing.T) {
 
 // testProxyDashboard checks if dashboard URL is accessible if proxy is set
 func testProxyDashboard(t *testing.T) {
-	p := profile(t) // profile name
+	p := profileName(t) // profile name
 	mk := NewMinikubeRunner(t, p)
 	cmd, out := mk.RunDaemon("dashboard --url")
 	defer func() {

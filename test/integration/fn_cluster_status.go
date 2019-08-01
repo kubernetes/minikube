@@ -28,7 +28,7 @@ import (
 )
 
 func testClusterStatus(t *testing.T) {
-	p := "minikube"
+	p := profileName(t)
 	kr := util.NewKubectlRunner(t, p)
 	cs := api.ComponentStatusList{}
 

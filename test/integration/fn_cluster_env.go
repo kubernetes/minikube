@@ -30,7 +30,7 @@ import (
 // Assert that docker-env subcommand outputs usable information for "docker ps"
 func testClusterEnv(t *testing.T) {
 	t.Parallel()
-	p := "minikube"
+	p := profileName(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	// Set a specific shell syntax so that we don't have to handle every possible user shell

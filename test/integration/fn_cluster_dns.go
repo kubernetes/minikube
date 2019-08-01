@@ -32,7 +32,7 @@ import (
 
 func testClusterDNS(t *testing.T) {
 	t.Parallel()
-	p := "minikube"
+	p := profileName(t)
 	client, err := pkgutil.GetClient(p)
 	if err != nil {
 		t.Fatalf("Error getting kubernetes client %v", err)
