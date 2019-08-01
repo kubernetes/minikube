@@ -287,10 +287,11 @@ func (m *MinikubeRunner) Status() (status string, stderr string, err error) {
 	cmd := fmt.Sprintf("status --format={{.Host}} %s", m.GlobalArgs)
 	s := func() error {
 		status, stderr, err = m.RunCommandRetriable(cmd)
+		status = strings.TrimRight(status, "\n")
 		return err
 	}
 	err = RetryX(s, 2*time.Minute)
-	if err != nil && status == state.None.String() {
+	if err != nil && (status == state.None.String() || status == state.Stopped.String()) {
 		err = nil // because https://github.com/kubernetes/minikube/issues/4932
 	}
 	return status, stderr, err
