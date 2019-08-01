@@ -23,12 +23,7 @@ import (
 )
 
 func TestFunctional(t *testing.T) {
-	p := "minikube"
-	// if !isTestNoneDriver() {
-	// 	t.Parallel()
-	// }
-
-	mk := NewMinikubeRunner(t, p)
+	mk := NewMinikubeRunner(t, "minikube")
 	stdout, stderr, err := mk.Start()
 	if err != nil {
 		t.Fatalf("failed to start minikube failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)

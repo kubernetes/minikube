@@ -31,14 +31,13 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
-	p := profile(t) // profile name
-	if isTestNoneDriver() {
-		p = "minikube"
-	} else {
+	p := profile(t) // gets profile name used for minikube and kube context
+	if toParallel() {
 		t.Parallel()
 	}
+
 	t.Run("group", func(t *testing.T) {
-		if !isTestNoneDriver() {
+		if toParallel() {
 			t.Parallel()
 		}
 		tests := []struct {
@@ -76,7 +75,10 @@ func TestStartStop(t *testing.T) {
 		for _, tc := range tests {
 			n := tc.name // because similar to https://golang.org/doc/faq#closures_and_goroutines
 			t.Run(tc.name, func(t *testing.T) {
-				t.Parallel()
+				if toParallel() {
+					t.Parallel()
+				}
+
 				pn := p + n
 				mk := NewMinikubeRunner(t, pn)
 				// TODO : redundant first clause, never happens

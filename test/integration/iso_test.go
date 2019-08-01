@@ -26,9 +26,7 @@ import (
 
 func TestISO(t *testing.T) {
 	p := profile(t)
-	if isTestNoneDriver() {
-		p = "minikube"
-	} else {
+	if toParalle() {
 		t.Parallel()
 	}
 

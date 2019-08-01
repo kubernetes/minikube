@@ -30,7 +30,10 @@ func TestContainerd(t *testing.T) {
 	if isTestNoneDriver() {
 		t.Skip("Can't run containerd backend with none driver")
 	}
-	t.Parallel()
+	if toParallel() {
+		t.Parallel()
+	}
+
 	t.Run("GvisorRestart", testGvisorRestart)
 }
 
