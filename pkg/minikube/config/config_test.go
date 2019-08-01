@@ -18,6 +18,7 @@ package config
 
 import (
 	"bytes"
+	"os"
 	"reflect"
 	"testing"
 
@@ -139,6 +140,32 @@ func Test_readConfig(t *testing.T) {
 
 	if reflect.DeepEqual(expectedConfig, mkConfig) || err != nil {
 		t.Errorf("Did not read config correctly,\n\n wanted %+v, \n\n got %+v", expectedConfig, mkConfig)
+	}
+}
+
+func Test_writeConfig(t *testing.T) {
+	configFile := "./testdata/configTest"
+	cfg := map[string]interface{}{
+		"vm-driver":            constants.DriverKvm2,
+		"cpus":                 4,
+		"disk-size":            "20g",
+		"show-libmachine-logs": true,
+		"log_dir":              "/etc/hosts",
+	}
+
+	err := writeConfig(configFile, cfg)
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+	defer os.Remove(configFile)
+
+	mkConfig, err := readConfig("./testdata/.minikube/config/valid_config.json")
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+
+	if reflect.DeepEqual(cfg, mkConfig) || err != nil {
+		t.Errorf("Did not read config correctly,\n\n wanted %+v, \n\n got %+v", cfg, mkConfig)
 	}
 }
 
