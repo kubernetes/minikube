@@ -3,7 +3,7 @@ function initTabs() {
     $('.tab-content').find('.tab-pane').each(function(idx, item) {
       var navTabs = $(this).closest('.code-tabs').find('.nav-tabs'),
           title = $(this).attr('title');
-      navTabs.append('<li class="nav-tab"><a href="#" class="nav-tab">'+title+'</a></li');
+      navTabs.append('<li class="nav-tab"><a href="#" class="nav-tab">'+title+'</a></li>');
     });
    
     $('.code-tabs ul.nav-tabs').each(function() {

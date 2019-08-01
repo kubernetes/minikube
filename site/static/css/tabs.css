@@ -7,12 +7,12 @@ ul.nav.nav-tabs {
 }
 
 li.nav-tab {
+    margin-top: 1.5rem;
     padding: 10px 20px;
     float: left;
     text-align: center;
     text-decoration: none;
-    font-weight: bold;
-    color: darkgray;
+    color: #666;
     font-size: 14px;
 
     border-top: 1px solid #CBCBCB;
@@ -31,6 +31,7 @@ li.active {
     border-left: 1px solid #A9A9A9;
     border-right: 1px solid #A9A9A9;    
     background: #f5f5f5;
+    font-weight: bold;
 }
 
 a.nav-tab {
@@ -40,6 +41,7 @@ a.nav-tab {
 
 div.tab-pane {
     display: none;
+    margin-bottom: 3rem;
 }
 
 div.tab-pane.active {
