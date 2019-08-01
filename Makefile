@@ -401,6 +401,7 @@ hyperkit_in_docker:
 
 .PHONY: install-hyperkit-driver
 install-hyperkit-driver: out/docker-machine-driver-hyperkit
+	mkdir -p $(HOME)/bin
 	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
 	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
 	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
@@ -507,6 +508,7 @@ kvm_in_docker:
 
 .PHONY: install-kvm-driver
 install-kvm-driver: out/docker-machine-driver-kvm2
+	mkdir -p $(GOBIN)
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
 .PHONY: release-kvm-driver
