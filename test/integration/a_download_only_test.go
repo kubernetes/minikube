@@ -30,10 +30,6 @@ import (
 // Note this test runs before all tests (because of file name) and caches images for them
 func TestDownloadOnly(t *testing.T) {
 	p := profile(t)
-	if isTestNoneDriver() {
-		t.Skip()
-
-	}
 	mk := NewMinikubeRunner(t, p)
 	if !isTestNoneDriver() { // none driver doesnt need to be deleted
 		defer mk.TearDown(t)

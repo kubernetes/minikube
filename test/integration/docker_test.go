@@ -32,7 +32,10 @@ func TestDocker(t *testing.T) {
 		t.Skip("skipping test as none driver does not bundle docker")
 	}
 	p := profile(t)
-	t.Parallel()
+	if toParallel() {
+		t.Parallel()
+	}
+
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	defer mk.TearDown(t)
 

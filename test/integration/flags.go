@@ -38,6 +38,7 @@ var globalArgs = flag.String("minikube-args", "", "Arguments to pass to minikube
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
 var mountArgs = flag.String("minikube-mount-args", "", "Arguments to pass to minikube mount")
 var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
+var disableParallel = flag.Bool("disable-parallel", false, "run the tests squentially and disable all parallel runs")
 
 // NewMinikubeRunner creates a new MinikubeRunner
 func NewMinikubeRunner(t *testing.T, profile string, extraStartArgs ...string) util.MinikubeRunner {
@@ -58,11 +59,25 @@ func isTestNoneDriver() bool {
 }
 
 // profile chooses a profile name based on the test name
-// for i.e, TestFunctional/SSH returns TestFunctional
+// to be used in minikube and kubecontext across that test
 func profile(t *testing.T) string {
+	if isTestNoneDriver() {
+		return "minikube"
+	}
 	p := t.Name()
-	if strings.Contains(p, "/") {
+	if strings.Contains(p, "/") { // for i.e, TestFunctional/SSH returns TestFunctional
 		p = strings.Split(p, "/")[0]
 	}
 	return p
+}
+
+// toParallel deterimines if test should run in  parallel or not
+func toParallel() bool {
+	if *disableParallel {
+		return false
+	}
+	if isTestNoneDriver() {
+		return false
+	}
+	return true
 }

@@ -60,7 +60,7 @@ func TestPersistence(t *testing.T) {
 		return mk.CheckStatusNoFail(state.Stopped.String())
 	}
 
-	if err = util.RetryX(checkStop, 30*time.Second, 3*time.Minute); err != nil {
+	if err = util.RetryX(checkStop, 15*time.Second, 3*time.Minute); err != nil {
 		t.Fatalf("TestPersistence Failed to stop minikube : %v", err)
 	}
 
