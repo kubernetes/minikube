@@ -21,13 +21,22 @@ package integration
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
+	"time"
 
+	"github.com/hashicorp/go-getter"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
+	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/test/integration/util"
 )
 
-// TestDownloadOnly downloads ISOs also tests the --download-only option
-// Note this test runs before all tests (because of file name) and caches images for them
+// Note this test runs before all because filename is alpahbetically first
+// is used to cache images and binaries used by other parallel tests to avoid redownloading.
+// TestDownloadOnly tests the --download-only option
 func TestDownloadOnly(t *testing.T) {
 	p := profile(t)
 	mk := NewMinikubeRunner(t, p)
@@ -50,24 +59,31 @@ func TestDownloadOnly(t *testing.T) {
 		// TODO: add test to check if files are downloaded
 	})
 
-	// TODO: download latest binary to test data here
-
+	t.Run("DownloadLatestRelease", func(t *testing.T) {
+		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-latest-stable", runtime.GOOS))
+		err := downloadMinikubeBinary(dest, "latest")
+		if err != nil {
+			t.Errorf("erorr downloading the latest minikube release %v", err)
+		}
+	})
 }
 
-// func downloadMinikubeBinary(dest string, version string) error {
-// 	// Grab latest release binary
-// 	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
-// 	download := func() error {
-// 		return getter.GetFile(dest, url)
-// 	}
+// downloadMinikubeBinary downloads the minikube binary from github used by TestVersionUpgrade
+// acts as a test setup for TestVersionUpgrade
+func downloadMinikubeBinary(dest string, version string) error {
+	// Grab latest release binary
+	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
+	download := func() error {
+		return getter.GetFile(dest, url)
+	}
 
-// 	if err := util.Retry2(download, 3*time.Second, 13); err != nil {
-// 		return errors.Wrap(err, "Failed to get latest release binary")
-// 	}
-// 	if runtime.GOOS != "windows" {
-// 		if err := os.Chmod(dest, 0700); err != nil {
-// 			return err
-// 		}
-// 	}
-// 	return nil
-// }
+	if err := util.RetryX(download, 13*time.Second, 5*time.Minute); err != nil {
+		return errors.Wrap(err, "Failed to get latest release binary")
+	}
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(dest, 0700); err != nil {
+			return err
+		}
+	}
+	return nil
+}
