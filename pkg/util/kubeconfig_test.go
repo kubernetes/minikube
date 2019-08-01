@@ -394,6 +394,32 @@ func TestDeleteKubeConfigContext(t *testing.T) {
 	}
 }
 
+func TestSetCurrentContext(t *testing.T) {
+	kubeConfigFile := "./testdata/kubeconfig/config"
+	contextName := "minikube"
+
+	cfg, err := ReadConfigOrNew(kubeConfigFile)
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+
+	if cfg.CurrentContext != "" {
+		t.Errorf("Expected empty context but got %v", cfg.CurrentContext)
+	}
+
+	SetCurrentContext(kubeConfigFile, contextName)
+	defer UnsetCurrentContext(kubeConfigFile, contextName)
+
+	cfg, err = ReadConfigOrNew(kubeConfigFile)
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+
+	if cfg.CurrentContext != contextName {
+		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
+	}
+}
+
 // tempFile creates a temporary with the provided bytes as its contents.
 // The caller is responsible for deleting file after use.
 func tempFile(t *testing.T, data []byte) string {
