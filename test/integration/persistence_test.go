@@ -31,21 +31,22 @@ func TestPersistence(t *testing.T) {
 	if isTestNoneDriver() {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
-	t.Parallel()
-	p := profile(t) // profile name
-	mk := NewMinikubeRunner(t, p)
+	p := profile(t)
+	if toParallel() {
+		t.Parallel()
+	}
+
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	defer mk.TearDown(t)
+
 	stdout, stderr, err := mk.Start()
 	if err != nil {
 		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
-
 	kr := util.NewKubectlRunner(t, p)
-
 	if _, err := kr.RunCommand([]string{"create", "-f", filepath.Join(*testdataDir, "busybox.yaml")}); err != nil {
 		t.Fatalf("creating busybox pod: %s", err)
 	}
-
 	verifyBusybox := func(t *testing.T) {
 		if err := util.WaitForBusyboxRunning(t, "default", p); err != nil {
 			t.Fatalf("waiting for busybox to be up: %v", err)
@@ -57,12 +58,13 @@ func TestPersistence(t *testing.T) {
 
 	checkStop := func() error {
 		stdout, stderr, err = mk.RunCommandRetriable("stop")
-		return mk.CheckStatusNoFail(state.Stopped.String())
+		return err
 	}
 
-	if err = util.RetryX(checkStop, 15*time.Second, 3*time.Minute); err != nil {
+	if err = util.RetryX(checkStop, 5*time.Second, 3*time.Minute); err != nil {
 		t.Fatalf("TestPersistence Failed to stop minikube : %v", err)
 	}
+	mk.CheckStatus(state.Stopped.String())
 
 	stdout, stderr, err = mk.Start()
 	if err != nil {
