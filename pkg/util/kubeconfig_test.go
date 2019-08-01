@@ -407,8 +407,16 @@ func TestSetCurrentContext(t *testing.T) {
 		t.Errorf("Expected empty context but got %v", cfg.CurrentContext)
 	}
 
-	SetCurrentContext(kubeConfigFile, contextName)
-	defer UnsetCurrentContext(kubeConfigFile, contextName)
+	err = SetCurrentContext(kubeConfigFile, contextName)
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+	defer func() {
+		err := UnsetCurrentContext(kubeConfigFile, contextName)
+		if err != nil {
+			t.Fatalf("Error not expected but got %v", err)
+		}
+	}()
 
 	cfg, err = ReadConfigOrNew(kubeConfigFile)
 	if err != nil {
@@ -433,8 +441,16 @@ func TestUnsetCurrentContext(t *testing.T) {
 		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
 	}
 
-	UnsetCurrentContext(kubeConfigFile, contextName)
-	defer SetCurrentContext(kubeConfigFile, contextName)
+	err = UnsetCurrentContext(kubeConfigFile, contextName)
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+	defer func() {
+		err := SetCurrentContext(kubeConfigFile, contextName)
+		if err != nil {
+			t.Fatalf("Error not expected but got %v", err)
+		}
+	}()
 
 	cfg, err = ReadConfigOrNew(kubeConfigFile)
 	if err != nil {
@@ -459,7 +475,10 @@ func TestUnsetCurrentContextOnlyChangesIfProfileIsTheCurrentContext(t *testing.T
 		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
 	}
 
-	UnsetCurrentContext(kubeConfigFile, "differentContextName")
+	err = UnsetCurrentContext(kubeConfigFile, "differentContextName")
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
 
 	cfg, err = ReadConfigOrNew(kubeConfigFile)
 	if err != nil {
