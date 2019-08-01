@@ -28,7 +28,7 @@ set -e
 OS_ARCH="linux-amd64"
 VM_DRIVER="kvm2"
 JOB_NAME="Linux-KVM"
-PARALLEL_COUNT=3
+PARALLEL_COUNT=4
 
 # Download files and set permissions
 source ./common.sh

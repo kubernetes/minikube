@@ -87,9 +87,6 @@ func TestStartStop(t *testing.T) {
 				}
 
 				mk.RunCommand("config set WantReportErrorPrompt false", true)
-				mk.RunCommand("delete", false)
-				mk.CheckStatus(state.None.String())
-
 				stdout, stderr, err := mk.Start(tc.args...)
 				if err != nil {
 					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", pn, err, stdout, stderr)
@@ -103,33 +100,16 @@ func TestStartStop(t *testing.T) {
 					t.Fatalf("IP command returned an invalid address: %s \n %s", ip, stderr)
 				}
 
-				// check for the current-context before and after the stop
-				// TODO: medya move this test to a non-parallel test so we can do more parallel
-				// kr := util.NewKubectlRunner(t, p)
-				// currentContext, err := kr.RunCommand([]string{"config", "current-context"}, false)
-				// if err != nil {
-				// 	t.Fatalf("Failed to fetch current-context")
-				// }
-				// if strings.TrimRight(string(currentContext), "\n") != p {
-				// 	t.Fatalf("got current-context - %q, want  current-context %q", string(currentContext), p)
-				// }
-
-				checkStop := func() error {
-					mk.RunCommand("stop", true)
+				stop := func() error {
+					stdout, stderr, err = mk.RunCommandRetriable("stop")
 					return mk.CheckStatusNoFail(state.Stopped.String())
 				}
 
-				if err := util.Retry(t, checkStop, 10*time.Second, 3); err != nil {
-					t.Fatalf("timed out while checking stopped status: %v", err)
-				}
+				err = util.RetryX(stop, 10*time.Second, 2*time.Minute)
+				mk.CheckStatus(state.Stopped.String())
 
-				// TODO medyagh:  the commented code beollow was not correct ! I leave it for another PR
+				// TODO medyagh:
 				// https://github.com/kubernetes/minikube/issues/4854
-
-				// running this command results in error when the current-context is not set
-				// if err := mk.Run("config current-context"); err != nil {
-				// 	t.Logf("current-context is not set to minikube")
-				// }
 
 				stdout, stderr, err = mk.Start(tc.args...)
 				if err != nil {
