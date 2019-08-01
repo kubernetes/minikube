@@ -223,15 +223,15 @@ func stopKubelet(exec command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
 	stop := func() error {
 		cmdStop := "sudo systemctl stop kubelet.service"
-		cmdCheck := "sudo systemctl show -p SubState --value kubelet"
+		cmdCheck := "sudo systemctl show -p SubState kubelet"
 		err := exec.Run(cmdStop)
 		if err != nil {
-			glog.Errorf("Temporary Error for %q : %v", cmdStop, err)
+			glog.Errorf("temporary error for %q : %v", cmdStop, err)
 		}
 		var out bytes.Buffer
 		errStatus := exec.CombinedOutputTo(cmdCheck, &out)
 		if errStatus != nil {
-			glog.Errorf("Temporary Error: for %q : %v", cmdCheck, errStatus)
+			glog.Errorf("temporary error: for %q : %v", cmdCheck, errStatus)
 		}
 		if !strings.Contains(out.String(), "dead") {
 			return fmt.Errorf("expected to kubelet to be dead but it got : %q", out)
