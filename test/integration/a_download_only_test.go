@@ -34,13 +34,13 @@ import (
 	"k8s.io/minikube/test/integration/util"
 )
 
-// Note this test runs before all because filename is alpahbetically first
+// Note this test runs before all because filename is alphabetically first
 // is used to cache images and binaries used by other parallel tests to avoid redownloading.
 // TestDownloadOnly tests the --download-only option
 func TestDownloadOnly(t *testing.T) {
 	p := profileName(t)
 	mk := NewMinikubeRunner(t, p)
-	if !isTestNoneDriver() { // none driver doesnt need to be deleted
+	if !isTestNoneDriver(t) { // none driver doesnt need to be deleted
 		defer mk.TearDown(t)
 	}
 
@@ -61,7 +61,7 @@ func TestDownloadOnly(t *testing.T) {
 
 	t.Run("DownloadLatestRelease", func(t *testing.T) {
 		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
-		err := downloadMinikubeBinary(dest, "latest")
+		err := downloadMinikubeBinary(t, dest, "latest")
 		if err != nil {
 			t.Errorf("erorr downloading the latest minikube release %v", err)
 		}
@@ -70,7 +70,8 @@ func TestDownloadOnly(t *testing.T) {
 
 // downloadMinikubeBinary downloads the minikube binary from github used by TestVersionUpgrade
 // acts as a test setup for TestVersionUpgrade
-func downloadMinikubeBinary(dest string, version string) error {
+func downloadMinikubeBinary(t *testing.T, dest string, version string) error {
+	t.Helper()
 	// Grab latest release binary
 	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
 	download := func() error {

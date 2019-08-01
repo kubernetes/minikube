@@ -30,10 +30,10 @@ import (
 )
 
 func TestContainerd(t *testing.T) {
-	if isTestNoneDriver() {
+	if isTestNoneDriver(t) {
 		t.Skip("Can't run containerd backend with none driver")
 	}
-	if toParallel() {
+	if shouldRunInParallel(t) {
 		t.Parallel()
 	}
 
@@ -42,7 +42,7 @@ func TestContainerd(t *testing.T) {
 
 func testGvisorRestart(t *testing.T) {
 	p := profileName(t)
-	if toParallel() {
+	if shouldRunInParallel(t) {
 		t.Parallel()
 	}
 	mk := NewMinikubeRunner(t, p, "--wait=false")
@@ -57,13 +57,13 @@ func testGvisorRestart(t *testing.T) {
 
 	t.Log("waiting for gvisor controller to come up")
 	if err := waitForGvisorControllerRunning(p); err != nil {
-		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+		t.Errorf("waiting for gvisor controller to be up: %v", err)
 	}
 
 	createUntrustedWorkload(t, p)
 	t.Log("making sure untrusted workload is Running")
 	if err := waitForUntrustedNginxRunning(p); err != nil {
-		t.Fatalf("waiting for nginx to be up: %v", err)
+		t.Errorf("waiting for nginx to be up: %v", err)
 	}
 	deleteUntrustedWorkload(t, p)
 
@@ -76,13 +76,13 @@ func testGvisorRestart(t *testing.T) {
 
 	t.Log("waiting for gvisor controller to come up")
 	if err := waitForGvisorControllerRunning(p); err != nil {
-		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+		t.Errorf("waiting for gvisor controller to be up: %v", err)
 	}
 
 	createUntrustedWorkload(t, p)
 	t.Log("making sure untrusted workload is Running")
 	if err := waitForUntrustedNginxRunning(p); err != nil {
-		t.Fatalf("waiting for nginx to be up: %v", err)
+		t.Errorf("waiting for nginx to be up: %v", err)
 	}
 	deleteUntrustedWorkload(t, p)
 }

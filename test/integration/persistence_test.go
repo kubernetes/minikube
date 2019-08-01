@@ -27,11 +27,11 @@ import (
 )
 
 func TestPersistence(t *testing.T) {
-	if isTestNoneDriver() {
+	if isTestNoneDriver(t) {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
 	p := profileName(t)
-	if toParallel() {
+	if shouldRunInParallel(t) {
 		t.Parallel()
 	}
 
