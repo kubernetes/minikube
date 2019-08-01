@@ -38,14 +38,14 @@ func TestDownloadOnly(t *testing.T) {
 	t.Run("Oldest", func(t *testing.T) {
 		stdout, stderr, err := mk.Start("--download-only", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 		if err != nil {
-			t.Fatalf("%s minikube --download-only failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
+			t.Errorf("%s minikube --download-only failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
 		}
 	})
 
 	t.Run("Newest", func(t *testing.T) {
 		stdout, stderr, err := mk.Start("--download-only", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
 		if err != nil {
-			t.Fatalf("%s minikube --download-only failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
+			t.Errorf("%s minikube --download-only failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
 		}
 		// TODO: add test to check if files are downloaded
 	})
