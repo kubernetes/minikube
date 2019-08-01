@@ -26,7 +26,7 @@ import (
 
 func TestISO(t *testing.T) {
 	p := profileName(t)
-	if toParalle() {
+	if toParallel() {
 		t.Parallel()
 	}
 

@@ -60,7 +60,7 @@ func TestDownloadOnly(t *testing.T) {
 	})
 
 	t.Run("DownloadLatestRelease", func(t *testing.T) {
-		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-latest-stable", runtime.GOOS))
+		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
 		err := downloadMinikubeBinary(dest, "latest")
 		if err != nil {
 			t.Errorf("erorr downloading the latest minikube release %v", err)
