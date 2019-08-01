@@ -290,7 +290,7 @@ func (m *MinikubeRunner) Status() (status string, stderr string, err error) {
 		return err
 	}
 	err = RetryX(s, 2*time.Minute)
-	if err != nil && status != state.None.String() {
+	if err != nil && status == state.None.String() {
 		err = nil // because https://github.com/kubernetes/minikube/issues/4932
 	}
 	return status, stderr, err
@@ -319,7 +319,7 @@ func (m *MinikubeRunner) CheckStatusNoFail(desired string) error {
 	}
 
 	if err != nil {
-		err = errors.Wrapf(err, stderr)
+		return errors.Wrapf(err, stderr)
 	}
-	return err
+	return nil
 }
