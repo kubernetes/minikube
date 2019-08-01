@@ -54,14 +54,19 @@ func fileExists(fname string) error {
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
 	p := profileName(t)
-	if toParallel() {
+	if shouldRunInParallel(t) {
 		t.Parallel()
 	}
 	// fname is the filename for the minikube's latetest binary. this file been pre-downloaded before test by hacks/jenkins/common.sh
 	fname := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
 	err := fileExists(fname)
-	if err != nil {
-		t.Fail()
+	if err != nil { // download file if it is not downloaded by other test
+		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
+		err := downloadMinikubeBinary(t, dest, "latest")
+		if err != nil {
+			// binary is needed for the test
+			t.Fatalf("erorr downloading the latest minikube release %v", err)
+		}
 	}
 	defer os.Remove(fname)
 

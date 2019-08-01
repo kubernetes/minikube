@@ -29,7 +29,7 @@ func TestFunctional(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to start minikube failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
 	}
-	if !isTestNoneDriver() { // none driver doesn't need to be deleted
+	if !isTestNoneDriver(t) { // none driver doesn't need to be deleted
 		defer mk.TearDown(t)
 	}
 
@@ -49,7 +49,7 @@ func TestFunctional(t *testing.T) {
 		t.Run("Provisioning", testProvisioning)
 		t.Run("Tunnel", testTunnel)
 
-		if !isTestNoneDriver() {
+		if !isTestNoneDriver(t) {
 			t.Run("EnvVars", testClusterEnv)
 			t.Run("SSH", testClusterSSH)
 			t.Run("IngressController", testIngressController)

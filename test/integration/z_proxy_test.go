@@ -17,6 +17,8 @@ limitations under the License.
 */
 
 // the name of this file starts with z intentionally to make it run last after all other tests
+// the intent is to make sure os env proxy settings be done after all other tests.
+// for example in the case the test proxy clean up gets killed or fails
 package integration
 
 import (
@@ -69,7 +71,7 @@ func TestProxy(t *testing.T) {
 	origNP := os.Getenv("NO_PROXY")
 	p := profileName(t) // profile name
 
-	if isTestNoneDriver() {
+	if isTestNoneDriver(t) {
 		// TODO fix this later
 		t.Skip("Skipping proxy warning for none")
 	}
@@ -96,7 +98,7 @@ func TestProxy(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
-		if !isTestNoneDriver() {
+		if !isTestNoneDriver(t) {
 			mk.TearDown(t)
 		}
 

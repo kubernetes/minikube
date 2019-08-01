@@ -26,7 +26,7 @@ import (
 
 func TestISO(t *testing.T) {
 	p := profileName(t)
-	if toParallel() {
+	if shouldRunInParallel(t) {
 		t.Parallel()
 	}
 
@@ -36,7 +36,7 @@ func TestISO(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to start minikube (for profile %s) %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
-	if !isTestNoneDriver() { // none driver doesn't need to be deleted
+	if !isTestNoneDriver(t) { // none driver doesn't need to be deleted
 		defer mk.TearDown(t)
 	}
 
