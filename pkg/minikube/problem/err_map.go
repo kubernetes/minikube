@@ -149,6 +149,12 @@ var vmProblems = map[string]match{
 		Advice: "Configure an external network switch following the official documentation, then add `--hyperv-virtual-switch=<switch-name>` to `minikube start`",
 		URL:    "https://docs.docker.com/machine/drivers/hyper-v/",
 	},
+	"HYPERV_POWERSHELL_NOT_FOUND": {
+		Regexp: re(`Powershell was not found in the path`),
+		Advice: "To start minikube with HyperV Powershell must be in your PATH`",
+		URL:    "https://docs.docker.com/machine/drivers/hyper-v/",
+	},
+
 	"HOST_CIDR_CONFLICT": {
 		Regexp: re(`host-only cidr conflicts with the network address of a host interface`),
 		Advice: "Specify an alternate --host-only-cidr value, such as 172.16.0.1/24",
