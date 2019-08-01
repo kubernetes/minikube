@@ -48,5 +48,5 @@ func Unset(name string) error {
 		return err
 	}
 	delete(m, name)
-	return WriteConfig(m)
+	return pkgConfig.WriteConfig(m)
 }
