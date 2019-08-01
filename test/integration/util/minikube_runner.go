@@ -242,7 +242,7 @@ func (m *MinikubeRunner) Start(opts ...string) (stdout string, stderr string, er
 		stdout, stderr, err = m.RunCommandRetriable(cmd)
 		return err
 	}
-	err = RetryX(s, 1*time.Minute, m.TimeOutStart)
+	err = RetryX(s, 30*time.Second, m.TimeOutStart)
 	return stdout, stderr, err
 }
 
