@@ -240,7 +240,7 @@ func stopKubelet(exec command.Runner) error {
 	}
 
 	if err := util.RetryAfter(3, stop, 2*time.Second); err != nil {
-		return errors.Wrapf(err, "Error stopping kubelet")
+		return errors.Wrapf(err, "error stopping kubelet")
 	}
 
 	return nil
