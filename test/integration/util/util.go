@@ -359,19 +359,6 @@ func WaitForIngressControllerRunning(t *testing.T) error {
 	return nil
 }
 
-// WaitForGvisorControllerRunning waits for the gvisor controller pod to be running
-func WaitForGvisorControllerRunning(t *testing.T) error {
-	client, err := commonutil.GetClient()
-	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
-	}
-
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
-	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
-		return errors.Wrap(err, "waiting for gvisor controller pod to stabilize")
-	}
-	return nil
-}
 
 // WaitForGvisorControllerDeleted waits for the gvisor controller pod to be deleted
 func WaitForGvisorControllerDeleted() error {
