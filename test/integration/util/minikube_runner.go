@@ -47,14 +47,6 @@ type MinikubeRunner struct {
 	TimeOutStart time.Duration // time to wait for minikube start before killing it
 }
 
-// Copy copies a file
-func (m *MinikubeRunner) Copy(f assets.CopyableFile) error {
-	path, _ := filepath.Abs(m.BinaryPath)
-	cmd := exec.Command("/bin/bash", "-c", path, "ssh", "--", fmt.Sprintf("cat >> %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
-	Logf("Running: %s", cmd.Args)
-	return cmd.Run()
-}
-
 // Remove removes a file
 func (m *MinikubeRunner) Remove(f assets.CopyableFile) error {
 	_, err := m.SSH(fmt.Sprintf("rm -rf %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
