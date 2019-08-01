@@ -25,9 +25,6 @@ import (
 func TestFunctional(t *testing.T) {
 	p := profileName(t)
 	mk := NewMinikubeRunner(t, p)
-	if toParallel() {
-		t.Parallel()
-	}
 	stdout, stderr, err := mk.Start()
 	if err != nil {
 		t.Fatalf("failed to start minikube failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
