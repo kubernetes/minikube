@@ -21,6 +21,11 @@ resources:
 				<a class="btn btn-lg btn-secondary mr-3 mb-4" href="https://github.com/kubernetes/minikube">
 					View Repository <i class="fab fa-github ml-2 "></i>
 				</a>
+
+				<!-- news items -->
+				<ul>
+				<li>🎉 2019-06-24: minikube <a href="https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-120---2019-06-24">v1.2.0</a> released!
+				</ul>
 			</div>
 			<div class="col">
 				{{< imgproc "logo" Fit "220x220" >}}{{< /imgproc >}}
@@ -42,13 +47,15 @@ A single command away from reproducing your production environment, from the com
 
 <h3>Highlights</h3>
 <ul class="fa-ul">
-<li><i class="fas fa-check"></i> Always supports the latest Kubernetes release, as well as previous versions</li>
+<li><i class="fas fa-check"></i> Always supports the latest Kubernetes release (as well as previous versions)</li>
 <li><i class="fas fa-check"></i> Cross-platform (Linux, macOS, Windows)</li>
-<li><i class="fas fa-check"></i> Provides a Docker API endpoint</li>
 <li><i class="fas fa-check"></i> Infinitely configurable local development environment</li>
-<li><i class="fas fa-check"></i> Kubernetes certified, mother approved</li>
+<li><i class="fas fa-check"></i> Multiple container runtimes (crio, containerd, docker, gvisor)</li>
+<li><i class="fas fa-check"></i> Provides a Docker API endpoint</li>
 </ul>
 </div>
+
+
 
 {{< /blocks/lead >}}
 
@@ -95,11 +102,12 @@ The #minikube channel is ready to answer your questions.
 Want to join the fun on Github? New users are always welcome!
 {{% /blocks/feature %}}
 
-{{% blocks/feature icon="fa-calendar" title="Office Hours" %}}
- <a class="text-white" href="http://tinyurl.com/minikube-oh">
-    <button type="button" class="btn btn-secondary" style="width:150px; margin-top: 12px;">Join us</button>
+{{% blocks/feature icon="fas fa-bullhorn" title="Make your voice heard" %}}
+ <a class="text-white" href="https://forms.gle/Gg3hG5ZySw8c1C24A">
+    <button type="button" class="btn btn-secondary" style="width:150px; margin-top: 12px;">Survey</button>
  </a>
 
-Bi-weekly videoconference with the developers
+Have time for 5 quick questions? We would love to hear from you.
+
 {{% /blocks/feature %}}
 {{< /blocks/section >}}

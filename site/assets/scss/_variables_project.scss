@@ -67,6 +67,17 @@ $link-decoration: none !default;
 $link-hover-color: darken($link-color, 15%) !default;
 $link-hover-decoration: none !default;
 
+// Welcome to minikube! box
+.td-box--white:nth-child(1) {
+
+    // News
+    ul {
+        margin-top: 1rem;
+        list-style: none;
+        color: $gray-700;
+        padding-left: 0;
+    }
+}
 
 // Sales pitch box
 .td-box--1 {
@@ -74,7 +85,7 @@ $link-hover-decoration: none !default;
 
     // Increase from 1.25 for improved readability
     .h4 {
-        line-height: 1.5 !important;
+        line-height: 1.6 !important;
     }
 
     // Control the presentation of the screenshot
