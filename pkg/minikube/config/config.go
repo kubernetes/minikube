@@ -76,14 +76,18 @@ func get(name string, config MinikubeConfig) (string, error) {
 
 // WriteConfig writes a minikube config to the JSON file
 func WriteConfig(m MinikubeConfig) error {
-	f, err := os.Create(constants.ConfigFile)
+	return writeConfig(constants.ConfigFile, m)
+}
+
+func writeConfig(configFile string, m MinikubeConfig) error {
+	f, err := os.Create(configFile)
 	if err != nil {
-		return fmt.Errorf("create %s: %s", constants.ConfigFile, err)
+		return fmt.Errorf("create %s: %s", configFile, err)
 	}
 	defer f.Close()
 	err = encode(f, m)
 	if err != nil {
-		return fmt.Errorf("encode %s: %s", constants.ConfigFile, err)
+		return fmt.Errorf("encode %s: %s", configFile, err)
 	}
 	return nil
 }
