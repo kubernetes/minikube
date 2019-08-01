@@ -25,7 +25,7 @@ import (
 
 // testProfileList tests the `minikube profile list` command
 func testProfileList(t *testing.T) {
-	p := "minikube"
+	p := profileName(t)
 	t.Parallel()
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	out, stderr := mk.RunCommand("profile list", true)

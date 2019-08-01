@@ -58,15 +58,18 @@ func isTestNoneDriver() bool {
 	return strings.Contains(*startArgs, "--vm-driver=none")
 }
 
-// profile chooses a profile name based on the test name
+// profileName chooses a profile name based on the test name
 // to be used in minikube and kubecontext across that test
-func profile(t *testing.T) string {
+func profileName(t *testing.T) string {
 	if isTestNoneDriver() {
 		return "minikube"
 	}
 	p := t.Name()
 	if strings.Contains(p, "/") { // for i.e, TestFunctional/SSH returns TestFunctional
 		p = strings.Split(p, "/")[0]
+	}
+	if p == "TestFunctional" {
+		return "minikube"
 	}
 	return p
 }

@@ -41,7 +41,7 @@ import (
 
 func testAddons(t *testing.T) {
 	t.Parallel()
-	p := "minikube"
+	p := profileName(t)
 	client, err := pkgutil.GetClient(p)
 	if err != nil {
 		t.Fatalf("Could not get kubernetes client: %v", err)
@@ -78,7 +78,7 @@ func readLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error)
 
 func testDashboard(t *testing.T) {
 	t.Parallel()
-	p := "minikube"
+	p := profileName(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	cmd, out := mk.RunDaemon("dashboard --url")
 	defer func() {
@@ -124,7 +124,7 @@ func testDashboard(t *testing.T) {
 
 func testIngressController(t *testing.T) {
 	t.Parallel()
-	p := "minikube"
+	p := profileName(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	kr := util.NewKubectlRunner(t, p)
 
@@ -173,7 +173,7 @@ func testIngressController(t *testing.T) {
 
 func testServicesList(t *testing.T) {
 	t.Parallel()
-	p := "minikube"
+	p := profileName(t)
 	mk := NewMinikubeRunner(t, p)
 
 	checkServices := func() error {
@@ -189,7 +189,7 @@ func testServicesList(t *testing.T) {
 }
 func testRegistry(t *testing.T) {
 	t.Parallel()
-	p := "minikube"
+	p := profileName(t)
 	mk := NewMinikubeRunner(t, p)
 	mk.RunCommand("addons enable registry", true)
 	client, err := pkgutil.GetClient(p)

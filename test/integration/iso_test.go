@@ -25,7 +25,7 @@ import (
 )
 
 func TestISO(t *testing.T) {
-	p := profile(t)
+	p := profileName(t)
 	if toParalle() {
 		t.Parallel()
 	}
@@ -47,7 +47,7 @@ func TestISO(t *testing.T) {
 }
 
 func testMountPermissions(t *testing.T) {
-	p := profile(t)
+	p := profileName(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	// test mount permissions
 	mountPoints := []string{"/Users", "/hosthome"}
@@ -70,7 +70,7 @@ func testMountPermissions(t *testing.T) {
 }
 
 func testPackages(t *testing.T) {
-	p := profile(t)
+	p := profileName(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	packages := []string{
@@ -93,7 +93,7 @@ func testPackages(t *testing.T) {
 }
 
 func testPersistence(t *testing.T) {
-	p := profile(t)
+	p := profileName(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	for _, dir := range []string{

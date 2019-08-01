@@ -53,7 +53,7 @@ func fileExists(fname string) error {
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
-	p := profile(t)
+	p := profileName(t)
 	if toParallel() {
 		t.Parallel()
 	}

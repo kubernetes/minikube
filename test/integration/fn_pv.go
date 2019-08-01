@@ -39,7 +39,7 @@ var (
 )
 
 func testProvisioning(t *testing.T) {
-	p := "minikube"
+	p := profileName(t)
 	t.Parallel()
 
 	kr := util.NewKubectlRunner(t, p)

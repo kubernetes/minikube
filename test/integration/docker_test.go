@@ -31,7 +31,7 @@ func TestDocker(t *testing.T) {
 	if isTestNoneDriver() {
 		t.Skip("skipping test as none driver does not bundle docker")
 	}
-	p := profile(t)
+	p := profileName(t)
 	if toParallel() {
 		t.Parallel()
 	}

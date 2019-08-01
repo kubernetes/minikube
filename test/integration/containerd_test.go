@@ -41,7 +41,7 @@ func TestContainerd(t *testing.T) {
 }
 
 func testGvisorRestart(t *testing.T) {
-	p := profile(t)
+	p := profileName(t)
 	if toParallel() {
 		t.Parallel()
 	}
