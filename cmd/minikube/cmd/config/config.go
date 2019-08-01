@@ -17,16 +17,11 @@ limitations under the License.
 package config
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"os"
 	"strings"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // Bootstrapper is the name for bootstrapper
@@ -319,7 +314,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return WriteConfig(configFile)
+	return config.WriteConfig(configFile)
 }
 
 // DeleteFromConfigMap deletes entries from a map in the config file
@@ -344,30 +339,5 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return WriteConfig(configFile)
-}
-
-// WriteConfig writes a minikube config to the JSON file
-func WriteConfig(m config.MinikubeConfig) error {
-	f, err := os.Create(constants.ConfigFile)
-	if err != nil {
-		return fmt.Errorf("create %s: %s", constants.ConfigFile, err)
-	}
-	defer f.Close()
-	err = encode(f, m)
-	if err != nil {
-		return fmt.Errorf("encode %s: %s", constants.ConfigFile, err)
-	}
-	return nil
-}
-
-func encode(w io.Writer, m config.MinikubeConfig) error {
-	b, err := json.MarshalIndent(m, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	_, err = w.Write(b)
-
-	return err
+	return config.WriteConfig(configFile)
 }

@@ -71,5 +71,5 @@ func Set(name string, value string) error {
 	}
 
 	// Write the value
-	return WriteConfig(config)
+	return pkgConfig.WriteConfig(config)
 }
