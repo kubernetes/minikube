@@ -204,7 +204,13 @@ test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 all: cross drivers e2e-cross
 
 .PHONY: drivers
-drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
+drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2
+
+.PHONY: docker-machine-driver-hyperkit
+docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit
+
+.PHONY: docker-machine-driver-kvm2
+docker-machine-driver-kvm2: out/docker-machine-driver-kvm2
 
 .PHONY: integration
 integration: out/minikube
