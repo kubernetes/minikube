@@ -242,7 +242,7 @@ func (m *MinikubeRunner) Start(opts ...string) (stdout string, stderr string, er
 		stdout, stderr, err = m.RunCommandRetriable(cmd)
 		return err
 	}
-	err = RetryX(s, m.TimeOutStart)
+	err = RetryX(s, 1*time.Minute, m.TimeOutStart)
 	return stdout, stderr, err
 }
 
@@ -290,7 +290,7 @@ func (m *MinikubeRunner) Status() (status string, stderr string, err error) {
 		status = strings.TrimRight(status, "\n")
 		return err
 	}
-	err = RetryX(s, 2*time.Minute)
+	err = RetryX(s, 15*time.Second, 1*time.Minute)
 	if err != nil && (status == state.None.String() || status == state.Stopped.String()) {
 		err = nil // because https://github.com/kubernetes/minikube/issues/4932
 	}

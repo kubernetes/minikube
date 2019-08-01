@@ -176,10 +176,10 @@ func Retry2(callback func() error, d time.Duration, attempts int) (err error) {
 }
 
 // RetryX is expontential backoff retry
-func RetryX(callback func() error, maxTime time.Duration) error {
+func RetryX(callback func() error, initInterv time.Duration, maxTime time.Duration) error {
 	b := backoff.NewExponentialBackOff()
 	b.MaxElapsedTime = maxTime
-	b.InitialInterval = 1 * time.Minute
+	b.InitialInterval = initInterv
 	b.RandomizationFactor = 0.5
 	b.Multiplier = 1.5
 	b.Reset()
