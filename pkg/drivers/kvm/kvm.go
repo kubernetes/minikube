@@ -87,6 +87,7 @@ const (
 	qemusystem                = "qemu:///system"
 	defaultPrivateNetworkName = "minikube-net"
 	defaultNetworkName        = "default"
+	driverKvm2 = "kvm2"
 )
 
 // NewDriver creates a new driver for a host
@@ -214,7 +215,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	return "kvm2"
+	return driverKvm2
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
