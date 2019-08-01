@@ -75,10 +75,6 @@ gsutil -qm cp \
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
 
-# to be used by TestVersionUpgrade
-gsutil -qm cp gs://minikube/releases/latest/minikube-${OS_ARCH} testdata/minikube-${OS_ARCH}-latest-stable
-chmod +x "testdata/minikube-${OS_ARCH}-latest-stable"
-
 
 # Set the executable bit on the e2e binary and out binary
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
