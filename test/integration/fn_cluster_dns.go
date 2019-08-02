@@ -32,13 +32,14 @@ import (
 
 func testClusterDNS(t *testing.T) {
 	t.Parallel()
-	client, err := pkgutil.GetClient()
+	p := profileName(t)
+	client, err := pkgutil.GetClient(p)
 	if err != nil {
 		t.Fatalf("Error getting kubernetes client %v", err)
 	}
 
-	kr := util.NewKubectlRunner(t)
-	busybox := busyBoxPod(t, client, kr)
+	kr := util.NewKubectlRunner(t, p)
+	busybox := busyBoxPod(t, client, kr, p)
 	defer func() {
 		if _, err := kr.RunCommand([]string{"delete", "po", busybox}); err != nil {
 			t.Errorf("delete failed: %v", err)
@@ -61,12 +62,12 @@ func testClusterDNS(t *testing.T) {
 	}
 }
 
-func busyBoxPod(t *testing.T, c kubernetes.Interface, kr *util.KubectlRunner) string {
+func busyBoxPod(t *testing.T, c kubernetes.Interface, kr *util.KubectlRunner, profile string) string {
 	if _, err := kr.RunCommand([]string{"create", "-f", filepath.Join(*testdataDir, "busybox.yaml")}); err != nil {
 		t.Fatalf("creating busybox pod: %s", err)
 	}
 	// TODO(tstromberg): Refactor WaitForBusyboxRunning to return name of pod.
-	if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
+	if err := util.WaitForBusyboxRunning(t, "default", profile); err != nil {
 		t.Fatalf("Waiting for busybox pod to be up: %v", err)
 	}
 

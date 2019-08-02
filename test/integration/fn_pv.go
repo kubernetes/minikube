@@ -39,11 +39,13 @@ var (
 )
 
 func testProvisioning(t *testing.T) {
+	p := profileName(t)
 	t.Parallel()
-	kubectlRunner := util.NewKubectlRunner(t)
+
+	kr := util.NewKubectlRunner(t, p)
 
 	defer func() {
-		if out, err := kubectlRunner.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
+		if out, err := kr.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
 			t.Logf("delete pvc %s failed: %v\noutput: %s\n", pvcName, err, out)
 		}
 	}()
@@ -53,7 +55,7 @@ func testProvisioning(t *testing.T) {
 
 	checkStorageClass := func() error {
 		scl := storage.StorageClassList{}
-		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "storageclass"}, &scl); err != nil {
+		if err := kr.RunCommandParseOutput([]string{"get", "storageclass"}, &scl); err != nil {
 			return fmt.Errorf("get storageclass: %v", err)
 		}
 
@@ -63,14 +65,14 @@ func testProvisioning(t *testing.T) {
 		return fmt.Errorf("no default StorageClass yet")
 	}
 
-	if err := util.Retry(t, checkStorageClass, 5*time.Second, 20); err != nil {
+	if err := util.Retry(t, checkStorageClass, 10*time.Second, 10); err != nil {
 		t.Fatalf("no default storage class after retry: %v", err)
 	}
 
 	// Check that the storage provisioner pod is running
 
 	checkPodRunning := func() error {
-		client, err := commonutil.GetClient()
+		client, err := commonutil.GetClient(p)
 		if err != nil {
 			return errors.Wrap(err, "getting kubernetes client")
 		}
@@ -82,20 +84,20 @@ func testProvisioning(t *testing.T) {
 		return nil
 	}
 
-	if err := checkPodRunning(); err != nil {
+	if err := util.Retry(t, checkPodRunning, 2*time.Second, 5); err != nil {
 		t.Fatalf("Check storage-provisioner pod running failed with error: %v", err)
 	}
 
 	// Now create the PVC
 	pvcPath := filepath.Join(*testdataDir, "pvc.yaml")
-	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", pvcPath}); err != nil {
+	if _, err := kr.RunCommand([]string{"create", "-f", pvcPath}); err != nil {
 		t.Fatalf("Error creating pvc: %v", err)
 	}
 
 	// And check that it gets bound to a PV.
 	checkStorage := func() error {
 		pvc := core.PersistentVolumeClaim{}
-		if err := kubectlRunner.RunCommandParseOutput(pvcCmd, &pvc); err != nil {
+		if err := kr.RunCommandParseOutput(pvcCmd, &pvc); err != nil {
 			return err
 		}
 		// The test passes if the volume claim gets bound.

@@ -1,7 +1,7 @@
 // +build integration
 
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -23,12 +23,13 @@ import (
 	"testing"
 )
 
-func testClusterSSH(t *testing.T) {
+// testProfileList tests the `minikube profile list` command
+func testProfileList(t *testing.T) {
+	p := profileName(t)
 	t.Parallel()
-	mk := NewMinikubeRunner(t, "--wait=false")
-	expectedStr := "hello"
-	sshCmdOutput := mk.RunCommand("ssh echo "+expectedStr, true)
-	if !strings.Contains(sshCmdOutput, expectedStr) {
-		t.Fatalf("ExpectedStr sshCmdOutput to be: %s. Output was: %s", expectedStr, sshCmdOutput)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
+	out, stderr := mk.RunCommand("profile list", true)
+	if !strings.Contains(out, p) {
+		t.Errorf("Error , failed to read profile name (%s) in `profile list` command output : \n %q : \n stderr: %s ", p, out, stderr)
 	}
 }

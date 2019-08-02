@@ -23,7 +23,7 @@
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
-#
+# PARALLEL_COUNT: number of tests to run in parallel
 
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
@@ -75,6 +75,7 @@ gsutil -qm cp \
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
 
+
 # Set the executable bit on the e2e binary and out binary
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
@@ -82,7 +83,7 @@ chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
 procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
 if [[ "${procs}" != "" ]]; then
-  echo "ERROR: found stale test processes to kill:"
+  echo "Warning: found stale test processes to kill:"
   ps -f -p ${procs} || true
   kill ${procs} || true
   kill -9 ${procs} || true
@@ -130,14 +131,24 @@ if type -P virsh; then
     | awk '{ print $2 }' \
     | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
     || true
-  # list again after clean up
-  virsh -c qemu:///system list --all
+  virsh -c qemu:///system list --all \
+    | grep Test \
+    | awk '{ print $2 }' \
+    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
+    || true
+  echo ">> Virsh VM list after clean up (should be empty) :"
+  virsh -c qemu:///system list --all || true
 fi
 
 if type -P vboxmanage; then
   vboxmanage list vms || true
   vboxmanage list vms \
     | grep minikube \
+    | cut -d'"' -f2 \
+    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
+    || true
+  vboxmanage list vms \
+    | grep Test \
     | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
@@ -148,6 +159,7 @@ if type -P vboxmanage; then
     | cut -d'"' -f3 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
+
   # list them again after clean up
   vboxmanage list vms || true
 fi
@@ -238,7 +250,7 @@ echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
-  -test.v -test.timeout=100m -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+  -test.v -test.timeout=100m -test.parallel=${PARALLEL_COUNT}  -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
