@@ -1,7 +1,7 @@
 ---
 title: "Releasing"
 date: 2019-07-31
-weight: 4
+weight: 9
 description: >
   How to release minikube
 ---
