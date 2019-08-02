@@ -49,7 +49,6 @@ const (
 	permErr         = "%s needs to run with elevated permissions. " +
 		"Please run the following command, then try again: " +
 		"sudo chown root:wheel %s && sudo chmod u+s %s"
-	driverHyperkit = "hyperkit"
 )
 
 // Driver is the machine driver for Hyperkit
@@ -118,7 +117,7 @@ func (d *Driver) Create() error {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	return driverHyperkit
+	return "hyperkit"
 }
 
 // GetSSHHostname returns hostname for use with ssh
@@ -224,7 +223,7 @@ func (d *Driver) Start() error {
 	h.Memory = d.Memory
 	h.UUID = d.UUID
 	// This should stream logs from hyperkit, but doesn't seem to work.
-	logger := golog.New(os.Stderr, driverHyperkit, golog.LstdFlags)
+	logger := golog.New(os.Stderr, "hyperkit", golog.LstdFlags)
 	h.SetLogger(logger)
 
 	if vsockPorts, err := d.extractVSockPorts(); err != nil {
@@ -266,7 +265,7 @@ func (d *Driver) Start() error {
 
 		d.IPAddress, err = GetIPAddressByMACAddress(mac)
 		if err != nil {
-			return &TempError{err}
+			return &tempError{err}
 		}
 		return nil
 	}
@@ -305,6 +304,10 @@ func (d *Driver) Start() error {
 
 type tempError struct {
 	Err error
+}
+
+func (t tempError) Error() string {
+	return "Temporary error: " + t.Err.Error()
 }
 
 //recoverFromUncleanShutdown searches for an existing hyperkit.pid file in

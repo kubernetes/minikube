@@ -38,8 +38,6 @@ const (
 	VMNetDomain = "/Library/Preferences/SystemConfiguration/com.apple.vmnet"
 	// SharedNetAddrKey is the key for the network address
 	SharedNetAddrKey = "Shared_Net_Address"
-
-	IPErrorMessage = "could not find an IP address for %s"
 )
 
 var (
@@ -80,7 +78,7 @@ func getIPAddressFromFile(mac, path string) (string, error) {
 			return dhcpEntry.IPAddress, nil
 		}
 	}
-	return "", fmt.Errorf(IPErrorMessage, mac)
+	return "", fmt.Errorf("could not find an IP address for %s", mac)
 }
 
 func parseDHCPdLeasesFile(file io.Reader) ([]DHCPEntry, error) {
