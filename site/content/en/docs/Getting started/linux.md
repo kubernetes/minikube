@@ -9,7 +9,7 @@ description: >
 ## Installation
 
 {{% tabs %}}
-{{% tab "Manual" %}}
+{{% tab "Direct" %}}
 
 Download and install minikube to /usr/local/bin:
 
@@ -19,9 +19,25 @@ Download and install minikube to /usr/local/bin:
 ```
 {{% /tab %}}
 {{% tab "Debian/Ubuntu (apt)" %}}
+
+Download and install minikube:
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_{{< latest >}}.deb \
+ && dpkg -i minikube_{{< latest >}}.deb
+ ```
+
 {{% /tab %}}
 
 {{% tab "Fedora/Red Hat (rpm)" %}}
+
+Download and install minikube:
+
+```shell
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_{{< latest >}}.rpm \
+ && rpm -ivh minikube_{{< latest >}}.rpm
+ ```
+
 {{% /tab %}}
 {{% /tabs %}}
 
@@ -69,20 +85,27 @@ virt-host-validate
 
 If you see any errors, stop now and consult your distributions documentation on configuring libvirt.
 
-### Trying the kvm2 driver
+### Using the kvm2 driver
 
 ```shell
 minikube start --vm-driver=kvm2
 ```
-### Making the kvm2 driver the default
+
+To make the kvm2 driver to be the default for future minikube  invocations, run:
 
 ```shell
 minikube config set vm-driver kvm2
 ```
+
 {{% /tab %}}
 {{% tab "None (bare-metal)" %}}
 
-If you are already running minikube from inside a VM, it is possible to skip the creation of an additional VM layer by using the `none` driver. It does require sudo access:
+If you are already running minikube from inside a VM, it is possible to skip the creation of an additional VM layer by using the `none` driver. 
+This mode does come with additional requirements:
+
+- docker
+- systemd
+- sudo access
 
 ```shell
 sudo minikube start --vm-driver=none
@@ -92,6 +115,4 @@ Please see the [docs/reference/drivers/none](none driver) documentation for more
 {{% /tab %}}
 {{% /tabs %}}
 
-## Where should I go next?
-
-{{% readfile file="/docs/Getting started/_next_steps.md" %}}
+{{% readfile file="/docs/Getting started/_post_install.md" %}}
