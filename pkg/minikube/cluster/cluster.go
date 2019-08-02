@@ -409,7 +409,7 @@ func showRemoteOsRelease(driver drivers.Driver) {
 		return
 	}
 
-	out.T(out.Provisioner, "Provisioned with {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
+	glog.Infof("Provisioned with %s", osReleaseInfo.PrettyName)
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
