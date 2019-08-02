@@ -25,19 +25,30 @@ import (
 )
 
 func TestISO(t *testing.T) {
+	p := profileName(t)
+	if shouldRunInParallel(t) {
+		t.Parallel()
+	}
 
-	mk := NewMinikubeRunner(t, "--wait=false")
-
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	mk.RunCommand("delete", false)
-	mk.Start()
+	stdout, stderr, err := mk.Start()
+	if err != nil {
+		t.Fatalf("failed to start minikube (for profile %s) %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+	}
+	if !isTestNoneDriver(t) { // none driver doesn't need to be deleted
+		defer mk.TearDown(t)
+	}
 
 	t.Run("permissions", testMountPermissions)
 	t.Run("packages", testPackages)
 	t.Run("persistence", testPersistence)
+
 }
 
 func testMountPermissions(t *testing.T) {
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := profileName(t)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	// test mount permissions
 	mountPoints := []string{"/Users", "/hosthome"}
 	perms := "drwxr-xr-x"
@@ -59,7 +70,8 @@ func testMountPermissions(t *testing.T) {
 }
 
 func testPackages(t *testing.T) {
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := profileName(t)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	packages := []string{
 		"git",
@@ -81,7 +93,8 @@ func testPackages(t *testing.T) {
 }
 
 func testPersistence(t *testing.T) {
-	mk := NewMinikubeRunner(t, "--wait=false")
+	p := profileName(t)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	for _, dir := range []string{
 		"/data",
