@@ -5,3 +5,9 @@ Add styles or override variables from the theme here.
 */
 
 $primary: #326DE6;
+
+
+// Allow code tags to span most of a window length (default is 80%)
+div.td-content pre {
+    max-width: 99% !important;
+}
