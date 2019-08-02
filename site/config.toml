@@ -64,6 +64,9 @@ weight = 1
 # Everything below this are Site Params
 
 [params]
+# The latest release of minikube
+latest_release = "1.2.0"
+
 copyright = "The Linux Foundation"
 privacy_policy = ""
 

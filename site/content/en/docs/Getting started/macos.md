@@ -16,14 +16,14 @@ description: >
 {{% tabs %}}
 {{% tab "Brew" %}}
 
-Download and install minikube to /usr/local/bin:
+If you have the [Brew Package Manager](https://brew.sh/) installed, this will download and install minikube to /usr/local/bin:
 
 ```shell
 brew install minikube
 ```
 
 {{% /tab %}}
-{{% tab "Manual" %}}
+{{% tab "Direct" %}}
 
 Download and install minikube to /usr/local/bin:
 
@@ -43,19 +43,72 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin
 {{% /tab %}}
 {{% tab "Hyperkit" %}}
 
+The easiest way to install hyperkit is using the [Brew Package Manager](https://brew.sh/):
+
+```shell
+brew install hyperkit
+```
+
+To use minikube and hyperkit reliably, please download and install our improved fork of the driver:
+
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
   && sudo install docker-machine-driver-hyperkit /usr/local/bin/
-sudo chown root:wheel /usr/local/bin/docker-machine-driver-hyperkit
-sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
+```
+
+This driver requires root privileges to create and destroy network interfaces:
+
+```shell
+sudo chown root:wheel /usr/local/bin 
+docker-machine-driver-hyperkit \
+&& sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
+```
+
+### Using the hyperkit driver
+
+```shell
+minikube start --vm-driver=hyperkit
+```
+
+
+To make the hyperkit driver to be the default for future minikube  invocations, run:
+
+```shell
+minikube config set vm-driver hyperkit
 ```
 
 {{% /tab %}}
 
 {{% tab "Parallels" %}}
+
+Start minikube with Parallels support using:
+
+```shell
+minikube start --vm-driver=parallels
+```
+
+To make the parallels driver to be the default for future minikube  invocations, run:
+
+```shell
+minikube config set vm-driver parallels
+```
 {{% /tab %}}
 
-{{% tab "VMWare Fusion" %}}
+{{% tab "VMware Fusion" %}}
+
+Start minikube with VMware support using:
+
+```shell
+minikube start --vm-driver=vmware
+```
+
+To make the vmware driver to be the default for future minikube  invocations, run:
+
+```shell
+minikube config set vm-driver vmware
+```
 {{% /tab %}}
 
 {{% /tabs %}}
+
+{{% readfile file="/docs/Getting started/_post_install.md" %}}
