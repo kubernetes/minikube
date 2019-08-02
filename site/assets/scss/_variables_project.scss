@@ -7,16 +7,6 @@ $mk-light:#C7EAEC;
 $mk-verydark: darken($mk-dark, 15%);
 
 // bootstrap colors
-$primary: #403F4C !default;
-$primary-light: $mk-light;
-$secondary: $mk-medium;
-$success: #3772FF !default;
-$info: #C0E0DE !default;
-$warning: #ED6A5A !default;
-$danger: #ED6A5A !default;
-$white: #fff !default;
-$light: $mk-light;
-$medium: $mk-medium;
 $dark: #403F4C !default;
 $blue: #72A1E5 !default;
 $orange: #BA5A31 !default;
@@ -30,6 +20,18 @@ $gray-700: #495057 !default;
 $gray-800: #333 !default;
 $gray-900: #222 !default;
 $black: #000 !default;
+
+$primary: #f2771a !default;
+$primary-light: $mk-light;
+$secondary: #403F4C;
+$success: #3772FF !default;
+$info: #C0E0DE !default;
+$warning: #ED6A5A !default;
+$danger: #ED6A5A !default;
+$white: #fff !default;
+$light: $mk-light;
+$medium: $mk-medium;
+
 
 // Navigation bar
 $navbar-dark-color: $mk-dark;
@@ -125,6 +127,15 @@ $link-hover-decoration: none !default;
     }
     div.mb-5:nth-child(3) ul {
         max-width: 10em;
+    }
+}
+
+// Shorten footer box by 4x
+footer.bg-dark {
+    padding-top: 1rem !important;
+    min-height: 4rem !important;
+    div.py-2 { 
+        padding-top: 0 !important;
     }
 }
 
