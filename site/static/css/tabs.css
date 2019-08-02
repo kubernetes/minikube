@@ -6,7 +6,7 @@ ul.nav.nav-tabs {
     content: none;
 }
 
-li.nav-tab {
+div.code-tabs li.nav-tab {
     margin-top: 1.5rem;
     padding: 10px 20px;
     float: left;
@@ -18,15 +18,15 @@ li.nav-tab {
     border-top: 1px solid #CBCBCB;
     border-left: 1px solid #CBCBCB;
     border-right: 1px solid #CBCBCB;
-    margin-right: 1.5em;
+    margin-right: 0.5em;
 
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
     background-color: #E5E5E5;
 }
 
-li.active {
-    color: rgb(87, 119, 249);
+div.code-tabs li.active {
+    color:#000;
     border-top: 1px solid #A9A9A9;
     border-left: 1px solid #A9A9A9;
     border-right: 1px solid #A9A9A9;    
@@ -34,7 +34,7 @@ li.active {
     font-weight: bold;
 }
 
-a.nav-tab {
+div.code-tabs a.nav-tab {
     all: unset;
     cursor: pointer;
 }
@@ -51,6 +51,6 @@ div.tab-pane.active {
     border: 1px solid #CBCBCB;
 }
 
-code {
+div.code-tabs code {
     word-break: keep-all;
 }
