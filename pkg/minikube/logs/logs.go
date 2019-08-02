@@ -114,6 +114,7 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner, lines int) error {
 	cmds := logCommands(r, bs, lines, false)
 	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
+
 	names := []string{}
 	for k := range cmds {
 		names = append(names, k)
