@@ -5,6 +5,7 @@
 * Added a new command: profile list [#4811](https://github.com/kubernetes/minikube/pull/4811)
 * Update latest kubernetes version to v1.15.1 [#4915](https://github.com/kubernetes/minikube/pull/4915)
 * logs: Add container status & cruntime logs [#4960](https://github.com/kubernetes/minikube/pull/4960)
+* Automatically set flags for MINIKUBE_ prefixed env vars [#4607](https://github.com/kubernetes/minikube/pull/4607)
 * Decrease ReasonableStartTime from 10 minutes to 5 minutes [#4961](https://github.com/kubernetes/minikube/pull/4961)
 * Remove ingress-nginx default backend [#4786](https://github.com/kubernetes/minikube/pull/4786)
 * hyperv: Run "sudo poweroff" before stopping VM [#4758](https://github.com/kubernetes/minikube/pull/4758)
