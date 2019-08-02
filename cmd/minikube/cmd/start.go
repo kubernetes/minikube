@@ -128,6 +128,12 @@ func init() {
 
 // initMinikubeFlags includes commandline flags for minikube.
 func initMinikubeFlags() {
+	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	// Replaces '-' in flags with '_' in env variables
+	// e.g. iso-url => $ENVPREFIX_ISO_URL
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.AutomaticEnv()
+
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
 	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
@@ -158,7 +164,6 @@ func initKubernetesFlags() {
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-
 }
 
 // initDriverFlags inits the commandline flags for vm drivers
@@ -243,6 +248,17 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	out.T(out.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
 
+	// if --registry-mirror specified when run minikube start,
+	// take arg precedence over MINIKUBE_REGISTRY_MIRROR
+	// actually this is a hack, because viper 1.0.0 can assign env to variable if StringSliceVar
+	// and i can't update it to 1.4.0, it affects too much code
+	// other types (like String, Bool) of flag works, so imageRepository, imageMirrorCountry
+	// can be configured as MINIKUBE_IMAGE_REPOSITORY and IMAGE_MIRROR_COUNTRY
+	// this should be updated to documentation
+	if len(registryMirror) == 0 {
+		registryMirror = viper.GetStringSlice("registry_mirror")
+	}
+
 	vmDriver := viper.GetString(vmDriver)
 	if err := cmdcfg.IsValidDriver(runtime.GOOS, vmDriver); err != nil {
 		exit.WithCodeT(
@@ -251,6 +267,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			out.V{"driver": vmDriver, "os": runtime.GOOS},
 		)
 	}
+
 	validateConfig()
 	validateUser()
 	validateDriverVersion(viper.GetString(vmDriver))
