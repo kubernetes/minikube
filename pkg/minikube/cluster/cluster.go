@@ -134,6 +134,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	e := engineOptions(config)
 	glog.Infof("engine options: %+v", e)
 
+	out.T(out.Waiting, "Waiting for the host to be provisioned ...")
 	err = configureHost(h, e)
 	if err != nil {
 		return nil, err
@@ -152,8 +153,6 @@ func localDriver(name string) bool {
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
 	glog.Infof("configureHost: %T %+v", h, h)
-	out.T(out.Waiting, "Provisioning guest ...", out.V{})
-
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		glog.Infof("Detecting provisioner ...")
