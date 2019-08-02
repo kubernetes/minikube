@@ -305,7 +305,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
-	out.T(out.WaitingPods, "Verifying:")
+	out.T(out.WaitingPods, "Waiting for pods:")
 	client, err := util.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
