@@ -239,7 +239,7 @@ func platform() string {
 func runStart(cmd *cobra.Command, args []string) {
 	prefix := ""
 	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
-		prefix = fmt.Sprintf("[%s]", viper.GetString(cfg.MachineProfile))
+		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
 	}
 	out.T(out.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
 
@@ -771,7 +771,7 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 		return nv, isUpgrade
 	}
 	if nvs.GT(ovs) {
-		out.T(out.ThumbsUp, "minikube will upgrade the local cluster from Kubernetes {{.old}} to {{.new}}", out.V{"old": ovs, "new": nvs})
+		out.T(out.ThumbsUp, "Upgrading from Kubernetes {{.old}} to {{.new}}", out.V{"old": ovs, "new": nvs})
 		isUpgrade = true
 	}
 	return nv, isUpgrade
