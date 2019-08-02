@@ -120,9 +120,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Re-using the currently running {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
 	} else {
-		out.T(out.Restarting, `Restarting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -134,6 +134,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	e := engineOptions(config)
 	glog.Infof("engine options: %+v", e)
 
+	out.T(out.Waiting, "Waiting for the host to be provisioned ...")
 	err = configureHost(h, e)
 	if err != nil {
 		return nil, err
@@ -152,9 +153,6 @@ func localDriver(name string) bool {
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
 	glog.Infof("configureHost: %T %+v", h, h)
-	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
-	out.T(out.Waiting, "Waiting for SSH access ...", out.V{})
-
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		glog.Infof("Detecting provisioner ...")
@@ -409,7 +407,7 @@ func showRemoteOsRelease(driver drivers.Driver) {
 		return
 	}
 
-	out.T(out.Provisioner, "Provisioned with {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
+	glog.Infof("Provisioned with %s", osReleaseInfo.PrettyName)
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {

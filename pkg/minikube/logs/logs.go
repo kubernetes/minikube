@@ -115,7 +115,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 	cmds := logCommands(r, bs, lines, false)
 
 	// These are not technically logs, but are useful to have in bug reports.
-	cmds["kernel"] = "uptime && uname -a"
+	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 
 	names := []string{}
 	for k := range cmds {
