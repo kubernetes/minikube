@@ -30,6 +30,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
@@ -175,9 +176,66 @@ func init() {
 	translate.DetermineLocale()
 	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", constants.DefaultClusterBootstrapper, "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
-	RootCmd.AddCommand(configCmd.ConfigCmd)
-	RootCmd.AddCommand(configCmd.AddonsCmd)
-	RootCmd.AddCommand(configCmd.ProfileCmd)
+
+	groups := templates.CommandGroups{
+		{
+			Message: "Basic Commands:",
+			Commands: []*cobra.Command{
+				startCmd,
+				statusCmd,
+				stopCmd,
+				deleteCmd,
+				dashboardCmd,
+			},
+		},
+		{
+			Message: "Images Commands:",
+			Commands: []*cobra.Command{
+				dockerEnvCmd,
+				cacheCmd,
+			},
+		},
+		{
+			Message: "Configuration and Management Commands:",
+			Commands: []*cobra.Command{
+				configCmd.AddonsCmd,
+				configCmd.ConfigCmd,
+				configCmd.ProfileCmd,
+				updateContextCmd,
+			},
+		},
+		{
+			Message: "Networking and Connectivity Commands:",
+			Commands: []*cobra.Command{
+				serviceCmd,
+				tunnelCmd,
+			},
+		},
+		{
+			Message: "Advanced Commands:",
+			Commands: []*cobra.Command{
+				mountCmd,
+				sshCmd,
+				kubectlCmd,
+			},
+		},
+		{
+			Message: "Troubleshooting Commands:",
+			Commands: []*cobra.Command{
+				sshKeyCmd,
+				ipCmd,
+				logsCmd,
+				updateCheckCmd,
+				versionCmd,
+			},
+		},
+	}
+	groups.Add(RootCmd)
+
+	// any not grouped command will show in Other Commands group.
+	RootCmd.AddCommand(completionCmd)
+	templates.ActsAsRootCommand(RootCmd, []string{"options"}, groups...)
+
 	pflag.CommandLine.AddGoFlagSet(goflag.CommandLine)
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
 		exit.WithError("Unable to bind flags", err)

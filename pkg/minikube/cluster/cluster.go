@@ -120,9 +120,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Re-using the currently running {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
 	} else {
-		out.T(out.Restarting, `Restarting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -134,6 +134,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	e := engineOptions(config)
 	glog.Infof("engine options: %+v", e)
 
+	out.T(out.Waiting, "Waiting for the host to be provisioned ...")
 	err = configureHost(h, e)
 	if err != nil {
 		return nil, err
@@ -152,9 +153,6 @@ func localDriver(name string) bool {
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
 	glog.Infof("configureHost: %T %+v", h, h)
-	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
-	out.T(out.Waiting, "Waiting for SSH access ...", out.V{})
-
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		glog.Infof("Detecting provisioner ...")
@@ -228,21 +226,22 @@ func adjustGuestClock(h hostRunner, t time.Time) error {
 }
 
 // trySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
-func trySSHPowerOff(h *host.Host) {
+func trySSHPowerOff(h *host.Host) error {
 	s, err := h.Driver.GetState()
 	if err != nil {
 		glog.Warningf("unable to get state: %v", err)
-		return
+		return err
 	}
 	if s != state.Running {
 		glog.Infof("host is in state %s", s)
-		return
+		return nil
 	}
 
 	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": cfg.GetMachineName()})
 	out, err := h.RunSSHCommand("sudo poweroff")
 	// poweroff always results in an error, since the host disconnects.
 	glog.Infof("poweroff result: out=%s, err=%v", out, err)
+	return nil
 }
 
 // StopHost stops the host VM, saving state to disk.
@@ -251,7 +250,15 @@ func StopHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
+
 	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
+	if host.DriverName == constants.DriverHyperv {
+		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
+		if err := trySSHPowerOff(host); err != nil {
+			return errors.Wrap(err, "ssh power off")
+		}
+	}
+
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
@@ -270,7 +277,9 @@ func DeleteHost(api libmachine.API) error {
 	}
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
 	if host.Driver.DriverName() == constants.DriverHyperv {
-		trySSHPowerOff(host)
+		if err := trySSHPowerOff(host); err != nil {
+			glog.Infof("Unable to power off minikube because the host was not found.")
+		}
 	}
 
 	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
@@ -398,7 +407,7 @@ func showRemoteOsRelease(driver drivers.Driver) {
 		return
 	}
 
-	out.T(out.Provisioner, "Provisioned with {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
+	glog.Infof("Provisioned with %s", osReleaseInfo.PrettyName)
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {

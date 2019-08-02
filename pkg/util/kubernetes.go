@@ -44,8 +44,8 @@ import (
 var (
 	// ReasonableMutateTime is how long to wait for basic object mutations, such as deletions, to show up
 	ReasonableMutateTime = time.Minute * 2
-	// ReasonableStartTime is how long to wait for pods to start, considering dependency chains & slow networks.
-	ReasonableStartTime = time.Minute * 10
+	// ReasonableStartTime is how long to wait for pods to start
+	ReasonableStartTime = time.Minute * 5
 )
 
 // PodStore stores pods
@@ -71,9 +71,14 @@ func (s *PodStore) Stop() {
 }
 
 // GetClient gets the client from config
-func GetClient() (kubernetes.Interface, error) {
+func GetClient(kubectlContext ...string) (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
+	if kubectlContext != nil {
+		configOverrides = &clientcmd.ConfigOverrides{
+			CurrentContext: kubectlContext[0],
+		}
+	}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {

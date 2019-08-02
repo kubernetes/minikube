@@ -19,59 +19,51 @@ limitations under the License.
 package integration
 
 import (
-	"path"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/test/integration/util"
 )
 
 func TestPersistence(t *testing.T) {
-	mk := NewMinikubeRunner(t, "--wait=false")
-	if usingNoneDriver(mk) {
+	if isTestNoneDriver(t) {
 		t.Skip("skipping test as none driver does not support persistence")
 	}
-	mk.EnsureRunning()
+	p := profileName(t)
+	if shouldRunInParallel(t) {
+		t.Parallel()
+	}
 
-	kubectlRunner := util.NewKubectlRunner(t)
-	curdir, err := filepath.Abs("")
+	mk := NewMinikubeRunner(t, p, "--wait=false")
+	defer mk.TearDown(t)
+
+	stdout, stderr, err := mk.Start()
 	if err != nil {
-		t.Errorf("Error getting the file path for current directory: %s", curdir)
+		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
-	podPath := path.Join(curdir, "testdata", "busybox.yaml")
-
-	// Create a pod and wait for it to be running.
-	if _, err := kubectlRunner.RunCommand([]string{"create", "-f", podPath}); err != nil {
-		t.Fatalf("Error creating test pod: %v", err)
+	kr := util.NewKubectlRunner(t, p)
+	if _, err := kr.RunCommand([]string{"create", "-f", filepath.Join(*testdataDir, "busybox.yaml")}); err != nil {
+		t.Fatalf("creating busybox pod: %s", err)
 	}
-
-	verify := func(t *testing.T) {
-		if err := util.WaitForBusyboxRunning(t, "default"); err != nil {
+	verifyBusybox := func(t *testing.T) {
+		if err := util.WaitForBusyboxRunning(t, "default", p); err != nil {
 			t.Fatalf("waiting for busybox to be up: %v", err)
 		}
 
 	}
-
 	// Make sure everything is up before we stop.
-	verify(t)
+	verifyBusybox(t)
 
-	// Now restart minikube and make sure the pod is still there.
-	// mk.RunCommand("stop", true)
-	// mk.CheckStatus("Stopped")
-	checkStop := func() error {
-		mk.RunCommand("stop", true)
-		return mk.CheckStatusNoFail(state.Stopped.String())
+	mk.RunCommand("stop", true)
+	mk.CheckStatus(state.Stopped.String())
+
+	stdout, stderr, err = mk.Start()
+	if err != nil {
+		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
-
-	if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
-		t.Fatalf("timed out while checking stopped status: %v", err)
-	}
-
-	mk.Start()
 	mk.CheckStatus(state.Running.String())
 
 	// Make sure the same things come up after we've restarted.
-	verify(t)
+	verifyBusybox(t)
 }

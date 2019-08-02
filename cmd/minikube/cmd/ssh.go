@@ -55,7 +55,3 @@ var sshCmd = &cobra.Command{
 		}
 	},
 }
-
-func init() {
-	RootCmd.AddCommand(sshCmd)
-}
