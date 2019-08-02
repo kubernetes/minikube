@@ -66,6 +66,8 @@ type Manager interface {
 	StopContainers([]string) error
 	// ContainerLogCmd returns the command to retrieve the log for a container based on ID
 	ContainerLogCmd(string, int, bool) string
+	// SystemLogCmd returns the command to return the system logs
+	SystemLogCmd(int) string
 }
 
 // Config is runtime configuration
