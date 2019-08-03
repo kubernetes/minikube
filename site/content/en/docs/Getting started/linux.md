@@ -32,8 +32,8 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_{{< la
 Download and install minikube:
 
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_{{< latest >}}.rpm \
- && sudo rpm -ivh minikube_{{< latest >}}.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-{{< latest >}}.rpm \
+ && sudo rpm -ivh minikube-{{< latest >}}.rpm
  ```
 
 {{% /tab %}}
