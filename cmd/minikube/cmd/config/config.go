@@ -298,7 +298,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	configFile, err := config.ReadConfig()
+	cfg, err := config.ReadConfig()
 	if err != nil {
 		return err
 	}
@@ -306,16 +306,16 @@ func AddToConfigMap(name string, images []string) error {
 	for _, image := range images {
 		newImages[image] = nil
 	}
-	if values, ok := configFile[name].(map[string]interface{}); ok {
+	if values, ok := cfg[name].(map[string]interface{}); ok {
 		for key := range values {
 			newImages[key] = nil
 		}
 	}
-	if err = s.setMap(configFile, name, newImages); err != nil {
+	if err = s.setMap(cfg, name, newImages); err != nil {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(constants.ConfigFile, configFile)
+	return config.WriteConfig(constants.ConfigFile, cfg)
 }
 
 // DeleteFromConfigMap deletes entries from a map in the config file
@@ -325,20 +325,20 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	configFile, err := config.ReadConfig()
+	cfg, err := config.ReadConfig()
 	if err != nil {
 		return err
 	}
-	values, ok := configFile[name]
+	values, ok := cfg[name]
 	if !ok {
 		return nil
 	}
 	for _, image := range images {
 		delete(values.(map[string]interface{}), image)
 	}
-	if err = s.setMap(configFile, name, values.(map[string]interface{})); err != nil {
+	if err = s.setMap(cfg, name, values.(map[string]interface{})); err != nil {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(constants.ConfigFile, configFile)
+	return config.WriteConfig(constants.ConfigFile, cfg)
 }
