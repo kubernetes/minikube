@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.3.0 - 2019-08-02
+## Version 1.3.0 - 2019-08-XX (TBD)
 
 * Added a new command: profile list [#4811](https://github.com/kubernetes/minikube/pull/4811)
 * Update latest kubernetes version to v1.15.1 [#4915](https://github.com/kubernetes/minikube/pull/4915)
