@@ -8,7 +8,7 @@ description: >
 
 This document is written for contributors who are familiar with minikube, who would like to add support for a new VM driver.
 
-minikube relies on docker-machine drivers to manage machines. This document discusses how to modify minikube, so that this driver may be used by `minikube create --vm-driver=<new_driver>`. 
+minikube relies on docker-machine drivers to manage machines. This document discusses how to modify minikube, so that this driver may be used by `minikube start --vm-driver=<new_driver>`. 
 
 ## Creating a new driver
 
@@ -96,7 +96,7 @@ func createVMwareFusionHost(config cfg.MachineConfig) interface{} {
 }
 ```
 
-- In init function, register a `DriverDef` in registry. Specify the metadata in the `DriverDef`. As mentioned
+- Within the `init()` function, register a `DriverDef` in registry. Specify the metadata in the `DriverDef`. As mentioned
 earlier, it's builtin, so you also need to specify `DriverCreator` to tell minikube how to create a `drivers.Driver`.
 - Another important thing is `vmwarefusion` only runs on MacOS. You need to add a build tag on top so it only
 runs on MacOS, so that the releases on Windows and Linux won't have this driver in registry.

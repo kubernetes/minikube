@@ -2,8 +2,6 @@
 title: "Linux"
 linkTitle: "Linux"
 weight: 1
-description: >
-  How to install and start minikube on Linux.
 ---
 
 ## Installation
@@ -90,8 +88,7 @@ If you see any errors, stop now and consult your distributions documentation on 
 ```shell
 minikube start --vm-driver=kvm2
 ```
-
-To make the kvm2 driver to be the default for future minikube  invocations, run:
+To make kvm2 the default for future invocations, run:
 
 ```shell
 minikube config set vm-driver kvm2

@@ -8,7 +8,8 @@ Once started, you can use any regular Kubernetes command to interact with your m
 
 ### Increasing memory allocation
 
-minikube only allocates a 2GB of RAM to Kubernetes, which is only enough for basic deployments. If you run into stability issues, increase this value if your system has the resources available. You will need to recreate the VM using `minikube delete` for this to take effect.
+minikube only allocates 2GB of RAM by default, which is only enough for trivial deployments. For larger 
+deployments, increase the memory allocation using the `--memory` flag, or make the setting persistent using:
 
 ```shell
 minikube config set memory 4096

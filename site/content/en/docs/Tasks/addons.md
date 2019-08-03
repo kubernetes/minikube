@@ -6,7 +6,7 @@ description: >
   Using addons
 ---
 
-minikube has a set of built in addons that can be used enabled within Kubernetes. 
+minikube has a set of built-in addons that, when enabled, can be used within Kubernetes.
 
 ## Available addons
 
