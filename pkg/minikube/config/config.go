@@ -75,11 +75,7 @@ func get(name string, config MinikubeConfig) (string, error) {
 }
 
 // WriteConfig writes a minikube config to the JSON file
-func WriteConfig(m MinikubeConfig) error {
-	return writeConfig(constants.ConfigFile, m)
-}
-
-func writeConfig(configFile string, m MinikubeConfig) error {
+func WriteConfig(configFile string, m MinikubeConfig) error {
 	f, err := os.Create(configFile)
 	if err != nil {
 		return fmt.Errorf("create %s: %s", configFile, err)
