@@ -44,7 +44,7 @@ var (
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
 func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, profile string) error {
-	localPath := constants.GetProfilePath(profile)
+	localPath := filepath.Join(constants.GetProfilePath(profile), "certs")
 	glog.Infof("Setting up certificates for profile %s IP: %s\n", profile, k8s.NodeIP)
 
 	if err := generateCerts(k8s, profile); err != nil {
