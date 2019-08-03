@@ -3,6 +3,6 @@ title: "Reference"
 linkTitle: "Reference"
 weight: 3
 description: >
-  Low level reference docs for your project.
+  Low level reference docs
 ---
 

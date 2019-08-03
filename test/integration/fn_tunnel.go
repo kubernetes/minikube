@@ -21,7 +21,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -46,11 +45,13 @@ func testTunnel(t *testing.T) {
 	}
 
 	t.Log("starting tunnel test...")
-	runner := NewMinikubeRunner(t, "--wait=false")
+	p := profileName(t)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	go func() {
-		output := runner.RunCommand("tunnel --alsologtostderr -v 8 --logtostderr", true)
+		output, stderr := mk.RunCommand("tunnel --alsologtostderr -v 8 --logtostderr", true)
 		if t.Failed() {
-			fmt.Println(output)
+			t.Errorf("tunnel stderr : %s", stderr)
+			t.Errorf("tunnel output : %s", output)
 		}
 	}()
 
@@ -60,19 +61,15 @@ func testTunnel(t *testing.T) {
 		t.Fatal(errors.Wrap(err, "cleaning up tunnels"))
 	}
 
-	kubectlRunner := util.NewKubectlRunner(t)
+	kr := util.NewKubectlRunner(t, p)
 
 	t.Log("deploying nginx...")
-	curdir, err := filepath.Abs("")
-	if err != nil {
-		t.Errorf("Error getting the file path for current directory: %s", curdir)
-	}
-	podPath := path.Join(curdir, "testdata", "testsvc.yaml")
-	if _, err := kubectlRunner.RunCommand([]string{"apply", "-f", podPath}); err != nil {
+	podPath := filepath.Join(*testdataDir, "testsvc.yaml")
+	if _, err := kr.RunCommand([]string{"apply", "-f", podPath}); err != nil {
 		t.Fatalf("creating nginx ingress resource: %s", err)
 	}
 
-	client, err := commonutil.GetClient()
+	client, err := commonutil.GetClient(p)
 
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "getting kubernetes client"))
@@ -89,13 +86,13 @@ func testTunnel(t *testing.T) {
 
 	t.Log("getting nginx ingress...")
 
-	nginxIP, err := getIngress(kubectlRunner)
+	nginxIP, err := getIngress(kr)
 	if err != nil {
 		t.Errorf("error getting ingress IP for nginx: %s", err)
 	}
 
 	if len(nginxIP) == 0 {
-		stdout, err := describeIngress(kubectlRunner)
+		stdout, err := describeIngress(kr)
 
 		if err != nil {
 			t.Errorf("error debugging nginx service: %s", err)
@@ -113,12 +110,12 @@ func testTunnel(t *testing.T) {
 	}
 }
 
-func getIngress(kubectlRunner *util.KubectlRunner) (string, error) {
+func getIngress(kr *util.KubectlRunner) (string, error) {
 	nginxIP := ""
 	var ret error
 	err := wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
 		cmd := []string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"}
-		stdout, err := kubectlRunner.RunCommand(cmd)
+		stdout, err := kr.RunCommand(cmd)
 		switch {
 		case err == nil:
 			nginxIP = string(stdout)
@@ -137,8 +134,8 @@ func getIngress(kubectlRunner *util.KubectlRunner) (string, error) {
 	return nginxIP, ret
 }
 
-func describeIngress(kubectlRunner *util.KubectlRunner) ([]byte, error) {
-	return kubectlRunner.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status}"})
+func describeIngress(kr *util.KubectlRunner) ([]byte, error) {
+	return kr.RunCommand([]string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status}"})
 }
 
 // getResponseBody returns the contents of a URL

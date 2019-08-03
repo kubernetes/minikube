@@ -31,86 +31,96 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
-	tests := []struct {
-		name string
-		args []string
-	}{
-		{"nocache_oldest", []string{
-			"--cache-images=false",
-			fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
-			// default is the network created by libvirt, if we change the name minikube won't boot
-			// because the given network doesn't exist
-			"--kvm-network=default",
-			"--kvm-qemu-uri=qemu:///system",
-		}},
-		{"feature_gates_newest_cni", []string{
-			"--feature-gates",
-			"ServerSideApply=true",
-			"--network-plugin=cni",
-			"--extra-config=kubelet.network-plugin=cni",
-			"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
-			fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
-		}},
-		{"containerd_and_non_default_apiserver_port", []string{
-			"--container-runtime=containerd",
-			"--docker-opt containerd=/var/run/containerd/containerd.sock",
-			"--apiserver-port=8444",
-		}},
-		{"crio_ignore_preflights", []string{
-			"--container-runtime=crio",
-			"--extra-config",
-			"kubeadm.ignore-preflight-errors=SystemVerification",
-		}},
+	p := profileName(t) // gets profile name used for minikube and kube context
+	if shouldRunInParallel(t) {
+		t.Parallel()
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			r := NewMinikubeRunner(t)
-			if !strings.Contains(test.name, "docker") && usingNoneDriver(r) {
-				t.Skipf("skipping %s - incompatible with none driver", test.name)
-			}
+	t.Run("group", func(t *testing.T) {
+		if shouldRunInParallel(t) {
+			t.Parallel()
+		}
+		tests := []struct {
+			name string
+			args []string
+		}{
+			{"oldest", []string{ // nocache_oldest
+				"--cache-images=false",
+				fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
+				// default is the network created by libvirt, if we change the name minikube won't boot
+				// because the given network doesn't exist
+				"--kvm-network=default",
+				"--kvm-qemu-uri=qemu:///system",
+			}},
+			{"cni", []string{ // feature_gates_newest_cni
+				"--feature-gates",
+				"ServerSideApply=true",
+				"--network-plugin=cni",
+				"--extra-config=kubelet.network-plugin=cni",
+				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
+				fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
+			}},
+			{"containerd", []string{ // containerd_and_non_default_apiserver_port
+				"--container-runtime=containerd",
+				"--docker-opt containerd=/var/run/containerd/containerd.sock",
+				"--apiserver-port=8444",
+			}},
+			{"crio", []string{ // crio_ignore_preflights
+				"--container-runtime=crio",
+				"--extra-config",
+				"kubeadm.ignore-preflight-errors=SystemVerification",
+			}},
+		}
 
-			r.RunCommand("config set WantReportErrorPrompt false", true)
-			r.RunCommand("delete", false)
-			r.CheckStatus(state.None.String())
-			r.Start(test.args...)
-			r.CheckStatus(state.Running.String())
+		for _, tc := range tests {
+			n := tc.name // because similar to https://golang.org/doc/faq#closures_and_goroutines
+			t.Run(tc.name, func(t *testing.T) {
+				if shouldRunInParallel(t) {
+					t.Parallel()
+				}
 
-			ip := r.RunCommand("ip", true)
-			ip = strings.TrimRight(ip, "\n")
-			if net.ParseIP(ip) == nil {
-				t.Fatalf("IP command returned an invalid address: %s", ip)
-			}
+				pn := p + n // TestStartStopoldest
+				mk := NewMinikubeRunner(t, pn, "--wait=false")
+				// TODO : redundant first clause ? never happens?
+				if !strings.Contains(pn, "docker") && isTestNoneDriver(t) {
+					t.Skipf("skipping %s - incompatible with none driver", t.Name())
+				}
 
-			// check for the current-context before and after the stop
-			kubectlRunner := util.NewKubectlRunner(t)
-			currentContext, err := kubectlRunner.RunCommand([]string{"config", "current-context"})
-			if err != nil {
-				t.Fatalf("Failed to fetch current-context")
-			}
-			if strings.TrimRight(string(currentContext), "\n") != "minikube" {
-				t.Fatalf("got current-context - %q, want  current-context %q", string(currentContext), "minikube")
-			}
+				mk.RunCommand("config set WantReportErrorPrompt false", true)
+				stdout, stderr, err := mk.Start(tc.args...)
+				if err != nil {
+					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", pn, err, stdout, stderr)
+				}
 
-			checkStop := func() error {
-				r.RunCommand("stop", true)
-				return r.CheckStatusNoFail(state.Stopped.String())
-			}
+				mk.CheckStatus(state.Running.String())
 
-			if err := util.Retry(t, checkStop, 5*time.Second, 6); err != nil {
-				t.Fatalf("timed out while checking stopped status: %v", err)
-			}
+				ip, stderr := mk.RunCommand("ip", true)
+				ip = strings.TrimRight(ip, "\n")
+				if net.ParseIP(ip) == nil {
+					t.Fatalf("IP command returned an invalid address: %s \n %s", ip, stderr)
+				}
 
-			// running this command results in error when the current-context is not set
-			if err := r.Run("config current-context"); err != nil {
-				t.Logf("current-context is not set to minikube")
-			}
+				stop := func() error {
+					stdout, stderr, err = mk.RunCommandRetriable("stop")
+					return mk.CheckStatusNoFail(state.Stopped.String())
+				}
 
-			r.Start(test.args...)
-			r.CheckStatus(state.Running.String())
+				err = util.RetryX(stop, 10*time.Second, 2*time.Minute)
+				mk.CheckStatus(state.Stopped.String())
 
-			r.RunCommand("delete", true)
-			r.CheckStatus(state.None.String())
-		})
-	}
+				// TODO medyagh:
+				// https://github.com/kubernetes/minikube/issues/4854
+
+				stdout, stderr, err = mk.Start(tc.args...)
+				if err != nil {
+					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+				}
+
+				mk.CheckStatus(state.Running.String())
+
+				mk.RunCommand("delete", true)
+				mk.CheckStatus(state.None.String())
+			})
+		}
+	})
 }

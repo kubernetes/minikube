@@ -30,13 +30,14 @@ import (
 // Assert that docker-env subcommand outputs usable information for "docker ps"
 func testClusterEnv(t *testing.T) {
 	t.Parallel()
-	r := NewMinikubeRunner(t, "--wait=false")
+	p := profileName(t)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	// Set a specific shell syntax so that we don't have to handle every possible user shell
-	envOut := r.RunCommand("docker-env --shell=bash", true)
-	vars := r.ParseEnvCmdOutput(envOut)
+	envOut, stderr := mk.RunCommand("docker-env --shell=bash", true)
+	vars := mk.ParseEnvCmdOutput(envOut)
 	if len(vars) == 0 {
-		t.Fatalf("Failed to parse env vars:\n%s", envOut)
+		t.Fatalf("Failed to parse env vars:\n%s, \n stderr: %s ", envOut, stderr)
 	}
 	for k, v := range vars {
 		t.Logf("Found: %s=%s", k, v)

@@ -113,16 +113,14 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 // Output displays logs from multiple sources in tail(1) format
 func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner, lines int) error {
 	cmds := logCommands(r, bs, lines, false)
-
-	// These are not technically logs, but are useful to have in bug reports.
-	cmds["kernel"] = "uptime && uname -a"
+	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 
 	names := []string{}
 	for k := range cmds {
 		names = append(names, k)
 	}
-	sort.Strings(names)
 
+	sort.Strings(names)
 	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
@@ -130,6 +128,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 		}
 		out.T(out.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
+
 		err := runner.CombinedOutputTo(cmds[name], &b)
 		if err != nil {
 			glog.Errorf("failed: %v", err)
@@ -141,6 +140,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 			out.T(out.Empty, scanner.Text())
 		}
 	}
+
 	if len(failed) > 0 {
 		return fmt.Errorf("unable to fetch logs for: %s", strings.Join(failed, ", "))
 	}
@@ -163,5 +163,8 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 		}
 		cmds[pod] = r.ContainerLogCmd(ids[0], length, follow)
 	}
+	cmds[r.Name()] = r.SystemLogCmd(length)
+	// Works across container runtimes with good formatting
+	cmds["container status"] = "sudo crictl ps -a"
 	return cmds
 }
