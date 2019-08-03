@@ -28,12 +28,13 @@ import (
 )
 
 func testClusterStatus(t *testing.T) {
-	kubectlRunner := util.NewKubectlRunner(t)
+	p := profileName(t)
+	kr := util.NewKubectlRunner(t, p)
 	cs := api.ComponentStatusList{}
 
 	healthy := func() error {
 		t.Log("Checking if cluster is healthy.")
-		if err := kubectlRunner.RunCommandParseOutput([]string{"get", "cs"}, &cs); err != nil {
+		if err := kr.RunCommandParseOutput([]string{"get", "cs"}, &cs); err != nil {
 			return err
 		}
 		for _, i := range cs.Items {
@@ -45,7 +46,7 @@ func testClusterStatus(t *testing.T) {
 				status = c.Status
 			}
 			if status != api.ConditionTrue {
-				err := fmt.Errorf("Component %s is not Healthy! Status: %s", i.GetName(), status)
+				err := fmt.Errorf("component %s is not Healthy! Status: %s", i.GetName(), status)
 				t.Logf("Retrying, %v", err)
 				return err
 			}

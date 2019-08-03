@@ -18,74 +18,77 @@ package integration
 
 import (
 	"fmt"
-	"io"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
-	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/test/integration/util"
 )
 
-func downloadMinikubeBinary(version string) (*os.File, error) {
-	// Grab latest release binary
-	url := pkgutil.GetBinaryDownloadURL(version, runtime.GOOS)
-	resp, err := retryablehttp.Get(url)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get latest release binary")
-	}
-	defer resp.Body.Close()
-
-	tf, err := ioutil.TempFile("", "minikube")
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to create binary file")
-	}
-	_, err = io.Copy(tf, resp.Body)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to populate temp file")
-	}
-	if err := tf.Close(); err != nil {
-		return nil, errors.Wrap(err, "Failed to close temp file")
-	}
-
-	if runtime.GOOS != "windows" {
-		if err := os.Chmod(tf.Name(), 0700); err != nil {
-			return nil, err
-			// t.Fatal(errors.Wrap(err, "Failed to make binary executable."))
+func fileExists(fname string) error {
+	check := func() error {
+		info, err := os.Stat(fname)
+		if os.IsNotExist(err) {
+			return err
 		}
+		if info.IsDir() {
+			return fmt.Errorf("Error expect file got dir")
+		}
+		return nil
 	}
-	return tf, err
+
+	if err := util.Retry2(check, 1*time.Second, 3); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("Failed check if file (%q) exists,", fname))
+	}
+	return nil
 }
 
 // TestVersionUpgrade downloads latest version of minikube and runs with
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
-	currentRunner := NewMinikubeRunner(t)
-	currentRunner.RunCommand("delete", true)
-	currentRunner.CheckStatus(state.None.String())
-	tf, err := downloadMinikubeBinary("latest")
-	if err != nil || tf == nil {
-		t.Fatal(errors.Wrap(err, "Failed to download minikube binary."))
+	p := profileName(t)
+	if shouldRunInParallel(t) {
+		t.Parallel()
 	}
-	defer os.Remove(tf.Name())
+	// fname is the filename for the minikube's latetest binary. this file been pre-downloaded before test by hacks/jenkins/common.sh
+	fname := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
+	err := fileExists(fname)
+	if err != nil { // download file if it is not downloaded by other test
+		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
+		err := downloadMinikubeBinary(t, dest, "latest")
+		if err != nil {
+			// binary is needed for the test
+			t.Fatalf("erorr downloading the latest minikube release %v", err)
+		}
+	}
+	defer os.Remove(fname)
 
-	releaseRunner := NewMinikubeRunner(t)
-	releaseRunner.BinaryPath = tf.Name()
+	mkCurrent := NewMinikubeRunner(t, p)
+	defer mkCurrent.TearDown(t)
+
+	mkRelease := NewMinikubeRunner(t, p)
+	mkRelease.BinaryPath = fname
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
-	releaseRunner.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
-	releaseRunner.CheckStatus(state.Running.String())
-	releaseRunner.RunCommand("stop", true)
-	releaseRunner.CheckStatus(state.Stopped.String())
+	stdout, stderr, err := mkRelease.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
+	if err != nil {
+		t.Fatalf("TestVersionUpgrade minikube start failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
+	}
+
+	mkRelease.CheckStatus(state.Running.String())
+	mkRelease.RunCommand("stop", true)
+	mkRelease.CheckStatus(state.Stopped.String())
 
 	// Trim the leading "v" prefix to assert that we handle it properly.
-	currentRunner.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
-	currentRunner.CheckStatus(state.Running.String())
-	currentRunner.RunCommand("delete", true)
-	currentRunner.CheckStatus(state.None.String())
+	stdout, stderr, err = mkCurrent.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
+	if err != nil {
+		t.Fatalf("TestVersionUpgrade mkCurrent.Start start failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
+	}
+	mkCurrent.CheckStatus(state.Running.String())
 }
