@@ -52,22 +52,18 @@ anchor = "smart"
 #id = "UA-00000000-0"
 
 # Language configuration
-
 [languages]
 [languages.en]
 title = "minikube"
 description = "minikube is local Kubernetes"
 languageName = "English"
-# Weight used for sorting.
 weight = 1
 
-# Everything below this are Site Params
-
 [params]
+copyright = "The Kubernetes Authors -- "
 # The latest release of minikube
 latest_release = "1.2.0"
 
-copyright = "The Linux Foundation"
 privacy_policy = ""
 
 # Menu title if your navbar has a versions selector to access old versions of your site.
@@ -109,34 +105,14 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 [params.links]
 # End user relevant links. These will show up on left side of footer and in the community page if you have one.
 [[params.links.user]]
-	name = "User mailing list"
-	url = "https://groups.google.com/forum/#!forum/minikube-users"
-	icon = "fa fa-envelope"
-        desc = "Discussion and help from your fellow users"
-[[params.links.user]]
-	name ="Twitter"
-	url = "https://example.org/twitter"
-	icon = "fab fa-twitter"
-        desc = "Follow us on Twitter to get the latest news!"
-[[params.links.user]]
-	name = "Stack Overflow"
-	url = "https://stackoverflow.com/questions/tagged/minikube"
-	icon = "fab fa-stack-overflow"
-        desc = "Practical questions and curated answers"
+	name = "Slack"
+	url = "https://kubernetes.slack.com/messages/C1F5CT6Q1"
+	icon = "fab fa-slack"
+    desc = "Chat with other minikube users & developers"
+
 # Developer relevant links. These will show up on right side of footer and in the community page if you have one.
 [[params.links.developer]]
 	name = "GitHub"
 	url = "https://github.com/kubernetes/minikube"
 	icon = "fab fa-github"
         desc = "Development takes place here!"
-[[params.links.developer]]
-	name = "Slack"
-	url = "https://kubernetes.slack.com/messages/C1F5CT6Q1"
-	icon = "fab fa-slack"
-        desc = "Chat with other project developers"
-[[params.links.developer]]
-	name = "Developer mailing list"
-	url = "https://groups.google.com/forum/#!forum/minikube-dev"
-	icon = "fa fa-envelope"
-        desc = "Discuss development issues around the project"
-
