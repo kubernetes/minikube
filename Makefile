@@ -14,7 +14,7 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 2
+VERSION_MINOR ?= 3
 VERSION_BUILD ?= 0
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
@@ -57,7 +57,7 @@ GOLINT_GOGC ?= 8
 GOLINT_OPTIONS = --deadline 4m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
 	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
-	  --exclude 'variable on range scope.*in function literal|ifElseChain' 
+	  --exclude 'variable on range scope.*in function literal|ifElseChain'
 
 
 export GO111MODULE := on
