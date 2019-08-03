@@ -16,7 +16,7 @@ Download and install minikube to /usr/local/bin:
    && sudo install minikube-linux-amd64 /usr/local/bin/minikube
 ```
 {{% /tab %}}
-{{% tab "Debian/Ubuntu (apt)" %}}
+{{% tab "Debian/Ubuntu (deb)" %}}
 
 Download and install minikube:
 
