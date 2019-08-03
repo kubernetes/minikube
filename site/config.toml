@@ -60,17 +60,13 @@ description = "minikube is local Kubernetes"
 languageName = "English"
 # Weight used for sorting.
 weight = 1
-[languages.no]
-title = "minikube"
-description = "minikube er lokale Kubernetes"
-languageName ="Norsk"
-contentDir = "content/no"
-time_format_default = "02.01.2006"
-time_format_blog = "02.01.2006"
 
 # Everything below this are Site Params
 
 [params]
+# The latest release of minikube
+latest_release = "1.2.0"
+
 copyright = "The Linux Foundation"
 privacy_policy = ""
 
