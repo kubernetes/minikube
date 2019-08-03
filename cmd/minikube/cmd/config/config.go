@@ -22,6 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // Bootstrapper is the name for bootstrapper
@@ -314,7 +315,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(configFile)
+	return config.WriteConfig(constants.ConfigFile, configFile)
 }
 
 // DeleteFromConfigMap deletes entries from a map in the config file
@@ -339,5 +340,5 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(configFile)
+	return config.WriteConfig(constants.ConfigFile, configFile)
 }

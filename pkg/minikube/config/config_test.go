@@ -18,6 +18,7 @@ package config
 
 import (
 	"bytes"
+	"io/ioutil"
 	"os"
 	"reflect"
 	"testing"
@@ -143,8 +144,12 @@ func Test_readConfig(t *testing.T) {
 	}
 }
 
-func Test_writeConfig(t *testing.T) {
-	configFile := "./testdata/configTest"
+func TestWriteConfig(t *testing.T) {
+	configFile, err := ioutil.TempFile("/tmp", "configTest")
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+
 	cfg := map[string]interface{}{
 		"vm-driver":            constants.DriverKvm2,
 		"cpus":                 4,
@@ -153,13 +158,13 @@ func Test_writeConfig(t *testing.T) {
 		"log_dir":              "/etc/hosts",
 	}
 
-	err := writeConfig(configFile, cfg)
+	err = WriteConfig(configFile.Name(), cfg)
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
-	defer os.Remove(configFile)
+	defer os.Remove(configFile.Name())
 
-	mkConfig, err := readConfig("./testdata/.minikube/config/valid_config.json")
+	mkConfig, err := readConfig(configFile.Name())
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
