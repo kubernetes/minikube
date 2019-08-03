@@ -163,12 +163,12 @@ func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ..
 	var buf bytes.Buffer
 	t, err := template.New(format).Parse(format)
 	if err != nil {
-		glog.Infof("Initializing template failed. Returning raw string.")
+		glog.Errorf("unable to parse %q: %v - returning raw string.", format, err)
 		return format
 	}
 	err = t.Execute(&buf, a[0])
 	if err != nil {
-		glog.Infof("Executing template failed. Returning raw string.")
+		glog.Errorf("unable to execute %s: %v - returning raw string.", format, err)
 		return format
 	}
 	outStyled := buf.String()

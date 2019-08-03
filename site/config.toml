@@ -52,17 +52,18 @@ anchor = "smart"
 #id = "UA-00000000-0"
 
 # Language configuration
-
 [languages]
 [languages.en]
 title = "minikube"
 description = "minikube is local Kubernetes"
 languageName = "English"
-# Weight used for sorting.
 weight = 1
 
 [params]
 copyright = "The Kubernetes Authors -- "
+# The latest release of minikube
+latest_release = "1.2.0"
+
 privacy_policy = ""
 
 # Menu title if your navbar has a versions selector to access old versions of your site.
