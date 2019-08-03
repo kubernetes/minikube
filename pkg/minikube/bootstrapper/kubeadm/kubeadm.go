@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -197,6 +198,37 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
+	err = k.kubeadmInit(k8s, false)
+	if err != nil {
+		return errors.Wrap(err, "kubeadm init phase")
+	}
+
+	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
+		// TODO(r2d4): get rid of global here
+		master = k8s.NodeName
+		if err := util.RetryAfter(200, unmarkMaster, time.Second*1); err != nil {
+			return errors.Wrap(err, "timed out waiting to unmark master")
+		}
+	}
+
+	glog.Infof("Configuring cluster permissions ...")
+	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
+		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
+	}
+
+	if err := k.adjustResourceLimits(); err != nil {
+		glog.Warningf("unable to adjust resource limits: %v", err)
+	}
+	return nil
+}
+
+// sorry for the stutter !
+// kubeadmInit runs kubeadm init
+func (k *Bootstrapper) kubeadmInit(k8s config.KubernetesConfig, ignoreAll bool) error {
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing k8s version in kubeadminit")
+	}
 
 	extraFlags := createFlagsFromExtraArgs(k8s.ExtraOptions)
 
@@ -217,6 +249,9 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 	ignore = append(ignore, SkipAdditionalPreflights[r.Name()]...)
 
+	if ignoreAll {
+		ignore = []string{"all"}
+	}
 	// Allow older kubeadm versions to function with newer Docker releases.
 	if version.LT(semver.MustParse("1.13.0")) {
 		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
@@ -228,23 +263,6 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	out, err := k.c.CombinedOutput(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "cmd failed: %s\n%s\n", cmd, out)
-	}
-
-	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
-		// TODO(r2d4): get rid of global here
-		master = k8s.NodeName
-		if err := util.RetryAfter(200, unmarkMaster, time.Second*1); err != nil {
-			return errors.Wrap(err, "timed out waiting to unmark master")
-		}
-	}
-
-	glog.Infof("Configuring cluster permissions ...")
-	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
-		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
-	}
-
-	if err := k.adjustResourceLimits(); err != nil {
-		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
 	return nil
 }
@@ -359,6 +377,30 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	// Run commands one at a time so that it is easier to root cause failures.
 	for _, cmd := range cmds {
 		if err := k.c.Run(cmd); err != nil {
+			// handle cert errors on restart !
+			// context https://github.com/kubernetes/minikube/pull/4968#issuecomment-517953773
+
+			if strings.Contains(err.Error(), "cert") {
+				glog.Errorf("found wrong certs on the VM, will reconfigure")
+				err = k.c.Run(`sudo systemctl stop kubelet`)
+				if err != nil {
+					glog.Errorf("error stopping kubelet for fixing cert issue %v", err)
+				}
+				err = k.SetupCerts(k8s, cfg.GetMachineName())
+				if err != nil {
+					glog.Errorf("error setting up certs %v", err)
+				}
+				err = k.kubeadmInit(k8s, true)
+				if err != nil {
+					glog.Errorf("error kubeadm init %v", err)
+				}
+				err = k.StartCluster(k8s)
+				if err != nil {
+					glog.Errorf("error starting the cluster %v", err)
+				}
+
+				continue
+			}
 			return errors.Wrapf(err, "running cmd: %s", cmd)
 		}
 	}

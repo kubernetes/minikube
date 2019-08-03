@@ -26,10 +26,12 @@ import (
 const (
 	APIServerPort            = 8443
 	DefaultMinikubeDirectory = "/var/lib/minikube"
-	DefaultCertPath          = DefaultMinikubeDirectory + "/certs/"
-	DefaultKubeConfigPath    = DefaultMinikubeDirectory + "/kubeconfig"
-	DefaultDNSDomain         = "cluster.local"
-	DefaultServiceCIDR       = "10.96.0.0/12"
+	// changing certs folder to profilecerts. since minikube 1.3 we generate certs per profile, to keep the version upgrade without conflict
+	// https://github.com/kubernetes/minikube/pull/4968
+	DefaultCertPath       = DefaultMinikubeDirectory + "/profilecerts/"
+	DefaultKubeConfigPath = DefaultMinikubeDirectory + "/kubeconfig"
+	DefaultDNSDomain      = "cluster.local"
+	DefaultServiceCIDR    = "10.96.0.0/12"
 )
 
 // DefaultV114AdmissionControllers are admission controllers we default to in v1.14.x

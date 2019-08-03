@@ -803,12 +803,12 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 	for _, eo := range extraOptions {
 		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
+	if err := bs.SetupCerts(kc, cfg.GetMachineName()); err != nil {
+		exit.WithError("Failed to setup certs", err)
+	}
 	// Loads cached images, generates config files, download binaries
 	if err := bs.UpdateCluster(kc); err != nil {
 		exit.WithError("Failed to update cluster", err)
-	}
-	if err := bs.SetupCerts(kc, cfg.GetMachineName()); err != nil {
-		exit.WithError("Failed to setup certs", err)
 	}
 	return bs
 }
