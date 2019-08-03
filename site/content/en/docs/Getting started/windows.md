@@ -2,8 +2,6 @@
 title: "Windows"
 linkTitle: "Windows"
 weight: 3
-description: >
-  How to install and start minikube on Windows.
 ---
 
 ### Prerequisites
@@ -57,7 +55,6 @@ Hyper-V Requirements:     A hypervisor has been detected.
 ```
 
 {{% tabs %}}
-
 {{% tab "VirtualBox" %}}
 {{% readfile file="/docs/Getting started/_virtualbox.md" %}}
 {{% /tab %}}
@@ -69,16 +66,15 @@ If Hyper-V is active, you can start minikube with Hyper-V support using:
 minikube start --vm-driver=hyperv
 ```
 
-NOTE: If this doesn't work, you may need to create an external switch.
+NOTE: If this fails due to networking issues, see the [Hyper-V driver documentation](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyper-v-driver) for further instructions.
 
-To make the hyperv driver to be the default for future minikube  invocations, run:
+To make hyperv the default for future invocations:
 
 ```shell
 minikube config set vm-driver hyperv
 ```
 
 {{% /tab %}}
-
 {{% /tabs %}}
 
 {{% readfile file="/docs/Getting started/_post_install.md" %}}

@@ -18,7 +18,7 @@ To check, run `git log -- deploy/iso` from the root directory and see if there h
 
 Note: you can build the ISO using the `hack/jenkins/build_iso.sh` script locally.
 
-* navigate to the minikube ISO jenkins job
+* Navigate to the minikube ISO jenkins job
 * Ensure that you are logged in (top right)
 * Click "▶️ Build with Parameters" (left)
 * For `ISO_VERSION`, type in the intended release version (same as the minikube binary's version)
@@ -68,7 +68,7 @@ sh hack/tag_release.sh 1.<minor>.<patch>
 
 This step uses the git tag to publish new binaries to GCS and create a github release:
 
-* navigate to the minikube "Release" jenkins job
+* Navigate to the minikube "Release" jenkins job
 * Ensure that you are logged in (top right)
 * Click "▶️ Build with Parameters" (left)
 * `VERSION_MAJOR`, `VERSION_MINOR`, and `VERSION_BUILD` should reflect the values in your Makefile
@@ -77,7 +77,7 @@ This step uses the git tag to publish new binaries to GCS and create a github re
 
 ## Check the release logs
 
-After job completion, click "Console Output" to verify that the release completed without errors. This is typically where one  will see brew automation fail, for instance.
+After job completion, click "Console Output" to verify that the release completed without errors. This is typically where one will see brew automation fail, for instance.
 
 ## Check releases.json
 
@@ -98,7 +98,7 @@ WARNING: The Brew cask automation is error-prone. please ensure that a PR was cr
 
 ## Verification
 
-Verify release checksums by running`make check-release`
+Verify release checksums by running `make check-release`
 
 ## Update docs
 

@@ -1,6 +1,6 @@
-Dwnload and install the latest version of VirtualBox from https://www.virtualbox.org/
+Download and install the latest version of VirtualBox from https://www.virtualbox.org/
 
-Once installed, you can start minikube without any special flags:
+Once installed, start minikube:
 
 ```shell
 minikube start

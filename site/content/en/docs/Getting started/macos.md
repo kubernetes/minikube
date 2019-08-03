@@ -2,8 +2,6 @@
 title: "macOS"
 linkTitle: "macOS"
 weight: 2
-description: >
-  How to install and start minikube on macOS.
 ---
 
 ### Prerequisites
@@ -70,8 +68,7 @@ docker-machine-driver-hyperkit \
 minikube start --vm-driver=hyperkit
 ```
 
-
-To make the hyperkit driver to be the default for future minikube  invocations, run:
+To make hyperkit the default for future invocations:
 
 ```shell
 minikube config set vm-driver hyperkit
@@ -87,7 +84,7 @@ Start minikube with Parallels support using:
 minikube start --vm-driver=parallels
 ```
 
-To make the parallels driver to be the default for future minikube  invocations, run:
+To make parallels the default for future invocations:
 
 ```shell
 minikube config set vm-driver parallels
@@ -96,16 +93,16 @@ minikube config set vm-driver parallels
 
 {{% tab "VMware Fusion" %}}
 
-Start minikube with VMware support using:
+Start minikube with VMware Fusion support using:
 
 ```shell
-minikube start --vm-driver=vmware
+minikube start --vm-driver=vmwarefusion
 ```
 
-To make the vmware driver to be the default for future minikube  invocations, run:
+To make vmwarefusion the default for future invocations:
 
 ```shell
-minikube config set vm-driver vmware
+minikube config set vm-driver vmwarefusion
 ```
 {{% /tab %}}
 
