@@ -422,8 +422,8 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 }
 
 // SetupCerts sets up certificates within the cluster.
-func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
-	return bootstrapper.SetupCerts(k.c, k8s)
+func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, profile string) error {
+	return bootstrapper.SetupCerts(k.c, k8s, profile)
 }
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet

@@ -29,7 +29,8 @@ import (
 )
 
 func TestSetupCerts(t *testing.T) {
-	tempDir := tests.MakeTempDir()
+	p := t.Name()
+	tempDir := tests.MakeTempDir() // TODO: this doesn't seem to be used
 	defer os.RemoveAll(tempDir)
 
 	f := command.NewFakeCommandRunner()
@@ -41,10 +42,10 @@ func TestSetupCerts(t *testing.T) {
 
 	var filesToBeTransferred []string
 	for _, cert := range certs {
-		filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), cert))
+		filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetProfilePath(p), cert))
 	}
 
-	if err := SetupCerts(f, k8s); err != nil {
+	if err := SetupCerts(f, k8s, p); err != nil {
 		t.Fatalf("Error starting cluster: %v", err)
 	}
 	for _, cert := range filesToBeTransferred {

@@ -43,11 +43,11 @@ var (
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
-	localPath := constants.GetMinipath()
-	glog.Infof("Setting up certificates for IP: %s\n", k8s.NodeIP)
+func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, profile string) error {
+	localPath := constants.GetProfilePath(profile)
+	glog.Infof("Setting up certificates for profile %s IP: %s\n", profile, k8s.NodeIP)
 
-	if err := generateCerts(k8s); err != nil {
+	if err := generateCerts(k8s, profile); err != nil {
 		return errors.Wrap(err, "Error generating certs")
 	}
 
@@ -97,13 +97,13 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	return nil
 }
 
-func generateCerts(k8s config.KubernetesConfig) error {
+func generateCerts(k8s config.KubernetesConfig, profile string) error {
 	serviceIP, err := util.GetServiceClusterIP(k8s.ServiceCIDR)
 	if err != nil {
 		return errors.Wrap(err, "getting service cluster ip")
 	}
 
-	localPath := constants.GetMinipath()
+	localPath := constants.GetProfilePath(profile)
 
 	caCertPath := filepath.Join(localPath, "ca.crt")
 	caKeyPath := filepath.Join(localPath, "ca.key")

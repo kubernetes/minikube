@@ -807,7 +807,7 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 	if err := bs.UpdateCluster(kc); err != nil {
 		exit.WithError("Failed to update cluster", err)
 	}
-	if err := bs.SetupCerts(kc); err != nil {
+	if err := bs.SetupCerts(kc, cfg.GetMachineName()); err != nil {
 		exit.WithError("Failed to setup certs", err)
 	}
 	return bs
@@ -824,13 +824,14 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 	if c.KubernetesConfig.APIServerName != constants.APIServerName {
 		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
 	}
+	p := cfg.GetMachineName()
 
 	kcs := &pkgutil.KubeConfigSetup{
-		ClusterName:          cfg.GetMachineName(),
+		ClusterName:          p,
 		ClusterServerAddress: addr,
-		ClientCertificate:    constants.MakeMiniPath("client.crt"),
-		ClientKey:            constants.MakeMiniPath("client.key"),
-		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
+		ClientCertificate:    filepath.Join(constants.GetProfilePath(p), "client.crt"),
+		ClientKey:            filepath.Join(constants.GetProfilePath(p), "client.key"),
+		CertificateAuthority: filepath.Join(constants.GetProfilePath(p), "ca.crt"),
 		KeepContext:          viper.GetBool(keepContext),
 		EmbedCerts:           viper.GetBool(embedCerts),
 	}
