@@ -42,6 +42,7 @@ import (
 
 var dirs = [...]string{
 	constants.GetMinipath(),
+	constants.MakeMiniPath("profiles", config.GetMachineName(), "certs"),
 	constants.MakeMiniPath("certs"),
 	constants.MakeMiniPath("machines"),
 	constants.MakeMiniPath("cache"),

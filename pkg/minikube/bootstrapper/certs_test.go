@@ -42,7 +42,7 @@ func TestSetupCerts(t *testing.T) {
 
 	var filesToBeTransferred []string
 	for _, cert := range certs {
-		filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetProfilePath(p), cert))
+		filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetProfilePath(p), "certs", cert))
 	}
 
 	if err := SetupCerts(f, k8s, p); err != nil {

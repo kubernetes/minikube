@@ -23,7 +23,6 @@ import (
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
-	"fmt"
 	"io/ioutil"
 	"math/big"
 	"net"
@@ -36,8 +35,6 @@ import (
 
 // GenerateCACert generates a CA certificate and RSA key for a common name
 func GenerateCACert(certPath, keyPath string, name string) error {
-	fmt.Printf("Inside GenerateCACert certpath %s keypath %s", certPath, keyPath)
-
 	priv, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		return errors.Wrap(err, "Error generating rsa key")
@@ -67,8 +64,6 @@ func GenerateCACert(certPath, keyPath string, name string) error {
 
 // GenerateSignedCert generates a signed certificate and key
 func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS []string, signerCertPath, signerKeyPath string) error {
-	fmt.Printf("Inside GenerateSignedCert certpath %s keypath %s", certPath, keyPath)
-	fmt.Println()
 	signerCertBytes, err := ioutil.ReadFile(signerCertPath)
 	if err != nil {
 		return errors.Wrap(err, "Error reading file: signerCertPath")
@@ -120,7 +115,6 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 }
 
 func loadOrGeneratePrivateKey(keyPath string) (*rsa.PrivateKey, error) {
-	fmt.Printf("Inside loadOrGeneratePrivateKey  keypath %s", keyPath)
 	keyBytes, err := ioutil.ReadFile(keyPath)
 	if err == nil {
 		decodedKey, _ := pem.Decode(keyBytes)
@@ -139,7 +133,6 @@ func loadOrGeneratePrivateKey(keyPath string) (*rsa.PrivateKey, error) {
 }
 
 func writeCertsAndKeys(template *x509.Certificate, certPath string, signeeKey *rsa.PrivateKey, keyPath string, parent *x509.Certificate, signingKey *rsa.PrivateKey) error {
-	fmt.Printf("Inside writeCertsAndKeys : certPath %s keypath %s", certPath, keyPath)
 	derBytes, err := x509.CreateCertificate(rand.Reader, template, parent, &signeeKey.PublicKey, signingKey)
 	if err != nil {
 		return errors.Wrap(err, "Error creating certificate")

@@ -103,7 +103,7 @@ func generateCerts(k8s config.KubernetesConfig, profile string) error {
 		return errors.Wrap(err, "getting service cluster ip")
 	}
 
-	localPath := constants.GetProfilePath(profile)
+	localPath := filepath.Join(constants.GetProfilePath(profile), "certs")
 
 	caCertPath := filepath.Join(localPath, "ca.crt")
 	caKeyPath := filepath.Join(localPath, "ca.key")

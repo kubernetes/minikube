@@ -829,9 +829,9 @@ func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
 	kcs := &pkgutil.KubeConfigSetup{
 		ClusterName:          p,
 		ClusterServerAddress: addr,
-		ClientCertificate:    filepath.Join(constants.GetProfilePath(p), "client.crt"),
-		ClientKey:            filepath.Join(constants.GetProfilePath(p), "client.key"),
-		CertificateAuthority: filepath.Join(constants.GetProfilePath(p), "ca.crt"),
+		ClientCertificate:    filepath.Join(constants.GetProfilePath(p), "certs", "client.crt"),
+		ClientKey:            filepath.Join(constants.GetProfilePath(p), "certs", "client.key"),
+		CertificateAuthority: filepath.Join(constants.GetProfilePath(p), "certs", "ca.crt"),
 		KeepContext:          viper.GetBool(keepContext),
 		EmbedCerts:           viper.GetBool(embedCerts),
 	}
