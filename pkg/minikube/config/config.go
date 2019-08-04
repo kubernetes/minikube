@@ -74,6 +74,20 @@ func get(name string, config MinikubeConfig) (string, error) {
 	return "", ErrKeyNotFound
 }
 
+// WriteConfig writes a minikube config to the JSON file
+func WriteConfig(configFile string, m MinikubeConfig) error {
+	f, err := os.Create(configFile)
+	if err != nil {
+		return fmt.Errorf("create %s: %s", configFile, err)
+	}
+	defer f.Close()
+	err = encode(f, m)
+	if err != nil {
+		return fmt.Errorf("encode %s: %s", configFile, err)
+	}
+	return nil
+}
+
 // ReadConfig reads in the JSON minikube config
 func ReadConfig() (MinikubeConfig, error) {
 	return readConfig(constants.ConfigFile)
@@ -101,6 +115,17 @@ func decode(r io.Reader) (MinikubeConfig, error) {
 	var data MinikubeConfig
 	err := json.NewDecoder(r).Decode(&data)
 	return data, err
+}
+
+func encode(w io.Writer, m MinikubeConfig) error {
+	b, err := json.MarshalIndent(m, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(b)
+
+	return err
 }
 
 // GetMachineName gets the machine name for the VM
