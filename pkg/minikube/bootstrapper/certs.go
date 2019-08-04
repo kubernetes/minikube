@@ -17,8 +17,11 @@ limitations under the License.
 package bootstrapper
 
 import (
+	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -66,6 +69,19 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		copyableFiles = append(copyableFiles, certFile)
 	}
 
+	caCerts, err := collectCACerts()
+	if err != nil {
+		return err
+	}
+	for src, dst := range caCerts {
+		certFile, err := assets.NewFileAsset(src, path.Dir(dst), path.Base(dst), "0644")
+		if err != nil {
+			return err
+		}
+
+		copyableFiles = append(copyableFiles, certFile)
+	}
+
 	kubeCfgSetup := &util.KubeConfigSetup{
 		ClusterName:          k8s.NodeName,
 		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
@@ -76,7 +92,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	}
 
 	kubeCfg := api.NewConfig()
-	err := util.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
+	err = util.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
 	if err != nil {
 		return errors.Wrap(err, "populating kubeconfig")
 	}
@@ -93,6 +109,11 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		if err := cmd.Copy(f); err != nil {
 			return err
 		}
+	}
+
+	// configure CA certificates
+	if err := configureCACerts(cmd, caCerts); err != nil {
+		return errors.Wrapf(err, "error configuring CA certificates during provisioning %v", err)
 	}
 	return nil
 }
@@ -192,6 +213,105 @@ func generateCerts(k8s config.KubernetesConfig) error {
 			signedCertSpec.caCertPath, signedCertSpec.caKeyPath,
 		); err != nil {
 			return errors.Wrap(err, "Error generating signed apiserver serving cert")
+		}
+	}
+
+	return nil
+}
+
+func collectCACerts() (map[string]string, error) {
+	localPath := constants.GetMinipath()
+
+	isValidPem := func(hostpath string) (bool, error) {
+		fileBytes, err := ioutil.ReadFile(hostpath)
+		if err != nil {
+			return false, err
+		}
+
+		for {
+			block, rest := pem.Decode(fileBytes)
+			if block == nil {
+				break
+			}
+
+			if block.Type == "CERTIFICATE" {
+				// certificate found
+				return true, nil
+			}
+			fileBytes = rest
+		}
+
+		return false, nil
+	}
+
+	certFiles := map[string]string{}
+
+	certsDir := filepath.Join(localPath, "certs")
+	err := filepath.Walk(certsDir, func(hostpath string, info os.FileInfo, err error) error {
+		if info != nil && !info.IsDir() {
+			ext := strings.ToLower(filepath.Ext(hostpath))
+			if ext == ".crt" || ext == ".pem" {
+				validPem, err := isValidPem(hostpath)
+				if err != nil {
+					return err
+				}
+				if validPem {
+					filename := filepath.Base(hostpath)
+					dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
+					certFiles[hostpath] = path.Join(constants.CACertificatesDir, dst)
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "provisioning: traversal certificates dir %s", certsDir)
+	}
+
+	for _, excluded := range []string{"ca.pem", "cert.pem"} {
+		certFiles[filepath.Join(certsDir, excluded)] = ""
+	}
+
+	// populates minikube CA
+	certFiles[filepath.Join(localPath, "ca.crt")] = path.Join(constants.CACertificatesDir, "minikubeCA.pem")
+
+	filtered := map[string]string{}
+	for k, v := range certFiles {
+		if v != "" {
+			filtered[k] = v
+		}
+	}
+	return filtered, nil
+}
+
+func configureCACerts(cmd command.Runner, caCerts map[string]string) error {
+	getSubjectHash := func(hostpath string) (string, error) {
+		out, err := cmd.CombinedOutput(fmt.Sprintf("openssl x509 -hash -noout -in '%s'", hostpath))
+		if err != nil {
+			return "", err
+		}
+
+		stringHash := strings.ReplaceAll(out, "\n", "")
+		return stringHash, nil
+	}
+
+	for _, caCertFile := range caCerts {
+		dstFilename := path.Base(caCertFile)
+		certStorePath := path.Join(constants.SSLCertStoreDir, dstFilename)
+		if err := cmd.Run(fmt.Sprintf("sudo test -f '%s'", certStorePath)); err != nil {
+			if err := cmd.Run(fmt.Sprintf("sudo ln -s '%s' '%s'", caCertFile, certStorePath)); err != nil {
+				return errors.Wrapf(err, "error making symbol link for certificate %s", caCertFile)
+			}
+		}
+		subjectHash, err := getSubjectHash(caCertFile)
+		if err != nil {
+			return errors.Wrapf(err, "error calculating subject hash for certificate %s", caCertFile)
+		}
+		subjectHashLink := path.Join(constants.SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
+		if err := cmd.Run(fmt.Sprintf("sudo test -f '%s'", subjectHashLink)); err != nil {
+			if err := cmd.Run(fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, subjectHashLink)); err != nil {
+				return errors.Wrapf(err, "error making subject hash symbol link for certificate %s", caCertFile)
+			}
 		}
 	}
 
