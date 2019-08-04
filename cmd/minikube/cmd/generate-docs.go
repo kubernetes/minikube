@@ -33,6 +33,7 @@ var generateDocs = &cobra.Command{
 	Short:   "Populates the specified folder with documentation in markdown about minikube",
 	Long:    "Populates the specified folder with documentation in markdown about minikube",
 	Example: "minikube generate-docs --path <FOLDER_PATH>",
+	Hidden: true,
 	Run: func(cmd *cobra.Command, args []string) {
 
 		// if directory does not exist
