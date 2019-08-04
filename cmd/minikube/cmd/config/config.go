@@ -17,10 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"os"
 	"strings"
 
 	"github.com/golang/glog"
@@ -302,7 +298,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	configFile, err := config.ReadConfig()
+	cfg, err := config.ReadConfig()
 	if err != nil {
 		return err
 	}
@@ -310,16 +306,16 @@ func AddToConfigMap(name string, images []string) error {
 	for _, image := range images {
 		newImages[image] = nil
 	}
-	if values, ok := configFile[name].(map[string]interface{}); ok {
+	if values, ok := cfg[name].(map[string]interface{}); ok {
 		for key := range values {
 			newImages[key] = nil
 		}
 	}
-	if err = s.setMap(configFile, name, newImages); err != nil {
+	if err = s.setMap(cfg, name, newImages); err != nil {
 		return err
 	}
 	// Write the values
-	return WriteConfig(configFile)
+	return config.WriteConfig(constants.ConfigFile, cfg)
 }
 
 // DeleteFromConfigMap deletes entries from a map in the config file
@@ -329,45 +325,20 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	configFile, err := config.ReadConfig()
+	cfg, err := config.ReadConfig()
 	if err != nil {
 		return err
 	}
-	values, ok := configFile[name]
+	values, ok := cfg[name]
 	if !ok {
 		return nil
 	}
 	for _, image := range images {
 		delete(values.(map[string]interface{}), image)
 	}
-	if err = s.setMap(configFile, name, values.(map[string]interface{})); err != nil {
+	if err = s.setMap(cfg, name, values.(map[string]interface{})); err != nil {
 		return err
 	}
 	// Write the values
-	return WriteConfig(configFile)
-}
-
-// WriteConfig writes a minikube config to the JSON file
-func WriteConfig(m config.MinikubeConfig) error {
-	f, err := os.Create(constants.ConfigFile)
-	if err != nil {
-		return fmt.Errorf("create %s: %s", constants.ConfigFile, err)
-	}
-	defer f.Close()
-	err = encode(f, m)
-	if err != nil {
-		return fmt.Errorf("encode %s: %s", constants.ConfigFile, err)
-	}
-	return nil
-}
-
-func encode(w io.Writer, m config.MinikubeConfig) error {
-	b, err := json.MarshalIndent(m, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	_, err = w.Write(b)
-
-	return err
+	return config.WriteConfig(constants.ConfigFile, cfg)
 }
