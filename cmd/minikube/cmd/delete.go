@@ -17,9 +17,10 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/pkg/errors"
-	"os"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"

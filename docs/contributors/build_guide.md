@@ -62,6 +62,9 @@ $ ./out/minikube start
 ## Running Tests
 
 ### Unit Tests
+In order to run the Unit Tests, you might be required to install the following packages -
+- pkg-config
+- libvirt-dev
 
 Unit tests are run on Travis before code is merged. To run as part of a development cycle:
 
