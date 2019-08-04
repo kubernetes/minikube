@@ -17,11 +17,11 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/pkg/errors"
 	"os"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -69,7 +69,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if err = cluster.DeleteHost(api); err != nil {
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.name}}" cluster does not exist`, out.V{"name": profile})
+			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": err.Name})
 		default:
 			exit.WithError("Failed to delete cluster", err)
 		}
