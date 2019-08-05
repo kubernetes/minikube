@@ -57,6 +57,7 @@ func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, 
 	p.Set64(currentSize)
 	p.SetUnits(pb.U_BYTES)
 	p.Prefix(fmt.Sprintf("    %s:", filepath.Base(src)))
+	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
 	p.SetWidth(78)
 	cpb.pool.Add(p)
 	reader := p.NewProxyReader(stream)
