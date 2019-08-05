@@ -420,8 +420,6 @@ const (
 	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.1-rc.0/gvisor-containerd-shim-v0.0.1-rc.0.linux-amd64"
 	// GvisorURL is the url to download gvisor
 	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2018-12-07/runsc"
-	// GivsorAddonRepo is the environment variable that will store the repo of the gvisor image for integration tests.
-	GivsorAddonRepo = "GVISOR_ADDON_REPO"
 )
 
 const (

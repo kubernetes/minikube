@@ -19,11 +19,6 @@ limitations under the License.
 package integration
 
 import (
-<<<<<<< HEAD
-	"os"
-	"strings"
-=======
->>>>>>> 45e5265c3570cf9c7b3cedda09f58ab8e6edbdfe
 	"testing"
 )
 
