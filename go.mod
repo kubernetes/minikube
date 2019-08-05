@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
+	github.com/Microsoft/go-winio v0.4.13 // indirect
 	github.com/Parallels/docker-machine-parallels v1.3.0
 	github.com/Sirupsen/logrus v0.0.0-20170822132746-89742aefa4b2 // indirect
 	github.com/blang/semver v3.5.0+incompatible
@@ -11,7 +12,9 @@ require (
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/cpuguy83/go-md2man v1.0.4 // indirect
-	github.com/docker/docker v1.13.1 // indirect
+	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/docker v0.0.0-20180531152204-71cd53e4a197 // indirect
+	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-units v0.0.0-20170127094116-9e638d38cf69
 	github.com/docker/machine v0.16.1
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
@@ -24,7 +27,7 @@ require (
 	github.com/golang/groupcache v0.0.0-20160516000752-02826c3e7903 // indirect
 	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-cmp v0.2.0
-	github.com/google/go-containerregistry v0.0.0-20190318164241-019cdfc6adf9
+	github.com/google/go-containerregistry v0.0.0-20190729175742-ef12d49c8daf
 	github.com/google/go-github/v25 v25.0.2
 	github.com/google/gofuzz v0.0.0-20161122191042-44d81051d367 // indirect
 	github.com/googleapis/gnostic v0.0.0-20170729233727-0c5108395e2d // indirect
@@ -60,13 +63,15 @@ require (
 	github.com/olekukonko/tablewriter v0.0.0-20160923125401-bdcc175572fd
 	github.com/onsi/ginkgo v1.8.0 // indirect
 	github.com/onsi/gomega v1.5.0 // indirect
+	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
+	github.com/opencontainers/image-spec v1.0.1 // indirect
 	github.com/pborman/uuid v0.0.0-20150603214016-ca53cad383ca
 	github.com/pelletier/go-buffruneio v0.1.0 // indirect
 	github.com/pelletier/go-toml v0.0.0-20160822122712-0049ab3dc4c4 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/browser v0.0.0-20160118053552-9302be274faa
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.8.1
 	github.com/pkg/profile v0.0.0-20161223203901-3a8809bd8a80
 	github.com/pkg/sftp v0.0.0-20160930220758-4d0e916071f6 // indirect
 	github.com/pmezard/go-difflib v1.0.0
@@ -74,7 +79,6 @@ require (
 	github.com/russross/blackfriday v0.0.0-20151117072312-300106c228d5 // indirect
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
 	github.com/shurcooL/sanitized_anchor_name v0.0.0-20151028001915-10ef21a441db // indirect
-	github.com/sirupsen/logrus v1.4.1 // indirect
 	github.com/spf13/afero v0.0.0-20160816080757-b28a7effac97 // indirect
 	github.com/spf13/cast v0.0.0-20160730092037-e31f36ffc91a // indirect
 	github.com/spf13/cobra v0.0.0-20180228053838-6644d46b81fa
