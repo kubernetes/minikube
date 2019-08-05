@@ -1,4 +1,7 @@
-# Principles of Minikube
+---
+title: "Principles"
+date: 2019-06-18T15:31:58+08:00
+---
 
 The primary goal of minikube is to make it simple to run Kubernetes locally, for day-to-day development workflows and learning purposes. Here are the guiding principles for minikube, in rough priority order:
 
@@ -22,4 +25,4 @@ Here are some specific minikube features that align with our goal:
 ## Non-Goals
 
 * Simplifying Kubernetes production deployment experience
-* Supporting all possible deployment configurations of Kubernetes, such as storage, networking, etc.
+* Supporting all possible deployment configurations of Kubernetes like various types of storage, networking, etc.

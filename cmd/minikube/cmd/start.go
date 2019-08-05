@@ -222,13 +222,13 @@ func platform() string {
 		s.WriteString(fmt.Sprintf("%s %s", strings.Title(hi.Platform), hi.PlatformVersion))
 		glog.Infof("hostinfo: %+v", hi)
 	} else {
-		glog.Errorf("gopshost.Info returned error: %v", err)
+		glog.Warningf("gopshost.Info returned error: %v", err)
 		s.WriteString(runtime.GOOS)
 	}
 
 	vsys, vrole, err := gopshost.Virtualization()
 	if err != nil {
-		glog.Errorf("gopshost.Virtualization returned error: %v", err)
+		glog.Warningf("gopshost.Virtualization returned error: %v", err)
 	} else {
 		glog.Infof("virtualization: %s %s", vsys, vrole)
 	}
