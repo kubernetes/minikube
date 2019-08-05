@@ -17,13 +17,12 @@ limitations under the License.
 package util
 
 import (
-	"crypto"
 	"net/url"
 	"os"
 	"path/filepath"
 
 	"github.com/golang/glog"
-	download "github.com/jimmidyson/go-download"
+	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -55,32 +54,30 @@ func (f DefaultDownloader) GetISOFileURI(isoURL string) string {
 }
 
 // CacheMinikubeISOFromURL downloads the ISO, if it doesn't exist in cache
-func (f DefaultDownloader) CacheMinikubeISOFromURL(isoURL string) error {
-	if !f.ShouldCacheMinikubeISO(isoURL) {
-		glog.Infof("Not caching ISO, using %s", isoURL)
+func (f DefaultDownloader) CacheMinikubeISOFromURL(url string) error {
+	if !f.ShouldCacheMinikubeISO(url) {
+		glog.Infof("Not caching ISO, using %s", url)
 		return nil
 	}
 
-	options := download.FileOptions{
-		Mkdirs: download.MkdirAll,
-		Options: download.Options{
-			ProgressBars: &download.ProgressBarOptions{
-				MaxWidth: 80,
-			},
-		},
+	urlWithChecksum := url
+	if url == constants.DefaultISOURL {
+		urlWithChecksum = url + "?checksum=file:" + constants.DefaultISOSHAURL
 	}
 
-	// Validate the ISO if it was the default URL, before writing it to disk.
-	if isoURL == constants.DefaultISOURL {
-		options.Checksum = constants.DefaultISOSHAURL
-		options.ChecksumHash = crypto.SHA256
+	opts := []getter.ClientOption{getter.WithProgress(defaultProgressBar)}
+	client := &getter.Client{
+		Src:     urlWithChecksum,
+		Dst:     f.GetISOCacheFilepath(url),
+		Mode:    getter.ClientModeFile,
+		Options: opts,
 	}
 
-	out.T(out.ISODownload, "Downloading Minikube ISO ...")
-	if err := download.ToFile(isoURL, f.GetISOCacheFilepath(isoURL), options); err != nil {
-		return errors.Wrap(err, isoURL)
+	glog.Infof("full url: %s", urlWithChecksum)
+	out.T(out.ISODownload, "Downloading VM boot image ...")
+	if err := client.Get(); err != nil {
+		return errors.Wrap(err, url)
 	}
-
 	return nil
 }
 
