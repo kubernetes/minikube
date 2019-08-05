@@ -220,12 +220,6 @@ var Addons = map[string]*Addon{
 			"ingress-dp.yaml",
 			"0640",
 			true),
-		MustBinAsset(
-			"deploy/addons/ingress/ingress-svc.yaml.tmpl",
-			constants.AddonsPath,
-			"ingress-svc.yaml",
-			"0640",
-			false),
 	}, false, "ingress"),
 	"metrics-server": NewAddon([]*BinAsset{
 		MustBinAsset(

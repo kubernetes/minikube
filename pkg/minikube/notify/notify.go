@@ -30,8 +30,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -66,13 +66,9 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) {
 		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
 			glog.Errorf("write time failed: %v", err)
 		}
-		console.ErrStyle(console.WarningType, `There is a newer version of minikube available (%s%s).  Download it here:
-%s%s
-
-To disable this notification, run the following:
-minikube config set WantUpdateNotification false
-`,
-			version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion)
+		url := fmt.Sprintf("%s/%s", updateLinkPrefix, latestVersion)
+		out.ErrT(out.WarningType, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
+		out.T(out.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'")
 	}
 }
 

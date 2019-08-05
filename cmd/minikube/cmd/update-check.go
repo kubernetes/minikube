@@ -18,10 +18,10 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/notify"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -41,14 +41,10 @@ var updateCheckCmd = &cobra.Command{
 		}
 
 		if len(r) < 1 {
-			exit.WithCode(exit.Data, "Update server returned an empty list")
+			exit.WithCodeT(exit.Data, "Update server returned an empty list")
 		}
 
-		console.OutLn("CurrentVersion: %s", version.GetVersion())
-		console.OutLn("LatestVersion: %s", r[0].Name)
+		out.Ln("CurrentVersion: %s", version.GetVersion())
+		out.Ln("LatestVersion: %s", r[0].Name)
 	},
-}
-
-func init() {
-	RootCmd.AddCommand(updateCheckCmd)
 }

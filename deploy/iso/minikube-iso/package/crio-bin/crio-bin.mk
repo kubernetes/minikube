@@ -4,9 +4,9 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.14.1
-CRIO_BIN_COMMIT = b7644f67e6383cc862b3e37fb74fba334b0b2721
-CRIO_BIN_SITE = https://github.com/kubernetes-sigs/cri-o/archive
+CRIO_BIN_VERSION = v1.15.0
+CRIO_BIN_COMMIT = 485227d727401fa0472a449b5df3b0537e314ebb
+CRIO_BIN_SITE = https://github.com/cri-o/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = host-go libgpgme
 CRIO_BIN_GOPATH = $(@D)/_output
@@ -23,8 +23,10 @@ define CRIO_BIN_USERS
 endef
 
 define CRIO_BIN_CONFIGURE_CMDS
-	mkdir -p $(CRIO_BIN_GOPATH)/src/github.com/kubernetes-sigs
-	ln -sf $(@D) $(CRIO_BIN_GOPATH)/src/github.com/kubernetes-sigs/cri-o
+	mkdir -p $(CRIO_BIN_GOPATH)/src/github.com/cri-o
+	ln -sf $(@D) $(CRIO_BIN_GOPATH)/src/github.com/cri-o/cri-o
+	# Generate conmon/config.h with a simplified bin/crio-config
+	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) BUILDTAGS="containers_image_ostree_stub exclude_graphdriver_btrfs exclude_graphdriver_devicemapper containers_image_openpgp" conmon/config.h
 endef
 
 define CRIO_BIN_BUILD_CMDS
@@ -45,9 +47,6 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 \
 		$(@D)/bin/pause \
 		$(TARGET_DIR)/usr/libexec/crio/pause
-	$(INSTALL) -Dm644 \
-		$(@D)/seccomp.json \
-		$(TARGET_DIR)/etc/crio/seccomp.json
 	$(INSTALL) -Dm644 \
 		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/crio-bin/crio.conf \
 		$(TARGET_DIR)/etc/crio/crio.conf

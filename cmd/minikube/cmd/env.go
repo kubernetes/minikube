@@ -344,21 +344,21 @@ var dockerEnvCmd = &cobra.Command{
 			exit.WithError("Error getting host", err)
 		}
 		if host.Driver.DriverName() == constants.DriverNone {
-			exit.Usage(`'none' driver does not support 'minikube docker-env' command`)
+			exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
 		}
 		hostSt, err := cluster.GetHostStatus(api)
 		if err != nil {
 			exit.WithError("Error getting host status", err)
 		}
 		if hostSt != state.Running.String() {
-			exit.WithCode(exit.Unavailable, `The docker host is currently not running`)
+			exit.WithCodeT(exit.Unavailable, `The docker host is currently not running`)
 		}
 		docker, err := GetDockerActive(host)
 		if err != nil {
 			exit.WithError("Error getting service status", err)
 		}
 		if !docker {
-			exit.WithCode(exit.Unavailable, `The docker service is currently not active`)
+			exit.WithCodeT(exit.Unavailable, `The docker service is currently not active`)
 		}
 
 		var shellCfg *ShellConfig
@@ -382,7 +382,6 @@ var dockerEnvCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(dockerEnvCmd)
 	defaultShellDetector = &LibmachineShellDetector{}
 	defaultNoProxyGetter = &EnvNoProxyGetter{}
 	dockerEnvCmd.Flags().BoolVar(&noProxy, "no-proxy", false, "Add machine IP to NO_PROXY environment variable")

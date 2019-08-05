@@ -66,7 +66,7 @@ var logsCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("command runner", err)
 		}
-		bs, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+		bs, err := getClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
 			exit.WithError("Error getting cluster bootstrapper", err)
 		}
@@ -97,6 +97,5 @@ var logsCmd = &cobra.Command{
 func init() {
 	logsCmd.Flags().BoolVarP(&followLogs, "follow", "f", false, "Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.")
 	logsCmd.Flags().BoolVar(&showProblems, "problems", false, "Show only log entries which point to known problems")
-	logsCmd.Flags().IntVarP(&numberOfLines, "length", "n", 50, "Number of lines back to go within the log")
-	RootCmd.AddCommand(logsCmd)
+	logsCmd.Flags().IntVarP(&numberOfLines, "length", "n", 30, "Number of lines back to go within the log")
 }

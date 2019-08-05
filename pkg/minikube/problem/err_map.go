@@ -91,6 +91,11 @@ var vmProblems = map[string]match{
 		Advice: "Please install the minikube kvm2 VM driver, or select an alternative --vm-driver",
 		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver",
 	},
+	"HYPERKIT_NOT_FOUND": {
+		Regexp: re(`Driver "hyperkit" not found. Do you have the plugin binary .* accessible in your PATH?`),
+		Advice: "Please install the minikube hyperkit VM driver, or select an alternative --vm-driver",
+		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver",
+	},
 	"KVM2_RESTART_NO_IP": {
 		Regexp: re(`Error starting stopped host: Machine didn't return an IP after 120 seconds`),
 		Advice: "The KVM driver is unable to resurrect this old VM. Please run `minikube delete` to delete it and try again.",
@@ -144,6 +149,12 @@ var vmProblems = map[string]match{
 		Advice: "Configure an external network switch following the official documentation, then add `--hyperv-virtual-switch=<switch-name>` to `minikube start`",
 		URL:    "https://docs.docker.com/machine/drivers/hyper-v/",
 	},
+	"HYPERV_POWERSHELL_NOT_FOUND": {
+		Regexp: re(`Powershell was not found in the path`),
+		Advice: "To start minikube with HyperV Powershell must be in your PATH`",
+		URL:    "https://docs.docker.com/machine/drivers/hyper-v/",
+	},
+
 	"HOST_CIDR_CONFLICT": {
 		Regexp: re(`host-only cidr conflicts with the network address of a host interface`),
 		Advice: "Specify an alternate --host-only-cidr value, such as 172.16.0.1/24",

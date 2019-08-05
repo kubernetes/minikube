@@ -1,9 +1,12 @@
 language: go
 os: linux
-sudo: required
 
-go:
-  - 1.x
+matrix:
+  include:
+    - go: 1.12.7
+    - language: python
+      before_install: pip install flake8
+      script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
 before_install:
   - sudo apt-get install -y libvirt-dev
