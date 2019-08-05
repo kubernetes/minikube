@@ -21,6 +21,7 @@ limitations under the License.
 package util
 
 import (
+	"fmt"
 	"io"
 	"path/filepath"
 	"sync"
@@ -55,8 +56,8 @@ func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, 
 	p := pb.New64(totalSize)
 	p.Set64(currentSize)
 	p.SetUnits(pb.U_BYTES)
-	p.Prefix(filepath.Base(src))
-
+	p.Prefix(fmt.Sprintf("    %s:", filepath.Base(src)))
+	p.SetWidth(78)
 	cpb.pool.Add(p)
 	reader := p.NewProxyReader(stream)
 
