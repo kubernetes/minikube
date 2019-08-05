@@ -11,7 +11,6 @@ require (
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
-	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-units v0.3.3
 	github.com/docker/machine v0.16.1-0.20190718054102-a555e4f7a8f5
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
@@ -66,7 +65,7 @@ require (
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
 	k8s.io/kubectl v0.0.0-00010101000000-000000000000
-	k8s.io/kubernetes v1.15.0
+	k8s.io/kubernetes v1.15.3-beta.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner v4.0.0+incompatible
 )
 

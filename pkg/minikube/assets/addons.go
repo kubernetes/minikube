@@ -394,23 +394,14 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 		ea = runtime.GOARCH
 	}
 	opts := struct {
-		Arch                  string
-		ExoticArch            string
-		ImageRepository       string
-		GvisorImageRepository string
+		Arch            string
+		ExoticArch      string
+		ImageRepository string
 	}{
-		Arch:                  a,
-		ExoticArch:            ea,
-		ImageRepository:       cfg.ImageRepository,
-		GvisorImageRepository: retrieveGvisorImageRepository(cfg.ImageRepository),
+		Arch:            a,
+		ExoticArch:      ea,
+		ImageRepository: cfg.ImageRepository,
 	}
 
 	return opts
-}
-
-func retrieveGvisorImageRepository(imageRepository string) string {
-	if repo := os.Getenv(constants.GivsorAddonRepo); repo != "" {
-		return repo
-	}
-	return imageRepository
 }
