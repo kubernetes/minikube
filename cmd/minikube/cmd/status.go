@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
@@ -61,7 +62,7 @@ var statusCmd = &cobra.Command{
 		var returnCode = 0
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			exit.WithCode(exit.Unavailable, "Error getting client: %v", err)
+			exit.WithCodeT(exit.Unavailable, "Error getting client: {{.error}}", out.V{"error": err})
 		}
 		defer api.Close()
 
@@ -75,7 +76,7 @@ var statusCmd = &cobra.Command{
 		apiserverSt := state.None.String()
 
 		if hostSt == state.Running.String() {
-			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+			clusterBootstrapper, err := getClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 			if err != nil {
 				exit.WithError("Error getting bootstrapper", err)
 			}
@@ -143,5 +144,4 @@ func init() {
 	statusCmd.Flags().StringVar(&statusFormat, "format", constants.DefaultStatusFormat,
 		`Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
-	RootCmd.AddCommand(statusCmd)
 }

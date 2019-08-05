@@ -19,10 +19,15 @@ package tests
 import (
 	"encoding/json"
 	"fmt"
+	"math/rand"
+	"testing"
 
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/swarm"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 )
 
 // MockAPI is a struct used to mock out libmachine.API
@@ -31,16 +36,29 @@ type MockAPI struct {
 	CreateError bool
 	RemoveError bool
 	SaveCalled  bool
+	t           *testing.T
 }
 
 // NewMockAPI returns a new MockAPI
-func NewMockAPI() *MockAPI {
+func NewMockAPI(t *testing.T) *MockAPI {
+	t.Helper()
 	m := MockAPI{
 		FakeStore: FakeStore{
 			Hosts: make(map[string]*host.Host),
+			T:     t,
 		},
+		t: t,
 	}
 	return &m
+}
+
+// Logf logs mock interactions
+func (api *MockAPI) Logf(format string, args ...interface{}) {
+	if api.t == nil {
+		glog.Infof(format, args...)
+		return
+	}
+	api.t.Logf(format, args...)
 }
 
 // Close closes the API.
@@ -54,20 +72,43 @@ func (api *MockAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, er
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {
 		return nil, errors.Wrap(err, "error unmarshalling json")
 	}
+
 	h := &host.Host{
-		DriverName:  driverName,
-		RawDriver:   rawDriver,
-		Driver:      &MockDriver{},
-		Name:        driver.GetMachineName(),
-		HostOptions: &host.Options{AuthOptions: &auth.Options{}},
+		DriverName: driverName,
+		RawDriver:  rawDriver,
+		Driver:     &MockDriver{},
+		Name:       fmt.Sprintf("mock-machine-%.8f", rand.Float64()),
+		HostOptions: &host.Options{
+			AuthOptions:  &auth.Options{},
+			SwarmOptions: &swarm.Options{},
+		},
 	}
+
+	// HACK: Make future calls to config.GetMachineName() work properly.
+	api.Logf("MockAPI.NewHost: Setting profile=%q", h.Name)
+	viper.Set("profile", h.Name)
+
+	api.Logf("MockAPI.NewHost: %+v", h)
 	return h, nil
+}
+
+// Load a created mock
+func (api *MockAPI) Load(name string) (*host.Host, error) {
+	h, err := api.FakeStore.Load(name)
+	api.Logf("MockAPI.Load: %+v - %v", h, err)
+	return h, err
 }
 
 // Create creates the actual host.
 func (api *MockAPI) Create(h *host.Host) error {
+	api.Logf("MockAPI.Create: %+v", h)
 	if api.CreateError {
 		return errors.New("error creating host")
+	}
+	// Propagate test info messages
+	drv, ok := h.Driver.(*MockDriver)
+	if ok {
+		drv.T = api.t
 	}
 	return h.Driver.Create()
 }
@@ -79,6 +120,7 @@ func (api *MockAPI) List() ([]string, error) {
 
 // Remove a host.
 func (api *MockAPI) Remove(name string) error {
+	api.Logf("MockAPI.Delete: %s", name)
 	if api.RemoveError {
 		return fmt.Errorf("error removing %s", name)
 	}
@@ -90,6 +132,7 @@ func (api *MockAPI) Remove(name string) error {
 // Save saves a host to disk.
 func (api *MockAPI) Save(host *host.Host) error {
 	api.SaveCalled = true
+	api.Logf("MockAPI.Save: %+v", host)
 	return api.FakeStore.Save(host)
 }
 

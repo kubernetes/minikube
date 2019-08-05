@@ -111,28 +111,20 @@ func TestParseFeatureArgs(t *testing.T) {
 		expectedComponentFeatureArgs string
 	}{
 		{
-			description:  "only kubeadm feature",
-			featureGates: "Auditing=true,SelfHosting=false",
+			description:  "CoreDNS enabled",
+			featureGates: "CoreDNS=true",
 			expectedKubeadmFeatureArgs: map[string]bool{
-				"Auditing":    true,
-				"SelfHosting": false,
+				"CoreDNS": true,
 			},
 			expectedComponentFeatureArgs: "",
 		},
 		{
-			description:                  "only component feature",
-			featureGates:                 "PodPriority=true,Accelerators=false",
-			expectedKubeadmFeatureArgs:   map[string]bool{},
-			expectedComponentFeatureArgs: "PodPriority=true,Accelerators=false",
-		},
-		{
-			description:  "between component and kubeadm feature",
-			featureGates: "Auditing=true,PodPriority=true,SelfHosting=false,Accelerators=false",
+			description:  "CoreDNS disabled",
+			featureGates: "CoreDNS=false",
 			expectedKubeadmFeatureArgs: map[string]bool{
-				"Auditing":    true,
-				"SelfHosting": false,
+				"CoreDNS": false,
 			},
-			expectedComponentFeatureArgs: "PodPriority=true,Accelerators=false",
+			expectedComponentFeatureArgs: "",
 		},
 	}
 

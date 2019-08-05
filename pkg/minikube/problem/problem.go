@@ -18,9 +18,10 @@ limitations under the License.
 package problem
 
 import (
+	"fmt"
 	"regexp"
 
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -52,21 +53,21 @@ type match struct {
 
 // Display problem metadata to the console
 func (p *Problem) Display() {
-	console.ErrStyle(console.FailureType, "Error:         [%s] %v", p.ID, p.Err)
-	console.ErrStyle(console.Tip, "Advice:        %s", translate.T(p.Advice))
+	out.ErrT(out.FailureType, "Error: [{{.id}}] {{.error}}", out.V{"id": p.ID, "error": p.Err})
+	out.ErrT(out.Tip, "Suggestion: {{.advice}}", out.V{"advice": translate.T(p.Advice)})
 	if p.URL != "" {
-		console.ErrStyle(console.Documentation, "Documentation: %s", p.URL)
+		out.ErrT(out.Documentation, "Documentation: {{.url}}", out.V{"url": p.URL})
 	}
 	if len(p.Issues) == 0 {
 		return
 	}
-	console.ErrStyle(console.Issues, "Related issues:")
+	out.ErrT(out.Issues, "Related issues:")
 	issues := p.Issues
 	if len(issues) > 3 {
 		issues = issues[0:3]
 	}
 	for _, i := range issues {
-		console.ErrStyle(console.Issue, "%s/%d", issueBase, i)
+		out.ErrT(out.Issue, "{{.url}}", out.V{"url": fmt.Sprintf("%s/%d", issueBase, i)})
 	}
 }
 

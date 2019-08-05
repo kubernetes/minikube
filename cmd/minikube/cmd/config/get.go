@@ -22,7 +22,7 @@ import (
 
 	"github.com/spf13/cobra"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var configGetCmd = &cobra.Command{
@@ -44,7 +44,7 @@ var configGetCmd = &cobra.Command{
 			return fmt.Errorf("no value for key '%s'", args[0])
 		}
 
-		console.OutLn(val)
+		out.Ln(val)
 		return nil
 	},
 }

@@ -23,7 +23,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/r2d4/external-storage/lib/controller"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
@@ -31,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/sig-storage-lib-external-provisioner/controller"
 )
 
 const provisionerName = "k8s.io/minikube-hostpath"
@@ -55,7 +55,7 @@ func NewHostPathProvisioner() controller.Provisioner {
 var _ controller.Provisioner = &hostPathProvisioner{}
 
 // Provision creates a storage asset and returns a PV object representing it.
-func (p *hostPathProvisioner) Provision(options controller.VolumeOptions) (*core.PersistentVolume, error) {
+func (p *hostPathProvisioner) Provision(options controller.ProvisionOptions) (*core.PersistentVolume, error) {
 	glog.Infof("Provisioning volume %v", options)
 	path := path.Join(p.pvDir, options.PVName)
 	if err := os.MkdirAll(path, 0777); err != nil {
@@ -75,7 +75,7 @@ func (p *hostPathProvisioner) Provision(options controller.VolumeOptions) (*core
 			},
 		},
 		Spec: core.PersistentVolumeSpec{
-			PersistentVolumeReclaimPolicy: options.PersistentVolumeReclaimPolicy,
+			PersistentVolumeReclaimPolicy: *options.StorageClass.ReclaimPolicy,
 			AccessModes:                   options.PVC.Spec.AccessModes,
 			Capacity: core.ResourceList{
 				core.ResourceStorage: options.PVC.Spec.Resources.Requests[core.ResourceStorage],

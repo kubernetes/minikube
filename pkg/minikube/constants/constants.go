@@ -59,11 +59,11 @@ func ArchTag(hasTag bool) string {
 	return "-" + runtime.GOARCH + ":"
 }
 
+// DriverMock is a mock driver.
+const DriverMock = "mock-driver"
+
 // DriverNone is the none driver.
 const DriverNone = "none"
-
-// DriverKvmOld is the depricated kvm driver option name
-const DriverKvmOld = "kvm"
 
 // DriverKvm2 is the kvm2 driver option name for in linux
 const DriverKvm2 = "kvm2"
@@ -83,26 +83,8 @@ const DriverVmwareFusion = "vmwarefusion"
 // DriverHyperv is the hyperv driver option for windows
 const DriverHyperv = "hyperv"
 
-// DriverXhyve is the depricated xhyve driver option name
-const DriverXhyve = "xhyve"
-
 // DriverParallels is the parallels driver option name
 const DriverParallels = "parallels"
-
-// SupportedVMDrivers is a list of supported drivers on all platforms. Currently
-// used in gendocs.
-var SupportedVMDrivers = [...]string{
-	DriverVirtualbox,
-	DriverParallels,
-	DriverVmwareFusion,
-	DriverKvmOld,
-	DriverXhyve,
-	DriverHyperv,
-	DriverHyperkit,
-	DriverKvm2,
-	DriverVmware,
-	DriverNone,
-}
 
 // DefaultMinipath is the default Minikube path (under the home directory)
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
@@ -194,10 +176,10 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.15.0"
+var DefaultKubernetesVersion = "v1.15.1"
 
 // NewestKubernetesVersion is the newest Kubernetes version to test against
-var NewestKubernetesVersion = "v1.15.0"
+var NewestKubernetesVersion = "v1.15.1"
 
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
 var OldestKubernetesVersion = "v1.10.13"
@@ -209,13 +191,21 @@ var ConfigFilePath = MakeMiniPath("config")
 var ConfigFile = MakeMiniPath("config", "config.json")
 
 // GetProfileFile returns the Minikube profile config file
-func GetProfileFile(profile string) string {
-	return filepath.Join(GetMinipath(), "profiles", profile, "config.json")
+func GetProfileFile(profile string, miniHome ...string) string {
+	miniPath := GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "profiles", profile, "config.json")
 }
 
 // GetProfilePath returns the Minikube profile path of config file
-func GetProfilePath(profile string) string {
-	return filepath.Join(GetMinipath(), "profiles", profile)
+func GetProfilePath(profile string, miniHome ...string) string {
+	miniPath := GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "profiles", profile)
 }
 
 // AddonsPath is the default path of the addons configuration
@@ -435,6 +425,6 @@ const (
 )
 
 const (
-	// KVMDocumentation the documentation of the KVM driver
-	KVMDocumentation = "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver"
+	// DriverDocumentation the documentation of the KVM driver
+	DriverDocumentation = "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md"
 )

@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // KubernetesContainerPrefix is the prefix of each kubernetes container
@@ -40,8 +40,8 @@ func (r *Docker) Name() string {
 }
 
 // Style is the console style for Docker
-func (r *Docker) Style() console.StyleEnum {
-	return console.Docker
+func (r *Docker) Style() out.StyleEnum {
+	return out.Docker
 }
 
 // Version retrieves the current version of this runtime
@@ -152,4 +152,9 @@ func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
 
 	cmd.WriteString(id)
 	return cmd.String()
+}
+
+// SystemLogCmd returns the command to retrieve system logs
+func (r *Docker) SystemLogCmd(len int) string {
+	return fmt.Sprintf("sudo journalctl -u docker -n %d", len)
 }
