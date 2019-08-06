@@ -28,6 +28,7 @@ import (
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -76,7 +77,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 
 	machineName := pkg_config.GetMachineName()
-	err = pkgutil.UnsetCurrentContext(constants.KubeconfigPath, machineName)
+	err = kubeconfig.UnsetCurrentContext(constants.KubeconfigPath, machineName)
 	if err != nil {
 		exit.WithError("update config", err)
 	}
