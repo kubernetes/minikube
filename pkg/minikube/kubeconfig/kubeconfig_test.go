@@ -25,7 +25,7 @@ import (
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
+	"k8s.io/minikube/pkg/minikube/constants"
 
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -97,7 +97,7 @@ users:
 `)
 
 func TestSetupKubeConfig(t *testing.T) {
-	setupCfg := &KubeConfigSetup{
+	setupCfg := &Setup{
 		ClusterName:          "test",
 		ClusterServerAddress: "192.168.1.1:8080",
 		ClientCertificate:    "/home/apiserver.crt",
@@ -108,7 +108,7 @@ func TestSetupKubeConfig(t *testing.T) {
 
 	var tests = []struct {
 		description string
-		cfg         *KubeConfigSetup
+		cfg         *Setup
 		existingCfg []byte
 		expected    api.Config
 		err         bool
@@ -128,7 +128,7 @@ func TestSetupKubeConfig(t *testing.T) {
 		},
 		{
 			description: "keep context",
-			cfg: &KubeConfigSetup{
+			cfg: &Setup{
 				ClusterName:          "test",
 				ClusterServerAddress: "192.168.1.1:8080",
 				ClientCertificate:    "/home/apiserver.crt",
@@ -524,7 +524,7 @@ func minikubeConfig(config *api.Config) {
 	// cluster
 	clusterName := "minikube"
 	cluster := api.NewCluster()
-	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(kubeadm.APIServerPort)
+	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(constants.APIServerPort)
 	cluster.CertificateAuthority = "/home/tux/.minikube/apiserver.crt"
 	config.Clusters[clusterName] = cluster
 

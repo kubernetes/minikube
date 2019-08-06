@@ -35,8 +35,8 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
-// KubeConfigSetup is the kubeconfig setup
-type KubeConfigSetup struct {
+// Setup is the kubeconfig setup
+type Setup struct {
 	// The name of the cluster for this context
 	ClusterName string
 
@@ -64,17 +64,17 @@ type KubeConfigSetup struct {
 }
 
 // SetKubeConfigFile sets the kubeconfig file
-func (k *KubeConfigSetup) SetKubeConfigFile(kubeConfigFile string) {
+func (k *Setup) SetKubeConfigFile(kubeConfigFile string) {
 	k.kubeConfigFile.Store(kubeConfigFile)
 }
 
 // GetKubeConfigFile gets the kubeconfig file
-func (k *KubeConfigSetup) GetKubeConfigFile() string {
+func (k *Setup) GetKubeConfigFile() string {
 	return k.kubeConfigFile.Load().(string)
 }
 
 // PopulateKubeConfig populates an api.Config object.
-func PopulateKubeConfig(cfg *KubeConfigSetup, kubecfg *api.Config) error {
+func PopulateKubeConfig(cfg *Setup, kubecfg *api.Config) error {
 	var err error
 	clusterName := cfg.ClusterName
 	cluster := api.NewCluster()
@@ -125,7 +125,7 @@ func PopulateKubeConfig(cfg *KubeConfigSetup, kubecfg *api.Config) error {
 // SetupKubeConfig reads config from disk, adds the minikube settings, and writes it back.
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
-func SetupKubeConfig(cfg *KubeConfigSetup) error {
+func SetupKubeConfig(cfg *Setup) error {
 	glog.Infoln("Using kubeconfig: ", cfg.GetKubeConfigFile())
 
 	// read existing config or create new if does not exist
