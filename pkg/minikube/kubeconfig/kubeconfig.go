@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package kubeconfig
 
 import (
 	"fmt"
@@ -31,6 +31,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	"k8s.io/minikube/pkg/minikube/constants"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // KubeConfigSetup is the kubeconfig setup
@@ -199,7 +201,7 @@ func WriteConfig(config *api.Config, filename string) error {
 	if err := ioutil.WriteFile(filename, data, 0600); err != nil {
 		return errors.Wrapf(err, "Error writing file %s", filename)
 	}
-	if err := MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
+	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
 		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
 	}
 
@@ -225,7 +227,7 @@ func decode(data []byte) (*api.Config, error) {
 // GetKubeConfigStatus verifies the ip stored in kubeconfig.
 func GetKubeConfigStatus(ip net.IP, filename string, machineName string) (bool, error) {
 	if ip == nil {
-		return false, fmt.Errorf("Error, empty ip passed")
+		return false, fmt.Errorf("error, empty ip passed")
 	}
 	kip, err := getIPFromKubeConfig(filename, machineName)
 	if err != nil {
@@ -242,7 +244,7 @@ func GetKubeConfigStatus(ip net.IP, filename string, machineName string) (bool, 
 // UpdateKubeconfigIP overwrites the IP stored in kubeconfig with the provided IP.
 func UpdateKubeconfigIP(ip net.IP, filename string, machineName string) (bool, error) {
 	if ip == nil {
-		return false, fmt.Errorf("Error, empty ip passed")
+		return false, fmt.Errorf("error, empty ip passed")
 	}
 	kip, err := getIPFromKubeConfig(filename, machineName)
 	if err != nil {
@@ -303,11 +305,11 @@ func GetPortFromKubeConfig(filename, machineName string) (int, error) {
 	}
 	kurl, err := url.Parse(cluster.Server)
 	if err != nil {
-		return APIServerPort, nil
+		return constants.APIServerPort, nil
 	}
 	_, kport, err := net.SplitHostPort(kurl.Host)
 	if err != nil {
-		return APIServerPort, nil
+		return constants.APIServerPort, nil
 	}
 	port, err := strconv.Atoi(kport)
 	return port, err
@@ -369,4 +371,13 @@ func DeleteKubeConfigContext(kubeCfgPath, machineName string) error {
 		return errors.Wrap(err, "writing kubeconfig")
 	}
 	return nil
+}
+
+// GetKubeConfigPath gets the path to the first kubeconfig
+func GetKubeConfigPath() string {
+	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
+	if kubeConfigEnv == "" {
+		return constants.KubeconfigPath
+	}
+	return filepath.SplitList(kubeConfigEnv)[0]
 }

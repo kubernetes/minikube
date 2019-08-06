@@ -31,8 +31,8 @@ import (
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
-// APIServerPort is the port that the API server should listen on.
 const (
+	APIServerPort    = 8443
 	APIServerName    = "minikubeCA"
 	ClusterDNSDomain = "cluster.local"
 )

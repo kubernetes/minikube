@@ -33,6 +33,7 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/drivers/none"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
@@ -46,7 +47,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	cmdutil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -97,12 +97,12 @@ const (
 	uuid                  = "uuid"
 	vpnkitSock            = "hyperkit-vpnkit-sock"
 	vsockPorts            = "hyperkit-vsock-ports"
-	embedCerts            = "embed-certs"
-	noVTXCheck            = "no-vtx-check"
-	downloadOnly          = "download-only"
-	dnsProxy              = "dns-proxy"
-	hostDNSResolver       = "host-dns-resolver"
-	waitUntilHealthy      = "wait"
+	// embedCerts            = "embed-certs" //TODO medya
+	noVTXCheck       = "no-vtx-check"
+	downloadOnly     = "download-only"
+	dnsProxy         = "dns-proxy"
+	hostDNSResolver  = "host-dns-resolver"
+	waitUntilHealthy = "wait"
 )
 
 var (
@@ -160,7 +160,7 @@ func initKubernetesFlags() {
 		Valid kubeadm parameters: `+fmt.Sprintf("%s, %s", strings.Join(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], ", "), strings.Join(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], ",")))
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
 	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
-	startCmd.Flags().Int(apiServerPort, pkgutil.APIServerPort, "The apiserver listening port")
+	startCmd.Flags().Int(apiServerPort, constants.APIServerPort, "The apiserver listening port")
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
@@ -306,7 +306,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// setup kube adm and certs and return bootstrapperx
 	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
-	kubeconfig := updateKubeConfig(host, &config)
+	kubeconfig := kubeconfig.Update(host, &config)
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
 	configureMounts()
@@ -401,7 +401,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
+func showKubectlConnectInfo(kubeconfig *kubeconfig.KubeConfigSetup) {
 	if kubeconfig.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kubeconfig.ClusterName})
 	} else {
@@ -811,34 +811,6 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 		exit.WithError("Failed to setup certs", err)
 	}
 	return bs
-}
-
-// updateKubeConfig sets up kubectl
-func updateKubeConfig(h *host.Host, c *cfg.Config) *pkgutil.KubeConfigSetup {
-	addr, err := h.Driver.GetURL()
-	if err != nil {
-		exit.WithError("Failed to get driver URL", err)
-	}
-	addr = strings.Replace(addr, "tcp://", "https://", -1)
-	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
-	if c.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
-	}
-
-	kcs := &pkgutil.KubeConfigSetup{
-		ClusterName:          cfg.GetMachineName(),
-		ClusterServerAddress: addr,
-		ClientCertificate:    constants.MakeMiniPath("client.crt"),
-		ClientKey:            constants.MakeMiniPath("client.key"),
-		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
-		KeepContext:          viper.GetBool(keepContext),
-		EmbedCerts:           viper.GetBool(embedCerts),
-	}
-	kcs.SetKubeConfigFile(cmdutil.GetKubeConfigPath())
-	if err := pkgutil.SetupKubeConfig(kcs); err != nil {
-		exit.WithError("Failed to setup kubeconfig", err)
-	}
-	return kcs
 }
 
 // configureRuntimes does what needs to happen to get a runtime going.

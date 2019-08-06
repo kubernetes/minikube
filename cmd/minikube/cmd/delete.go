@@ -30,9 +30,9 @@ import (
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // deleteCmd represents the delete command
@@ -89,7 +89,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	out.T(out.Crushed, `The "{{.cluster_name}}" cluster has been deleted.`, out.V{"cluster_name": profile})
 
 	machineName := pkg_config.GetMachineName()
-	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
+	if err := kubeconfig.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
 		exit.WithError("update config", err)
 	}
 
