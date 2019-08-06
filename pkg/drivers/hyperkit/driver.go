@@ -272,6 +272,7 @@ func (d *Driver) Start() error {
 
 	// Implement a retry loop without calling any minikube code
 	for i := 0; i < 30; i++ {
+		log.Debugf("Attempt %d", i)
 		err = getIP()
 		if err == nil {
 			break
@@ -279,7 +280,7 @@ func (d *Driver) Start() error {
 		if _, ok := err.(*tempError); !ok {
 			return err
 		}
-		time.Sleep(2)
+		time.Sleep(2 * time.Second)
 	}
 
 	if err != nil {
