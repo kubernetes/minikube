@@ -28,7 +28,7 @@ import (
 )
 
 // Update sets up kubeconfig to be used by kubectl
-func Update(h *host.Host, c *cfg.Config) *KubeConfigSetup {
+func Update(h *host.Host, c *cfg.Config) *Setup {
 	addr, err := h.Driver.GetURL()
 	if err != nil {
 		exit.WithError("Failed to get driver URL", err)
@@ -39,7 +39,7 @@ func Update(h *host.Host, c *cfg.Config) *KubeConfigSetup {
 		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
 	}
 
-	kcs := &KubeConfigSetup{
+	kcs := &Setup{
 		ClusterName:          cfg.GetMachineName(),
 		ClusterServerAddress: addr,
 		ClientCertificate:    constants.MakeMiniPath("client.crt"),

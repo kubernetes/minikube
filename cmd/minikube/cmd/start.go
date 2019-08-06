@@ -401,7 +401,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-func showKubectlConnectInfo(kubeconfig *kubeconfig.KubeConfigSetup) {
+func showKubectlConnectInfo(kubeconfig *kubeconfig.Setup) {
 	if kubeconfig.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kubeconfig.ClusterName})
 	} else {
