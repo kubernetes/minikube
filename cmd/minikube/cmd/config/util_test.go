@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -108,6 +109,29 @@ func TestIsAddonAlreadySet(t *testing.T) {
 		err := isAddonAlreadySet(addon, addonStatus)
 		if err.Error() != expectMsg {
 			t.Errorf("Did not get expected error, \n\n expected: %+v \n\n actual: %+v", expectMsg, err)
+		}
+	}
+}
+
+func TestValidateProfile(t *testing.T) {
+	testCases := []struct {
+		profileName string
+		expectErr   string
+	}{
+		{
+			profileName: "not_so_common",
+			expectErr:   "Profile you are trying to switch is not found",
+		},
+	}
+
+	for _, test := range testCases {
+		profileNam := test.profileName
+		expectedMsg := test.expectErr
+
+		err := ValidateProfile(profileNam)
+		fmt.Println(err.Error())
+		if err.Error() != expectedMsg {
+			t.Errorf("Didnt receive expected message")
 		}
 	}
 }

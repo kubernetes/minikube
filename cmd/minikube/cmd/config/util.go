@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -225,4 +226,32 @@ func EnableOrDisableStorageClasses(name, val string) error {
 	}
 
 	return EnableOrDisableAddon(name, val)
+}
+
+//ValidateProfile checks if the profile user is trying to switch exists, else throws error
+func ValidateProfile(profile string) error {
+	var profileFound bool
+	validProfiles, invalidProfiles, err := pkgConfig.ListProfiles()
+	if err != nil {
+		exit.WithError("Not able to retrieve profile list", err)
+	}
+
+	// handling invalid profiles
+	for _, invalidProf := range invalidProfiles {
+		if profile == invalidProf.Name {
+			return errors.New("You are trying to switch to invalid profile")
+		}
+	}
+
+	// valid profiles if found, setting profileFound to true
+	for _, prof := range validProfiles {
+		if prof.Name == profile {
+			profileFound = true
+			break
+		}
+	}
+	if !profileFound {
+		return errors.New("Profile you are trying to switch is not found")
+	}
+	return nil
 }
