@@ -14,7 +14,7 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 2
+VERSION_MINOR ?= 3
 VERSION_BUILD ?= 0
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
@@ -34,7 +34,7 @@ HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
 # NOTE: "latest" as of 2019-07-12. kube-cross images aren't updated as often as Kubernetes
 BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v1.12.7-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
-KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image
+KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
 
 ISO_BUCKET ?= minikube/iso
 
@@ -43,7 +43,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.16.14
+KERNEL_VERSION ?= 4.15
 
 # Currently *only* used for the KVM_BUILD_IMAGE, see also BUILD_IMAGE above
 GO_VERSION ?= 1.12.7
@@ -57,7 +57,7 @@ GOLINT_GOGC ?= 8
 GOLINT_OPTIONS = --deadline 4m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
 	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
-	  --exclude 'variable on range scope.*in function literal|ifElseChain' 
+	  --exclude 'variable on range scope.*in function literal|ifElseChain'
 
 
 export GO111MODULE := on
@@ -443,7 +443,7 @@ release-minikube: out/minikube checksum
 
 out/docker-machine-driver-kvm2:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	docker pull $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
+	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
 	# make extra sure that we are linking with the older version of libvirt (1.3.1)
 	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
@@ -474,14 +474,14 @@ out/docker-machine-driver-kvm2-$(RPM_VERSION).rpm: out/docker-machine-driver-kvm
 		out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
 	rm -rf out/docker-machine-driver-kvm2-$(RPM_VERSION)
 
-kvm-image: $(KVM_BUILD_IMAGE) # convenient alias to build the docker container
-$(KVM_BUILD_IMAGE): installers/linux/kvm/Dockerfile
-	docker build --build-arg "GO_VERSION=$(GO_VERSION)" -t $@ -f $< $(dir $<)
+.PHONY: kvm-image # convenient alias to build the docker container
+kvm-image: installers/linux/kvm/Dockerfile
+	docker build --build-arg "GO_VERSION=$(GO_VERSION)" -t $(KVM_BUILD_IMAGE) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
 
 kvm_in_docker:
-	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) $(KVM_BUILD_IMAGE)
+	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
 	rm -f out/docker-machine-driver-kvm2
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 

@@ -1,11 +1,10 @@
-
 ---
 title: "Core Tasks"
 linkTitle: "Core Tasks"
 weight: 6
 date: 2017-01-05
 description: >
-  What can your user do with your project?
+  What can you do with minikube?
 ---
 
 {{% pageinfo %}}
@@ -22,4 +21,3 @@ Each task should give the user
 * What this task accomplishes.
 * Instructions for the task. If it involves editing a file, running a command, or writing code, provide code-formatted example snippets to show the user what to do! If there are multiple steps, provide them as a numbered list.
 * If appropriate, links to related concept, tutorial, or example pages.
-

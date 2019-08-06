@@ -136,3 +136,8 @@ func (r *Containerd) StopContainers(ids []string) error {
 func (r *Containerd) ContainerLogCmd(id string, len int, follow bool) string {
 	return criContainerLogCmd(id, len, follow)
 }
+
+// SystemLogCmd returns the command to retrieve system logs
+func (r *Containerd) SystemLogCmd(len int) string {
+	return fmt.Sprintf("sudo journalctl -u containerd -n %d", len)
+}

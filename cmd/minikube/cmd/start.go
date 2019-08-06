@@ -41,6 +41,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
@@ -127,6 +128,12 @@ func init() {
 
 // initMinikubeFlags includes commandline flags for minikube.
 func initMinikubeFlags() {
+	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	// Replaces '-' in flags with '_' in env variables
+	// e.g. iso-url => $ENVPREFIX_ISO_URL
+	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+	viper.AutomaticEnv()
+
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
 	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
 	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
@@ -157,7 +164,6 @@ func initKubernetesFlags() {
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-
 }
 
 // initDriverFlags inits the commandline flags for vm drivers
@@ -206,9 +212,52 @@ var startCmd = &cobra.Command{
 	Run:   runStart,
 }
 
+// platform generates a user-readable platform message
+func platform() string {
+	var s strings.Builder
+
+	// Show the distro version if possible
+	hi, err := gopshost.Info()
+	if err == nil {
+		s.WriteString(fmt.Sprintf("%s %s", strings.Title(hi.Platform), hi.PlatformVersion))
+		glog.Infof("hostinfo: %+v", hi)
+	} else {
+		glog.Warningf("gopshost.Info returned error: %v", err)
+		s.WriteString(runtime.GOOS)
+	}
+
+	vsys, vrole, err := gopshost.Virtualization()
+	if err != nil {
+		glog.Warningf("gopshost.Virtualization returned error: %v", err)
+	} else {
+		glog.Infof("virtualization: %s %s", vsys, vrole)
+	}
+
+	// This environment is exotic, let's output a bit more.
+	if vrole == "guest" || runtime.GOARCH != "amd64" {
+		s.WriteString(fmt.Sprintf(" (%s/%s)", vsys, runtime.GOARCH))
+	}
+	return s.String()
+}
+
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
-	out.T(out.Happy, "minikube {{.version}} on {{.os}} ({{.arch}})", out.V{"version": version.GetVersion(), "os": runtime.GOOS, "arch": runtime.GOARCH})
+	prefix := ""
+	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
+		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
+	}
+	out.T(out.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
+
+	// if --registry-mirror specified when run minikube start,
+	// take arg precedence over MINIKUBE_REGISTRY_MIRROR
+	// actually this is a hack, because viper 1.0.0 can assign env to variable if StringSliceVar
+	// and i can't update it to 1.4.0, it affects too much code
+	// other types (like String, Bool) of flag works, so imageRepository, imageMirrorCountry
+	// can be configured as MINIKUBE_IMAGE_REPOSITORY and IMAGE_MIRROR_COUNTRY
+	// this should be updated to documentation
+	if len(registryMirror) == 0 {
+		registryMirror = viper.GetStringSlice("registry_mirror")
+	}
 
 	vmDriver := viper.GetString(vmDriver)
 	if err := cmdcfg.IsValidDriver(runtime.GOOS, vmDriver); err != nil {
@@ -218,6 +267,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			out.V{"driver": vmDriver, "os": runtime.GOOS},
 		)
 	}
+
 	validateConfig()
 	validateUser()
 	validateDriverVersion(viper.GetString(vmDriver))
@@ -342,7 +392,7 @@ func skipCache(config *cfg.Config) {
 
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
-	out.T(cr.Style(), "Configuring environment for Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}}", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
+	out.T(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
 	for _, v := range dockerOpt {
 		out.T(out.Option, "opt {{.docker_option}}", out.V{"docker_option": v})
 	}
@@ -355,11 +405,7 @@ func showKubectlConnectInfo(kubeconfig *pkgutil.KubeConfigSetup) {
 	if kubeconfig.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kubeconfig.ClusterName})
 	} else {
-		if !viper.GetBool(waitUntilHealthy) {
-			out.T(out.Ready, "kubectl has been configured configured to use {{.name}}", out.V{"name": cfg.GetMachineName()})
-		} else {
-			out.T(out.Ready, "Done! kubectl is now configured to use {{.name}}", out.V{"name": cfg.GetMachineName()})
-		}
+		out.T(out.Ready, `Done! kubectl is now configured to use "{{.name}}"`, out.V{"name": cfg.GetMachineName()})
 	}
 	_, err := exec.LookPath("kubectl")
 	if err != nil {
@@ -742,7 +788,7 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 		return nv, isUpgrade
 	}
 	if nvs.GT(ovs) {
-		out.T(out.ThumbsUp, "minikube will upgrade the local cluster from Kubernetes {{.old}} to {{.new}}", out.V{"old": ovs, "new": nvs})
+		out.T(out.ThumbsUp, "Upgrading from Kubernetes {{.old}} to {{.new}}", out.V{"old": ovs, "new": nvs})
 		isUpgrade = true
 	}
 	return nv, isUpgrade
@@ -828,7 +874,7 @@ func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner c
 	}
 
 	if preexisting {
-		out.T(out.Restarting, "Relaunching Kubernetes {{.version}} using {{.bootstrapper}} ... ", out.V{"version": kc.KubernetesVersion, "bootstrapper": bsName})
+		out.T(out.Restarting, "Relaunching Kubernetes using {{.bootstrapper}} ... ", out.V{"bootstrapper": bsName})
 		if err := bs.RestartCluster(kc); err != nil {
 			exit.WithLogEntries("Error restarting cluster", err, logs.FindProblems(r, bs, runner))
 		}

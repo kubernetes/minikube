@@ -3,7 +3,7 @@
 [![BuildStatus Widget]][BuildStatus Result]
 [![GoReport Widget]][GoReport Status]
 
-[BuildStatus Result]: https://travis-ci.org/kubernetes/minikube/branches
+[BuildStatus Result]: https://travis-ci.org/kubernetes/minikube
 [BuildStatus Widget]: https://travis-ci.org/kubernetes/minikube.svg?branch=master
 
 [GoReport Status]: https://goreportcard.com/report/github.com/kubernetes/minikube
@@ -23,9 +23,7 @@ minikube's [primary goals](https://github.com/kubernetes/minikube/blob/master/do
 
 :mega: **Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A)** so that we can learn how & why you use minikube, and what improvements we should make. Thank you! :dancers:
 
-* 2019-06-24 - v1.2.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.2.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-120---2019-06-24)]
-* 2019-06-07 - v1.1.1 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.1.1)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-111---2019-06-07)]
-* 2019-05-21 - v1.1.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.1.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-110---2019-05-21)]
+* 2019-08-05 - v1.3.0 released! [[download](https://github.com/kubernetes/minikube/releases/tag/v1.3.0)] [[release notes](https://github.com/kubernetes/minikube/blob/master/CHANGELOG.md#version-130---2019-08-05)]
 
 ## Features
 
