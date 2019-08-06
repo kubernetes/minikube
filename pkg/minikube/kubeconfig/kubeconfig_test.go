@@ -160,7 +160,7 @@ func TestSetupKubeConfig(t *testing.T) {
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
 			}
-			config, err := ReadConfigOrNew(test.cfg.GetKubeConfigFile())
+			config, err := readOrNew(test.cfg.GetKubeConfigFile())
 			if err != nil {
 				t.Errorf("Error reading kubeconfig file: %v", err)
 			}
@@ -291,7 +291,7 @@ func TestEmptyConfig(t *testing.T) {
 	tmp := tempFile(t, []byte{})
 	defer os.Remove(tmp)
 
-	cfg, err := ReadConfigOrNew(tmp)
+	cfg, err := readOrNew(tmp)
 	if err != nil {
 		t.Fatalf("could not read config: %v", err)
 	}
@@ -322,12 +322,12 @@ func TestNewConfig(t *testing.T) {
 
 	// write actual
 	filename := filepath.Join(dir, "config")
-	err = WriteConfig(expected, filename)
+	err = writeToFile(expected, filename)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	actual, err := ReadConfigOrNew(filename)
+	actual, err := readOrNew(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -379,7 +379,7 @@ func TestDeleteKubeConfigContext(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	cfg, err := ReadConfigOrNew(configFilename)
+	cfg, err := readOrNew(configFilename)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -406,7 +406,7 @@ func TestSetCurrentContext(t *testing.T) {
 	}
 	defer os.Remove(kubeConfigFile.Name())
 
-	cfg, err := ReadConfigOrNew(kubeConfigFile.Name())
+	cfg, err := readOrNew(kubeConfigFile.Name())
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
@@ -426,7 +426,7 @@ func TestSetCurrentContext(t *testing.T) {
 		}
 	}()
 
-	cfg, err = ReadConfigOrNew(kubeConfigFile.Name())
+	cfg, err = readOrNew(kubeConfigFile.Name())
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
@@ -440,7 +440,7 @@ func TestUnsetCurrentContext(t *testing.T) {
 	kubeConfigFile := "./testdata/kubeconfig/config1"
 	contextName := "minikube"
 
-	cfg, err := ReadConfigOrNew(kubeConfigFile)
+	cfg, err := readOrNew(kubeConfigFile)
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
@@ -460,7 +460,7 @@ func TestUnsetCurrentContext(t *testing.T) {
 		}
 	}()
 
-	cfg, err = ReadConfigOrNew(kubeConfigFile)
+	cfg, err = readOrNew(kubeConfigFile)
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
@@ -474,7 +474,7 @@ func TestUnsetCurrentContextOnlyChangesIfProfileIsTheCurrentContext(t *testing.T
 	contextName := "minikube"
 	kubeConfigFile := "./testdata/kubeconfig/config2"
 
-	cfg, err := ReadConfigOrNew(kubeConfigFile)
+	cfg, err := readOrNew(kubeConfigFile)
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
@@ -488,7 +488,7 @@ func TestUnsetCurrentContextOnlyChangesIfProfileIsTheCurrentContext(t *testing.T
 		t.Fatalf("Error not expected but got %v", err)
 	}
 
-	cfg, err = ReadConfigOrNew(kubeConfigFile)
+	cfg, err = readOrNew(kubeConfigFile)
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
