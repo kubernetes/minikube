@@ -93,12 +93,3 @@ func KillMountProcess() error {
 	}
 	return nil
 }
-
-// GetKubeConfigPath gets the path to the first kubeconfig
-func GetKubeConfigPath() string {
-	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
-	if kubeConfigEnv == "" {
-		return constants.KubeconfigPath
-	}
-	return filepath.SplitList(kubeConfigEnv)[0]
-}

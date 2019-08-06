@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package kubeconfig
 
 import (
 	"io/ioutil"
@@ -25,6 +25,9 @@ import (
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
+
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var fakeKubeCfg = []byte(`
@@ -521,7 +524,7 @@ func minikubeConfig(config *api.Config) {
 	// cluster
 	clusterName := "minikube"
 	cluster := api.NewCluster()
-	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(APIServerPort)
+	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(kubeadm.APIServerPort)
 	cluster.CertificateAuthority = "/home/tux/.minikube/apiserver.crt"
 	config.Clusters[clusterName] = cluster
 
@@ -662,4 +665,27 @@ func contextEquals(aContext, bContext *api.Context) bool {
 		return false
 	}
 	return true
+}
+
+func TestGetKubeConfigPath(t *testing.T) {
+	var tests = []struct {
+		input string
+		want  string
+	}{
+		{
+			input: "/home/fake/.kube/.kubeconfig",
+			want:  "/home/fake/.kube/.kubeconfig",
+		},
+		{
+			input: "/home/fake/.kube/.kubeconfig:/home/fake2/.kubeconfig",
+			want:  "/home/fake/.kube/.kubeconfig",
+		},
+	}
+
+	for _, test := range tests {
+		os.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
+		if result := GetKubeConfigPath(); result != test.want {
+			t.Errorf("Expected first splitted chunk, got: %s", result)
+		}
+	}
 }

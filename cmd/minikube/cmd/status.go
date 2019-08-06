@@ -25,14 +25,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 var statusFormat string
@@ -93,10 +92,10 @@ var statusCmd = &cobra.Command{
 				glog.Errorln("Error host driver ip status:", err)
 			}
 
-			apiserverPort, err := pkgutil.GetPortFromKubeConfig(util.GetKubeConfigPath(), config.GetMachineName())
+			apiserverPort, err := kubeconfig.GetPortFromKubeConfig(kubeconfig.GetKubeConfigPath(), config.GetMachineName())
 			if err != nil {
 				// Fallback to presuming default apiserver port
-				apiserverPort = pkgutil.APIServerPort
+				apiserverPort = constants.APIServerPort
 			}
 
 			apiserverSt, err = clusterBootstrapper.GetAPIServerStatus(ip, apiserverPort)
@@ -106,7 +105,7 @@ var statusCmd = &cobra.Command{
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ks, err := pkgutil.GetKubeConfigStatus(ip, util.GetKubeConfigPath(), config.GetMachineName())
+			ks, err := kubeconfig.GetKubeConfigStatus(ip, kubeconfig.GetKubeConfigPath(), config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
 			}
