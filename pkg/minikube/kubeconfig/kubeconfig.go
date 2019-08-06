@@ -24,7 +24,6 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
-	"sync/atomic"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -34,44 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
-
-// Setup is the kubeconfig setup
-type Setup struct {
-	// The name of the cluster for this context
-	ClusterName string
-
-	// ClusterServerAddress is the address of the kubernetes cluster
-	ClusterServerAddress string
-
-	// ClientCertificate is the path to a client cert file for TLS.
-	ClientCertificate string
-
-	// CertificateAuthority is the path to a cert file for the certificate authority.
-	CertificateAuthority string
-
-	// ClientKey is the path to a client key file for TLS.
-	ClientKey string
-
-	// Should the current context be kept when setting up this one
-	KeepContext bool
-
-	// Should the certificate files be embedded instead of referenced by path
-	EmbedCerts bool
-
-	// kubeConfigFile is the path where the kube config is stored
-	// Only access this with atomic ops
-	kubeConfigFile atomic.Value
-}
-
-// SetKubeConfigFile sets the kubeconfig file
-func (k *Setup) SetKubeConfigFile(kubeConfigFile string) {
-	k.kubeConfigFile.Store(kubeConfigFile)
-}
-
-// GetKubeConfigFile gets the kubeconfig file
-func (k *Setup) GetKubeConfigFile() string {
-	return k.kubeConfigFile.Load().(string)
-}
 
 // PopulateKubeConfig populates an api.Config object.
 func PopulateKubeConfig(cfg *Setup, kubecfg *api.Config) error {
@@ -129,7 +90,7 @@ func SetupKubeConfig(cfg *Setup) error {
 	glog.Infoln("Using kubeconfig: ", cfg.GetKubeConfigFile())
 
 	// read existing config or create new if does not exist
-	config, err := ReadConfigOrNew(cfg.GetKubeConfigFile())
+	config, err := readOrNew(cfg.GetKubeConfigFile())
 	if err != nil {
 		return err
 	}
@@ -140,15 +101,15 @@ func SetupKubeConfig(cfg *Setup) error {
 	}
 
 	// write back to disk
-	if err := WriteConfig(config, cfg.GetKubeConfigFile()); err != nil {
+	if err := writeToFile(config, cfg.GetKubeConfigFile()); err != nil {
 		return errors.Wrap(err, "writing kubeconfig")
 	}
 	return nil
 }
 
-// ReadConfigOrNew retrieves Kubernetes client configuration from a file.
+// readOrNew retrieves Kubernetes client configuration from a file.
 // If no files exists, an empty configuration is returned.
-func ReadConfigOrNew(filename string) (*api.Config, error) {
+func readOrNew(filename string) (*api.Config, error) {
 	data, err := ioutil.ReadFile(filename)
 	if os.IsNotExist(err) {
 		return api.NewConfig(), nil
@@ -176,9 +137,19 @@ func ReadConfigOrNew(filename string) (*api.Config, error) {
 	return config, nil
 }
 
+<<<<<<< HEAD
 // WriteConfig encodes the configuration and writes it to the given file.
 // If the file exists, its contents will be overwritten.
 func WriteConfig(config *api.Config, filename string) error {
+||||||| merged common ancestors
+// WriteConfig encodes the configuration and writes it to the given file.
+// If the file exists, it's contents will be overwritten.
+func WriteConfig(config *api.Config, filename string) error {
+=======
+// writeToFile encodes the configuration and writes it to the given file.
+// If the file exists, it's contents will be overwritten.
+func writeToFile(config runtime.Object, filename string) error {
+>>>>>>> statisfy lint interfacer
 	if config == nil {
 		glog.Errorf("could not write to '%s': config can't be nil", filename)
 	}
@@ -257,13 +228,13 @@ func UpdateKubeconfigIP(ip net.IP, filename string, machineName string) (bool, e
 	if err != nil {
 		return false, err
 	}
-	con, err := ReadConfigOrNew(filename)
+	con, err := readOrNew(filename)
 	if err != nil {
 		return false, errors.Wrap(err, "Error getting kubeconfig status")
 	}
 	// Safe to lookup server because if field non-existent getIPFromKubeconfig would have given an error
 	con.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(kport)
-	err = WriteConfig(con, filename)
+	err = writeToFile(con, filename)
 	if err != nil {
 		return false, err
 	}
@@ -273,7 +244,7 @@ func UpdateKubeconfigIP(ip net.IP, filename string, machineName string) (bool, e
 
 // getIPFromKubeConfig returns the IP address stored for minikube in the kubeconfig specified
 func getIPFromKubeConfig(filename, machineName string) (net.IP, error) {
-	con, err := ReadConfigOrNew(filename)
+	con, err := readOrNew(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting kubeconfig status")
 	}
@@ -295,7 +266,7 @@ func getIPFromKubeConfig(filename, machineName string) (net.IP, error) {
 
 // GetPortFromKubeConfig returns the Port number stored for minikube in the kubeconfig specified
 func GetPortFromKubeConfig(filename, machineName string) (int, error) {
-	con, err := ReadConfigOrNew(filename)
+	con, err := readOrNew(filename)
 	if err != nil {
 		return 0, errors.Wrap(err, "Error getting kubeconfig status")
 	}
@@ -317,7 +288,7 @@ func GetPortFromKubeConfig(filename, machineName string) (int, error) {
 
 // UnsetCurrentContext unsets the current-context from minikube to "" on minikube stop
 func UnsetCurrentContext(filename, machineName string) error {
-	confg, err := ReadConfigOrNew(filename)
+	confg, err := readOrNew(filename)
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubeconfig status")
 	}
@@ -325,7 +296,7 @@ func UnsetCurrentContext(filename, machineName string) error {
 	// Unset current-context only if profile is the current-context
 	if confg.CurrentContext == machineName {
 		confg.CurrentContext = ""
-		if err := WriteConfig(confg, filename); err != nil {
+		if err := writeToFile(confg, filename); err != nil {
 			return errors.Wrap(err, "writing kubeconfig")
 		}
 		return nil
@@ -336,12 +307,12 @@ func UnsetCurrentContext(filename, machineName string) error {
 
 // SetCurrentContext sets the kubectl's current-context
 func SetCurrentContext(kubeCfgPath, name string) error {
-	kcfg, err := ReadConfigOrNew(kubeCfgPath)
+	kcfg, err := readOrNew(kubeCfgPath)
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubeconfig status")
 	}
 	kcfg.CurrentContext = name
-	if err := WriteConfig(kcfg, kubeCfgPath); err != nil {
+	if err := writeToFile(kcfg, kubeCfgPath); err != nil {
 		return errors.Wrap(err, "writing kubeconfig")
 	}
 	return nil
@@ -349,7 +320,7 @@ func SetCurrentContext(kubeCfgPath, name string) error {
 
 // DeleteKubeConfigContext deletes the specified machine's kubeconfig context
 func DeleteKubeConfigContext(kubeCfgPath, machineName string) error {
-	kcfg, err := ReadConfigOrNew(kubeCfgPath)
+	kcfg, err := readOrNew(kubeCfgPath)
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubeconfig status")
 	}
@@ -367,7 +338,7 @@ func DeleteKubeConfigContext(kubeCfgPath, machineName string) error {
 		kcfg.CurrentContext = ""
 	}
 
-	if err := WriteConfig(kcfg, kubeCfgPath); err != nil {
+	if err := writeToFile(kcfg, kubeCfgPath); err != nil {
 		return errors.Wrap(err, "writing kubeconfig")
 	}
 	return nil
