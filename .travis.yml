@@ -1,6 +1,8 @@
 language: go
 os: linux
 
+env:
+  - GOPROXY=https://goproxy.golang.org
 matrix:
   include:
     - go: 1.12.7
