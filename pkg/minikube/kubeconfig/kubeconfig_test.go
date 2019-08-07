@@ -147,9 +147,9 @@ func TestSetupKubeConfig(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error making temp directory %v", err)
 			}
-			test.cfg.SetKubeConfigFile(filepath.Join(tmpDir, "kubeconfig"))
+			test.cfg.setPath(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
-				if err := ioutil.WriteFile(test.cfg.GetKubeConfigFile(), test.existingCfg, 0600); err != nil {
+				if err := ioutil.WriteFile(test.cfg.fileContent(), test.existingCfg, 0600); err != nil {
 					t.Fatalf("WriteFile: %v", err)
 				}
 			}
@@ -160,7 +160,7 @@ func TestSetupKubeConfig(t *testing.T) {
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
 			}
-			config, err := readOrNew(test.cfg.GetKubeConfigFile())
+			config, err := readOrNew(test.cfg.fileContent())
 			if err != nil {
 				t.Errorf("Error reading kubeconfig file: %v", err)
 			}
@@ -230,7 +230,7 @@ func TestGetKubeConfigStatus(t *testing.T) {
 	}
 }
 
-func TestUpdateKubeconfigIP(t *testing.T) {
+func TestUpdateIP(t *testing.T) {
 
 	var tests = []struct {
 		description string
@@ -272,7 +272,7 @@ func TestUpdateKubeconfigIP(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := UpdateKubeconfigIP(test.ip, configFilename, "minikube")
+			statusActual, err := UpdateIP(test.ip, configFilename, "minikube")
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -359,7 +359,7 @@ func TestGetIPFromKubeConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			configFilename := tempFile(t, test.cfg)
-			ip, err := getIPFromKubeConfig(configFilename, "minikube")
+			ip, err := extractIP(configFilename, "minikube")
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -684,7 +684,7 @@ func TestGetKubeConfigPath(t *testing.T) {
 
 	for _, test := range tests {
 		os.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
-		if result := GetKubeConfigPath(); result != test.want {
+		if result := Path(); result != test.want {
 			t.Errorf("Expected first splitted chunk, got: %s", result)
 		}
 	}

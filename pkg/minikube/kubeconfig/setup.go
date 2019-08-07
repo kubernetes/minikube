@@ -47,11 +47,11 @@ type Setup struct {
 }
 
 // SetKubeConfigFile sets the kubeconfig file
-func (k *Setup) SetKubeConfigFile(kubeConfigFile string) {
+func (k *Setup) setPath(kubeConfigFile string) {
 	k.kubeConfigFile.Store(kubeConfigFile)
 }
 
-// GetKubeConfigFile gets the kubeconfig file
-func (k *Setup) GetKubeConfigFile() string {
+// fileContent gets the kubeconfig file
+func (k *Setup) fileContent() string {
 	return k.kubeConfigFile.Load().(string)
 }
