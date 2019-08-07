@@ -27,7 +27,7 @@ set -e
 
 OS_ARCH="linux-amd64"
 VM_DRIVER="kvm2"
-JOB_NAME="Linux-KVM"
+JOB_NAME="KVM_Linux"
 PARALLEL_COUNT=4
 
 # Download files and set permissions
