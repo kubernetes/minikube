@@ -307,7 +307,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
 
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
-	kubeconfig := setupKubeconfig(host, &config)
+	kubeconfig, err := setupKubeconfig(host, &config)
+	if err != nil {
+		exit.WithError("Failed to setup kubeconfig", err)
+	}
 
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
@@ -326,12 +329,12 @@ func runStart(cmd *cobra.Command, args []string) {
 
 }
 
-func setupKubeconfig(host *host.Host, config *cfg.Config) *kubeconfig.Setup {
+func setupKubeconfig(host *host.Host, config *cfg.Config) (*kubeconfig.Setup, error) {
 	addr, err := host.Driver.GetURL()
 	if err != nil {
 		exit.WithError("Failed to get host URL", err)
 	}
-	return kubeconfig.Update(addr, config)
+	return kubeconfig.Setup(addr, config)
 }
 
 func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {

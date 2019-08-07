@@ -97,7 +97,7 @@ users:
 `)
 
 func Test_update(t *testing.T) {
-	setupCfg := &Setup{
+	setupCfg := &KCS{
 		ClusterName:          "test",
 		ClusterServerAddress: "192.168.1.1:8080",
 		ClientCertificate:    "/home/apiserver.crt",
@@ -108,7 +108,7 @@ func Test_update(t *testing.T) {
 
 	var tests = []struct {
 		description string
-		cfg         *Setup
+		cfg         *KCS
 		existingCfg []byte
 		expected    api.Config
 		err         bool
@@ -128,7 +128,7 @@ func Test_update(t *testing.T) {
 		},
 		{
 			description: "keep context",
-			cfg: &Setup{
+			cfg: &KCS{
 				ClusterName:          "test",
 				ClusterServerAddress: "192.168.1.1:8080",
 				ClientCertificate:    "/home/apiserver.crt",
