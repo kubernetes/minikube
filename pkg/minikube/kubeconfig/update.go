@@ -48,7 +48,7 @@ func Update(h *host.Host, c *cfg.Config) *Setup {
 		KeepContext:          viper.GetBool("keep-context"),
 		EmbedCerts:           viper.GetBool("embed-certs"),
 	}
-	kcs.SetKubeConfigFile(GetKubeConfigPath())
+	kcs.setPath(Path())
 	if err := SetupKubeConfig(kcs); err != nil {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
