@@ -13,13 +13,14 @@ minikube defaults to the latest stable version of Kubernetes. You may select a d
 
 minikube follows the [Kubernetes Version and Version Skew Support Policy](https://kubernetes.io/docs/setup/version-skew-policy/), so we guarantee support for the latest build for the last 3 minor Kubernetes releases. When practical, minikube extends this policy two additional minor releases so that users can emulate legacy environments.
 
-As of April 2019, this means that minikube supports and actively tests against the latest builds of:
+As of August 2019, this means that minikube supports and actively tests against the latest builds of:
 
-* v1.14 (default)
-* v1.13
-* v1.12
-* v1.11 (best effort)
-* v1.10 (best effort)
+* v1.15.x (default)
+* v1.14.x
+* v1.13.x
+* v1.12.x
+* v1.11.x (best effort)
+* v1.10.x (best effort)
 
 For more up to date information, see `OldestKubernetesVersion` and `NewestKubernetesVersion` in [constants.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/constants/constants.go)
 
