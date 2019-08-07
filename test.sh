@@ -19,7 +19,7 @@ set -eu -o pipefail
 exitcode=0
 
 echo "= go mod ================================================================"
-export GOPROXY=proxy.golang.org
+export GOPROXY=http://proxy.golang.org
 go mod download 2>&1 | grep -v "go: finding" || true
 go mod tidy -v && echo ok || ((exitcode += 2))
 
