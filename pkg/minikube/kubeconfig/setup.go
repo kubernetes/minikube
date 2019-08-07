@@ -16,7 +16,12 @@ limitations under the License.
 
 package kubeconfig
 
-import "sync/atomic"
+import (
+	"io/ioutil"
+	"sync/atomic"
+
+	"k8s.io/client-go/tools/clientcmd/api"
+)
 
 // Setup is the kubeconfig setup
 type Setup struct {
@@ -54,4 +59,53 @@ func (k *Setup) setPath(kubeConfigFile string) {
 // fileContent gets the kubeconfig file
 func (k *Setup) fileContent() string {
 	return k.kubeConfigFile.Load().(string)
+}
+
+// Populate populates an api.Config object with values from *Setup
+func Populate(cfg *Setup, apiCfg *api.Config) error {
+	var err error
+	clusterName := cfg.ClusterName
+	cluster := api.NewCluster()
+	cluster.Server = cfg.ClusterServerAddress
+	if cfg.EmbedCerts {
+		cluster.CertificateAuthorityData, err = ioutil.ReadFile(cfg.CertificateAuthority)
+		if err != nil {
+			return err
+		}
+	} else {
+		cluster.CertificateAuthority = cfg.CertificateAuthority
+	}
+	apiCfg.Clusters[clusterName] = cluster
+
+	// user
+	userName := cfg.ClusterName
+	user := api.NewAuthInfo()
+	if cfg.EmbedCerts {
+		user.ClientCertificateData, err = ioutil.ReadFile(cfg.ClientCertificate)
+		if err != nil {
+			return err
+		}
+		user.ClientKeyData, err = ioutil.ReadFile(cfg.ClientKey)
+		if err != nil {
+			return err
+		}
+	} else {
+		user.ClientCertificate = cfg.ClientCertificate
+		user.ClientKey = cfg.ClientKey
+	}
+	apiCfg.AuthInfos[userName] = user
+
+	// context
+	contextName := cfg.ClusterName
+	context := api.NewContext()
+	context.Cluster = cfg.ClusterName
+	context.AuthInfo = userName
+	apiCfg.Contexts[contextName] = context
+
+	// Only set current context to minikube if the user has not used the keepContext flag
+	if !cfg.KeepContext {
+		apiCfg.CurrentContext = cfg.ClusterName
+	}
+
+	return nil
 }

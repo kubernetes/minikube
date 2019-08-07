@@ -34,55 +34,6 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
-// PopulateKubeConfig populates an api.Config object.
-func PopulateKubeConfig(cfg *Setup, kubecfg *api.Config) error {
-	var err error
-	clusterName := cfg.ClusterName
-	cluster := api.NewCluster()
-	cluster.Server = cfg.ClusterServerAddress
-	if cfg.EmbedCerts {
-		cluster.CertificateAuthorityData, err = ioutil.ReadFile(cfg.CertificateAuthority)
-		if err != nil {
-			return err
-		}
-	} else {
-		cluster.CertificateAuthority = cfg.CertificateAuthority
-	}
-	kubecfg.Clusters[clusterName] = cluster
-
-	// user
-	userName := cfg.ClusterName
-	user := api.NewAuthInfo()
-	if cfg.EmbedCerts {
-		user.ClientCertificateData, err = ioutil.ReadFile(cfg.ClientCertificate)
-		if err != nil {
-			return err
-		}
-		user.ClientKeyData, err = ioutil.ReadFile(cfg.ClientKey)
-		if err != nil {
-			return err
-		}
-	} else {
-		user.ClientCertificate = cfg.ClientCertificate
-		user.ClientKey = cfg.ClientKey
-	}
-	kubecfg.AuthInfos[userName] = user
-
-	// context
-	contextName := cfg.ClusterName
-	context := api.NewContext()
-	context.Cluster = cfg.ClusterName
-	context.AuthInfo = userName
-	kubecfg.Contexts[contextName] = context
-
-	// Only set current context to minikube if the user has not used the keepContext flag
-	if !cfg.KeepContext {
-		kubecfg.CurrentContext = cfg.ClusterName
-	}
-
-	return nil
-}
-
 // VeryifyMachineIP verifies the ip stored in kubeconfig.
 func VeryifyMachineIP(ip net.IP, filename string, machineName string) (bool, error) {
 	if ip == nil {
