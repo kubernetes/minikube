@@ -54,8 +54,8 @@ func SetCurrentContext(kubeCfgPath, name string) error {
 	return nil
 }
 
-// DeleteKubeConfigContext deletes the specified machine's kubeconfig context
-func DeleteKubeConfigContext(kubeCfgPath, machineName string) error {
+// DeleteContext deletes the specified machine's kubeconfig context
+func DeleteContext(kubeCfgPath, machineName string) error {
 	kcfg, err := readOrNew(kubeCfgPath)
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubeconfig status")
