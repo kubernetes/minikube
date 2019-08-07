@@ -32,7 +32,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/kubernetes/pkg/scheduler/api/latest"
+	"k8s.io/client-go/tools/clientcmd/api/latest"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
