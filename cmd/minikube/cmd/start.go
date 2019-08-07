@@ -305,8 +305,10 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// setup kube adm and certs and return bootstrapperx
 	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
+
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
-	kubeconfig := kubeconfig.Update(host, &config)
+	kubeconfig := setupKubeconfig(host, &config)
+
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
 	configureMounts()
@@ -322,6 +324,14 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	showKubectlConnectInfo(kubeconfig)
 
+}
+
+func setupKubeconfig(host *host.Host, config *cfg.Config) *kubeconfig.Setup {
+	addr, err := host.Driver.GetURL()
+	if err != nil {
+		exit.WithError("Failed to get host URL", err)
+	}
+	return kubeconfig.Update(addr, config)
 }
 
 func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {

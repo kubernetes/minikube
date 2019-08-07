@@ -26,7 +26,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -40,20 +39,16 @@ import (
 )
 
 // Update sets up kubeconfig to be used by kubectl
-func Update(h *host.Host, c *cfg.Config) *Setup {
-	addr, err := h.Driver.GetURL()
-	if err != nil {
-		exit.WithError("Failed to get driver URL", err)
-	}
-	addr = strings.Replace(addr, "tcp://", "https://", -1)
-	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
+func Update(clusterURL string, c *cfg.Config) *Setup {
+	clusterURL = strings.Replace(clusterURL, "tcp://", "https://", -1)
+	clusterURL = strings.Replace(clusterURL, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
 	if c.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
+		clusterURL = strings.Replace(clusterURL, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
 	}
 
 	kcs := &Setup{
 		ClusterName:          cfg.GetMachineName(),
-		ClusterServerAddress: addr,
+		ClusterServerAddress: clusterURL,
 		ClientCertificate:    constants.MakeMiniPath("client.crt"),
 		ClientKey:            constants.MakeMiniPath("client.key"),
 		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
