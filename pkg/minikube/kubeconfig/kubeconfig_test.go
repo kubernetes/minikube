@@ -337,7 +337,7 @@ func TestNewConfig(t *testing.T) {
 	}
 }
 
-func TestGetIPFromKubeConfig(t *testing.T) {
+func Test_extractIP(t *testing.T) {
 
 	var tests = []struct {
 		description string
