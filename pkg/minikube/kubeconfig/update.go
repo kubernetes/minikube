@@ -17,10 +17,14 @@ limitations under the License.
 package kubeconfig
 
 import (
+	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
 	"github.com/docker/machine/libmachine/host"
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -49,8 +53,62 @@ func Update(h *host.Host, c *cfg.Config) *Setup {
 		EmbedCerts:           viper.GetBool("embed-certs"),
 	}
 	kcs.setPath(Path())
-	if err := SetupKubeConfig(kcs); err != nil {
+	if err := update(kcs); err != nil {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
 	return kcs
+}
+
+// update reads config from disk, adds the minikube settings, and writes it back.
+// activeContext is true when minikube is the CurrentContext
+// If no CurrentContext is set, the given name will be used.
+func update(cfg *Setup) error {
+	glog.Infoln("Using kubeconfig: ", cfg.fileContent())
+
+	// read existing config or create new if does not exist
+	config, err := readOrNew(cfg.fileContent())
+	if err != nil {
+		return err
+	}
+
+	err = PopulateKubeConfig(cfg, config)
+	if err != nil {
+		return err
+	}
+
+	// write back to disk
+	if err := writeToFile(config, cfg.fileContent()); err != nil {
+		return errors.Wrap(err, "writing kubeconfig")
+	}
+	return nil
+}
+
+// UpdateIP overwrites the IP stored in kubeconfig with the provided IP.
+func UpdateIP(ip net.IP, filename string, machineName string) (bool, error) {
+	if ip == nil {
+		return false, fmt.Errorf("error, empty ip passed")
+	}
+	kip, err := extractIP(filename, machineName)
+	if err != nil {
+		return false, err
+	}
+	if kip.Equal(ip) {
+		return false, nil
+	}
+	kport, err := Port(filename, machineName)
+	if err != nil {
+		return false, err
+	}
+	con, err := readOrNew(filename)
+	if err != nil {
+		return false, errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	// Safe to lookup server because if field non-existent getIPFromKubeconfig would have given an error
+	con.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(kport)
+	err = writeToFile(con, filename)
+	if err != nil {
+		return false, err
+	}
+	// Kubeconfig IP reconfigured
+	return true, nil
 }

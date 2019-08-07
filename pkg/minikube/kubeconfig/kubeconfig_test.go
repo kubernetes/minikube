@@ -96,7 +96,7 @@ users:
     client-key: /home/la-croix/apiserver.key
 `)
 
-func TestSetupKubeConfig(t *testing.T) {
+func Test_update(t *testing.T) {
 	setupCfg := &Setup{
 		ClusterName:          "test",
 		ClusterServerAddress: "192.168.1.1:8080",
@@ -153,7 +153,7 @@ func TestSetupKubeConfig(t *testing.T) {
 					t.Fatalf("WriteFile: %v", err)
 				}
 			}
-			err = SetupKubeConfig(test.cfg)
+			err = update(test.cfg)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -177,7 +177,7 @@ func TestSetupKubeConfig(t *testing.T) {
 	}
 }
 
-func TestGetKubeConfigStatus(t *testing.T) {
+func TestVeryifyMachineIP(t *testing.T) {
 
 	var tests = []struct {
 		description string
@@ -215,7 +215,7 @@ func TestGetKubeConfigStatus(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := GetKubeConfigStatus(test.ip, configFilename, "minikube")
+			statusActual, err := VeryifyMachineIP(test.ip, configFilename, "minikube")
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -370,131 +370,6 @@ func TestGetIPFromKubeConfig(t *testing.T) {
 				t.Errorf("IP returned: %s does not match ip given: %s", ip, test.ip)
 			}
 		})
-	}
-}
-
-func TestDeleteKubeConfigContext(t *testing.T) {
-	configFilename := tempFile(t, fakeKubeCfg)
-	if err := DeleteKubeConfigContext(configFilename, "la-croix"); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg, err := readOrNew(configFilename)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(cfg.AuthInfos) != 0 {
-		t.Fail()
-	}
-
-	if len(cfg.Clusters) != 0 {
-		t.Fail()
-	}
-
-	if len(cfg.Contexts) != 0 {
-		t.Fail()
-	}
-}
-
-func TestSetCurrentContext(t *testing.T) {
-	contextName := "minikube"
-
-	kubeConfigFile, err := ioutil.TempFile("/tmp", "kubeconfig")
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-	defer os.Remove(kubeConfigFile.Name())
-
-	cfg, err := readOrNew(kubeConfigFile.Name())
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != "" {
-		t.Errorf("Expected empty context but got %v", cfg.CurrentContext)
-	}
-
-	err = SetCurrentContext(kubeConfigFile.Name(), contextName)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-	defer func() {
-		err := UnsetCurrentContext(kubeConfigFile.Name(), contextName)
-		if err != nil {
-			t.Fatalf("Error not expected but got %v", err)
-		}
-	}()
-
-	cfg, err = readOrNew(kubeConfigFile.Name())
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != contextName {
-		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
-	}
-}
-
-func TestUnsetCurrentContext(t *testing.T) {
-	kubeConfigFile := "./testdata/kubeconfig/config1"
-	contextName := "minikube"
-
-	cfg, err := readOrNew(kubeConfigFile)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != contextName {
-		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
-	}
-
-	err = UnsetCurrentContext(kubeConfigFile, contextName)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-	defer func() {
-		err := SetCurrentContext(kubeConfigFile, contextName)
-		if err != nil {
-			t.Fatalf("Error not expected but got %v", err)
-		}
-	}()
-
-	cfg, err = readOrNew(kubeConfigFile)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != "" {
-		t.Errorf("Expected empty context but got %v", cfg.CurrentContext)
-	}
-}
-
-func TestUnsetCurrentContextOnlyChangesIfProfileIsTheCurrentContext(t *testing.T) {
-	contextName := "minikube"
-	kubeConfigFile := "./testdata/kubeconfig/config2"
-
-	cfg, err := readOrNew(kubeConfigFile)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != contextName {
-		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
-	}
-
-	err = UnsetCurrentContext(kubeConfigFile, "differentContextName")
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	cfg, err = readOrNew(kubeConfigFile)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != contextName {
-		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
 	}
 }
 

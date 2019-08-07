@@ -83,28 +83,52 @@ func PopulateKubeConfig(cfg *Setup, kubecfg *api.Config) error {
 	return nil
 }
 
-// SetupKubeConfig reads config from disk, adds the minikube settings, and writes it back.
-// activeContext is true when minikube is the CurrentContext
-// If no CurrentContext is set, the given name will be used.
-func SetupKubeConfig(cfg *Setup) error {
-	glog.Infoln("Using kubeconfig: ", cfg.fileContent())
-
-	// read existing config or create new if does not exist
-	config, err := readOrNew(cfg.fileContent())
+// VeryifyMachineIP verifies the ip stored in kubeconfig.
+func VeryifyMachineIP(ip net.IP, filename string, machineName string) (bool, error) {
+	if ip == nil {
+		return false, fmt.Errorf("error, empty ip passed")
+	}
+	kip, err := extractIP(filename, machineName)
 	if err != nil {
-		return err
+		return false, err
 	}
+	if kip.Equal(ip) {
+		return true, nil
+	}
+	// Kubeconfig IP misconfigured
+	return false, nil
 
-	err = PopulateKubeConfig(cfg, config)
+}
+
+// GetPortFromKubeConfig returns the Port number stored for minikube in the kubeconfig specified
+func Port(filename, machineName string) (int, error) {
+	con, err := readOrNew(filename)
 	if err != nil {
-		return err
+		return 0, errors.Wrap(err, "Error getting kubeconfig status")
 	}
+	cluster, ok := con.Clusters[machineName]
+	if !ok {
+		return 0, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
+	}
+	kurl, err := url.Parse(cluster.Server)
+	if err != nil {
+		return constants.APIServerPort, nil
+	}
+	_, kport, err := net.SplitHostPort(kurl.Host)
+	if err != nil {
+		return constants.APIServerPort, nil
+	}
+	port, err := strconv.Atoi(kport)
+	return port, err
+}
 
-	// write back to disk
-	if err := writeToFile(config, cfg.fileContent()); err != nil {
-		return errors.Wrap(err, "writing kubeconfig")
+// GetKubeConfigPath gets the path to the first kubeconfig
+func Path() string {
+	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
+	if kubeConfigEnv == "" {
+		return constants.KubeconfigPath
 	}
-	return nil
+	return filepath.SplitList(kubeConfigEnv)[0]
 }
 
 // readOrNew retrieves Kubernetes client configuration from a file.
@@ -179,53 +203,6 @@ func writeToFile(config runtime.Object, filename string) error {
 	return nil
 }
 
-// GetKubeConfigStatus verifies the ip stored in kubeconfig.
-func GetKubeConfigStatus(ip net.IP, filename string, machineName string) (bool, error) {
-	if ip == nil {
-		return false, fmt.Errorf("error, empty ip passed")
-	}
-	kip, err := extractIP(filename, machineName)
-	if err != nil {
-		return false, err
-	}
-	if kip.Equal(ip) {
-		return true, nil
-	}
-	// Kubeconfig IP misconfigured
-	return false, nil
-
-}
-
-// UpdateIP overwrites the IP stored in kubeconfig with the provided IP.
-func UpdateIP(ip net.IP, filename string, machineName string) (bool, error) {
-	if ip == nil {
-		return false, fmt.Errorf("error, empty ip passed")
-	}
-	kip, err := extractIP(filename, machineName)
-	if err != nil {
-		return false, err
-	}
-	if kip.Equal(ip) {
-		return false, nil
-	}
-	kport, err := GetPortFromKubeConfig(filename, machineName)
-	if err != nil {
-		return false, err
-	}
-	con, err := readOrNew(filename)
-	if err != nil {
-		return false, errors.Wrap(err, "Error getting kubeconfig status")
-	}
-	// Safe to lookup server because if field non-existent getIPFromKubeconfig would have given an error
-	con.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(kport)
-	err = writeToFile(con, filename)
-	if err != nil {
-		return false, err
-	}
-	// Kubeconfig IP reconfigured
-	return true, nil
-}
-
 // extractIP returns the IP address stored for minikube in the kubeconfig specified
 func extractIP(filename, machineName string) (net.IP, error) {
 	con, err := readOrNew(filename)
@@ -246,37 +223,6 @@ func extractIP(filename, machineName string) (net.IP, error) {
 	}
 	ip := net.ParseIP(kip)
 	return ip, nil
-}
-
-// GetPortFromKubeConfig returns the Port number stored for minikube in the kubeconfig specified
-func GetPortFromKubeConfig(filename, machineName string) (int, error) {
-	con, err := readOrNew(filename)
-	if err != nil {
-		return 0, errors.Wrap(err, "Error getting kubeconfig status")
-	}
-	cluster, ok := con.Clusters[machineName]
-	if !ok {
-		return 0, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
-	}
-	kurl, err := url.Parse(cluster.Server)
-	if err != nil {
-		return constants.APIServerPort, nil
-	}
-	_, kport, err := net.SplitHostPort(kurl.Host)
-	if err != nil {
-		return constants.APIServerPort, nil
-	}
-	port, err := strconv.Atoi(kport)
-	return port, err
-}
-
-// GetKubeConfigPath gets the path to the first kubeconfig
-func Path() string {
-	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
-	if kubeConfigEnv == "" {
-		return constants.KubeconfigPath
-	}
-	return filepath.SplitList(kubeConfigEnv)[0]
 }
 
 // decode reads a Config object from bytes.
