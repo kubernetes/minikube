@@ -19,6 +19,7 @@ package kubeconfig
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -121,8 +122,8 @@ func TestUnsetCurrentContext(t *testing.T) {
 
 func TestUnsetCurrentContextOnlyChangesIfProfileIsTheCurrentContext(t *testing.T) {
 	contextName := "minikube"
-	kubeConfigFile := "./testdata/kubeconfig/config2"
 
+	kubeConfigFile := filepath.Join("testdata", "kubeconfig", "config2")
 	cfg, err := readOrNew(kubeConfigFile)
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
