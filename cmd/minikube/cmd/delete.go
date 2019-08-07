@@ -89,7 +89,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	out.T(out.Crushed, `The "{{.cluster_name}}" cluster has been deleted.`, out.V{"cluster_name": profile})
 
 	machineName := pkg_config.GetMachineName()
-	if err := kubeconfig.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
+	if err := kubeconfig.DeleteContext(constants.KubeconfigPath, machineName); err != nil {
 		exit.WithError("update config", err)
 	}
 

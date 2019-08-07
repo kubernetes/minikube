@@ -22,9 +22,9 @@ import (
 	"testing"
 )
 
-func TestDeleteKubeConfigContext(t *testing.T) {
+func TestDeleteContext(t *testing.T) {
 	configFilename := tempFile(t, fakeKubeCfg)
-	if err := DeleteKubeConfigContext(configFilename, "la-croix"); err != nil {
+	if err := DeleteContext(configFilename, "la-croix"); err != nil {
 		t.Fatal(err)
 	}
 
