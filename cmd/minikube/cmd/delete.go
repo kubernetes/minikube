@@ -111,9 +111,14 @@ func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 	for _, profile := range profiles {
 		err := deleteProfile(profile)
 
-		_, errStat := os.Stat(constants.GetMachinePath(profile.Name, constants.GetMinipath()))
-		// TODO: if (err != nil && !profile.IsValid()) || (err != nil && !machineConfig.IsValid()) {
-		if (err != nil && !profile.IsValid()) || (err != nil && os.IsNotExist(errStat)) {
+		var mm *pkg_config.Machine
+		var loadErr error
+
+		if err != nil {
+			mm, loadErr = pkg_config.LoadMachine(profile.Name)
+		}
+
+		if (err != nil && !profile.IsValid()) || (loadErr != nil || !mm.IsValid()) {
 			invalidProfileDeletionErrs := DeleteInvalidProfile(profile)
 			if len(invalidProfileDeletionErrs) > 0 {
 				errs = append(errs, invalidProfileDeletionErrs...)
