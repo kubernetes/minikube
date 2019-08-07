@@ -23,8 +23,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
-// Setup is the kubeconfig setup
-type Setup struct {
+// KCS is the kubeconfig setup
+type KCS struct {
 	// The name of the cluster for this context
 	ClusterName string
 
@@ -52,17 +52,17 @@ type Setup struct {
 }
 
 // SetKubeConfigFile sets the kubeconfig file
-func (k *Setup) setPath(kubeConfigFile string) {
+func (k *KCS) setPath(kubeConfigFile string) {
 	k.kubeConfigFile.Store(kubeConfigFile)
 }
 
 // fileContent gets the kubeconfig file
-func (k *Setup) fileContent() string {
+func (k *KCS) fileContent() string {
 	return k.kubeConfigFile.Load().(string)
 }
 
 // Populate populates an api.Config object with values from *Setup
-func Populate(cfg *Setup, apiCfg *api.Config) error {
+func Populate(cfg *KCS, apiCfg *api.Config) error {
 	var err error
 	clusterName := cfg.ClusterName
 	cluster := api.NewCluster()
