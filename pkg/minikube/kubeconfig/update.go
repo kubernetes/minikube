@@ -71,7 +71,7 @@ func update(cfg *Setup) error {
 		return err
 	}
 
-	err = PopulateKubeConfig(cfg, config)
+	err = Populate(cfg, config)
 	if err != nil {
 		return err
 	}
