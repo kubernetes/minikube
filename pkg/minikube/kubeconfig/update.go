@@ -34,19 +34,18 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api/latest"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/exit"
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
-// Update sets up kubeconfig to be used by kubectl
-func Update(clusterURL string, c *cfg.Config) *Setup {
+// Setup sets up kubeconfig to be used by kubectl
+func Setup(clusterURL string, c *cfg.Config) (*KCS, error) {
 	clusterURL = strings.Replace(clusterURL, "tcp://", "https://", -1)
 	clusterURL = strings.Replace(clusterURL, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
 	if c.KubernetesConfig.APIServerName != constants.APIServerName {
 		clusterURL = strings.Replace(clusterURL, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
 	}
 
-	kcs := &Setup{
+	kcs := &KCS{
 		ClusterName:          cfg.GetMachineName(),
 		ClusterServerAddress: clusterURL,
 		ClientCertificate:    constants.MakeMiniPath("client.crt"),
@@ -57,15 +56,16 @@ func Update(clusterURL string, c *cfg.Config) *Setup {
 	}
 	kcs.setPath(Path())
 	if err := update(kcs); err != nil {
-		exit.WithError("Failed to setup kubeconfig", err)
+		return kcs, fmt.Errorf("error update kubeconfig: %v", err)
+
 	}
-	return kcs
+	return kcs, nil
 }
 
 // update reads config from disk, adds the minikube settings, and writes it back.
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
-func update(cfg *Setup) error {
+func update(cfg *KCS) error {
 	glog.Infoln("Using kubeconfig: ", cfg.fileContent())
 
 	// read existing config or create new if does not exist
