@@ -37,32 +37,20 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin
 
 {{% tabs %}}
 {{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Getting started/_virtualbox.md" %}}
+{{% readfile file="/docs/Getting started/includes/virtualbox.md" %}}
 {{% /tab %}}
 {{% tab "Hyperkit" %}}
 
-The easiest way to install hyperkit is using the [Brew Package Manager](https://brew.sh/):
 
-```shell
-brew install hyperkit
-```
+### Prerequisites Installation
 
-To use minikube and hyperkit reliably, please download and install our improved fork of the driver:
+{{% readfile file="/docs/Reference/Drivers/includes/hyperkit_prereqs_install.md" %}}
 
-```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit \
-  && sudo install docker-machine-driver-hyperkit /usr/local/bin/
-```
+### Driver Installation
 
-This driver requires root privileges to create and destroy network interfaces:
+{{% readfile file="/docs/Reference/Drivers/includes/hyperkit_driver_install.md" %}}
 
-```shell
-sudo chown root:wheel /usr/local/bin 
-docker-machine-driver-hyperkit \
-&& sudo chmod u+s /usr/local/bin/docker-machine-driver-hyperkit
-```
-
-### Using the hyperkit driver
+### Usage
 
 ```shell
 minikube start --vm-driver=hyperkit
@@ -108,4 +96,4 @@ minikube config set vm-driver vmwarefusion
 
 {{% /tabs %}}
 
-{{% readfile file="/docs/Getting started/_post_install.md" %}}
+{{% readfile file="/docs/Getting started/includes/post_install.md" %}}

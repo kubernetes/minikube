@@ -8,7 +8,7 @@ Proper installation of KVM and libvirt is highly specific to each Linux distribu
 * [RedHat](https://access.redhat.com/articles/1344173#Q_how-install-virtualization-packages)
 * [Ubuntu](https://help.ubuntu.com/community/KVM/Installation)
 
-Once configured, validate that libvirt shows no warning or error messages:
+Once configured, validate that libvirt reports no errors:
 
 ```shell
 virt-host-validate
