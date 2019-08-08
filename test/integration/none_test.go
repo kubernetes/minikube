@@ -1,4 +1,4 @@
-// +build integration
+// +build integration linux
 
 /*
 Copyright 2019 The Kubernetes Authors All rights reserved.
