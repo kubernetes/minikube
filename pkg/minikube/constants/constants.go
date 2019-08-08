@@ -129,6 +129,8 @@ func MakeMiniPath(fileName ...string) string {
 var MountProcessFileName = ".mount-process"
 
 const (
+	// DefaultEmbedCerts  is if the certs should be embedded in the kubeconfig file
+	DefaultEmbedCerts = false
 	// DefaultKeepContext is if we should keep context by default
 	DefaultKeepContext = false
 	// SHASuffix is the suffix of a SHA-256 checksum file

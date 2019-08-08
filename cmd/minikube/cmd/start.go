@@ -97,12 +97,12 @@ const (
 	uuid                  = "uuid"
 	vpnkitSock            = "hyperkit-vpnkit-sock"
 	vsockPorts            = "hyperkit-vsock-ports"
-	// embedCerts            = "embed-certs" //TODO medya
-	noVTXCheck       = "no-vtx-check"
-	downloadOnly     = "download-only"
-	dnsProxy         = "dns-proxy"
-	hostDNSResolver  = "host-dns-resolver"
-	waitUntilHealthy = "wait"
+	embedCerts            = "embed-certs"
+	noVTXCheck            = "no-vtx-check"
+	downloadOnly          = "download-only"
+	dnsProxy              = "dns-proxy"
+	hostDNSResolver       = "host-dns-resolver"
+	waitUntilHealthy      = "wait"
 )
 
 var (
@@ -134,20 +134,21 @@ func initMinikubeFlags() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
 
-	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM")
-	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
-	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g)")
+	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM.")
+	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
-	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso")
+	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso.")
 	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
-	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd)")
-	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube")
-	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start")
-	startCmd.Flags().String(criSocket, "", "The cri socket path to be used")
-	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin")
-	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\"")
-	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting")
+	startCmd.Flags().Bool(embedCerts, constants.DefaultEmbedCerts, "if true, will embed the certs in kubeconfig.")
+	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
+	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
+	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
+	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
+	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
+	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -273,7 +274,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateDriverVersion(viper.GetString(vmDriver))
 
 	k8sVersion, isUpgrade := getKubernetesVersion()
-	config, err := generateConfig(cmd, k8sVersion)
+	config, err := generateCfgFromFlags(cmd, k8sVersion)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
@@ -329,7 +330,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 }
 
-func setupKubeconfig(host *host.Host, config *cfg.Config) (*kubeconfig.Setup, error) {
+func setupKubeconfig(host *host.Host, config *cfg.Config) (*kubeconfig.KCS, error) {
 	addr, err := host.Driver.GetURL()
 	if err != nil {
 		exit.WithError("Failed to get host URL", err)
@@ -414,7 +415,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-func showKubectlConnectInfo(kubeconfig *kubeconfig.Setup) {
+func showKubectlConnectInfo(kubeconfig *kubeconfig.KCS) {
 	if kubeconfig.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kubeconfig.ClusterName})
 	} else {
@@ -572,8 +573,8 @@ func waitCacheImages(g *errgroup.Group) {
 	}
 }
 
-// generateConfig generates cfg.Config based on flags and supplied arguments
-func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
+// generateCfgFromFlags generates cfg.Config based on flags and supplied arguments
+func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 	r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
 	if err != nil {
 		return cfg.Config{}, err
@@ -629,6 +630,7 @@ func generateConfig(cmd *cobra.Command, k8sVersion string) (cfg.Config, error) {
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
 			KeepContext:         viper.GetBool(keepContext),
+			EmbedCerts:          viper.GetBool(embedCerts),
 			MinikubeISO:         viper.GetString(isoURL),
 			Memory:              pkgutil.CalculateSizeInMB(viper.GetString(memory)),
 			CPUs:                viper.GetInt(cpus),
