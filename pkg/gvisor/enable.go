@@ -44,7 +44,6 @@ const (
 //   3. copies necessary containerd config files
 //   4. restarts containerd
 func Enable() error {
-	return fmt.Errorf("local image used correctly")
 	if err := makeGvisorDirs(); err != nil {
 		return errors.Wrap(err, "creating directories on node")
 	}
