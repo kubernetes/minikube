@@ -87,6 +87,8 @@ func runDelete(cmd *cobra.Command, args []string) {
 		errs := DeleteProfiles(profilesToDelete)
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
+		} else {
+			out.T(out.DeletingHost, "Successfully deleted all profiles")
 		}
 	} else {
 		if len(args) > 0 {
@@ -100,8 +102,10 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 
 		errs := DeleteProfiles([]*pkg_config.Profile{profile})
-		if err != nil {
+		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
+		} else {
+			out.T(out.DeletingHost, "Successfully deleted profile \"{{.name}}\"", out.V{"name": profileName})
 		}
 	}
 }
@@ -119,7 +123,7 @@ func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 		}
 
 		if (err != nil && !profile.IsValid()) || (loadErr != nil || !mm.IsValid()) {
-			invalidProfileDeletionErrs := DeleteInvalidProfile(profile)
+			invalidProfileDeletionErrs := deleteInvalidProfile(profile)
 			if len(invalidProfileDeletionErrs) > 0 {
 				errs = append(errs, invalidProfileDeletionErrs...)
 			}
@@ -193,7 +197,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	return nil
 }
 
-func DeleteInvalidProfile(profile *pkg_config.Profile) []error {
+func deleteInvalidProfile(profile *pkg_config.Profile) []error {
 	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
