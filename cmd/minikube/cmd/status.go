@@ -105,7 +105,7 @@ var statusCmd = &cobra.Command{
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ks, err := kubeconfig.VeryifyMachineIP(ip, kubeconfig.Path(), config.GetMachineName())
+			ks, err := kubeconfig.IsMachineInConfig(ip, config.GetMachineName(), kubeconfig.Path())
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
 			}
