@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
-	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -175,28 +174,6 @@ func readOrNew(filename string) (*api.Config, error) {
 	}
 
 	return config, nil
-}
-
-// extractIP returns the IP address stored for minikube in the kubeconfig specified
-func extractIP(filename, machineName string) (net.IP, error) {
-	con, err := readOrNew(filename)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error getting kubeconfig status")
-	}
-	cluster, ok := con.Clusters[machineName]
-	if !ok {
-		return nil, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
-	}
-	kurl, err := url.Parse(cluster.Server)
-	if err != nil {
-		return net.ParseIP(cluster.Server), nil
-	}
-	kip, _, err := net.SplitHostPort(kurl.Host)
-	if err != nil {
-		return net.ParseIP(kurl.Host), nil
-	}
-	ip := net.ParseIP(kip)
-	return ip, nil
 }
 
 // decode reads a Config object from bytes.

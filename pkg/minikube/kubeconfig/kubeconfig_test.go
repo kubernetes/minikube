@@ -177,7 +177,7 @@ func Test_update(t *testing.T) {
 	}
 }
 
-func TestVeryifyMachineIP(t *testing.T) {
+func TestIsMachineInConfig(t *testing.T) {
 
 	var tests = []struct {
 		description string
@@ -215,7 +215,7 @@ func TestVeryifyMachineIP(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := VeryifyMachineIP(test.ip, configFilename, "minikube")
+			statusActual, err := IsMachineInConfig(test.ip, configFilename, "minikube")
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}

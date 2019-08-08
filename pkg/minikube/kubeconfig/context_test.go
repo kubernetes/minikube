@@ -48,8 +48,6 @@ func TestDeleteContext(t *testing.T) {
 }
 
 func TestSetCurrentContext(t *testing.T) {
-	contextName := "minikube"
-
 	kubeConfigFile, err := ioutil.TempFile("/tmp", "kubeconfig")
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
@@ -65,6 +63,7 @@ func TestSetCurrentContext(t *testing.T) {
 		t.Errorf("Expected empty context but got %v", cfg.CurrentContext)
 	}
 
+	contextName := "minikube"
 	err = SetCurrentContext(kubeConfigFile.Name(), contextName)
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
@@ -80,9 +79,8 @@ func TestSetCurrentContext(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
-
 	if cfg.CurrentContext != contextName {
-		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
+		t.Errorf("Expected context name %s but got %v : ", contextName, cfg.CurrentContext)
 	}
 }
 
