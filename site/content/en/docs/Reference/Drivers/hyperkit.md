@@ -15,18 +15,22 @@ description: >
 
 ## Special features
 
-minikube start supports some VirtualBox specific flags:
+minikube start supports additional hyperkit specific flags:
 
-* **\--host-only-cidr**: The CIDR to be used for the minikube VM (default "192.168.99.1/24")
-* **\--no-vtx-check**: Disable checking for the availability of hardware virtualization 
+
+* **\--hyperkit-vpnkit-sock**: Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSoc
+* **\--hyperkit-vsock-ports**: List of guest VSock ports that should be exposed as sockets on the host
+* **\--nfs-share**: Local folders to share with Guest via NFS mounts
+* **\--nfs-shares-root**: Where to root the NFS Shares (default "/nfsshares")
+* **\--uuid**: Provide VM UUID to restore MAC address 
 
 ## Issues
 
 ### Local DNS server conflict
 
-If you are using dnsmasq in your setup and cluster creation fails (stuck at kube-dns initialization) you might need to add listen-address=192.168.64.1 to dnsmasq.conf.
+If you are using `dnsmasq` and `minikube` fails, add `listen-address=192.168.64.1` to dnsmasq.conf.
 
-Note: If dnsmasq.conf contains listen-address=127.0.0.1 kubernetes discovers dns at 127.0.0.1:53 and tries to use it using bridge ip address, but dnsmasq replies only to requests from 127.0.0.1
+If you are running other DNS servers, shut them off or specify an alternative bind address.
 
 ### Other
 

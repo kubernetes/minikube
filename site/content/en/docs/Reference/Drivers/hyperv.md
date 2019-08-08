@@ -16,7 +16,7 @@ Hyper-V is a native hypervisor built in to modern versions of Microsoft Windows.
 
 ## Special features
 
-The `minikube start` command supports 3 additional hyperv specific flags:
+The `minikube start` command supports additional hyperv specific flags:
 
 * **\--hyperv-virtual-switch**: The hyperv virtual switch name. Defaults to first found
 
