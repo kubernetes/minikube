@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -37,7 +36,7 @@ func TestDeleteProfileWithValidConfig(t *testing.T) {
 
 	err = os.Setenv(constants.MinikubeHome, miniDir)
 	if err != nil {
-		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+		t.Errorf("error setting up test environment. could not set %s", constants.MinikubeHome)
 	}
 
 	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
@@ -85,7 +84,7 @@ func TestDeleteProfileWithEmptyProfileConfig(t *testing.T) {
 
 	err = os.Setenv(constants.MinikubeHome, miniDir)
 	if err != nil {
-		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+		t.Errorf("error setting up test environment. could not set %s", constants.MinikubeHome)
 	}
 
 	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
@@ -133,7 +132,7 @@ func TestDeleteProfileWithInvalidProfileConfig(t *testing.T) {
 
 	err = os.Setenv(constants.MinikubeHome, miniDir)
 	if err != nil {
-		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+		t.Errorf("error setting up test environment. could not set %s", constants.MinikubeHome)
 	}
 
 	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
@@ -181,7 +180,7 @@ func TestDeleteProfileWithPartialProfileConfig(t *testing.T) {
 
 	err = os.Setenv(constants.MinikubeHome, miniDir)
 	if err != nil {
-		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+		t.Errorf("error setting up test environment. could not set %s", constants.MinikubeHome)
 	}
 
 	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
@@ -229,7 +228,7 @@ func TestDeleteProfileWithMissingMachineConfig(t *testing.T) {
 
 	err = os.Setenv(constants.MinikubeHome, miniDir)
 	if err != nil {
-		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+		t.Errorf("error setting up test environment. could not set %s", constants.MinikubeHome)
 	}
 
 	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
@@ -277,7 +276,7 @@ func TestDeleteProfileWithEmptyMachineConfig(t *testing.T) {
 
 	err = os.Setenv(constants.MinikubeHome, miniDir)
 	if err != nil {
-		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+		t.Errorf("error setting up test environment. could not set %s", constants.MinikubeHome)
 	}
 
 	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
@@ -325,7 +324,7 @@ func TestDeleteProfileWithInvalidMachineConfig(t *testing.T) {
 
 	err = os.Setenv(constants.MinikubeHome, miniDir)
 	if err != nil {
-		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+		t.Errorf("error setting up test environment. could not set %s", constants.MinikubeHome)
 	}
 
 	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
@@ -373,7 +372,7 @@ func TestDeleteProfileWithPartialMachineConfig(t *testing.T) {
 
 	err = os.Setenv(constants.MinikubeHome, miniDir)
 	if err != nil {
-		fmt.Printf("error setting up test environment. could not set %s", constants.MinikubeHome)
+		t.Errorf("error setting up test environment. could not set %s", constants.MinikubeHome)
 	}
 
 	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
@@ -408,5 +407,67 @@ func TestDeleteProfileWithPartialMachineConfig(t *testing.T) {
 
 	if files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
 		t.Fatal("Did not delete exactly one profile")
+	}
+}
+
+func TestDeleteAllProfiles(t *testing.T) {
+	const numberOfTotalProfileDirs = 8
+	const numberOfTotalMachineDirs = 7
+
+	testMinikubeDir := "../../../pkg/minikube/config/testdata/delete-all/.minikube"
+	miniDir, err := filepath.Abs(testMinikubeDir)
+
+	if err != nil {
+		t.Errorf("error getting dir path for %s : %v", testMinikubeDir, err)
+	}
+
+	err = os.Setenv(constants.MinikubeHome, miniDir)
+	if err != nil {
+		t.Errorf("error setting up test environment. could not set %s", constants.MinikubeHome)
+	}
+
+	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
+	numberOfProfileDirs := len(files)
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	numberOfMachineDirs := len(files)
+
+	if numberOfTotalProfileDirs != numberOfProfileDirs {
+		t.Error("invalid testdata")
+	}
+
+	if numberOfTotalMachineDirs != numberOfMachineDirs {
+		t.Error("invalid testdata")
+	}
+
+	validProfiles, inValidProfiles, err := config.ListProfiles()
+
+	if err != nil {
+		t.Error(err)
+	}
+
+	if numberOfTotalProfileDirs != len(validProfiles)+len(inValidProfiles) {
+		t.Error("invalid testdata")
+	}
+
+	profiles := append(validProfiles, inValidProfiles...)
+	errs := DeleteProfiles(profiles)
+
+	if errs != nil {
+		t.Errorf("errors while deleting all profiles: %v", errs)
+	}
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "profiles"))
+	numberOfProfileDirs = len(files)
+
+	files, _ = ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	numberOfMachineDirs = len(files)
+
+	if numberOfProfileDirs != 0 {
+		t.Errorf("Did not delete all profiles: still %d profiles left", numberOfProfileDirs)
+	}
+
+	if numberOfMachineDirs != 0 {
+		t.Errorf("Did not delete all profiles: still %d machines left", numberOfMachineDirs)
 	}
 }
