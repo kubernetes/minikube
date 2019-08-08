@@ -420,7 +420,7 @@ else
 endif
 
 .PHONY: out/gvisor-addon
-out/gvisor-addon:
+out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image
