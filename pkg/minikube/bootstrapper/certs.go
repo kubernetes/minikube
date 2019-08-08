@@ -67,7 +67,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		copyableFiles = append(copyableFiles, certFile)
 	}
 
-	kubeCfgSetup := &kubeconfig.Setup{
+	kcs := &kubeconfig.KCS{
 		ClusterName:          k8s.NodeName,
 		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
 		ClientCertificate:    path.Join(util.DefaultCertPath, "apiserver.crt"),
@@ -77,7 +77,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	}
 
 	kubeCfg := api.NewConfig()
-	err := kubeconfig.Populate(kubeCfgSetup, kubeCfg)
+	err := kubeconfig.Populate(kcs, kubeCfg)
 	if err != nil {
 		return errors.Wrap(err, "populating kubeconfig")
 	}
