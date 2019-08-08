@@ -243,7 +243,7 @@ func ValidateProfile(profile string) (*ErrValidateProfile, bool) {
 
 	validProfiles, invalidProfiles, err := pkgConfig.ListProfiles()
 	if err != nil {
-		exit.WithError("Not able to retrieve profile list", err)
+		out.FailureT(err.Error())
 	}
 
 	// handling invalid profiles
