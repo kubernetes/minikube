@@ -12,15 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM golang:1.12.5
-WORKDIR $GOPATH/src/k8s.io/minikube
-COPY . .
-ENV GO111MODULE=on
-RUN GOOS=linux CGO_ENABLED=0 go build -o /out/gvisor-addon cmd/gvisor/gvisor.go
-
 FROM ubuntu:18.04
 RUN apt-get update && \
     apt-get install -y kmod gcc wget xz-utils libc6-dev bc libelf-dev bison flex openssl libssl-dev libidn2-0 sudo libcap2 && \
     rm -rf /var/lib/apt/lists/*
-COPY --from=0 /out/gvisor-addon /gvisor-addon
+COPY out/gvisor-addon /gvisor-addon
 CMD ["/gvisor-addon"]

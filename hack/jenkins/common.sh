@@ -274,11 +274,8 @@ ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
 rmdir "${TEST_HOME}"
 echo ">> ${TEST_HOME} completed at $(date)"
 
-# Build the gvisor image and store it as a tarball. This will be copied into minikube and loaded by ctr.
+# Build the gvisor image. This will be copied into minikube and loaded by ctr.
 docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile out
-sudo mkdir -p ${MINIKUBE_HOME}
-docker save gcr.io/k8s-minikube/gvisor-addon:latest > out/gvisor-image.tar 
-sudo cp out/gvisor-image.tar ${MINIKUBE_HOME}/gvisor-image.tar
 
 if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
   readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
