@@ -38,11 +38,5 @@ If you are running other DNS servers, shut them off or specify an alternative bi
 
 ## Troubleshooting
 
-* Run `docker-machine-driver-hyperkit version` to verify that the version matches minikubes version. Example output:
-
-```
-version: v1.3.0
-commit: 43969594266d77b555a207b0f3e9b3fa1dc92b1f
-````
-
+* Run `docker-machine-driver-hyperkit version` to make sure the version matches minikube
 * Run `minikube start --alsologtostderr -v=7` to debug crashes
