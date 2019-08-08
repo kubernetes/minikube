@@ -1,8 +1,9 @@
 # Release Notes
 
-## Version 1.3.0 - 2019-08-XX (TBD)
+## Version 1.3.0 - 2019-08-05
 
 * Added a new command: profile list [#4811](https://github.com/kubernetes/minikube/pull/4811)
+* Update latest kubernetes version to v1.15.2 [#4986](https://github.com/kubernetes/minikube/pull/4986)
 * Update latest kubernetes version to v1.15.1 [#4915](https://github.com/kubernetes/minikube/pull/4915)
 * logs: Add container status & cruntime logs [#4960](https://github.com/kubernetes/minikube/pull/4960)
 * Automatically set flags for MINIKUBE_ prefixed env vars [#4607](https://github.com/kubernetes/minikube/pull/4607)
