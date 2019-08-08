@@ -119,18 +119,19 @@ func TestValidateProfile(t *testing.T) {
 		expectErr   string
 	}{
 		{
-			profileName: "not_so_common",
-			expectErr:   "Profile you are trying to switch is not found",
+			profileName: "82374328742_2974224498",
+		},
+		{
+			profileName: "minikube",
 		},
 	}
 
 	for _, test := range testCases {
 		profileNam := test.profileName
-		expectedMsg := test.expectErr
+		expectedMsg := fmt.Sprintf("profile %q not found", test.profileName)
 
-		err := ValidateProfile(profileNam)
-		fmt.Println(err.Error())
-		if err.Error() != expectedMsg {
+		err, ok := ValidateProfile(profileNam)
+		if !ok && err.Error() != expectedMsg {
 			t.Errorf("Didnt receive expected message")
 		}
 	}
