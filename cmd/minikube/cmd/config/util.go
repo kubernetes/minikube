@@ -228,9 +228,19 @@ func EnableOrDisableStorageClasses(name, val string) error {
 	return EnableOrDisableAddon(name, val)
 }
 
-//ValidateProfile checks if the profile user is trying to switch exists, else throws error
-func ValidateProfile(profile string) error {
-	var profileFound bool
+// ErrValidateProfile Error to validate profile
+type ErrValidateProfile struct {
+	Name string
+	Msg  string
+}
+
+func (e ErrValidateProfile) Error() string {
+	return e.Msg
+}
+
+// ValidateProfile checks if the profile user is trying to switch exists, else throws error
+func ValidateProfile(profile string) (*ErrValidateProfile, bool) {
+
 	validProfiles, invalidProfiles, err := pkgConfig.ListProfiles()
 	if err != nil {
 		exit.WithError("Not able to retrieve profile list", err)
@@ -239,11 +249,12 @@ func ValidateProfile(profile string) error {
 	// handling invalid profiles
 	for _, invalidProf := range invalidProfiles {
 		if profile == invalidProf.Name {
-			return errors.New("You are trying to switch to invalid profile")
+			return &ErrValidateProfile{Name: profile, Msg: fmt.Sprintf("%q is an invalid profile", profile)}, false
 		}
 	}
 
-	// valid profiles if found, setting profileFound to true
+	profileFound := false
+	// valid profiles if found, setting profileFound to trueexpectedMsg
 	for _, prof := range validProfiles {
 		if prof.Name == profile {
 			profileFound = true
@@ -251,7 +262,7 @@ func ValidateProfile(profile string) error {
 		}
 	}
 	if !profileFound {
-		return errors.New("Profile you are trying to switch is not found")
+		return &ErrValidateProfile{Name: profile, Msg: fmt.Sprintf("profile %q not found", profile)}, false
 	}
-	return nil
+	return nil, true
 }
