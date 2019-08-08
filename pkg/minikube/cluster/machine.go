@@ -17,12 +17,13 @@ limitations under the License.
 package cluster
 
 import (
+	"io/ioutil"
+	"path/filepath"
+
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
-	"io/ioutil"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"path/filepath"
 )
 
 type Machine struct {

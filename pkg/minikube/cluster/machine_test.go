@@ -18,10 +18,11 @@ package cluster
 
 import (
 	"io/ioutil"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"os"
 	"path/filepath"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func TestListMachines(t *testing.T) {
