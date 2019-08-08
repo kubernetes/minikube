@@ -111,11 +111,11 @@ func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 	for _, profile := range profiles {
 		err := deleteProfile(profile)
 
-		var mm *pkg_config.Machine
+		var mm *cluster.Machine
 		var loadErr error
 
 		if err != nil {
-			mm, loadErr = pkg_config.LoadMachine(profile.Name)
+			mm, loadErr = cluster.LoadMachine(profile.Name)
 		}
 
 		if (err != nil && !profile.IsValid()) || (loadErr != nil || !mm.IsValid()) {
