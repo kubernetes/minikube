@@ -28,8 +28,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// VeryifyMachineIP verifies the ip stored in kubeconfig.
-func VeryifyMachineIP(ip net.IP, filename string, machineName string) (bool, error) {
+// IsMachineInConfig verifies the ip stored in kubeconfig.
+func IsMachineInConfig(ip net.IP, machineName string, filename string) (bool, error) {
 	if ip == nil {
 		return false, fmt.Errorf("error, empty ip passed")
 	}
@@ -74,4 +74,26 @@ func Path() string {
 		return constants.KubeconfigPath
 	}
 	return filepath.SplitList(kubeConfigEnv)[0]
+}
+
+// extractIP returns the IP address stored for minikube in the kubeconfig specified
+func extractIP(filename, machineName string) (net.IP, error) {
+	apiCfg, err := readOrNew(filename)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	cluster, ok := apiCfg.Clusters[machineName]
+	if !ok {
+		return nil, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
+	}
+	kurl, err := url.Parse(cluster.Server)
+	if err != nil {
+		return net.ParseIP(cluster.Server), nil
+	}
+	kip, _, err := net.SplitHostPort(kurl.Host)
+	if err != nil {
+		return net.ParseIP(kurl.Host), nil
+	}
+	ip := net.ParseIP(kip)
+	return ip, nil
 }
