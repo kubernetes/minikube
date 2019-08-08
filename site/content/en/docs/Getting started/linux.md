@@ -55,44 +55,15 @@ If the above command outputs "no":
 {{% tabs %}}
 
 {{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Getting started/includes/virtualbox.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.md" %}}
 {{% /tab %}}
 {{% tab "KVM" %}}
-
-### Prerequisites Installation
-
-{{% readfile file="/docs/Reference/Drivers/includes/kvm2_prereqs_install.md" %}}
-
-### Driver Installation
-
-{{% readfile file="/docs/Reference/Drivers/includes/kvm2_driver_install.md" %}}
-
-### Usage
-
-```shell
-minikube start --vm-driver=kvm2
-```
-To make kvm2 the default for future invocations, run:
-
-```shell
-minikube config set vm-driver kvm2
-```
-
+{{% readfile file="/docs/Reference/Drivers/includes/kvm2_usage.md" %}}
 {{% /tab %}}
 {{% tab "None (bare-metal)" %}}
+If you are already running minikube from inside a VM, it is possible to skip the creation of an additional VM layer by using the `none` driver.
 
-If you are already running minikube from inside a VM, it is possible to skip the creation of an additional VM layer by using the `none` driver. 
-This mode does come with additional requirements:
-
-- docker
-- systemd
-- sudo access
-
-```shell
-sudo minikube start --vm-driver=none
-```
-
-Please see the [docs/reference/drivers/none](none driver) documentation for more information.
+{{% readfile file="/docs/Reference/Drivers/includes/none_usage.md" %}}
 {{% /tab %}}
 {{% /tabs %}}
 

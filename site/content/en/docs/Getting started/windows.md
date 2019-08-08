@@ -15,12 +15,12 @@ weight: 3
 
 {{% tabs %}}
 {{% tab "Direct" %}}
-Download and run the [installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
+Download and run the [minikube installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 {{% /tab %}}
 
 {{% tab "Chocolatey" %}}
 
-If you have the [Chocolatey Package Manager](https://chocolatey.org/) installed, you can install minikube if run as an Administrator:
+If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use it to install minikube:
 
 ```shell
 choco install minikube
@@ -55,24 +55,10 @@ Hyper-V Requirements:     A hypervisor has been detected.
 
 {{% tabs %}}
 {{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Getting started/includes/virtualbox.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.md" %}}
 {{% /tab %}}
 {{% tab "Hyper-V" %}}
-
-If Hyper-V is active, you can start minikube with Hyper-V support using:
-
-```shell
-minikube start --vm-driver=hyperv
-```
-
-NOTE: If this fails due to networking issues, see the [Hyper-V driver documentation](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyper-v-driver) for further instructions.
-
-To make hyperv the default for future invocations:
-
-```shell
-minikube config set vm-driver hyperv
-```
-
+{{% readfile file="/docs/Reference/Drivers/includes/hyperv_usage.md" %}}
 {{% /tab %}}
 {{% /tabs %}}
 

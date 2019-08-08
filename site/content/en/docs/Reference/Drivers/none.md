@@ -1,7 +1,7 @@
 ---
 title: "none"
 linkTitle: "none"
-weight: 1
+weight: 3
 date: 2017-01-05
 date: 2018-08-05
 description: >
@@ -12,28 +12,7 @@ description: >
 
 This document is written for system integrators who are familiar with minikube, and wish to run it within a customized VM environment. The `none` driver allows advanced minikube users to skip VM creation, allowing minikube to be run on a user-supplied VM.
 
-## Features
-
-* Ability to run without the creation of an additional VM
-* Fast setup and teardown
-
-## Requirements
-
-VM running a systemd-based Linux distribution ([see #2704](https://github.com/kubernetes/minikube/issues/2704))
-
-## Usage
-
-The none driver requires minikube to be run as root, until [#3760](https://github.com/kubernetes/minikube/issues/3760) can be addressed.
-
-```shell
-sudo minikube start --vm-driver=none
-```
-
-To make none the default for future invocations, run:
-
-```shell
-sudo minikube config set vm-driver none
-```
+{{% readfile file="/docs/Reference/Drivers/includes/none_usage.md" %}}
 
 ## Issues
 

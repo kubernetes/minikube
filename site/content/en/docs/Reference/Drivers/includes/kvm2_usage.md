@@ -1,3 +1,10 @@
+## Requirements
+
+- libvirt v1.3.1 or higher
+- qemu-kvm v2.0 or higher
+
+## Installing Prerequisites
+
 Proper installation of KVM and libvirt is highly specific to each Linux distribution. Please consult:
 
 * [ArchLinux](https://wiki.archlinux.org/index.php/Libvirt)
@@ -12,4 +19,11 @@ Once configured, validate that libvirt reports no errors:
 
 ```shell
 virt-host-validate
+```
+
+## Driver installation
+
+```shell
+ curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
+  && sudo install docker-machine-driver-kvm2 /usr/local/bin/
 ```
