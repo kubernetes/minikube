@@ -16,13 +16,13 @@ Download and install minikube to /usr/local/bin:
    && sudo install minikube-linux-amd64 /usr/local/bin/minikube
 ```
 {{% /tab %}}
-{{% tab "Debian/Ubuntu (apt)" %}}
+{{% tab "Debian/Ubuntu (deb)" %}}
 
 Download and install minikube:
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_{{< latest >}}.deb \
- && dpkg -i minikube_{{< latest >}}.deb
+ && sudo dpkg -i minikube_{{< latest >}}.deb
  ```
 
 {{% /tab %}}
@@ -32,8 +32,8 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_{{< la
 Download and install minikube:
 
 ```shell
-curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_{{< latest >}}.rpm \
- && rpm -ivh minikube_{{< latest >}}.rpm
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-{{< latest >}}.rpm \
+ && sudo rpm -ivh minikube-{{< latest >}}.rpm
  ```
 
 {{% /tab %}}
