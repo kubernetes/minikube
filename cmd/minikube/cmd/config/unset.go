@@ -19,6 +19,7 @@ package config
 import (
 	"github.com/spf13/cobra"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
@@ -48,5 +49,5 @@ func Unset(name string) error {
 		return err
 	}
 	delete(m, name)
-	return WriteConfig(m)
+	return pkgConfig.WriteConfig(constants.ConfigFile, m)
 }
