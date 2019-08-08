@@ -116,7 +116,6 @@ func TestIsAddonAlreadySet(t *testing.T) {
 func TestValidateProfile(t *testing.T) {
 	testCases := []struct {
 		profileName string
-		expectErr   string
 	}{
 		{
 			profileName: "82374328742_2974224498",
