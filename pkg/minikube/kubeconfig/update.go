@@ -28,7 +28,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
@@ -51,8 +50,8 @@ func Setup(clusterURL string, c *cfg.Config) (*KCS, error) {
 		ClientCertificate:    constants.MakeMiniPath("client.crt"),
 		ClientKey:            constants.MakeMiniPath("client.key"),
 		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
-		KeepContext:          viper.GetBool("keep-context"),
-		EmbedCerts:           viper.GetBool("embed-certs"),
+		KeepContext:          c.MachineConfig.KeepContext,
+		EmbedCerts:           c.MachineConfig.EmbedCerts,
 	}
 	kcs.setPath(Path())
 	if err := update(kcs); err != nil {
@@ -65,22 +64,22 @@ func Setup(clusterURL string, c *cfg.Config) (*KCS, error) {
 // update reads config from disk, adds the minikube settings, and writes it back.
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
-func update(cfg *KCS) error {
-	glog.Infoln("Using kubeconfig: ", cfg.fileContent())
+func update(kcs *KCS) error {
+	glog.Infoln("Using kubeconfig: ", kcs.fileContent())
 
 	// read existing config or create new if does not exist
-	config, err := readOrNew(cfg.fileContent())
+	config, err := readOrNew(kcs.fileContent())
 	if err != nil {
 		return err
 	}
 
-	err = Populate(cfg, config)
+	err = Populate(kcs, config)
 	if err != nil {
 		return err
 	}
 
 	// write back to disk
-	if err := writeToFile(config, cfg.fileContent()); err != nil {
+	if err := writeToFile(config, kcs.fileContent()); err != nil {
 		return errors.Wrap(err, "writing kubeconfig")
 	}
 	return nil

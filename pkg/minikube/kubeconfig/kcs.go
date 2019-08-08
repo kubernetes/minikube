@@ -61,7 +61,7 @@ func (k *KCS) fileContent() string {
 	return k.kubeConfigFile.Load().(string)
 }
 
-// Populate populates an api.Config object with values from *Setup
+// Populate populates an api.Config object with values from *KCS
 func Populate(cfg *KCS, apiCfg *api.Config) error {
 	var err error
 	clusterName := cfg.ClusterName
