@@ -5,7 +5,7 @@ weight: 1
 date: 2017-01-05
 date: 2018-08-05
 description: >
-  Linux KVM (Kernel-based Virtual Machine Driver
+  Linux KVM (Kernel-based Virtual Machine) driver
 ---
 
 ## Overview
@@ -17,15 +17,15 @@ description: >
 - libvirt v1.3.1 or higher
 - qemu-kvm v2.0 or higher
 
-## Prerequisites Installation
+## Installing Prerequisites
 
-{{% readfile file="/docs/Reference/Drivers/_kvm2_prereqs_install.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/kvm2_prereqs_install.md" %}}
 
-## Driver Installation
+## Driver installation
 
-{{% readfile file="/docs/Reference/Drivers/_kvm2_driver_install.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/kvm2_driver_install.md" %}}
 
-## Using the kvm2 driver
+## Usage
 
 ```shell
 minikube start --vm-driver=kvm2
@@ -36,7 +36,7 @@ To make kvm2 the default for future invocations, run:
 minikube config set vm-driver kvm2
 ```
 
-## Driver Differences
+## Special features
 
 The `minikube start` command supports 3 additional kvm specific flags:
 
@@ -44,7 +44,7 @@ The `minikube start` command supports 3 additional kvm specific flags:
 * **\--hidden**: Hide the hypervisor signature from the guest in minikube
 * **\--kvm-network**:  The KVM network name
 
-## Known Issues
+## Issues
 
 * `minikube` will repeatedly for root password if user is not in the correct `libvirt` group [#3467](https://github.com/kubernetes/minikube/issues/3467)
 * `Machine didn't return an IP after 120 seconds` when firewall prevents VM network access [#3566](https://github.com/kubernetes/minikube/issues/3566)
@@ -56,7 +56,7 @@ Also see [co/kvm2 open issues](https://github.com/kubernetes/minikube/labels/co%
 
 ## Troubleshooting
 
-* Run `minikube start --alsologtostderr -v=7` to debug crashes related to kvm
-* Run `docker-machine-kvm2 version` to verify the kvm2 driver executes properly.
+* Run `minikube start --alsologtostderr -v=7` to debug crashes
+* Run `docker-machine-driver-kvm2 version` to verify the kvm2 driver executes properly.
 * Read [How to debug Virtualization problems](https://fedoraproject.org/wiki/How_to_debug_Virtualization_problems)
  

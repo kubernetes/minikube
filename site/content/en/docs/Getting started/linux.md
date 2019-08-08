@@ -55,19 +55,19 @@ If the above command outputs "no":
 {{% tabs %}}
 
 {{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Getting started/_virtualbox.md" %}}
+{{% readfile file="/docs/Getting started/includes/virtualbox.md" %}}
 {{% /tab %}}
 {{% tab "KVM" %}}
 
 ### Prerequisites Installation
 
-{{% readfile file="/docs/Reference/Drivers/_kvm2_prereqs_install.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/kvm2_prereqs_install.md" %}}
 
 ### Driver Installation
 
-{{% readfile file="/docs/Reference/Drivers/_kvm2_driver_install.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/kvm2_driver_install.md" %}}
 
-### Using the kvm2 driver
+### Usage
 
 ```shell
 minikube start --vm-driver=kvm2
@@ -96,4 +96,4 @@ Please see the [docs/reference/drivers/none](none driver) documentation for more
 {{% /tab %}}
 {{% /tabs %}}
 
-{{% readfile file="/docs/Getting started/_post_install.md" %}}
+{{% readfile file="/docs/Getting started/includes/post_install.md" %}}

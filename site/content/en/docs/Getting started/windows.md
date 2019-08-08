@@ -51,12 +51,11 @@ If you see the following output, your system already has a Hypervisor installed 
 
 ```
 Hyper-V Requirements:     A hypervisor has been detected.
-                          Features required for Hyper-V will not be displayed.
 ```
 
 {{% tabs %}}
 {{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Getting started/_virtualbox.md" %}}
+{{% readfile file="/docs/Getting started/includes/virtualbox.md" %}}
 {{% /tab %}}
 {{% tab "Hyper-V" %}}
 
@@ -77,4 +76,4 @@ minikube config set vm-driver hyperv
 {{% /tab %}}
 {{% /tabs %}}
 
-{{% readfile file="/docs/Getting started/_post_install.md" %}}
+{{% readfile file="/docs/Getting started/includes/post_install.md" %}}
