@@ -259,12 +259,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	vmDriver := viper.GetString(vmDriver)
-	if err := cmdcfg.IsValidDriver(runtime.GOOS, vmDriver); err != nil {
+	if err := cmdcfg.IsValidDriver(runtime.GOOS, viper.GetString(vmDriver)); err != nil {
 		exit.WithCodeT(
 			exit.Failure,
 			"The driver '{{.driver}}' is not supported on {{.os}}",
-			out.V{"driver": vmDriver, "os": runtime.GOOS},
+			out.V{"driver": viper.GetString(vmDriver), "os": runtime.GOOS},
 		)
 	}
 
