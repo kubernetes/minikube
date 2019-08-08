@@ -14,14 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package cluster
 
-//TODO: Resolve import cycle
 import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
 	"io/ioutil"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"path/filepath"
@@ -84,7 +82,7 @@ func LoadMachine(name string) (*Machine, error) {
 		return nil, err
 	}
 
-	h, err := cluster.CheckIfHostExistsAndLoad(api, name)
+	h, err := CheckIfHostExistsAndLoad(api, name)
 	if err != nil {
 		return nil, err
 	}
