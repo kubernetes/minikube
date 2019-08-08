@@ -92,7 +92,7 @@ var statusCmd = &cobra.Command{
 				glog.Errorln("Error host driver ip status:", err)
 			}
 
-			apiserverPort, err := kubeconfig.Port(kubeconfig.Path(), config.GetMachineName())
+			apiserverPort, err := kubeconfig.Port(config.GetMachineName())
 			if err != nil {
 				// Fallback to presuming default apiserver port
 				apiserverPort = constants.APIServerPort
@@ -105,7 +105,7 @@ var statusCmd = &cobra.Command{
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ks, err := kubeconfig.IsMachineInConfig(ip, config.GetMachineName(), kubeconfig.Path())
+			ks, err := kubeconfig.IsClusterInConfig(ip, config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
 			}

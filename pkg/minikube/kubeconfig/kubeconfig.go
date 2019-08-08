@@ -28,12 +28,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// IsMachineInConfig verifies the ip stored in kubeconfig.
-func IsMachineInConfig(ip net.IP, machineName string, filename string) (bool, error) {
+// IsClusterInConfig verifies the ip stored in kubeconfig.
+func IsClusterInConfig(ip net.IP, clusterName string) (bool, error) {
 	if ip == nil {
 		return false, fmt.Errorf("error, empty ip passed")
 	}
-	kip, err := extractIP(filename, machineName)
+	kip, err := extractIP(Path(), clusterName)
 	if err != nil {
 		return false, err
 	}
@@ -45,13 +45,13 @@ func IsMachineInConfig(ip net.IP, machineName string, filename string) (bool, er
 
 }
 
-// GetPortFromKubeConfig returns the Port number stored for minikube in the kubeconfig specified
-func Port(filename, machineName string) (int, error) {
-	con, err := readOrNew(filename)
+// Port returns the Port number stored for minikube in the kubeconfig specified
+func Port(clusterName string) (int, error) {
+	con, err := readOrNew(Path())
 	if err != nil {
 		return 0, errors.Wrap(err, "Error getting kubeconfig status")
 	}
-	cluster, ok := con.Clusters[machineName]
+	cluster, ok := con.Clusters[clusterName]
 	if !ok {
 		return 0, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
 	}
