@@ -1,7 +1,7 @@
 ---
 title: "kvm2"
 linkTitle: "kvm2"
-weight: 1
+weight: 2
 date: 2017-01-05
 date: 2018-08-05
 description: >
@@ -12,29 +12,7 @@ description: >
 
 [KVM (Kernel-based Virtual Machine)](https://www.linux-kvm.org/page/Main_Page) is a full virtualization solution for Linux on x86 hardware containing virtualization extensions. To work with KVM, minikube uses the [libvirt virtualization API](https://libvirt.org/)
 
-## Requirements
-
-- libvirt v1.3.1 or higher
-- qemu-kvm v2.0 or higher
-
-## Installing Prerequisites
-
-{{% readfile file="/docs/Reference/Drivers/includes/kvm2_prereqs_install.md" %}}
-
-## Driver installation
-
-{{% readfile file="/docs/Reference/Drivers/includes/kvm2_driver_install.md" %}}
-
-## Usage
-
-```shell
-minikube start --vm-driver=kvm2
-```
-To make kvm2 the default for future invocations, run:
-
-```shell
-minikube config set vm-driver kvm2
-```
+{{% readfile file="/docs/Reference/Drivers/includes/kvm2_usage.md" %}}
 
 ## Special features
 

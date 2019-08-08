@@ -1,6 +1,6 @@
 ---
-title: "HyperKit"
-linkTitle: "HyperKit"
+title: "hyperkit"
+linkTitle: "hyperkit"
 weight: 1
 date: 2018-08-08
 description: >
@@ -11,29 +11,7 @@ description: >
 
 [HyperKit](https://github.com/moby/hyperkit) is an open-source hypervisor for macOS hypervisor, optimized for lightweight virtual machines and container deployment.
 
-## Requirements
-
-- macOS High Sierra 10.12 (or newer)
-- HyperKit
-
-## Installing Prerequisites
-
-{{% readfile file="/docs/Reference/Drivers/includes/hyperkit_prereqs_install.md" %}}
-
-## Driver installation
-
-{{% readfile file="/docs/Reference/Drivers/includes/hyperkit_driver_install.md" %}}
-
-## Usage
-
-```shell
-minikube start --vm-driver=hyperkit
-```
-To make hyperkit the default driver:
-
-```shell
-minikube config set vm-driver hyperkit
-```
+{{% readfile file="/docs/Reference/Drivers/includes/hyperkit_usage.md" %}}
 
 ## Special features
 
