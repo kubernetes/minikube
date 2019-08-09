@@ -67,9 +67,8 @@ func TestStartStop(t *testing.T) {
 			}},
 			{"crio", []string{
 				"--container-runtime=crio",
-				"--extra-config",
 				"--disable-driver-mounts",
-				"kubeadm.ignore-preflight-errors=SystemVerification",
+				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
 		}
 
