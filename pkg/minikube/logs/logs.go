@@ -165,6 +165,7 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 	}
 	cmds[r.Name()] = r.SystemLogCmd(length)
 	// Works across container runtimes with good formatting
-	cmds["container status"] = "sudo crictl ps -a"
+	// Fallback to 'docker ps' if it fails (none driver)
+	cmds["container status"] = "sudo crictl ps -a || sudo docker ps -a"
 	return cmds
 }
