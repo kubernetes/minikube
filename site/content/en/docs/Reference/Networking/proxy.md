@@ -102,7 +102,7 @@ Then run `minikube delete` and `minikube start`.
 
 ## downloading binaries: proxyconnect tcp: tls: oversized record received with length 20527
 
-Your need to set a correct `HTTPS_PROXY` value.
+The supplied value of `HTTPS_PROXY` is probably incorrect. Verify that this value is not pointing to an HTTP proxy rather than an HTTPS proxy.
 
 ## Additional Information
 
