@@ -330,12 +330,31 @@ func runStart(cmd *cobra.Command, args []string) {
 
 }
 
-func setupKubeconfig(host *host.Host, config *cfg.Config) (*kubeconfig.KCS, error) {
-	addr, err := host.Driver.GetURL()
+func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.KCS, error) {
+	addr, err := h.Driver.GetURL()
 	if err != nil {
-		exit.WithError("Failed to get host URL", err)
+		exit.WithError("Failed to get driver URL", err)
 	}
-	return kubeconfig.Setup(addr, config)
+	addr = strings.Replace(addr, "tcp://", "https://", -1)
+	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
+	if c.KubernetesConfig.APIServerName != constants.APIServerName {
+		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
+	}
+
+	kcs := &kubeconfig.KCS{
+		ClusterName:          cfg.GetMachineName(),
+		ClusterServerAddress: addr,
+		ClientCertificate:    constants.MakeMiniPath("client.crt"),
+		ClientKey:            constants.MakeMiniPath("client.key"),
+		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
+		KeepContext:          viper.GetBool(keepContext),
+		EmbedCerts:           viper.GetBool(embedCerts),
+	}
+	kcs.SetPath(kubeconfig.PathFromEnv())
+	if err := kubeconfig.Update(kcs); err != nil {
+		return kcs, err
+	}
+	return kcs, nil
 }
 
 func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
@@ -415,9 +434,9 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-func showKubectlConnectInfo(kubeconfig *kubeconfig.KCS) {
-	if kubeconfig.KeepContext {
-		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kubeconfig.ClusterName})
+func showKubectlConnectInfo(kcs *kubeconfig.KCS) {
+	if kcs.KeepContext {
+		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
 	} else {
 		out.T(out.Ready, `Done! kubectl is now configured to use "{{.name}}"`, out.V{"name": cfg.GetMachineName()})
 	}

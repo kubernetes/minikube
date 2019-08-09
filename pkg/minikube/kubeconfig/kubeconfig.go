@@ -18,22 +18,32 @@ package kubeconfig
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/client-go/tools/clientcmd/api/latest"
 	"k8s.io/minikube/pkg/minikube/constants"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // IsClusterInConfig verifies the ip stored in kubeconfig.
-func IsClusterInConfig(ip net.IP, clusterName string) (bool, error) {
+func IsClusterInConfig(ip net.IP, clusterName string, configPath ...string) (bool, error) {
+	path := PathFromEnv()
+	if configPath != nil {
+		path = configPath[0]
+	}
 	if ip == nil {
 		return false, fmt.Errorf("error, empty ip passed")
 	}
-	kip, err := extractIP(Path(), clusterName)
+	kip, err := extractIP(clusterName, path)
 	if err != nil {
 		return false, err
 	}
@@ -46,12 +56,16 @@ func IsClusterInConfig(ip net.IP, clusterName string) (bool, error) {
 }
 
 // Port returns the Port number stored for minikube in the kubeconfig specified
-func Port(clusterName string) (int, error) {
-	con, err := readOrNew(Path())
+func Port(clusterName string, configPath ...string) (int, error) {
+	path := PathFromEnv()
+	if configPath != nil {
+		path = configPath[0]
+	}
+	cfg, err := readOrNew(path)
 	if err != nil {
 		return 0, errors.Wrap(err, "Error getting kubeconfig status")
 	}
-	cluster, ok := con.Clusters[clusterName]
+	cluster, ok := cfg.Clusters[clusterName]
 	if !ok {
 		return 0, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
 	}
@@ -67,8 +81,8 @@ func Port(clusterName string) (int, error) {
 	return port, err
 }
 
-// Path() gets the path to the first kubeconfig
-func Path() string {
+// PathFromEnv() gets the path to the first kubeconfig
+func PathFromEnv() string {
 	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
 	if kubeConfigEnv == "" {
 		return constants.KubeconfigPath
@@ -77,8 +91,12 @@ func Path() string {
 }
 
 // extractIP returns the IP address stored for minikube in the kubeconfig specified
-func extractIP(filename, machineName string) (net.IP, error) {
-	apiCfg, err := readOrNew(filename)
+func extractIP(machineName string, configPath ...string) (net.IP, error) {
+	path := PathFromEnv()
+	if configPath != nil {
+		path = configPath[0]
+	}
+	apiCfg, err := readOrNew(path)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting kubeconfig status")
 	}
@@ -96,4 +114,128 @@ func extractIP(filename, machineName string) (net.IP, error) {
 	}
 	ip := net.ParseIP(kip)
 	return ip, nil
+}
+
+// UpdateIP overwrites the IP stored in kubeconfig with the provided IP.
+func UpdateIP(ip net.IP, machineName string, configPath ...string) (bool, error) {
+	path := PathFromEnv()
+	if configPath != nil {
+		path = configPath[0]
+	}
+
+	if ip == nil {
+		return false, fmt.Errorf("error, empty ip passed")
+	}
+
+	kip, err := extractIP(machineName, path)
+	if err != nil {
+		return false, err
+	}
+	if kip.Equal(ip) {
+		return false, nil
+	}
+	kport, err := Port(machineName, path)
+	if err != nil {
+		return false, err
+	}
+	cfg, err := readOrNew(path)
+	if err != nil {
+		return false, errors.Wrap(err, "Error getting kubeconfig status")
+	}
+	// Safe to lookup server because if field non-existent getIPFromKubeconfig would have given an error
+	cfg.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(kport)
+	err = writeToFile(cfg, path)
+	if err != nil {
+		return false, err
+	}
+	// Kubeconfig IP reconfigured
+	return true, nil
+}
+
+// writeToFile encodes the configuration and writes it to the given file.
+// If the file exists, it's contents will be overwritten.
+func writeToFile(config runtime.Object, configPath ...string) error {
+	fPath := PathFromEnv()
+	if configPath != nil {
+		fPath = configPath[0]
+	}
+
+	if config == nil {
+		glog.Errorf("could not write to '%s': config can't be nil", fPath)
+	}
+
+	// encode config to YAML
+	data, err := runtime.Encode(latest.Codec, config)
+	if err != nil {
+		return errors.Errorf("could not write to '%s': failed to encode config: %v", fPath, err)
+	}
+
+	// create parent dir if doesn't exist
+	dir := filepath.Dir(fPath)
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		if err = os.MkdirAll(dir, 0755); err != nil {
+			return errors.Wrapf(err, "Error creating directory: %s", dir)
+		}
+	}
+
+	// write with restricted permissions
+	if err := ioutil.WriteFile(fPath, data, 0600); err != nil {
+		return errors.Wrapf(err, "Error writing file %s", fPath)
+	}
+	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
+		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
+	}
+
+	return nil
+}
+
+// readOrNew retrieves Kubernetes client configuration from a file.
+// If no files exists, an empty configuration is returned.
+func readOrNew(configPath ...string) (*api.Config, error) {
+	fPath := PathFromEnv()
+	if configPath != nil {
+		fPath = configPath[0]
+	}
+
+	data, err := ioutil.ReadFile(fPath)
+	if os.IsNotExist(err) {
+		return api.NewConfig(), nil
+	} else if err != nil {
+		return nil, errors.Wrapf(err, "Error reading file %q", fPath)
+	}
+
+	// decode config, empty if no bytes
+	kcfg, err := decode(data)
+	if err != nil {
+		return nil, errors.Errorf("could not read config: %v", err)
+	}
+
+	// initialize nil maps
+	if kcfg.AuthInfos == nil {
+		kcfg.AuthInfos = map[string]*api.AuthInfo{}
+	}
+	if kcfg.Clusters == nil {
+		kcfg.Clusters = map[string]*api.Cluster{}
+	}
+	if kcfg.Contexts == nil {
+		kcfg.Contexts = map[string]*api.Context{}
+	}
+
+	return kcfg, nil
+}
+
+// decode reads a Config object from bytes.
+// Returns empty config if no bytes.
+func decode(data []byte) (*api.Config, error) {
+	// if no data, return empty config
+	if len(data) == 0 {
+		return api.NewConfig(), nil
+	}
+
+	kcfg, _, err := latest.Codec.Decode(data, nil, nil)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error decoding config from data: %s", string(data))
+	}
+
+	return kcfg.(*api.Config), nil
 }

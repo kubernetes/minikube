@@ -96,7 +96,7 @@ users:
     client-key: /home/la-croix/apiserver.key
 `)
 
-func Test_update(t *testing.T) {
+func TestUpdate(t *testing.T) {
 	setupCfg := &KCS{
 		ClusterName:          "test",
 		ClusterServerAddress: "192.168.1.1:8080",
@@ -147,20 +147,20 @@ func Test_update(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error making temp directory %v", err)
 			}
-			test.cfg.setPath(filepath.Join(tmpDir, "kubeconfig"))
+			test.cfg.SetPath(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
-				if err := ioutil.WriteFile(test.cfg.fileContent(), test.existingCfg, 0600); err != nil {
+				if err := ioutil.WriteFile(test.cfg.filePath(), test.existingCfg, 0600); err != nil {
 					t.Fatalf("WriteFile: %v", err)
 				}
 			}
-			err = update(test.cfg)
+			err = Update(test.cfg)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
 			}
-			config, err := readOrNew(test.cfg.fileContent())
+			config, err := readOrNew(test.cfg.filePath())
 			if err != nil {
 				t.Errorf("Error reading kubeconfig file: %v", err)
 			}
@@ -215,7 +215,7 @@ func TestIsClusterInConfig(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := IsClusterInConfig(test.ip, configFilename, "minikube")
+			statusActual, err := IsClusterInConfig(test.ip, "minikube", configFilename)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -272,7 +272,7 @@ func TestUpdateIP(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := UpdateIP(test.ip, configFilename, "minikube")
+			statusActual, err := UpdateIP(test.ip, "minikube", configFilename)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -359,7 +359,7 @@ func Test_extractIP(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			configFilename := tempFile(t, test.cfg)
-			ip, err := extractIP(configFilename, "minikube")
+			ip, err := extractIP("minikube", configFilename)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -559,7 +559,7 @@ func TestGetKubeConfigPath(t *testing.T) {
 
 	for _, test := range tests {
 		os.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
-		if result := Path(); result != test.want {
+		if result := PathFromEnv(); result != test.want {
 			t.Errorf("Expected first splitted chunk, got: %s", result)
 		}
 	}
