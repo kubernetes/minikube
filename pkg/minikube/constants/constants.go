@@ -426,8 +426,3 @@ const (
 	// DriverDocumentation the documentation of the KVM driver
 	DriverDocumentation = "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md"
 )
-
-const (
-	CACertificatesDir = "/usr/share/ca-certificates"
-	SSLCertStoreDir   = "/etc/ssl/certs"
-)
