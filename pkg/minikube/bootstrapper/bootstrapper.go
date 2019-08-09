@@ -56,7 +56,7 @@ const (
 func GetCachedBinaryList(bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		return constants.GetKubeadmCachedBinaries()
+		return constants.KubeadmBinaries
 	default:
 		return []string{}
 	}

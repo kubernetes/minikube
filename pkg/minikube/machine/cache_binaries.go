@@ -20,6 +20,7 @@ import (
 	"crypto"
 	"os"
 	"path"
+	"path/filepath"
 	"runtime"
 
 	"github.com/golang/glog"
@@ -90,9 +91,9 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 	return targetFilepath, nil
 }
 
-// CopyBinary copies previously cached binaries into the path
-func CopyBinary(cr command.Runner, binary, path string) error {
-	f, err := assets.NewFileAsset(path, "/usr/bin", binary, "0755")
+// CopyBinary copies a locally cached binary to the guest VM
+func CopyBinary(cr command.Runner, src string, dest string) error {
+	f, err := assets.NewFileAsset(src, filepath.Dir(dest), filepath.Base(dest), "0755")
 	if err != nil {
 		return errors.Wrap(err, "new file asset")
 	}
