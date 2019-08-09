@@ -23,7 +23,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -72,7 +71,7 @@ func runStop(cmd *cobra.Command, args []string) {
 		out.T(out.Stopped, `"{{.profile_name}}" stopped.`, out.V{"profile_name": profile})
 	}
 
-	if err := cmdUtil.KillMountProcess(); err != nil {
+	if err := killMountProcess(); err != nil {
 		out.T(out.WarningType, "Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
