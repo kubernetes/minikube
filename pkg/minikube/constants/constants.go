@@ -213,21 +213,19 @@ const (
 	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
 	// KubeletSystemdConfFile is the path to the kubelet systemd configuration
 	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	// KubeadmConfigFile is the path to the kubeadm configuration
-	KubeadmConfigFile = "/var/lib/kubeadm.yaml"
 	// DefaultCNIConfigPath is the path to the CNI configuration
 	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
+
 	// GuestAddonsDir is the default path of the addons configuration
 	GuestAddonsDir = "/etc/kubernetes/addons"
 	// GuestManifestsDir is where the kubelet should look for static Pod manifests
 	GuestManifestsDir = "/etc/kubernetes/manifests"
-	// PersistentDir is the path where persistant data should be stored within the VM (not tmpfs)
-	GuestPersistentDir = "/data/minikube"
 	// GuestEphemeralDir is the path where ephemeral data should be stored within the VM
 	GuestEphemeralDir = "/var/tmp/minikube"
+	// PersistentDir is the path where persistant data should be stored within the VM (not tmpfs)
+	GuestPersistentDir = "/var/lib/minikube"
 	// GuestCertsDir are where Kubernetes certificates are kept on the guest
-	GuestCertsDir = "/data/minikube/certs"
-
+	GuestCertsDir = GuestPersistentDir + "/certs"
 	// DefaultUfsPort is the default port of UFS
 	DefaultUfsPort = "5640"
 	// DefaultUfsDebugLvl is the default debug level of UFS
@@ -241,7 +239,6 @@ const (
 
 	// IsMinikubeChildProcess is the name of "is minikube child process" variable
 	IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
-
 	// FileScheme is the file scheme
 	FileScheme = "file"
 )
