@@ -20,7 +20,7 @@ To debug issues with minikube (not *Kubernetes* but **minikube** itself), you ca
 
 Example:
 
-`minikube start --v=7` Will start minikube and output all the important debug logs to stdout.
+`minikube start --v=7` will start minikube and output all the important debug logs to stdout.
 
 ## Gathering VM logs
 

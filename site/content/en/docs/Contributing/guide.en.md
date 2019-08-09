@@ -17,15 +17,16 @@ We'd love to accept your patches! Before we can take them, [please fill out eith
 ### Finding issues to work on
 
 * ["good first issue"](https://github.com/kubernetes/minikube/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22)  -  issues where there is a clear path to resolution
-* ["help wanted"](https://github.com/kubernetes/minikube/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+) - any issue where we've identified a need, but not the resources to work on it.
-* High impact issues are labelled as *priority/important-soon* or *priority/important-longterm*
+* ["help wanted"](https://github.com/kubernetes/minikube/issues?utf8=%E2%9C%93&q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22+) - issues where we've identified a need but not resources to work on them
+"priority/important-soon" or "priority/important-longterm: - high impact issues that need to be addressed in the next couple of releases.
+
 * Ask on the #minikube Slack if you aren't sure
 
 Once you've discovered an issue to work on:
 
-* add a comment mentioning that you plan to work on the issue
-* send a PR out that mentions the issue
-* Once there is a PR, comment on the issue with `/assign` to assign it to yourself
+* Add a comment mentioning that you plan to work on the issue
+* Send a PR out that mentions the issue
+* Comment on the issue with `/assign` to assign it to yourself
 
 ### Contributing A Patch
 
