@@ -1,5 +1,6 @@
 ---
 title: "Contributor Guide"
+linkTitle: "Guide"
 date: 2019-07-31
 weight: 1
 description: >
