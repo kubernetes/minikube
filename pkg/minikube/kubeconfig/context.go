@@ -23,16 +23,20 @@ import (
 )
 
 // UnsetCurrentContext unsets the current-context from minikube to "" on minikube stop
-func UnsetCurrentContext(filename, machineName string) error {
-	confg, err := readOrNew(filename)
+func UnsetCurrentContext(machineName string, configPath ...string) error {
+	fPath := PathFromEnv()
+	if configPath != nil {
+		fPath = configPath[0]
+	}
+	kCfg, err := readOrNew(fPath)
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubeconfig status")
 	}
 
 	// Unset current-context only if profile is the current-context
-	if confg.CurrentContext == machineName {
-		confg.CurrentContext = ""
-		if err := writeToFile(confg, filename); err != nil {
+	if kCfg.CurrentContext == machineName {
+		kCfg.CurrentContext = ""
+		if err := writeToFile(kCfg, fPath); err != nil {
 			return errors.Wrap(err, "writing kubeconfig")
 		}
 		return nil
@@ -42,21 +46,29 @@ func UnsetCurrentContext(filename, machineName string) error {
 }
 
 // SetCurrentContext sets the kubectl's current-context
-func SetCurrentContext(kubeCfgPath, name string) error {
-	kcfg, err := readOrNew(kubeCfgPath)
+func SetCurrentContext(name string, configPath ...string) error {
+	fPath := PathFromEnv()
+	if configPath != nil {
+		fPath = configPath[0]
+	}
+	kcfg, err := readOrNew(fPath)
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubeconfig status")
 	}
 	kcfg.CurrentContext = name
-	if err := writeToFile(kcfg, kubeCfgPath); err != nil {
+	if err := writeToFile(kcfg, fPath); err != nil {
 		return errors.Wrap(err, "writing kubeconfig")
 	}
 	return nil
 }
 
 // DeleteContext deletes the specified machine's kubeconfig context
-func DeleteContext(kubeCfgPath, machineName string) error {
-	kcfg, err := readOrNew(kubeCfgPath)
+func DeleteContext(machineName string, configPath ...string) error {
+	fPath := PathFromEnv()
+	if configPath != nil {
+		fPath = configPath[0]
+	}
+	kcfg, err := readOrNew(fPath)
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubeconfig status")
 	}
@@ -74,7 +86,7 @@ func DeleteContext(kubeCfgPath, machineName string) error {
 		kcfg.CurrentContext = ""
 	}
 
-	if err := writeToFile(kcfg, kubeCfgPath); err != nil {
+	if err := writeToFile(kcfg, fPath); err != nil {
 		return errors.Wrap(err, "writing kubeconfig")
 	}
 	return nil
