@@ -44,13 +44,12 @@ func TestGenerateKubeletConfig(t *testing.T) {
 				NodeName:          "minikube",
 				ContainerRuntime:  "docker",
 			},
-			expected: `
-[Unit]
+			expected: `[Unit]
 Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/var/lib/minikube/binaries/v1.10.13/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,
@@ -63,13 +62,12 @@ ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook 
 				NodeName:          "minikube",
 				ContainerRuntime:  "cri-o",
 			},
-			expected: `
-[Unit]
+			expected: `[Unit]
 Wants=crio.service
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=remote --container-runtime-endpoint=/var/run/crio/crio.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=/var/run/crio/crio.sock --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+ExecStart=/var/lib/minikube/binaries/v1.15.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=remote --container-runtime-endpoint=/var/run/crio/crio.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=/var/run/crio/crio.sock --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
 `,
@@ -82,13 +80,12 @@ ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/
 				NodeName:          "minikube",
 				ContainerRuntime:  "containerd",
 			},
-			expected: `
-[Unit]
+			expected: `[Unit]
 Wants=containerd.service
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+ExecStart=/var/lib/minikube/binaries/v1.15.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
 `,
@@ -102,13 +99,12 @@ ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/
 				ContainerRuntime:  "docker",
 				ImageRepository:   "docker-proxy-image.io/google_containers",
 			},
-			expected: `
-[Unit]
+			expected: `[Unit]
 Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/var/lib/minikube/binaries/v1.15.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,
@@ -134,7 +130,7 @@ ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/
 
 			diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 				A:        difflib.SplitLines(tc.expected),
-				B:        difflib.SplitLines(got),
+				B:        difflib.SplitLines(string(got)),
 				FromFile: "Expected",
 				ToFile:   "Got",
 				Context:  1,
@@ -267,7 +263,7 @@ func TestGenerateConfig(t *testing.T) {
 				}
 				diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 					A:        difflib.SplitLines(string(expected)),
-					B:        difflib.SplitLines(got),
+					B:        difflib.SplitLines(string(got)),
 					FromFile: "Expected",
 					ToFile:   "Got",
 					Context:  1,

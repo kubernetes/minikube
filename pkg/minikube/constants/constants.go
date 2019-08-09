@@ -222,7 +222,7 @@ const (
 	GuestManifestsDir = "/etc/kubernetes/manifests"
 	// GuestEphemeralDir is the path where ephemeral data should be stored within the VM
 	GuestEphemeralDir = "/var/tmp/minikube"
-	// PersistentDir is the path where persistant data should be stored within the VM (not tmpfs)
+	// PersistentDir is the path where persistent data should be stored within the VM (not tmpfs)
 	GuestPersistentDir = "/var/lib/minikube"
 	// GuestCertsDir are where Kubernetes certificates are kept on the guest
 	GuestCertsDir = GuestPersistentDir + "/certs"
