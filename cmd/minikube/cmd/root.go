@@ -116,7 +116,7 @@ func Execute() {
 	RootCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 		flag.Usage = translate.T(flag.Usage)
 	})
-	RootCmd.SetUsageTemplate(usageTemplate())
+
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
 		os.Exit(exit.BadUsage)
@@ -179,7 +179,7 @@ func init() {
 
 	groups := templates.CommandGroups{
 		{
-			Message: "Basic Commands:",
+			Message: translate.T("Basic Commands:"),
 			Commands: []*cobra.Command{
 				startCmd,
 				statusCmd,
@@ -189,14 +189,14 @@ func init() {
 			},
 		},
 		{
-			Message: "Images Commands:",
+			Message: translate.T("Images Commands:"),
 			Commands: []*cobra.Command{
 				dockerEnvCmd,
 				cacheCmd,
 			},
 		},
 		{
-			Message: "Configuration and Management Commands:",
+			Message: translate.T("Configuration and Management Commands:"),
 			Commands: []*cobra.Command{
 				configCmd.AddonsCmd,
 				configCmd.ConfigCmd,
@@ -205,14 +205,14 @@ func init() {
 			},
 		},
 		{
-			Message: "Networking and Connectivity Commands:",
+			Message: translate.T("Networking and Connectivity Commands:"),
 			Commands: []*cobra.Command{
 				serviceCmd,
 				tunnelCmd,
 			},
 		},
 		{
-			Message: "Advanced Commands:",
+			Message: translate.T("Advanced Commands:"),
 			Commands: []*cobra.Command{
 				mountCmd,
 				sshCmd,
@@ -220,7 +220,7 @@ func init() {
 			},
 		},
 		{
-			Message: "Troubleshooting Commands:",
+			Message: translate.T("Troubleshooting Commands:"),
 			Commands: []*cobra.Command{
 				sshKeyCmd,
 				ipCmd,
@@ -232,7 +232,7 @@ func init() {
 	}
 	groups.Add(RootCmd)
 
-	// any not grouped command will show in Other Commands group.
+	// Ungrouped commands will show up in the "Other Commands" section
 	RootCmd.AddCommand(completionCmd)
 	templates.ActsAsRootCommand(RootCmd, []string{"options"}, groups...)
 
