@@ -56,10 +56,10 @@ func TestSetupCerts(t *testing.T) {
 	cmdMap := map[string]string{}
 	certFilenames := map[string]string{"ca.crt": "minikubeCA.pem", "mycert.pem": "mycert.pem"}
 	for _, dst := range certFilenames {
-		certFile := path.Join(constants.CACertificatesDir, dst)
-		certStorePath := path.Join(constants.SSLCertStoreDir, dst)
+		certFile := path.Join(CACertificatesDir, dst)
+		certStorePath := path.Join(SSLCertStoreDir, dst)
 		certNameHash := "abcdef"
-		remoteCertHashLink := path.Join(constants.SSLCertStoreDir, fmt.Sprintf("%s.0", certNameHash))
+		remoteCertHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", certNameHash))
 		cmdMap[fmt.Sprintf("sudo ln -s '%s' '%s'", certFile, certStorePath)] = "1"
 		cmdMap[fmt.Sprintf("openssl x509 -hash -noout -in '%s'", certFile)] = certNameHash
 		cmdMap[fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, remoteCertHashLink)] = "1"
