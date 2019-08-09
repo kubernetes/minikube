@@ -14,7 +14,7 @@ require (
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-units v0.3.3
-	github.com/docker/machine v0.16.1
+	github.com/docker/machine v0.7.1-0.20190718054102-a555e4f7a8f5
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
