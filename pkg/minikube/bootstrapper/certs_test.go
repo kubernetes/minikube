@@ -32,7 +32,6 @@ func TestSetupCerts(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
-	f := command.NewFakeCommandRunner()
 	k8s := config.KubernetesConfig{
 		APIServerName: constants.APIServerName,
 		DNSDomain:     constants.ClusterDNSDomain,
@@ -44,6 +43,8 @@ func TestSetupCerts(t *testing.T) {
 		filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), cert))
 	}
 
+	f := command.NewFakeCommandRunner()
+	f.SetCommandToOutput(map[string]string{"sudo mkdir -p  /var/lib/minikube/certs": ""})
 	if err := SetupCerts(f, k8s); err != nil {
 		t.Fatalf("Error starting cluster: %v", err)
 	}

@@ -50,11 +50,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	if err := generateCerts(k8s); err != nil {
 		return errors.Wrap(err, "Error generating certs")
 	}
-	if err := cmd.Run(fmt.Sprintf("sudo mkdir -p %s", constants.GuestCertsDir)); err != nil {
-		return errors.Wrap(err, "mkdir")
-	}
 	copyableFiles := []assets.CopyableFile{}
-
 	for _, cert := range certs {
 		p := filepath.Join(localPath, cert)
 		perms := "0644"

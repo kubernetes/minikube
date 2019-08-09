@@ -670,7 +670,7 @@ func configFiles(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, ku
 	return fs
 }
 
-// binDir returns the persistant path binaries are stored in
+// binDir returns the persistent path binaries are stored in
 func binRoot(version string) string {
 	return filepath.Join(constants.GuestPersistentDir, "binaries", version)
 }
