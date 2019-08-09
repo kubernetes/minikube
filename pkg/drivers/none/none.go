@@ -38,8 +38,8 @@ const driverName = constants.DriverNone
 
 // cleanupPaths are paths to be removed by cleanup, and are used by both kubeadm and minikube.
 var cleanupPaths = []string{
-	"/data/minikube",
-	"/etc/kubernetes/manifests",
+	constants.GuestEphemeralDir,
+	constants.GuestManifestsDir,
 	"/var/lib/minikube",
 }
 

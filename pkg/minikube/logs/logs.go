@@ -34,7 +34,7 @@ import (
 )
 
 // rootCauseRe is a regular expression that matches known failure root causes
-var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted|tls: bad certificate`)
+var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted|tls: bad certificate|kubelet.*no API client|kubelet.*No api server`)
 
 // ignoreRe is a regular expression that matches spurious errors to not surface
 var ignoreCauseRe = regexp.MustCompile("error: no objects passed to apply")

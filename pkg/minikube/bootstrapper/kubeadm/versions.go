@@ -241,7 +241,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 	NewUnversionedOption(Kubelet, "hostname-override", constants.DefaultNodeName),
 
 	// System pods args
-	NewUnversionedOption(Kubelet, "pod-manifest-path", "/etc/kubernetes/manifests"),
+	NewUnversionedOption(Kubelet, "pod-manifest-path", constants.GuestManifestsDir),
 	{
 		Option: util.ExtraOption{
 			Component: Kubelet,
@@ -257,7 +257,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 
 	// Auth args
 	NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
-	NewUnversionedOption(Kubelet, "client-ca-file", path.Join(util.DefaultCertPath, "ca.crt")),
+	NewUnversionedOption(Kubelet, "client-ca-file", path.Join(constants.GuestCertsDir, "ca.crt")),
 
 	// Cgroup args
 	NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),

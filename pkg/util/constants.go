@@ -26,7 +26,6 @@ import (
 const (
 	APIServerPort            = 8443
 	DefaultMinikubeDirectory = "/var/lib/minikube"
-	DefaultCertPath          = DefaultMinikubeDirectory + "/certs/"
 	DefaultKubeConfigPath    = DefaultMinikubeDirectory + "/kubeconfig"
 	DefaultDNSDomain         = "cluster.local"
 	DefaultServiceCIDR       = "10.96.0.0/12"

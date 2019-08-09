@@ -41,7 +41,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
-const tempLoadDir = "/tmp"
+// loadRoot is where images should be loaded from within the guest VM
+var loadRoot = filepath.Join(constants.GuestPersistentDir, "images")
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
 
@@ -86,6 +87,9 @@ func CacheImages(images []string, cacheDir string) error {
 
 // LoadImages loads previously cached images into the container runtime
 func LoadImages(cmd command.Runner, images []string, cacheDir string) error {
+	glog.Infof("LoadImages start: %s", images)
+	defer glog.Infof("LoadImages end")
+
 	var g errgroup.Group
 	// Load profile cluster config from file
 	cc, err := config.Load()
@@ -97,7 +101,7 @@ func LoadImages(cmd command.Runner, images []string, cacheDir string) error {
 		g.Go(func() error {
 			src := filepath.Join(cacheDir, image)
 			src = sanitizeCacheDir(src)
-			if err := loadImageFromCache(cmd, cc.KubernetesConfig, src); err != nil {
+			if err := transferAndLoadImage(cmd, cc.KubernetesConfig, src); err != nil {
 				glog.Warningf("Failed to load %s: %v", src, err)
 				return errors.Wrapf(err, "loading image %s", src)
 			}
@@ -194,15 +198,15 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
-// loadImageFromCache loads a single image from the cache
-func loadImageFromCache(cr command.Runner, k8s config.KubernetesConfig, src string) error {
+// transferAndLoadImage transfers and loads a single image from the cache
+func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src string) error {
 	glog.Infof("Loading image from cache: %s", src)
 	filename := filepath.Base(src)
 	if _, err := os.Stat(src); err != nil {
 		return err
 	}
-	dst := path.Join(tempLoadDir, filename)
-	f, err := assets.NewFileAsset(src, tempLoadDir, filename, "0777")
+	dst := path.Join(loadRoot, filename)
+	f, err := assets.NewFileAsset(src, loadRoot, filename, "0644")
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}
@@ -222,9 +226,6 @@ func loadImageFromCache(cr command.Runner, k8s config.KubernetesConfig, src stri
 		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
 
-	if err := cr.Run("sudo rm -rf " + dst); err != nil {
-		return errors.Wrap(err, "deleting temp docker image location")
-	}
 	glog.Infof("Successfully loaded image %s from cache", src)
 	return nil
 }
