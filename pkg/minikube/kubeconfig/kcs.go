@@ -20,10 +20,12 @@ import (
 	"io/ioutil"
 	"sync/atomic"
 
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
-// KCS is the kubeconfig setup
+// KCS is the minikubes settings for kubeconfig
 type KCS struct {
 	// The name of the cluster for this context
 	ClusterName string
@@ -51,18 +53,18 @@ type KCS struct {
 	kubeConfigFile atomic.Value
 }
 
-// SetKubeConfigFile sets the kubeconfig file
-func (k *KCS) setPath(kubeConfigFile string) {
+// SetPath sets the setting for kubeconfig filepath
+func (k *KCS) SetPath(kubeConfigFile string) {
 	k.kubeConfigFile.Store(kubeConfigFile)
 }
 
-// fileContent gets the kubeconfig file
-func (k *KCS) fileContent() string {
+// filePath gets the kubeconfig file
+func (k *KCS) filePath() string {
 	return k.kubeConfigFile.Load().(string)
 }
 
 // Populate populates an api.Config object with values from *KCS
-func Populate(cfg *KCS, apiCfg *api.Config) error {
+func PopulateFromSetup(cfg *KCS, apiCfg *api.Config) error {
 	var err error
 	clusterName := cfg.ClusterName
 	cluster := api.NewCluster()
@@ -107,5 +109,29 @@ func Populate(cfg *KCS, apiCfg *api.Config) error {
 		apiCfg.CurrentContext = cfg.ClusterName
 	}
 
+	return nil
+}
+
+// update reads config from disk, adds the minikube settings, and writes it back.
+// activeContext is true when minikube is the CurrentContext
+// If no CurrentContext is set, the given name will be used.
+func Update(kcs *KCS) error {
+	glog.Infoln("Using kubeconfig: ", kcs.filePath())
+
+	// read existing config or create new if does not exist
+	kcfg, err := readOrNew(kcs.filePath())
+	if err != nil {
+		return err
+	}
+
+	err = PopulateFromSetup(kcs, kcfg)
+	if err != nil {
+		return err
+	}
+
+	// write back to disk
+	if err := writeToFile(kcfg, kcs.filePath()); err != nil {
+		return errors.Wrap(err, "writing kubeconfig")
+	}
 	return nil
 }
