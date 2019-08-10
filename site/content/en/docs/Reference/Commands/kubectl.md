@@ -8,7 +8,7 @@ description: >
 ---
 
 
-### Synopsis
+### Overview
 
 Run the kubernetes client, download it if necessary.
 

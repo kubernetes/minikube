@@ -8,7 +8,7 @@ description: >
 
 minikube has integrated support for the [Kubernetes Dashboard UI](https://github.com/kubernetes/dashboard).
 
-## Synopsis
+## Overview
 
 The Dashboard is a web-based Kubernetes user interface. You can use it to:
 

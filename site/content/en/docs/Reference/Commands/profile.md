@@ -7,7 +7,7 @@ description: >
   Profile gets or sets the current minikube profile
 ---
 
-### Synopsis
+### Overview
 
 profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`
 
@@ -42,7 +42,7 @@ You can return to the default minikube profile by running `minikube profile defa
 
 Lists all minikube profiles.
 
-### Synopsis
+### Overview
 
 Lists all valid minikube profiles and detects all possible invalid profiles.
 

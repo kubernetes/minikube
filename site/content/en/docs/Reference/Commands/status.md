@@ -8,7 +8,7 @@ description: >
 ---
 
 
-### Synopsis
+### Overview
 
 Gets the status of a local kubernetes cluster.
 	Exit status contains the status of minikube's VM, cluster and kubernetes encoded on it's bits in this order from right to left.
