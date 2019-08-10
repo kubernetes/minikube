@@ -41,4 +41,3 @@ touch $KUBECONFIG
 sudo -E minikube start --vm-driver=none
 ```
 
-## Troubleshooting

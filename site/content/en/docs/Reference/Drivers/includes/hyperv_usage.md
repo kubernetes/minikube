@@ -2,9 +2,9 @@
 
 * Windows 10 Pro 
 * Hyper-V enabled
-* A Hyper-V switch created
+* An active Hyper-V switch
 
-## Configuring Hyper-V
+## Enabling Hyper-V
 
 Open a PowerShell console as Administrator, and run the following command:
 
@@ -12,13 +12,21 @@ Open a PowerShell console as Administrator, and run the following command:
 Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All
 ```
 
-Reboot, and create a new external network switch:
+If Hyper-V was not previously active, you will need to reboot.
+
+## Network Configuration
+
+Create a Hyper-V external network switch  
+
+{{% alert title="Untested" color="warning" %}}
+This command is speculative, and may not work in all environments. You may need to use the Hyper-V Administrator UI for wireless interfaces.
+{{% /alert %}}
 
 ```powershell
-New-VMSwitch -name ExternalSwitch  -NetAdapterName Ethernet -AllowManagementOS $true 
+New-VMSwitch -name ExternalSwitch -NetAdapterName Ethernet -AllowManagementOS $true 
 ```
 
-Set this network switch as the minikube default:
+Set this switch as the minikube default:
 
 ```shell
 minikube config set hyperv-virtual-switch ExternalSwitch

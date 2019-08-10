@@ -1,6 +1,6 @@
 ## Requirements
 
-- [https://www.virtualbox.org/wiki/Downloads](VirtualBox) 5.2 or higher
+- [VirtualBox](https://www.virtualbox.org/wiki/Downloads) 5.2 or higher
 
 ## Usage
 

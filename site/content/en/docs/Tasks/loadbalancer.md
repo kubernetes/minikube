@@ -7,7 +7,10 @@ description: >
   How to access a LoadBalancer service in minikube
 ---
 
+## Overview
+
 A LoadBalancer service is the standard way to expose a service to the internet. With this method, each service gets it's own IP address.
+
 
 ## Using `minikube tunnel`
 
@@ -33,26 +36,23 @@ Status:
                 loadbalancer emulator: no errors
 ```
 
-Tunnel might ask you for password for creating and deleting network routes.
 
-### DNS resolution
+`minikube tunnel` runs as a separate daemon, creating a network route on the host to the service CIDR of the cluster using the cluster's IP address as a gateway.  The tunnel command exposes the external IP directly to any program running on the host operating system.
+
+### DNS resolution (experimental)
 
 If you are on macOS, the tunnel command also allows DNS resolution for Kubernetes services from the host.
 
 ### Cleaning up orphaned routes
 
-If the `minikube tunnel` shuts down in an unclean way, it might leave a network route around.
-This case the ~/.minikube/tunnels.json file will contain an entry for that tunnel.
-To cleanup orphaned routes, run:
+If the `minikube tunnel` shuts down in an abrupt manner, it may leave orphaned network routes on your system. If this happens, the ~/.minikube/tunnels.json file will contain an entry for that tunnel. To remove orphaned routes, run:
 
 ````shell
 minikube tunnel --cleanup
 ````
 
-### Avoid entering password multiple times
+### Avoiding password prompts
 
-`minikube tunnel` runs as a separate daemon, creates a network route on the host to the service CIDR of the cluster using the cluster's IP address as a gateway. Adding a route requires root privileges for the user, and thus there are differences in how to run `minikube tunnel` depending on the OS.
-
-If you want to avoid entering the root password, consider setting NOPASSWD for "ip" and "route" commands:
+Adding a route requires root privileges for the user, and thus there are differences in how to run `minikube tunnel` depending on the OS. If you want to avoid entering the root password, consider setting NOPASSWD for "ip" and "route" commands:
 
 <https://superuser.com/questions/1328452/sudoers-nopasswd-for-single-executable-but-allowing-others>

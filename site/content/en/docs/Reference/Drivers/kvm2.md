@@ -18,13 +18,13 @@ description: >
 
 The `minikube start` command supports 3 additional kvm specific flags:
 
-* **\--gpu**: Enable experimental NVIDIA GPU support in minikube
-* **\--hidden**: Hide the hypervisor signature from the guest in minikube
-* **\--kvm-network**:  The KVM network name
+* **`--gpu`**: Enable experimental NVIDIA GPU support in minikube
+* **`--hidden`**: Hide the hypervisor signature from the guest in minikube
+* **`--kvm-network`**:  The KVM network name
 
 ## Issues
 
-* `minikube` will repeatedly for root password if user is not in the correct `libvirt` group [#3467](https://github.com/kubernetes/minikube/issues/3467)
+* `minikube` will repeatedly for the root password if user is not in the correct `libvirt` group [#3467](https://github.com/kubernetes/minikube/issues/3467)
 * `Machine didn't return an IP after 120 seconds` when firewall prevents VM network access [#3566](https://github.com/kubernetes/minikube/issues/3566)
 * `unable to set user and group to '65534:992` when `dynamic ownership = 1` in `qemu.conf` [#4467](https://github.com/kubernetes/minikube/issues/4467) 
 * KVM VM's cannot be used simultaneously with VirtualBox  [#4913](https://github.com/kubernetes/minikube/issues/4913)
