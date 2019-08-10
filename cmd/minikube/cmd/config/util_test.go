@@ -91,10 +91,6 @@ func TestIsAddonAlreadySet(t *testing.T) {
 			addonName: "ingress",
 			expectErr: "addon ingress was already ",
 		},
-		{
-			addonName: "heapster",
-			expectErr: "addon heapster was already ",
-		},
 	}
 
 	for _, test := range testCases {

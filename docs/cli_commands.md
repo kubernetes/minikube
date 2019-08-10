@@ -22,7 +22,7 @@ In this section, all commands which are accepted by the `minikube` CLI are descr
 
 ---
  ### addons
-**Description -** Modifies minikube addons files using subcommands like `minikube addons enable heapster`
+**Description -** Modifies minikube addons files using subcommands like `minikube addons enable dashboard`
 **Usage -** 
 ```
 minikube addons SUBCOMMAND [flags]
@@ -99,7 +99,6 @@ Configurable fields:
  * dashboard
  * addon-manager
  * default-storageclass
- * heapster
  * efk
  * ingress
  * registry

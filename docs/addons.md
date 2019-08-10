@@ -1,6 +1,6 @@
 # Add-ons
 
-Minikube has a set of built in addons that can be used enabled, disabled, and opened inside of the local k8s environment. Below is an example of this functionality for the `heapster` addon:
+Minikube has a set of built in addons that can be used enabled, disabled, and opened inside of the local k8s environment. Below is an example of this functionality for the `dashboard` addon:
 
 ```shell
 $ minikube addons list
@@ -9,7 +9,6 @@ $ minikube addons list
 - freshpod: disabled
 - addon-manager: enabled
 - dashboard: enabled
-- heapster: disabled
 - efk: disabled
 - ingress: disabled
 - default-storageclass: enabled
@@ -19,10 +18,10 @@ $ minikube addons list
 - nvidia-gpu-device-plugin: disabled
 
 # minikube must be running for these commands to take effect
-$ minikube addons enable heapster
-heapster was successfully enabled
+$ minikube addons enable dashboard
+dashboard was successfully enabled
 
-$ minikube addons open heapster # This will open grafana (interacting w/ heapster) in the browser
+$ minikube addons open dashboard # This will open kubernetes dashboard in the browser
 Waiting, endpoint for service is not ready yet...
 Waiting, endpoint for service is not ready yet...
 Created new window in existing browser session.
@@ -31,7 +30,6 @@ Created new window in existing browser session.
 The currently supported addons include:
 
 * [Kubernetes Dashboard](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/dashboard)
-* [Heapster](https://github.com/kubernetes/heapster): [Troubleshooting Guide](https://github.com/kubernetes/heapster/blob/master/docs/influxdb.md) Note:You will need to login to Grafana as admin/admin in order to access the console
 * [EFK](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/fluentd-elasticsearch)
 * [Registry](https://github.com/kubernetes/minikube/tree/master/deploy/addons/registry)
 * [Registry Credentials](https://github.com/upmc-enterprises/registry-creds)

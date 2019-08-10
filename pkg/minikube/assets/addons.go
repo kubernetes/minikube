@@ -131,38 +131,6 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "storage-provisioner-gluster"),
-	"heapster": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/heapster/influx-grafana-rc.yaml.tmpl",
-			constants.AddonsPath,
-			"influxGrafana-rc.yaml",
-			"0640",
-			true),
-		MustBinAsset(
-			"deploy/addons/heapster/grafana-svc.yaml.tmpl",
-			constants.AddonsPath,
-			"grafana-svc.yaml",
-			"0640",
-			false),
-		MustBinAsset(
-			"deploy/addons/heapster/influxdb-svc.yaml.tmpl",
-			constants.AddonsPath,
-			"influxdb-svc.yaml",
-			"0640",
-			false),
-		MustBinAsset(
-			"deploy/addons/heapster/heapster-rc.yaml.tmpl",
-			constants.AddonsPath,
-			"heapster-rc.yaml",
-			"0640",
-			true),
-		MustBinAsset(
-			"deploy/addons/heapster/heapster-svc.yaml.tmpl",
-			constants.AddonsPath,
-			"heapster-svc.yaml",
-			"0640",
-			false),
-	}, false, "heapster"),
 	"efk": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/efk/elasticsearch-rc.yaml.tmpl",
