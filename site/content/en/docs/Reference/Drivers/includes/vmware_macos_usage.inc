@@ -6,7 +6,7 @@
 
 If the [Brew Package Manager](https://brew.sh/) is installed, run:
 
-```
+```shell
 brew install docker-machine-driver-vmware
 ```
 

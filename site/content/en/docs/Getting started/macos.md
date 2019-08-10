@@ -36,18 +36,18 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin
 
 {{% tabs %}}
 {{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.inc" %}}
 {{% /tab %}}
 {{% tab "Hyperkit" %}}
-{{% readfile file="/docs/Reference/Drivers/includes/hyperkit_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/hyperkit_usage.inc" %}}
 {{% /tab %}}
 {{% tab "Parallels" %}}
-{{% readfile file="/docs/Reference/Drivers/includes/parallels_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/parallels_usage.inc" %}}
 {{% /tab %}}
 {{% tab "VMware" %}}
-{{% readfile file="/docs/Reference/Drivers/includes/vmware_macos_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/vmware_macos_usage.inc" %}}
 {{% /tab %}}
 
 {{% /tabs %}}
 
-{{% readfile file="/docs/Getting started/includes/post_install.md" %}}
+{{% readfile file="/docs/Getting started/includes/post_install.inc" %}}

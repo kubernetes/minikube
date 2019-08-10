@@ -12,7 +12,7 @@ description: >
 
 This document is written for system integrators who are familiar with minikube, and wish to run it within a customized VM environment. The `none` driver allows advanced minikube users to skip VM creation, allowing minikube to be run on a user-supplied VM.
 
-{{% readfile file="/docs/Reference/Drivers/includes/none_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/none_usage.inc" %}}
 
 ## Issues
 

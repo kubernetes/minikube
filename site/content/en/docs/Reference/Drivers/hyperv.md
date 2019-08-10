@@ -12,7 +12,7 @@ description: >
 
 Hyper-V is a native hypervisor built in to modern versions of Microsoft Windows.
 
-{{% readfile file="/docs/Reference/Drivers/includes/hyperv_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/hyperv_usage.inc" %}}
 
 ## Special features
 
