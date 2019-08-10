@@ -25,8 +25,8 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 )
 
-// KCS is the minikubes settings for kubeconfig
-type KCS struct {
+// Settings is the minikubes settings for kubeconfig
+type Settings struct {
 	// The name of the cluster for this context
 	ClusterName string
 
@@ -54,17 +54,17 @@ type KCS struct {
 }
 
 // SetPath sets the setting for kubeconfig filepath
-func (k *KCS) SetPath(kubeConfigFile string) {
+func (k *Settings) SetPath(kubeConfigFile string) {
 	k.kubeConfigFile.Store(kubeConfigFile)
 }
 
 // filePath gets the kubeconfig file
-func (k *KCS) filePath() string {
+func (k *Settings) filePath() string {
 	return k.kubeConfigFile.Load().(string)
 }
 
-// Populate populates an api.Config object with values from *KCS
-func PopulateFromSetup(cfg *KCS, apiCfg *api.Config) error {
+// Populate populates an api.Config object with values from *Settings
+func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	var err error
 	clusterName := cfg.ClusterName
 	cluster := api.NewCluster()
@@ -72,7 +72,7 @@ func PopulateFromSetup(cfg *KCS, apiCfg *api.Config) error {
 	if cfg.EmbedCerts {
 		cluster.CertificateAuthorityData, err = ioutil.ReadFile(cfg.CertificateAuthority)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "reading CertificateAuthority %s", cfg.CertificateAuthority)
 		}
 	} else {
 		cluster.CertificateAuthority = cfg.CertificateAuthority
@@ -85,11 +85,11 @@ func PopulateFromSetup(cfg *KCS, apiCfg *api.Config) error {
 	if cfg.EmbedCerts {
 		user.ClientCertificateData, err = ioutil.ReadFile(cfg.ClientCertificate)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "reading ClientCertificate %s", cfg.ClientCertificate)
 		}
 		user.ClientKeyData, err = ioutil.ReadFile(cfg.ClientKey)
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "reading ClientKey %s", cfg.ClientKey)
 		}
 	} else {
 		user.ClientCertificate = cfg.ClientCertificate
@@ -115,7 +115,7 @@ func PopulateFromSetup(cfg *KCS, apiCfg *api.Config) error {
 // update reads config from disk, adds the minikube settings, and writes it back.
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
-func Update(kcs *KCS) error {
+func Update(kcs *Settings) error {
 	glog.Infoln("Using kubeconfig: ", kcs.filePath())
 
 	// read existing config or create new if does not exist
@@ -124,7 +124,7 @@ func Update(kcs *KCS) error {
 		return err
 	}
 
-	err = PopulateFromSetup(kcs, kcfg)
+	err = PopulateFromSettings(kcs, kcfg)
 	if err != nil {
 		return err
 	}
