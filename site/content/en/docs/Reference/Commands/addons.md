@@ -4,7 +4,7 @@ linkTitle: "addons"
 weight: 1
 date: 2019-08-01
 description: >
-  Modifies minikube addons files using subcommands like "minikube addons enable heapster"
+  Modifies minikube addons files using subcommands like "minikube addons enable dashboard"
 ---
 
 ## Overview
