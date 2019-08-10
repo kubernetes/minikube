@@ -169,6 +169,7 @@ func initKubernetesFlags() {
 // initDriverFlags inits the commandline flags for vm drivers
 func initDriverFlags() {
 	startCmd.Flags().String(vmDriver, constants.DefaultVMDriver, fmt.Sprintf("VM driver is one of: %v", constants.SupportedVMDrivers))
+	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
 
 	// kvm2
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (only supported with KVM driver)")
@@ -259,12 +260,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	vmDriver := viper.GetString(vmDriver)
-	if err := cmdcfg.IsValidDriver(runtime.GOOS, vmDriver); err != nil {
+	if err := cmdcfg.IsValidDriver(runtime.GOOS, viper.GetString(vmDriver)); err != nil {
 		exit.WithCodeT(
 			exit.Failure,
 			"The driver '{{.driver}}' is not supported on {{.os}}",
-			out.V{"driver": vmDriver, "os": runtime.GOOS},
+			out.V{"driver": viper.GetString(vmDriver), "os": runtime.GOOS},
 		)
 	}
 
