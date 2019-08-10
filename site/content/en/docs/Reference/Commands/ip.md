@@ -7,7 +7,7 @@ description: >
   Retrieves the IP address of the running cluster
 ---
 
-### Synopsis
+### Overview
 
 Retrieves the IP address of the running cluster, and writes it to STDOUT.
 

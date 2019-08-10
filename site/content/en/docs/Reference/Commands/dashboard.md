@@ -7,20 +7,20 @@ description: >
   Access the kubernetes dashboard running within the minikube cluster
 ---
 
-###  Usage
+## Usage
 
 ```
 minikube dashboard [flags]
 ```
 
-### Options
+## Options
 
 ```
   -h, --help   help for dashboard
       --url    Display dashboard URL instead of opening a browser
 ```
 
-### Options inherited from parent commands
+## Options inherited from parent commands
 
 ```
       --alsologtostderr                  log to standard error as well as files

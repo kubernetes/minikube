@@ -7,7 +7,7 @@ description: >
   Modify minikube config
 ---
 
-### Synopsis
+### Overview
 
 config modifies minikube config files using subcommands like "minikube config set vm-driver kvm"
 
@@ -93,7 +93,7 @@ minikube config unset PROPERTY_NAME [flags]
 
 ## minikube config view
 
-### Synopsis
+### Overview
 
 Display values currently set in the minikube config file.
 
