@@ -45,9 +45,8 @@ func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, 
 	if cpb.progress == nil {
 		cpb.progress = pb.New64(totalSize)
 	}
-	tmpl := `{{ string . "filePath" }} {{ bar . "-" "█" (cycle . "↖" "↗" "↘" "↙" ) "." "-"}} {{speed . }} {{percent .}} {{ rtime . " ETA - %s"}} {{ etime . " Elapsed - %s"}}`
-	p := pb.ProgressBarTemplate(tmpl).Start64(totalSize)
-	p.Set("filePath", filepath.Base(src))
+	p := pb.Full.Start64(totalSize)
+	p.Set("prefix", filepath.Base(src+": "))
 	p.SetCurrent(currentSize)
 	p.Set(pb.Bytes, true)
 
