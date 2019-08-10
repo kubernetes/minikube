@@ -330,7 +330,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 }
 
-func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.KCS, error) {
+func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) {
 	addr, err := h.Driver.GetURL()
 	if err != nil {
 		exit.WithError("Failed to get driver URL", err)
@@ -341,7 +341,7 @@ func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.KCS, error) {
 		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
 	}
 
-	kcs := &kubeconfig.KCS{
+	kcs := &kubeconfig.Settings{
 		ClusterName:          cfg.GetMachineName(),
 		ClusterServerAddress: addr,
 		ClientCertificate:    constants.MakeMiniPath("client.crt"),
@@ -434,7 +434,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-func showKubectlConnectInfo(kcs *kubeconfig.KCS) {
+func showKubectlConnectInfo(kcs *kubeconfig.Settings) {
 	if kcs.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
 	} else {
