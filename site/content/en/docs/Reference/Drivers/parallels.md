@@ -11,7 +11,7 @@ description: >
 
 The Parallels driver is particularly useful for users who own Parallels Desktop, as it does not require VT-x hardware support.
 
-{{% readfile file="/docs/Reference/Drivers/includes/parallels_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/parallels_usage.inc" %}}
 
 ## Issues
 
@@ -20,4 +20,3 @@ The Parallels driver is particularly useful for users who own Parallels Desktop,
 ## Troubleshooting
 
 * Run `minikube start --alsologtostderr -v=7` to debug crashes
-* 

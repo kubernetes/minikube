@@ -11,18 +11,17 @@ description: >
 
 [HyperKit](https://github.com/moby/hyperkit) is an open-source hypervisor for macOS hypervisor, optimized for lightweight virtual machines and container deployment.
 
-{{% readfile file="/docs/Reference/Drivers/includes/hyperkit_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/hyperkit_usage.inc" %}}
 
 ## Special features
 
 minikube start supports additional hyperkit specific flags:
 
-
 * **`--hyperkit-vpnkit-sock`**: Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSoc
 * **`--hyperkit-vsock-ports`**: List of guest VSock ports that should be exposed as sockets on the host
 * **`--nfs-share`**: Local folders to share with Guest via NFS mounts
 * **`--nfs-shares-root`**: Where to root the NFS Shares (default "/nfsshares")
-* **`--uuid`**: Provide VM UUID to restore MAC address 
+* **`--uuid`**: Provide VM UUID to restore MAC address
 
 ## Issues
 

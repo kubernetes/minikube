@@ -1,6 +1,6 @@
 ## Requirements
 
-* Windows 10 Pro 
+* Windows 10 Enterprise, Pro, or Education ([system requirements](https://docs.microsoft.com/en-us/virtualization/hyper-v-on-windows/reference/hyper-v-requirements))
 * Hyper-V enabled
 * An active Hyper-V switch
 
@@ -23,7 +23,7 @@ This command is speculative, and may not work in all environments. You may need 
 {{% /alert %}}
 
 ```powershell
-New-VMSwitch -name ExternalSwitch -NetAdapterName Ethernet -AllowManagementOS $true 
+New-VMSwitch -name ExternalSwitch -NetAdapterName Ethernet -AllowManagementOS $true
 ```
 
 Set this switch as the minikube default:

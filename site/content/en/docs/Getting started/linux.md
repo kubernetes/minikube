@@ -55,16 +55,16 @@ If the above command outputs "no":
 {{% tabs %}}
 
 {{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.inc" %}}
 {{% /tab %}}
 {{% tab "KVM" %}}
-{{% readfile file="/docs/Reference/Drivers/includes/kvm2_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/kvm2_usage.inc" %}}
 {{% /tab %}}
 {{% tab "None (bare-metal)" %}}
 If you are already running minikube from inside a VM, it is possible to skip the creation of an additional VM layer by using the `none` driver.
 
-{{% readfile file="/docs/Reference/Drivers/includes/none_usage.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/none_usage.inc" %}}
 {{% /tab %}}
 {{% /tabs %}}
 
-{{% readfile file="/docs/Getting started/includes/post_install.md" %}}
+{{% readfile file="/docs/Getting started/includes/post_install.inc" %}}
