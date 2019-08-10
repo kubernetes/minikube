@@ -149,3 +149,9 @@ footer.bg-dark {
 section.td-box--height-auto {
     padding-bottom: 3rem !important;
 }
+
+
+// Allow code tags to span most of a window length (default is 80%)
+div.td-content pre {
+    max-width: 99% !important;
+}
