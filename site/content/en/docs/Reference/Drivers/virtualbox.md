@@ -17,8 +17,8 @@ VirtualBox is the oldest and most stable VM driver for minikube.
 
 minikube start supports some VirtualBox specific flags:
 
-* **\--host-only-cidr**: The CIDR to be used for the minikube VM (default "192.168.99.1/24")
-* **\--no-vtx-check**: Disable checking for the availability of hardware virtualization 
+* **`--host-only-cidr`**: The CIDR to be used for the minikube VM (default "192.168.99.1/24")
+* **`--no-vtx-check`**: Disable checking for the availability of hardware virtualization 
 
 ## Issues
 
