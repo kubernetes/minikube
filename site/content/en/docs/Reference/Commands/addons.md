@@ -7,14 +7,7 @@ description: >
   Modifies minikube addons files using subcommands like "minikube addons enable heapster"
 ---
 
-## Usage
-
-```
-minikube addons SUBCOMMAND [flags]
-minikube addons [command]
-```
-
-## Subcommands
+## Overview
 
 * **configure**:   Configures the addon w/ADDON_NAME within minikube
 * **disable**:     Disables the addon w/ADDON_NAME within minikube
@@ -22,12 +15,9 @@ minikube addons [command]
 * **list**:        Lists all available minikube addons as well as their current statuses (enabled/disabled)
 * **open**:        Opens the addon w/ADDON_NAME within minikube
 
-
 ## minikube addons configure
 
 Configures the addon w/ADDON_NAME within minikube (example: minikube addons configure registry-creds). For a list of available addons use: minikube addons list 
-
-### Usage
 
 ```
 minikube addons configure ADDON_NAME [flags]
@@ -37,8 +27,6 @@ minikube addons configure ADDON_NAME [flags]
 
 Disables the addon w/ADDON_NAME within minikube (example: minikube addons disable dashboard). For a list of available addons use: minikube addons list 
 
-### Usage
-
 ```
 minikube addons disable ADDON_NAME [flags]
 ```
@@ -46,8 +34,6 @@ minikube addons disable ADDON_NAME [flags]
 ## minikube addons enable
 
 Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable dashboard). For a list of available addons use: minikube addons list 
-
-### Usage
 
 ```
 minikube addons enable ADDON_NAME [flags]
@@ -57,16 +43,12 @@ minikube addons enable ADDON_NAME [flags]
 
 Lists all available minikube addons as well as their current statuses (enabled/disabled)
 
-### Usage
-
 ```
 minikube addons list [flags]
 ```
 ## minikube addons open
 
 Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a list of available addons use: minikube addons list 
-
-### Usage
 
 ```
 minikube addons open ADDON_NAME [flags]
@@ -84,7 +66,7 @@ minikube addons open ADDON_NAME [flags]
 ```
 
 
-### Options inherited from parent commands
+## Options inherited from parent commands
 
 ```
       --alsologtostderr                  log to standard error as well as files

@@ -7,7 +7,7 @@ description: >
   Stops a running local kubernetes cluster
 ---
 
-### Synopsis
+### Overview
 
 Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
 itself, leaving all files intact. The cluster can be started again with the "start" command.

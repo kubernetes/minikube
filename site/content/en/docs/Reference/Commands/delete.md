@@ -7,7 +7,7 @@ description: >
   Deletes a local kubernetes cluster
 ---
 
-### Synopsis
+### Overview
 
 Deletes a local kubernetes cluster. This command deletes the VM, and removes all
 associated files.

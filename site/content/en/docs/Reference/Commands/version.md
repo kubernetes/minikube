@@ -2,7 +2,7 @@
 
 Print the version of minikube
 
-### Synopsis
+### Overview
 
 Print the version of minikube.
 
