@@ -7,7 +7,7 @@ description: >
   Gets the kubernetes URL(s) for the specified service in your local cluster
 ---
 
-### Synopsis
+### Overview
 
 Gets the kubernetes URL(s) for the specified service in your local cluster. In the case of multiple URLs they will be printed one at a time.
 

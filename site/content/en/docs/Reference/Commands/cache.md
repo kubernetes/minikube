@@ -7,7 +7,6 @@ description: >
   Add or delete an image from the local cache.
 ---
 
-### Subcommands
 
 ## minikube cache add
 

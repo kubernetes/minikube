@@ -8,38 +8,38 @@ description: >
 ---
 
 
-### Synopsis
+### Overview
 
-	Outputs minikube shell completion for the given shell (bash or zsh)
+Outputs minikube shell completion for the given shell (bash or zsh)
 
-	This depends on the bash-completion binary.  Example installation instructions:
-	OS X:
-
-```shell
-		$ brew install bash-completion
-		$ source $(brew --prefix)/etc/bash_completion
-		$ minikube completion bash > ~/.minikube-completion  # for bash users
-		$ minikube completion zsh > ~/.minikube-completion  # for zsh users
-		$ source ~/.minikube-completion
-```
-
-	Ubuntu:
-```shell
-		$ apt-get install bash-completion
-		$ source /etc/bash-completion
-		$ source <(minikube completion bash) # for bash users
-		$ source <(minikube completion zsh) # for zsh users
-```
-
-	Additionally, you may want to output the completion to a file and source in your .bashrc
-
-	Note for zsh users: [1] zsh completions are only supported in versions of zsh >= 5.2
+This depends on the bash-completion binary.  Example installation instructions:
 
 ### Usage
 
 ```
 minikube completion SHELL [flags]
 ```
+
+## Example: macOS
+
+```shell
+brew install bash-completion
+source $(brew --prefix)/etc/bash_completion
+minikube completion bash > ~/.minikube-completion  # for bash users
+$ minikube completion zsh > ~/.minikube-completion  # for zsh users
+$ source ~/.minikube-completion
+```
+
+## Example: Ubuntu
+
+```shell
+apt-get install bash-completion
+source /etc/bash-completion
+source <(minikube completion bash) # for bash users
+source <(minikube completion zsh) # for zsh users
+```
+
+Additionally, you may want to output the completion to a file and source in your .bashrc
 
 ### Options inherited from parent commands
 

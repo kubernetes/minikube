@@ -7,7 +7,7 @@ description: >
   tunnel makes services of type LoadBalancer accessible on localhost
 ---
 
-### Synopsis
+### Overview
 
 tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP
 
