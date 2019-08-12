@@ -40,11 +40,10 @@ If you would like to develop Kubernetes applications:
 Then minikube is for you.
 
 * **What is it good for?** Developing local Kubernetes applications
-* **What is it not good for?** Production deployments of Kubernetes applications
+* **What is it not good for?** Production Kubernetes deployments
 * **What is it *not yet* good for?** Environments which do not allow VM's
 
 ## Where should I go next?
 
-* [Getting Started](/getting-started/): Get started with minikube
+* [Getting Started](/start/): Get started with minikube
 * [Examples](/examples/): Check out some minikube examples!
-* 
