@@ -34,5 +34,5 @@ With a bit of work, one could setup [Syncthing](https://syncthing.net) between t
 If you are looking for a solution tuned for iterative application development, consider using a Kubernetes tool that is known to work well with minikube:
 
 - [Draft](https://draft.sh): see specific [minikube instructions](https://github.com/Azure/draft/blob/master/docs/install-minikube.md)
-- [Oketo](https://github.com/okteto/okteto)
+- [Okteto](https://github.com/okteto/okteto)
 - [Skaffold](http://github.com/ContainerTools/skaffold)
