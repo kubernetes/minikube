@@ -1,10 +1,10 @@
 ---
-title: "Proxy Support"
-linkTitle: "Proxy Support"
+title: "HTTP Proxiies"
+linkTitle: "HTTP Proxies"
 weight: 6
 date: 2017-01-05
 description: >
-  How to use an HTTP proxy with minikube
+  How to use an HTTP/HTTPS proxy with minikube
 ---
 
 minikube requires access to the internet via HTTP, HTTPS, and DNS protocols. If a HTTP proxy is required to access the internet, you may need to pass the proxy connection information to both minikube and Docker using environment variables:

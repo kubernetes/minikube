@@ -1,9 +1,9 @@
 ---
-title: "Building within"
+title: "Building images within minikube"
 date: 2019-08-05
 weight: 1
 description: >
-  Building images from within minikube
+  Building images within minikube
 ---
 
 When using a single VM of Kubernetes it's really handy to build inside the VM; as this means you don't have to build on your host machine and push the image into a docker registry - you can just build inside the same machine as minikube which speeds up local experiments.

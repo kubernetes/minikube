@@ -1,10 +1,10 @@
 ---
-title: "VPN Support"
-linkTitle: "VPN Support"
+title: "Host VPN"
+linkTitle: "Host VPN"
 weight: 6
 date: 2019-08-01
 description: >
-  How to use a VPN with minikube
+  Using minikube on a host with a VPN installed
 ---
 
 minikube requires access from the host to the following IP ranges:

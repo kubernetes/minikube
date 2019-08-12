@@ -67,4 +67,4 @@ If you are already running minikube from inside a VM, it is possible to skip the
 {{% /tab %}}
 {{% /tabs %}}
 
-{{% readfile file="/docs/Getting started/includes/post_install.inc" %}}
+{{% readfile file="/docs/Start/includes/post_install.inc" %}}
