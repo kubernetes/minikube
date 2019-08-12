@@ -1,7 +1,7 @@
 ---
 title: "Core Tasks"
 linkTitle: "Core Tasks"
-weight: 6
+weight: 4
 date: 2017-01-05
 description: >
   What can you do with minikube?
