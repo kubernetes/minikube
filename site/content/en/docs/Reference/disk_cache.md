@@ -1,6 +1,6 @@
 ---
-title: "Caching"
-linkTitle: "Caching"
+title: "Disk cache"
+linkTitle: "Disk cache"
 weight: 6
 date: 2019-08-01
 description: >
@@ -14,31 +14,13 @@ minikube has built-in support for caching downloaded resources into `$MINIKUBE_H
 * `~/.minikube/cache/images` - Docker images used by Kubernetes.
 * `~/.minikube/cache/<version>` - Kubernetes binaries, such as `kubeadm` and `kubelet`
 
-## Caching arbitrary Docker images
-
-minikube supports caching arbitrary images using the `minikube cache` command. Cached images are stored in `$MINIKUBE_HOME/cache/images`, and loaded into the VM's container runtime on `minikube start`.
-
-### Adding an image
-
-```shell
-minikube cache add ubuntu:16.04
-```
-
-### Listing images
-
-```shell
-minikube cache list
-```
-
-### Deleting an image
-
-```shell
-minikube cache delete <image name>
-```
-
-## Built-in Kubernetes image caching
+## Kubernetes image cache
 
 `minikube start` caches all required Kubernetes images by default. This default may be changed by setting `--cache-images=false`. These images are not displayed by the `minikube cache` command.
+
+## Arbitrary docker image cache
+
+See [Tasks: Caching images]({{< ref "/docs/tasks/caching.md" >}})
 
 ## Sharing the minikube cache
 

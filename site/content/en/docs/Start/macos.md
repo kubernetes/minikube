@@ -50,4 +50,4 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin
 
 {{% /tabs %}}
 
-{{% readfile file="/docs/Getting started/includes/post_install.inc" %}}
+{{% readfile file="/docs/Start/includes/post_install.inc" %}}
