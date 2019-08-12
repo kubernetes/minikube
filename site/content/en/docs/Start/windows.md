@@ -61,4 +61,4 @@ Hyper-V Requirements:     A hypervisor has been detected.
 {{% /tab %}}
 {{% /tabs %}}
 
-{{% readfile file="/docs/Getting started/includes/post_install.inc" %}}
+{{% readfile file="/docs/Start/includes/post_install.inc" %}}
