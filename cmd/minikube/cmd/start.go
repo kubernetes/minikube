@@ -686,7 +686,7 @@ func prepareNone(vmDriver string) {
 		out.T(out.Empty, "")
 		out.WarningT("The 'none' driver provides limited isolation and may reduce system security and reliability.")
 		out.WarningT("For more information, see:")
-		out.T(out.URL, "https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md")
+		out.T(out.URL, "https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 		out.T(out.Empty, "")
 	}
 
@@ -749,7 +749,7 @@ func validateNetwork(h *host.Host) string {
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
 			k = strings.ToUpper(k)               // for http_proxy & https_proxy
 			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
-				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see https://github.com/kubernetes/minikube/blob/master/docs/http_proxy.md for more details", out.V{"ip_address": ip})
+				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see https://minikube.sigs.k8s.io/docs/reference/networking/proxy/ for more details", out.V{"ip_address": ip})
 				warnedOnce = true
 			}
 		}
