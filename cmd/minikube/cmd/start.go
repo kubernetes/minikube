@@ -487,7 +487,7 @@ func validateUser() {
 func validateConfig() {
 	diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 	if diskSizeMB < pkgutil.CalculateSizeInMB(constants.MinimumDiskSize) {
-		exit.WithCodeT(exit.Config, "Requested disk size {{.size_in_mb}} is less than minimum of {{.size_in_mb2}}", out.V{"size_in_mb": diskSizeMB, "size_in_mb2": pkgutil.CalculateSizeInMB(constants.MinimumDiskSize)})
+		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(constants.MinimumDiskSize)})
 	}
 
 	err := autoSetOptions(viper.GetString(vmDriver))
@@ -497,7 +497,7 @@ func validateConfig() {
 
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.MinimumMemorySize) {
-		exit.UsageT("Requested memory allocation {{.size_in_mb}} is less than the minimum allowed of {{.size_in_mb2}}", out.V{"size_in_mb": memorySizeMB, "size_in_mb2": pkgutil.CalculateSizeInMB(constants.MinimumMemorySize)})
+		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(constants.MinimumMemorySize)})
 	}
 	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) {
 		out.T(out.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default_memorysize}}MB. Beware that minikube might not work correctly or crash unexpectedly.",
@@ -769,7 +769,7 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	nvs, err := semver.Make(strings.TrimPrefix(rawVersion, version.VersionPrefix))
 	if err != nil {
-		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubenretes_version}}": {{.error}}`, out.V{"kubenretes_version": rawVersion, "error": err})
+		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": rawVersion, "error": err})
 	}
 	nv := version.VersionPrefix + nvs.String()
 
