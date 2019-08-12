@@ -16,13 +16,9 @@ You should now be able to use docker on the command line on your host mac/linux 
 docker ps
 ```
 
-Docker may report following forbidden error if you are using http proxy and the `$(minikube ip)` is not added to `no_proxy`/`NO_PROXY`:
+### Troubleshooting
 
-```shell
-error during connect: Get https://192.168.39.98:2376/v1.39/containers/json: Forbidden
-```
-
-On Centos 7, docker may report the following error:
+On CentOS 7, Docker may report the following error:
 
 ```shell
 Could not read CA certificate "/etc/docker/ca.pem": open /etc/docker/ca.pem: no such file or directory

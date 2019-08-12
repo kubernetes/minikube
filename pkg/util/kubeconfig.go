@@ -175,7 +175,7 @@ func ReadConfigOrNew(filename string) (*api.Config, error) {
 }
 
 // WriteConfig encodes the configuration and writes it to the given file.
-// If the file exists, it's contents will be overwritten.
+// If the file exists, its contents will be overwritten.
 func WriteConfig(config *api.Config, filename string) error {
 	if config == nil {
 		glog.Errorf("could not write to '%s': config can't be nil", filename)

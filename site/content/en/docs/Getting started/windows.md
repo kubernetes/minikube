@@ -6,21 +6,21 @@ weight: 3
 
 ### Prerequisites
 
-  * Windows 8 or above
-  * A hypervisor, such as Hyper-V or VirtualBox
-  * Hardware virtualization support must be enabled in BIOS
-  * 4GB of RAM
+* Windows 8 or above
+* A hypervisor, such as Hyper-V or VirtualBox
+* Hardware virtualization support must be enabled in BIOS
+* 4GB of RAM
 
 ### Installation
 
 {{% tabs %}}
 {{% tab "Direct" %}}
-Download and run the [installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
+Download and run the [minikube installer](https://storage.googleapis.com/minikube/releases/latest/minikube-installer.exe)
 {{% /tab %}}
 
 {{% tab "Chocolatey" %}}
 
-If you have the [Chocolatey Package Manager](https://chocolatey.org/) installed, you can install minikube if run as an Administrator:
+If the [Chocolatey Package Manager](https://chocolatey.org/) is installed, use it to install minikube:
 
 ```shell
 choco install minikube
@@ -29,7 +29,6 @@ choco install minikube
 After it has installed, close the current CLI session and reopen it. minikube should have been added to your path automatically.
 {{% /tab %}}
 {{% /tabs %}}
-
 
 ## Hypervisor Setup
 
@@ -49,32 +48,17 @@ Hyper-V Requirements:     VM Monitor Mode Extensions: Yes
 
 If you see the following output, your system already has a Hypervisor installed and you can skip the next step.
 
-```
+```shell
 Hyper-V Requirements:     A hypervisor has been detected.
-                          Features required for Hyper-V will not be displayed.
 ```
 
 {{% tabs %}}
 {{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Getting started/_virtualbox.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.inc" %}}
 {{% /tab %}}
 {{% tab "Hyper-V" %}}
-
-If Hyper-V is active, you can start minikube with Hyper-V support using:
-
-```shell
-minikube start --vm-driver=hyperv
-```
-
-NOTE: If this fails due to networking issues, see the [Hyper-V driver documentation](https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyper-v-driver) for further instructions.
-
-To make hyperv the default for future invocations:
-
-```shell
-minikube config set vm-driver hyperv
-```
-
+{{% readfile file="/docs/Reference/Drivers/includes/hyperv_usage.inc" %}}
 {{% /tab %}}
 {{% /tabs %}}
 
-{{% readfile file="/docs/Getting started/_post_install.md" %}}
+{{% readfile file="/docs/Getting started/includes/post_install.inc" %}}

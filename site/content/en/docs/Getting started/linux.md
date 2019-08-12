@@ -55,61 +55,16 @@ If the above command outputs "no":
 {{% tabs %}}
 
 {{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Getting started/_virtualbox.md" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.inc" %}}
 {{% /tab %}}
 {{% tab "KVM" %}}
-
-The KVM driver requires libvirt and qemu-kvm to be installed:
-
-- Debian or Ubuntu 18.x: `sudo apt install libvirt-clients libvirt-daemon-system qemu-kvm`
-- Ubuntu 16.x or older: `sudo apt install libvirt-bin libvirt-daemon-system qemu-kvm`
-- Fedora/CentOS/RHEL: `sudo yum install libvirt libvirt-daemon-kvm qemu-kvm`
-- openSUSE/SLES: `sudo zypper install libvirt qemu-kvm`
-
-Additionally, The KVM driver requires an additional binary to be installed:
-
-```shell
- curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
-  && sudo install docker-machine-driver-kvm2 /usr/local/bin/
-```
-
-### Validate libvirt
-
-Before trying minikube, assert that libvirt is in a healthy state:
-
-```shell
-virt-host-validate
-```
-
-If you see any errors, stop now and consult your distributions documentation on configuring libvirt.
-
-### Using the kvm2 driver
-
-```shell
-minikube start --vm-driver=kvm2
-```
-To make kvm2 the default for future invocations, run:
-
-```shell
-minikube config set vm-driver kvm2
-```
-
+{{% readfile file="/docs/Reference/Drivers/includes/kvm2_usage.inc" %}}
 {{% /tab %}}
 {{% tab "None (bare-metal)" %}}
+If you are already running minikube from inside a VM, it is possible to skip the creation of an additional VM layer by using the `none` driver.
 
-If you are already running minikube from inside a VM, it is possible to skip the creation of an additional VM layer by using the `none` driver. 
-This mode does come with additional requirements:
-
-- docker
-- systemd
-- sudo access
-
-```shell
-sudo minikube start --vm-driver=none
-```
-
-Please see the [docs/reference/drivers/none](none driver) documentation for more information.
+{{% readfile file="/docs/Reference/Drivers/includes/none_usage.inc" %}}
 {{% /tab %}}
 {{% /tabs %}}
 
-{{% readfile file="/docs/Getting started/_post_install.md" %}}
+{{% readfile file="/docs/Getting started/includes/post_install.inc" %}}
