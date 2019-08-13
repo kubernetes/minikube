@@ -72,7 +72,6 @@ func TestListProfiles(t *testing.T) {
 	}
 }
 
-
 func TestProfileExists(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
