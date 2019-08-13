@@ -112,11 +112,18 @@ func TestCreateEmptyProfile(t *testing.T) {
 		{"p_13", false},
 	}
 	for _, tc := range testCases {
-		gotErr := CreateEmptyProfile(tc.name, miniDir)
+		n := tc.name // capturing  loop variable
+		gotErr := CreateEmptyProfile(n, miniDir)
 		if gotErr != nil && tc.expectErr == false {
 			t.Errorf("expected CreateEmptyProfile not to error but got err=%v", gotErr)
 		}
-		defer DeleteProfile(tc.name, miniDir)
+
+		defer func() { // tear down
+			err := DeleteProfile(n, miniDir)
+			if err != nil {
+				t.Errorf("error test tear down %v", err)
+			}
+		}()
 
 	}
 
@@ -141,12 +148,19 @@ func TestCreateProfile(t *testing.T) {
 			ShouldLoadCachedImages: false}}, false},
 	}
 	for _, tc := range testCases {
-		gotErr := CreateProfile(tc.name, tc.cfg, miniDir)
+		n := tc.name // capturing  loop variable
+		gotErr := CreateProfile(n, tc.cfg, miniDir)
 		if gotErr != nil && tc.expectErr == false {
 			t.Errorf("expected CreateEmptyProfile not to error but got err=%v", gotErr)
 		}
-		defer DeleteProfile(tc.name, miniDir)
 
+		defer func() { // tear down
+
+			err := DeleteProfile(n, miniDir)
+			if err != nil {
+				t.Errorf("error test tear down %v", err)
+			}
+		}()
 	}
 
 }
@@ -157,7 +171,10 @@ func TestDeleteProfile(t *testing.T) {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
 
-	CreateEmptyProfile("existing_prof", miniDir)
+	err = CreateEmptyProfile("existing_prof", miniDir)
+	if err != nil {
+		t.Errorf("error setting up TestDeleteProfile %v", err)
+	}
 
 	var testCases = []struct {
 		name      string
