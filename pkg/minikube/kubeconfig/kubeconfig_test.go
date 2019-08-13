@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package kubeconfig
 
 import (
 	"io/ioutil"
@@ -25,6 +25,9 @@ import (
 	"testing"
 
 	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/minikube/pkg/minikube/constants"
+
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var fakeKubeCfg = []byte(`
@@ -93,8 +96,8 @@ users:
     client-key: /home/la-croix/apiserver.key
 `)
 
-func TestSetupKubeConfig(t *testing.T) {
-	setupCfg := &KubeConfigSetup{
+func TestUpdate(t *testing.T) {
+	setupCfg := &Settings{
 		ClusterName:          "test",
 		ClusterServerAddress: "192.168.1.1:8080",
 		ClientCertificate:    "/home/apiserver.crt",
@@ -105,7 +108,7 @@ func TestSetupKubeConfig(t *testing.T) {
 
 	var tests = []struct {
 		description string
-		cfg         *KubeConfigSetup
+		cfg         *Settings
 		existingCfg []byte
 		expected    api.Config
 		err         bool
@@ -125,7 +128,7 @@ func TestSetupKubeConfig(t *testing.T) {
 		},
 		{
 			description: "keep context",
-			cfg: &KubeConfigSetup{
+			cfg: &Settings{
 				ClusterName:          "test",
 				ClusterServerAddress: "192.168.1.1:8080",
 				ClientCertificate:    "/home/apiserver.crt",
@@ -144,20 +147,20 @@ func TestSetupKubeConfig(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Error making temp directory %v", err)
 			}
-			test.cfg.SetKubeConfigFile(filepath.Join(tmpDir, "kubeconfig"))
+			test.cfg.SetPath(filepath.Join(tmpDir, "kubeconfig"))
 			if len(test.existingCfg) != 0 {
-				if err := ioutil.WriteFile(test.cfg.GetKubeConfigFile(), test.existingCfg, 0600); err != nil {
+				if err := ioutil.WriteFile(test.cfg.filePath(), test.existingCfg, 0600); err != nil {
 					t.Fatalf("WriteFile: %v", err)
 				}
 			}
-			err = SetupKubeConfig(test.cfg)
+			err = Update(test.cfg)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
 			}
-			config, err := ReadConfigOrNew(test.cfg.GetKubeConfigFile())
+			config, err := readOrNew(test.cfg.filePath())
 			if err != nil {
 				t.Errorf("Error reading kubeconfig file: %v", err)
 			}
@@ -174,7 +177,7 @@ func TestSetupKubeConfig(t *testing.T) {
 	}
 }
 
-func TestGetKubeConfigStatus(t *testing.T) {
+func TestIsClusterInConfig(t *testing.T) {
 
 	var tests = []struct {
 		description string
@@ -212,7 +215,7 @@ func TestGetKubeConfigStatus(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := GetKubeConfigStatus(test.ip, configFilename, "minikube")
+			statusActual, err := IsClusterInConfig(test.ip, "minikube", configFilename)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -227,7 +230,7 @@ func TestGetKubeConfigStatus(t *testing.T) {
 	}
 }
 
-func TestUpdateKubeconfigIP(t *testing.T) {
+func TestUpdateIP(t *testing.T) {
 
 	var tests = []struct {
 		description string
@@ -269,7 +272,7 @@ func TestUpdateKubeconfigIP(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
 			configFilename := tempFile(t, test.existing)
-			statusActual, err := UpdateKubeconfigIP(test.ip, configFilename, "minikube")
+			statusActual, err := UpdateIP(test.ip, "minikube", configFilename)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -288,7 +291,7 @@ func TestEmptyConfig(t *testing.T) {
 	tmp := tempFile(t, []byte{})
 	defer os.Remove(tmp)
 
-	cfg, err := ReadConfigOrNew(tmp)
+	cfg, err := readOrNew(tmp)
 	if err != nil {
 		t.Fatalf("could not read config: %v", err)
 	}
@@ -319,12 +322,12 @@ func TestNewConfig(t *testing.T) {
 
 	// write actual
 	filename := filepath.Join(dir, "config")
-	err = WriteConfig(expected, filename)
+	err = writeToFile(expected, filename)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	actual, err := ReadConfigOrNew(filename)
+	actual, err := readOrNew(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -334,7 +337,7 @@ func TestNewConfig(t *testing.T) {
 	}
 }
 
-func TestGetIPFromKubeConfig(t *testing.T) {
+func Test_extractIP(t *testing.T) {
 
 	var tests = []struct {
 		description string
@@ -356,7 +359,7 @@ func TestGetIPFromKubeConfig(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			configFilename := tempFile(t, test.cfg)
-			ip, err := getIPFromKubeConfig(configFilename, "minikube")
+			ip, err := extractIP("minikube", configFilename)
 			if err != nil && !test.err {
 				t.Errorf("Got unexpected error: %v", err)
 			}
@@ -367,131 +370,6 @@ func TestGetIPFromKubeConfig(t *testing.T) {
 				t.Errorf("IP returned: %s does not match ip given: %s", ip, test.ip)
 			}
 		})
-	}
-}
-
-func TestDeleteKubeConfigContext(t *testing.T) {
-	configFilename := tempFile(t, fakeKubeCfg)
-	if err := DeleteKubeConfigContext(configFilename, "la-croix"); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg, err := ReadConfigOrNew(configFilename)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(cfg.AuthInfos) != 0 {
-		t.Fail()
-	}
-
-	if len(cfg.Clusters) != 0 {
-		t.Fail()
-	}
-
-	if len(cfg.Contexts) != 0 {
-		t.Fail()
-	}
-}
-
-func TestSetCurrentContext(t *testing.T) {
-	contextName := "minikube"
-
-	kubeConfigFile, err := ioutil.TempFile("/tmp", "kubeconfig")
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-	defer os.Remove(kubeConfigFile.Name())
-
-	cfg, err := ReadConfigOrNew(kubeConfigFile.Name())
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != "" {
-		t.Errorf("Expected empty context but got %v", cfg.CurrentContext)
-	}
-
-	err = SetCurrentContext(kubeConfigFile.Name(), contextName)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-	defer func() {
-		err := UnsetCurrentContext(kubeConfigFile.Name(), contextName)
-		if err != nil {
-			t.Fatalf("Error not expected but got %v", err)
-		}
-	}()
-
-	cfg, err = ReadConfigOrNew(kubeConfigFile.Name())
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != contextName {
-		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
-	}
-}
-
-func TestUnsetCurrentContext(t *testing.T) {
-	kubeConfigFile := "./testdata/kubeconfig/config1"
-	contextName := "minikube"
-
-	cfg, err := ReadConfigOrNew(kubeConfigFile)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != contextName {
-		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
-	}
-
-	err = UnsetCurrentContext(kubeConfigFile, contextName)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-	defer func() {
-		err := SetCurrentContext(kubeConfigFile, contextName)
-		if err != nil {
-			t.Fatalf("Error not expected but got %v", err)
-		}
-	}()
-
-	cfg, err = ReadConfigOrNew(kubeConfigFile)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != "" {
-		t.Errorf("Expected empty context but got %v", cfg.CurrentContext)
-	}
-}
-
-func TestUnsetCurrentContextOnlyChangesIfProfileIsTheCurrentContext(t *testing.T) {
-	contextName := "minikube"
-	kubeConfigFile := "./testdata/kubeconfig/config2"
-
-	cfg, err := ReadConfigOrNew(kubeConfigFile)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != contextName {
-		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
-	}
-
-	err = UnsetCurrentContext(kubeConfigFile, "differentContextName")
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	cfg, err = ReadConfigOrNew(kubeConfigFile)
-	if err != nil {
-		t.Fatalf("Error not expected but got %v", err)
-	}
-
-	if cfg.CurrentContext != contextName {
-		t.Errorf("Expected context name %s but got %s", contextName, cfg.CurrentContext)
 	}
 }
 
@@ -521,7 +399,7 @@ func minikubeConfig(config *api.Config) {
 	// cluster
 	clusterName := "minikube"
 	cluster := api.NewCluster()
-	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(APIServerPort)
+	cluster.Server = "https://192.168.99.100:" + strconv.Itoa(constants.APIServerPort)
 	cluster.CertificateAuthority = "/home/tux/.minikube/apiserver.crt"
 	config.Clusters[clusterName] = cluster
 
@@ -662,4 +540,27 @@ func contextEquals(aContext, bContext *api.Context) bool {
 		return false
 	}
 	return true
+}
+
+func TestGetKubeConfigPath(t *testing.T) {
+	var tests = []struct {
+		input string
+		want  string
+	}{
+		{
+			input: "/home/fake/.kube/.kubeconfig",
+			want:  "/home/fake/.kube/.kubeconfig",
+		},
+		{
+			input: "/home/fake/.kube/.kubeconfig:/home/fake2/.kubeconfig",
+			want:  "/home/fake/.kube/.kubeconfig",
+		},
+	}
+
+	for _, test := range tests {
+		os.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
+		if result := PathFromEnv(); result != test.want {
+			t.Errorf("Expected first splitted chunk, got: %s", result)
+		}
+	}
 }

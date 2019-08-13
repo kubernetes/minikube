@@ -567,7 +567,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 	// In case of no port assigned, use util.APIServerPort
 	nodePort := k8s.NodePort
 	if nodePort <= 0 {
-		nodePort = util.APIServerPort
+		nodePort = constants.APIServerPort
 	}
 
 	opts := struct {

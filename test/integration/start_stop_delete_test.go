@@ -108,9 +108,6 @@ func TestStartStop(t *testing.T) {
 				err = util.RetryX(stop, 10*time.Second, 2*time.Minute)
 				mk.CheckStatus(state.Stopped.String())
 
-				// TODO medyagh:
-				// https://github.com/kubernetes/minikube/issues/4854
-
 				stdout, stderr, err = mk.Start(tc.args...)
 				if err != nil {
 					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
