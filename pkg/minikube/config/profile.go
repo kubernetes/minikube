@@ -17,9 +17,12 @@ limitations under the License.
 package config
 
 import (
+	"encoding/json"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
+	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -81,4 +84,72 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 		}
 	}
 	return dirs, err
+}
+
+// CreateProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
+func CreateEmptyProfile(name string, miniHome ...string) error {
+	cfg := &Config{}
+	return CreateProfile(name, cfg, miniHome...)
+}
+
+// CreateProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
+func CreateProfile(name string, cfg *Config, miniHome ...string) error {
+	data, err := json.MarshalIndent(cfg, "", "    ")
+	if err != nil {
+		return err
+	}
+	glog.Infof("Saving config:\n%s", data)
+	path := getProfileFile(name, miniHome...)
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return err
+	}
+
+	// If no config file exists, don't worry about swapping paths
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		if err := ioutil.WriteFile(path, data, 0600); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	tf, err := ioutil.TempFile(filepath.Dir(path), "config.json.tmp")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tf.Name())
+
+	if err = ioutil.WriteFile(tf.Name(), data, 0600); err != nil {
+		return err
+	}
+
+	if err = tf.Close(); err != nil {
+		return err
+	}
+
+	if err = os.Remove(path); err != nil {
+		return err
+	}
+
+	if err = os.Rename(tf.Name(), path); err != nil {
+		return err
+	}
+	return nil
+}
+
+// getProfileFile returns the Minikube profile config file
+func getProfileFile(profile string, miniHome ...string) string {
+	miniPath := constants.GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "profiles", profile, "config.json")
+}
+
+// GetProfilePath returns the Minikube profile path of config file
+func GetProfilePath(profile string, miniHome ...string) string {
+	miniPath := constants.GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "profiles", profile)
 }

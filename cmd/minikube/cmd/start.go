@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -34,7 +33,6 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/drivers/none"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
-
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -54,6 +52,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/drivers/none"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -920,47 +919,8 @@ func configureMounts() {
 }
 
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterConfig *cfg.Config) error {
-	data, err := json.MarshalIndent(clusterConfig, "", "    ")
-	if err != nil {
-		return err
-	}
-	glog.Infof("Saving config:\n%s", data)
-	path := constants.GetProfileFile(viper.GetString(cfg.MachineProfile))
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return err
-	}
-
-	// If no config file exists, don't worry about swapping paths
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if err := ioutil.WriteFile(path, data, 0600); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	tf, err := ioutil.TempFile(filepath.Dir(path), "config.json.tmp")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tf.Name())
-
-	if err = ioutil.WriteFile(tf.Name(), data, 0600); err != nil {
-		return err
-	}
-
-	if err = tf.Close(); err != nil {
-		return err
-	}
-
-	if err = os.Remove(path); err != nil {
-		return err
-	}
-
-	if err = os.Rename(tf.Name(), path); err != nil {
-		return err
-	}
-	return nil
+func saveConfig(clusterCfg *cfg.Config) error {
+	return cfg.CreateProfile(viper.GetString(cfg.MachineProfile), clusterCfg)
 }
 
 func validateDriverVersion(vmDriver string) {
