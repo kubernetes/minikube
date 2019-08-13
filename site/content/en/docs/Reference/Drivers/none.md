@@ -55,7 +55,7 @@ As Kubernetes has full access to both your filesystem as well as your docker ima
 * `-p` (profiles) are unsupported: It is not possible to run more than one `--vm-driver=none` instance
 * Many `minikube` commands are not supported, such as: `dashboard`, `mount`, `ssh`
 * minikube with the `none` driver has a confusing permissions model, as some commands need to be run as root ("start"), and others by a regular user ("dashboard")
-* CoreDNS detects resolver loop, goes into CrashloopBackoff - [#3511](https://github.com/kubernetes/minikube/issues/3511)
+* CoreDNS detects resolver loop, goes into CrashLoopBackOff - [#3511](https://github.com/kubernetes/minikube/issues/3511)
 * Some versions of Linux have a version of docker that is newer then what Kubernetes expects. To overwrite this, run minikube with the following parameters: `sudo -E minikube start --vm-driver=none --kubernetes-version v1.11.8 --extra-config kubeadm.ignore-preflight-errors=SystemVerification`
 
 * [Full list of open 'none' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fnone-driver)
