@@ -37,6 +37,7 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/test/integration/util"
 )
 
 // setUpProxy runs a local http proxy and sets the env vars for it.
@@ -70,7 +71,6 @@ func TestProxy(t *testing.T) {
 	origHP := os.Getenv("HTTP_PROXY")
 	origNP := os.Getenv("NO_PROXY")
 	p := profileName(t) // profile name
-
 	if isTestNoneDriver(t) {
 		// TODO fix this later
 		t.Skip("Skipping proxy warning for none")
@@ -105,14 +105,14 @@ func TestProxy(t *testing.T) {
 	}(t)
 	t.Run("ProxyConsoleWarnning", testProxyWarning)
 	t.Run("ProxyDashboard", testProxyDashboard)
-
+	t.Run("KubeconfigContext", testKubeConfigCurrentCtx)
 }
 
 // testProxyWarning checks user is warned correctly about the proxy related env vars
 func testProxyWarning(t *testing.T) {
 	p := profileName(t) // profile name
 	mk := NewMinikubeRunner(t, p)
-	stdout, stderr, err := mk.Start()
+	stdout, stderr, err := mk.Start("--wait=false")
 	if err != nil {
 		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
@@ -160,5 +160,19 @@ func testProxyDashboard(t *testing.T) {
 			t.Fatalf("Unable to read http response body: %v", err)
 		}
 		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
+	}
+}
+
+// testKubeConfigCurrentCtx checks weather the current-context is set after star
+func testKubeConfigCurrentCtx(t *testing.T) {
+	p := profileName(t) // profile name
+	kr := util.NewKubectlRunner(t, p)
+	ctxAfter, err := kr.RunCommand([]string{"config", "current-context"}, false)
+	if err != nil {
+		t.Errorf("expected not to get error for kubectl config current-context but got error: %v", err)
+	}
+
+	if !strings.Contains(string(ctxAfter), p) {
+		t.Errorf("expected kubecontext after start to be %s but got %s", p, ctxAfter)
 	}
 }

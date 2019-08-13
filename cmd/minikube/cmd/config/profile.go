@@ -24,8 +24,8 @@ import (
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/out"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // ProfileCmd represents the profile command
@@ -62,7 +62,7 @@ var ProfileCmd = &cobra.Command{
 				out.SuccessT("Skipped switching kubectl context for {{.profile_name}} , because --keep-context", out.V{"profile_name": profile})
 				out.SuccessT("To connect to this cluster, use: kubectl --context={{.profile_name}}", out.V{"profile_name": profile})
 			} else {
-				err := pkgutil.SetCurrentContext(constants.KubeconfigPath, profile)
+				err := kubeconfig.SetCurrentContext(constants.KubeconfigPath, profile)
 				if err != nil {
 					out.ErrT(out.Sad, `Error while setting kubectl current context :  {{.error}}`, out.V{"error": err})
 				}
