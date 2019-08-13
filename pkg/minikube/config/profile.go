@@ -46,7 +46,7 @@ func ProfileExists(name string, miniHome ...string) bool {
 
 	p := profileFilePath(name, miniPath)
 	_, err := os.Stat(p)
-	return err != nil
+	return err == nil
 }
 
 // CreateProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
@@ -162,6 +162,7 @@ func profileFilePath(profile string, miniHome ...string) string {
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
+	
 	return filepath.Join(miniPath, "profiles", profile, "config.json")
 }
 

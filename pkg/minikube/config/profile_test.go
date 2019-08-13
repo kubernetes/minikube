@@ -70,3 +70,31 @@ func TestListProfiles(t *testing.T) {
 		t.Errorf("error listing profiles %v", err)
 	}
 }
+
+
+func TestProfileExists(t *testing.T) {
+	miniDir, err := filepath.Abs("./testdata/.minikube")
+	if err != nil {
+		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+	}
+
+	var testCases = []struct {
+		name      string
+		expected bool
+	}{
+		{"p1", true},
+		{"p2",true},
+		{"p3_empty",true},
+		{"p4_invalid_file",true},
+		{"p5_partial_config",true},
+		{"p6_no_file",false},
+	}
+	for _, tt := range testCases { 
+		got := ProfileExists(tt.name,miniDir)
+		if  got != tt.expected {
+			t.Errorf("error expected ProfileExists(%s,%s)=%t but got %t ", tt.name,miniDir,tt.expected, got )
+		}
+
+	}
+
+}
