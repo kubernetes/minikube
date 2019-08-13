@@ -493,3 +493,24 @@ install-kvm-driver: out/docker-machine-driver-kvm2
 release-kvm-driver: install-kvm-driver checksum
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
+
+site/themes/docsy/assets/vendor/bootstrap/package.js:
+	git submodule update -f --init --recursive
+
+# hugo for generating site previews
+.ONESHELL:
+out/hugo/hugo:
+	mkdir -p out
+	cd out
+	git clone https://github.com/gohugoio/hugo.git
+	cd hugo
+	go build --tags extended
+
+# Serve the documentation site to localhost
+.PHONY: site
+site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo
+	(cd site && ../out/hugo/hugo serve \
+	  --disableFastRender \
+	  --navigateToChanged \
+	  --ignoreCache \
+	  --buildFuture)
