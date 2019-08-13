@@ -57,7 +57,8 @@ div.code-tabs code {
 
 div.code-tabs h2 {
     font-size: 1.2rem !important;
-    margin-top: 1rem;
+    font-weight: bold !important;
+    margin-top: 1.3rem;
 }
 div.code-tabs h3 {
     font-size: 1.1rem !important;
