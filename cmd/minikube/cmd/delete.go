@@ -84,8 +84,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 		out.FatalT("Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	// TODO:Medyagh move to config package
-	if err := os.RemoveAll(pkg_config.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {
+	if err := pkg_config.DeleteProfile(viper.GetString(pkg_config.MachineProfile)); err != nil {
 		if os.IsNotExist(err) {
 			out.T(out.Meh, `"{{.profile_name}}" profile does not exist`, out.V{"profile_name": profile})
 			os.Exit(0)

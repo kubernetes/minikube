@@ -37,6 +37,79 @@ func (p *Profile) isValid() bool {
 	return true
 }
 
+// ProfileExists returns true if there is a profile config (regardless of being valid)
+func ProfileExists(name string, miniHome ...string) bool {
+	miniPath := constants.GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+
+	p := profileFilePath(name, miniHome...)
+	_, err := os.Stat(p)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// CreateProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
+func CreateEmptyProfile(name string, miniHome ...string) error {
+	cfg := &Config{}
+	return CreateProfile(name, cfg, miniHome...)
+}
+
+// CreateProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
+func CreateProfile(name string, cfg *Config, miniHome ...string) error {
+	data, err := json.MarshalIndent(cfg, "", "    ")
+	if err != nil {
+		return err
+	}
+	glog.Infof("Saving config:\n%s", data)
+	path := profileFilePath(name, miniHome...)
+	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+		return err
+	}
+
+	// If no config file exists, don't worry about swapping paths
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		if err := ioutil.WriteFile(path, data, 0600); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	tf, err := ioutil.TempFile(filepath.Dir(path), "config.json.tmp")
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tf.Name())
+
+	if err = ioutil.WriteFile(tf.Name(), data, 0600); err != nil {
+		return err
+	}
+
+	if err = tf.Close(); err != nil {
+		return err
+	}
+
+	if err = os.Remove(path); err != nil {
+		return err
+	}
+
+	if err = os.Rename(tf.Name(), path); err != nil {
+		return err
+	}
+	return nil
+}
+
+func DeleteProfile(profile string, miniHome ...string) error {
+	miniPath := constants.GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return os.RemoveAll(profileFolderPath(profile, miniPath))
+}
+
 // ListProfiles returns all valid and invalid (if any) minikube profiles
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggeted to be deleted
@@ -86,58 +159,8 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 	return dirs, err
 }
 
-// CreateProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func CreateEmptyProfile(name string, miniHome ...string) error {
-	cfg := &Config{}
-	return CreateProfile(name, cfg, miniHome...)
-}
-
-// CreateProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func CreateProfile(name string, cfg *Config, miniHome ...string) error {
-	data, err := json.MarshalIndent(cfg, "", "    ")
-	if err != nil {
-		return err
-	}
-	glog.Infof("Saving config:\n%s", data)
-	path := getProfileFile(name, miniHome...)
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return err
-	}
-
-	// If no config file exists, don't worry about swapping paths
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if err := ioutil.WriteFile(path, data, 0600); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	tf, err := ioutil.TempFile(filepath.Dir(path), "config.json.tmp")
-	if err != nil {
-		return err
-	}
-	defer os.Remove(tf.Name())
-
-	if err = ioutil.WriteFile(tf.Name(), data, 0600); err != nil {
-		return err
-	}
-
-	if err = tf.Close(); err != nil {
-		return err
-	}
-
-	if err = os.Remove(path); err != nil {
-		return err
-	}
-
-	if err = os.Rename(tf.Name(), path); err != nil {
-		return err
-	}
-	return nil
-}
-
-// getProfileFile returns the Minikube profile config file
-func getProfileFile(profile string, miniHome ...string) string {
+// profileFilePath returns the Minikube profile config file
+func profileFilePath(profile string, miniHome ...string) string {
 	miniPath := constants.GetMinipath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
@@ -145,8 +168,8 @@ func getProfileFile(profile string, miniHome ...string) string {
 	return filepath.Join(miniPath, "profiles", profile, "config.json")
 }
 
-// GetProfilePath returns the Minikube profile path of config file
-func GetProfilePath(profile string, miniHome ...string) string {
+// profileFolderPath returns path of profile folder
+func profileFolderPath(profile string, miniHome ...string) string {
 	miniPath := constants.GetMinipath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
