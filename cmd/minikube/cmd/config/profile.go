@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	pkgConfig "k8s.io/minikube/pkg/minikube/config" //TODO:Medyagh
+	pkgConfig "k8s.io/minikube/pkg/minikube/config" //TODO:Medyagh have consistent naming everywhere pk_config
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -50,7 +50,10 @@ var ProfileCmd = &cobra.Command{
 		}
 
 		if !pkgConfig.ProfileExists(profile) {
-			pkgConfig.CreateEmptyProfile(profile)
+			err := pkgConfig.CreateEmptyProfile(profile)
+			if err != nil {
+				exit.WithError("Creating a new profile failed", err)
+			}
 			out.SuccessT("Created a new profile : {{.profile_name}}", out.V{"profile_name": profile})
 		}
 
