@@ -1,7 +1,7 @@
 ---
 title: "Tutorials"
 linkTitle: "Tutorials"
-weight: 8
+weight: 4
 date: 2017-01-04
 description: >
   Contributed end-to-end tutorials using minikube
