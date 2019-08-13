@@ -21,6 +21,7 @@ import (
 	"testing"
 )
 
+// TestListProfiles uses a different uses different MINIKUBE_HOME with rest of tests since it relies on file list index
 func TestListProfiles(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/.minikube")
 	if err != nil {
@@ -71,8 +72,9 @@ func TestListProfiles(t *testing.T) {
 	}
 }
 
+
 func TestProfileExists(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube")
+	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
@@ -99,7 +101,7 @@ func TestProfileExists(t *testing.T) {
 }
 
 func TestCreateEmptyProfile(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube")
+	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
@@ -130,7 +132,7 @@ func TestCreateEmptyProfile(t *testing.T) {
 }
 
 func TestCreateProfile(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube")
+	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
@@ -166,7 +168,7 @@ func TestCreateProfile(t *testing.T) {
 }
 
 func TestDeleteProfile(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube")
+	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
