@@ -10,7 +10,7 @@ When using a single VM of Kubernetes it's really handy to build inside the VM; a
 
 ## Docker (containerd)
 
-For Docker, you can either set up your host docker client to communicate by [reusing the docker daemon](docker_daemon.md).
+For Docker, you can either set up your host docker client to communicate by [reusing the docker daemon]({{< ref "/docs/tasks/docker_daemon.md" >}}).
 
 Or you can use `minikube ssh` to connect to the virtual machine, and run the `docker build` there:
 

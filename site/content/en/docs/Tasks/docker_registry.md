@@ -7,7 +7,7 @@ description: >
   How to access the Docker registry within minikube
 ---
 
-As an alternative to [reusing the Docker daemon](docker_daemon.md), you may enable the registry addon to push images directly into registry. 
+As an alternative to [reusing the Docker daemon]({{< ref "/docs/tasks/docker_daemon.md" >}}), you may enable the registry addon to push images directly into registry.
 
 Steps are as follows:
 
