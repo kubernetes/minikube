@@ -4,7 +4,7 @@
 
 * Update code references to point to new documentation site [#5052](https://github.com/kubernetes/minikube/pull/5052)
 * Localization support for help text [#4814](https://github.com/kubernetes/minikube/pull/4814)
-* Upgrade cheggaaa/pb from v1.0.27 to v3.0.1 [#5025](https://github.com/kubernetes/minikube/pull/5025)
+* Fix progress bar on Windows + git bash [#5025](https://github.com/kubernetes/minikube/pull/5025)
 * Restore --disable-driver-mounts flag [#5026](https://github.com/kubernetes/minikube/pull/5026)
 * Fixed the template for dashboard output [#5004](https://github.com/kubernetes/minikube/pull/5004)
 * Use a temp dest to atomically download the iso [#5000](https://github.com/kubernetes/minikube/pull/5000)
