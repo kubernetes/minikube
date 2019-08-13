@@ -71,7 +71,6 @@ func TestListProfiles(t *testing.T) {
 	}
 }
 
-
 func TestProfileExists(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/.minikube")
 	if err != nil {
@@ -79,22 +78,99 @@ func TestProfileExists(t *testing.T) {
 	}
 
 	var testCases = []struct {
-		name      string
+		name     string
 		expected bool
 	}{
 		{"p1", true},
-		{"p2",true},
-		{"p3_empty",true},
-		{"p4_invalid_file",true},
-		{"p5_partial_config",true},
-		{"p6_no_file",false},
+		{"p2", true},
+		{"p3_empty", true},
+		{"p4_invalid_file", true},
+		{"p5_partial_config", true},
+		{"p6_no_file", false},
 	}
-	for _, tt := range testCases { 
-		got := ProfileExists(tt.name,miniDir)
-		if  got != tt.expected {
-			t.Errorf("error expected ProfileExists(%s,%s)=%t but got %t ", tt.name,miniDir,tt.expected, got )
+	for _, tt := range testCases {
+		got := ProfileExists(tt.name, miniDir)
+		if got != tt.expected {
+			t.Errorf("expected ProfileExists(%q,%q)=%t but got %t ", tt.name, miniDir, tt.expected, got)
 		}
 
+	}
+
+}
+
+func TestCreateEmptyProfile(t *testing.T) {
+	miniDir, err := filepath.Abs("./testdata/.minikube")
+	if err != nil {
+		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+	}
+
+	var testCases = []struct {
+		name      string
+		expectErr bool
+	}{
+		{"p13", false},
+		{"p_13", false},
+	}
+	for _, tc := range testCases {
+		gotErr := CreateEmptyProfile(tc.name, miniDir)
+		if gotErr != nil && tc.expectErr == false {
+			t.Errorf("expected CreateEmptyProfile not to error but got err=%v", gotErr)
+		}
+		defer DeleteProfile(tc.name, miniDir)
+
+	}
+
+}
+
+func TestCreateProfile(t *testing.T) {
+	miniDir, err := filepath.Abs("./testdata/.minikube")
+	if err != nil {
+		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+	}
+
+	var testCases = []struct {
+		name      string
+		cfg       *Config
+		expectErr bool
+	}{
+		{"p_empty_config", &Config{}, false},
+		{"p_partial_config", &Config{KubernetesConfig: KubernetesConfig{
+			ShouldLoadCachedImages: false}}, false},
+		{"p_partial_config2", &Config{MachineConfig: MachineConfig{
+			KeepContext: false}, KubernetesConfig: KubernetesConfig{
+			ShouldLoadCachedImages: false}}, false},
+	}
+	for _, tc := range testCases {
+		gotErr := CreateProfile(tc.name, tc.cfg, miniDir)
+		if gotErr != nil && tc.expectErr == false {
+			t.Errorf("expected CreateEmptyProfile not to error but got err=%v", gotErr)
+		}
+		defer DeleteProfile(tc.name, miniDir)
+
+	}
+
+}
+
+func TestDeleteProfile(t *testing.T) {
+	miniDir, err := filepath.Abs("./testdata/.minikube")
+	if err != nil {
+		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+	}
+
+	CreateEmptyProfile("existing_prof", miniDir)
+
+	var testCases = []struct {
+		name      string
+		expectErr bool
+	}{
+		{"existing_prof", false},
+		{"non_existing_prof", false},
+	}
+	for _, tc := range testCases {
+		gotErr := DeleteProfile(tc.name, miniDir)
+		if gotErr != nil && tc.expectErr == false {
+			t.Errorf("expected CreateEmptyProfile not to error but got err=%v", gotErr)
+		}
 	}
 
 }

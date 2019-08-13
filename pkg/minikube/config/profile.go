@@ -162,7 +162,7 @@ func profileFilePath(profile string, miniHome ...string) string {
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
-	
+
 	return filepath.Join(miniPath, "profiles", profile, "config.json")
 }
 
