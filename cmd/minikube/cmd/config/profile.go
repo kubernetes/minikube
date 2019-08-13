@@ -48,6 +48,10 @@ var ProfileCmd = &cobra.Command{
 		if profile == "default" {
 			profile = "minikube"
 		}
+
+		// if profile doesn't exit create it
+		//
+
 		err := Set(pkgConfig.MachineProfile, profile)
 		if err != nil {
 			exit.WithError("Setting profile failed", err)

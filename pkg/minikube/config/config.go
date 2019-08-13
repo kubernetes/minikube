@@ -21,9 +21,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
-
 	"io/ioutil"
+	"os"
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -152,10 +151,10 @@ type simpleConfigLoader struct{}
 // DefaultLoader is the default config loader
 var DefaultLoader Loader = &simpleConfigLoader{}
 
-func (c *simpleConfigLoader) LoadConfigFromFile(profile string, miniHome ...string) (*Config, error) {
+func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*Config, error) {
 	var cc Config
-
-	path := constants.GetProfileFile(profile, miniHome...)
+	// Move to profile package
+	path := getProfileFile(profileName, miniHome...)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err
