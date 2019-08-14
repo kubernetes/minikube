@@ -30,7 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // stopCmd represents the stop command
@@ -63,7 +63,8 @@ func runStop(cmd *cobra.Command, args []string) {
 			return err
 		}
 	}
-	if err := pkgutil.RetryAfter(3, stop, 2*time.Second); err != nil {
+
+	if err := retry.Expo(stop, 5*time.Second, 3*time.Minute, 5); err != nil {
 		exit.WithError("Unable to stop VM", err)
 	}
 
