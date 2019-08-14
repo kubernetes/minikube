@@ -9,13 +9,13 @@
 [GoReport Status]: https://goreportcard.com/report/github.com/kubernetes/minikube
 [GoReport Widget]: https://goreportcard.com/badge/github.com/kubernetes/minikube
 
-<img src="https://github.com/kubernetes/minikube/raw/master/images/logo/logo.png" width="100">
+<img src="https://github.com/kubernetes/minikube/raw/master/images/logo/logo.png" width="100" alt="minikube logo">
 
 ## What is minikube?
 
 minikube implements a local Kubernetes cluster on macOS, Linux, and Windows.
 
-![screenshot](/images/start.jpg)
+<img src="https://github.com/kubernetes/minikube/raw/master/site/content/en/start.png" width="730" alt="screenshot">
 
 minikube's [primary goals](https://minikube.sigs.k8s.io/docs/concepts/principles/) are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit. We hope you enjoy it!
 
@@ -51,8 +51,6 @@ As well as developer-friendly features:
 See https://minikube.sigs.k8s.io/docs/
 
 ## Community
-
-![Help Wanted!](/images/help_wanted.jpg)
 
 minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/community/tree/master/sig-cluster-lifecycle)  project.
 
