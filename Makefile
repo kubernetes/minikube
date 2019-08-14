@@ -498,13 +498,10 @@ site/themes/docsy/assets/vendor/bootstrap/package.js:
 	git submodule update -f --init --recursive
 
 # hugo for generating site previews
-.ONESHELL:
 out/hugo/hugo:
 	mkdir -p out
-	cd out
-	git clone https://github.com/gohugoio/hugo.git
-	cd hugo
-	go build --tags extended
+	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
+	(cd out/hugo && go build --tags extended)
 
 # Serve the documentation site to localhost
 .PHONY: site
