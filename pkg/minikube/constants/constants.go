@@ -192,24 +192,6 @@ var ConfigFilePath = MakeMiniPath("config")
 // ConfigFile is the path of the config file
 var ConfigFile = MakeMiniPath("config", "config.json")
 
-// GetProfileFile returns the Minikube profile config file
-func GetProfileFile(profile string, miniHome ...string) string {
-	miniPath := GetMinipath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "profiles", profile, "config.json")
-}
-
-// GetProfilePath returns the Minikube profile path of config file
-func GetProfilePath(profile string, miniHome ...string) string {
-	miniPath := GetMinipath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "profiles", profile)
-}
-
 // AddonsPath is the default path of the addons configuration
 const AddonsPath = "/etc/kubernetes/addons"
 
