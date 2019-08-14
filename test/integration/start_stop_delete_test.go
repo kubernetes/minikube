@@ -27,7 +27,7 @@ import (
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/test/integration/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 func TestStartStop(t *testing.T) {
@@ -105,7 +105,7 @@ func TestStartStop(t *testing.T) {
 					return mk.CheckStatusNoFail(state.Stopped.String())
 				}
 
-				err = util.RetryX(stop, 10*time.Second, 2*time.Minute)
+				err = retry.Expo(stop, 10*time.Second, 5*time.Minute)
 				mk.CheckStatus(state.Stopped.String())
 
 				stdout, stderr, err = mk.Start(tc.args...)
