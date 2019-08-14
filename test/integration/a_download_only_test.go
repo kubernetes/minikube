@@ -31,7 +31,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	pkgutil "k8s.io/minikube/pkg/util"
-	"k8s.io/minikube/test/integration/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Note this test runs before all because filename is alphabetically first
@@ -78,7 +78,7 @@ func downloadMinikubeBinary(t *testing.T, dest string, version string) error {
 		return getter.GetFile(dest, url)
 	}
 
-	if err := util.RetryX(download, 13*time.Second, 5*time.Minute); err != nil {
+	if err := retry.Expo(download, 3*time.Second, 3*time.Minute); err != nil {
 		return errors.Wrap(err, "Failed to get latest release binary")
 	}
 	if runtime.GOOS != "windows" {
