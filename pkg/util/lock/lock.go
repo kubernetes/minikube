@@ -39,7 +39,7 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 		}
 		return nil
 	}
-	err := retry.Expo(getLock, 1*time.Second, 13*time.Second)
+	err := retry.Expo(getLock, 500*time.Millisecond, 13*time.Second)
 	if err != nil {
 		return errors.Wrapf(err, "acquiring file lock for %s", filename)
 	}

@@ -142,7 +142,6 @@ func TestUpdate(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			t.Parallel()
 			tmpDir, err := ioutil.TempDir("", "")
 			if err != nil {
 				t.Fatalf("Error making temp directory %v", err)

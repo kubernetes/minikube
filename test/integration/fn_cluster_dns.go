@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -52,7 +53,8 @@ func testClusterDNS(t *testing.T) {
 		out, err = kr.RunCommand([]string{"exec", busybox, "nslookup", "kubernetes.default"})
 		return err
 	}
-	if err := util.Retry(t, nslookup, 3*time.Second, 60); err != nil {
+
+	if err = retry.Expo(nslookup, 500*time.Millisecond, time.Minute); err != nil {
 		t.Fatalf(err.Error())
 	}
 
