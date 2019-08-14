@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api/latest"
 	"k8s.io/minikube/pkg/minikube/constants"
 	pkgutil "k8s.io/minikube/pkg/util"
+	file "k8s.io/minikube/pkg/util/file"
 )
 
 // IsClusterInConfig verifies the ip stored in kubeconfig.
@@ -179,9 +180,10 @@ func writeToFile(config runtime.Object, configPath ...string) error {
 	}
 
 	// write with restricted permissions
-	if err := ioutil.WriteFile(fPath, data, 0600); err != nil {
+	if err := file.WriteWithLock(fPath, data, 0600); err != nil {
 		return errors.Wrapf(err, "Error writing file %s", fPath)
 	}
+
 	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
 		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
 	}

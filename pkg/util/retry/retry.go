@@ -14,6 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
+package retry
+
+import (
+	"time"
+
+	"github.com/cenkalti/backoff"
+)
+
 // Expo is expontential backoff retry
 func Expo(callback func() error, initInterv time.Duration, maxTime time.Duration) error {
 	b := backoff.NewExponentialBackOff()
