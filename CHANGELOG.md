@@ -1,5 +1,24 @@
 # Release Notes
 
+## Version 1.3.1 - 2019-08-13
+
+* Update code references to point to new documentation site [#5052](https://github.com/kubernetes/minikube/pull/5052)
+* Localization support for help text [#4814](https://github.com/kubernetes/minikube/pull/4814)
+* Fix progress bar on Windows + git bash [#5025](https://github.com/kubernetes/minikube/pull/5025)
+* Restore --disable-driver-mounts flag [#5026](https://github.com/kubernetes/minikube/pull/5026)
+* Fixed the template for dashboard output [#5004](https://github.com/kubernetes/minikube/pull/5004)
+* Use a temp dest to atomically download the iso [#5000](https://github.com/kubernetes/minikube/pull/5000)
+
+Thank you to our merry band of contributors for assembling this last minute bug fix release.
+
+- Jituri, Pranav
+- Medya Ghazizadeh
+- Pranav Jituri
+- Ramiro Berrelleza
+- Sharif Elgamal
+- Thomas Strömberg
+- josedonizetti
+
 ## Version 1.3.0 - 2019-08-05
 
 * Added a new command: profile list [#4811](https://github.com/kubernetes/minikube/pull/4811)
@@ -1133,7 +1152,7 @@ Huge Thank You for this release to our contributors:
 * Added a `minikube dashboard` command to open the Kubernetes Dashboard.
 * Updated Docker to version 1.11.1.
 * Updated Kubernetes components to v1.3.0-alpha.5-330-g760c563.
-* Generated documentation for all commands. Documentation [is here](https://github.com/kubernetes/minikube/blob/master/docs/minikube.md).
+* Generated documentation for all commands. Documentation [is here](https://minikube.sigs.k8s.io/docs/).
 
 ## Version 0.2.0 - 6/3/2016
 

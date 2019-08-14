@@ -36,7 +36,7 @@ $medium: $mk-medium;
 // Navigation bar
 $navbar-dark-color: $mk-dark;
 $navbar-dark-hover-color: $mk-light !default;
-$navbar-dark-active-color: $mk-light !default;
+$navbar-dark-active-color: $primary !default;
 $navbar-dark-disabled-color: rgba($white, 0.25) !default;
 .td-navbar {
     background: $white !important;
@@ -148,4 +148,18 @@ footer.bg-dark {
 // Reduce section padding by 1rem
 section.td-box--height-auto {
     padding-bottom: 3rem !important;
+}
+
+
+div.td-content {
+    // Allow code tags to span most of a window length (default is 80%)
+    pre {
+        max-width: 99% !important;
+    }
+    h2 {
+        font-size: 1.4rem !important;
+    }
+    h3 {
+        font-size: 1.3rem !important;
+    }
 }

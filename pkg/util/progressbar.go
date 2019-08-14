@@ -21,22 +21,19 @@ limitations under the License.
 package util
 
 import (
-	"fmt"
 	"io"
 	"path/filepath"
 	"sync"
 
-	"github.com/cheggaaa/pb"
-	"github.com/golang/glog"
+	"github.com/cheggaaa/pb/v3"
 	"github.com/hashicorp/go-getter"
 )
 
 var defaultProgressBar getter.ProgressTracker = &progressBar{}
 
 type progressBar struct {
-	lock sync.Mutex
-	pool *pb.Pool
-	pbs  int
+	lock     sync.Mutex
+	progress *pb.ProgressBar
 }
 
 // TrackProgress instantiates a new progress bar that will
@@ -45,38 +42,24 @@ type progressBar struct {
 func (cpb *progressBar) TrackProgress(src string, currentSize, totalSize int64, stream io.ReadCloser) io.ReadCloser {
 	cpb.lock.Lock()
 	defer cpb.lock.Unlock()
-
-	if cpb.pool == nil {
-		cpb.pool = pb.NewPool()
-		if err := cpb.pool.Start(); err != nil {
-			glog.Errorf("pool start: %v", err)
-		}
+	if cpb.progress == nil {
+		cpb.progress = pb.New64(totalSize)
 	}
+	p := pb.Full.Start64(totalSize)
+	p.Set("prefix", filepath.Base(src+": "))
+	p.SetCurrent(currentSize)
+	p.Set(pb.Bytes, true)
 
-	p := pb.New64(totalSize)
-	p.Set64(currentSize)
-	p.SetUnits(pb.U_BYTES)
-	p.Prefix(fmt.Sprintf("    %s:", filepath.Base(src)))
 	// Just a hair less than 80 (standard terminal width) for aesthetics & pasting into docs
-	p.SetWidth(78)
-	cpb.pool.Add(p)
-	reader := p.NewProxyReader(stream)
+	p.SetWidth(79)
+	barReader := p.NewProxyReader(stream)
 
-	cpb.pbs++
 	return &readCloser{
-		Reader: reader,
+		Reader: barReader,
 		close: func() error {
 			cpb.lock.Lock()
 			defer cpb.lock.Unlock()
-
 			p.Finish()
-			cpb.pbs--
-			if cpb.pbs <= 0 {
-				if err := cpb.pool.Stop(); err != nil {
-					glog.Errorf("pool stop: %v", err)
-				}
-				cpb.pool = nil
-			}
 			return nil
 		},
 	}

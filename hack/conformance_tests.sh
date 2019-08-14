@@ -56,7 +56,7 @@ name: minikube
 version: ${version}
 website_url: https://github.com/kubernetes/minikube
 repo_url: https://github.com/kubernetes/minikube
-documentation_url: https://github.com/kubernetes/minikube/blob/master/docs/README.md
+documentation_url: https://minikube.sigs.k8s.io/docs/
 product_logo_url: https://raw.githubusercontent.com/kubernetes/minikube/master/images/logo/logo.svg
 type: installer
 description: minikube runs a local Kubernetes cluster on macOS, Linux, and Windows.

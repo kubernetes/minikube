@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 3
-VERSION_BUILD ?= 0
+VERSION_BUILD ?= 1
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 
@@ -375,7 +375,7 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	mv out/windows_tmp/minikube-installer.exe out/minikube-installer.exe
 	rm -rf out/windows_tmp
 
-out/docker-machine-driver-hyperkit: pkg/minikube/translate/translations.go
+out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
 else
@@ -441,18 +441,18 @@ release-minikube: out/minikube checksum
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
-out/docker-machine-driver-kvm2: pkg/minikube/translate/translations.go
+out/docker-machine-driver-kvm2:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
 	# make extra sure that we are linking with the older version of libvirt (1.3.1)
 	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
 else
-	go build 																					\
-		-installsuffix "static" 												\
-		-ldflags="$(KVM2_LDFLAGS)" 											\
-		-tags "libvirt.1.3.1 without_lxc"												\
-		-o $(BUILD_DIR)/docker-machine-driver-kvm2 			\
+	go build \
+		-installsuffix "static" \
+		-ldflags="$(KVM2_LDFLAGS)" \
+		-tags "libvirt.1.3.1 without_lxc" \
+		-o $(BUILD_DIR)/docker-machine-driver-kvm2 \
 		k8s.io/minikube/cmd/drivers/kvm
 endif
 	chmod +X $@
@@ -493,3 +493,21 @@ install-kvm-driver: out/docker-machine-driver-kvm2
 release-kvm-driver: install-kvm-driver checksum
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
+
+site/themes/docsy/assets/vendor/bootstrap/package.js:
+	git submodule update -f --init --recursive
+
+# hugo for generating site previews
+out/hugo/hugo:
+	mkdir -p out
+	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
+	(cd out/hugo && go build --tags extended)
+
+# Serve the documentation site to localhost
+.PHONY: site
+site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo
+	(cd site && ../out/hugo/hugo serve \
+	  --disableFastRender \
+	  --navigateToChanged \
+	  --ignoreCache \
+	  --buildFuture)

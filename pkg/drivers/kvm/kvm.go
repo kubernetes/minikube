@@ -25,10 +25,6 @@ import (
 	"syscall"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util"
-
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/state"
@@ -102,14 +98,8 @@ func NewDriver(hostName, storePath string) *Driver {
 			SSHUser:     "docker",
 		},
 		CommonDriver:   &pkgdrivers.CommonDriver{},
-		Boot2DockerURL: constants.DefaultISOURL,
-		CPU:            constants.DefaultCPUS,
-		DiskSize:       util.CalculateSizeInMB(constants.DefaultDiskSize),
-		Memory:         util.CalculateSizeInMB(constants.DefaultMemorySize),
 		PrivateNetwork: defaultPrivateNetworkName,
 		Network:        defaultNetworkName,
-		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", config.GetMachineName(), fmt.Sprintf("%s.rawdisk", config.GetMachineName())),
-		ISO:            filepath.Join(constants.GetMinipath(), "machines", config.GetMachineName(), "boot2docker.iso"),
 		ConnectionURI:  qemusystem,
 	}
 }
@@ -224,7 +214,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	return constants.DriverKvm2
+	return "kvm2"
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
