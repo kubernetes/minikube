@@ -62,6 +62,9 @@ func TestVersionUpgrade(t *testing.T) {
 	err := fileExists(fname)
 	if err != nil { // download file if it is not downloaded by other test
 		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
+		if runtime.GOOS == "windows" {
+			dest += ".exe"
+		}
 		err := downloadMinikubeBinary(t, dest, "latest")
 		if err != nil {
 			// binary is needed for the test
