@@ -48,6 +48,15 @@ var ProfileCmd = &cobra.Command{
 		if profile == "default" {
 			profile = "minikube"
 		}
+
+		if !pkgConfig.ProfileExists(profile) {
+			err := pkgConfig.CreateEmptyProfile(profile)
+			if err != nil {
+				exit.WithError("Creating a new profile failed", err)
+			}
+			out.SuccessT("Created a new profile : {{.profile_name}}", out.V{"profile_name": profile})
+		}
+
 		err := Set(pkgConfig.MachineProfile, profile)
 		if err != nil {
 			exit.WithError("Setting profile failed", err)
