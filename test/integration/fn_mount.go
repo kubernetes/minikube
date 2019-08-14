@@ -30,6 +30,7 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -119,7 +120,7 @@ func getMountCmd(mk util.MinikubeRunner, mountDir string) string {
 func writeFilesFromHost(mountedDir string, files []string, content string) error {
 	for _, file := range files {
 		path := filepath.Join(mountedDir, file)
-		err := ioutil.WriteFile(path, []byte(content), 0644)
+		err := lock.WriteFile(path, []byte(content), 0644)
 		if err != nil {
 			return fmt.Errorf("unexpected error while writing file %s: %v", path, err)
 		}

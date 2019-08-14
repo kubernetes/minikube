@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package file
+package lock
 
 import (
 	"io/ioutil"
@@ -27,8 +27,8 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// WriteWithLock wraps ioutil.WriteFile with a file lock and retry
-func WriteWithLock(filename string, data []byte, perm os.FileMode) error {
+// WriteWithLock decorates ioutil.WriteFile with a file lock and retry
+func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	lock := fslock.New(filename)
 
 	getLock := func() error {
