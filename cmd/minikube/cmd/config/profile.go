@@ -21,7 +21,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	pkgConfig "k8s.io/minikube/pkg/minikube/config" //TODO:Medyagh have consistent naming everywhere pk_config
+	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
