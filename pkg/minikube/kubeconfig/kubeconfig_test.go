@@ -555,11 +555,23 @@ func TestGetKubeConfigPath(t *testing.T) {
 			input: "/home/fake/.kube/.kubeconfig:/home/fake2/.kubeconfig",
 			want:  "/home/fake/.kube/.kubeconfig",
 		},
+		{
+			input: ":/home/fake/.kube/.kubeconfig:/home/fake2/.kubeconfig",
+			want:  "/home/fake/.kube/.kubeconfig",
+		},
+		{
+			input: ":",
+			want:  "$HOME/.kube/config",
+		},
+		{
+			input: "",
+			want:  "$HOME/.kube/config",
+		},
 	}
 
 	for _, test := range tests {
 		os.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
-		if result := PathFromEnv(); result != test.want {
+		if result := PathFromEnv(); result != os.ExpandEnv(test.want) {
 			t.Errorf("Expected first splitted chunk, got: %s", result)
 		}
 	}
