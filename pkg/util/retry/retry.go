@@ -22,13 +22,30 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
-// Expo is expontential backoff retry
-func Expo(callback func() error, initInterv time.Duration, maxTime time.Duration) error {
+const defaultMaxRetries = 113
+
+// Expo is expontential backoff retry.
+// initInterval is the initial waiting time to start with.
+// maxTime is the max time allowed to spend on the all the retries.
+// maxRetries is the optional max number of retries allowed with default of 13.
+func Expo(callback func() error, initInterval time.Duration, maxTime time.Duration, maxRetries ...uint64) error {
+	maxRetry := uint64(defaultMaxRetries) // max number of times to retry
+	if maxRetries != nil {
+		maxRetry = maxRetries[0]
+	}
+
 	b := backoff.NewExponentialBackOff()
 	b.MaxElapsedTime = maxTime
-	b.InitialInterval = initInterv
+	b.InitialInterval = initInterval
 	b.RandomizationFactor = 0.5
 	b.Multiplier = 1.5
-	b.Reset()
-	return backoff.Retry(callback, b)
+	bm := backoff.WithMaxRetries(b, maxRetry)
+	return backoff.Retry(callback, bm)
 }
+
+// RetriableError is an error that can be tried again
+type RetriableError struct {
+	Err error
+}
+
+func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Error() }

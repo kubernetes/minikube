@@ -38,7 +38,7 @@ func fileExists(fname string) error {
 			return err
 		}
 		if info.IsDir() {
-			return fmt.Errorf("Error expect file got dir")
+			return fmt.Errorf("error expect file got dir")
 		}
 		return nil
 	}

@@ -58,6 +58,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/proxy"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
+	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -756,7 +757,8 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 		}
 		return err
 	}
-	if err = pkgutil.RetryAfter(3, start, 2*time.Second); err != nil {
+
+	if err = retry.Expo(start, 2*time.Second, 3*time.Minute, 5); err != nil {
 		exit.WithError("Unable to start VM", err)
 	}
 	return host, exists
