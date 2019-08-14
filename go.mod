@@ -9,12 +9,12 @@ require (
 	github.com/blang/semver v3.5.0+incompatible
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/cheggaaa/pb v1.0.27
+	github.com/cheggaaa/pb/v3 v3.0.1
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-units v0.3.3
-	github.com/docker/machine v0.16.1-0.20190718054102-a555e4f7a8f5
+	github.com/docker/machine v0.7.1-0.20190718054102-a555e4f7a8f5 // version is 0.7.1 to pin to a555e4f7a8f5
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
@@ -35,7 +35,6 @@ require (
 	github.com/johanneswuerbach/nfsexports v0.0.0-20181204082207-1aa528dcb345
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
-	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.8
 	github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd

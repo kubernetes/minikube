@@ -44,7 +44,7 @@ func TestStartStop(t *testing.T) {
 			name string
 			args []string
 		}{
-			{"oldest", []string{ // nocache_oldest
+			{"oldest", []string{
 				"--cache-images=false",
 				fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
 				// default is the network created by libvirt, if we change the name minikube won't boot
@@ -52,7 +52,7 @@ func TestStartStop(t *testing.T) {
 				"--kvm-network=default",
 				"--kvm-qemu-uri=qemu:///system",
 			}},
-			{"cni", []string{ // feature_gates_newest_cni
+			{"cni", []string{
 				"--feature-gates",
 				"ServerSideApply=true",
 				"--network-plugin=cni",
@@ -60,15 +60,15 @@ func TestStartStop(t *testing.T) {
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 				fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
 			}},
-			{"containerd", []string{ // containerd_and_non_default_apiserver_port
+			{"containerd", []string{
 				"--container-runtime=containerd",
 				"--docker-opt containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
 			}},
-			{"crio", []string{ // crio_ignore_preflights
+			{"crio", []string{
 				"--container-runtime=crio",
-				"--extra-config",
-				"kubeadm.ignore-preflight-errors=SystemVerification",
+				"--disable-driver-mounts",
+				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
 		}
 
@@ -107,9 +107,6 @@ func TestStartStop(t *testing.T) {
 
 				err = util.RetryX(stop, 10*time.Second, 2*time.Minute)
 				mk.CheckStatus(state.Stopped.String())
-
-				// TODO medyagh:
-				// https://github.com/kubernetes/minikube/issues/4854
 
 				stdout, stderr, err = mk.Start(tc.args...)
 				if err != nil {

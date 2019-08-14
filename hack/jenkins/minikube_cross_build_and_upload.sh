@@ -49,8 +49,8 @@ git diff ${ghprbActualCommit} --name-only \
   | grep -q deploy/iso/minikube && rebuild=1 || rebuild=0
 
 if [[ "${rebuild}" -eq 1 ]]; then
-	echo "ISO changes detected ... rebuilding ISO"
-	make release-iso
+  echo "ISO changes detected ... rebuilding ISO"
+  make release-iso
 fi
 
 cp -r test/integration/testdata out/
