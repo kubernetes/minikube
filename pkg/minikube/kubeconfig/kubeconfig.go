@@ -87,7 +87,14 @@ func PathFromEnv() string {
 	if kubeConfigEnv == "" {
 		return constants.KubeconfigPath
 	}
-	return filepath.SplitList(kubeConfigEnv)[0]
+	kubeConfigFiles := filepath.SplitList(kubeConfigEnv)
+	for _, kubeConfigFile := range kubeConfigFiles {
+		if kubeConfigFile != "" {
+			return kubeConfigFile
+		}
+		glog.Infof("Ignoring empty entry in %s env var", constants.KubeconfigEnvVar)
+	}
+	return constants.KubeconfigPath
 }
 
 // extractIP returns the IP address stored for minikube in the kubeconfig specified
