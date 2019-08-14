@@ -49,6 +49,12 @@ var settings = []Setting{
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
+		name:        "container-runtime",
+		set:         SetString,
+		validations: []setFn{IsContainerdRuntime},
+		callbacks:   []setFn{RequiresRestartMsg},
+	},
+	{
 		name:      "feature-gates",
 		set:       SetString,
 		callbacks: []setFn{RequiresRestartMsg},
