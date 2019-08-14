@@ -33,6 +33,7 @@ require (
 	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
 	github.com/jimmidyson/go-download v0.0.0-20161028105827-7f9a90c8c95b
 	github.com/johanneswuerbach/nfsexports v0.0.0-20181204082207-1aa528dcb345
+	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
 	github.com/mattn/go-isatty v0.0.8

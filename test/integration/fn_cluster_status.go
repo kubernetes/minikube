@@ -24,6 +24,7 @@ import (
 	"time"
 
 	api "k8s.io/kubernetes/pkg/apis/core"
+	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -54,7 +55,7 @@ func testClusterStatus(t *testing.T) {
 		return nil
 	}
 
-	if err := util.Retry(t, healthy, 1*time.Second, 5); err != nil {
+	if err := retry.Expo(healthy, 500*time.Millisecond, time.Minute); err != nil {
 		t.Fatalf("Cluster is not healthy: %v", err)
 	}
 }

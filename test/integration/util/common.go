@@ -21,7 +21,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cenkalti/backoff"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	commonutil "k8s.io/minikube/pkg/util"
@@ -35,41 +34,6 @@ func WaitForBusyboxRunning(t *testing.T, namespace string, miniProfile string) e
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
 	return commonutil.WaitForPodsWithLabelRunning(client, namespace, selector)
-}
-
-// Retry tries the callback for a number of attempts, with a delay between attempts
-func Retry(t *testing.T, callback func() error, d time.Duration, attempts int) (err error) {
-	for i := 0; i < attempts; i++ {
-		err = callback()
-		if err == nil {
-			return nil
-		}
-		time.Sleep(d)
-	}
-	return err
-}
-
-// Retry2 tries the callback for a number of attempts, with a delay without *testing.T
-func Retry2(callback func() error, d time.Duration, attempts int) (err error) {
-	for i := 0; i < attempts; i++ {
-		err = callback()
-		if err == nil {
-			return nil
-		}
-		time.Sleep(d)
-	}
-	return err
-}
-
-// RetryX is expontential backoff retry
-func RetryX(callback func() error, initInterv time.Duration, maxTime time.Duration) error {
-	b := backoff.NewExponentialBackOff()
-	b.MaxElapsedTime = maxTime
-	b.InitialInterval = initInterv
-	b.RandomizationFactor = 0.5
-	b.Multiplier = 1.5
-	b.Reset()
-	return backoff.Retry(callback, b)
 }
 
 // Logf writes logs to stdout if -v is set.

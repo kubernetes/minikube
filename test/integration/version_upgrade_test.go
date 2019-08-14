@@ -28,7 +28,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/test/integration/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 func fileExists(fname string) error {
@@ -38,12 +38,12 @@ func fileExists(fname string) error {
 			return err
 		}
 		if info.IsDir() {
-			return fmt.Errorf("Error expect file got dir")
+			return fmt.Errorf("error expect file got dir")
 		}
 		return nil
 	}
 
-	if err := util.Retry2(check, 1*time.Second, 3); err != nil {
+	if err := retry.Expo(check, 1*time.Second, 3); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Failed check if file (%q) exists,", fname))
 	}
 	return nil
