@@ -36,6 +36,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	commonutil "k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -157,7 +158,7 @@ func testIngressController(t *testing.T) {
 		return nil
 	}
 
-	if err := util.Retry(t, checkIngress, 2*time.Second, 5); err != nil {
+	if err := retry.Expo(checkIngress, 500*time.Millisecond, time.Minute); err != nil {
 		t.Fatalf(err.Error())
 	}
 
@@ -183,7 +184,7 @@ func testServicesList(t *testing.T) {
 		}
 		return nil
 	}
-	if err := util.Retry(t, checkServices, 2*time.Second, 5); err != nil {
+	if err := retry.Expo(checkServices, 500*time.Millisecond, time.Minute); err != nil {
 		t.Fatalf(err.Error())
 	}
 }
@@ -232,10 +233,9 @@ func testRegistry(t *testing.T) {
 		return nil
 	}
 
-	if err := util.Retry(t, checkExternalAccess, 2*time.Second, 5); err != nil {
+	if err := retry.Expo(checkExternalAccess, 500*time.Millisecond, 2*time.Minute); err != nil {
 		t.Fatalf(err.Error())
 	}
-
 	t.Log("checking registry access from inside cluster")
 	kr := util.NewKubectlRunner(t, p)
 	// TODO: Fix this
@@ -252,12 +252,12 @@ func testRegistry(t *testing.T) {
 	internalCheckOutput := string(out)
 	expectedStr := "200"
 	if !strings.Contains(internalCheckOutput, expectedStr) {
-		t.Fatalf("ExpectedStr internalCheckOutput to be: %s. Output was: %s", expectedStr, internalCheckOutput)
+		t.Errorf("ExpectedStr internalCheckOutput to be: %s. Output was: %s", expectedStr, internalCheckOutput)
 	}
 
 	defer func() {
 		if _, err := kr.RunCommand([]string{"delete", "pod", "registry-test"}); err != nil {
-			t.Fatalf("failed to delete pod registry-test")
+			t.Errorf("failed to delete pod registry-test")
 		}
 	}()
 	mk.RunCommand("addons disable registry", true)
