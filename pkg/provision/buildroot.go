@@ -92,6 +92,13 @@ func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision
 	driverNameLabel := fmt.Sprintf("provider=%s", p.Driver.DriverName())
 	p.EngineOptions.Labels = append(p.EngineOptions.Labels, driverNameLabel)
 
+	noPivot := true
+	// Using pivot_root is not supported on fstype rootfs
+	if fstype, err := rootFileSystemType(p); err == nil {
+		log.Debugf("root file system type: %s", fstype)
+		noPivot = fstype == "rootfs"
+	}
+
 	engineConfigTmpl := `[Unit]
 Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
@@ -101,8 +108,14 @@ Requires= minikube-automount.service docker.socket
 [Service]
 Type=notify
 
+`
+	if noPivot {
+		engineConfigTmpl += `
 # DOCKER_RAMDISK disables pivot_root in Docker, using MS_MOVE instead.
 Environment=DOCKER_RAMDISK=yes
+`
+	}
+	engineConfigTmpl += `
 {{range .EngineOptions.Env}}Environment={{.}}
 {{end}}
 
@@ -158,6 +171,14 @@ WantedBy=multi-user.target
 		EngineOptions:     engineCfg.String(),
 		EngineOptionsPath: "/lib/systemd/system/docker.service",
 	}, nil
+}
+
+func rootFileSystemType(p *BuildrootProvisioner) (string, error) {
+	fs, err := p.SSHCommand("df --output=fstype / | tail -n 1")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(fs), nil
 }
 
 // Package installs a package
