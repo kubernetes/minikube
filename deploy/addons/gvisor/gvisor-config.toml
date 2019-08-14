@@ -36,7 +36,7 @@ oom_score = 0
     max_container_log_line_size = 16384
     [plugins.cri.containerd]
       snapshotter = "overlayfs"
-      no_pivot = true
+      no_pivot = false
       [plugins.cri.containerd.default_runtime]
         runtime_type = "io.containerd.runtime.v1.linux"
         runtime_engine = ""
