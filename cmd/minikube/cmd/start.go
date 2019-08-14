@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/url"
 	"os"
@@ -58,6 +57,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -912,7 +912,7 @@ func configureMounts() {
 	if err := mountCmd.Start(); err != nil {
 		exit.WithError("Error starting mount", err)
 	}
-	if err := ioutil.WriteFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
+	if err := lock.WriteFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
 		exit.WithError("Error writing mount pid", err)
 	}
 }

@@ -31,6 +31,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // GenerateCACert generates a CA certificate and RSA key for a common name
@@ -151,14 +152,14 @@ func writeCertsAndKeys(template *x509.Certificate, certPath string, signeeKey *r
 	if err := os.MkdirAll(filepath.Dir(certPath), os.FileMode(0755)); err != nil {
 		return errors.Wrap(err, "Error creating certificate directory")
 	}
-	if err := ioutil.WriteFile(certPath, certBuffer.Bytes(), os.FileMode(0644)); err != nil {
+	if err := lock.WriteFile(certPath, certBuffer.Bytes(), os.FileMode(0644)); err != nil {
 		return errors.Wrap(err, "Error writing certificate to cert path")
 	}
 
 	if err := os.MkdirAll(filepath.Dir(keyPath), os.FileMode(0755)); err != nil {
 		return errors.Wrap(err, "Error creating key directory")
 	}
-	if err := ioutil.WriteFile(keyPath, keyBuffer.Bytes(), os.FileMode(0600)); err != nil {
+	if err := lock.WriteFile(keyPath, keyBuffer.Bytes(), os.FileMode(0600)); err != nil {
 		return errors.Wrap(err, "Error writing key file")
 	}
 
