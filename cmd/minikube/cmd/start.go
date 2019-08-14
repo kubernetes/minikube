@@ -968,7 +968,7 @@ func validateDriverVersion(vmDriver string) {
 
 	minikubeVersion, err := version.GetSemverVersion()
 	if err != nil {
-		out.WarningT("Error parsing minukube version: {{.error}}", out.V{"error": err})
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
 		return
 	}
 
