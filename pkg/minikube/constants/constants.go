@@ -210,12 +210,6 @@ func GetProfilePath(profile string, miniHome ...string) string {
 	return filepath.Join(miniPath, "profiles", profile)
 }
 
-// AddonsPath is the default path of the addons configuration
-const AddonsPath = "/etc/kubernetes/addons"
-
-// FilesPath is the default path of files
-const FilesPath = "/files"
-
 const (
 	// KubeletServiceFile is the path to the kubelet systemd service
 	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
