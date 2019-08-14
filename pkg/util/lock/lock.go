@@ -28,30 +28,34 @@ import (
 )
 
 // WriteWithLock decorates ioutil.WriteFile with a file lock and retry
-func WriteFile(filename string, data []byte, perm os.FileMode) error {
+func WriteFile(filename string, data []byte, perm os.FileMode) (err error) {
 	lock := fslock.New(filename)
+	glog.Infof("attempting to write to file %q with filemode %v", filename, perm)
 
 	getLock := func() error {
 		lockErr := lock.TryLock()
 		if lockErr != nil {
-			glog.Infof("temproary error : %v", lockErr.Error())
-			return errors.Wrapf(lockErr, "falied to acquire file lock for %s > ", filename)
+			glog.Warningf("temporary error : %v", lockErr.Error())
+			return errors.Wrapf(lockErr, "falied to acquire lock for %s > ", filename)
 		}
 		return nil
 	}
-	err := retry.Expo(getLock, 500*time.Millisecond, 13*time.Second)
+
+	defer func() { // release the lock
+		err = lock.Unlock()
+		if err != nil {
+			err = errors.Wrapf(err, "error releasing lock for file: %s", filename)
+		}
+	}()
+
+	err = retry.Expo(getLock, 500*time.Millisecond, 13*time.Second)
 	if err != nil {
-		return errors.Wrapf(err, "acquiring file lock for %s", filename)
+		return errors.Wrapf(err, "error acquiring lock for %s", filename)
 	}
 
-	if err := ioutil.WriteFile(filename, data, perm); err != nil {
+	if err = ioutil.WriteFile(filename, data, perm); err != nil {
 		return errors.Wrapf(err, "error writing file %s", filename)
 	}
 
-	// release the lock
-	err = lock.Unlock()
-	if err != nil {
-		return errors.Wrapf(err, "error releasing lock for file: %s", filename)
-	}
-	return nil
+	return err
 }
