@@ -82,12 +82,12 @@ func GetClient(kubectlContext ...string) (kubernetes.Interface, error) {
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
+		return nil, fmt.Errorf("error creating kubeConfig: %v", err)
 	}
 	config = proxy.UpdateTransport(config)
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
+		return nil, errors.Wrap(err, "error creating new client from kubeConfig.ClientConfig()")
 	}
 	return client, nil
 }
@@ -121,7 +121,7 @@ func StartPods(c kubernetes.Interface, namespace string, pod core.Pod, waitForRu
 		label := labels.SelectorFromSet(labels.Set(map[string]string{"name": pod.Name}))
 		err := WaitForPodsWithLabelRunning(c, namespace, label)
 		if err != nil {
-			return fmt.Errorf("Error waiting for pod %s to be running: %v", pod.Name, err)
+			return fmt.Errorf("error waiting for pod %s to be running: %v", pod.Name, err)
 		}
 	}
 	return nil

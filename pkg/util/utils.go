@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // ErrPrefix notes an error
@@ -44,13 +45,6 @@ const OutPrefix = "> "
 const (
 	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-amd64%s"
 )
-
-// RetriableError is an error that can be tried again
-type RetriableError struct {
-	Err error
-}
-
-func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Error() }
 
 // CalculateSizeInMB returns the number of MB in the human readable string
 func CalculateSizeInMB(humanReadableSize string) int {
@@ -123,7 +117,7 @@ func RetryAfter(attempts int, callback func() error, d time.Duration) (err error
 			return nil
 		}
 		m.Collect(err)
-		if _, ok := err.(*RetriableError); !ok {
+		if _, ok := err.(*retry.RetriableError); !ok {
 			glog.Infof("non-retriable error: %v", err)
 			return m.ToError()
 		}

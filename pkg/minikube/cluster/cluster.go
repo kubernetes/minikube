@@ -48,8 +48,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // hostRunner is a minimal host.Host based interface for running commands
@@ -169,7 +169,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 	if !localDriver(h.Driver.DriverName()) {
 		glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
 		if err := h.ConfigureAuth(); err != nil {
-			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
+			return &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
 		return ensureSyncedGuestClock(h)
 	}
@@ -264,7 +264,7 @@ func StopHost(api libmachine.API) error {
 		if ok && alreadyInStateError.State == state.Stopped {
 			return nil
 		}
-		return &util.RetriableError{Err: errors.Wrapf(err, "Stop: %s", cfg.GetMachineName())}
+		return &retry.RetriableError{Err: errors.Wrapf(err, "Stop: %s", cfg.GetMachineName())}
 	}
 	return nil
 }

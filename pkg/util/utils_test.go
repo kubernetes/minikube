@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Returns a function that will return n errors, then return successfully forever.
@@ -34,7 +35,7 @@ func errorGenerator(n int, retryable bool) func() error {
 			errorCount++
 			e := errors.New("Error")
 			if retryable {
-				return &RetriableError{Err: e}
+				return &retry.RetriableError{Err: e}
 			}
 			return e
 
