@@ -48,6 +48,7 @@ func TestFunctional(t *testing.T) {
 		t.Run("ServicesList", testServicesList)
 		t.Run("Provisioning", testProvisioning)
 		t.Run("Tunnel", testTunnel)
+		t.Run("kubecontext", testKubeConfigCurrentCtx)
 
 		if !isTestNoneDriver(t) {
 			t.Run("EnvVars", testClusterEnv)

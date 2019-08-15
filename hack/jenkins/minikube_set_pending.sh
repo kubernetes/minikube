@@ -36,7 +36,7 @@ jobs=(
      'Hyper-V_Windows'
      'VirtualBox_Linux'
      'VirtualBox_macOS'
-     'VirtualBox_Windows'     
+     'VirtualBox_Windows'
      # 'KVM-GPU_Linux' - Disabled
      'KVM_Linux'
      'none_Linux'

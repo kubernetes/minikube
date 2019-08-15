@@ -17,8 +17,11 @@ limitations under the License.
 package bootstrapper
 
 import (
+	"encoding/pem"
 	"fmt"
+	"io/ioutil"
 	"net"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -32,7 +35,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/util"
+)
+
+const (
+	CACertificatesDir = "/usr/share/ca-certificates"
+	SSLCertStoreDir   = "/etc/ssl/certs"
 )
 
 var (
@@ -66,7 +75,20 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		copyableFiles = append(copyableFiles, certFile)
 	}
 
-	kubeCfgSetup := &util.KubeConfigSetup{
+	caCerts, err := collectCACerts()
+	if err != nil {
+		return err
+	}
+	for src, dst := range caCerts {
+		certFile, err := assets.NewFileAsset(src, path.Dir(dst), path.Base(dst), "0644")
+		if err != nil {
+			return err
+		}
+
+		copyableFiles = append(copyableFiles, certFile)
+	}
+
+	kcs := &kubeconfig.Settings{
 		ClusterName:          k8s.NodeName,
 		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
 		ClientCertificate:    path.Join(util.DefaultCertPath, "apiserver.crt"),
@@ -76,7 +98,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	}
 
 	kubeCfg := api.NewConfig()
-	err := util.PopulateKubeConfig(kubeCfgSetup, kubeCfg)
+	err = kubeconfig.PopulateFromSettings(kcs, kubeCfg)
 	if err != nil {
 		return errors.Wrap(err, "populating kubeconfig")
 	}
@@ -93,6 +115,11 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		if err := cmd.Copy(f); err != nil {
 			return err
 		}
+	}
+
+	// configure CA certificates
+	if err := configureCACerts(cmd, caCerts); err != nil {
+		return errors.Wrapf(err, "error configuring CA certificates during provisioning %v", err)
 	}
 	return nil
 }
@@ -192,6 +219,125 @@ func generateCerts(k8s config.KubernetesConfig) error {
 			signedCertSpec.caCertPath, signedCertSpec.caKeyPath,
 		); err != nil {
 			return errors.Wrap(err, "Error generating signed apiserver serving cert")
+		}
+	}
+
+	return nil
+}
+
+// isValidPEMCertificate checks whether the input file is a valid PEM certificate (with at least one CERTIFICATE block)
+func isValidPEMCertificate(filePath string) (bool, error) {
+	fileBytes, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return false, err
+	}
+
+	for {
+		block, rest := pem.Decode(fileBytes)
+		if block == nil {
+			break
+		}
+
+		if block.Type == "CERTIFICATE" {
+			// certificate found
+			return true, nil
+		}
+		fileBytes = rest
+	}
+
+	return false, nil
+}
+
+// collectCACerts looks up all PEM certificates with .crt or .pem extension in ~/.minikube/certs to copy to the host.
+// minikube root CA is also included but libmachine certificates (ca.pem/cert.pem) are excluded.
+func collectCACerts() (map[string]string, error) {
+	localPath := constants.GetMinipath()
+	certFiles := map[string]string{}
+
+	certsDir := filepath.Join(localPath, "certs")
+	err := filepath.Walk(certsDir, func(hostpath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if info != nil && !info.IsDir() {
+			ext := strings.ToLower(filepath.Ext(hostpath))
+			if ext == ".crt" || ext == ".pem" {
+				validPem, err := isValidPEMCertificate(hostpath)
+				if err != nil {
+					return err
+				}
+				if validPem {
+					filename := filepath.Base(hostpath)
+					dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
+					certFiles[hostpath] = path.Join(CACertificatesDir, dst)
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Wrapf(err, "provisioning: traversal certificates dir %s", certsDir)
+	}
+
+	for _, excluded := range []string{"ca.pem", "cert.pem"} {
+		certFiles[filepath.Join(certsDir, excluded)] = ""
+	}
+
+	// populates minikube CA
+	certFiles[filepath.Join(localPath, "ca.crt")] = path.Join(CACertificatesDir, "minikubeCA.pem")
+
+	filtered := map[string]string{}
+	for k, v := range certFiles {
+		if v != "" {
+			filtered[k] = v
+		}
+	}
+	return filtered, nil
+}
+
+// getSubjectHash calculates Certificate Subject Hash for creating certificate symlinks
+func getSubjectHash(cmd command.Runner, filePath string) (string, error) {
+	out, err := cmd.CombinedOutput(fmt.Sprintf("openssl x509 -hash -noout -in '%s'", filePath))
+	if err != nil {
+		return "", err
+	}
+
+	stringHash := strings.TrimSpace(out)
+	return stringHash, nil
+}
+
+// configureCACerts looks up and installs all uploaded PEM certificates in /usr/share/ca-certificates to system-wide certificate store (/etc/ssl/certs).
+// OpenSSL binary required in minikube ISO
+func configureCACerts(cmd command.Runner, caCerts map[string]string) error {
+	hasSSLBinary := true
+	if err := cmd.Run("which openssl"); err != nil {
+		hasSSLBinary = false
+	}
+
+	if !hasSSLBinary && len(caCerts) > 0 {
+		glog.Warning("OpenSSL not found. Please recreate the cluster with the latest minikube ISO.")
+	}
+
+	for _, caCertFile := range caCerts {
+		dstFilename := path.Base(caCertFile)
+		certStorePath := path.Join(SSLCertStoreDir, dstFilename)
+		if err := cmd.Run(fmt.Sprintf("sudo test -f '%s'", certStorePath)); err != nil {
+			if err := cmd.Run(fmt.Sprintf("sudo ln -s '%s' '%s'", caCertFile, certStorePath)); err != nil {
+				return errors.Wrapf(err, "error making symbol link for certificate %s", caCertFile)
+			}
+		}
+		if hasSSLBinary {
+			subjectHash, err := getSubjectHash(cmd, caCertFile)
+			if err != nil {
+				return errors.Wrapf(err, "error calculating subject hash for certificate %s", caCertFile)
+			}
+			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
+			if err := cmd.Run(fmt.Sprintf("sudo test -f '%s'", subjectHashLink)); err != nil {
+				if err := cmd.Run(fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, subjectHashLink)); err != nil {
+					return errors.Wrapf(err, "error making subject hash symbol link for certificate %s", caCertFile)
+				}
+			}
 		}
 	}
 
