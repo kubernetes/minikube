@@ -20,6 +20,7 @@
 
 set -e
 
+# default values if not provided 
 VERSION_TO_INSTALL=${1:-"1.12.8"}  
 INSTALL_PATH=${2:-"/usr/local"} 
 
