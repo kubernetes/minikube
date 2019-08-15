@@ -141,6 +141,8 @@ const (
 	MinimumMemorySize = "1024mb"
 	// DefaultCPUS is the default number of cpus of a host
 	DefaultCPUS = 2
+	// MinimumCPUS is the minimum number of cpus of a host
+	MinimumCPUS = 2
 	// DefaultDiskSize is the default disk image size, in megabytes
 	DefaultDiskSize = "20000mb"
 	// MinimumDiskSize is the minimum disk image size, in megabytes
