@@ -30,10 +30,15 @@ var vmProblems = map[string]match{
 		Advice: "Please make sure the service you are looking for is deployed or is in the correct namespace.",
 		Issues: []int{4599},
 	},
+	"MACHINE_NOT_FOUND": {
+		Regexp: re(`Machine does not exist for api.Exists`),
+		Advice: "Your minikube vm is not running, try minikube start.",
+		Issues: []int{4889},
+	},
 	"HYPERKIT_NO_IP": {
 		Regexp: re(`IP address never found in dhcp leases file Temporary Error: Could not find an IP address for`),
 		Advice: "Install the latest minikube hyperkit driver, and run 'minikube delete'",
-		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver",
+		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperkit/",
 		Issues: []int{1926, 4206},
 	},
 	"VBOX_NOT_FOUND": {
@@ -89,12 +94,12 @@ var vmProblems = map[string]match{
 	"KVM2_NOT_FOUND": {
 		Regexp: re(`Driver "kvm2" not found. Do you have the plugin binary .* accessible in your PATH`),
 		Advice: "Please install the minikube kvm2 VM driver, or select an alternative --vm-driver",
-		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver",
+		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
 	},
 	"HYPERKIT_NOT_FOUND": {
 		Regexp: re(`Driver "hyperkit" not found. Do you have the plugin binary .* accessible in your PATH?`),
 		Advice: "Please install the minikube hyperkit VM driver, or select an alternative --vm-driver",
-		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#hyperkit-driver",
+		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperkit/",
 	},
 	"KVM2_RESTART_NO_IP": {
 		Regexp: re(`Error starting stopped host: Machine didn't return an IP after 120 seconds`),
@@ -104,7 +109,7 @@ var vmProblems = map[string]match{
 	"KVM2_START_NO_IP": {
 		Regexp: re(`Error in driver during machine creation: Machine didn't return an IP after 120 seconds`),
 		Advice: "Install the latest kvm2 driver and run 'virt-host-validate'",
-		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver",
+		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
 		Issues: []int{4249, 3566},
 	},
 	"KVM2_NETWORK_DEFINE_XML": {
@@ -127,17 +132,17 @@ var vmProblems = map[string]match{
 	"KVM_CONNECTION_ERROR": {
 		Regexp: re(`error connecting to libvirt socket`),
 		Advice: "Have you set up libvirt correctly?",
-		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#kvm2-driver",
+		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
 	},
 	"DRIVER_CRASHED": {
 		Regexp: re(`Error attempting to get plugin server address for RPC`),
 		Advice: "The VM driver exited with an error, and may be corrupt. Run 'minikube start' with --alsologtostderr -v=8 to see the error",
-		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md",
+		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/",
 	},
 	"DRIVER_EXITED": {
 		Regexp: re(`Unable to start VM: create: creating: exit status 1`),
 		Advice: "Re-run 'minikube start' with --alsologtostderr -v=8 to see the VM driver error message",
-		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#troubleshooting",
+		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/#troubleshooting",
 	},
 	"VM_BOOT_FAILED_HYPERV_ENABLED": {
 		Regexp: re(`VirtualBox won't boot a 64bits VM when Hyper-V is activated`),
@@ -173,7 +178,7 @@ var vmProblems = map[string]match{
 }
 
 // proxyDoc is the URL to proxy documentation
-const proxyDoc = "https://github.com/kubernetes/minikube/blob/master/docs/http_proxy.md"
+const proxyDoc = "https://minikube.sigs.k8s.io/docs/reference/networking/proxy/"
 
 // netProblems are network related problems.
 var netProblems = map[string]match{
@@ -262,7 +267,7 @@ var osProblems = map[string]match{
 	"SYSTEMCTL_EXIT_1": {
 		Regexp: re(`Failed to enable container runtime: .*sudo systemctl start docker: exit status 1`),
 		Advice: "If using the none driver, ensure that systemctl is installed",
-		URL:    "https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md",
+		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/none/",
 		Issues: []int{2704},
 	},
 }

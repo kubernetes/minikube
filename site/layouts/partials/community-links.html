@@ -1,0 +1,29 @@
+{{ $links := .Site.Params.links }}
+
+<section class="row td-box td-box--4 td-box--gradient td-box--height-auto linkbox">
+<div class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
+<h2>Learn and Connect</h2>		
+<p>Using or want to use {{ .Site.Title }}? Find out more here:
+{{ with index $links "user"}}
+{{ template "community-links-list"  . }}
+{{ end }}
+</div>
+<div class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
+<h2>Develop and Contribute</h2>
+<p>If you want to get more involved by contributing to {{ .Site.Title }}, join us here:
+{{ with index $links "developer"}}
+{{ template "community-links-list"  . }}
+{{ end }}
+<p>You can find out how to contribute to these docs in our <a href="/docs/contributing/guide">Contributing Guide</a>.
+</div>
+</section>
+
+{{ define "community-links-list" }}
+<ul>
+ {{ range . }}
+ <li title="{{ .name }}">
+   <a target="_blank" href="{{ .url }}"><i class="{{ .icon }}"></i> {{ .name }}:</a> {{ .desc }}
+ </li>
+  {{ end }}
+</ul>
+{{ end }}

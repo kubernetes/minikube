@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-# This script runs the integration tests on an OSX machine for the Virtualbox Driver
+# This script runs the integration tests on an macOS machine for the VirtualBox Driver
 
 # The script expects the following env variables:
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
@@ -27,7 +27,7 @@
 set -e
 OS_ARCH="darwin-amd64"
 VM_DRIVER="virtualbox"
-JOB_NAME="OSX-Virtualbox"
+JOB_NAME="VirtualBox_macOS"
 EXTRA_ARGS="--bootstrapper=kubeadm"
 PARALLEL_COUNT=3
 

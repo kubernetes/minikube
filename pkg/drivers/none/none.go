@@ -31,7 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 const driverName = constants.DriverNone
@@ -44,7 +44,7 @@ var cleanupPaths = []string{
 }
 
 // Driver is a driver designed to run kubeadm w/o VM management, and assumes systemctl.
-// https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md
+// https://minikube.sigs.k8s.io/docs/reference/drivers/none/
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -239,7 +239,7 @@ func stopKubelet(exec command.Runner) error {
 		return nil
 	}
 
-	if err := util.RetryAfter(3, stop, 2*time.Second); err != nil {
+	if err := retry.Expo(stop, 2*time.Second, time.Minute*3, 5); err != nil {
 		return errors.Wrapf(err, "error stopping kubelet")
 	}
 

@@ -33,7 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/translate"
 	_ "k8s.io/minikube/pkg/provision"
 )
 
@@ -51,7 +50,6 @@ func main() {
 	}
 	out.SetOutFile(os.Stdout)
 	out.SetErrFile(os.Stderr)
-	translate.DetermineLocale()
 	cmd.Execute()
 }
 

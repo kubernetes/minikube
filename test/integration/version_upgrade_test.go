@@ -28,7 +28,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/test/integration/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 func fileExists(fname string) error {
@@ -38,12 +38,12 @@ func fileExists(fname string) error {
 			return err
 		}
 		if info.IsDir() {
-			return fmt.Errorf("Error expect file got dir")
+			return fmt.Errorf("error expect file got dir")
 		}
 		return nil
 	}
 
-	if err := util.Retry2(check, 1*time.Second, 3); err != nil {
+	if err := retry.Expo(check, 1*time.Second, 3); err != nil {
 		return errors.Wrap(err, fmt.Sprintf("Failed check if file (%q) exists,", fname))
 	}
 	return nil
@@ -62,6 +62,9 @@ func TestVersionUpgrade(t *testing.T) {
 	err := fileExists(fname)
 	if err != nil { // download file if it is not downloaded by other test
 		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
+		if runtime.GOOS == "windows" {
+			dest += ".exe"
+		}
 		err := downloadMinikubeBinary(t, dest, "latest")
 		if err != nil {
 			// binary is needed for the test

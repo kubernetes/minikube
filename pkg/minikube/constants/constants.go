@@ -31,8 +31,8 @@ import (
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
-// APIServerPort is the port that the API server should listen on.
 const (
+	APIServerPort    = 8443
 	APIServerName    = "minikubeCA"
 	ClusterDNSDomain = "cluster.local"
 )
@@ -129,6 +129,8 @@ func MakeMiniPath(fileName ...string) string {
 var MountProcessFileName = ".mount-process"
 
 const (
+	// DefaultEmbedCerts  is if the certs should be embedded in the kubeconfig file
+	DefaultEmbedCerts = false
 	// DefaultKeepContext is if we should keep context by default
 	DefaultKeepContext = false
 	// SHASuffix is the suffix of a SHA-256 checksum file
@@ -176,10 +178,10 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.15.1"
+var DefaultKubernetesVersion = "v1.15.2"
 
 // NewestKubernetesVersion is the newest Kubernetes version to test against
-var NewestKubernetesVersion = "v1.15.1"
+var NewestKubernetesVersion = "v1.15.2"
 
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
 var OldestKubernetesVersion = "v1.10.13"
@@ -189,24 +191,6 @@ var ConfigFilePath = MakeMiniPath("config")
 
 // ConfigFile is the path of the config file
 var ConfigFile = MakeMiniPath("config", "config.json")
-
-// GetProfileFile returns the Minikube profile config file
-func GetProfileFile(profile string, miniHome ...string) string {
-	miniPath := GetMinipath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "profiles", profile, "config.json")
-}
-
-// GetProfilePath returns the Minikube profile path of config file
-func GetProfilePath(profile string, miniHome ...string) string {
-	miniPath := GetMinipath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "profiles", profile)
-}
 
 // AddonsPath is the default path of the addons configuration
 const AddonsPath = "/etc/kubernetes/addons"
@@ -424,5 +408,5 @@ const (
 
 const (
 	// DriverDocumentation the documentation of the KVM driver
-	DriverDocumentation = "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md"
+	DriverDocumentation = "https://minikube.sigs.k8s.io/docs/reference/drivers/"
 )

@@ -41,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // BuildrootProvisioner provisions the custom system based on Buildroot
@@ -174,13 +175,14 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	log.Debugf("set auth options %+v", p.AuthOptions)
 
 	log.Debugf("setting up certificates")
-	configureAuth := func() error {
+	configAuth := func() error {
 		if err := configureAuth(p); err != nil {
-			return &util.RetriableError{Err: err}
+			return &retry.RetriableError{Err: err}
 		}
 		return nil
 	}
-	err := util.RetryAfter(5, configureAuth, time.Second*10)
+
+	err := retry.Expo(configAuth, time.Second, 2*time.Minute)
 	if err != nil {
 		log.Debugf("Error configuring auth during provisioning %v", err)
 		return err
