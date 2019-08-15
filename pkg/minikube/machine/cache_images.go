@@ -314,7 +314,11 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
-	err = tarball.Write(ref, img, f)
+	tag, err := name.NewTag(image, name.WeakValidation)
+	if err != nil {
+		return err
+	}
+	err = tarball.Write(tag, img, &tarball.WriteOptions{}, f)
 	if err != nil {
 		return err
 	}
