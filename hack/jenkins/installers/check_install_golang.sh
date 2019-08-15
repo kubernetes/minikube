@@ -29,24 +29,22 @@ function check_and_install_golang() {
 	if ! go version &> /dev/null
 	then
 		echo "WARNING: No golang installation found in your enviroment."
-    install_golang $VERSION_TO_INSTALL $INSTALL_PATH
+    install_golang "$VERSION_TO_INSTALL" "$INSTALL_PATH"
     return
 	fi
 	
 	# golang has been installed and check its version
 	if [[ $(go version) =~ (([0-9]+)\.([0-9]+).([0-9]+).([\.0-9]*)) ]]
 	then
-		host_golang_version=${BASH_REMATCH[1]}	
-    if [ $host_golang_version = $VERSION_TO_INSTALL ]; then
-      echo "go version on the host looks good : $host_golang_version"
+		HOST_VERSION=${BASH_REMATCH[1]}	
+    if [ "$HOST_VERSION" = "$VERSION_TO_INSTALL" ]; then
+      echo "go version on the host looks good : $HOST_VERSION"
     else
-      echo "WARNING: expected go version to be $VERSION_TO_INSTALL but got $host_golang_version"
-      install_golang $VERSION_TO_INSTALL $INSTALL_PATH
-    fi
-  	
-  
+      echo "WARNING: expected go version to be $VERSION_TO_INSTALL but got $HOST_VERSION"
+      install_golang "$VERSION_TO_INSTALL" "$INSTALL_PATH"
+    fi 	  
   else
-  	warn "Failed to parse golang version."
+  	echo "ERROR: Failed to parse golang version."
 		return
 	fi
 }
@@ -55,16 +53,16 @@ function check_and_install_golang() {
 function install_golang {
     echo "Installing golang version: $1 on $2"  
     pushd /tmp >/dev/null
-    curl -qL -O "https://storage.googleapis.com/golang/go${version_to_install}.linux-amd64.tar.gz" &&
-      tar xfa go${version_to_install}.linux-amd64.tar.gz &&
-      rm -rf "${INSTALL_PATH}/go" &&
-      mv go "${INSTALL_PATH}/" &&
+    sudo curl -qL -O "https://storage.googleapis.com/golang/go${1}.linux-amd64.tar.gz" &&
+      sudo tar xfa go${1}.linux-amd64.tar.gz &&
+      sudo rm -rf "${2}/go" &&
+      sudo mv go "${2}/" &&
     popd >/dev/null
 
-    pushd "${INSTALL_PATH}/go/src/go/types" > /dev/null
+    pushd "${2}/go/src/go/types" > /dev/null
     echo "Installing gotype linter"
-    go build gotype.go
-    cp gotype "${INSTALL_PATH}/go/bin"
+    sudo go build gotype.go
+    sudo cp gotype "${2}/go/bin"
     popd >/dev/null
 }
 

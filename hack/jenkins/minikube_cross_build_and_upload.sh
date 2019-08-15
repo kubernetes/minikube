@@ -25,6 +25,11 @@ set -eux -o pipefail
 
 readonly bucket="minikube-builds"
 
+# Make sure the right golang version is installed based on Makefile
+EXPCECTED_GOLANG_VERSION=$(cat Makefile | grep "GO_VERSION ?=" | awk -F"= " '{print $2}')
+source ./hack/jenkins/installers/check_install_golang.sh $EXPCECTED_GOLANG_VERSION
+
+
 declare -rx BUILD_IN_DOCKER=y
 declare -rx GOPATH=/var/lib/jenkins/go
 declare -rx ISO_BUCKET="${bucket}/${ghprbPullId}"

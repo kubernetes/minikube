@@ -33,8 +33,8 @@ export GOPATH=~/go
 
 # Make sure the right golang version is installed based on Makefile
 EXPCECTED_GOLANG_VERSION=$(cat Makefile | grep "GO_VERSION ?=" | awk -F"= " '{print $2}')
-GOLANG_INSTALL_PATH="/usr/local/"
-source ./install_golang.sh $GOLANG_VERSION $GOLANG_INSTALL_PATH 
+source ./hack/jenkins/installers/check_install_golang.sh $EXPCECTED_GOLANG_VERSION
+
 
 # Make sure the tag matches the Makefile
 cat Makefile | grep "VERSION_MAJOR ?=" | grep $VERSION_MAJOR
