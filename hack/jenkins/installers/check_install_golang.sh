@@ -54,15 +54,9 @@ function install_golang {
     echo "Installing golang version: $1 on $2"  
     pushd /tmp >/dev/null
     sudo curl -qL -O "https://storage.googleapis.com/golang/go${1}.linux-amd64.tar.gz" &&
-      sudo tar xfa go${1}.linux-amd64.tar.gz &&
-      sudo rm -rf "${2}/go" &&
-      sudo mv go "${2}/" &&
-    popd >/dev/null
-
-    pushd "${2}/go/src/go/types" > /dev/null
-    echo "Installing gotype linter"
-    sudo go build gotype.go
-    sudo cp gotype "${2}/go/bin"
+    sudo tar xfa go${1}.linux-amd64.tar.gz &&
+    sudo rm -rf "${2}/go" &&
+    sudo mv go "${2}/" && sudo chown -R $(whoami): ${2}/go
     popd >/dev/null
 }
 
