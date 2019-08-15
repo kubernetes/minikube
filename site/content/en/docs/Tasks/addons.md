@@ -69,4 +69,4 @@ minikube addons disable <name>
 
 ## Custom Addons
 
-If you would like to have minikube properly start/restart custom addons, place the addon(s) _.yaml_ you wish to be launched with minikube in the `.minikube/addons` directory. Addons in this folder will be moved to the minikube VM and launched each time minikube is started/restarted. Read the guidance to learn [how to develop minikube addons](../Contributing/addons.en.md).
+If you would like to have minikube properly start/restart custom addons, place the addon(s) _.yaml_ you wish to be launched with minikube in the `.minikube/addons` directory. Addons in this folder will be moved to the minikube VM and launched each time minikube is started/restarted. Read the guidance to learn [how to develop minikube addons](/docs/tasks/Contributing/addons).
