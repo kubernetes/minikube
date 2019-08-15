@@ -31,6 +31,11 @@ export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export RPM_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export GOPATH=~/go
 
+# Make sure the right golang version is installed based on Makefile
+EXPCECTED_GOLANG_VERSION=$(cat Makefile | grep "GO_VERSION ?=" | awk -F"= " '{print $2}')
+GOLANG_INSTALL_PATH="/usr/local/"
+source ./install_golang.sh $GOLANG_VERSION $GOLANG_INSTALL_PATH 
+
 # Make sure the tag matches the Makefile
 cat Makefile | grep "VERSION_MAJOR ?=" | grep $VERSION_MAJOR
 cat Makefile | grep "VERSION_MINOR ?=" | grep $VERSION_MINOR
@@ -46,3 +51,6 @@ gsutil -m cp out/* gs://$BUCKET/releases/$TAGNAME/
 
 # Bump latest
 gsutil cp -r gs://$BUCKET/releases/$TAGNAME/* gs://$BUCKET/releases/latest/
+
+
+
