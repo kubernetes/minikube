@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -132,7 +133,7 @@ func GetAllVersionsFromURL(url string) (Releases, error) {
 }
 
 func writeTimeToFile(path string, inputTime time.Time) error {
-	err := ioutil.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0644)
+	err := lock.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0644)
 	if err != nil {
 		return errors.Wrap(err, "Error writing current update time to file: ")
 	}

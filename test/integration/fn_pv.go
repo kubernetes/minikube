@@ -30,6 +30,7 @@ import (
 	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	commonutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -65,7 +66,7 @@ func testProvisioning(t *testing.T) {
 		return fmt.Errorf("no default StorageClass yet")
 	}
 
-	if err := util.Retry(t, checkStorageClass, 10*time.Second, 10); err != nil {
+	if err := retry.Expo(checkStorageClass, time.Second, 90*time.Second); err != nil {
 		t.Fatalf("no default storage class after retry: %v", err)
 	}
 
@@ -84,7 +85,7 @@ func testProvisioning(t *testing.T) {
 		return nil
 	}
 
-	if err := util.Retry(t, checkPodRunning, 2*time.Second, 5); err != nil {
+	if err := retry.Expo(checkPodRunning, 2*time.Second, 2*time.Minute); err != nil {
 		t.Fatalf("Check storage-provisioner pod running failed with error: %v", err)
 	}
 
@@ -107,7 +108,7 @@ func testProvisioning(t *testing.T) {
 		return fmt.Errorf("PV not attached to PVC: %v", pvc)
 	}
 
-	if err := util.Retry(t, checkStorage, 2*time.Second, 5); err != nil {
+	if err := retry.Expo(checkStorage, 2*time.Second, 2*time.Minute); err != nil {
 		t.Fatalf("PV Creation failed with error: %v", err)
 	}
 

@@ -21,9 +21,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
-
 	"io/ioutil"
+	"os"
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -74,6 +73,20 @@ func get(name string, config MinikubeConfig) (string, error) {
 	return "", ErrKeyNotFound
 }
 
+// WriteConfig writes a minikube config to the JSON file
+func WriteConfig(configFile string, m MinikubeConfig) error {
+	f, err := os.Create(configFile)
+	if err != nil {
+		return fmt.Errorf("create %s: %s", configFile, err)
+	}
+	defer f.Close()
+	err = encode(f, m)
+	if err != nil {
+		return fmt.Errorf("encode %s: %s", configFile, err)
+	}
+	return nil
+}
+
 // ReadConfig reads in the JSON minikube config
 func ReadConfig() (MinikubeConfig, error) {
 	return readConfig(constants.ConfigFile)
@@ -103,6 +116,17 @@ func decode(r io.Reader) (MinikubeConfig, error) {
 	return data, err
 }
 
+func encode(w io.Writer, m MinikubeConfig) error {
+	b, err := json.MarshalIndent(m, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(b)
+
+	return err
+}
+
 // GetMachineName gets the machine name for the VM
 func GetMachineName() string {
 	// REFACTOR NECESSARY: This function should not rely on globals.
@@ -127,10 +151,10 @@ type simpleConfigLoader struct{}
 // DefaultLoader is the default config loader
 var DefaultLoader Loader = &simpleConfigLoader{}
 
-func (c *simpleConfigLoader) LoadConfigFromFile(profile string, miniHome ...string) (*Config, error) {
+func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*Config, error) {
 	var cc Config
-
-	path := constants.GetProfileFile(profile, miniHome...)
+	// Move to profile package
+	path := profileFilePath(profileName, miniHome...)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err

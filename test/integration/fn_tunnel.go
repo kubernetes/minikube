@@ -33,6 +33,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	commonutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -146,16 +147,16 @@ func getResponseBody(address string) (string, error) {
 	var resp *http.Response
 	var err error
 
-	request := func() error {
+	req := func() error {
 		resp, err = httpClient.Get(fmt.Sprintf("http://%s", address))
 		if err != nil {
-			retriable := &commonutil.RetriableError{Err: err}
+			retriable := &retry.RetriableError{Err: err}
 			return retriable
 		}
 		return nil
 	}
 
-	if err = commonutil.RetryAfter(5, request, 1*time.Second); err != nil {
+	if err = retry.Expo(req, time.Millisecond*500, 2*time.Minute, 6); err != nil {
 		return "", err
 	}
 

@@ -1,10 +1,10 @@
 ---
 title: "Networking"
 linkTitle: "Networking"
-weight: 8
-date: 2017-01-05
+weight: 6
+date: 2018-08-01
 description: >
-  Configuring networking with minikube
+  How minikube interacts with networks.
 ---
 
-Since minikube runs all services within a VM environment, networking gets pretty complicated. Networking is both a popular topic among power users, and the most common cause for failed minikube deployments.
+Since minikube runs everything from within a VM, networking can get fairly complicated. 
