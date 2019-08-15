@@ -30,6 +30,8 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
+	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -77,6 +79,7 @@ func testMounting(t *testing.T) {
 		}
 		return nil
 	}
+
 	defer func() {
 		t.Logf("Deleting pod from: %s", podPath)
 		if out, err := kr.RunCommand([]string{"delete", "-f", podPath}); err != nil {
@@ -84,7 +87,7 @@ func testMounting(t *testing.T) {
 		}
 	}()
 
-	if err := util.Retry(t, setupTest, 5*time.Second, 40); err != nil {
+	if err = retry.Expo(setupTest, 500*time.Millisecond, 4*time.Minute); err != nil {
 		t.Fatal("mountTest failed with error:", err)
 	}
 
@@ -100,7 +103,8 @@ func testMounting(t *testing.T) {
 
 		return nil
 	}
-	if err := util.Retry(t, mountTest, 5*time.Second, 40); err != nil {
+
+	if err = retry.Expo(mountTest, 500*time.Millisecond, 4*time.Minute); err != nil {
 		t.Fatalf("mountTest failed with error: %v", err)
 	}
 
@@ -119,7 +123,7 @@ func getMountCmd(mk util.MinikubeRunner, mountDir string) string {
 func writeFilesFromHost(mountedDir string, files []string, content string) error {
 	for _, file := range files {
 		path := filepath.Join(mountedDir, file)
-		err := ioutil.WriteFile(path, []byte(content), 0644)
+		err := lock.WriteFile(path, []byte(content), 0644)
 		if err != nil {
 			return fmt.Errorf("unexpected error while writing file %s: %v", path, err)
 		}

@@ -40,7 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/service"
-	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 var (
@@ -110,7 +110,8 @@ var dashboardCmd = &cobra.Command{
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
 		out.ErrT(out.Verifying, "Verifying dashboard health ...")
-		if err = util.RetryAfter(180, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
+		checkSVC := func() error { return service.CheckService(ns, svc) }
+		if err = retry.Expo(checkSVC, 1*time.Second, time.Minute*3); err != nil {
 			exit.WithCodeT(exit.Unavailable, "dashboard service is not running: {{.error}}", out.V{"error": err})
 		}
 
@@ -122,14 +123,15 @@ var dashboardCmd = &cobra.Command{
 		url := dashboardURL(hostPort, ns, svc)
 
 		out.ErrT(out.Verifying, "Verifying proxy health ...")
-		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
+		chkURL := func() error { return checkURL(url) }
+		if err = retry.Expo(chkURL, 1*time.Second, 3*time.Minute); err != nil {
 			exit.WithCodeT(exit.Unavailable, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
 		}
 
 		if dashboardURLMode {
 			out.Ln(url)
 		} else {
-			out.ErrT(out.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
+			out.T(out.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
 			if err = browser.OpenURL(url); err != nil {
 				exit.WithCodeT(exit.Software, "failed to open browser: {{.error}}", out.V{"error": err})
 			}
@@ -219,7 +221,7 @@ func checkURL(url string) error {
 		return errors.Wrap(err, "checkURL")
 	}
 	if resp.StatusCode != http.StatusOK {
-		return &util.RetriableError{
+		return &retry.RetriableError{
 			Err: fmt.Errorf("unexpected response code: %d", resp.StatusCode),
 		}
 	}

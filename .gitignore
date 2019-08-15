@@ -44,3 +44,9 @@ deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
 /.vscode
 
 test/integration/testdata/minikube-linux-amd64-latest-stable
+
+# hugo
+/public
+/site/resources
+/_gen
+
