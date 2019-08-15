@@ -71,12 +71,12 @@ func getDevicesXML() (string, error) {
 	for _, device := range unboundNVIDIADevices {
 		splits := strings.Split(device, ":")
 		if len(splits) != 3 {
-			log.Infof("Error while parsing PCI device %q. Not splitable into domain:bus:slot.function.", device)
+			log.Infof("Error while parsing PCI device %q. Not splittable into domain:bus:slot.function.", device)
 			continue
 		}
 		parts := strings.Split(splits[2], ".")
 		if len(parts) != 2 {
-			log.Infof("Error while parsing PCI device %q. Not splitable into domain:bus:slot.function.", device)
+			log.Infof("Error while parsing PCI device %q. Not splittable into domain:bus:slot.function.", device)
 			continue
 		}
 		pciDevice := PCIDevice{
@@ -161,7 +161,7 @@ func getPassthroughableNVIDIADevices() ([]string, error) {
 		}
 	}
 	if len(isolatedNVIDIADevices) == 0 {
-		return []string{}, fmt.Errorf("some unbound NVIDIA devices were found but they had other devices in their IOMMU group that were bound. See instructoins at https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/")
+		return []string{}, fmt.Errorf("some unbound NVIDIA devices were found but they had other devices in their IOMMU group that were bound. See instructions at https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/")
 	}
 
 	return isolatedNVIDIADevices, nil
