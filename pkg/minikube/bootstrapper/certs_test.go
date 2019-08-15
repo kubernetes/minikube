@@ -17,7 +17,9 @@ limitations under the License.
 package bootstrapper
 
 import (
+	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"testing"
 
@@ -39,10 +41,37 @@ func TestSetupCerts(t *testing.T) {
 		ServiceCIDR:   util.DefaultServiceCIDR,
 	}
 
+	if err := os.Mkdir(filepath.Join(tempDir, "certs"), 0777); err != nil {
+		t.Fatalf("error create certificate directory: %v", err)
+	}
+
+	if err := util.GenerateCACert(
+		filepath.Join(tempDir, "certs", "mycert.pem"),
+		filepath.Join(tempDir, "certs", "mykey.pem"),
+		"Test Certificate",
+	); err != nil {
+		t.Fatalf("error generating certificate: %v", err)
+	}
+
+	cmdMap := map[string]string{}
+	certFilenames := map[string]string{"ca.crt": "minikubeCA.pem", "mycert.pem": "mycert.pem"}
+	for _, dst := range certFilenames {
+		certFile := path.Join(CACertificatesDir, dst)
+		certStorePath := path.Join(SSLCertStoreDir, dst)
+		certNameHash := "abcdef"
+		remoteCertHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", certNameHash))
+		cmdMap[fmt.Sprintf("sudo ln -s '%s' '%s'", certFile, certStorePath)] = "1"
+		cmdMap[fmt.Sprintf("openssl x509 -hash -noout -in '%s'", certFile)] = certNameHash
+		cmdMap[fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, remoteCertHashLink)] = "1"
+	}
+	f.SetCommandToOutput(cmdMap)
+
 	var filesToBeTransferred []string
 	for _, cert := range certs {
 		filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), cert))
 	}
+	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), "ca.crt"))
+	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), "certs", "mycert.pem"))
 
 	if err := SetupCerts(f, k8s); err != nil {
 		t.Fatalf("Error starting cluster: %v", err)
