@@ -52,5 +52,3 @@ gsutil -m cp out/* gs://$BUCKET/releases/$TAGNAME/
 # Bump latest
 gsutil cp -r gs://$BUCKET/releases/$TAGNAME/* gs://$BUCKET/releases/latest/
 
-
-
