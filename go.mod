@@ -2,6 +2,10 @@ module k8s.io/minikube
 
 go 1.12
 
+require github.com/google/go-containerregistry v0.0.0-20180731221751-697ee0b3d46e
+
+require k8s.io/kubernetes v1.15.2
+
 require (
 	github.com/Parallels/docker-machine-parallels v1.3.0
 	github.com/Sirupsen/logrus v0.0.0-20170822132746-89742aefa4b2 // indirect
@@ -21,7 +25,6 @@ require (
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.3.0
-	github.com/google/go-containerregistry v0.0.0-20190318164241-019cdfc6adf9
 	github.com/google/go-github/v25 v25.0.2
 	github.com/gorilla/mux v1.7.1 // indirect
 	github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce // indirect
@@ -43,7 +46,7 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/browser v0.0.0-20160118053552-9302be274faa
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.8.1
 	github.com/pkg/profile v0.0.0-20161223203901-3a8809bd8a80
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
@@ -68,7 +71,6 @@ require (
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
 	k8s.io/kubectl v0.0.0-00010101000000-000000000000
-	k8s.io/kubernetes v1.15.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner v4.0.0+incompatible
 )
 
