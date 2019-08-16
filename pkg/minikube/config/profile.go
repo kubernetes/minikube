@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // isValid checks if the profile has the essential info needed for a profile
@@ -69,7 +70,7 @@ func CreateProfile(name string, cfg *Config, miniHome ...string) error {
 
 	// If no config file exists, don't worry about swapping paths
 	if _, err := os.Stat(path); os.IsNotExist(err) {
-		if err := ioutil.WriteFile(path, data, 0600); err != nil {
+		if err := lock.WriteFile(path, data, 0600); err != nil {
 			return err
 		}
 		return nil
@@ -81,7 +82,7 @@ func CreateProfile(name string, cfg *Config, miniHome ...string) error {
 	}
 	defer os.Remove(tf.Name())
 
-	if err = ioutil.WriteFile(tf.Name(), data, 0600); err != nil {
+	if err = lock.WriteFile(tf.Name(), data, 0600); err != nil {
 		return err
 	}
 

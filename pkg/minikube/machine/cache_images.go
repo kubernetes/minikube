@@ -29,6 +29,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
@@ -303,9 +305,9 @@ func CacheImage(image, dst string) error {
 		return errors.Wrap(err, "creating docker image name")
 	}
 
-	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	img, err := retrieveImage(ref)
 	if err != nil {
-		return errors.Wrap(err, "fetching remote image")
+		return errors.Wrap(err, "fetching image")
 	}
 
 	glog.Infoln("OPENING: ", dstPath)
@@ -313,7 +315,11 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
-	err = tarball.Write(ref, img, f)
+	tag, err := name.NewTag(image, name.WeakValidation)
+	if err != nil {
+		return err
+	}
+	err = tarball.Write(tag, img, &tarball.WriteOptions{}, f)
 	if err != nil {
 		return err
 	}
@@ -326,4 +332,13 @@ func CacheImage(image, dst string) error {
 		return err
 	}
 	return nil
+}
+
+func retrieveImage(ref name.Reference) (v1.Image, error) {
+	img, err := daemon.Image(ref)
+	if err == nil {
+		glog.Infof("found %s locally; caching", ref.Name())
+		return img, err
+	}
+	return remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 }

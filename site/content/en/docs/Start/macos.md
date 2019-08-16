@@ -17,7 +17,7 @@ weight: 2
 If the [Brew Package Manager](https://brew.sh/) is installed, use it to download and install minikube:
 
 ```shell
-brew install minikube
+brew cask install minikube
 ```
 
 {{% /tab %}}
