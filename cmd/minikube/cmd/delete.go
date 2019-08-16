@@ -63,7 +63,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	cc, err := pkg_config.Load()
 	if err != nil && !os.IsNotExist(err) {
-		out.ErrT(out.Sad, "Error loading profile config: {{.error}}", out.V{"name": profile})
+		out.ErrT(out.Sad, "Error loading profile {{.name}}: {{.error}}", out.V{"name": profile, "error": err})
 	}
 
 	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
@@ -71,27 +71,38 @@ func runDelete(cmd *cobra.Command, args []string) {
 		uninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper))
 	}
 
+	if err := killMountProcess(); err != nil {
+		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
+	}
+
 	if err = cluster.DeleteHost(api); err != nil {
-		switch err := errors.Cause(err).(type) {
+		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
 			out.T(out.Meh, `"{{.name}}" cluster does not exist`, out.V{"name": profile})
 		default:
-			exit.WithError("Failed to delete cluster", err)
+			out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
+			out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile})
 		}
 	}
 
-	if err := killMountProcess(); err != nil {
-		out.FatalT("Failed to kill mount process: {{.error}}", out.V{"error": err})
+	// In case DeleteHost didn't complete the job.
+	machineDir := filepath.Join(constants.GetMinipath(), "machines", profile)
+	if _, err := os.Stat(machineDir); err == nil {
+		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
+		err := os.RemoveAll(machineDir)
+		if err != nil {
+			exit.WithError("Unable to remove machine directory: %v", err)
+		}
 	}
 
-	if err := pkg_config.DeleteProfile(viper.GetString(pkg_config.MachineProfile)); err != nil {
+	if err := pkg_config.DeleteProfile(profile); err != nil {
 		if os.IsNotExist(err) {
-			out.T(out.Meh, `"{{.profile_name}}" profile does not exist`, out.V{"profile_name": profile})
+			out.T(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profile})
 			os.Exit(0)
 		}
 		exit.WithError("Failed to remove profile", err)
 	}
-	out.T(out.Crushed, `The "{{.cluster_name}}" cluster has been deleted.`, out.V{"cluster_name": profile})
+	out.T(out.Crushed, `The "{{.name}}" cluster has been deleted.`, out.V{"name": profile})
 
 	machineName := pkg_config.GetMachineName()
 	if err := kubeconfig.DeleteContext(constants.KubeconfigPath, machineName); err != nil {
