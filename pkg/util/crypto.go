@@ -87,7 +87,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 	}
 	signerKey, err := x509.ParsePKCS1PrivateKey(decodedSignerKey.Bytes)
 	if err != nil {
-		return errors.Wrap(err, "Error parsing prive key: decodedSignerKey.Bytes")
+		return errors.Wrap(err, "Error parsing private key: decodedSignerKey.Bytes")
 	}
 
 	template := x509.Certificate{
