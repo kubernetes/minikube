@@ -52,7 +52,9 @@ func TestSetupCerts(t *testing.T) {
 		t.Fatalf("error generating certificate: %v", err)
 	}
 
-	cmdMap := map[string]string{}
+	cmdMap := map[string]string{
+		"sudo mkdir -p  /var/lib/minikube/certs": "",
+	}
 	certFilenames := map[string]string{"ca.crt": "minikubeCA.pem", "mycert.pem": "mycert.pem"}
 	for _, dst := range certFilenames {
 		certFile := path.Join(CACertificatesDir, dst)
@@ -63,6 +65,7 @@ func TestSetupCerts(t *testing.T) {
 		cmdMap[fmt.Sprintf("openssl x509 -hash -noout -in '%s'", certFile)] = certNameHash
 		cmdMap[fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, remoteCertHashLink)] = "1"
 	}
+	f := command.NewFakeCommandRunner()
 	f.SetCommandToOutput(cmdMap)
 
 	var filesToBeTransferred []string
@@ -72,8 +75,6 @@ func TestSetupCerts(t *testing.T) {
 	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), "ca.crt"))
 	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), "certs", "mycert.pem"))
 
-	f := command.NewFakeCommandRunner()
-	f.SetCommandToOutput(map[string]string{"sudo mkdir -p  /var/lib/minikube/certs": ""})
 	if err := SetupCerts(f, k8s); err != nil {
 		t.Fatalf("Error starting cluster: %v", err)
 	}
