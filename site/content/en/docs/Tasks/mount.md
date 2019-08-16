@@ -6,7 +6,11 @@ description: >
   How to mount a host directory into the VM
 ---
 
-It is possible to mount directories from the host into the guest using the `mount` subcommand:
+## 9P Mounts
+
+9P mounts are flexible and work across all hypervisors, but suffers from performance and reliability issues when used with large folders (>600 files). See **Driver Mounts** as an alternative.
+
+To mount a directory from the host into the guest using the `mount` subcommand:
 
 ```
 minikube mount <source directory>:<target directory>
@@ -57,3 +61,21 @@ This directory may then be referenced from a Kubernetes manifest, for example:
 }
 ```
 
+## Driver mounts
+
+Some hypervisors, have built-in host folder sharing. Driver mounts are reliable with good performance, but the paths are not predictable across operating systems or hypervisors:
+
+| Driver | OS | HostFolder | VM |
+| --- | --- | --- | --- |
+| VirtualBox | Linux | /home | /hosthome |
+| VirtualBox | macOS | /Users | /Users |
+| VirtualBox | Windows | C://Users | /c/Users |
+| VMware Fusion | macOS | /Users | /Users |
+| KVM | Linux | Unsupported | | 
+| HyperKit | Linux | Unsupported (see NFS mounts) | | 
+
+These mounts can be disabled by passing `--disable-driver-mounts` to `minikube start`.
+
+## File Sync
+
+See [File Sync]({{<ref "sync.md" >}})
