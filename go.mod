@@ -2,6 +2,10 @@ module k8s.io/minikube
 
 go 1.12
 
+require github.com/google/go-containerregistry v0.0.0-20180731221751-697ee0b3d46e
+
+require k8s.io/kubernetes v1.15.2
+
 require (
 	github.com/Parallels/docker-machine-parallels v1.3.0
 	github.com/Sirupsen/logrus v0.0.0-20170822132746-89742aefa4b2 // indirect
@@ -9,19 +13,18 @@ require (
 	github.com/blang/semver v3.5.0+incompatible
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
-	github.com/cheggaaa/pb v1.0.27
+	github.com/cheggaaa/pb/v3 v3.0.1
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-units v0.3.3
-	github.com/docker/machine v0.16.1-0.20190718054102-a555e4f7a8f5
+	github.com/docker/machine v0.7.1-0.20190718054102-a555e4f7a8f5 // version is 0.7.1 to pin to a555e4f7a8f5
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.3.0
-	github.com/google/go-containerregistry v0.0.0-20190318164241-019cdfc6adf9
 	github.com/google/go-github/v25 v25.0.2
 	github.com/gorilla/mux v1.7.1 // indirect
 	github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce // indirect
@@ -33,9 +36,9 @@ require (
 	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
 	github.com/jimmidyson/go-download v0.0.0-20161028105827-7f9a90c8c95b
 	github.com/johanneswuerbach/nfsexports v0.0.0-20181204082207-1aa528dcb345
+	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
-	github.com/mattn/go-colorable v0.1.2 // indirect
 	github.com/mattn/go-isatty v0.0.8
 	github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
@@ -43,7 +46,7 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/browser v0.0.0-20160118053552-9302be274faa
-	github.com/pkg/errors v0.8.0
+	github.com/pkg/errors v0.8.1
 	github.com/pkg/profile v0.0.0-20161223203901-3a8809bd8a80
 	github.com/pmezard/go-difflib v1.0.0
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
@@ -68,7 +71,6 @@ require (
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
 	k8s.io/kubectl v0.0.0-00010101000000-000000000000
-	k8s.io/kubernetes v1.15.0
 	sigs.k8s.io/sig-storage-lib-external-provisioner v4.0.0+incompatible
 )
 

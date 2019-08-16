@@ -46,6 +46,12 @@ resampleFilter = "CatmullRom"
 quality = 75
 anchor = "smart"
 
+# Additional menu items
+[[menu.main]]
+    name = "GitHub"
+    weight = 50
+    url = "https://github.com/kubernetes/minikube"
+
 [services]
 [services.googleAnalytics]
 # Comment out the next line to disable GA tracking. Also disables the feature described in [params.ui.feedback].
@@ -62,7 +68,7 @@ weight = 1
 [params]
 copyright = "The Kubernetes Authors -- "
 # The latest release of minikube
-latest_release = "1.3.0"
+latest_release = "1.3.1"
 
 privacy_policy = ""
 
@@ -71,12 +77,12 @@ privacy_policy = ""
 version_menu = "Releases"
 
 # Repository configuration (URLs for in-page links to opening issues and suggesting changes)
-github_repo = "http://github.com/minikube/kubernetes"
+github_repo = "http://github.com/kubernetes/minikube"
 # An optional link to a related project repo. For example, the sibling repository where your product code lives.
 github_project_repo = ""
 
 # Specify a value here if your content directory is not in your repo's root directory
-github_subdir = "/site/content"
+github_subdir = "site"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
 gcs_engine_id = "005331096405080631692:s7c4yfpw9sy"
@@ -84,7 +90,7 @@ gcs_engine_id = "005331096405080631692:s7c4yfpw9sy"
 # User interface configuration
 [params.ui]
 # Enable to show the side bar menu in its compact state.
-sidebar_menu_compact = false
+sidebar_menu_compact = true
 #  Set to true to disable breadcrumb navigation.
 breadcrumb_disable = false
 #  Set to true to hide the sidebar search box (the top nav search box will still be displayed if search is enabled)
@@ -99,8 +105,8 @@ navbar_logo = true
 [params.ui.feedback]
 enable = true
 # The responses that the user sees after clicking "yes" (the page was helpful) or "no" (the page was not helpful).
-yes = 'Glad to hear it! Please <a href="https://github.com/kubernetes/minikube/issues/new">tell us how we can improve</a>.'
-no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube/issues/new">tell us how we can improve</a>.'
+yes = 'Glad to hear it! Please <a href="https://github.com/kubernetes/minikube/issues/new/choose">tell us how we can improve</a>.'
+no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube/issues/new/choose">tell us how we can improve</a>.'
 
 [params.links]
 # End user relevant links. These will show up on left side of footer and in the community page if you have one.

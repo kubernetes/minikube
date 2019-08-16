@@ -33,6 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	commonutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // MinikubeRunner runs a command
@@ -234,7 +235,7 @@ func (m *MinikubeRunner) Start(opts ...string) (stdout string, stderr string, er
 		stdout, stderr, err = m.RunCommandRetriable(cmd)
 		return err
 	}
-	err = RetryX(s, 10*time.Second, m.TimeOutStart)
+	err = retry.Expo(s, 10*time.Second, m.TimeOutStart)
 	return stdout, stderr, err
 }
 
@@ -282,7 +283,7 @@ func (m *MinikubeRunner) Status() (status string, stderr string, err error) {
 		status = strings.TrimRight(status, "\n")
 		return err
 	}
-	err = RetryX(s, 15*time.Second, 1*time.Minute)
+	err = retry.Expo(s, 3*time.Second, 2*time.Minute)
 	if err != nil && (status == state.None.String() || status == state.Stopped.String()) {
 		err = nil // because https://github.com/kubernetes/minikube/issues/4932
 	}

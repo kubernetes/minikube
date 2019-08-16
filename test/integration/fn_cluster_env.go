@@ -24,7 +24,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/minikube/test/integration/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Assert that docker-env subcommand outputs usable information for "docker ps"
@@ -61,7 +61,7 @@ func testClusterEnv(t *testing.T) {
 		}
 		return nil
 	}
-	if err := util.Retry(t, dockerPs, 3*time.Second, 5); err != nil {
+	if err := retry.Expo(dockerPs, 500*time.Millisecond, time.Minute); err != nil {
 		t.Fatalf("Error running command: %s. Error: %v Output: %s", "docker ps", err, output)
 	}
 }

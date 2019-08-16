@@ -65,10 +65,14 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(url string) error {
 		urlWithChecksum = url + "?checksum=file:" + constants.DefaultISOSHAURL
 	}
 
+	dst := f.GetISOCacheFilepath(url)
+	// Predictable temp destination so that resume can function
+	tmpDst := dst + ".download"
+
 	opts := []getter.ClientOption{getter.WithProgress(defaultProgressBar)}
 	client := &getter.Client{
 		Src:     urlWithChecksum,
-		Dst:     f.GetISOCacheFilepath(url),
+		Dst:     tmpDst,
 		Mode:    getter.ClientModeFile,
 		Options: opts,
 	}
@@ -78,7 +82,7 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(url string) error {
 	if err := client.Get(); err != nil {
 		return errors.Wrap(err, url)
 	}
-	return nil
+	return os.Rename(tmpDst, dst)
 }
 
 // ShouldCacheMinikubeISO returns if we need to download the ISO

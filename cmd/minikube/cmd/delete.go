@@ -17,22 +17,27 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strconv"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/golang/glog"
+	ps "github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // deleteCmd represents the delete command
@@ -75,11 +80,11 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if err := cmdUtil.KillMountProcess(); err != nil {
+	if err := killMountProcess(); err != nil {
 		out.FatalT("Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	if err := os.RemoveAll(constants.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {
+	if err := pkg_config.DeleteProfile(viper.GetString(pkg_config.MachineProfile)); err != nil {
 		if os.IsNotExist(err) {
 			out.T(out.Meh, `"{{.profile_name}}" profile does not exist`, out.V{"profile_name": profile})
 			os.Exit(0)
@@ -89,7 +94,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	out.T(out.Crushed, `The "{{.cluster_name}}" cluster has been deleted.`, out.V{"cluster_name": profile})
 
 	machineName := pkg_config.GetMachineName()
-	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
+	if err := kubeconfig.DeleteContext(constants.KubeconfigPath, machineName); err != nil {
 		exit.WithError("update config", err)
 	}
 
@@ -106,4 +111,52 @@ func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsN
 	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
 		out.ErrT(out.Empty, "Failed to delete cluster: {{.error}}", out.V{"error": err})
 	}
+}
+
+// killMountProcess kills the mount process, if it is running
+func killMountProcess() error {
+	pidPath := filepath.Join(constants.GetMinipath(), constants.MountProcessFileName)
+	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
+		return nil
+	}
+
+	glog.Infof("Found %s ...", pidPath)
+	out, err := ioutil.ReadFile(pidPath)
+	if err != nil {
+		return errors.Wrap(err, "ReadFile")
+	}
+	glog.Infof("pidfile contents: %s", out)
+	pid, err := strconv.Atoi(string(out))
+	if err != nil {
+		return errors.Wrap(err, "error parsing pid")
+	}
+	// os.FindProcess does not check if pid is running :(
+	entry, err := ps.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "ps.FindProcess")
+	}
+	if entry == nil {
+		glog.Infof("Stale pid: %d", pid)
+		if err := os.Remove(pidPath); err != nil {
+			return errors.Wrap(err, "Removing stale pid")
+		}
+		return nil
+	}
+
+	// We found a process, but it still may not be ours.
+	glog.Infof("Found process %d: %s", pid, entry.Executable())
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "os.FindProcess")
+	}
+
+	glog.Infof("Killing pid %d ...", pid)
+	if err := proc.Kill(); err != nil {
+		glog.Infof("Kill failed with %v - removing probably stale pid...", err)
+		if err := os.Remove(pidPath); err != nil {
+			return errors.Wrap(err, "Removing likely stale unkillable pid")
+		}
+		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
+	}
+	return nil
 }
