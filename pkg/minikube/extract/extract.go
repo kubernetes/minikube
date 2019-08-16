@@ -31,6 +31,7 @@ import (
 
 	"github.com/golang-collections/collections/stack"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // blacklist is a list of strings to explicitly omit from translation files.
@@ -474,7 +475,7 @@ func writeStringsToFiles(e *state, output string) error {
 		if err != nil {
 			return errors.Wrap(err, "marshalling translations")
 		}
-		err = ioutil.WriteFile(path, c, info.Mode())
+		err = lock.WriteFile(path, c, info.Mode())
 		if err != nil {
 			return errors.Wrap(err, "writing translation file")
 		}

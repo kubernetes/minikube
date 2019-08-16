@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // enum to differentiate kubeadm command line parameters from kubeadm config file parameters (see the
@@ -237,13 +238,15 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
 		// TODO(r2d4): get rid of global here
 		master = k8s.NodeName
-		if err := util.RetryAfter(200, unmarkMaster, time.Second*1); err != nil {
+
+		if err := retry.Expo(unmarkMaster, time.Millisecond*500, time.Second*113); err != nil {
 			return errors.Wrap(err, "timed out waiting to unmark master")
 		}
 	}
 
 	glog.Infof("Configuring cluster permissions ...")
-	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
+
+	if err := retry.Expo(elevateKubeSystemPrivileges, time.Millisecond*500, 40*time.Second); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
 

@@ -72,6 +72,8 @@ $(shell mkdir -p $(BUILD_DIR))
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
 BUILD_OS := $(shell uname -s)
 
+SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
+
 STORAGE_PROVISIONER_TAG := v1.8.1
 
 # Set the version information for the Kubernetes servers
@@ -190,7 +192,7 @@ test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross
+all: cross drivers e2e-cross out/gvisor-addon
 
 .PHONY: drivers
 drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
@@ -352,14 +354,14 @@ out/repodata/repomd.xml: out/minikube-$(RPM_VERSION).rpm
 
 .SECONDEXPANSION:
 TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
-TAR_TARGETS_darwin  := out/minikube-darwin-amd64
+TAR_TARGETS_darwin  := out/minikube-darwin-amd64 out/docker-machine-driver-hyperkit
 TAR_TARGETS_windows := out/minikube-windows-amd64.exe
-TAR_TARGETS_ALL     := $(shell find deploy/addons -type f)
-out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*) $(TAR_TARGETS_ALL)
-	tar -cvf $@ $^
+out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*)
+	tar -cvzf $@ $^
 
 .PHONY: cross-tars
 cross-tars: out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
+	-cd out && $(SHA512SUM) *.tar.gz > SHA512SUM
 
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
 	rm -rf out/windows_tmp
@@ -384,11 +386,20 @@ else
 		-o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
 endif
 
+hyperkit_in_docker:
+	rm -f out/docker-machine-driver-hyperkit
+	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make out/docker-machine-driver-hyperkit)
+
 .PHONY: install-hyperkit-driver
 install-hyperkit-driver: out/docker-machine-driver-hyperkit
 	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
 	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
 	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
+
+.PHONY: release-hyperkit-driver
+release-hyperkit-driver: install-hyperkit-driver checksum
+	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit gs://minikube/drivers/hyperkit/$(VERSION)/
+	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit.sha256 gs://minikube/drivers/hyperkit/$(VERSION)/
 
 .PHONY: check-release
 check-release:
@@ -420,7 +431,7 @@ else
 endif
 
 .PHONY: out/gvisor-addon
-out/gvisor-addon:
+out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image

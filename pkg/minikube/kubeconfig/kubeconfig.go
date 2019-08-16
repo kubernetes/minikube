@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api/latest"
 	"k8s.io/minikube/pkg/minikube/constants"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // IsClusterInConfig verifies the ip stored in kubeconfig.
@@ -87,7 +88,14 @@ func PathFromEnv() string {
 	if kubeConfigEnv == "" {
 		return constants.KubeconfigPath
 	}
-	return filepath.SplitList(kubeConfigEnv)[0]
+	kubeConfigFiles := filepath.SplitList(kubeConfigEnv)
+	for _, kubeConfigFile := range kubeConfigFiles {
+		if kubeConfigFile != "" {
+			return kubeConfigFile
+		}
+		glog.Infof("Ignoring empty entry in %s env var", constants.KubeconfigEnvVar)
+	}
+	return constants.KubeconfigPath
 }
 
 // extractIP returns the IP address stored for minikube in the kubeconfig specified
@@ -179,9 +187,10 @@ func writeToFile(config runtime.Object, configPath ...string) error {
 	}
 
 	// write with restricted permissions
-	if err := ioutil.WriteFile(fPath, data, 0600); err != nil {
+	if err := lock.WriteFile(fPath, data, 0600); err != nil {
 		return errors.Wrapf(err, "Error writing file %s", fPath)
 	}
+
 	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(dir); err != nil {
 		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
 	}
