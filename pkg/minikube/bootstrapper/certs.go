@@ -84,7 +84,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "encoding kubeconfig")
 	}
 
-	kubeCfgFile := assets.NewMemoryAsset(data, constants.GuestEphemeralDir, "kubeconfig", "0644")
+	kubeCfgFile := assets.NewMemoryAsset(data, constants.GuestPersistentDir, "kubeconfig", "0644")
 	copyableFiles = append(copyableFiles, kubeCfgFile)
 
 	for _, f := range copyableFiles {
