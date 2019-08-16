@@ -30,7 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/service"
-	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 const (
@@ -119,7 +119,7 @@ func elevateKubeSystemPrivileges() error {
 	if err != nil {
 		netErr, ok := err.(net.Error)
 		if ok && netErr.Timeout() {
-			return &util.RetriableError{Err: errors.Wrap(err, "creating clusterrolebinding")}
+			return &retry.RetriableError{Err: errors.Wrap(err, "creating clusterrolebinding")}
 		}
 		return errors.Wrap(err, "creating clusterrolebinding")
 	}

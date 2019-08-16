@@ -25,7 +25,7 @@ import (
 	"testing"
 	"time"
 
-	commonutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 const kubectlBinary = "kubectl"
@@ -79,14 +79,14 @@ func (k *KubectlRunner) RunCommand(args []string, useKubeContext ...bool) (stdou
 		cmd := exec.Command(k.BinaryPath, args...)
 		stdout, err = cmd.CombinedOutput()
 		if err != nil {
-			retriable := &commonutil.RetriableError{Err: fmt.Errorf("error running command %s: %v. Stdout: \n %s", args, err, stdout)}
+			retriable := &retry.RetriableError{Err: fmt.Errorf("error running command %s: %v. Stdout: \n %s", args, err, stdout)}
 			k.T.Log(retriable)
 			return retriable
 		}
 		return nil
 	}
 
-	err = commonutil.RetryAfter(3, inner, 2*time.Second)
+	err = retry.Expo(inner, time.Millisecond*500, 1*time.Minute, 5)
 	return stdout, err
 }
 
