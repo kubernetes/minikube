@@ -36,8 +36,6 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
-const updateLinkPrefix = "https://github.com/kubernetes/minikube/releases/tag/v"
-
 var (
 	timeLayout              = time.RFC1123
 	lastUpdateCheckFilePath = constants.MakeMiniPath("last_update_check")
@@ -67,7 +65,7 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) {
 		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
 			glog.Errorf("write time failed: %v", err)
 		}
-		url := fmt.Sprintf("%s/%s", updateLinkPrefix, latestVersion)
+		url := "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
 		out.ErrT(out.WarningType, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
 		out.T(out.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'")
 	}
