@@ -126,7 +126,7 @@ Section "Install"
 	# Files added here should be removed by the uninstaller (see section "uninstall")
 	File "minikube.exe"
 	File "logo.ico"
-  File "update_path.ps1"
+    File "update_path.ps1"
 	# Add any other files for the install directory (license files, app data, etc) here
 
 	# Uninstaller - See function un.onInit and section "uninstall" for configuration
@@ -173,7 +173,7 @@ Section "Uninstall"
 	RmDir /REBOOTOK "$SMPROGRAMS\${COMPANYNAME}"
 
 	# Remove uninstalled executable from PATH
-  nsExec::ExecToLog 'powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File "$INSTDIR\update_path.ps1" -Remove -Path "$INSTDIR"' ; appends to the system path
+    nsExec::ExecToLog 'powershell -ExecutionPolicy Bypass -WindowStyle Hidden -File "$INSTDIR\update_path.ps1" -Remove -Path "$INSTDIR"' ; Removes minikube from System Path
 
 	# Remove files
 	Delete /REBOOTOK $INSTDIR\minikube.exe
