@@ -104,9 +104,9 @@ func Test_get(t *testing.T) {
 	}
 }
 
-func Test_readConfig(t *testing.T) {
+func TestReadConfig(t *testing.T) {
 	// non existing file
-	mkConfig, err := readConfig("non_existing_file")
+	mkConfig, err := ReadConfig("non_existing_file")
 	if err != nil {
 		t.Fatalf("Error not exepected but got %v", err)
 	}
@@ -116,7 +116,7 @@ func Test_readConfig(t *testing.T) {
 	}
 
 	// invalid config file
-	mkConfig, err = readConfig("./testdata/.minikube/config/invalid_config.json")
+	mkConfig, err = ReadConfig("./testdata/.minikube/config/invalid_config.json")
 	if err == nil {
 		t.Fatalf("Error expected but got none")
 	}
@@ -126,7 +126,7 @@ func Test_readConfig(t *testing.T) {
 	}
 
 	// valid config file
-	mkConfig, err = readConfig("./testdata/.minikube/config/valid_config.json")
+	mkConfig, err = ReadConfig("./testdata/.minikube/config/valid_config.json")
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
@@ -164,7 +164,7 @@ func TestWriteConfig(t *testing.T) {
 	}
 	defer os.Remove(configFile.Name())
 
-	mkConfig, err := readConfig(configFile.Name())
+	mkConfig, err := ReadConfig(configFile.Name())
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}

@@ -44,7 +44,7 @@ func init() {
 
 // Unset unsets a property
 func Unset(name string) error {
-	m, err := pkgConfig.ReadConfig()
+	m, err := pkgConfig.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return err
 	}
