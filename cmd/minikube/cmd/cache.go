@@ -67,7 +67,7 @@ var deleteCacheCmd = &cobra.Command{
 }
 
 func imagesInConfigFile() ([]string, error) {
-	configFile, err := config.ReadConfig()
+	configFile, err := config.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return nil, err
 	}

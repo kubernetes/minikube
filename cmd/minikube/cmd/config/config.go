@@ -290,7 +290,7 @@ func configurableFields() string {
 
 // ListConfigMap list entries from config file
 func ListConfigMap(name string) ([]string, error) {
-	configFile, err := config.ReadConfig()
+	configFile, err := config.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return nil, err
 	}
@@ -310,7 +310,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig()
+	cfg, err := config.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return err
 	}
@@ -337,7 +337,7 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig()
+	cfg, err := config.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return err
 	}
