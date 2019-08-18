@@ -29,7 +29,7 @@ import (
 	core "k8s.io/api/core/v1"
 	storage "k8s.io/api/storage/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	commonutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/kube"
 	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
 )
@@ -73,13 +73,13 @@ func testProvisioning(t *testing.T) {
 	// Check that the storage provisioner pod is running
 
 	checkPodRunning := func() error {
-		client, err := commonutil.GetClient(p)
+		client, err := kube.Client(p)
 		if err != nil {
 			return errors.Wrap(err, "getting kubernetes client")
 		}
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "storage-provisioner"}))
 
-		if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		if err := kube.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 			return err
 		}
 		return nil

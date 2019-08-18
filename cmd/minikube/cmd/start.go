@@ -46,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -111,7 +112,7 @@ var (
 	insecureRegistry []string
 	apiServerNames   []string
 	apiServerIPs     []net.IP
-	extraOptions     pkgutil.ExtraOptionSlice
+	extraOptions     config.ExtraOptionSlice
 )
 
 func init() {
@@ -538,8 +539,8 @@ func validateConfig() {
 
 	// check that kubeadm extra args contain only whitelisted parameters
 	for param := range extraOptions.AsMap().Get(kubeadm.Kubeadm) {
-		if !pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
-			!pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], param) {
+		if !cfg.ContainsParam(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
+			!cfg.ContainsParam(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], param) {
 			exit.UsageT("Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config", out.V{"parameter_name": param})
 		}
 	}

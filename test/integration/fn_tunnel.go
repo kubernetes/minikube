@@ -31,8 +31,8 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/minikube/pkg/kube"
 	"k8s.io/minikube/pkg/minikube/tunnel"
-	commonutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
 )
@@ -70,18 +70,18 @@ func testTunnel(t *testing.T) {
 		t.Fatalf("creating nginx ingress resource: %s", err)
 	}
 
-	client, err := commonutil.GetClient(p)
+	client, err := kube.Client(p)
 
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "getting kubernetes client"))
 	}
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx-svc"}))
-	if err := commonutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+	if err := kube.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
 		t.Fatal(errors.Wrap(err, "waiting for nginx pods"))
 	}
 
-	if err := commonutil.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, 2*time.Minute); err != nil {
+	if err := kube.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, 2*time.Minute); err != nil {
 		t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
 	}
 
@@ -114,14 +114,14 @@ func testTunnel(t *testing.T) {
 func getIngress(kr *util.KubectlRunner) (string, error) {
 	nginxIP := ""
 	var ret error
-	err := wait.PollImmediate(1*time.Second, 1*time.Minute, func() (bool, error) {
+	err := wait.PollImmediate(1*time.Second, 2*time.Minute, func() (bool, error) {
 		cmd := []string{"get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"}
 		stdout, err := kr.RunCommand(cmd)
 		switch {
 		case err == nil:
 			nginxIP = string(stdout)
 			return len(stdout) != 0, nil
-		case !commonutil.IsRetryableAPIError(err):
+		case !kube.IsRetryableAPIError(err):
 			ret = fmt.Errorf("`%s` failed with non retriable error: %v", cmd, err)
 			return false, err
 		default:

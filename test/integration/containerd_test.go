@@ -25,7 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
-	commonutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/kube"
 	"k8s.io/minikube/test/integration/util"
 )
 
@@ -107,13 +107,13 @@ func deleteUntrustedWorkload(t *testing.T, profile string) {
 
 // waitForGvisorControllerRunning waits for the gvisor controller pod to be running
 func waitForGvisorControllerRunning(p string) error {
-	client, err := commonutil.GetClient(p)
+	client, err := kube.Client(p)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
-	if err := commonutil.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+	if err := kube.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 		return errors.Wrap(err, "waiting for gvisor controller pod to stabilize")
 	}
 	return nil
@@ -121,13 +121,13 @@ func waitForGvisorControllerRunning(p string) error {
 
 // waitForUntrustedNginxRunning waits for the untrusted nginx pod to start running
 func waitForUntrustedNginxRunning(miniProfile string) error {
-	client, err := commonutil.GetClient(miniProfile)
+	client, err := kube.Client(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
-	if err := commonutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+	if err := kube.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
 		return errors.Wrap(err, "waiting for nginx pods")
 	}
 	return nil

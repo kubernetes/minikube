@@ -29,7 +29,7 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/labels"
-	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/kube"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
@@ -132,12 +132,12 @@ func writeFilesFromHost(mountedDir string, files []string, content string) error
 }
 
 func waitForPods(s map[string]string, profile string) error {
-	client, err := pkgutil.GetClient(profile)
+	client, err := kube.Client(profile)
 	if err != nil {
 		return fmt.Errorf("getting kubernetes client: %v", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(s))
-	if err := pkgutil.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+	if err := kube.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
 		return err
 	}
 	return nil
