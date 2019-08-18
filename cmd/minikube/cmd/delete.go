@@ -115,20 +115,17 @@ func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 	for _, profile := range profiles {
 		err := deleteProfile(profile)
 
-		var mm *cluster.Machine
-		var loadErr error
-
 		if err != nil {
-			mm, loadErr = cluster.LoadMachine(profile.Name)
-		}
+			mm, loadErr := cluster.LoadMachine(profile.Name)
 
-		if (err != nil && !profile.IsValid()) || (loadErr != nil || !mm.IsValid()) {
-			invalidProfileDeletionErrs := deleteInvalidProfile(profile)
-			if len(invalidProfileDeletionErrs) > 0 {
-				errs = append(errs, invalidProfileDeletionErrs...)
+			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
+				invalidProfileDeletionErrs := deleteInvalidProfile(profile)
+				if len(invalidProfileDeletionErrs) > 0 {
+					errs = append(errs, invalidProfileDeletionErrs...)
+				}
+			} else {
+				errs = append(errs, err)
 			}
-		} else if err != nil {
-			errs = append(errs, err)
 		}
 	}
 	return errs
