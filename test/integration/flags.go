@@ -18,7 +18,6 @@ package integration
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -46,7 +45,7 @@ func NewMinikubeRunner(t *testing.T, profile string, extraStartArgs ...string) u
 	return util.MinikubeRunner{
 		Profile:      profile,
 		BinaryPath:   *binaryPath,
-		StartArgs:    *startArgs + fmt.Sprintf(" --wait-timeout=%s ", *startTimeout/2) + strings.Join(extraStartArgs, " "), // adding timeout per component
+		StartArgs:    *startArgs + " --wait-timeout=13m " + strings.Join(extraStartArgs, " "), // adding timeout per component
 		GlobalArgs:   *globalArgs,
 		MountArgs:    *mountArgs,
 		TimeOutStart: *startTimeout, // timeout for all start
