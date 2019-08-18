@@ -305,7 +305,7 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 }
 
 // WaitCluster blocks until Kubernetes appears to be healthy.
-func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
+func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
@@ -329,7 +329,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 		}
 		out.String(" %s", p.name)
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
-		if err := kube.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		if err := kube.WaitForPodsWithLabelRunning(client, "kube-system", selector, timeout); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))
 		}
 	}
