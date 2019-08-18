@@ -35,7 +35,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	watchtools "k8s.io/client-go/tools/watch"
-	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/proxy"
 )
 
@@ -43,7 +43,7 @@ var (
 	// ReasonableMutateTime is how long to wait for basic object mutations, such as deletions, to show up
 	ReasonableMutateTime = time.Minute * 2
 	// ReasonableStartTime is how long to wait for pods to start
-	ReasonableStartTime = time.Minute * 6
+	ReasonableStartTime = time.Minute * 5
 )
 
 // Client gets the kuberentes client from default kubeconfig
@@ -70,9 +70,10 @@ func Client(kubectlContext ...string) (kubernetes.Interface, error) {
 
 // WaitForPodsWithLabelRunning waits for all matching pods to become Running and at least one matching pod exists.
 func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector) error {
+	start := time.Now()
 	glog.Infof("Waiting for pod with label %q in ns %q ...", ns, label)
 	lastKnownPodNumber := -1
-	return wait.PollImmediate(constants.APICallRetryInterval, ReasonableStartTime, func() (bool, error) {
+	f := func() (bool, error) {
 		listOpts := meta.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
@@ -96,7 +97,11 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		}
 
 		return true, nil
-	})
+	}
+	err := wait.PollImmediate(kconst.APICallRetryInterval, ReasonableStartTime, f)
+	elapsed := time.Since(start)
+	glog.Infof("duration metric: took %s to wait for %s ...", elapsed, label)
+	return err
 }
 
 // WaitForRCToStabilize waits till the RC has a matching generation/replica count between spec and status.

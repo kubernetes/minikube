@@ -34,6 +34,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/kube"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -323,10 +324,9 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 	}
 
 	for _, p := range PodsByLayer {
-		if componentsOnly && p.key != "component" {
+		if componentsOnly && p.key != "component" { // skip component check if network plugin is cni
 			continue
 		}
-
 		out.String(" %s", p.name)
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
 		if err := kube.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
@@ -383,8 +383,10 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 
 // waitForAPIServer waits for the apiserver to start up
 func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
+	start := time.Now()
 	glog.Infof("Waiting for apiserver ...")
-	return wait.PollImmediate(time.Millisecond*300, time.Minute*3, func() (bool, error) {
+
+	f := func() (bool, error) {
 		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
 		glog.Infof("apiserver status: %s, err: %v", status, err)
 		if err != nil {
@@ -394,7 +396,11 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 			return false, nil
 		}
 		return true, nil
-	})
+	}
+	err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, f)
+	elapsed := time.Since(start)
+	glog.Infof("duration metric: took %s to wait for apiserver status ...", elapsed)
+	return err
 }
 
 // DeleteCluster removes the components that were started earlier
