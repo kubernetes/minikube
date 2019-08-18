@@ -19,6 +19,7 @@ package config
 import (
 	"net"
 
+	"github.com/blang/semver"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -82,8 +83,33 @@ type KubernetesConfig struct {
 	FeatureGates      string
 	ServiceCIDR       string
 	ImageRepository   string
-	ExtraOptions      util.ExtraOptionSlice
+	ExtraOptions      ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool
+}
+
+// VersionedExtraOption holds information on flags to apply to a specific range
+// of versions
+type VersionedExtraOption struct {
+	// Special Cases:
+	//
+	// If LessThanOrEqual and GreaterThanOrEqual are both nil, the flag will be applied
+	// to all versions
+	//
+	// If LessThanOrEqual == GreaterThanOrEqual, the flag will only be applied to that
+	// specific version
+
+	// The flag and component that will be set
+	Option ExtraOption
+
+	// This flag will only be applied to versions before or equal to this version
+	// If it is the default value, it will have no upper bound on versions the
+	// flag is applied to
+	LessThanOrEqual semver.Version
+
+	// The flag will only be applied to versions after or equal to this version
+	// If it is the default value, it will have no lower bound on versions the
+	// flag is applied to
+	GreaterThanOrEqual semver.Version
 }
