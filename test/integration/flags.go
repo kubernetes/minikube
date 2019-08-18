@@ -18,6 +18,7 @@ package integration
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -32,7 +33,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-var startTimeout = flag.Int("timeout", 25, "number of minutes to wait for minikube start")
+var startTimeout = flag.Duration("timeout", 25*time.Minute, "max duration to wait for a full minikube start")
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
 var globalArgs = flag.String("minikube-args", "", "Arguments to pass to minikube")
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
@@ -45,10 +46,10 @@ func NewMinikubeRunner(t *testing.T, profile string, extraStartArgs ...string) u
 	return util.MinikubeRunner{
 		Profile:      profile,
 		BinaryPath:   *binaryPath,
-		StartArgs:    *startArgs + " " + strings.Join(extraStartArgs, " "),
+		StartArgs:    *startArgs + fmt.Sprintf(" --wait-timeout=%s ", *startTimeout/2) + strings.Join(extraStartArgs, " "), // adding timeout per component
 		GlobalArgs:   *globalArgs,
 		MountArgs:    *mountArgs,
-		TimeOutStart: time.Duration(*startTimeout) * time.Minute,
+		TimeOutStart: *startTimeout, // timeout for all start
 		T:            t,
 	}
 }

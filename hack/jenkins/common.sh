@@ -241,6 +241,11 @@ export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export MINIKUBE_WANTREPORTERRORPROMPT=False
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
+# Build the gvisor image. This will be copied into minikube and loaded by ctr.
+# Used by TestContainerd for Gvisor Test.
+docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile out
+
+
 # Display the default image URL
 echo ""
 echo ">> ISO URL"
