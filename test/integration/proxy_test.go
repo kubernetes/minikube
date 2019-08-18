@@ -96,9 +96,16 @@ func TestProxy(t *testing.T) {
 			t.Errorf("Error shutting down the http proxy")
 		}
 
-		_, _, err = r.RunWithContext(ctx, "delete")
+		_, _, err = r.RunWithContext(ctx, "delete --all")
 		if err != nil {
-			t.Logf("Error deleting minikube when cleaning up proxy setup: %s", err)
+			t.Errorf("Error deleting minikube when cleaning up proxy setup: %s", err)
+		}
+
+		stdOut, stdErr, _ := r.RunWithContext(ctx, "profile list")
+
+		msg := "No minikube profile was found"
+		if stdOut != "" || !strings.Contains(stdErr, msg) {
+			t.Errorf("minikube delete --all did not delete all profiles")
 		}
 	}(t)
 
