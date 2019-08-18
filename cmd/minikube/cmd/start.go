@@ -503,7 +503,7 @@ func validateUser() {
 	d := viper.GetString(vmDriver)
 	// Check if minikube needs to run with sudo or not.
 	if err == nil {
-		if d == constants.DriverNone && u.Name != "root" {
+		if d == constants.DriverNone && u.Username != "root" {
 			exit.UsageT(`Please run with sudo. the vm-driver "{{.driver_name}}" requires sudo.`, out.V{"driver_name": constants.DriverNone})
 		} else if u.Name == "root" && !(d == constants.DriverHyperv || d == constants.DriverNone) {
 			out.T(out.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with {{.driver}} driver.", out.V{"driver": d})
