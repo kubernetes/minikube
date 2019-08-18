@@ -69,7 +69,7 @@ func Client(kubectlContext ...string) (kubernetes.Interface, error) {
 }
 
 // WaitForPodsWithLabelRunning waits for all matching pods to become Running and at least one matching pod exists.
-func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector) error {
+func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector, timeOut ...time.Duration) error {
 	start := time.Now()
 	glog.Infof("Waiting for pod with label %q in ns %q ...", ns, label)
 	lastKnownPodNumber := -1
@@ -77,7 +77,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		listOpts := meta.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
-			glog.Errorf("error getting Pods with label selector %q [%v]\n", label.String(), err)
+			glog.Infof("temproary error: getting Pods with label selector %q : [%v]\n", label.String(), err)
 			return false, nil
 		}
 
@@ -92,19 +92,24 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 
 		for _, pod := range pods.Items {
 			if pod.Status.Phase != core.PodRunning {
+				glog.Infof("temporary error: for Pod with label %q expected status to be running but got %s : [%v]\n", label.String(), pod.Status.Phase, err)
 				return false, nil
 			}
 		}
 
 		return true, nil
 	}
-	err := wait.PollImmediate(kconst.APICallRetryInterval, ReasonableStartTime, f)
+	t := ReasonableStartTime
+	if timeOut != nil {
+		t = timeOut[0]
+	}
+	err := wait.PollImmediate(kconst.APICallRetryInterval, t, f)
 	elapsed := time.Since(start)
 	glog.Infof("duration metric: took %s to wait for %s ...", elapsed, label)
 	return err
 }
 
-// WaitForRCToStabilize waits till the RC has a matching generation/replica count between spec and status.
+// WaitForRCToStabilize waits till the RC has a matching generation/replica count between spec and status. used by integration tests
 func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
 	options := meta.ListOptions{FieldSelector: fields.Set{
 		"metadata.name":      name,
@@ -138,7 +143,7 @@ func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.
 	return err
 }
 
-// WaitForDeploymentToStabilize waits till the Deployment has a matching generation/replica count between spec and status.
+// WaitForDeploymentToStabilize waits till the Deployment has a matching generation/replica count between spec and status. used by integrationt tests
 func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
 	options := meta.ListOptions{FieldSelector: fields.Set{
 		"metadata.name":      name,

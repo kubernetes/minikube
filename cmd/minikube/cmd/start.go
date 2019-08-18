@@ -103,6 +103,7 @@ const (
 	dnsProxy              = "dns-proxy"
 	hostDNSResolver       = "host-dns-resolver"
 	waitUntilHealthy      = "wait"
+	waitTimeout           = "wait-timeout"
 )
 
 var (
@@ -149,6 +150,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
 	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
+	startCmd.Flags().Duration(waitTimeout, 3*time.Minute, "max time to wait for Kubernetes core services to be healthy.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -322,7 +324,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// special ops for none driver, like change minikube directory.
 	prepareNone(viper.GetString(vmDriver))
 	if viper.GetBool(waitUntilHealthy) {
-		if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
+		if err := bs.WaitCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
 			exit.WithError("Wait failed", err)
 		}
 	}
