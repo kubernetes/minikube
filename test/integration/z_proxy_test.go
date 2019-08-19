@@ -22,6 +22,7 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -33,7 +34,7 @@ import (
 	"net/url"
 
 	"github.com/elazarl/goproxy"
-	"github.com/hashicorp/go-retryablehttp"
+	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/test/integration/util"
@@ -93,12 +94,12 @@ func TestProxy(t *testing.T) {
 			t.Errorf("Error reverting the NO_PROXY env")
 		}
 
-		_, _, err = r.RunWithContext(ctx, "delete --all")
-		if err != nil {
+		_, stdErr := mk.RunCommand("delete --all", false)
+		if stdErr != "" {
 			t.Errorf("Error deleting minikube when cleaning up proxy setup: %s", err)
 		}
 
-		stdOut, stdErr, _ := r.RunWithContext(ctx, "profile list")
+		stdOut, stdErr := mk.RunCommand("profile list", false)
 
 		msg := "No minikube profile was found"
 		if stdOut != "" || !strings.Contains(stdErr, msg) {
