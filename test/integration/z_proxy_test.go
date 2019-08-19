@@ -22,7 +22,6 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -34,7 +33,7 @@ import (
 	"net/url"
 
 	"github.com/elazarl/goproxy"
-	retryablehttp "github.com/hashicorp/go-retryablehttp"
+	"github.com/hashicorp/go-retryablehttp"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/test/integration/util"
@@ -94,11 +93,6 @@ func TestProxy(t *testing.T) {
 			t.Errorf("Error reverting the NO_PROXY env")
 		}
 
-		err := srv.Shutdown(context.TODO()) // shutting down the http proxy after tests
-		if err != nil {
-			t.Errorf("Error shutting down the http proxy")
-		}
-
 		_, _, err = r.RunWithContext(ctx, "delete --all")
 		if err != nil {
 			t.Errorf("Error deleting minikube when cleaning up proxy setup: %s", err)
@@ -110,6 +104,15 @@ func TestProxy(t *testing.T) {
 		if stdOut != "" || !strings.Contains(stdErr, msg) {
 			t.Errorf("minikube delete --all did not delete all profiles")
 		}
+
+		err := srv.Shutdown(context.TODO()) // shutting down the http proxy after tests
+		if err != nil {
+			t.Errorf("Error shutting down the http proxy")
+		}
+		if !isTestNoneDriver(t) {
+			mk.TearDown(t)
+		}
+
 	}(t)
 	t.Run("ProxyConsoleWarnning", testProxyWarning)
 	t.Run("ProxyDashboard", testProxyDashboard)
