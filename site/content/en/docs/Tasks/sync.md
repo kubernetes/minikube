@@ -35,4 +35,4 @@ If you are looking for a solution tuned for iterative application development, c
 
 - [Draft](https://draft.sh): see specific [minikube instructions](https://github.com/Azure/draft/blob/master/docs/install-minikube.md)
 - [Okteto](https://github.com/okteto/okteto)
-- [Skaffold](http://github.com/ContainerTools/skaffold)
+- [Skaffold](https://github.com/GoogleContainerTools/skaffold)
