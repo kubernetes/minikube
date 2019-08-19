@@ -86,5 +86,4 @@ var tunnelCmd = &cobra.Command{
 
 func init() {
 	tunnelCmd.Flags().BoolVarP(&cleanup, "cleanup", "c", false, "call with cleanup=true to remove old tunnels")
-	RootCmd.AddCommand(tunnelCmd)
 }

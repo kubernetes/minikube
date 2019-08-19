@@ -24,7 +24,6 @@ import (
 
 // These constants are used by both minikube
 const (
-	APIServerPort            = 8443
 	DefaultMinikubeDirectory = "/var/lib/minikube"
 	DefaultCertPath          = DefaultMinikubeDirectory + "/certs/"
 	DefaultKubeConfigPath    = DefaultMinikubeDirectory + "/kubeconfig"

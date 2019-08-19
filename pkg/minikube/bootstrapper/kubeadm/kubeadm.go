@@ -43,6 +43,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // enum to differentiate kubeadm command line parameters from kubeadm config file parameters (see the
@@ -233,13 +234,15 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
 		// TODO(r2d4): get rid of global here
 		master = k8s.NodeName
-		if err := util.RetryAfter(200, unmarkMaster, time.Second*1); err != nil {
+
+		if err := retry.Expo(unmarkMaster, time.Millisecond*500, time.Second*113); err != nil {
 			return errors.Wrap(err, "timed out waiting to unmark master")
 		}
 	}
 
 	glog.Infof("Configuring cluster permissions ...")
-	if err := util.RetryAfter(100, elevateKubeSystemPrivileges, time.Millisecond*500); err != nil {
+
+	if err := retry.Expo(elevateKubeSystemPrivileges, time.Millisecond*500, 40*time.Second); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
 
@@ -305,7 +308,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
-	out.T(out.WaitingPods, "Verifying:")
+	out.T(out.WaitingPods, "Waiting for:")
 	client, err := util.GetClient()
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
@@ -567,7 +570,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) (string, er
 	// In case of no port assigned, use util.APIServerPort
 	nodePort := k8s.NodePort
 	if nodePort <= 0 {
-		nodePort = util.APIServerPort
+		nodePort = constants.APIServerPort
 	}
 
 	opts := struct {

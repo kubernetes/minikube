@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io/ioutil"
 	"math"
 	"net"
 	"os/exec"
@@ -29,6 +30,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -46,8 +48,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // hostRunner is a minimal host.Host based interface for running commands
@@ -118,9 +120,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Re-using the currently running {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
 	} else {
-		out.T(out.Restarting, `Restarting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -132,6 +134,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	e := engineOptions(config)
 	glog.Infof("engine options: %+v", e)
 
+	out.T(out.Waiting, "Waiting for the host to be provisioned ...")
 	err = configureHost(h, e)
 	if err != nil {
 		return nil, err
@@ -150,9 +153,6 @@ func localDriver(name string) bool {
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
 	glog.Infof("configureHost: %T %+v", h, h)
-	// Slightly counter-intuitive, but this is what DetectProvisioner & ConfigureAuth block on.
-	out.T(out.Waiting, "Waiting for SSH access ...", out.V{})
-
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		glog.Infof("Detecting provisioner ...")
@@ -169,7 +169,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 	if !localDriver(h.Driver.DriverName()) {
 		glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
 		if err := h.ConfigureAuth(); err != nil {
-			return &util.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
+			return &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
 		return ensureSyncedGuestClock(h)
 	}
@@ -226,21 +226,22 @@ func adjustGuestClock(h hostRunner, t time.Time) error {
 }
 
 // trySSHPowerOff runs the poweroff command on the guest VM to speed up deletion
-func trySSHPowerOff(h *host.Host) {
+func trySSHPowerOff(h *host.Host) error {
 	s, err := h.Driver.GetState()
 	if err != nil {
 		glog.Warningf("unable to get state: %v", err)
-		return
+		return err
 	}
 	if s != state.Running {
 		glog.Infof("host is in state %s", s)
-		return
+		return nil
 	}
 
 	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": cfg.GetMachineName()})
 	out, err := h.RunSSHCommand("sudo poweroff")
 	// poweroff always results in an error, since the host disconnects.
 	glog.Infof("poweroff result: out=%s, err=%v", out, err)
+	return nil
 }
 
 // StopHost stops the host VM, saving state to disk.
@@ -249,13 +250,21 @@ func StopHost(api libmachine.API) error {
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
+
 	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
+	if host.DriverName == constants.DriverHyperv {
+		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
+		if err := trySSHPowerOff(host); err != nil {
+			return errors.Wrap(err, "ssh power off")
+		}
+	}
+
 	if err := host.Stop(); err != nil {
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
 			return nil
 		}
-		return &util.RetriableError{Err: errors.Wrapf(err, "Stop: %s", cfg.GetMachineName())}
+		return &retry.RetriableError{Err: errors.Wrapf(err, "Stop: %s", cfg.GetMachineName())}
 	}
 	return nil
 }
@@ -268,7 +277,9 @@ func DeleteHost(api libmachine.API) error {
 	}
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
 	if host.Driver.DriverName() == constants.DriverHyperv {
-		trySSHPowerOff(host)
+		if err := trySSHPowerOff(host); err != nil {
+			glog.Infof("Unable to power off minikube because the host was not found.")
+		}
 	}
 
 	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
@@ -327,6 +338,7 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 		InsecureRegistry: append([]string{pkgutil.DefaultServiceCIDR}, config.InsecureRegistry...),
 		RegistryMirror:   config.RegistryMirror,
 		ArbitraryFlags:   config.DockerOpt,
+		InstallURL:       drivers.DefaultEngineInstallURL,
 	}
 	return &o
 }
@@ -365,11 +377,45 @@ func getHostInfo() (*hostInfo, error) {
 	return &info, nil
 }
 
+// showLocalOsRelease shows systemd information about the current linux distribution, on the local host
+func showLocalOsRelease() {
+	osReleaseOut, err := ioutil.ReadFile("/etc/os-release")
+	if err != nil {
+		glog.Errorf("ReadFile: %v", err)
+		return
+	}
+
+	osReleaseInfo, err := provision.NewOsRelease(osReleaseOut)
+	if err != nil {
+		glog.Errorf("NewOsRelease: %v", err)
+		return
+	}
+
+	out.T(out.Provisioner, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
+}
+
+// showRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM
+func showRemoteOsRelease(driver drivers.Driver) {
+	provisioner, err := provision.DetectProvisioner(driver)
+	if err != nil {
+		glog.Errorf("DetectProvisioner: %v", err)
+		return
+	}
+
+	osReleaseInfo, err := provisioner.GetOsReleaseInfo()
+	if err != nil {
+		glog.Errorf("GetOsReleaseInfo: %v", err)
+		return
+	}
+
+	glog.Infof("Provisioned with %s", osReleaseInfo.PrettyName)
+}
+
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	if config.VMDriver == constants.DriverVmwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
-			See https://github.com/kubernetes/minikube/blob/master/docs/drivers.md#vmware-unified-driver for more information.
+			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
 	if !localDriver(config.VMDriver) {
@@ -408,6 +454,12 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		// Wait for all the logs to reach the client
 		time.Sleep(2 * time.Second)
 		return nil, errors.Wrap(err, "create")
+	}
+
+	if !localDriver(config.VMDriver) {
+		showRemoteOsRelease(h.Driver)
+	} else {
+		showLocalOsRelease()
 	}
 
 	if err := api.Save(h); err != nil {

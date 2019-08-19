@@ -1,0 +1,165 @@
+// minkube CSS overrides ///
+
+// minikube colors, taken from the logo
+$mk-dark: #306EE5;
+$mk-medium: #1FC3CF;
+$mk-light:#C7EAEC;
+$mk-verydark: darken($mk-dark, 15%);
+
+// bootstrap colors
+$dark: #403F4C !default;
+$blue: #72A1E5 !default;
+$orange: #BA5A31 !default;
+$gray-100: #f8f9fa !default;
+$gray-200: #eee !default;
+$gray-300: #dee2e6 !default;
+$gray-400: #ccc !default;
+$gray-500: #adb5bd !default;
+$gray-600: #888 !default;
+$gray-700: #495057 !default;
+$gray-800: #333 !default;
+$gray-900: #222 !default;
+$black: #000 !default;
+
+$primary: #f2771a !default;
+$primary-light: $mk-light;
+$secondary: #403F4C;
+$success: #3772FF !default;
+$info: #C0E0DE !default;
+$warning: #ED6A5A !default;
+$danger: #ED6A5A !default;
+$white: #fff !default;
+$light: $mk-light;
+$medium: $mk-medium;
+
+
+// Navigation bar
+$navbar-dark-color: $mk-dark;
+$navbar-dark-hover-color: $mk-light !default;
+$navbar-dark-active-color: $primary !default;
+$navbar-dark-disabled-color: rgba($white, 0.25) !default;
+.td-navbar {
+    background: $white !important;
+    border-bottom: 1px solid $mk-light;
+
+    .navbar-logo {
+        svg {
+            display: inline-block;
+            height: 50px;
+            width: auto;
+            margin-right: 10px;
+        }
+    }
+    a.navbar-brand {
+        color: $gray-900 !important;
+    }
+    span.text-uppercase {
+        text-transform: none !important;
+    }
+}
+
+// Inline images
+div.card.rounded {
+    border: none;
+}
+
+// Links
+$link-color: $mk-dark !default;
+$link-decoration: none !default;
+$link-hover-color: darken($link-color, 15%) !default;
+$link-hover-decoration: none !default;
+
+// Welcome to minikube! box
+.td-box--white:nth-child(1) {
+
+    // News
+    ul {
+        margin-top: 1rem;
+        list-style: none;
+        color: $gray-700;
+        padding-left: 0;
+    }
+}
+
+// Sales pitch box
+.td-box--1 {
+    background-color: $mk-dark !important;
+
+    // Increase from 1.25 for improved readability
+    .h4 {
+        line-height: 1.6 !important;
+    }
+
+    // Control the presentation of the screenshot
+    .p-2 {
+        padding: 0 !important;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    .card {
+        border-radius: 0 !important;
+        border: 2px solid $mk-verydark !important;
+    }
+    .card-img-top {
+        border-top-left-radius: 0;
+        border-top-right-radius: 0;
+    }
+
+    // Make sure the arrow color matches our override
+    .td-arrow-down::before {
+        border-color: $mk-dark transparent transparent transparent !important;
+    }
+
+    // Left is best.
+    .text-center {
+        text-align: left !important;
+    }
+}
+
+// Features box
+.td-box--white {
+    // Center-aligned bullets look bad.
+    .text-center ul {
+        text-align: left;
+        margin-left: auto;
+        margin-right: auto;
+        max-width: 15em;
+    }
+    div.mb-5:nth-child(3) ul {
+        max-width: 10em;
+    }
+}
+
+// Shorten footer box by 4x
+footer.bg-dark {
+    padding-top: 1rem !important;
+    min-height: 4rem !important;
+    div.py-2 { 
+        padding-top: 0 !important;
+    }
+}
+
+// If we're using icons for bullets, de-ident
+.fa-ul {
+    padding-left: 0em !important;
+    margin-left: 1em !important;
+}
+
+// Reduce section padding by 1rem
+section.td-box--height-auto {
+    padding-bottom: 3rem !important;
+}
+
+
+div.td-content {
+    // Allow code tags to span most of a window length (default is 80%)
+    pre {
+        max-width: 99% !important;
+    }
+    h2 {
+        font-size: 1.4rem !important;
+    }
+    h3 {
+        font-size: 1.3rem !important;
+    }
+}

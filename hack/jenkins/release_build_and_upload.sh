@@ -31,6 +31,11 @@ export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export RPM_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export GOPATH=~/go
 
+# Make sure the right golang version is installed based on Makefile
+WANT_GOLANG_VERSION=$(grep '^GO_VERSION' Makefile | awk '{ print $3 }')
+./hack/jenkins/installers/check_install_golang.sh $WANT_GOLANG_VERSION /usr/local
+
+
 # Make sure the tag matches the Makefile
 cat Makefile | grep "VERSION_MAJOR ?=" | grep $VERSION_MAJOR
 cat Makefile | grep "VERSION_MINOR ?=" | grep $VERSION_MINOR

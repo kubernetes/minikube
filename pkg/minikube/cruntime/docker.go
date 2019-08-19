@@ -153,3 +153,8 @@ func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
 	cmd.WriteString(id)
 	return cmd.String()
 }
+
+// SystemLogCmd returns the command to retrieve system logs
+func (r *Docker) SystemLogCmd(len int) string {
+	return fmt.Sprintf("sudo journalctl -u docker -n %d", len)
+}

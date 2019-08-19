@@ -79,9 +79,8 @@ func init() {
 	serviceCmd.Flags().BoolVar(&serviceURLMode, "url", false, "Display the kubernetes service URL in the CLI instead of opening it in the default browser")
 	serviceCmd.Flags().BoolVar(&https, "https", false, "Open the service URL with https instead of http")
 	serviceCmd.Flags().IntVar(&wait, "wait", constants.DefaultWait, "Amount of time to wait for a service in seconds")
-	serviceCmd.Flags().IntVar(&interval, "interval", constants.DefaultInterval, "The time interval for each check that wait performs in seconds")
+	serviceCmd.Flags().IntVar(&interval, "interval", constants.DefaultInterval, "The initial time interval for each check that wait performs in seconds")
 
 	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time.")
 
-	RootCmd.AddCommand(serviceCmd)
 }

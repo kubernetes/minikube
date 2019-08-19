@@ -24,19 +24,29 @@
 # ghprbActualCommit: The commit hash, injected from the ghpbr plugin.
 # access_token: The Github API access token. Injected by the Jenkins credential provider.
 
-set -e
-set +x
+set -eux -o pipefail
 
 if [ "${ghprbPullId}" == "master" ]; then
   echo "not setting github status for continuous builds"
   exit 0
 fi
 
-for job in "OSX-Virtualbox" "OSX-Hyperkit" "Linux-Virtualbox" "Linux-KVM" "Linux-None"; do
-  target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${job}.txt"
+jobs=(
+     'HyperKit_macOS'
+     'Hyper-V_Windows'
+     'VirtualBox_Linux'
+     'VirtualBox_macOS'
+     'VirtualBox_Windows'
+     # 'KVM-GPU_Linux' - Disabled
+     'KVM_Linux'
+     'none_Linux'
+)
+
+for j in ${jobs[@]}; do
+  target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}.txt"
   curl "https://api.github.com/repos/kubernetes/minikube/statuses/${ghprbActualCommit}?access_token=$access_token" \
     -H "Content-Type: application/json" \
     -X POST \
-    -d "{\"state\": \"pending\", \"description\": \"Jenkins\", \"target_url\": \"${target_url}\", \"context\": \"${job}\"}"
+    -d "{\"state\": \"pending\", \"description\": \"Jenkins\", \"target_url\": \"${target_url}\", \"context\": \"${j}\"}"
 done
 

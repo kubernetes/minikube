@@ -48,7 +48,3 @@ var updateCheckCmd = &cobra.Command{
 		out.Ln("LatestVersion: %s", r[0].Name)
 	},
 }
-
-func init() {
-	RootCmd.AddCommand(updateCheckCmd)
-}
