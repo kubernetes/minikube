@@ -49,6 +49,7 @@ func TestFunctional(t *testing.T) {
 		t.Run("Provisioning", testProvisioning)
 		t.Run("Tunnel", testTunnel)
 		t.Run("kubecontext", testKubeConfigCurrentCtx)
+		t.Run("minikubeConfig", testMinikubeConfig)
 
 		if !isTestNoneDriver(t) {
 			t.Run("EnvVars", testClusterEnv)
