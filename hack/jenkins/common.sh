@@ -279,9 +279,6 @@ ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
 rmdir "${TEST_HOME}"
 echo ">> ${TEST_HOME} completed at $(date)"
 
-# Build the gvisor image. This will be copied into minikube and loaded by ctr.
-docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile out
-
 if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
   readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
   curl -s "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
