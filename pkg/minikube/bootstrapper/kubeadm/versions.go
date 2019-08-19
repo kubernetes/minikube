@@ -159,7 +159,7 @@ func Supports(featureName string) bool {
 	return false
 }
 
-// arseKubernetesVersion parses the kubernetes version
+// parseKubernetesVersion parses the kubernetes version
 func parseKubernetesVersion(version string) (semver.Version, error) {
 	// Strip leading 'v' prefix from version for semver parsing
 	v, err := semver.Make(version[1:])

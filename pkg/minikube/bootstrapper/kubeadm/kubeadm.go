@@ -35,7 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
-	"k8s.io/minikube/pkg/kube"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -311,7 +311,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
 	out.T(out.WaitingPods, "Waiting for:")
-	client, err := kube.Client()
+	client, err := kapi.Client()
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
 	}
@@ -329,7 +329,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 		}
 		out.String(" %s", p.name)
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
-		if err := kube.WaitForPodsWithLabelRunning(client, "kube-system", selector, timeout); err != nil {
+		if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector, timeout); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))
 		}
 	}
@@ -398,8 +398,7 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 		return true, nil
 	}
 	err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, f)
-	elapsed := time.Since(start)
-	glog.Infof("duration metric: took %s to wait for apiserver status ...", elapsed)
+	glog.Infof("duration metric: took %s to wait for apiserver status ...", time.Since(start))
 	return err
 }
 

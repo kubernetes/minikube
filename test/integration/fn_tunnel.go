@@ -31,7 +31,7 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/minikube/pkg/kube"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
@@ -70,18 +70,18 @@ func testTunnel(t *testing.T) {
 		t.Fatalf("creating nginx ingress resource: %s", err)
 	}
 
-	client, err := kube.Client(p)
+	client, err := kapi.Client(p)
 
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "getting kubernetes client"))
 	}
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx-svc"}))
-	if err := kube.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
 		t.Fatal(errors.Wrap(err, "waiting for nginx pods"))
 	}
 
-	if err := kube.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, 2*time.Minute); err != nil {
+	if err := kapi.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, 2*time.Minute); err != nil {
 		t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
 	}
 
@@ -121,7 +121,7 @@ func getIngress(kr *util.KubectlRunner) (string, error) {
 		case err == nil:
 			nginxIP = string(stdout)
 			return len(stdout) != 0, nil
-		case !kube.IsRetryableAPIError(err):
+		case !kapi.IsRetryableAPIError(err):
 			ret = fmt.Errorf("`%s` failed with non retriable error: %v", cmd, err)
 			return false, err
 		default:
