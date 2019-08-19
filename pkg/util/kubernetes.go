@@ -17,6 +17,7 @@ limitations under the License.
 package util
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -35,6 +36,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/clientcmd"
+	watchtools "k8s.io/client-go/tools/watch"
 	"k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/proxy"
 )
@@ -42,8 +44,8 @@ import (
 var (
 	// ReasonableMutateTime is how long to wait for basic object mutations, such as deletions, to show up
 	ReasonableMutateTime = time.Minute * 2
-	// ReasonableStartTime is how long to wait for pods to start, considering dependency chains & slow networks.
-	ReasonableStartTime = time.Minute * 10
+	// ReasonableStartTime is how long to wait for pods to start
+	ReasonableStartTime = time.Minute * 5
 )
 
 // PodStore stores pods
@@ -69,18 +71,23 @@ func (s *PodStore) Stop() {
 }
 
 // GetClient gets the client from config
-func GetClient() (kubernetes.Interface, error) {
+func GetClient(kubectlContext ...string) (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
+	if kubectlContext != nil {
+		configOverrides = &clientcmd.ConfigOverrides{
+			CurrentContext: kubectlContext[0],
+		}
+	}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("Error creating kubeConfig: %v", err)
+		return nil, fmt.Errorf("error creating kubeConfig: %v", err)
 	}
 	config = proxy.UpdateTransport(config)
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
+		return nil, errors.Wrap(err, "error creating new client from kubeConfig.ClientConfig()")
 	}
 	return client, nil
 }
@@ -114,7 +121,7 @@ func StartPods(c kubernetes.Interface, namespace string, pod core.Pod, waitForRu
 		label := labels.SelectorFromSet(labels.Set(map[string]string{"name": pod.Name}))
 		err := WaitForPodsWithLabelRunning(c, namespace, label)
 		if err != nil {
-			return fmt.Errorf("Error waiting for pod %s to be running: %v", pod.Name, err)
+			return fmt.Errorf("error waiting for pod %s to be running: %v", pod.Name, err)
 		}
 	}
 	return nil
@@ -191,7 +198,11 @@ func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.
 	if err != nil {
 		return err
 	}
-	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
+
+	ctx, cancel := watchtools.ContextWithOptionalTimeout(context.Background(), timeout)
+	defer cancel()
+
+	_, err = watchtools.UntilWithoutRetry(ctx, w, func(event watch.Event) (bool, error) {
 		if event.Type == watch.Deleted {
 			return false, apierr.NewNotFound(schema.GroupResource{Resource: "replicationcontrollers"}, "")
 		}
@@ -221,7 +232,11 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 	if err != nil {
 		return err
 	}
-	_, err = watch.Until(timeout, w, func(event watch.Event) (bool, error) {
+
+	ctx, cancel := watchtools.ContextWithOptionalTimeout(context.Background(), timeout)
+	defer cancel()
+
+	_, err = watchtools.UntilWithoutRetry(ctx, w, func(event watch.Event) (bool, error) {
 		if event.Type == watch.Deleted {
 			return false, apierr.NewNotFound(schema.GroupResource{Resource: "deployments"}, "")
 		}

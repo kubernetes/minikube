@@ -114,7 +114,7 @@ func convertKind(e reflect.Value, v string) error {
 func convertInt(e reflect.Value, v string) error {
 	i, err := strconv.Atoi(v)
 	if err != nil {
-		return fmt.Errorf("Error converting input %s to an integer: %v", v, err)
+		return fmt.Errorf("error converting input %s to an integer: %v", v, err)
 	}
 	e.SetInt(int64(i))
 	return nil
@@ -128,7 +128,7 @@ func convertString(e reflect.Value, v string) error {
 func convertFloat(e reflect.Value, v string) error {
 	f, err := strconv.ParseFloat(v, 64)
 	if err != nil {
-		return fmt.Errorf("Error converting input %s to a float: %v", v, err)
+		return fmt.Errorf("error converting input %s to a float: %v", v, err)
 	}
 	e.SetFloat(f)
 	return nil
@@ -137,7 +137,7 @@ func convertFloat(e reflect.Value, v string) error {
 func convertBool(e reflect.Value, v string) error {
 	b, err := strconv.ParseBool(v)
 	if err != nil {
-		return fmt.Errorf("Error converting input %s to a bool: %v", v, err)
+		return fmt.Errorf("error converting input %s to a bool: %v", v, err)
 	}
 	e.SetBool(b)
 	return nil
@@ -146,7 +146,7 @@ func convertBool(e reflect.Value, v string) error {
 func convertIP(e reflect.Value, v string) error {
 	ip := net.ParseIP(v)
 	if ip == nil {
-		return fmt.Errorf("Error converting input %s to an IP", v)
+		return fmt.Errorf("error converting input %s to an IP", v)
 	}
 	e.Set(reflect.ValueOf(ip))
 	return nil
@@ -155,7 +155,7 @@ func convertIP(e reflect.Value, v string) error {
 func convertCIDR(e reflect.Value, v string) error {
 	_, cidr, err := net.ParseCIDR(v)
 	if err != nil {
-		return fmt.Errorf("Error converting input %s to a CIDR: %v", v, err)
+		return fmt.Errorf("error converting input %s to a CIDR: %v", v, err)
 	}
 	e.Set(reflect.ValueOf(*cidr))
 	return nil
@@ -164,7 +164,7 @@ func convertCIDR(e reflect.Value, v string) error {
 func convertPortRange(e reflect.Value, v string) error {
 	pr, err := utilnet.ParsePortRange(v)
 	if err != nil {
-		return fmt.Errorf("Error converting input %s to PortRange: %v", v, err)
+		return fmt.Errorf("error converting input %s to PortRange: %v", v, err)
 	}
 	e.Set(reflect.ValueOf(*pr))
 	return nil
@@ -173,7 +173,7 @@ func convertPortRange(e reflect.Value, v string) error {
 func convertDuration(e reflect.Value, v string) error {
 	dur, err := time.ParseDuration(v)
 	if err != nil {
-		return fmt.Errorf("Error converting input %s to Duration: %v", v, err)
+		return fmt.Errorf("error converting input %s to Duration: %v", v, err)
 	}
 	e.Set(reflect.ValueOf(dur))
 	return nil

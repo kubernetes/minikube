@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-# This script runs the integration tests on a Linux machine for the Virtualbox Driver
+# This script runs the integration tests on a Linux machine for the none Driver
 
 # The script expects the following env variables:
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
@@ -28,8 +28,9 @@ set -e
 
 OS_ARCH="linux-amd64"
 VM_DRIVER="none"
-JOB_NAME="Linux-None"
+JOB_NAME="none_Linux"
 EXTRA_ARGS="--bootstrapper=kubeadm"
+PARALLEL_COUNT=1
 
 SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"

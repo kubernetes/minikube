@@ -71,12 +71,12 @@ func getDevicesXML() (string, error) {
 	for _, device := range unboundNVIDIADevices {
 		splits := strings.Split(device, ":")
 		if len(splits) != 3 {
-			log.Infof("Error while parsing PCI device %q. Not splitable into domain:bus:slot.function.", device)
+			log.Infof("Error while parsing PCI device %q. Not splittable into domain:bus:slot.function.", device)
 			continue
 		}
 		parts := strings.Split(splits[2], ".")
 		if len(parts) != 2 {
-			log.Infof("Error while parsing PCI device %q. Not splitable into domain:bus:slot.function.", device)
+			log.Infof("Error while parsing PCI device %q. Not splittable into domain:bus:slot.function.", device)
 			continue
 		}
 		pciDevice := PCIDevice{
@@ -110,7 +110,7 @@ func getPassthroughableNVIDIADevices() ([]string, error) {
 		return []string{}, fmt.Errorf("error reading %q: %v", sysKernelIOMMUGroupsPath, err)
 	}
 	if len(iommuGroups) == 0 {
-		return []string{}, fmt.Errorf("no IOMMU groups found at %q. Make sure your host supports IOMMU. See instructions at https://github.com/kubernetes/minikube/blob/master/docs/gpu.md", sysKernelIOMMUGroupsPath)
+		return []string{}, fmt.Errorf("no IOMMU groups found at %q. Make sure your host supports IOMMU. See instructions at https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/", sysKernelIOMMUGroupsPath)
 	}
 
 	// Get list of PCI devices
@@ -146,7 +146,7 @@ func getPassthroughableNVIDIADevices() ([]string, error) {
 		return []string{}, fmt.Errorf("no NVIDIA devices found")
 	}
 	if len(unboundNVIDIADevices) == 0 {
-		return []string{}, fmt.Errorf("some NVIDIA devices were found but none of them were unbound. See instructions at https://github.com/kubernetes/minikube/blob/master/docs/gpu.md")
+		return []string{}, fmt.Errorf("some NVIDIA devices were found but none of them were unbound. See instructions at https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/")
 	}
 
 	// Make sure all the unbound devices are in IOMMU groups that only contain unbound devices.
@@ -161,7 +161,7 @@ func getPassthroughableNVIDIADevices() ([]string, error) {
 		}
 	}
 	if len(isolatedNVIDIADevices) == 0 {
-		return []string{}, fmt.Errorf("some unbound NVIDIA devices were found but they had other devices in their IOMMU group that were bound. See instructoins at https://github.com/kubernetes/minikube/blob/master/docs/gpu.md")
+		return []string{}, fmt.Errorf("some unbound NVIDIA devices were found but they had other devices in their IOMMU group that were bound. See instructions at https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/")
 	}
 
 	return isolatedNVIDIADevices, nil

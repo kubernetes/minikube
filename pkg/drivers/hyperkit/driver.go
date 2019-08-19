@@ -40,9 +40,6 @@ import (
 	hyperkit "github.com/moby/hyperkit/go"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
-
-	"k8s.io/minikube/pkg/minikube/constants"
-	commonutil "k8s.io/minikube/pkg/util"
 )
 
 const (
@@ -77,7 +74,6 @@ func NewDriver(hostName, storePath string) *Driver {
 			SSHUser: "docker",
 		},
 		CommonDriver: &pkgdrivers.CommonDriver{},
-		DiskSize:     commonutil.CalculateSizeInMB(constants.DefaultDiskSize),
 	}
 }
 
@@ -121,7 +117,7 @@ func (d *Driver) Create() error {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	return constants.DriverHyperkit
+	return "hyperkit"
 }
 
 // GetSSHHostname returns hostname for use with ssh
@@ -227,7 +223,7 @@ func (d *Driver) Start() error {
 	h.Memory = d.Memory
 	h.UUID = d.UUID
 	// This should stream logs from hyperkit, but doesn't seem to work.
-	logger := golog.New(os.Stderr, constants.DriverHyperkit, golog.LstdFlags)
+	logger := golog.New(os.Stderr, "hyperkit", golog.LstdFlags)
 	h.SetLogger(logger)
 
 	if vsockPorts, err := d.extractVSockPorts(); err != nil {
@@ -269,12 +265,25 @@ func (d *Driver) Start() error {
 
 		d.IPAddress, err = GetIPAddressByMACAddress(mac)
 		if err != nil {
-			return &commonutil.RetriableError{Err: err}
+			return &tempError{err}
 		}
 		return nil
 	}
 
-	if err := commonutil.RetryAfter(30, getIP, 2*time.Second); err != nil {
+	// Implement a retry loop without calling any minikube code
+	for i := 0; i < 30; i++ {
+		log.Debugf("Attempt %d", i)
+		err = getIP()
+		if err == nil {
+			break
+		}
+		if _, ok := err.(*tempError); !ok {
+			return err
+		}
+		time.Sleep(2 * time.Second)
+	}
+
+	if err != nil {
 		return fmt.Errorf("IP address never found in dhcp leases file %v", err)
 	}
 	log.Debugf("IP: %s", d.IPAddress)
@@ -292,6 +301,14 @@ func (d *Driver) Start() error {
 	}
 
 	return nil
+}
+
+type tempError struct {
+	Err error
+}
+
+func (t tempError) Error() string {
+	return "Temporary error: " + t.Err.Error()
 }
 
 //recoverFromUncleanShutdown searches for an existing hyperkit.pid file in

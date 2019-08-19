@@ -382,7 +382,6 @@ var dockerEnvCmd = &cobra.Command{
 }
 
 func init() {
-	RootCmd.AddCommand(dockerEnvCmd)
 	defaultShellDetector = &LibmachineShellDetector{}
 	defaultNoProxyGetter = &EnvNoProxyGetter{}
 	dockerEnvCmd.Flags().BoolVar(&noProxy, "no-proxy", false, "Add machine IP to NO_PROXY environment variable")

@@ -27,8 +27,8 @@ import (
 	"syscall"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -62,7 +62,7 @@ var mountCmd = &cobra.Command{
 	Long:  `Mounts the specified directory into minikube.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if isKill {
-			if err := cmdUtil.KillMountProcess(); err != nil {
+			if err := killMountProcess(); err != nil {
 				exit.WithError("Error killing mount process", err)
 			}
 			os.Exit(0)
@@ -118,7 +118,7 @@ var mountCmd = &cobra.Command{
 				exit.WithCodeT(exit.Data, "error parsing the input ip address for mount")
 			}
 		}
-		port, err := cmdUtil.GetPort()
+		port, err := getPort()
 		if err != nil {
 			exit.WithError("Error finding port for mount", err)
 		}
@@ -209,5 +209,19 @@ func init() {
 	mountCmd.Flags().UintVar(&mode, "mode", 0755, "File permissions used for the mount")
 	mountCmd.Flags().StringSliceVar(&options, "options", []string{}, "Additional mount options, such as cache=fscache")
 	mountCmd.Flags().IntVar(&mSize, "msize", constants.DefaultMsize, "The number of bytes to use for 9p packet payload")
-	RootCmd.AddCommand(mountCmd)
+}
+
+// getPort asks the kernel for a free open port that is ready to use
+func getPort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		panic(err)
+	}
+
+	l, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return -1, errors.Errorf("Error accessing port %d", addr.Port)
+	}
+	defer l.Close()
+	return l.Addr().(*net.TCPAddr).Port, nil
 }

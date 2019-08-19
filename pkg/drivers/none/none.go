@@ -17,8 +17,10 @@ limitations under the License.
 package none
 
 import (
+	"bytes"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
@@ -29,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 const driverName = constants.DriverNone
@@ -41,7 +44,7 @@ var cleanupPaths = []string{
 }
 
 // Driver is a driver designed to run kubeadm w/o VM management, and assumes systemctl.
-// https://github.com/kubernetes/minikube/blob/master/docs/vmdriver-none.md
+// https://minikube.sigs.k8s.io/docs/reference/drivers/none/
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -218,7 +221,29 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 // stopKubelet idempotently stops the kubelet
 func stopKubelet(exec command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
-	return exec.Run("sudo systemctl stop kubelet.service")
+	stop := func() error {
+		cmdStop := "sudo systemctl stop kubelet.service"
+		cmdCheck := "sudo systemctl show -p SubState kubelet"
+		err := exec.Run(cmdStop)
+		if err != nil {
+			glog.Errorf("temporary error for %q : %v", cmdStop, err)
+		}
+		var out bytes.Buffer
+		errStatus := exec.CombinedOutputTo(cmdCheck, &out)
+		if errStatus != nil {
+			glog.Errorf("temporary error: for %q : %v", cmdCheck, errStatus)
+		}
+		if !strings.Contains(out.String(), "dead") {
+			return fmt.Errorf("expected to kubelet to be dead but it got : %q", out)
+		}
+		return nil
+	}
+
+	if err := retry.Expo(stop, 2*time.Second, time.Minute*3, 5); err != nil {
+		return errors.Wrapf(err, "error stopping kubelet")
+	}
+
+	return nil
 }
 
 // restartKubelet restarts the kubelet

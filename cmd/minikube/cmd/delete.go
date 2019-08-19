@@ -18,23 +18,26 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strconv"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
+	ps "github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	cmdUtil "k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 var deleteAll bool
@@ -143,6 +146,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 
 	cc, err := pkg_config.Load()
 	if err != nil && !os.IsNotExist(err) {
+		out.ErrT(out.Sad, "Error loading profile {{.name}}: {{.error}}", out.V{"name": profile, "error": err})
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
 		return DeletionError{Err: delErr, Errtype: MissingProfile}
 	}
@@ -160,23 +164,32 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		}
 	}
 
+	if err := killMountProcess(); err != nil {
+		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
+	}
+
 	if err = cluster.DeleteHost(api); err != nil {
-		switch err := errors.Cause(err).(type) {
+		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
 			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("\"%s\" cluster does not exist", profile.Name))
 			return DeletionError{Err: delErr, Errtype: MissingCluster}
 		default:
-			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("failed to delete cluster %v", err))
-			return DeletionError{Err: delErr, Errtype: Fatal}
+			out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
+			out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
 		}
 	}
 
-	if err := cmdUtil.KillMountProcess(); err != nil {
-		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("failed to kill mount process: %v", err))
-		return DeletionError{Err: delErr, Errtype: Fatal}
+	// In case DeleteHost didn't complete the job.
+	machineDir := filepath.Join(constants.GetMinipath(), "machines", profile.Name)
+	if _, err := os.Stat(machineDir); err == nil {
+		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
+		err := os.RemoveAll(machineDir)
+		if err != nil {
+			return DeletionError{Err: fmt.Errorf("unable to remove machine directory: %v", err), Errtype: Fatal}
+		}
 	}
 
-	if err := os.RemoveAll(constants.GetProfilePath(viper.GetString(pkg_config.MachineProfile))); err != nil {
+	if err := pkg_config.DeleteProfile(profile.Name); err != nil {
 		if os.IsNotExist(err) {
 			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("\"%s\" profile does not exist", profile.Name))
 			return DeletionError{Err: delErr, Errtype: MissingProfile}
@@ -184,12 +197,16 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("failed to remove profile %v", err))
 		return DeletionError{Err: delErr, Errtype: Fatal}
 	}
-	out.T(out.Crushed, `The "{{.cluster_name}}" cluster has been deleted.`, out.V{"cluster_name": profile.Name})
+
+	out.T(out.Crushed, `The "{{.name}}" cluster has been deleted.`, out.V{"name": profile.Name})
 
 	machineName := pkg_config.GetMachineName()
-	if err := pkgutil.DeleteKubeConfigContext(constants.KubeconfigPath, machineName); err != nil {
-		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("update config %v", err))
-		return DeletionError{Err: delErr, Errtype: Fatal}
+	if err := kubeconfig.DeleteContext(constants.KubeconfigPath, machineName); err != nil {
+		return DeletionError{Err: fmt.Errorf("update config: %v", err), Errtype: Fatal}
+	}
+
+	if err := cmdcfg.Unset(pkg_config.MachineProfile); err != nil {
+		return DeletionError{Err: fmt.Errorf("unset minikube profile: %v", err), Errtype: Fatal}
 	}
 	return nil
 }
@@ -272,7 +289,50 @@ func handleMultipleDeletionErrors(errors []error) {
 	}
 }
 
-func init() {
-	deleteCmd.Flags().BoolVar(&deleteAll, "all", false, "Set flag to delete all profiles")
-	RootCmd.AddCommand(deleteCmd)
+// killMountProcess kills the mount process, if it is running
+func killMountProcess() error {
+	pidPath := filepath.Join(constants.GetMinipath(), constants.MountProcessFileName)
+	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
+		return nil
+	}
+
+	glog.Infof("Found %s ...", pidPath)
+	out, err := ioutil.ReadFile(pidPath)
+	if err != nil {
+		return errors.Wrap(err, "ReadFile")
+	}
+	glog.Infof("pidfile contents: %s", out)
+	pid, err := strconv.Atoi(string(out))
+	if err != nil {
+		return errors.Wrap(err, "error parsing pid")
+	}
+	// os.FindProcess does not check if pid is running :(
+	entry, err := ps.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "ps.FindProcess")
+	}
+	if entry == nil {
+		glog.Infof("Stale pid: %d", pid)
+		if err := os.Remove(pidPath); err != nil {
+			return errors.Wrap(err, "Removing stale pid")
+		}
+		return nil
+	}
+
+	// We found a process, but it still may not be ours.
+	glog.Infof("Found process %d: %s", pid, entry.Executable())
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "os.FindProcess")
+	}
+
+	glog.Infof("Killing pid %d ...", pid)
+	if err := proc.Kill(); err != nil {
+		glog.Infof("Kill failed with %v - removing probably stale pid...", err)
+		if err := os.Remove(pidPath); err != nil {
+			return errors.Wrap(err, "Removing likely stale unkillable pid")
+		}
+		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
+	}
+	return nil
 }

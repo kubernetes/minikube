@@ -1,0 +1,65 @@
+/* Tabs CSS implementation. Borrowed from Skaffold & Kubernetes websites */
+ul.nav.nav-tabs {
+    padding: 0;
+    list-style-type: none;
+    overflow: hidden;
+    content: none;
+}
+
+div.code-tabs li.nav-tab {
+    margin-top: 1.5rem;
+    padding: 10px 20px;
+    float: left;
+    text-align: center;
+    text-decoration: none;
+    color: #666;
+    font-size: 14px;
+
+    border-top: 1px solid #C7EAEC;
+    border-left: 1px solid #C7EAEC;
+    border-right: 1px solid #C7EAEC;
+    margin-right: 0.5em;
+
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    background-color: #c7eaec;
+}
+
+div.code-tabs li.active {
+    color: #f2771a;
+    border-top: 1px solid #C7EAEC;
+    border-left: 1px solid #C7EAEC;
+    border-right: 1px solid #C7EAEC;
+    background: rgb(244, 255, 255);
+    font-weight: bold;
+}
+
+div.code-tabs a.nav-tab {
+    all: unset;
+    cursor: pointer;
+}
+
+div.tab-pane {
+    display: none;
+    margin-bottom: 3rem;
+}
+
+div.tab-pane.active {
+    display: block;
+    padding: 2em;
+    background: rgb(244, 255, 255);
+    border: 1px solid #C7EAEC;
+}
+
+div.code-tabs code {
+    word-break: keep-all;
+}
+
+div.code-tabs h2 {
+    font-size: 1.2rem !important;
+    font-weight: bold !important;
+    margin-top: 1.3rem;
+}
+div.code-tabs h3 {
+    font-size: 1.1rem !important;
+}

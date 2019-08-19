@@ -34,7 +34,3 @@ var sshKeyCmd = &cobra.Command{
 		out.Ln(filepath.Join(constants.GetMinipath(), "machines", config.GetMachineName(), "id_rsa"))
 	},
 }
-
-func init() {
-	RootCmd.AddCommand(sshKeyCmd)
-}
