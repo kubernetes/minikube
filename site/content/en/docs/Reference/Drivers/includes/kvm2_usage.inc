@@ -27,3 +27,16 @@ virt-host-validate
  curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
   && sudo install docker-machine-driver-kvm2 /usr/local/bin/
 ```
+
+## Usage
+
+To explicitly start minikube with KVM:
+
+```shell
+minikube start --vm-driver=kvm2
+```
+To make KVM the default driver:
+
+```shell
+minikube config set vm-driver kvm2
+```
