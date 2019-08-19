@@ -34,7 +34,7 @@ import (
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/minikube/pkg/kube"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
 )
@@ -42,12 +42,12 @@ import (
 func testAddons(t *testing.T) {
 	t.Parallel()
 	p := profileName(t)
-	client, err := kube.Client(p)
+	client, err := kapi.Client(p)
 	if err != nil {
 		t.Fatalf("Could not get kubernetes client: %v", err)
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"component": "kube-addon-manager"}))
-	if err := kube.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 		t.Errorf("Error waiting for addon manager to be up")
 	}
 }
@@ -192,22 +192,22 @@ func testRegistry(t *testing.T) {
 	p := profileName(t)
 	mk := NewMinikubeRunner(t, p)
 	mk.RunCommand("addons enable registry", true)
-	client, err := kube.Client(p)
+	client, err := kapi.Client(p)
 	if err != nil {
 		t.Fatalf("getting kubernetes client: %v", err)
 	}
-	if err := kube.WaitForRCToStabilize(client, "kube-system", "registry", time.Minute*5); err != nil {
+	if err := kapi.WaitForRCToStabilize(client, "kube-system", "registry", time.Minute*5); err != nil {
 		t.Fatalf("waiting for registry replicacontroller to stabilize: %v", err)
 	}
 	rs := labels.SelectorFromSet(labels.Set(map[string]string{"actual-registry": "true"}))
-	if err := kube.WaitForPodsWithLabelRunning(client, "kube-system", rs); err != nil {
+	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", rs); err != nil {
 		t.Fatalf("waiting for registry pods: %v", err)
 	}
 	ps, err := labels.Parse("kubernetes.io/minikube-addons=registry,actual-registry!=true")
 	if err != nil {
 		t.Fatalf("Unable to parse selector: %v", err)
 	}
-	if err := kube.WaitForPodsWithLabelRunning(client, "kube-system", ps); err != nil {
+	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", ps); err != nil {
 		t.Fatalf("waiting for registry-proxy pods: %v", err)
 	}
 	ip, stderr := mk.RunCommand("ip", true)
@@ -264,18 +264,18 @@ func testRegistry(t *testing.T) {
 
 // waitForNginxRunning waits for nginx service to be up
 func waitForNginxRunning(t *testing.T, miniProfile string) error {
-	client, err := kube.Client(miniProfile)
+	client, err := kapi.Client(miniProfile)
 
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
-	if err := kube.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
 		return errors.Wrap(err, "waiting for nginx pods")
 	}
 
-	if err := kube.WaitForService(client, "default", "nginx", true, time.Millisecond*500, time.Minute*10); err != nil {
+	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, time.Minute*10); err != nil {
 		t.Errorf("Error waiting for nginx service to be up")
 	}
 	return nil
@@ -283,17 +283,17 @@ func waitForNginxRunning(t *testing.T, miniProfile string) error {
 
 // waitForIngressControllerRunning waits until ingress controller pod to be running
 func waitForIngressControllerRunning(miniProfile string) error {
-	client, err := kube.Client(miniProfile)
+	client, err := kapi.Client(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 
-	if err := kube.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", time.Minute*10); err != nil {
+	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", time.Minute*10); err != nil {
 		return errors.Wrap(err, "waiting for ingress-controller deployment to stabilize")
 	}
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app.kubernetes.io/name": "nginx-ingress-controller"}))
-	if err := kube.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
 		return errors.Wrap(err, "waiting for ingress-controller pods")
 	}
 

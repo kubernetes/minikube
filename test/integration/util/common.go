@@ -23,17 +23,17 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/minikube/pkg/kube"
+	"k8s.io/minikube/pkg/kapi"
 )
 
 // WaitForBusyboxRunning waits until busybox pod to be running
 func WaitForBusyboxRunning(t *testing.T, namespace string, miniProfile string) error {
-	client, err := kube.Client(miniProfile)
+	client, err := kapi.Client(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
-	return kube.WaitForPodsWithLabelRunning(client, namespace, selector)
+	return kapi.WaitForPodsWithLabelRunning(client, namespace, selector)
 }
 
 // Logf writes logs to stdout if -v is set.

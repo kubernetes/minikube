@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kube
+package kapi
 
 import (
 	"context"
@@ -77,7 +77,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		listOpts := meta.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
-			glog.Infof("temproary error: getting Pods with label selector %q : [%v]\n", label.String(), err)
+			glog.Infof("temporary error: getting Pods with label selector %q : [%v]\n", label.String(), err)
 			return false, nil
 		}
 
@@ -92,7 +92,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 
 		for _, pod := range pods.Items {
 			if pod.Status.Phase != core.PodRunning {
-				glog.Infof("temporary error: for Pod with label %q expected status to be running but got %s : [%v]\n", label.String(), pod.Status.Phase, err)
+				glog.Infof("waiting for pod %q, current state: %s: [%v]\n", label.String(), pod.Status.Phase, err)
 				return false, nil
 			}
 		}
@@ -104,8 +104,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		t = timeOut[0]
 	}
 	err := wait.PollImmediate(kconst.APICallRetryInterval, t, f)
-	elapsed := time.Since(start)
-	glog.Infof("duration metric: took %s to wait for %s ...", elapsed, label)
+	glog.Infof("duration metric: took %s to wait for %s ...", time.Since(start), label)
 	return err
 }
 

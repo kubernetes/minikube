@@ -150,7 +150,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
 	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
-	startCmd.Flags().Duration(waitTimeout, 3*time.Minute, "max time to wait for Kubernetes core services to be healthy.")
+	startCmd.Flags().Duration(waitTimeout, 3*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
