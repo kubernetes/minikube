@@ -73,7 +73,7 @@ func profileName(t *testing.T) string {
 	return p
 }
 
-// shouldRunInParallel deterimines if test should run in parallel or not
+// shouldRunInParallel determines if test should run in parallel or not
 func shouldRunInParallel(t *testing.T) bool {
 	t.Helper()
 	if !*parallel {
