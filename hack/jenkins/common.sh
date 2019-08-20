@@ -125,6 +125,18 @@ for stale_dir in ${TEST_ROOT}/*; do
   rmdir "${stale_dir}" || true
 done
 
+
+# sometimes tests left over zombie procs that won't exit
+# for example:
+# jenkins  20041  0.0  0.0      0     0 ?        Z    Aug19   0:00 [minikube-linux-] <defunct>
+zombie_defuncts=$(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}')
+if [[ "${zombie_defuncts}" != "" ]]; then
+  echo "Found zombie defunct procs to kill..."
+  ps -f -p ${zombie_defuncts} || true
+  sudo -E kill ${zombie_defuncts} || true
+fi
+
+
 if type -P virsh; then
   virsh -c qemu:///system list --all
   virsh -c qemu:///system list --all \
@@ -165,6 +177,7 @@ if type -P vboxmanage; then
   vboxmanage list vms || true
 fi
 
+
 if type -P hdiutil; then
   hdiutil info | grep -E "/dev/disk[1-9][^s]" || true
   hdiutil info \
@@ -197,6 +210,14 @@ if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
     sudo chmod u+s out/docker-machine-driver-hyperkit || true
   fi
 fi
+
+vboxprocs=$(pgrep VBox || true)
+if [[ "${vboxprocs}" != "" ]]; then
+  echo "error: killing left over virtualbox processes ..."
+  ps -f -p ${vboxprocs} || true
+  sudo -E kill ${vboxprocs} || true
+fi
+
 
 kprocs=$(pgrep kubectl || true)
 if [[ "${kprocs}" != "" ]]; then
