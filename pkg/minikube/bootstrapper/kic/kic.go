@@ -177,10 +177,9 @@ func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string 
 	}
 }
 
-
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
