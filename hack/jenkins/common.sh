@@ -72,7 +72,7 @@ gsutil -qm cp \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" out
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
 
@@ -266,7 +266,7 @@ export KUBECONFIG="${TEST_HOME}/kubeconfig"
 # Used by TestContainerd for Gvisor Test.
 # TODO: move this to integration test setup.
 chmod +x ./out/gvisor-addon
-docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile ./out
+docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile ./testdata
 
 
 # Display the default image URL
