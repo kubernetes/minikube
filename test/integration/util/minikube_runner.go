@@ -125,8 +125,7 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ..
 }
 
 // RunCommandRetriable executes a command, returns error
-// the purpose of this command is to make it retriable and
-// better logging for retrying
+// the purpose of this command is to make it retriable by returning error
 func (m *MinikubeRunner) RunCommandRetriable(cmdStr string, waitForRun ...bool) (stdout string, stderr string, err error) {
 	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
@@ -231,11 +230,10 @@ func (m *MinikubeRunner) SSH(cmdStr string) (string, error) {
 // Start starts the cluster
 func (m *MinikubeRunner) Start(opts ...string) (stdout string, stderr string, err error) {
 	cmd := fmt.Sprintf("start %s %s %s", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
-	s := func() error {
-		stdout, stderr, err = m.RunCommandRetriable(cmd)
-		return err
-	}
-	err = retry.Expo(s, 10*time.Second, m.TimeOutStart)
+	ctx := context.Background()
+	ctx, cancel := context.WithTimeout(ctx, m.TimeOutStart)
+	defer cancel()
+	stdout, stderr, err = m.RunWithContext(ctx, cmd, true)
 	return stdout, stderr, err
 }
 
