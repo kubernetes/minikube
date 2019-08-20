@@ -19,7 +19,6 @@ limitations under the License.
 package integration
 
 import (
-	"io"
 	"strings"
 	"testing"
 )
@@ -66,17 +65,7 @@ func TestConfig(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		_, stdoutReader, stderrReader := mk.RunDaemon2(test.cmd)
-
-		stdout, err := stdoutReader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			t.Fatalf("Error not expected but got: %v", err)
-		}
-
-		stderr, err := stderrReader.ReadString('\n')
-		if err != nil && err != io.EOF {
-			t.Fatalf("Error not expected but got: %v", err)
-		}
+		stdout, stderr, _ := mk.RunCommandRetriable(test.cmd)
 
 		if !compare(test.stdout, stdout) {
 			t.Fatalf("Expected stdout to be: %s. Stdout was: %s Stderr: %s", test.stdout, stdout, stderr)
