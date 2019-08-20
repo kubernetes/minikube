@@ -177,6 +177,7 @@ if type -P vboxmanage; then
   vboxmanage list vms || true
 fi
 
+
 if type -P hdiutil; then
   hdiutil info | grep -E "/dev/disk[1-9][^s]" || true
   hdiutil info \
@@ -209,6 +210,14 @@ if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
     sudo chmod u+s out/docker-machine-driver-hyperkit || true
   fi
 fi
+
+vboxprocs=$(pgrep VBox || true)
+if [[ "${vboxprocs}" != "" ]]; then
+  echo "error: killing left over virtualbox processes ..."
+  ps -f -p ${vboxprocs} || true
+  sudo -E kill ${vboxprocs} || true
+fi
+
 
 kprocs=$(pgrep kubectl || true)
 if [[ "${kprocs}" != "" ]]; then
