@@ -24,7 +24,7 @@ import (
 
 func testConfig(t *testing.T) {
 	t.Parallel()
-	p := profileName(t)
+	p := profileName(t) + "config"
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	tests := []struct {
