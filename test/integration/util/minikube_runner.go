@@ -124,7 +124,7 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ..
 	return stdout, stderr
 }
 
-// RunCommandRetriable Error  executes a command, returns error
+// RunCommandRetriable executes a command, returns error
 // the purpose of this command is to make it retriable and
 // better logging for retrying
 func (m *MinikubeRunner) RunCommandRetriable(cmdStr string, waitForRun ...bool) (stdout string, stderr string, err error) {
