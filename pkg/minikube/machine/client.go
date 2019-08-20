@@ -153,6 +153,11 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 	if h.DriverName == constants.DriverNone {
 		return &command.ExecRunner{}, nil
 	}
+
+	if h.DriverName == constants.DriverKic {
+		return &command.OciRunner{}, nil
+	}
+
 	client, err := sshutil.NewSSHClient(h.Driver)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
