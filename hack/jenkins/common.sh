@@ -129,7 +129,7 @@ done
 # sometimes tests left over zombie procs that won't exit
 # for example:
 # jenkins  20041  0.0  0.0      0     0 ?        Z    Aug19   0:00 [minikube-linux-] <defunct>
-zombie_defuncts=$(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}C')
+zombie_defuncts=$(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}')
 if [[ "${zombie_defuncts}" != "" ]]; then
   echo "Found zombie defunct procs to kill..."
   ps -f -p ${zombie_defuncts} || true
