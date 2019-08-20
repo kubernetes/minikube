@@ -19,6 +19,8 @@ limitations under the License.
 package integration
 
 import (
+	"strings"
+
 	"testing"
 )
 
@@ -39,9 +41,9 @@ func testConfig(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		sshCmdOutput, stderr := mk.RunCommand(t.cmd)
-		if !strings.Contains(sshCmdOutput, t.output) {
-			t.Fatalf("ExpectedStr sshCmdOutput to be: %s. Output was: %s Stderr: %s", expectedStr, sshCmdOutput, stderr)
+		sshCmdOutput, stderr := mk.RunCommand(test.cmd, true)
+		if !strings.Contains(sshCmdOutput, test.output) {
+			t.Fatalf("ExpectedStr sshCmdOutput to be: %s. Output was: %s Stderr: %s", test.output, sshCmdOutput, stderr)
 		}
 	}
 }
