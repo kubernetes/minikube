@@ -336,3 +336,8 @@ func killMountProcess() error {
 	}
 	return nil
 }
+
+func init() {
+	deleteCmd.Flags().BoolVar(&deleteAll, "all", false, "Set flag to delete all profiles")
+	RootCmd.AddCommand(deleteCmd)
+}
