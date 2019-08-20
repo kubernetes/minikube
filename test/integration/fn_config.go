@@ -1,7 +1,7 @@
 // +build integration
 
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@ import (
 	"testing"
 )
 
-func testMinikubeConfig(t *testing.T) {
+func testConfig(t *testing.T) {
 	t.Parallel()
 	p := profileName(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
