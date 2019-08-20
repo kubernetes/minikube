@@ -36,7 +36,7 @@ var (
 	Translations map[string]interface{}
 )
 
-// T translates the given string to the supplied language.
+// T translates the given string to the preferred language.
 func T(s string) string {
 	if preferredLanguage == defaultLanguage {
 		return s
