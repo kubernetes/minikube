@@ -27,6 +27,7 @@ var DefaultMountDir = homedir.HomeDir()
 
 // SupportedVMDrivers is a list of supported drivers on Linux.
 var SupportedVMDrivers = [...]string{
+	DriverKic,
 	DriverVirtualbox,
 	DriverParallels,
 	DriverVmwareFusion,
