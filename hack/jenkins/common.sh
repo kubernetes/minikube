@@ -132,8 +132,8 @@ done
 zombie_defuncts=$(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}C')
 if [[ "${zombie_defuncts}" != "" ]]; then
   echo "Found zombie defunct procs to kill..."
-  ps -f -p ${kprocs} || true
-  sudo -E kill ${kprocs} || true
+  ps -f -p ${zombie_defuncts} || true
+  sudo -E kill ${zombie_defuncts} || true
 fi
 
 
