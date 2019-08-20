@@ -30,4 +30,5 @@ var SupportedVMDrivers = [...]string{
 	DriverKvm2,
 	DriverVmware,
 	DriverNone,
+	DriverKic,
 }

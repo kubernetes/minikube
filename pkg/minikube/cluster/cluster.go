@@ -144,7 +144,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 
 // localDriver returns whether or not the driver should be considered local
 func localDriver(name string) bool {
-	if name == constants.DriverNone || name == constants.DriverMock {
+	if name == constants.DriverNone || name == constants.DriverMock || name == constants.DriverKic {
 		return true
 	}
 	return false
