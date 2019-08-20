@@ -31,11 +31,11 @@ func testConfig(t *testing.T) {
 		cmd    string
 		output string
 	}{
-		{"config get memory", "Error: specified key could not be found in config"},
-		{"config set memory 4016", "! These changes will take effect upon a minikube delete and then a minikube start"},
-		{"config get memory", "4016"},
-		{"config unset memory", ""},
-		{"config get memory", "Error: specified key could not be found in config"},
+		{"config get cpus", "Error: specified key could not be found in config"},
+		{"config set cpus 2", "! These changes will take effect upon a minikube delete and then a minikube start"},
+		{"config get cpus", "2"},
+		{"config unset cpus", ""},
+		{"config get cpus", "Error: specified key could not be found in config"},
 	}
 
 	for _, test := range tests {
