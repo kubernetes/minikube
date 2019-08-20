@@ -100,7 +100,7 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd, waitForRun ...bool) (string, stri
 
 // RunCommand executes a command, optionally checking for error and by default waits for run to finish
 func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ...bool) (string, string) {
-	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
+	profileArg := fmt.Sprintf(" -p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -127,13 +127,13 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ..
 // RunCommandRetriable executes a command, returns error
 // the purpose of this command is to make it retriable by returning error
 func (m *MinikubeRunner) RunCommandRetriable(cmdStr string, waitForRun ...bool) (stdout string, stderr string, err error) {
-	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
+	profileArg := fmt.Sprintf(" -p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 
 	cmd := exec.Command(path, cmdArgs...)
-	Logf("Run: %s", cmd.Args)
+	Logf("RunCommandRetriable: %s", cmd.Args)
 	stdout, stderr, err = m.teeRun(cmd, waitForRun...)
 	if err != nil {
 		if exitError, ok := err.(*exec.ExitError); ok {
@@ -147,13 +147,13 @@ func (m *MinikubeRunner) RunCommandRetriable(cmdStr string, waitForRun ...bool) 
 
 // RunWithContext calls the minikube command with a context, useful for timeouts.
 func (m *MinikubeRunner) RunWithContext(ctx context.Context, cmdStr string, wait ...bool) (string, string, error) {
-	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
+	profileArg := fmt.Sprintf(" -p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 
 	cmd := exec.CommandContext(ctx, path, cmdArgs...)
-	Logf("Run: %s", cmd.Args)
+	Logf("RunWithContext: %s", cmd.Args)
 	return m.teeRun(cmd, wait...)
 }
 
