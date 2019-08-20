@@ -267,7 +267,10 @@ export KUBECONFIG="${TEST_HOME}/kubeconfig"
 # Used by TestContainerd for Gvisor Test.
 # TODO: move this to integration test setup.
 chmod +x ./testdata/gvisor-addon
-docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile ./testdata
+# skipping gvisor setup on mac because ofg https://github.com/kubernetes/minikube/issues/5137
+# if [ "$(uname)" != "Darwin" ]; then
+cd testdata && docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f gvisor-addon-Dockerfile 
+# fi
 
 
 # Display the default image URL
