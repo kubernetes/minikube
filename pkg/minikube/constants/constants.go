@@ -147,6 +147,10 @@ const (
 	MinimumDiskSize = "2000mb"
 	// DefaultVMDriver is the default virtual machine driver name
 	DefaultVMDriver = DriverVirtualbox
+
+	// DefaultOciClient is the default OciClient to be used (docker or podman)
+	DefaultOciClient = "docker"
+
 	// DefaultStatusFormat is the default format of a host
 	DefaultStatusFormat = `host: {{.Host}}
 kubelet: {{.Kubelet}}
