@@ -18,7 +18,6 @@ package kic
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -46,7 +45,6 @@ func createKicHost(config cfg.MachineConfig) interface{} {
 		MachineName:      cfg.GetMachineName(),
 		StorePath:        constants.GetMinipath(),
 		ContainerRuntime: config.ContainerRuntime,
-		OciClient:        constants.DefaultOCIClient,
+		OciClient:        constants.DefaultOciClient,
 	})
 }
-

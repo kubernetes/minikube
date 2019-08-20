@@ -62,6 +62,9 @@ func ArchTag(hasTag bool) string {
 // DriverMock is a mock driver.
 const DriverMock = "mock-driver"
 
+// DriverKic is the kic driver.
+const DriverKic = "kic"
+
 // DriverNone is the none driver.
 const DriverNone = "none"
 

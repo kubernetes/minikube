@@ -32,13 +32,6 @@ import (
 
 const driverName = constants.DriverKic
 
-// cleanupPaths are paths to be removed by cleanup, and are used by both kubeadm and minikube.
-var cleanupPaths = []string{
-	"/data/minikube",
-	"/etc/kubernetes/manifests",
-	"/var/lib/minikube",
-}
-
 // Driver is a driver designed to run kubeadm inside a container
 type Driver struct {
 	*drivers.BaseDriver
