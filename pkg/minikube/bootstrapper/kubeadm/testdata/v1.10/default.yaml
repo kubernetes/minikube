@@ -1,0 +1,16 @@
+apiVersion: kubeadm.k8s.io/v1alpha1
+kind: MasterConfiguration
+noTaintMaster: true
+api:
+  advertiseAddress: 1.1.1.1
+  bindPort: 8443
+  controlPlaneEndpoint: localhost
+kubernetesVersion: v1.10.0
+certificatesDir: /var/lib/minikube/certs/
+networking:
+  serviceSubnet: 10.96.0.0/12
+etcd:
+  dataDir: /data/minikube
+nodeName: mk
+apiServerExtraArgs:
+  admission-control: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
