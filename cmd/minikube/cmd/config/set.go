@@ -56,7 +56,7 @@ func Set(name string, value string) error {
 	}
 
 	// Set the value
-	config, err := pkgConfig.ReadConfig()
+	config, err := pkgConfig.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return err
 	}
