@@ -30,8 +30,8 @@ func TestISO(t *testing.T) {
 		t.Parallel()
 	}
 	mk := NewMinikubeRunner(t, p, "--wait=false")
-	mk.RunCommand("delete", false) // will error if not exist, but ignored.
-	stdout, stderr := mk.MustStart()
+	mk.MustRun("delete")
+		stdout, stderr := mk.MustStart()
 	if err != nil {
 		t.Fatalf("failed to start minikube (for profile %s) %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
