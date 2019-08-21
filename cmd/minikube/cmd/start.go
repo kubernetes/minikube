@@ -820,13 +820,11 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	if nvs.LT(ovs) {
 		nv = version.VersionPrefix + ovs.String()
-		exit.WithCodeT(exit.Config, `Error: You have selected version {{.new}}, but your existing "minikube" cluster is
-running version {{.old}}. Non-destructive downgrades are not supported, but you
-can proceed by selecting one of these options:
+		exit.WithCodeT(exit.Config, `Error: You have selected version {{.new}}, but your existing cluster for profile "{{.profile}}" is running version {{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
 
-* Run minikube delete -p minikube to delete the existing cluster
-* Run minikube start -p <new name> to start a new cluster with a different name
-* Run minikube start --kubernetes-version={{.new}} or newer to continue using this cluster.`, out.V{"new": nvs, "old": ovs})
+* Run "minikube start [-p {{.profile}}] --kubernetes-version={{.old}}" or newer to continue using this cluster
+* Run "minikube start -p <new name> --kubernetes-version={{.new}}" to start a new cluster with a different name
+* Run "minikube delete [-p {{.profile}}]" to delete the existing cluster first, and "minikube start [-p {{.profile}}] --kubernetes-version={{.new}}" to start a new cluster under the same name`, out.V{"new": nvs, "old": ovs, "profile": cfg.GetMachineName()})
 
 	}
 	if nvs.GT(ovs) {
