@@ -83,19 +83,14 @@ func TestVersionUpgrade(t *testing.T) {
 	mkRelease.StartArgs = strings.Replace(mkRelease.StartArgs, "--wait-timeout=13m", "", 1)
 	mkRelease.BinaryPath = fname
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
-	stdout, stderr, err := mkRelease.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
-	if err != nil {
-		t.Fatalf("minikube start (%s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
-	}
+	mkRelease.StartWithFail(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 
 	mkRelease.CheckStatus(state.Running.String())
 	mkRelease.RunCommand("stop", true)
 	mkRelease.CheckStatus(state.Stopped.String())
 
 	// Trim the leading "v" prefix to assert that we handle it properly.
-	stdout, stderr, err = mkHead.Start(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
-	if err != nil {
-		t.Fatalf("TestVersionUpgrade mkCurrent.Start start failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
-	}
+	mkHead.StartWithFail(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
+
 	mkHead.CheckStatus(state.Running.String())
 }
