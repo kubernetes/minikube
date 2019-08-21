@@ -33,8 +33,10 @@ import (
 // WriteFile decorates ioutil.WriteFile with a file lock and retry
 func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	dir, name := filepath.Split(filename)
+	// Make the mutex name the file name and its parent directory
 	profile := strings.ReplaceAll(filepath.Base(dir), ".", "-")
 	mutexName := fmt.Sprintf("%s-%s", profile, strings.ReplaceAll(name, ".", "-"))
+	// There's an arbitrary hard max on mutex name at 40.
 	if len(mutexName) > 40 {
 		mutexName = mutexName[:40]
 	}
