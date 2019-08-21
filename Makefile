@@ -131,7 +131,12 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
-	cp out/minikube-windows-amd64 out/minikube-windows-amd64.exe
+	cp $< $@
+
+.PHONY: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe
+minikube-linux-amd64: out/minikube-linux-amd64
+minikube-darwin-amd64: out/minikube-darwin-amd64
+minikube-windows-amd64.exe: out/minikube-windows-amd64.exe
 
 out/minikube-%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go  $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -140,12 +145,16 @@ else
 	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
-.PHONY: e2e-%-$(GOARCH)
-e2e-%-$(GOARCH): out/minikube-%-$(GOARCH)
-	GOOS=$* GOARCH=$(GOARCH) go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o out/$@
+.PHONY: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
+e2e-linux-amd64: out/e2e-linux-amd64
+e2e-darwin-amd64: out/e2e-darwin-amd64
+e2e-windows-amd64.exe: out/e2e-windows-amd64.exe
 
-e2e-windows-amd64.exe: e2e-windows-amd64
-	cp $(BUILD_DIR)/e2e-windows-amd64 $(BUILD_DIR)/e2e-windows-amd64.exe
+out/e2e-%: out/minikube-%
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
+
+out/e2e-windows-amd64.exe: out/e2e-windows-amd64
+	cp $< $@
 
 minikube_iso: # old target kept for making tests happy
 	echo $(ISO_VERSION) > deploy/iso/minikube-iso/board/coreos/minikube/rootfs-overlay/etc/VERSION
@@ -195,7 +204,13 @@ test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 all: cross drivers e2e-cross out/gvisor-addon
 
 .PHONY: drivers
-drivers: out/docker-machine-driver-hyperkit out/docker-machine-driver-kvm2
+drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2
+
+.PHONY: docker-machine-driver-hyperkit
+docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit
+
+.PHONY: docker-machine-driver-kvm2
+docker-machine-driver-kvm2: out/docker-machine-driver-kvm2
 
 .PHONY: integration
 integration: out/minikube
@@ -223,7 +238,7 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/assets/assets.go -pkg assets deploy/addons/...
+	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
 	-gofmt -s -w $@
 endif
 
@@ -232,30 +247,30 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o pkg/minikube/translate/translations.go -pkg translate translations/...
+	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
 	-gofmt -s -w $@
 endif
 	@#golint: Json should be JSON (compat sed)
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
 .PHONY: cross
-cross: out/minikube-linux-$(GOARCH) out/minikube-darwin-amd64 out/minikube-windows-amd64.exe
+cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe
 
 .PHONY: windows
-windows: out/minikube-windows-amd64.exe
+windows: minikube-windows-amd64.exe
 
 .PHONY: darwin
-darwin: out/minikube-darwin-amd64
+darwin: minikube-darwin-amd64
 
 .PHONY: linux
-linux: out/minikube-linux-$(GOARCH)
+linux: minikube-linux-amd64
 
 .PHONY: e2e-cross
 e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
 
 .PHONY: checksum
 checksum:
-	for f in out/minikube-linux-$(GOARCH) out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso \
+	for f in out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso \
 		 out/docker-machine-driver-kvm2 out/docker-machine-driver-hyperkit; do \
 		if [ -f "$${f}" ]; then \
 			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
@@ -383,7 +398,7 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 else
 	GOOS=darwin CGO_ENABLED=1 go build \
 		-ldflags="$(HYPERKIT_LDFLAGS)"   \
-		-o $(BUILD_DIR)/docker-machine-driver-hyperkit k8s.io/minikube/cmd/drivers/hyperkit
+		-o $@ k8s.io/minikube/cmd/drivers/hyperkit
 endif
 
 hyperkit_in_docker:
@@ -392,6 +407,7 @@ hyperkit_in_docker:
 
 .PHONY: install-hyperkit-driver
 install-hyperkit-driver: out/docker-machine-driver-hyperkit
+	mkdir -p $(HOME)/bin
 	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
 	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
 	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
@@ -412,7 +428,7 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo "$(@) successfully built"
 
 out/storage-provisioner:
-	GOOS=linux go build -o $(BUILD_DIR)/storage-provisioner -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+	GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner
@@ -463,7 +479,7 @@ else
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
 		-tags "libvirt.1.3.1 without_lxc" \
-		-o $(BUILD_DIR)/docker-machine-driver-kvm2 \
+		-o $@ \
 		k8s.io/minikube/cmd/drivers/kvm
 endif
 	chmod +X $@
@@ -498,6 +514,7 @@ kvm_in_docker:
 
 .PHONY: install-kvm-driver
 install-kvm-driver: out/docker-machine-driver-kvm2
+	mkdir -p $(GOBIN)
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
 .PHONY: release-kvm-driver
