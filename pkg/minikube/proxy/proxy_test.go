@@ -34,7 +34,7 @@ func TestIsValidEnv(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.env, func(t *testing.T) {
 			got := isValidEnv(tc.env)
-			if got != tc.want {
+			if got == tc.want { // Making it fail just to see travisbuddy work
 				t.Errorf("isValidEnv(\"%v\") got %v; want %v", tc.env, got, tc.want)
 			}
 
