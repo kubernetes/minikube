@@ -46,7 +46,7 @@ func TestDownloadOnly(t *testing.T) {
 	}
 	t.Run("group", func(t *testing.T) {
 		t.Run("CacheOldestNewest", func(t *testing.T) {
-			if !isTestNoneDriver(t) { // don't cache images
+			if isTestNoneDriver(t) { // don't cache images
 				t.Skip("skipping test for none driver as it doesn't cache images")
 			}
 
