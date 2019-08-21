@@ -102,6 +102,7 @@ const (
 	dnsProxy              = "dns-proxy"
 	hostDNSResolver       = "host-dns-resolver"
 	waitUntilHealthy      = "wait"
+	waitTimeout           = "wait-timeout"
 )
 
 var (
@@ -111,7 +112,7 @@ var (
 	insecureRegistry []string
 	apiServerNames   []string
 	apiServerIPs     []net.IP
-	extraOptions     pkgutil.ExtraOptionSlice
+	extraOptions     cfg.ExtraOptionSlice
 )
 
 func init() {
@@ -148,6 +149,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
 	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
+	startCmd.Flags().Duration(waitTimeout, 3*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -321,7 +323,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// special ops for none driver, like change minikube directory.
 	prepareNone(viper.GetString(vmDriver))
 	if viper.GetBool(waitUntilHealthy) {
-		if err := bs.WaitCluster(config.KubernetesConfig); err != nil {
+		if err := bs.WaitCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
 			exit.WithError("Wait failed", err)
 		}
 	}
@@ -538,8 +540,8 @@ func validateConfig() {
 
 	// check that kubeadm extra args contain only whitelisted parameters
 	for param := range extraOptions.AsMap().Get(kubeadm.Kubeadm) {
-		if !pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
-			!pkgutil.ContainsString(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], param) {
+		if !cfg.ContainsParam(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
+			!cfg.ContainsParam(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], param) {
 			exit.UsageT("Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config", out.V{"parameter_name": param})
 		}
 	}
