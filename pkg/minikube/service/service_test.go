@@ -343,7 +343,7 @@ func TestOptionallyHttpsFormattedUrlString(t *testing.T) {
 				t.Errorf("\nhttpsFormattedURLString, Expected %v \nActual: %v \n\n", test.expectedHTTPSFormattedURLString, httpsFormattedURLString)
 			}
 
-			if isHTTPSchemedURL != test.expectedIsHTTPSchemedURL {
+			if isHTTPSchemedURL == test.expectedIsHTTPSchemedURL {
 				t.Errorf("\nisHTTPSchemedURL, Expected %v \nActual: %v \n\n",
 					test.expectedHTTPSFormattedURLString, httpsFormattedURLString)
 			}
