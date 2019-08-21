@@ -28,7 +28,7 @@ func testClusterSSH(t *testing.T) {
 	p := profileName(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	expectedStr := "hello"
-	sshCmdOutput, stderr := mk.RunCommand("ssh echo "+expectedStr, true)
+	sshCmdOutput, stderr := mk.MustRun("ssh echo " + expectedStr)
 	if !strings.Contains(sshCmdOutput, expectedStr) {
 		t.Fatalf("ExpectedStr sshCmdOutput to be: %s. Output was: %s Stderr: %s", expectedStr, sshCmdOutput, stderr)
 	}

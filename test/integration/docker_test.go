@@ -46,7 +46,7 @@ func TestDocker(t *testing.T) {
 		t.Logf("pre-delete failed (probably ok): %v", err)
 	}
 
-	mk.StartWithFail("--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", " --docker-opt=icc=true")
+	mk.MustStart("--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", " --docker-opt=icc=true")
 
 	mk.CheckStatus(state.Running.String())
 

@@ -23,11 +23,9 @@ import (
 	"net"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 func TestStartStop(t *testing.T) {
@@ -86,38 +84,25 @@ func TestStartStop(t *testing.T) {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
 
-				mk.RunCommand("config set WantReportErrorPrompt false", true)
-				mk.StartWithFail(tc.args...)
+				mk.MustRun("config set WantReportErrorPrompt false")
+				mk.MustStart(tc.args...)
 
 				mk.CheckStatus(state.Running.String())
 
-				ip, stderr := mk.RunCommand("ip", true)
+				ip, stderr := mk.MustRun("ip")
 				ip = strings.TrimRight(ip, "\n")
 				if net.ParseIP(ip) == nil {
 					t.Fatalf("IP command returned an invalid address: %s \n %s", ip, stderr)
 				}
 
-				stop := func() error {
-					_, _, err := mk.RunCommandRetriable("stop", true)
-					if err != nil {
-						t.Errorf("minikube stop error %v ( will retry up to 3 times) ", err)
-					}
-					err = mk.CheckStatusNoFail(state.Stopped.String())
-					if err != nil {
-						t.Errorf("expected status to be stoped but got error %v ", err)
-					}
-					return err
-				}
-
-				err := retry.Expo(stop, 10*time.Second, 5*time.Minute, 3) // max retry 3
+				mk.MustRun("stop")
+				err := mk.CheckStatusNoFail(state.Stopped.String())
 				if err != nil {
-					t.Errorf("expected status to be stoped but got error: %v ", err)
+					t.Errorf("expected status to be %s but got error %v ", state.Stopped.String(), err)
 				}
-
-				mk.CheckStatus(state.Stopped.String())
-				mk.StartWithFail(tc.args...)
+				mk.MustStart(tc.args...)
 				mk.CheckStatus(state.Running.String())
-				mk.RunCommand("delete", true)
+				mk.MustRun("delete")
 				mk.CheckStatus(state.None.String())
 			})
 		}

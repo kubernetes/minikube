@@ -83,14 +83,14 @@ func TestVersionUpgrade(t *testing.T) {
 	mkRelease.StartArgs = strings.Replace(mkRelease.StartArgs, "--wait-timeout=13m", "", 1)
 	mkRelease.BinaryPath = fname
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
-	mkRelease.StartWithFail(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
+	mkRelease.MustStart(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 
 	mkRelease.CheckStatus(state.Running.String())
-	mkRelease.RunCommand("stop", true)
+	mkRelease.MustRun("stop")
 	mkRelease.CheckStatus(state.Stopped.String())
 
 	// Trim the leading "v" prefix to assert that we handle it properly.
-	mkHead.StartWithFail(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
+	mkHead.MustStart(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
 
 	mkHead.CheckStatus(state.Running.String())
 }

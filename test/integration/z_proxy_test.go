@@ -112,7 +112,7 @@ func TestProxy(t *testing.T) {
 func testProxyWarning(t *testing.T) {
 	p := profileName(t) // profile name
 	mk := NewMinikubeRunner(t, p)
-	stdout, stderr := mk.StartWithFail("--wait=false")
+	stdout, stderr := mk.MustStart("--wait=false")
 
 	msg := "Found network options:"
 	if !strings.Contains(stdout, msg) {

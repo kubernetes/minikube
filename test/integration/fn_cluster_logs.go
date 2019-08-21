@@ -27,13 +27,13 @@ func testClusterLogs(t *testing.T) {
 	t.Parallel()
 	p := profileName(t)
 	mk := NewMinikubeRunner(t, p)
-	logsCmdOutput := mk.GetLogs()
+	logsCmdStdout, _ := mk.GetLogs()
 
 	// check for # of lines or check for strings
 	logWords := []string{"minikube", ".go"}
 	for _, logWord := range logWords {
-		if !strings.Contains(logsCmdOutput, logWord) {
-			t.Fatalf("Error in logsCmdOutput, expected to find: %s. Output: %s", logWord, logsCmdOutput)
+		if !strings.Contains(logsCmdStdout, logWord) {
+			t.Fatalf("Error in logsCmdOutput, expected to find: %s. Output: %s", logWord, logsCmdStdout)
 		}
 	}
 }
