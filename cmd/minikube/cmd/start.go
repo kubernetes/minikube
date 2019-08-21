@@ -826,7 +826,7 @@ can proceed by selecting one of these options:
 
 * Run minikube delete -p minikube to delete the existing cluster
 * Run minikube start -p <new name> to start a new cluster with a different name
-* Run minikube start --kubernetes-version=v1.15.2 or newer to continue using this cluster.`, out.V{"new": nvs, "old": ovs})
+* Run minikube start --kubernetes-version={{.new}} or newer to continue using this cluster.`, out.V{"new": nvs, "old": ovs})
 
 	}
 	if nvs.GT(ovs) {
