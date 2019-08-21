@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -48,20 +49,23 @@ func TestDownloadOnly(t *testing.T) {
 		minHome := constants.GetMinipath()
 		for _, v := range []string{constants.OldestKubernetesVersion, constants.NewestKubernetesVersion} {
 			mk.StartWithFail("--download-only", fmt.Sprintf("--kubernetes-version=%s", v))
-			// checking if cached images are downloaded to
+			// checking if cached images are downloaded for example (kube-apiserver_v1.15.2, kube-scheduler_v1.15.2, ...)
 			_, imgs := constants.GetKubeadmCachedImages("", v)
 			for _, img := range imgs {
-				_, err := os.Stat(filepath.Join(minHome, fmt.Sprintf("images/%s", img)))
+				img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
+				fp := filepath.Join(minHome, "cache", "images", img)
+				_, err := os.Stat(fp)
 				if err != nil {
-					t.Errorf("error expected download-only to cachne image %q but got error %v", img, err)
+					t.Errorf("expected image file exist at %q but got error: %v", fp, err)
 				}
 			}
 
 			// checking binaries downloaded (kubelet,kubeadm)
 			for _, bin := range constants.GetKubeadmCachedBinaries() {
-				_, err := os.Stat(filepath.Join(minHome, fmt.Sprintf("cache/%s/%s", v, bin)))
+				fp := filepath.Join(minHome, "cache", v, bin)
+				_, err := os.Stat(fp)
 				if err != nil {
-					t.Errorf("error expected download-only to cachne binary %q but got error %v", bin, err)
+					t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
 				}
 			}
 		}

@@ -239,8 +239,9 @@ func (m *MinikubeRunner) start(opts ...string) (stdout string, stderr string, er
 // StartWithFail starts the cluster and fail the test if error
 func (m *MinikubeRunner) StartWithFail(opts ...string) (stdout string, stderr string) {
 	stdout, stderr, err := m.start(opts...)
+	// the reason for this formatting is, the logs are very big but useful and also in parallel testing logs are harder to identify
 	if err != nil {
-		m.T.Fatalf("%s Failed to start minikube (for profile %s) error: %v \n\twith opts %v, \n\t Global Args: %s \n\t Driver Args: %s \n\t STDOUT: \n\t\t %s \n\t STDERR: \n\t\t %s", m.T.Name(), m.Profile, err, strings.Join(opts, " "), m.GlobalArgs, m.StartArgs, stdout, stderr)
+		m.T.Fatalf("%s Failed to start minikube With error: %v \n\t Start log block ---> \n\t With Profile: %s \n\t With Args: %v \n\t With Global Args: %s  \n\t With Driver Args: %s \n\t With STDOUT: \n \t %s \n\t With STDERR: \n \t %s \n\t <--- End of log block", m.T.Name(), err, m.Profile, strings.Join(opts, " "), m.GlobalArgs, m.StartArgs, stdout, stderr)
 	}
 	return stdout, stderr
 }
