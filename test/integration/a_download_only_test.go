@@ -43,41 +43,28 @@ func TestDownloadOnly(t *testing.T) {
 	if !isTestNoneDriver(t) { // none driver doesnt need to be deleted
 		defer mk.TearDown(t)
 	}
-	minHome := constants.GetMinipath()
 
-	t.Run("Oldest", func(t *testing.T) {
-		mk.StartWithFail("--download-only", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
-	})
+	t.Run("OldestNewest", func(t *testing.T) {
+		minHome := constants.GetMinipath()
+		for _, v := range []string{constants.OldestKubernetesVersion, constants.NewestKubernetesVersion} {
+			mk.StartWithFail("--download-only", fmt.Sprintf("--kubernetes-version=%s", v))
+			// checking if cached images are downloaded to
+			_, imgs := constants.GetKubeadmCachedImages("", v)
+			for _, img := range imgs {
+				_, err := os.Stat(filepath.Join(minHome, fmt.Sprintf("images/%s", img)))
+				if err != nil {
+					t.Errorf("error expected download-only to cachne image %q but got error %v", img, err)
+				}
+			}
 
-	t.Run("Newest", func(t *testing.T) {
-		v := constants.NewestKubernetesVersion
-		mk.StartWithFail("--download-only", fmt.Sprintf("--kubernetes-version=%s", v))
-
-		// checking binaries downloaded
-		_, imgs := constants.GetKubeadmCachedImages("", v)
-		for _, img := range imgs {
-			_, err := os.Stat(filepath.Join(minHome, fmt.Sprintf("images/%s", img)))
-			if err != nil {
-				t.Errorf("error expected download-only to cachne image %q but got error %v", img, err)
+			// checking binaries downloaded (kubelet,kubeadm)
+			for _, bin := range constants.GetKubeadmCachedBinaries() {
+				_, err := os.Stat(filepath.Join(minHome, fmt.Sprintf("cache/%s/%s", v, bin)))
+				if err != nil {
+					t.Errorf("error expected download-only to cachne binary %q but got error %v", bin, err)
+				}
 			}
 		}
-
-		// checking binaries downloaded (kubelet,kubeadm)
-		for _, bin := range constants.GetKubeadmCachedBinaries() {
-			_, err := os.Stat(filepath.Join(minHome, fmt.Sprintf("cache/%s/%s", v, bin)))
-			if err != nil {
-				t.Errorf("error expected download-only to cachne binary %q but got error %v", bin, err)
-			}
-		}
-
-		// checking binaries downloaded
-		for _, bin := range []string{"kublet,kbueadm"} {
-			_, err := os.Stat(filepath.Join(minHome, fmt.Sprintf("cache/%s/%s", v, bin)))
-			if err != nil {
-				t.Errorf("error expected download-only to cachne binary %q but got error %v", bin, err)
-			}
-		}
-
 	})
 
 	// this downloads the latest published binary from where we publish the minikube binary
