@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -32,16 +33,8 @@ import (
 
 // WriteFile decorates ioutil.WriteFile with a file lock and retry
 func WriteFile(filename string, data []byte, perm os.FileMode) error {
-	dir, name := filepath.Split(filename)
-	// Make the mutex name the file name and its parent directory
-	profile := strings.ReplaceAll(filepath.Base(dir), ".", "-")
-	mutexName := fmt.Sprintf("%s-%s", profile, strings.ReplaceAll(name, ".", "-"))
-	// There's an arbitrary hard max on mutex name at 40.
-	if len(mutexName) > 40 {
-		mutexName = mutexName[:40]
-	}
 	spec := mutex.Spec{
-		Name:  strings.TrimPrefix(mutexName, "-"),
+		Name:  getMutexName(filename),
 		Clock: clock.WallClock,
 		Delay: 13 * time.Second,
 	}
@@ -59,4 +52,31 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	}
 
 	return err
+}
+
+func getMutexName(filename string) string {
+	// Make the mutex name the file name and its parent directory
+	dir, name := filepath.Split(filename)
+
+	// Replace underscores and periods with dashes, the only valid punctuation for mutex name
+	name = strings.ReplaceAll(name, ".", "-")
+	name = strings.ReplaceAll(name, "_", "-")
+
+	profile := strings.ReplaceAll(filepath.Base(dir), ".", "-")
+	profile = strings.ReplaceAll(profile, "_", "-")
+	mutexName := fmt.Sprintf("%s-%s", profile, strings.ReplaceAll(name, ".", "-"))
+
+	// Make sure name doesn't start with a dash
+	mutexName = strings.TrimPrefix(mutexName, "-")
+
+	// Check if name starts with an int and prepend a string instead
+	if _, err := strconv.Atoi(mutexName[:1]); err == nil {
+		mutexName = "m" + mutexName
+	}
+	// There's an arbitrary hard max on mutex name at 40.
+	if len(mutexName) > 40 {
+		mutexName = mutexName[:40]
+	}
+
+	return mutexName
 }
