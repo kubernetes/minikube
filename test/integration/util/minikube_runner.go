@@ -100,7 +100,7 @@ func (m *MinikubeRunner) teeRun(cmd *exec.Cmd, waitForRun ...bool) (string, stri
 
 // RunCommand executes a command, optionally checking for error and by default waits for run to finish
 func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ...bool) (string, string) {
-	profileArg := fmt.Sprintf(" -p=%s ", m.Profile)
+	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -111,9 +111,9 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ..
 	if err != nil {
 		errMsg := ""
 		if exitError, ok := err.(*exec.ExitError); ok {
-			errMsg = fmt.Sprintf("Error running command: %s %s. Output: %s Stderr: %s", cmdStr, exitError.Stderr, stdout, stderr)
+			errMsg = fmt.Sprintf("Error RunCommand: %q : %q. Output: %q Stderr: %q", cmdStr, exitError.Stderr, stdout, stderr)
 		} else {
-			errMsg = fmt.Sprintf("Error running command: %s %s. Output: %s", cmdStr, stderr, stdout)
+			errMsg = fmt.Sprintf("Error RunCommand: %q : %q. Output: %q", cmdStr, stderr, stdout)
 		}
 		if failError {
 			m.T.Fatalf(errMsg)
@@ -127,7 +127,7 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ..
 // RunCommandRetriable executes a command, returns error
 // the purpose of this command is to make it retriable by returning error
 func (m *MinikubeRunner) RunCommandRetriable(cmdStr string, waitForRun ...bool) (stdout string, stderr string, err error) {
-	profileArg := fmt.Sprintf(" -p=%s ", m.Profile)
+	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
@@ -147,7 +147,7 @@ func (m *MinikubeRunner) RunCommandRetriable(cmdStr string, waitForRun ...bool) 
 
 // RunWithContext calls the minikube command with a context, useful for timeouts.
 func (m *MinikubeRunner) RunWithContext(ctx context.Context, cmdStr string, wait ...bool) (string, string, error) {
-	profileArg := fmt.Sprintf(" -p=%s ", m.Profile)
+	profileArg := fmt.Sprintf("-p=%s ", m.Profile)
 	cmdStr = profileArg + cmdStr
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
