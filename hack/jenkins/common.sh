@@ -71,10 +71,11 @@ echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" out
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
+
+gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 
 
 # Set the executable bit on the e2e binary and out binary
@@ -125,6 +126,18 @@ for stale_dir in ${TEST_ROOT}/*; do
   rmdir "${stale_dir}" || true
 done
 
+
+# sometimes tests left over zombie procs that won't exit
+# for example:
+# jenkins  20041  0.0  0.0      0     0 ?        Z    Aug19   0:00 [minikube-linux-] <defunct>
+zombie_defuncts=$(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}')
+if [[ "${zombie_defuncts}" != "" ]]; then
+  echo "Found zombie defunct procs to kill..."
+  ps -f -p ${zombie_defuncts} || true
+  sudo -E kill ${zombie_defuncts} || true
+fi
+
+
 if type -P virsh; then
   virsh -c qemu:///system list --all
   virsh -c qemu:///system list --all \
@@ -165,6 +178,7 @@ if type -P vboxmanage; then
   vboxmanage list vms || true
 fi
 
+
 if type -P hdiutil; then
   hdiutil info | grep -E "/dev/disk[1-9][^s]" || true
   hdiutil info \
@@ -197,6 +211,14 @@ if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
     sudo chmod u+s out/docker-machine-driver-hyperkit || true
   fi
 fi
+
+vboxprocs=$(pgrep VBox || true)
+if [[ "${vboxprocs}" != "" ]]; then
+  echo "error: killing left over virtualbox processes ..."
+  ps -f -p ${vboxprocs} || true
+  sudo -E kill ${vboxprocs} || true
+fi
+
 
 kprocs=$(pgrep kubectl || true)
 if [[ "${kprocs}" != "" ]]; then
@@ -241,6 +263,16 @@ export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export MINIKUBE_WANTREPORTERRORPROMPT=False
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
+# Build the gvisor image. This will be copied into minikube and loaded by ctr.
+# Used by TestContainerd for Gvisor Test.
+# TODO: move this to integration test setup.
+chmod +x ./testdata/gvisor-addon
+# skipping gvisor mac because ofg https://github.com/kubernetes/minikube/issues/5137
+if [ "$(uname)" != "Darwin" ]; then
+  docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile ./testdata
+fi
+
+
 # Display the default image URL
 echo ""
 echo ">> ISO URL"
@@ -273,9 +305,6 @@ ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
 rmdir "${TEST_HOME}"
 echo ">> ${TEST_HOME} completed at $(date)"
-
-# Build the gvisor image. This will be copied into minikube and loaded by ctr.
-docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile out
 
 if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
   readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"

@@ -55,7 +55,7 @@ minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/
 * [**#minikube on Kubernetes Slack**](https://kubernetes.slack.com) - Live chat with minikube developers!
 * [minikube-users mailing list](https://groups.google.com/forum/#!forum/minikube-users)
 * [minikube-dev mailing list](https://groups.google.com/forum/#!forum/minikube-dev)
-* [Bi-weekly office hours, Mondays @ 10am PST](https://tinyurl.com/minikube-oh)
+* [Bi-weekly office hours, Mondays @ 11am PST](https://tinyurl.com/minikube-oh)
 
 * [Contributing](https://minikube.sigs.k8s.io/docs/contributing/)
 * [Development Roadmap](https://minikube.sigs.k8s.io/docs/contributing/roadmap/)

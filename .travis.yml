@@ -5,7 +5,7 @@ env:
   - GOPROXY=https://proxy.golang.org
 matrix:
   include:
-    - go: 1.12.7
+    - go: 1.12.9
     - language: python
       before_install: pip install flake8
       script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics

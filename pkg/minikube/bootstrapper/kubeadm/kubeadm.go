@@ -35,6 +35,8 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -182,13 +184,13 @@ func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string 
 }
 
 // createFlagsFromExtraArgs converts kubeadm extra args into flags to be supplied from the commad linne
-func createFlagsFromExtraArgs(extraOptions util.ExtraOptionSlice) string {
+func createFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 	kubeadmExtraOpts := extraOptions.AsMap().Get(Kubeadm)
 
 	// kubeadm allows only a small set of parameters to be supplied from the command line when the --config param
 	// is specified, here we remove those that are not allowed
 	for opt := range kubeadmExtraOpts {
-		if !util.ContainsString(KubeadmExtraArgsWhitelist[KubeadmCmdParam], opt) {
+		if !config.ContainsParam(KubeadmExtraArgsWhitelist[KubeadmCmdParam], opt) {
 			// kubeadmExtraOpts is a copy so safe to delete
 			delete(kubeadmExtraOpts, opt)
 		}
@@ -198,7 +200,7 @@ func createFlagsFromExtraArgs(extraOptions util.ExtraOptionSlice) string {
 
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -307,13 +309,13 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 }
 
 // WaitCluster blocks until Kubernetes appears to be healthy.
-func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
+func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
 	out.T(out.WaitingPods, "Waiting for:")
-	client, err := util.GetClient()
+	client, err := kapi.Client()
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
 	}
@@ -326,13 +328,12 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 	}
 
 	for _, p := range PodsByLayer {
-		if componentsOnly && p.key != "component" {
+		if componentsOnly && p.key != "component" { // skip component check if network plugin is cni
 			continue
 		}
-
 		out.String(" %s", p.name)
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
-		if err := util.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector, timeout); err != nil {
 			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))
 		}
 	}
@@ -342,7 +343,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig) error {
 
 // RestartCluster restarts the Kubernetes cluster configured by kubeadm
 func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -398,8 +399,9 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 		return fmt.Errorf("apiserver process never appeared")
 	}
 
-	glog.Infof("Waiting for apiserver status ...")
-	return wait.PollImmediate(time.Millisecond*300, time.Minute*1, func() (bool, error) {
+	start := time.Now()
+	glog.Infof("Waiting for apiserver ...")
+	f := func() (bool, error) {
 		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
 		glog.Infof("apiserver status: %s, err: %v", status, err)
 		if err != nil {
@@ -409,7 +411,10 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 			return false, nil
 		}
 		return true, nil
-	})
+	}
+	err = wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, f)
+	glog.Infof("duration metric: took %s to wait for apiserver status ...", time.Since(start))
+	return err
 }
 
 // DeleteCluster removes the components that were started earlier
@@ -425,7 +430,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 // PullImages downloads images that will be used by RestartCluster
 func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -448,7 +453,7 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
 func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, error) {
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -551,7 +556,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 }
 
 // createExtraComponentConfig generates a map of component to extra args for all of the components except kubeadm
-func createExtraComponentConfig(extraOptions util.ExtraOptionSlice, version semver.Version, componentFeatureArgs string) ([]ComponentExtraArgs, error) {
+func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version semver.Version, componentFeatureArgs string) ([]ComponentExtraArgs, error) {
 	extraArgsSlice, err := NewComponentExtraArgs(extraOptions, version, componentFeatureArgs)
 	if err != nil {
 		return nil, err
@@ -571,7 +576,7 @@ func createExtraComponentConfig(extraOptions util.ExtraOptionSlice, version semv
 
 // generateConfig generates the kubeadm.yaml file
 func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, error) {
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}

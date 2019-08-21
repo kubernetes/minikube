@@ -32,6 +32,21 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin
 {{% /tab %}}
 {{% /tabs %}}
 
+### Upgrading minikube
+
+{{% tabs %}}
+{{% tab "Brew" %}}
+
+If the [Brew Package Manager](https://brew.sh/) is installed, use it to download and upgrade minikube:
+
+```shell
+rm /usr/local/bin/minikube
+brew cask reinstall minikube
+```
+
+{{% /tab %}}
+{{% /tabs %}}
+
 ## Hypervisor Setup
 
 {{% tabs %}}

@@ -26,7 +26,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/test/integration/util"
 )
@@ -34,7 +34,7 @@ import (
 func testClusterDNS(t *testing.T) {
 	t.Parallel()
 	p := profileName(t)
-	client, err := pkgutil.GetClient(p)
+	client, err := kapi.Client(p)
 	if err != nil {
 		t.Fatalf("Error getting kubernetes client %v", err)
 	}

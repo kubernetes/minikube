@@ -27,6 +27,8 @@ import (
 	"strings"
 	"syscall"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func TestNone(t *testing.T) {
@@ -76,7 +78,7 @@ func testNoneMinikubeFolderPermissions(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to convert uid to int: %v", err)
 	}
-	info, err := os.Stat(filepath.Join(u.HomeDir, ".minikube"))
+	info, err := os.Stat(constants.GetMinipath())
 	if err != nil {
 		t.Fatalf("Failed to get .minikube dir info, %v", err)
 	}

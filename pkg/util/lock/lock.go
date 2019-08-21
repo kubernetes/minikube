@@ -36,7 +36,7 @@ func WriteFile(filename string, data []byte, perm os.FileMode) (err error) {
 		lockErr := lock.TryLock()
 		if lockErr != nil {
 			glog.Warningf("temporary error : %v", lockErr.Error())
-			return errors.Wrapf(lockErr, "falied to acquire lock for %s > ", filename)
+			return errors.Wrapf(lockErr, "failed to acquire lock for %s > ", filename)
 		}
 		return nil
 	}
