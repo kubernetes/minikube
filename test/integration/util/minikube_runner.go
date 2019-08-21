@@ -244,7 +244,7 @@ func (m *MinikubeRunner) TearDown(t *testing.T) {
 	profileArg := fmt.Sprintf("-p=%s", m.Profile)
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, profileArg, "delete")
-	err := cmd.Start()
+	err := cmd.Start() // don't wait for it to finish
 	if err != nil {
 		t.Errorf("error tearing down minikube %s : %v", profileArg, err)
 	}

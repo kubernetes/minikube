@@ -45,5 +45,5 @@ Then minikube is for you.
 
 ## Where should I go next?
 
-* [Getting Started](/start/): Get started with minikube
-* [Examples](/examples/): Check out some minikube examples!
+* [Getting Started](/docs/start/): Get started with minikube
+* [Examples](/docs/examples/): Check out some minikube examples!

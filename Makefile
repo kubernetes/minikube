@@ -23,7 +23,7 @@ VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 RPM_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.12.8
+GO_VERSION ?= 1.12.9
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2018.05.3
@@ -101,7 +101,7 @@ SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
 # kvm2 ldflags
-KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT) 
+KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT)
 
 # hyperkit ldflags
 HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/hyperkit.gitCommitID=$(COMMIT)
