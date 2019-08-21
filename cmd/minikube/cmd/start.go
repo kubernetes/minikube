@@ -60,6 +60,7 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/pkg/version"
+	"github.com/shirou/gopsutil/cpu"
 )
 
 const (
@@ -574,7 +575,16 @@ func validateConfig() {
 			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
 	}
 
-	cpuCount = viper.GetInt(cpus)
+	if viper.GetString(vmDriver) == constants.DriverNone {
+		ci, err := cpu.Info()
+		if err != nil {
+			glog.Warningf("Unable to get CPU info: $v", err)
+		} else {
+			cpuCount = ci.Cores
+		}
+	} else {
+		cpuCount = viper.GetInt(cpus)
+	}
 	if cpuCount < constants.MinimumCPUS {
 		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
 	}
