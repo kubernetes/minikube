@@ -92,7 +92,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
 	}
-	// Oherwise, containerd will fail API requests with 'Unimplemented'
+	// Otherwise, containerd will fail API requests with 'Unimplemented'
 	return r.Runner.Run("sudo systemctl restart containerd")
 }
 

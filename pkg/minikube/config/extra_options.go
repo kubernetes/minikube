@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package util
+package config
 
 import (
 	"fmt"
@@ -76,7 +76,7 @@ func (es *ExtraOptionSlice) String() string {
 // component is not specified, all of the components are used.
 func (es *ExtraOptionSlice) Get(key string, component ...string) string {
 	for _, opt := range *es {
-		if component == nil || ContainsString(component, opt.Component) {
+		if component == nil || ContainsParam(component, opt.Component) {
 			if opt.Key == key {
 				return opt.Value
 			}
@@ -106,4 +106,26 @@ func (es *ExtraOptionSlice) Type() string {
 // Get returns the extra option map of keys to values for the specified component
 func (cm ComponentExtraOptionMap) Get(component string) map[string]string {
 	return cm[component]
+}
+
+// ContainsParam checks if a given slice of strings contains the provided string.
+// If a modifier func is provided, it is called with the slice item before the comparation.
+func ContainsParam(slice []string, s string) bool {
+	for _, item := range slice {
+		if item == s {
+			return true
+		}
+	}
+	return false
+}
+
+// NewUnversionedOption returns a VersionedExtraOption that applies to all versions.
+func NewUnversionedOption(component, k, v string) VersionedExtraOption {
+	return VersionedExtraOption{
+		Option: ExtraOption{
+			Component: component,
+			Key:       k,
+			Value:     v,
+		},
+	}
 }

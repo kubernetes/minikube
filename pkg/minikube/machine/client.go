@@ -123,7 +123,7 @@ func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host
 func (api *LocalClient) Load(name string) (*host.Host, error) {
 	h, err := api.Filestore.Load(name)
 	if err != nil {
-		return nil, errors.Wrap(err, "filestore")
+		return nil, errors.Wrapf(err, "filestore %q", name)
 	}
 
 	var def registry.DriverDef

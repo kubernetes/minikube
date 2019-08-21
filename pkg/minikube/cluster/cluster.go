@@ -160,7 +160,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		if err != nil {
 			return errors.Wrap(err, "detecting provisioner")
 		}
-		glog.Infof("Provisioning: %+v", *h.HostOptions)
+		glog.Infof("Provisioning with %s: %+v", provisioner.String(), *h.HostOptions)
 		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
 			return errors.Wrap(err, "provision")
 		}
@@ -338,6 +338,7 @@ func engineOptions(config cfg.MachineConfig) *engine.Options {
 		InsecureRegistry: append([]string{pkgutil.DefaultServiceCIDR}, config.InsecureRegistry...),
 		RegistryMirror:   config.RegistryMirror,
 		ArbitraryFlags:   config.DockerOpt,
+		InstallURL:       drivers.DefaultEngineInstallURL,
 	}
 	return &o
 }

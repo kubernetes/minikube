@@ -26,7 +26,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/util"
 )
 
 func TestGenerateKubeletConfig(t *testing.T) {
@@ -145,29 +144,29 @@ ExecStart=/var/lib/minikube/binaries/v1.15.2/kubelet --authorization-mode=Webhoo
 	}
 }
 
-func getExtraOpts() []util.ExtraOption {
-	return util.ExtraOptionSlice{
-		util.ExtraOption{
+func getExtraOpts() []config.ExtraOption {
+	return config.ExtraOptionSlice{
+		config.ExtraOption{
 			Component: Apiserver,
 			Key:       "fail-no-swap",
 			Value:     "true",
 		},
-		util.ExtraOption{
+		config.ExtraOption{
 			Component: ControllerManager,
 			Key:       "kube-api-burst",
 			Value:     "32",
 		},
-		util.ExtraOption{
+		config.ExtraOption{
 			Component: Scheduler,
 			Key:       "scheduler-name",
 			Value:     "mini-scheduler",
 		},
-		util.ExtraOption{
+		config.ExtraOption{
 			Component: Kubeadm,
 			Key:       "ignore-preflight-errors",
 			Value:     "true",
 		},
-		util.ExtraOption{
+		config.ExtraOption{
 			Component: Kubeadm,
 			Key:       "dry-run",
 			Value:     "true",
@@ -175,9 +174,9 @@ func getExtraOpts() []util.ExtraOption {
 	}
 }
 
-func getExtraOptsPodCidr() []util.ExtraOption {
-	return util.ExtraOptionSlice{
-		util.ExtraOption{
+func getExtraOptsPodCidr() []config.ExtraOption {
+	return config.ExtraOptionSlice{
+		config.ExtraOption{
 			Component: Kubeadm,
 			Key:       "pod-network-cidr",
 			Value:     "192.168.32.0/20",
@@ -229,7 +228,7 @@ func TestGenerateConfig(t *testing.T) {
 		{"crio", "crio", false, config.KubernetesConfig{}},
 		{"options", "docker", false, config.KubernetesConfig{ExtraOptions: extraOpts}},
 		{"crio-options-gates", "crio", false, config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}},
-		{"unknown-component", "docker", true, config.KubernetesConfig{ExtraOptions: util.ExtraOptionSlice{util.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}},
+		{"unknown-component", "docker", true, config.KubernetesConfig{ExtraOptions: config.ExtraOptionSlice{config.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}},
 		{"containerd-api-port", "containerd", false, config.KubernetesConfig{NodePort: 12345}},
 		{"containerd-pod-network-cidr", "containerd", false, config.KubernetesConfig{ExtraOptions: extraOptsPodCidr}},
 		{"image-repository", "docker", false, config.KubernetesConfig{ImageRepository: "test/repo"}},
