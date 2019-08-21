@@ -85,7 +85,7 @@ func TestVersionUpgrade(t *testing.T) {
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
 	stdout, stderr, err := mkRelease.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 	if err != nil {
-		t.Fatalf("TestVersionUpgrade minikube start failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
+		t.Fatalf("minikube start (%s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
 	}
 
 	mkRelease.CheckStatus(state.Running.String())
