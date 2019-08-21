@@ -44,6 +44,7 @@ rm /usr/local/bin/minikube
 brew cask reinstall minikube
 ```
 
+{{% /tab %}}
 {{% /tabs %}}
 
 ## Hypervisor Setup
