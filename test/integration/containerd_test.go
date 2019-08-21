@@ -48,9 +48,9 @@ func testGvisorRestart(t *testing.T) {
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	defer mk.TearDown(t)
 
-	mk.StartWithFail("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
-	mk.RunCommand("cache add gcr.io/k8s-minikube/gvisor-addon:latest", true)
-	mk.RunCommand("addons enable gvisor", true)
+	mk.MustStart("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	mk.MustRun("cache add gcr.io/k8s-minikube/gvisor-addon:latest")
+	mk.MustRun("addons enable gvisor")
 
 	t.Log("waiting for gvisor controller to come up")
 	if err := waitForGvisorControllerRunning(p); err != nil {
@@ -64,8 +64,8 @@ func testGvisorRestart(t *testing.T) {
 	}
 	deleteUntrustedWorkload(t, p)
 
-	mk.RunCommand("delete", true)
-	mk.StartWithFail("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	mk.MustRun("delete")
+	mk.MustStart("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	mk.CheckStatus(state.Running.String())
 
 	t.Log("waiting for gvisor controller to come up")

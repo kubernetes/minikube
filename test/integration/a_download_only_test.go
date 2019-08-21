@@ -52,7 +52,7 @@ func TestDownloadOnly(t *testing.T) {
 
 			minHome := constants.GetMinipath()
 			for _, v := range []string{constants.OldestKubernetesVersion, constants.NewestKubernetesVersion} {
-				mk.StartWithFail("--download-only", fmt.Sprintf("--kubernetes-version=%s", v))
+				mk.MustStart("--download-only", fmt.Sprintf("--kubernetes-version=%s", v))
 				// checking if cached images are downloaded for example (kube-apiserver_v1.15.2, kube-scheduler_v1.15.2, ...)
 				_, imgs := constants.GetKubeadmCachedImages("", v)
 				for _, img := range imgs {

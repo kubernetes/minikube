@@ -25,7 +25,7 @@ import (
 func TestFunctional(t *testing.T) {
 	p := profileName(t)
 	mk := NewMinikubeRunner(t, p)
-	mk.StartWithFail()
+	mk.MustStart()
 	if !isTestNoneDriver(t) { // none driver doesn't need to be deleted
 		defer mk.TearDown(t)
 	}
