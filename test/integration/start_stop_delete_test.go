@@ -87,10 +87,7 @@ func TestStartStop(t *testing.T) {
 				}
 
 				mk.RunCommand("config set WantReportErrorPrompt false", true)
-				stdout, stderr, err := mk.Start(tc.args...)
-				if err != nil {
-					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", pn, err, stdout, stderr)
-				}
+				mk.StartWithFail(tc.args...)
 
 				mk.CheckStatus(state.Running.String())
 
@@ -101,20 +98,25 @@ func TestStartStop(t *testing.T) {
 				}
 
 				stop := func() error {
-					stdout, stderr, err = mk.RunCommandRetriable("stop")
-					return mk.CheckStatusNoFail(state.Stopped.String())
+					_, _, err := mk.RunCommandRetriable("stop", true)
+					if err != nil {
+						t.Errorf("minikube stop error %v ( will retry up to 3 times) ", err)
+					}
+					err = mk.CheckStatusNoFail(state.Stopped.String())
+					if err != nil {
+						t.Errorf("expected status to be stoped but got error %v ", err)
+					}
+					return err
 				}
 
-				err = retry.Expo(stop, 10*time.Second, 5*time.Minute)
-				mk.CheckStatus(state.Stopped.String())
-
-				stdout, stderr, err = mk.Start(tc.args...)
+				err := retry.Expo(stop, 10*time.Second, 5*time.Minute, 3) // max retry 3
 				if err != nil {
-					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+					t.Errorf("expected status to be stoped but got error: %v ", err)
 				}
 
+				mk.CheckStatus(state.Stopped.String())
+				mk.StartWithFail(tc.args...)
 				mk.CheckStatus(state.Running.String())
-
 				mk.RunCommand("delete", true)
 				mk.CheckStatus(state.None.String())
 			})

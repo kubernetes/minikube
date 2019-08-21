@@ -228,13 +228,21 @@ func (m *MinikubeRunner) SSH(cmdStr string) (string, error) {
 }
 
 // Start starts the cluster
-func (m *MinikubeRunner) Start(opts ...string) (stdout string, stderr string, err error) {
+func (m *MinikubeRunner) start(opts ...string) (stdout string, stderr string, err error) {
 	cmd := fmt.Sprintf("start %s %s %s", m.StartArgs, m.GlobalArgs, strings.Join(opts, " "))
 	ctx := context.Background()
 	ctx, cancel := context.WithTimeout(ctx, m.TimeOutStart)
 	defer cancel()
-	stdout, stderr, err = m.RunWithContext(ctx, cmd, true)
-	return stdout, stderr, err
+	return m.RunWithContext(ctx, cmd, true)
+}
+
+// StartWithFail starts the cluster and fail the test if error
+func (m *MinikubeRunner) StartWithFail(opts ...string) (stdout string, stderr string) {
+	stdout, stderr, err := m.start(opts...)
+	if err != nil {
+		m.T.Fatalf("%s Failed to start minikube (for profile %s) error: %v \n\twith opts %v, \n\t Global Args: %s \n\t Driver Args: %s \n\t STDOUT: \n\t\t %s \n\t STDERR: \n\t\t %s", m.T.Name(), m.Profile, err, strings.Join(opts, " "), m.GlobalArgs, m.StartArgs, stdout, stderr)
+	}
+	return stdout, stderr
 }
 
 // TearDown deletes minikube without waiting for it. used to free up ram/cpu after each test
@@ -255,7 +263,7 @@ func (m *MinikubeRunner) EnsureRunning(opts ...string) {
 		m.T.Errorf("error getting status for ensure running: %v", err)
 	}
 	if s != state.Running.String() {
-		stdout, stderr, err := m.Start(opts...)
+		stdout, stderr, err := m.start(opts...)
 		if err != nil {
 			m.T.Errorf("error starting while running EnsureRunning : %v , stdout %s stderr %s", err, stdout, stderr)
 		}

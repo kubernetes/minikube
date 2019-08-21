@@ -43,22 +43,44 @@ func TestDownloadOnly(t *testing.T) {
 	if !isTestNoneDriver(t) { // none driver doesnt need to be deleted
 		defer mk.TearDown(t)
 	}
+	minHome := constants.GetMinipath()
 
 	t.Run("Oldest", func(t *testing.T) {
-		stdout, stderr, err := mk.Start("--download-only", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
-		if err != nil {
-			t.Errorf("%s minikube --download-only failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
-		}
+		mk.StartWithFail("--download-only", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 	})
 
 	t.Run("Newest", func(t *testing.T) {
-		stdout, stderr, err := mk.Start("--download-only", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
-		if err != nil {
-			t.Errorf("%s minikube --download-only failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
+		v := constants.NewestKubernetesVersion
+		mk.StartWithFail("--download-only", fmt.Sprintf("--kubernetes-version=%s", v))
+
+		// checking binaries downloaded
+		_, imgs := constants.GetKubeadmCachedImages("", v)
+		for _, img := range imgs {
+			_, err := os.Stat(filepath.Join(minHome, fmt.Sprintf("images/%s", img)))
+			if err != nil {
+				t.Errorf("error expected download-only to cachne image %q but got error %v", img, err)
+			}
 		}
-		// TODO: add test to check if files are downloaded
+
+		// checking binaries downloaded (kubelet,kubeadm)
+		for _, bin := range constants.GetKubeadmCachedBinaries() {
+			_, err := os.Stat(filepath.Join(minHome, fmt.Sprintf("cache/%s/%s", v, bin)))
+			if err != nil {
+				t.Errorf("error expected download-only to cachne binary %q but got error %v", bin, err)
+			}
+		}
+
+		// checking binaries downloaded
+		for _, bin := range []string{"kublet,kbueadm"} {
+			_, err := os.Stat(filepath.Join(minHome, fmt.Sprintf("cache/%s/%s", v, bin)))
+			if err != nil {
+				t.Errorf("error expected download-only to cachne binary %q but got error %v", bin, err)
+			}
+		}
+
 	})
 
+	// this downloads the latest published binary from where we publish the minikube binary
 	t.Run("DownloadLatestRelease", func(t *testing.T) {
 		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
 		err := downloadMinikubeBinary(t, dest, "latest")
