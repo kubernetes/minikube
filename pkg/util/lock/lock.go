@@ -17,41 +17,40 @@ limitations under the License.
 package lock
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/juju/fslock"
+	"github.com/juju/clock"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
-// WriteWithLock decorates ioutil.WriteFile with a file lock and retry
-func WriteFile(filename string, data []byte, perm os.FileMode) (err error) {
-	lock := fslock.New(filename)
+// WriteFile decorates ioutil.WriteFile with a file lock and retry
+func WriteFile(filename string, data []byte, perm os.FileMode) error {
+	dir, name := filepath.Split(filename)
+	profile := strings.ReplaceAll(filepath.Base(dir), ".", "-")
+	mutexName := fmt.Sprintf("%s-%s", profile, strings.ReplaceAll(name, ".", "-"))
+	if len(mutexName) > 40 {
+		mutexName = mutexName[:40]
+	}
+	spec := mutex.Spec{
+		Name:  strings.TrimPrefix(mutexName, "-"),
+		Clock: clock.WallClock,
+		Delay: 13 * time.Second,
+	}
 	glog.Infof("attempting to write to file %q with filemode %v", filename, perm)
 
-	getLock := func() error {
-		lockErr := lock.TryLock()
-		if lockErr != nil {
-			glog.Warningf("temporary error : %v", lockErr.Error())
-			return errors.Wrapf(lockErr, "failed to acquire lock for %s > ", filename)
-		}
-		return nil
-	}
-
-	defer func() { // release the lock
-		err = lock.Unlock()
-		if err != nil {
-			err = errors.Wrapf(err, "error releasing lock for file: %s", filename)
-		}
-	}()
-
-	err = retry.Expo(getLock, 500*time.Millisecond, 13*time.Second)
+	releaser, err := mutex.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "error acquiring lock for %s", filename)
 	}
+
+	defer releaser.Release()
 
 	if err = ioutil.WriteFile(filename, data, perm); err != nil {
 		return errors.Wrapf(err, "error writing file %s", filename)
