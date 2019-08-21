@@ -228,7 +228,7 @@ func (m *MinikubeRunner) MustStart(opts ...string) (stdout string, stderr string
 	stdout, stderr, err := m.start(opts...)
 	// the reason for this formatting is, the logs are very big but useful and also in parallel testing logs are harder to identify
 	if err != nil {
-		m.T.Fatalf("%s Failed to start minikube With error: %v \n\t begin Start log block ---> \n\t With Profile: %s \n\t With Args: %v \n\t With Global Args: %s  \n\t With Driver Args: %s \n\t With STDOUT: \n \t %s \n\t With STDERR: \n \t %s \n\t <--- End of start log block", m.T.Name(), err, m.Profile, strings.Join(opts, " "), m.GlobalArgs, m.StartArgs, stdout, stderr)
+		m.T.Fatalf("%s Failed to start minikube With error: %v \n\t begin Start log block ------------> \n\t With Profile: %s \n\t With Args: %v \n\t With Global Args: %s  \n\t With Driver Args: %s \n\t With STDOUT: \n \t %s \n\t With STDERR: \n \t %s \n\t <------------ End of Start (%s) log block", m.T.Name(), err, m.Profile, strings.Join(opts, " "), m.GlobalArgs, m.StartArgs, stdout, stderr, m.Profile)
 	}
 	return stdout, stderr
 }

@@ -65,8 +65,7 @@ func TestConfig(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		stdout, stderr, _ := mk.RunCommandRetriable(tc.cmd)
-
+		stdout, stderr := mk.MustRun(tc.cmd)
 		if !compare(tc.stdout, stdout) {
 			t.Fatalf("Expected stdout to be: %s. Stdout was: %s Stderr: %s", tc.stdout, stdout, stderr)
 		}
