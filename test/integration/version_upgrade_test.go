@@ -80,7 +80,7 @@ func TestVersionUpgrade(t *testing.T) {
 
 	// because the --wait-timeout is a new flag and the current latest release (1.3.1) doesn't have it
 	// this won't be necessary after we release the change with --wait-timeout flag
-	mkRelease.StartArgs = strings.Replace("mkRelease.StartArgs", "--wait-timeout=13m", "", 1)
+	mkRelease.StartArgs = strings.Replace(mkRelease.StartArgs, "--wait-timeout=13m", "", 1)
 	mkRelease.BinaryPath = fname
 	// For full coverage: also test upgrading from oldest to newest supported k8s release
 	stdout, stderr, err := mkRelease.Start(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
