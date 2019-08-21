@@ -64,14 +64,14 @@ func TestConfig(t *testing.T) {
 		},
 	}
 
-	for _, test := range tests {
-		stdout, stderr, _ := mk.RunCommandRetriable(test.cmd)
+	for _, tc := range tests {
+		stdout, stderr, _ := mk.RunCommandRetriable(tc.cmd)
 
-		if !compare(test.stdout, stdout) {
-			t.Fatalf("Expected stdout to be: %s. Stdout was: %s Stderr: %s", test.stdout, stdout, stderr)
+		if !compare(tc.stdout, stdout) {
+			t.Fatalf("Expected stdout to be: %s. Stdout was: %s Stderr: %s", tc.stdout, stdout, stderr)
 		}
-		if !compare(test.stderr, stderr) {
-			t.Fatalf("Expected stderr to be: %s. Stdout was: %s Stderr: %s", test.stderr, stdout, stderr)
+		if !compare(tc.stderr, stderr) {
+			t.Fatalf("Expected stderr to be: %s. Stdout was: %s Stderr: %s", tc.stderr, stdout, stderr)
 		}
 	}
 }
