@@ -164,7 +164,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return errors.Wrap(err, "StdinPipe")
 	}
 	// The scpcmd below *should not* return until all data is copied and the
-	// StdinPipe is closed. But let's use errgroup to make it expicit.
+	// StdinPipe is closed. But let's use errgroup to make it explicit.
 	var g errgroup.Group
 	var copied int64
 	dst := filepath.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
