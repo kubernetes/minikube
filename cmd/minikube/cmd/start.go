@@ -843,8 +843,16 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	if nvs.LT(ovs) {
 		nv = version.VersionPrefix + ovs.String()
-		out.ErrT(out.Conflict, "Kubernetes downgrade is not supported, will continue to use {{.version}}", out.V{"version": nv})
-		return nv, isUpgrade
+		profileArg := ""
+		if cfg.GetMachineName() != constants.DefaultMachineName {
+			profileArg = fmt.Sprintf("-p %s", cfg.GetMachineName())
+		}
+		exit.WithCodeT(exit.Config, `Error: You have selected Kubernetes v{{.new}}, but the existing cluster for your profile is running Kubernetes v{{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
+
+* Recreate the cluster using Kubernetes v{{.new}}: Run "minikube delete {{.profile}}", then "minikube start {{.profile}} --kubernetes-version={{.new}}"
+* Create a second cluster with Kubernetes v{{.new}}: Run "minikube start -p <new name> --kubernetes-version={{.new}}"
+* Reuse the existing cluster with Kubernetes v{{.old}} or newer: Run "minikube start {{.profile}} --kubernetes-version={{.old}}"`, out.V{"new": nvs, "old": ovs, "profile": profileArg})
+
 	}
 	if nvs.GT(ovs) {
 		out.T(out.ThumbsUp, "Upgrading from Kubernetes {{.old}} to {{.new}}", out.V{"old": ovs, "new": nvs})
