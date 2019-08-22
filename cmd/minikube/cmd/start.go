@@ -575,12 +575,14 @@ func validateConfig() {
 			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
 	}
 
+	var cpuCount int
 	if viper.GetString(vmDriver) == constants.DriverNone {
-		ci, err := cpu.Info()
+		// Uses the gopsutil cpu package to count the number of physical cpu cores
+		ci, err := cpu.Counts(false)
 		if err != nil {
-			glog.Warningf("Unable to get CPU info: $v", err)
+			glog.Warningf("Unable to get CPU info: %v", err)
 		} else {
-			cpuCount = ci.Cores
+			cpuCount = ci
 		}
 	} else {
 		cpuCount = viper.GetInt(cpus)
