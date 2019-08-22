@@ -24,12 +24,12 @@ controllerManagerExtraArgs:
   kube-api-burst: "32"
 schedulerExtraArgs:
   scheduler-name: "mini-scheduler"
-certificatesDir: /var/lib/minikube/certs/
+certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
 controlPlaneEndpoint: localhost:8443
 etcd:
   local:
-    dataDir: /data/minikube
+    dataDir: /var/lib/minikube/etcd
 kubernetesVersion: v1.13.0
 networking:
   dnsDomain: cluster.local

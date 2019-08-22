@@ -6,11 +6,11 @@ api:
   bindPort: 8443
   controlPlaneEndpoint: localhost
 kubernetesVersion: v1.11.0
-certificatesDir: /var/lib/minikube/certs/
+certificatesDir: /var/lib/minikube/certs
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
-  dataDir: /data/minikube
+  dataDir: /var/lib/minikube/etcd
 nodeName: mk
 apiServerExtraArgs:
   enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
