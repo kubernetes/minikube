@@ -97,6 +97,9 @@ func (d *Driver) DriverName() string {
 
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
+
+	// MEDYA:TODO
+	// if alread exists use docker inspect --format '{{ .NetworkSettings.IPAddress }}' d.MachineName
 	ip, err := net.ChooseBindAddress(nil)
 	if err != nil {
 		return "", err
@@ -129,6 +132,15 @@ func (d *Driver) GetURL() (string, error) {
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	// TODO: add later
+	// Tips:
+	// docker inspect -f '{{.State.Running}}' m5controesdfdsl-plane
+	//  echo $?
+	// 1
+	//  docker inspect -f '{{.State.Running}}' m5control-plane
+	// true
+	//  echo $?
+	// 0
+
 	return state.Running, nil
 }
 

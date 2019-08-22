@@ -303,8 +303,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	beginCacheImages(&cacheGroup, config.KubernetesConfig.ImageRepository, k8sVersion)
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
-	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := saveConfig(&config); err != nil {
+	// Hence, saveProfileConfig must be called before startHost, and again afterwards when we know the IP.
+	if err := saveProfileConfig(&config); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
@@ -402,7 +402,7 @@ func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, ma
 	}
 	// Save IP to configuration file for subsequent use
 	config.KubernetesConfig.NodeIP = ip
-	if err := saveConfig(config); err != nil {
+	if err := saveProfileConfig(config); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 	runner, err = machine.CommandRunner(host)
@@ -972,8 +972,8 @@ func configureMounts() {
 	}
 }
 
-// saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterCfg *cfg.Config) error {
+// saveProfileConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
+func saveProfileConfig(clusterCfg *cfg.Config) error {
 	return cfg.CreateProfile(viper.GetString(cfg.MachineProfile), clusterCfg)
 }
 
