@@ -126,7 +126,7 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ..
 		if failError {
 			m.T.Fatalf(errMsg)
 		} else {
-			m.T.Errorf(errMsg)
+			m.T.Logf(errMsg)
 		}
 	}
 	return stdout, stderr, err
