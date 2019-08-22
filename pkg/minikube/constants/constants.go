@@ -186,30 +186,27 @@ var NewestKubernetesVersion = "v1.16.0-beta.1"
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
 var OldestKubernetesVersion = "v1.10.13"
 
-// ConfigFilePath is the path of the config directory
-var ConfigFilePath = MakeMiniPath("config")
-
 // ConfigFile is the path of the config file
 var ConfigFile = MakeMiniPath("config", "config.json")
-
-// AddonsPath is the default path of the addons configuration
-const AddonsPath = "/etc/kubernetes/addons"
-
-// FilesPath is the default path of files
-const FilesPath = "/files"
 
 const (
 	// KubeletServiceFile is the path to the kubelet systemd service
 	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
 	// KubeletSystemdConfFile is the path to the kubelet systemd configuration
 	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	// KubeadmConfigFile is the path to the kubeadm configuration
-	KubeadmConfigFile = "/var/lib/kubeadm.yaml"
 	// DefaultCNIConfigPath is the path to the CNI configuration
 	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
-)
 
-const (
+	// GuestAddonsDir is the default path of the addons configuration
+	GuestAddonsDir = "/etc/kubernetes/addons"
+	// GuestManifestsDir is where the kubelet should look for static Pod manifests
+	GuestManifestsDir = "/etc/kubernetes/manifests"
+	// GuestEphemeralDir is the path where ephemeral data should be stored within the VM
+	GuestEphemeralDir = "/var/tmp/minikube"
+	// PersistentDir is the path where persistent data should be stored within the VM (not tmpfs)
+	GuestPersistentDir = "/var/lib/minikube"
+	// GuestCertsDir are where Kubernetes certificates are kept on the guest
+	GuestCertsDir = GuestPersistentDir + "/certs"
 	// DefaultUfsPort is the default port of UFS
 	DefaultUfsPort = "5640"
 	// DefaultUfsDebugLvl is the default debug level of UFS
@@ -220,6 +217,11 @@ const (
 	DefaultMsize = 262144
 	// DefaultMountVersion is the default 9p version to use for mount
 	DefaultMountVersion = "9p2000.L"
+
+	// IsMinikubeChildProcess is the name of "is minikube child process" variable
+	IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
+	// FileScheme is the file scheme
+	FileScheme = "file"
 )
 
 // ImageRepositories contains all known image repositories
@@ -238,16 +240,8 @@ func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) s
 	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version, osName, archName))
 }
 
-// IsMinikubeChildProcess is the name of "is minikube child process" variable
-const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
-
-// FileScheme is the file scheme
-const FileScheme = "file"
-
-// GetKubeadmCachedBinaries gets the binaries to cache for kubeadm
-func GetKubeadmCachedBinaries() []string {
-	return []string{"kubelet", "kubeadm"}
-}
+// KubeadmBinaries are Kubernetes release binaries required for kubeadm
+var KubeadmBinaries = []string{"kubelet", "kubeadm"}
 
 // GetKubeadmCachedImages gets the images to cache for kubeadm for a version
 func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string) (string, []string) {

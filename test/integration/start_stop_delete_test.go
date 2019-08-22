@@ -23,11 +23,9 @@ import (
 	"net"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 func TestStartStop(t *testing.T) {
@@ -86,36 +84,25 @@ func TestStartStop(t *testing.T) {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
 
-				mk.RunCommand("config set WantReportErrorPrompt false", true)
-				stdout, stderr, err := mk.Start(tc.args...)
-				if err != nil {
-					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", pn, err, stdout, stderr)
-				}
+				mk.MustRun("config set WantReportErrorPrompt false")
+				mk.MustStart(tc.args...)
 
 				mk.CheckStatus(state.Running.String())
 
-				ip, stderr := mk.RunCommand("ip", true)
+				ip, stderr := mk.MustRun("ip")
 				ip = strings.TrimRight(ip, "\n")
 				if net.ParseIP(ip) == nil {
 					t.Fatalf("IP command returned an invalid address: %s \n %s", ip, stderr)
 				}
 
-				stop := func() error {
-					stdout, stderr, err = mk.RunCommandRetriable("stop")
-					return mk.CheckStatusNoFail(state.Stopped.String())
-				}
-
-				err = retry.Expo(stop, 10*time.Second, 5*time.Minute)
-				mk.CheckStatus(state.Stopped.String())
-
-				stdout, stderr, err = mk.Start(tc.args...)
+				mk.MustRun("stop")
+				err := mk.CheckStatusNoFail(state.Stopped.String())
 				if err != nil {
-					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+					t.Errorf("expected status to be %s but got error %v ", state.Stopped.String(), err)
 				}
-
+				mk.MustStart(tc.args...)
 				mk.CheckStatus(state.Running.String())
-
-				mk.RunCommand("delete", true)
+				mk.MustRun("delete")
 				mk.CheckStatus(state.None.String())
 			})
 		}

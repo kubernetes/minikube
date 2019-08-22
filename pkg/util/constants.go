@@ -24,11 +24,9 @@ import (
 
 // These constants are used by both minikube
 const (
-	DefaultMinikubeDirectory = "/var/lib/minikube"
-	DefaultCertPath          = DefaultMinikubeDirectory + "/certs/"
-	DefaultKubeConfigPath    = DefaultMinikubeDirectory + "/kubeconfig"
-	DefaultDNSDomain         = "cluster.local"
-	DefaultServiceCIDR       = "10.96.0.0/12"
+	APIServerPort      = 8443
+	DefaultDNSDomain   = "cluster.local"
+	DefaultServiceCIDR = "10.96.0.0/12"
 )
 
 // DefaultV114AdmissionControllers are admission controllers we default to in v1.14.x

@@ -28,7 +28,7 @@ func testProfileList(t *testing.T) {
 	p := profileName(t)
 	t.Parallel()
 	mk := NewMinikubeRunner(t, p, "--wait=false")
-	out, stderr := mk.RunCommand("profile list", true)
+	out, stderr := mk.MustRun("profile list")
 	if !strings.Contains(out, p) {
 		t.Errorf("Error , failed to read profile name (%s) in `profile list` command output : \n %q : \n stderr: %s ", p, out, stderr)
 	}
