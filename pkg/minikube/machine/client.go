@@ -41,6 +41,7 @@ import (
 	"github.com/docker/machine/libmachine/version"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
+	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -155,7 +156,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 	}
 
 	if h.DriverName == constants.DriverKic {
-		return &command.OciRunner{}, nil
+		return command.NewOciRunner(pkg_config.GetMachineName())
 	}
 
 	client, err := sshutil.NewSSHClient(h.Driver)

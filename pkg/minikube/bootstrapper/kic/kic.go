@@ -157,7 +157,9 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
 	return bootstrapper.SetupCerts(k.c, k8s)
 }
 
-// UpdateCluster updates the cluster
+// UpdateCluster updates the cluster config files
 func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
+	// UpdateCluster
+	//
 	return nil
 }

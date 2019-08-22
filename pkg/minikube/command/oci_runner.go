@@ -17,104 +17,30 @@ limitations under the License.
 package command
 
 import (
-	"bytes"
-	"fmt"
 	"io"
-	"path"
-	"path/filepath"
 
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
-	"golang.org/x/crypto/ssh"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
 // OciRunner runs commands inside container
 type OciRunner struct {
-	// nodename
-	c *ssh.Client
+	Profile string
 }
 
 // NewOciRunner returns a new OciRunner that will run commands
-func NewOciRunner(c *ssh.Client) *OciRunner {
-	return &OciRunner{c}
+func NewOciRunner(p string) (*OciRunner, error) {
+	return &OciRunner{Profile: p}, nil
 }
 
 // Remove runs a command to delete a file on the remote.
 func (s *OciRunner) Remove(f assets.CopyableFile) error {
-	sess, err := s.c.NewSession()
-	if err != nil {
-		return errors.Wrap(err, "getting ssh session")
-	}
-	defer sess.Close()
-	cmd := getDeleteFileCommand(f)
-	return sess.Run(cmd)
+	// MEDYA:TODO later
+	return nil
 }
-
-// type singleWriter2 struct {
-// 	b  bytes.Buffer
-// 	mu sync.Mutex
-// }
-
-// func (w *singleWriter2) Write(p []byte) (int, error) {
-// 	w.mu.Lock()
-// 	defer w.mu.Unlock()
-// 	return w.b.Write(p)
-// }
-
-// // teeOci runs an Oci command, streaming stdout, stderr to logs
-// func teeOci(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
-// 	outPipe, err := s.StdoutPipe()
-// 	if err != nil {
-// 		return errors.Wrap(err, "stdout")
-// 	}
-
-// 	errPipe, err := s.StderrPipe()
-// 	if err != nil {
-// 		return errors.Wrap(err, "stderr")
-// 	}
-// 	var wg sync.WaitGroup
-// 	wg.Add(2)
-
-// 	go func() {
-// 		if err := util.TeePrefix(util.ErrPrefix, errPipe, errB, glog.Infof); err != nil {
-// 			glog.Errorf("tee stderr: %v", err)
-// 		}
-// 		wg.Done()
-// 	}()
-// 	go func() {
-// 		if err := util.TeePrefix(util.OutPrefix, outPipe, outB, glog.Infof); err != nil {
-// 			glog.Errorf("tee stdout: %v", err)
-// 		}
-// 		wg.Done()
-// 	}()
-// 	err = s.Run(cmd)
-// 	wg.Wait()
-// 	return err
-// }
 
 // Run starts a command on the remote and waits for it to return.
 func (s *OciRunner) Run(cmd string) error {
-	glog.Infof("SSH: %s", cmd)
-	sess, err := s.c.NewSession()
-	if err != nil {
-		return errors.Wrap(err, "NewSession")
-	}
-
-	defer func() {
-		if err := sess.Close(); err != nil {
-			if err != io.EOF {
-				glog.Errorf("session close: %v", err)
-			}
-		}
-	}()
-	var outB bytes.Buffer
-	var errB bytes.Buffer
-	err = teeSSH(sess, cmd, &outB, &errB)
-	if err != nil {
-		return errors.Wrapf(err, "command failed: %s\nstdout: %s\nstderr: %s", cmd, outB.String(), errB.String())
-	}
+	// MEDYA:TODO later
 	return nil
 }
 
@@ -132,66 +58,12 @@ func (s *OciRunner) CombinedOutputTo(cmd string, w io.Writer) error {
 // CombinedOutput runs the command on the remote and returns its combined
 // standard output and standard error.
 func (s *OciRunner) CombinedOutput(cmd string) (string, error) {
-	glog.Infoln("Run with output:", cmd)
-	sess, err := s.c.NewSession()
-	if err != nil {
-		return "", errors.Wrap(err, "NewSession")
-	}
-	defer sess.Close()
-
-	var combined singleWriter
-	err = teeSSH(sess, cmd, &combined, &combined)
-	out := combined.b.String()
-	if err != nil {
-		return out, err
-	}
-	return out, nil
+	// MEDYA:TODO later
+	return "", nil
 }
 
 // Copy copies a file to the remote over SSH.
 func (s *OciRunner) Copy(f assets.CopyableFile) error {
-	sess, err := s.c.NewSession()
-	if err != nil {
-		return errors.Wrap(err, "NewSession")
-	}
-
-	w, err := sess.StdinPipe()
-	if err != nil {
-		return errors.Wrap(err, "StdinPipe")
-	}
-	// The scpcmd below *should not* return until all data is copied and the
-	// StdinPipe is closed. But let's use errgroup to make it explicit.
-	var g errgroup.Group
-	var copied int64
-	dst := filepath.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
-	glog.Infof("Transferring %d bytes to %s", f.GetLength(), dst)
-
-	g.Go(func() error {
-		defer w.Close()
-		header := fmt.Sprintf("C%s %d %s\n", f.GetPermissions(), f.GetLength(), f.GetTargetName())
-		fmt.Fprint(w, header)
-		if f.GetLength() == 0 {
-			glog.Warningf("%s is a 0 byte asset!", f.GetTargetName())
-			fmt.Fprint(w, "\x00")
-			return nil
-		}
-
-		copied, err = io.Copy(w, f)
-		if err != nil {
-			return errors.Wrap(err, "io.Copy")
-		}
-		if copied != int64(f.GetLength()) {
-			return fmt.Errorf("%s: expected to copy %d bytes, but copied %d instead", f.GetTargetName(), f.GetLength(), copied)
-		}
-		glog.Infof("%s: copied %d bytes", f.GetTargetName(), copied)
-		fmt.Fprint(w, "\x00")
-		return nil
-	})
-
-	scp := fmt.Sprintf("sudo mkdir -p %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
-	out, err := sess.CombinedOutput(scp)
-	if err != nil {
-		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
-	}
-	return g.Wait()
+	// MEDYA:TODO later
+	return nil
 }

@@ -317,7 +317,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	showVersionInfo(k8sVersion, cr)
 	waitCacheImages(&cacheGroup)
 
-	// setup kube adm and certs and return bootstrapperx
+	// setup kube adm and certs and return bootstrapper
 	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
 
 	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
@@ -902,8 +902,8 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 
 // configureRuntimes does what needs to happen to get a runtime going.
 func configureRuntimes(runner cruntime.CommandRunner) cruntime.Manager {
-	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
-	cr, err := cruntime.New(config)
+	crCfg := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
+	cr, err := cruntime.New(crCfg)
 	if err != nil {
 		exit.WithError("Failed runtime", err)
 	}
@@ -912,6 +912,8 @@ func configureRuntimes(runner cruntime.CommandRunner) cruntime.Manager {
 	if viper.GetString(vmDriver) == constants.DriverNone {
 		disableOthers = false
 	}
+
+	// MEDYA:TODO handle kic runtime
 	err = cr.Enable(disableOthers)
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
