@@ -43,6 +43,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -421,7 +422,7 @@ func getKubernetesVersion() (k8sVersion string, isUpgrade bool) {
 }
 
 func downloadISO(config cfg.Config) {
-	if viper.GetString(vmDriver) != constants.DriverNone {
+	if !pkgdrivers.IsLocal(viper.GetString(vmDriver)) {
 		if err := cluster.CacheISO(config.MachineConfig); err != nil {
 			exit.WithError("Failed to cache ISO", err)
 		}

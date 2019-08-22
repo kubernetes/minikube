@@ -29,7 +29,16 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
+
+// IsLocal returns whether or not the driver should be considered local
+func IsLocal(name string) bool {
+	if name == constants.DriverNone || name == constants.DriverMock || name == constants.DriverKic {
+		return true
+	}
+	return false
+}
 
 // GetDiskPath returns the path of the machine disk image
 func GetDiskPath(d *drivers.BaseDriver) string {

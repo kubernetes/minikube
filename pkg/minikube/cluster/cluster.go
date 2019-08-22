@@ -43,6 +43,7 @@ import (
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
+	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -77,7 +78,7 @@ func init() {
 
 // CacheISO downloads and caches ISO.
 func CacheISO(config cfg.MachineConfig) error {
-	if localDriver(config.VMDriver) {
+	if pkgdrivers.IsLocal(config.VMDriver) {
 		return nil
 	}
 	return config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO)
@@ -142,14 +143,6 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	return h, nil
 }
 
-// localDriver returns whether or not the driver should be considered local
-func localDriver(name string) bool {
-	if name == constants.DriverNone || name == constants.DriverMock || name == constants.DriverKic {
-		return true
-	}
-	return false
-}
-
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
 	glog.Infof("configureHost: %T %+v", h, h)
@@ -166,7 +159,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		}
 	}
 
-	if !localDriver(h.Driver.DriverName()) {
+	if !pkgdrivers.IsLocal(h.Driver.DriverName()) {
 		glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
 		if err := h.ConfigureAuth(); err != nil {
 			return &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
@@ -418,7 +411,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	if !localDriver(config.VMDriver) {
+	if !pkgdrivers.IsLocal(config.VMDriver) {
 		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
 	} else {
 		info, err := getHostInfo()
@@ -456,7 +449,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "create")
 	}
 
-	if !localDriver(config.VMDriver) {
+	if !pkgdrivers.IsLocal(config.VMDriver) {
 		showRemoteOsRelease(h.Driver)
 	} else {
 		showLocalOsRelease()
