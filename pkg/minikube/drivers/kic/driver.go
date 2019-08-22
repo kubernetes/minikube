@@ -47,7 +47,7 @@ func createKicHost(config cfg.MachineConfig) interface{} {
 		MachineName:      cfg.GetMachineName(),
 		StorePath:        constants.GetMinipath(), // MEDYA:TODO check what is stored here.
 		ContainerRuntime: config.ContainerRuntime, // MEDYA:TODO might not need.
-		OciClient:        config.KicImage,
+		OciClient:        config.OciClient,
 		KicImage:         config.KicImage,
 	})
 }
