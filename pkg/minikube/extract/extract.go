@@ -281,7 +281,7 @@ func checkArguments(s *ast.CallExpr, e *state) {
 
 }
 
-// checkIdentForStringValye takes a identifier and sees if it's a variable assigned to a string
+// checkIdentForStringValue takes a identifier and sees if it's a variable assigned to a string
 func checkIdentForStringValue(i *ast.Ident) string {
 	// This identifier is nil
 	if i.Obj == nil {
