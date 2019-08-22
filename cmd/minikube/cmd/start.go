@@ -775,7 +775,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	}
 
 	var host *host.Host
-	start := func() (err error) {
+	s := func() (err error) {
 		host, err = cluster.StartHost(api, mc)
 		if err != nil {
 			glog.Errorf("StartHost: %v", err)
@@ -783,7 +783,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 		return err
 	}
 
-	if err = retry.Expo(start, 2*time.Second, 3*time.Minute, 5); err != nil {
+	if err = retry.Expo(s, 2*time.Second, 3*time.Minute, 5); err != nil {
 		exit.WithError("Unable to start VM", err)
 	}
 	return host, exists
