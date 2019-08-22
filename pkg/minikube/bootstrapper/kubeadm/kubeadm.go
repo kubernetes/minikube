@@ -456,7 +456,15 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
+	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing kubernetes version")
+	}
+
 	cmd := fmt.Sprintf("%s reset --force", invokeKubeadm(k8s.KubernetesVersion))
+	if version.LT(semver.MustParse("1.11.0")) {
+		cmd = fmt.Sprintf("%s reset", invokeKubeadm(k8s.KubernetesVersion))
+	}
 	out, err := k.c.CombinedOutput(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "kubeadm reset: %s\n%s\n", cmd, out)
