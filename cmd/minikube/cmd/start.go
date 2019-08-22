@@ -37,6 +37,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/medyagh/kic/pkg/image"
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -104,6 +105,8 @@ const (
 	waitUntilHealthy      = "wait"
 	force                 = "force"
 	waitTimeout           = "wait-timeout"
+	ociClient             = "oci-client"
+	kicImg                = "kic-img"
 )
 
 var (
@@ -197,6 +200,11 @@ func initDriverFlags() {
 
 	// hyperv
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (only supported with HyperV driver)")
+
+	// kic
+	startCmd.Flags().String(kicImg, "", "override the kic image. (Only to be used with on with kic driver) ")
+	startCmd.Flags().String(ociClient, "docker", "the oci client to be used. (Only to be used with on with kic driver)")
+
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -670,6 +678,15 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string) (cfg.Config, er
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
+	kimg := viper.GetString(kicImg)
+	if kimg == "" {
+		kimg, err = image.NameForVersion(k8sVersion)
+		if err != nil {
+			glog.Errorf("error selecting kic image for %s : %v", k8sVersion, err)
+		}
+		glog.Infof("auto selected kic image: %s", kimg)
+	}
+
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
 			KeepContext:         viper.GetBool(keepContext),
@@ -700,6 +717,8 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string) (cfg.Config, er
 			NoVTXCheck:          viper.GetBool(noVTXCheck),
 			DNSProxy:            viper.GetBool(dnsProxy),
 			HostDNSResolver:     viper.GetBool(hostDNSResolver),
+			KicImage:            kimg,
+			OciClient:           viper.GetString(ociClient),
 		},
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
