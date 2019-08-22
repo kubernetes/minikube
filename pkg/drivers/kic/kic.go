@@ -21,7 +21,6 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
@@ -40,6 +39,7 @@ type Driver struct {
 	runtime   cruntime.Manager
 	exec      command.Runner
 	OciClient string // docker or podman
+	KicImage  string
 }
 
 // Config is configuration for the kic driver
@@ -48,24 +48,30 @@ type Config struct {
 	StorePath        string
 	ContainerRuntime string
 	OciClient        string
+	KicImage         string // Image used for nodes
 }
 
 // NewDriver returns a fully configured None driver
 func NewDriver(c Config) *Driver {
-	runner := &command.ExecRunner{}
-	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
+	runner := &command.OciRunner{} // MEDYA:TODO pass the node selector
+	// runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
 	// Libraries shouldn't panic, but there is no way for drivers to return error :(
-	if err != nil {
-		glog.Fatalf("unable to create container runtime: %v", err)
-	}
-	return &Driver{
+	// if err != nil {
+	// 	glog.Fatalf("unable to create container runtime: %v", err)
+	// }
+	d := &Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
-		runtime: runtime,
-		exec:    runner,
+		CommonDriver: &pkgdrivers.CommonDriver{},
+		exec:         runner,
+		KicImage:     c.KicImage,
+		OciClient:    c.OciClient,
 	}
+
+	fmt.Printf("MEDYA: Creating a New Driver %v", d)
+	return d
 }
 
 // PreCreateCheck checks for correct privileges and dependencies

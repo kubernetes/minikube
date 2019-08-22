@@ -40,6 +40,8 @@ type MachineConfig struct {
 	KeepContext         bool // used by start and profile command to or not to switch kubectl's current context
 	EmbedCerts          bool // used by kubeconfig.Setup
 	MinikubeISO         string
+	KicImage            string // Only used by kic driver. (the image to use for nodes)
+	OciClient           string // Currently Only used by kic driver. (docker or podman)
 	Memory              int
 	CPUs                int
 	DiskSize            int

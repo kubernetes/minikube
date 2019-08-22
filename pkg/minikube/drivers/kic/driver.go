@@ -32,19 +32,22 @@ func init() {
 		Builtin:       true,
 		ConfigCreator: createKicHost,
 		DriverCreator: func() drivers.Driver {
-			return kic.NewDriver(kic.Config{})
+			fmt.Println("Inside pkg/m/drivers/kic init")
+			return kic.NewDriver(kic.Config{}) // MEDYA:TODO verify this gets filled
 		},
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
 }
 
-// createKicHost creates a none Driver from a MachineConfig
+// createKicHost creates a kick Driver from a MachineConfig
 func createKicHost(config cfg.MachineConfig) interface{} {
+	fmt.Println("Inside createKicHost in pkg/m/drivers/kic")
 	return kic.NewDriver(kic.Config{
 		MachineName:      cfg.GetMachineName(),
-		StorePath:        constants.GetMinipath(),
-		ContainerRuntime: config.ContainerRuntime,
-		OciClient:        constants.DefaultOciClient,
+		StorePath:        constants.GetMinipath(), // MEDYA:TODO check what is stored here.
+		ContainerRuntime: config.ContainerRuntime, // MEDYA:TODO might not need.
+		OciClient:        config.KicImage,
+		KicImage:         config.KicImage,
 	})
 }
