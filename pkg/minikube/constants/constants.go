@@ -186,29 +186,8 @@ var NewestKubernetesVersion = "v1.15.2"
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
 var OldestKubernetesVersion = "v1.10.13"
 
-// ConfigFilePath is the path of the config directory
-var ConfigFilePath = MakeMiniPath("config")
-
 // ConfigFile is the path of the config file
 var ConfigFile = MakeMiniPath("config", "config.json")
-
-// GetProfileFile returns the Minikube profile config file
-func GetProfileFile(profile string, miniHome ...string) string {
-	miniPath := GetMinipath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "profiles", profile, "config.json")
-}
-
-// GetProfilePath returns the Minikube profile path of config file
-func GetProfilePath(profile string, miniHome ...string) string {
-	miniPath := GetMinipath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "profiles", profile)
-}
 
 const (
 	// KubeletServiceFile is the path to the kubelet systemd service
