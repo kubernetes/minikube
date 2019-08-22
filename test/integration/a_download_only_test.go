@@ -65,7 +65,7 @@ func TestDownloadOnly(t *testing.T) {
 				}
 
 				// checking binaries downloaded (kubelet,kubeadm)
-				for _, bin := range constants.GetKubeadmCachedBinaries() {
+				for _, bin := range constants.KubeadmBinaries {
 					fp := filepath.Join(minHome, "cache", v, bin)
 					_, err := os.Stat(fp)
 					if err != nil {
