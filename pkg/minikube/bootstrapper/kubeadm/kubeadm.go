@@ -198,6 +198,28 @@ func createFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 	return convertToFlags(kubeadmExtraOpts)
 }
 
+// etcdDataDir is where etcd data is stored.
+func etcdDataDir() string {
+	return filepath.Join(constants.GuestPersistentDir, "etcd")
+}
+
+// createCompatSymlinks creates compatibility symlinks to transition running services to new directory structures
+func (k *Bootstrapper) createCompatSymlinks() error {
+	legacyEtcd := "/data/minikube"
+	if err := k.c.Run(fmt.Sprintf("sudo test -d %s", legacyEtcd)); err != nil {
+		glog.Infof("%s check failed, skipping compat symlinks: %v", legacyEtcd, err)
+		return nil
+	}
+
+	glog.Infof("Found %s, creating compatibility symlinks ...", legacyEtcd)
+	cmd := fmt.Sprintf("sudo ln -s %s %s", legacyEtcd, etcdDataDir())
+	out, err := k.c.CombinedOutput(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "cmd failed: %s\n%s\n", cmd, out)
+	}
+	return nil
+}
+
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
@@ -206,7 +228,6 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	extraFlags := createFlagsFromExtraArgs(k8s.ExtraOptions)
-
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime})
 	if err != nil {
 		return err
@@ -343,6 +364,12 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 
 // RestartCluster restarts the Kubernetes cluster configured by kubeadm
 func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
+	glog.Infof("RestartCluster start")
+	start := time.Now()
+	defer func() {
+		glog.Infof("RestartCluster took %s", time.Since(start))
+	}()
+
 	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
@@ -353,6 +380,10 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	if version.GTE(semver.MustParse("1.13.0")) {
 		phase = "init"
 		controlPlane = "control-plane"
+	}
+
+	if err := k.createCompatSymlinks(); err != nil {
+		glog.Errorf("failed to create compat symlinks: %v", err)
 	}
 
 	baseCmd := fmt.Sprintf("%s %s", invokeKubeadm(k8s.KubernetesVersion), phase)
@@ -386,12 +417,19 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 
 // waitForAPIServer waits for the apiserver to start up
 func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
+	start := time.Now()
+	defer func() {
+		glog.Infof("duration metric: took %s to wait for apiserver status ...", time.Since(start))
+	}()
+
 	glog.Infof("Waiting for apiserver process ...")
 	// To give a better error message, first check for process existence via ssh
-	err := wait.PollImmediate(time.Millisecond*300, time.Minute*2, func() (bool, error) {
-		ierr := k.c.Run(`pgrep apiserver`)
+	// Needs minutes in case the image isn't cached (such as with v1.10.x)
+	err := wait.PollImmediate(time.Millisecond*300, time.Minute*3, func() (bool, error) {
+		ierr := k.c.Run(`sudo pgrep kube-apiserver`)
 		if ierr != nil {
-			return false, ierr
+			glog.Warningf("pgrep apiserver: %v", ierr)
+			return false, nil
 		}
 		return true, nil
 	})
@@ -399,13 +437,13 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 		return fmt.Errorf("apiserver process never appeared")
 	}
 
-	start := time.Now()
-	glog.Infof("Waiting for apiserver ...")
+	glog.Infof("Waiting for apiserver to port healthy status ...")
 	f := func() (bool, error) {
 		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
 		glog.Infof("apiserver status: %s, err: %v", status, err)
 		if err != nil {
-			return false, err
+			glog.Warningf("status: %v", err)
+			return false, nil
 		}
 		if status != "Running" {
 			return false, nil
@@ -413,7 +451,6 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 		return true, nil
 	}
 	err = wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, f)
-	glog.Infof("duration metric: took %s to wait for apiserver status ...", time.Since(start))
 	return err
 }
 
@@ -619,7 +656,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, er
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
-		EtcdDataDir:       filepath.Join(constants.GuestPersistentDir, "etcd"),
+		EtcdDataDir:       etcdDataDir(),
 		NodeName:          k8s.NodeName,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
