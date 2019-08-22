@@ -62,9 +62,9 @@ func getMutexName(filename string) string {
 	name = strings.ReplaceAll(name, ".", "-")
 	name = strings.ReplaceAll(name, "_", "-")
 
-	profile := strings.ReplaceAll(filepath.Base(dir), ".", "-")
-	profile = strings.ReplaceAll(profile, "_", "-")
-	mutexName := fmt.Sprintf("%s-%s", profile, strings.ReplaceAll(name, ".", "-"))
+	p := strings.ReplaceAll(filepath.Base(dir), ".", "-")
+	p = strings.ReplaceAll(p, "_", "-")
+	mutexName := fmt.Sprintf("%s-%s", p, strings.ReplaceAll(name, ".", "-"))
 
 	// Make sure name doesn't start with a dash
 	mutexName = strings.TrimPrefix(mutexName, "-")
