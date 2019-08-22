@@ -502,6 +502,14 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	return false, fallback, nil
 }
 
+// Return a minikube command containing the current profile name
+func minikubeCmd() string {
+	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
+		return fmt.Sprintf("minikube -p %s", cfg.MachineProfile)
+	}
+	return "minikube"
+}
+
 // validerUser validates minikube is run by the recommended user (privileged or regular)
 func validateUser() {
 	u, err := user.Current()
@@ -521,11 +529,15 @@ func validateUser() {
 		return
 	}
 
-	if useForce {
-		out.T(out.WarningType, "Exiting, as the {{.driver_name}} driver should not be used with root privileges.", out.V{"driver_name": d})
-		return
+	out.T(out.Stopped, "The {{.driver_name}} driver should not be used with root privileges.", out.V{"driver_name": d})
+
+	_, err = cfg.Load()
+	if err == nil || !os.IsNotExist(err) {
+		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
 	}
-	exit.WithCodeT(exit.Permissions, "Exiting, as the {{.driver_name}} driver should not be used with root privileges.", out.V{"driver_name": d})
+	if !useForce {
+		exit.WithCodeT(exit.Permissions, "Exiting")
+	}
 }
 
 // validateConfig validates the supplied configuration against known bad combinations
