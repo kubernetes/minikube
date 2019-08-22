@@ -46,7 +46,7 @@ var (
 	ReasonableStartTime = time.Minute * 5
 )
 
-// Client gets the kuberentes client from default kubeconfig
+// Client gets the kubernetes client from default kubeconfig
 func Client(kubectlContext ...string) (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}

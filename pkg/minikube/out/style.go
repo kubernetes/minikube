@@ -156,7 +156,7 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 
 func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...V) string {
 	if a == nil {
-		a = []V{V{}}
+		a = []V{{}}
 	}
 	format = applyStyle(style, useColor, format)
 
