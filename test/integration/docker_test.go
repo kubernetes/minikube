@@ -46,14 +46,11 @@ func TestDocker(t *testing.T) {
 		t.Logf("pre-delete failed (probably ok): %v", err)
 	}
 
-	stdout, stderr, err := mk.Start("--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", " --docker-opt=icc=true")
-	if err != nil {
-		t.Fatalf("TestDocker minikube start failed : %v\nstdout: %s\nstderr: %s", err, stdout, stderr)
-	}
+	mk.MustStart("--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", " --docker-opt=icc=true")
 
 	mk.CheckStatus(state.Running.String())
 
-	stdout, stderr, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
+	stdout, stderr, err := mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
 	if err != nil {
 		t.Errorf("docker env: %v\nstderr: %s", err, stderr)
 	}

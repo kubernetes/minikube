@@ -19,6 +19,7 @@ package kubeadm
 import (
 	"encoding/json"
 	"net"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -89,6 +90,7 @@ func unmarkMaster() error {
 // elevateKubeSystemPrivileges gives the kube-system service account
 // cluster admin privileges to work with RBAC.
 func elevateKubeSystemPrivileges() error {
+	start := time.Now()
 	k8s := service.K8s
 	client, err := k8s.GetClientset(constants.DefaultK8sClientTimeout)
 	if err != nil {
@@ -123,5 +125,6 @@ func elevateKubeSystemPrivileges() error {
 		}
 		return errors.Wrap(err, "creating clusterrolebinding")
 	}
+	glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
 	return nil
 }

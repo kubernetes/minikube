@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -43,22 +44,39 @@ func TestDownloadOnly(t *testing.T) {
 	if !isTestNoneDriver(t) { // none driver doesnt need to be deleted
 		defer mk.TearDown(t)
 	}
+	t.Run("group", func(t *testing.T) {
+		t.Run("CacheOldestNewest", func(t *testing.T) {
+			if isTestNoneDriver(t) { // don't cache images
+				t.Skip("skipping test for none driver as it doesn't cache images")
+			}
 
-	t.Run("Oldest", func(t *testing.T) {
-		stdout, stderr, err := mk.Start("--download-only", fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
-		if err != nil {
-			t.Errorf("%s minikube --download-only failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
-		}
+			minHome := constants.GetMinipath()
+			for _, v := range []string{constants.OldestKubernetesVersion, constants.NewestKubernetesVersion} {
+				mk.MustStart("--download-only", fmt.Sprintf("--kubernetes-version=%s", v))
+				// checking if cached images are downloaded for example (kube-apiserver_v1.15.2, kube-scheduler_v1.15.2, ...)
+				_, imgs := constants.GetKubeadmCachedImages("", v)
+				for _, img := range imgs {
+					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
+					fp := filepath.Join(minHome, "cache", "images", img)
+					_, err := os.Stat(fp)
+					if err != nil {
+						t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+					}
+				}
+
+				// checking binaries downloaded (kubelet,kubeadm)
+				for _, bin := range constants.GetKubeadmCachedBinaries() {
+					fp := filepath.Join(minHome, "cache", v, bin)
+					_, err := os.Stat(fp)
+					if err != nil {
+						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
+					}
+				}
+			}
+		})
 	})
 
-	t.Run("Newest", func(t *testing.T) {
-		stdout, stderr, err := mk.Start("--download-only", fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
-		if err != nil {
-			t.Errorf("%s minikube --download-only failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
-		}
-		// TODO: add test to check if files are downloaded
-	})
-
+	// this downloads the latest published binary from where we publish the minikube binary
 	t.Run("DownloadLatestRelease", func(t *testing.T) {
 		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
 		err := downloadMinikubeBinary(t, dest, "latest")

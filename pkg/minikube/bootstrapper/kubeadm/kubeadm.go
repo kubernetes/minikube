@@ -269,7 +269,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	glog.Infof("Configuring cluster permissions ...")
 
-	if err := retry.Expo(elevateKubeSystemPrivileges, time.Millisecond*500, 40*time.Second); err != nil {
+	if err := retry.Expo(elevateKubeSystemPrivileges, time.Millisecond*500, 60*time.Second); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
 

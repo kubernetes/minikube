@@ -65,13 +65,15 @@ func TestConfig(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		stdout, stderr, _ := mk.RunCommandRetriable(tc.cmd)
-
+		stdout, stderr, err := mk.RunCommand(tc.cmd, false)
+		if err != nil {
+			t.Logf("error running config test command (might be okay): %v ", err)
+		}
 		if !compare(tc.stdout, stdout) {
-			t.Fatalf("Expected stdout to be: %s. Stdout was: %s Stderr: %s", tc.stdout, stdout, stderr)
+			t.Fatalf("Expected stdout to be: %q. Stdout was: %q Stderr: %q", tc.stdout, stdout, stderr)
 		}
 		if !compare(tc.stderr, stderr) {
-			t.Fatalf("Expected stderr to be: %s. Stdout was: %s Stderr: %s", tc.stderr, stdout, stderr)
+			t.Fatalf("Expected stderr to be: %q. Stdout was: %s Stderr: %q", tc.stderr, stdout, stderr)
 		}
 	}
 }

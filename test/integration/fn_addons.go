@@ -128,7 +128,7 @@ func testIngressController(t *testing.T) {
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	kr := util.NewKubectlRunner(t, p)
 
-	mk.RunCommand("addons enable ingress", true)
+	mk.MustRun("addons enable ingress")
 	if err := waitForIngressControllerRunning(p); err != nil {
 		t.Fatalf("Failed waiting for ingress-controller to be up: %v", err)
 	}
@@ -168,7 +168,7 @@ func testIngressController(t *testing.T) {
 			}
 		}
 	}()
-	mk.RunCommand("addons disable ingress", true)
+	mk.MustRun("addons disable ingress")
 }
 
 func testServicesList(t *testing.T) {
@@ -177,7 +177,10 @@ func testServicesList(t *testing.T) {
 	mk := NewMinikubeRunner(t, p)
 
 	checkServices := func() error {
-		output, stderr := mk.RunCommand("service list", false)
+		output, stderr, err := mk.RunCommand("service list", false)
+		if err != nil {
+			return err
+		}
 		if !strings.Contains(output, "kubernetes") {
 			return fmt.Errorf("error, kubernetes service missing from output: %s, \n stderr: %s", output, stderr)
 		}
@@ -191,7 +194,7 @@ func testRegistry(t *testing.T) {
 	t.Parallel()
 	p := profileName(t)
 	mk := NewMinikubeRunner(t, p)
-	mk.RunCommand("addons enable registry", true)
+	mk.MustRun("addons enable registry")
 	client, err := kapi.Client(p)
 	if err != nil {
 		t.Fatalf("getting kubernetes client: %v", err)
@@ -210,7 +213,7 @@ func testRegistry(t *testing.T) {
 	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", ps); err != nil {
 		t.Fatalf("waiting for registry-proxy pods: %v", err)
 	}
-	ip, stderr := mk.RunCommand("ip", true)
+	ip, stderr := mk.MustRun("ip")
 	ip = strings.TrimSpace(ip)
 	endpoint := fmt.Sprintf("http://%s:%d", ip, 5000)
 	u, err := url.Parse(endpoint)
@@ -259,7 +262,7 @@ func testRegistry(t *testing.T) {
 			t.Errorf("failed to delete pod registry-test")
 		}
 	}()
-	mk.RunCommand("addons disable registry", true)
+	mk.MustRun("addons disable registry")
 }
 
 // waitForNginxRunning waits for nginx service to be up
