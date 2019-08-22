@@ -66,9 +66,6 @@ func getMutexName(filename string) string {
 	p = strings.ReplaceAll(p, "_", "-")
 	mutexName := fmt.Sprintf("%s-%s", p, strings.ReplaceAll(name, ".", "-"))
 
-	// Make sure name doesn't start with a dash
-	mutexName = strings.TrimPrefix(mutexName, "-")
-
 	// Check if name starts with an int and prepend a string instead
 	if _, err := strconv.Atoi(mutexName[:1]); err == nil {
 		mutexName = "m" + mutexName
@@ -77,6 +74,10 @@ func getMutexName(filename string) string {
 	if len(mutexName) > 40 {
 		mutexName = mutexName[:40]
 	}
+
+	// Make sure name doesn't start or end with punctuation
+	mutexName = strings.TrimPrefix(mutexName, "-")
+	mutexName = strings.TrimSuffix(mutexName, "-")
 
 	return mutexName
 }
