@@ -19,40 +19,40 @@ package lock
 import "testing"
 
 func TestGetMutexName(t *testing.T) {
-	var tests = []struct{
+	var tests = []struct {
 		description string
-		path string
-		expected string
+		path        string
+		expected    string
 	}{
 		{
 			description: "standard",
-			path: "/foo/bar",
-			expected: "foo-bar",
+			path:        "/foo/bar",
+			expected:    "foo-bar",
 		},
 		{
 			description: "deep directory",
-			path: "/foo/bar/baz/bat",
-			expected: "baz-bat",
+			path:        "/foo/bar/baz/bat",
+			expected:    "baz-bat",
 		},
 		{
 			description: "underscores",
-			path: "/foo_bar/baz",
-			expected: "foo-bar-baz",
+			path:        "/foo_bar/baz",
+			expected:    "foo-bar-baz",
 		},
 		{
 			description: "starts with number",
-			path: "/foo/2bar/baz",
-			expected: "m2bar-baz",
+			path:        "/foo/2bar/baz",
+			expected:    "m2bar-baz",
 		},
 		{
 			description: "starts with punctuation",
-			path: "/.foo/bar",
-			expected: "foo-bar",
+			path:        "/.foo/bar",
+			expected:    "foo-bar",
 		},
 		{
 			description: "long filename",
-			path: "/very-very-very-very-very-very-very-very-long/bar",
-			expected: "very-very-very-very-very-very-very-very",
+			path:        "/very-very-very-very-very-very-very-very-long/bar",
+			expected:    "very-very-very-very-very-very-very-very",
 		},
 	}
 
