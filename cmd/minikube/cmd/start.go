@@ -820,11 +820,15 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	if nvs.LT(ovs) {
 		nv = version.VersionPrefix + ovs.String()
-		exit.WithCodeT(exit.Config, `Error: You have selected version {{.new}}, but your existing cluster for profile "{{.profile}}" is running version {{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
+		profileArg := ""
+		if cfg.GetMachineName() != constants.DefaultMachineName {
+			profileArg = fmt.Sprintf("-p %s", cfg.GetMachineName())
+		}
+		exit.WithCodeT(exit.Config, `Error: You have selected Kubernetes v{{.new}}, but the existing cluster for your profile is running Kubernetes v{{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
 
-* Run "minikube start [-p {{.profile}}] --kubernetes-version={{.old}}" or newer to continue using this cluster
-* Run "minikube start -p <new name> --kubernetes-version={{.new}}" to start a new cluster with a different name
-* Run "minikube delete [-p {{.profile}}]" to delete the existing cluster first, and "minikube start [-p {{.profile}}] --kubernetes-version={{.new}}" to start a new cluster under the same name`, out.V{"new": nvs, "old": ovs, "profile": cfg.GetMachineName()})
+* Recreate the cluster using Kubernetes v{{.new}}: Run "minikube delete {{.profile}}", then "minikube start {{.profile}} --kubernetes-version={{.new}}"
+* Create a second cluster with Kubernetes v{{.new}}: Run "minikube start -p <new name> --kubernetes-version={{.new}}"
+* Reuse the existing cluster with Kubernetes v{{.old}} or newer: Run "minikube start {{.profile}} --kubernetes-version={{.old}}"`, out.V{"new": nvs, "old": ovs, "profile": profileArg})
 
 	}
 	if nvs.GT(ovs) {
