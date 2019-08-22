@@ -9,7 +9,7 @@ description: >
 
 ## Overview
 
-Most continuous integration environments are already running inside a VM, and may not supported nested virtualization. The `none` driver was designed for this use case.
+Most continuous integration environments are already running inside a VM, and may not support nested virtualization. The `none` driver was designed for this use case.
 
 ## Prerequisites
 
