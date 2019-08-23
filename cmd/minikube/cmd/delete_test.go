@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -60,7 +61,7 @@ func TestDeleteProfileWithValidConfig(t *testing.T) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
 
-	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	pathToMachine := cluster.MachinePath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -108,7 +109,7 @@ func TestDeleteProfileWithEmptyProfileConfig(t *testing.T) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
 
-	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	pathToMachine := cluster.MachinePath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -156,7 +157,7 @@ func TestDeleteProfileWithInvalidProfileConfig(t *testing.T) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
 
-	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	pathToMachine := cluster.MachinePath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -204,7 +205,7 @@ func TestDeleteProfileWithPartialProfileConfig(t *testing.T) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
 
-	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	pathToMachine := cluster.MachinePath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -252,7 +253,7 @@ func TestDeleteProfileWithMissingMachineConfig(t *testing.T) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
 
-	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	pathToMachine := cluster.MachinePath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -300,7 +301,7 @@ func TestDeleteProfileWithEmptyMachineConfig(t *testing.T) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
 
-	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	pathToMachine := cluster.MachinePath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -348,7 +349,7 @@ func TestDeleteProfileWithInvalidMachineConfig(t *testing.T) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
 
-	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	pathToMachine := cluster.MachinePath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -396,7 +397,7 @@ func TestDeleteProfileWithPartialMachineConfig(t *testing.T) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
 
-	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	pathToMachine := cluster.MachinePath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}

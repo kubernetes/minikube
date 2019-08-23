@@ -113,6 +113,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 }
 
+// Deletes one or more profiles
 func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 	var errs []error
 	for _, profile := range profiles {
@@ -223,7 +224,7 @@ func deleteInvalidProfile(profile *pkg_config.Profile) []error {
 		}
 	}
 
-	pathToMachine := constants.GetMachinePath(profile.Name, constants.GetMinipath())
+	pathToMachine := cluster.MachinePath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		err := os.RemoveAll(pathToMachine)
 		if err != nil {
@@ -248,6 +249,7 @@ func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsN
 	return nil
 }
 
+// Handles deletion error from DeleteProfiles
 func HandleDeletionErrors(errors []error) {
 	if len(errors) == 1 {
 		handleSingleDeletionError(errors[0])
