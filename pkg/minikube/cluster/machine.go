@@ -30,6 +30,7 @@ type Machine struct {
 	*host.Host
 }
 
+// IsValid checks if the machine has the essential info needed for a machine
 func (h *Machine) IsValid() bool {
 	if h == nil {
 		return false
@@ -57,6 +58,8 @@ func (h *Machine) IsValid() bool {
 	return true
 }
 
+// ListsMachines return all valid and invalid machines
+// If a machine is valid or invalid is determined by the cluster.IsValid function
 func ListMachines(miniHome ...string) (validMachines []*Machine, inValidMachines []*Machine, err error) {
 	pDirs, err := machineDirs(miniHome...)
 	if err != nil {
@@ -77,6 +80,7 @@ func ListMachines(miniHome ...string) (validMachines []*Machine, inValidMachines
 	return validMachines, inValidMachines, nil
 }
 
+// Loads a machine or throws an error if the machine could not be loadedG
 func LoadMachine(name string) (*Machine, error) {
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -111,4 +115,13 @@ func machineDirs(miniHome ...string) (dirs []string, err error) {
 		}
 	}
 	return dirs, err
+}
+
+// MachinePath returns the Minikube machine path of a machine
+func MachinePath(machine string, miniHome ...string) string {
+	miniPath := constants.GetMinipath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "machines", machine)
 }
