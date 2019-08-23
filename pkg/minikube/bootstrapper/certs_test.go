@@ -34,7 +34,6 @@ func TestSetupCerts(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
-	f := command.NewFakeCommandRunner()
 	k8s := config.KubernetesConfig{
 		APIServerName: constants.APIServerName,
 		DNSDomain:     constants.ClusterDNSDomain,
@@ -53,7 +52,9 @@ func TestSetupCerts(t *testing.T) {
 		t.Fatalf("error generating certificate: %v", err)
 	}
 
-	cmdMap := map[string]string{}
+	cmdMap := map[string]string{
+		"sudo mkdir -p  /var/lib/minikube/certs": "",
+	}
 	certFilenames := map[string]string{"ca.crt": "minikubeCA.pem", "mycert.pem": "mycert.pem"}
 	for _, dst := range certFilenames {
 		certFile := path.Join(CACertificatesDir, dst)
@@ -64,6 +65,7 @@ func TestSetupCerts(t *testing.T) {
 		cmdMap[fmt.Sprintf("openssl x509 -hash -noout -in '%s'", certFile)] = certNameHash
 		cmdMap[fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, remoteCertHashLink)] = "1"
 	}
+	f := command.NewFakeCommandRunner()
 	f.SetCommandToOutput(cmdMap)
 
 	var filesToBeTransferred []string

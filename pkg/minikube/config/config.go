@@ -59,7 +59,7 @@ type MinikubeConfig map[string]interface{}
 
 // Get gets a named value from config
 func Get(name string) (string, error) {
-	m, err := ReadConfig()
+	m, err := ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return "", err
 	}
@@ -88,11 +88,7 @@ func WriteConfig(configFile string, m MinikubeConfig) error {
 }
 
 // ReadConfig reads in the JSON minikube config
-func ReadConfig() (MinikubeConfig, error) {
-	return readConfig(constants.ConfigFile)
-}
-
-func readConfig(configFile string) (MinikubeConfig, error) {
+func ReadConfig(configFile string) (MinikubeConfig, error) {
 	f, err := os.Open(configFile)
 	if err != nil {
 		if os.IsNotExist(err) {

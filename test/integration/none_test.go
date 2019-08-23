@@ -46,11 +46,8 @@ func TestNone(t *testing.T) {
 
 	p := profileName(t)
 	mk := NewMinikubeRunner(t, p, "--wait=false")
-	mk.RunCommand("delete", false)
-	stdout, stderr, err := mk.Start()
-	if err != nil {
-		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", p, err, stdout, stderr)
-	}
+	mk.MustRun("delete")
+	stdout, stderr := mk.MustStart()
 	msg := "Configuring local host environment"
 	if !strings.Contains(stdout, msg) {
 		t.Errorf("Expected: stdout to contain %q, got: %s", msg, stdout)

@@ -94,19 +94,27 @@ func TestProxy(t *testing.T) {
 			t.Errorf("Error reverting the NO_PROXY env")
 		}
 
-		_, stdErr := mk.RunCommand("delete --all", false)
-		if stdErr != "" {
-			t.Errorf("Error deleting minikube when cleaning up proxy setup: %s", err)
+		_, stdErr, err := mk.RunCommand("delete --all", false)
+		if err != nil {
+			t.Error("Error running command 'delete --all': ", err)
 		}
 
-		stdOut, stdErr := mk.RunCommand("profile list", false)
+		if stdErr != "" {
+			t.Error("Error deleting minikube when cleaning up proxy setup: ", err)
+		}
+
+		stdOut, stdErr, err := mk.RunCommand("profile list", false)
+
+		if err != nil {
+			t.Error("Error running command 'profile list': ", err)
+		}
 
 		msg := "No minikube profile was found"
 		if stdOut != "" || !strings.Contains(stdErr, msg) {
-			t.Errorf("minikube delete --all did not delete all profiles")
+			t.Error("minikube delete --all did not delete all profiles")
 		}
 
-		err := srv.Shutdown(context.TODO()) // shutting down the http proxy after tests
+		err = srv.Shutdown(context.TODO()) // shutting down the http proxy after tests
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
@@ -124,10 +132,7 @@ func TestProxy(t *testing.T) {
 func testProxyWarning(t *testing.T) {
 	p := profileName(t) // profile name
 	mk := NewMinikubeRunner(t, p)
-	stdout, stderr, err := mk.Start("--wait=false")
-	if err != nil {
-		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
-	}
+	stdout, stderr := mk.MustStart("--wait=false")
 
 	msg := "Found network options:"
 	if !strings.Contains(stdout, msg) {

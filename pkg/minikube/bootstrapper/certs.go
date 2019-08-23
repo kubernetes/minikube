@@ -59,16 +59,14 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	if err := generateCerts(k8s); err != nil {
 		return errors.Wrap(err, "Error generating certs")
 	}
-
 	copyableFiles := []assets.CopyableFile{}
-
 	for _, cert := range certs {
 		p := filepath.Join(localPath, cert)
 		perms := "0644"
 		if strings.HasSuffix(cert, ".key") {
 			perms = "0600"
 		}
-		certFile, err := assets.NewFileAsset(p, util.DefaultCertPath, cert, perms)
+		certFile, err := assets.NewFileAsset(p, constants.GuestCertsDir, cert, perms)
 		if err != nil {
 			return err
 		}
@@ -91,9 +89,9 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	kcs := &kubeconfig.Settings{
 		ClusterName:          k8s.NodeName,
 		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
-		ClientCertificate:    path.Join(util.DefaultCertPath, "apiserver.crt"),
-		ClientKey:            path.Join(util.DefaultCertPath, "apiserver.key"),
-		CertificateAuthority: path.Join(util.DefaultCertPath, "ca.crt"),
+		ClientCertificate:    path.Join(constants.GuestCertsDir, "apiserver.crt"),
+		ClientKey:            path.Join(constants.GuestCertsDir, "apiserver.key"),
+		CertificateAuthority: path.Join(constants.GuestCertsDir, "ca.crt"),
 		KeepContext:          false,
 	}
 
@@ -107,13 +105,12 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "encoding kubeconfig")
 	}
 
-	kubeCfgFile := assets.NewMemoryAsset(data,
-		util.DefaultMinikubeDirectory, "kubeconfig", "0644")
+	kubeCfgFile := assets.NewMemoryAsset(data, constants.GuestPersistentDir, "kubeconfig", "0644")
 	copyableFiles = append(copyableFiles, kubeCfgFile)
 
 	for _, f := range copyableFiles {
 		if err := cmd.Copy(f); err != nil {
-			return err
+			return errors.Wrapf(err, "Copy %s", f.GetAssetName())
 		}
 	}
 

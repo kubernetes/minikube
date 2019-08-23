@@ -109,7 +109,7 @@ func DeleteProfile(profile string, miniHome ...string) error {
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
-	return os.RemoveAll(profileFolderPath(profile, miniPath))
+	return os.RemoveAll(ProfileFolderPath(profile, miniPath))
 }
 
 // ListProfiles returns all valid and invalid (if any) minikube profiles
@@ -171,8 +171,8 @@ func profileFilePath(profile string, miniHome ...string) string {
 	return filepath.Join(miniPath, "profiles", profile, "config.json")
 }
 
-// profileFolderPath returns path of profile folder
-func profileFolderPath(profile string, miniHome ...string) string {
+// ProfileFolderPath returns path of profile folder
+func ProfileFolderPath(profile string, miniHome ...string) string {
 	miniPath := constants.GetMinipath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]

@@ -34,7 +34,7 @@ func testClusterEnv(t *testing.T) {
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	// Set a specific shell syntax so that we don't have to handle every possible user shell
-	envOut, stderr := mk.RunCommand("docker-env --shell=bash", true)
+	envOut, stderr := mk.MustRun("docker-env --shell=bash")
 	vars := mk.ParseEnvCmdOutput(envOut)
 	if len(vars) == 0 {
 		t.Fatalf("Failed to parse env vars:\n%s, \n stderr: %s ", envOut, stderr)
