@@ -33,7 +33,8 @@ import (
 //
 // It implements the CommandRunner interface.
 type ExecRunner struct {
-	stdin io.Reader
+	stdin  io.Reader
+	stdout io.Writer
 }
 
 // Run starts the specified command in a bash shell and waits for it to complete.
@@ -114,5 +115,11 @@ func (e *ExecRunner) Remove(f assets.CopyableFile) error {
 // SetStdin is used in piping commands
 func (e *ExecRunner) SetStdin(rd io.Reader) Runner {
 	e.stdin = rd
+	return e
+}
+
+// SetStdout sets the setdout and returns a new one
+func (e *ExecRunner) SetStdout(w io.Writer) Runner {
+	e.stdout = w
 	return e
 }

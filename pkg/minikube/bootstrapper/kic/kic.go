@@ -198,7 +198,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	return nil
 }
 
-// installCNI
+// installCNI is needed for kic driver
 func (k *Bootstrapper) installCNI() error {
 	// TODO:
 	return nil

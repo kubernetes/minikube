@@ -26,6 +26,7 @@ import (
 type OciRunner struct {
 	Profile string
 	stdin   io.Reader
+	stdout  io.Writer
 }
 
 // NewOciRunner returns a new OciRunner that will run commands
@@ -72,5 +73,11 @@ func (o *OciRunner) Copy(f assets.CopyableFile) error {
 // SetStdin is used in piping commands
 func (o *OciRunner) SetStdin(rd io.Reader) Runner {
 	o.stdin = rd
+	return o
+}
+
+// SetStdout sets the setdout and returns a new one
+func (o *OciRunner) SetStdout(w io.Writer) Runner {
+	o.stdout = w
 	return o
 }

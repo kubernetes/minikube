@@ -54,6 +54,9 @@ type Runner interface {
 
 	// SetStdin is used for piping into a command
 	SetStdin(io.Reader) Runner
+
+	// SetStdout sets the stdout and returns a new runner
+	SetStdout(io.Writer) Runner
 }
 
 func getDeleteFileCommand(f assets.CopyableFile) string {
