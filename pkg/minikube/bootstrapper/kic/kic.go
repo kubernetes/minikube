@@ -24,6 +24,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -31,7 +32,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Bootstrapper is a bootstrapper using kubeadm
@@ -43,7 +47,7 @@ type Bootstrapper struct {
 func NewKicBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 	h, err := api.Load(config.GetMachineName())
 	if err != nil {
-		return nil, errors.Wrap(err, "getting api client")
+		return nil, errors.Wrap(err, "New kic bootstrapper libmachine api client")
 	}
 	runner, err := machine.CommandRunner(h)
 	if err != nil {
@@ -54,7 +58,7 @@ func NewKicBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 
 // GetKubeletStatus returns the kubelet status
 func (k *Bootstrapper) GetKubeletStatus() (string, error) {
-	statusCmd := `sudo systemctl is-active kubelet`
+	statusCmd := `systemctl is-active kubelet`
 	status, err := k.c.CombinedOutput(statusCmd)
 	if err != nil {
 		return "", errors.Wrap(err, "getting status")
@@ -73,6 +77,9 @@ func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 
 // GetAPIServerStatus returns the api-server status
 func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string, error) {
+	// seems to work on localhost even though docker ip is 172.17.0.2
+	// curl  172.17.0.2:56974/healthz doesnt work
+	// curl 127.0.0.1:56974/healthz works
 	url := fmt.Sprintf("https://%s:%d/healthz", ip, apiserverPort)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
@@ -104,7 +111,7 @@ func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string 
 	}
 
 	var dmesg strings.Builder
-	dmesg.WriteString("sudo dmesg -PH -L=never --level warn,err,crit,alert,emerg")
+	dmesg.WriteString("dmesg -PH -L=never --level warn,err,crit,alert,emerg")
 	if o.Follow {
 		dmesg.WriteString(" --follow")
 	}
@@ -119,6 +126,80 @@ func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string 
 
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
+	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing kubernetes version")
+	}
+
+	extraFlags := createFlagsFromExtraArgs(k8s.ExtraOptions)
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime})
+	if err != nil {
+		return err
+	}
+
+	ignore := []string{
+		fmt.Sprintf("DirAvailable-%s", strings.Replace(constants.GuestManifestsDir, "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", strings.Replace(constants.GuestPersistentDir, "/", "-", -1)),
+		"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
+		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
+		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
+		"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
+		"Port-10250", // For "none" users who already have a kubelet online
+		"Swap",       // For "none" users who have swap configured
+	}
+	ignore = append(ignore, SkipAdditionalPreflights[r.Name()]...)
+
+	// Allow older kubeadm versions to function with newer Docker releases.
+	if version.LT(semver.MustParse("1.13.0")) {
+		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
+		ignore = append(ignore, "SystemVerification")
+	}
+
+	cmd := fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
+		invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath, extraFlags, strings.Join(ignore, ","))
+	out, err := k.c.CombinedOutput(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "cmd failed: %s\n%s\n", cmd, out)
+	}
+
+	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
+		master = k8s.NodeName
+
+		if err := retry.Expo(unmarkMaster, time.Millisecond*500, time.Second*113); err != nil {
+			return errors.Wrap(err, "timed out waiting to unmark master")
+		}
+	}
+
+	glog.Infof("Configuring cluster permissions ...")
+
+	if err := retry.Expo(elevateKubeSystemPrivileges, time.Millisecond*500, 60*time.Second); err != nil {
+		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
+	}
+
+	if err := k.adjustResourceLimits(); err != nil {
+		glog.Warningf("unable to adjust resource limits: %v", err)
+	}
+	return nil
+}
+
+// adjustResourceLimits makes fine adjustments to pod resources that aren't possible via kubeadm config.
+func (k *Bootstrapper) adjustResourceLimits() error {
+	score, err := k.c.CombinedOutput("cat /proc/$(pgrep kube-apiserver)/oom_adj")
+	if err != nil {
+		return errors.Wrap(err, "oom_adj check")
+	}
+	glog.Infof("apiserver oom_adj: %s", score)
+	// oom_adj is already a negative number
+	if strings.HasPrefix(score, "-") {
+		return nil
+	}
+	glog.Infof("adjusting apiserver oom_adj to -10")
+
+	// Prevent the apiserver from OOM'ing before other pods, as it is our gateway into the cluster.
+	// It'd be preferable to do this via Kubernetes, but kubeadm doesn't have a way to set pod QoS.
+	if err := k.c.Run("echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj"); err != nil {
+		return errors.Wrap(err, "oom_adj adjust")
+	}
 	return nil
 }
 
