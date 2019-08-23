@@ -175,21 +175,21 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 	},
 }
 
-type pod struct {
-	// Human friendly name
-	name  string
-	key   string
-	value string
-}
+// type pod struct {
+// 	// Human friendly name
+// 	name  string
+// 	key   string
+// 	value string
+// }
 
-// PodsByLayer are queries we run when health checking, sorted roughly by dependency layer
-var PodsByLayer = []pod{
-	{"proxy", "k8s-app", "kube-proxy"},
-	{"etcd", "component", "etcd"},
-	{"scheduler", "component", "kube-scheduler"},
-	{"controller", "component", "kube-controller-manager"},
-	{"dns", "k8s-app", "kube-dns"},
-}
+// // PodsByLayer are queries we run when health checking, sorted roughly by dependency layer
+// var PodsByLayer = []pod{
+// 	{"proxy", "k8s-app", "kube-proxy"},
+// 	{"etcd", "component", "etcd"},
+// 	{"scheduler", "component", "kube-scheduler"},
+// 	{"controller", "component", "kube-controller-manager"},
+// 	{"dns", "k8s-app", "kube-dns"},
+// }
 
 // yamlConfigPath is the path to the kubeadm configuration
 var yamlConfigPath = filepath.Join(constants.GuestEphemeralDir, "kubeadm.yaml")

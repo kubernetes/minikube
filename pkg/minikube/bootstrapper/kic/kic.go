@@ -181,7 +181,10 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// this one is kic specific
-	k.installCNI()
+	err = k.installCNI()
+	if err != nil {
+		glog.Warningf("unable to install cni : %v", err)
+	}
 
 	glog.Infof("Configuring cluster permissions ...")
 

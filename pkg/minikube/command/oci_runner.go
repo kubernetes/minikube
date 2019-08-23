@@ -25,6 +25,7 @@ import (
 // OciRunner runs commands inside container
 type OciRunner struct {
 	Profile string
+	stdin   io.Reader
 }
 
 // NewOciRunner returns a new OciRunner that will run commands
@@ -33,21 +34,21 @@ func NewOciRunner(p string) (*OciRunner, error) {
 }
 
 // Remove runs a command to delete a file on the remote.
-func (s *OciRunner) Remove(f assets.CopyableFile) error {
+func (o *OciRunner) Remove(f assets.CopyableFile) error {
 	// MEDYA:TODO later
 	return nil
 }
 
 // Run starts a command on the remote and waits for it to return.
-func (s *OciRunner) Run(cmd string) error {
+func (o *OciRunner) Run(cmd string) error {
 	// MEDYA:TODO later
 	return nil
 }
 
 // CombinedOutputTo runs the command and stores both command
 // output and error to out.
-func (s *OciRunner) CombinedOutputTo(cmd string, w io.Writer) error {
-	out, err := s.CombinedOutput(cmd)
+func (o *OciRunner) CombinedOutputTo(cmd string, w io.Writer) error {
+	out, err := o.CombinedOutput(cmd)
 	if err != nil {
 		return err
 	}
@@ -57,13 +58,19 @@ func (s *OciRunner) CombinedOutputTo(cmd string, w io.Writer) error {
 
 // CombinedOutput runs the command on the remote and returns its combined
 // standard output and standard error.
-func (s *OciRunner) CombinedOutput(cmd string) (string, error) {
+func (o *OciRunner) CombinedOutput(cmd string) (string, error) {
 	// MEDYA:TODO later
 	return "", nil
 }
 
 // Copy copies a file to the remote over SSH.
-func (s *OciRunner) Copy(f assets.CopyableFile) error {
+func (o *OciRunner) Copy(f assets.CopyableFile) error {
 	// MEDYA:TODO later
 	return nil
+}
+
+// SetStdin is used in piping commands
+func (o *OciRunner) SetStdin(rd io.Reader) Runner {
+	o.stdin = rd
+	return o
 }

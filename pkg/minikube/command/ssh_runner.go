@@ -36,13 +36,14 @@ import (
 //
 // It implements the CommandRunner interface.
 type SSHRunner struct {
-	c *ssh.Client
+	c     *ssh.Client
+	stdin io.Reader
 }
 
 // NewSSHRunner returns a new SSHRunner that will run commands
 // through the ssh.Client provided.
 func NewSSHRunner(c *ssh.Client) *SSHRunner {
-	return &SSHRunner{c}
+	return &SSHRunner{c: c}
 }
 
 // Remove runs a command to delete a file on the remote.
@@ -198,4 +199,10 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
 	}
 	return g.Wait()
+}
+
+// SetStdin is used in piping commands
+func (s *SSHRunner) SetStdin(rd io.Reader) Runner {
+	s.stdin = rd
+	return s
 }

@@ -32,7 +32,9 @@ import (
 // ExecRunner runs commands using the os/exec package.
 //
 // It implements the CommandRunner interface.
-type ExecRunner struct{}
+type ExecRunner struct {
+	stdin io.Reader
+}
 
 // Run starts the specified command in a bash shell and waits for it to complete.
 func (*ExecRunner) Run(cmd string) error {
@@ -107,4 +109,10 @@ do you have the correct permissions?`,
 func (e *ExecRunner) Remove(f assets.CopyableFile) error {
 	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 	return os.Remove(targetPath)
+}
+
+// SetStdin is used in piping commands
+func (e *ExecRunner) SetStdin(rd io.Reader) Runner {
+	e.stdin = rd
+	return e
 }

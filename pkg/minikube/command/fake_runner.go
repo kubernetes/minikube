@@ -34,6 +34,7 @@ import (
 type FakeCommandRunner struct {
 	cmdMap  syncmap.Map
 	fileMap syncmap.Map
+	stdin   io.Reader
 }
 
 // NewFakeCommandRunner returns a new FakeCommandRunner
@@ -125,4 +126,10 @@ func (f *FakeCommandRunner) DumpMaps(w io.Writer) {
 		fmt.Fprint(w, k)
 		return true
 	})
+}
+
+// SetStdin is used in piping commands
+func (f *FakeCommandRunner) SetStdin(rd io.Reader) Runner {
+	f.stdin = rd
+	return f
 }

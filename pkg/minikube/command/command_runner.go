@@ -51,6 +51,9 @@ type Runner interface {
 
 	// Remove is a convenience method that runs a command to remove a file
 	Remove(assets.CopyableFile) error
+
+	// SetStdin is used for piping into a command
+	SetStdin(io.Reader) Runner
 }
 
 func getDeleteFileCommand(f assets.CopyableFile) string {
