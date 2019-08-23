@@ -157,9 +157,43 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
 	return bootstrapper.SetupCerts(k.c, k8s)
 }
 
-// UpdateCluster updates the cluster config files
+// UpdateCluster updates generates kubeadm/kubelet,... configs
+// also transgers config and binaries to the bootstrapper's control-plane node
 func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
-	// UpdateCluster
-	//
+	// TODO:medyagh investigate if loading cached images is needed for kic
+
+	// r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket})
+	// if err != nil {
+	// 	return errors.Wrap(err, "update cluster new runtim")
+	// }
+
+	// MEDYA:Todo genrate kubeadmCfg []byte
+	// TODO:medyagh investigate if we could genrate kubeletCfg for kic
+
+	// stop kubelet to avoid "Text File Busy" error'
+	// TODO:medyagh investigate if needed in kic
+	// err = k.c.Run(`pgrep kubelet && sudo systemctl stop kubelet`)
+	// if err != nil {
+	// 	glog.Warningf("unable to stop kubelet: %s", err)
+	// }
+
+	// kubeadmCfg := []byte{}
+
+	// files := []assets.CopyableFile{
+	// 	assets.NewMemoryAssetTarget(kubeadmCfg, yamlConfigPath, "0640"),
+	// }
+
+	// if err := addAddons(&files, assets.GenerateTemplateData(cfg)); err != nil {
+	// 	return errors.Wrap(err, "adding addons")
+	// }
+	// for _, f := range files {
+	// 	if err := k.c.Copy(f); err != nil {
+	// 		return errors.Wrapf(err, "copy")
+	// 	}
+	// }
+
+	// if err := k.c.Run(`sudo systemctl daemon-reload && sudo systemctl start kubelet`); err != nil {
+	// 	return errors.Wrap(err, "starting kubelet")
+	// }
 	return nil
 }
