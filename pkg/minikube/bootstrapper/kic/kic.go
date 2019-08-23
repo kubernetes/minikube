@@ -156,19 +156,32 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	cmd := fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
-		invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath, extraFlags, strings.Join(ignore, ","))
+		invokeKubeadm(), yamlConfigPath, extraFlags, strings.Join(ignore, ","))
 	out, err := k.c.CombinedOutput(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "cmd failed: %s\n%s\n", cmd, out)
 	}
 
 	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
+		// TODO(r2d4): get rid of global here
 		master = k8s.NodeName
 
 		if err := retry.Expo(unmarkMaster, time.Millisecond*500, time.Second*113); err != nil {
 			return errors.Wrap(err, "timed out waiting to unmark master")
 		}
 	}
+
+	// if we are only provisioning one node, remove the master taint
+	// this is using the kubectl on the container node
+	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
+	taintCmd := fmt.Sprintf("kubectl --kubeconfig=%s taint nodes --all node-role.kubernetes.io/master-", yamlConfigPath)
+	out, err = k.c.CombinedOutput(taintCmd)
+	if err != nil {
+		return errors.Wrapf(err, "taint cmd failed: %s\n%s\n", cmd, out)
+	}
+
+	// this one is kic specific
+	k.installCNI()
 
 	glog.Infof("Configuring cluster permissions ...")
 
@@ -179,6 +192,12 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	if err := k.adjustResourceLimits(); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
+	return nil
+}
+
+// installCNI
+func (k *Bootstrapper) installCNI() error {
+	// TODO:
 	return nil
 }
 
