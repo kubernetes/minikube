@@ -56,7 +56,7 @@ func TestDeleteProfileWithValidConfig(t *testing.T) {
 		t.Fatal("Errors while deleting profiles")
 	}
 
-	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	pathToProfile := config.ProfileFolderPath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -104,7 +104,7 @@ func TestDeleteProfileWithEmptyProfileConfig(t *testing.T) {
 		t.Fatal("Errors while deleting profiles")
 	}
 
-	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	pathToProfile := config.ProfileFolderPath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -152,7 +152,7 @@ func TestDeleteProfileWithInvalidProfileConfig(t *testing.T) {
 		t.Fatal("Errors while deleting profiles")
 	}
 
-	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	pathToProfile := config.ProfileFolderPath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -200,7 +200,7 @@ func TestDeleteProfileWithPartialProfileConfig(t *testing.T) {
 		t.Fatal("Errors while deleting profiles")
 	}
 
-	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	pathToProfile := config.ProfileFolderPath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -248,7 +248,7 @@ func TestDeleteProfileWithMissingMachineConfig(t *testing.T) {
 		t.Fatal("Errors while deleting profiles")
 	}
 
-	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	pathToProfile := config.ProfileFolderPath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -296,7 +296,7 @@ func TestDeleteProfileWithEmptyMachineConfig(t *testing.T) {
 		t.Fatal("Errors while deleting profiles")
 	}
 
-	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	pathToProfile := config.ProfileFolderPath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -344,7 +344,7 @@ func TestDeleteProfileWithInvalidMachineConfig(t *testing.T) {
 		t.Fatal("Errors while deleting profiles")
 	}
 
-	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	pathToProfile := config.ProfileFolderPath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}
@@ -392,7 +392,7 @@ func TestDeleteProfileWithPartialMachineConfig(t *testing.T) {
 		t.Fatal("Errors while deleting profiles")
 	}
 
-	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	pathToProfile := config.ProfileFolderPath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		t.Fatalf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 	}

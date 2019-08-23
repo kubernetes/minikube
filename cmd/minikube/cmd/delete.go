@@ -216,7 +216,7 @@ func deleteInvalidProfile(profile *pkg_config.Profile) []error {
 	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
-	pathToProfile := constants.GetProfilePath(profile.Name, constants.GetMinipath())
+	pathToProfile := pkg_config.ProfileFolderPath(profile.Name, constants.GetMinipath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		err := os.RemoveAll(pathToProfile)
 		if err != nil {

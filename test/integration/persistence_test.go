@@ -38,10 +38,7 @@ func TestPersistence(t *testing.T) {
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	defer mk.TearDown(t)
 
-	stdout, stderr, err := mk.Start()
-	if err != nil {
-		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
-	}
+	mk.MustStart()
 	kr := util.NewKubectlRunner(t, p)
 	if _, err := kr.RunCommand([]string{"create", "-f", filepath.Join(*testdataDir, "busybox.yaml")}); err != nil {
 		t.Fatalf("creating busybox pod: %s", err)
@@ -55,13 +52,10 @@ func TestPersistence(t *testing.T) {
 	// Make sure everything is up before we stop.
 	verifyBusybox(t)
 
-	mk.RunCommand("stop", true)
+	mk.MustRun("stop")
 	mk.CheckStatus(state.Stopped.String())
 
-	stdout, stderr, err = mk.Start()
-	if err != nil {
-		t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
-	}
+	mk.MustStart()
 	mk.CheckStatus(state.Running.String())
 
 	// Make sure the same things come up after we've restarted.

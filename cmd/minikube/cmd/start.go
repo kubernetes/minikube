@@ -102,6 +102,7 @@ const (
 	dnsProxy              = "dns-proxy"
 	hostDNSResolver       = "host-dns-resolver"
 	waitUntilHealthy      = "wait"
+	force                 = "force"
 	waitTimeout           = "wait-timeout"
 )
 
@@ -133,6 +134,8 @@ func initMinikubeFlags() {
 	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	viper.AutomaticEnv()
+
+	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
 
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM.")
 	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
@@ -499,28 +502,48 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	return false, fallback, nil
 }
 
+// Return a minikube command containing the current profile name
+func minikubeCmd() string {
+	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
+		return fmt.Sprintf("minikube -p %s", cfg.MachineProfile)
+	}
+	return "minikube"
+}
+
 // validerUser validates minikube is run by the recommended user (privileged or regular)
 func validateUser() {
 	u, err := user.Current()
-	d := viper.GetString(vmDriver)
-	// Check if minikube needs to run with sudo or not.
-	if err == nil {
-		if d == constants.DriverNone && u.Name != "root" {
-			exit.UsageT(`Please run with sudo. the vm-driver "{{.driver_name}}" requires sudo.`, out.V{"driver_name": constants.DriverNone})
-		} else if u.Name == "root" && !(d == constants.DriverHyperv || d == constants.DriverNone) {
-			out.T(out.WarningType, "Please don't run minikube as root or with 'sudo' privileges. It isn't necessary with {{.driver}} driver.", out.V{"driver": d})
-		}
-
-	} else {
+	if err != nil {
 		glog.Errorf("Error getting the current user: %v", err)
+		return
 	}
 
+	d := viper.GetString(vmDriver)
+	useForce := viper.GetBool(force)
+
+	if d == constants.DriverNone && u.Uid != "0" && !useForce {
+		exit.WithCodeT(exit.Permissions, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo minikube --vm-driver={{.driver_name}}'.`, out.V{"driver_name": d})
+	}
+
+	if d == constants.DriverNone || u.Uid != "0" {
+		return
+	}
+
+	out.T(out.Stopped, "The {{.driver_name}} driver should not be used with root privileges.", out.V{"driver_name": d})
+
+	_, err = cfg.Load()
+	if err == nil || !os.IsNotExist(err) {
+		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
+	}
+	if !useForce {
+		exit.WithCodeT(exit.Permissions, "Exiting")
+	}
 }
 
 // validateConfig validates the supplied configuration against known bad combinations
 func validateConfig() {
 	diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
-	if diskSizeMB < pkgutil.CalculateSizeInMB(constants.MinimumDiskSize) {
+	if diskSizeMB < pkgutil.CalculateSizeInMB(constants.MinimumDiskSize) && !viper.GetBool(force) {
 		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(constants.MinimumDiskSize)})
 	}
 
@@ -530,10 +553,10 @@ func validateConfig() {
 	}
 
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
-	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.MinimumMemorySize) {
+	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.MinimumMemorySize) && !viper.GetBool(force) {
 		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(constants.MinimumMemorySize)})
 	}
-	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) {
+	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) && !viper.GetBool(force) {
 		out.T(out.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default_memorysize}}MB. Beware that minikube might not work correctly or crash unexpectedly.",
 			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
 	}
@@ -820,8 +843,16 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	if nvs.LT(ovs) {
 		nv = version.VersionPrefix + ovs.String()
-		out.ErrT(out.Conflict, "Kubernetes downgrade is not supported, will continue to use {{.version}}", out.V{"version": nv})
-		return nv, isUpgrade
+		profileArg := ""
+		if cfg.GetMachineName() != constants.DefaultMachineName {
+			profileArg = fmt.Sprintf("-p %s", cfg.GetMachineName())
+		}
+		exit.WithCodeT(exit.Config, `Error: You have selected Kubernetes v{{.new}}, but the existing cluster for your profile is running Kubernetes v{{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
+
+* Recreate the cluster using Kubernetes v{{.new}}: Run "minikube delete {{.profile}}", then "minikube start {{.profile}} --kubernetes-version={{.new}}"
+* Create a second cluster with Kubernetes v{{.new}}: Run "minikube start -p <new name> --kubernetes-version={{.new}}"
+* Reuse the existing cluster with Kubernetes v{{.old}} or newer: Run "minikube start {{.profile}} --kubernetes-version={{.old}}"`, out.V{"new": nvs, "old": ovs, "profile": profileArg})
+
 	}
 	if nvs.GT(ovs) {
 		out.T(out.ThumbsUp, "Upgrading from Kubernetes {{.old}} to {{.new}}", out.V{"old": ovs, "new": nvs})
@@ -956,7 +987,7 @@ func validateDriverVersion(vmDriver string) {
 	v := extractVMDriverVersion(string(output))
 
 	// if the driver doesn't have return any version, it is really old, we force a upgrade.
-	if len(v) == 0 {
+	if len(v) == 0 && !viper.GetBool(force) {
 		exit.WithCodeT(
 			exit.Failure,
 			"Please upgrade the '{{.driver_executable}}'. {{.documentation_url}}",

@@ -63,7 +63,7 @@ func DisableDefaultStorageClass(class string) error {
 	return nil
 }
 
-// SetDefaultStorageClass makes sure onlt the class with @name is marked as
+// SetDefaultStorageClass makes sure only the class with @name is marked as
 // default.
 func SetDefaultStorageClass(name string) error {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
