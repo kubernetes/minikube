@@ -1,5 +1,5 @@
 ---
-title: "HTTP Proxiies"
+title: "HTTP Proxies"
 linkTitle: "HTTP Proxies"
 weight: 6
 date: 2017-01-05
