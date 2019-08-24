@@ -110,6 +110,7 @@ Type=notify
 
 `
 	if noPivot {
+		log.Warn("Using fundamentally insecure --no-pivot option")
 		engineConfigTmpl += `
 # DOCKER_RAMDISK disables pivot_root in Docker, using MS_MOVE instead.
 Environment=DOCKER_RAMDISK=yes
