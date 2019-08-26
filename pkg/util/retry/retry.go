@@ -24,7 +24,7 @@ import (
 
 const defaultMaxRetries = 113
 
-// Expo is expontential backoff retry.
+// Expo is exponential backoff retry.
 // initInterval is the initial waiting time to start with.
 // maxTime is the max time allowed to spend on the all the retries.
 // maxRetries is the optional max number of retries allowed with default of 13.
