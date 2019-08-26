@@ -68,7 +68,7 @@ var ProfileCmd = &cobra.Command{
 		}
 		if err == nil {
 			if cc.MachineConfig.KeepContext {
-				out.SuccessT("Skipped switching kubectl context for {{.profile_name}} , because --keep-context", out.V{"profile_name": profile})
+				out.SuccessT("Skipped switching kubectl context for {{.profile_name}} because --keep-context was set.", out.V{"profile_name": profile})
 				out.SuccessT("To connect to this cluster, use: kubectl --context={{.profile_name}}", out.V{"profile_name": profile})
 			} else {
 				err := kubeconfig.SetCurrentContext(constants.KubeconfigPath, profile)
