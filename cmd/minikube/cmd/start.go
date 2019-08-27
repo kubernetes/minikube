@@ -253,6 +253,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
 	}
 	out.T(out.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
+	displayEnviron(os.Environ())
 
 	// if --registry-mirror specified when run minikube start,
 	// take arg precedence over MINIKUBE_REGISTRY_MIRROR
@@ -331,7 +332,18 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 	showKubectlConnectInfo(kubeconfig)
+}
 
+// displayEnviron makes the user aware of environment variables that will affect how minikube operates
+func displayEnviron(env []string) {
+	for _, kv := range env {
+		bits := strings.SplitN(kv, "=", 2)
+		k := bits[0]
+		v := bits[1]
+		if strings.HasPrefix(k, "MINIKUBE_") || k == constants.KubeconfigEnvVar {
+			out.T(out.Option, "{{.key}}={{.value}}", out.V{"key": k, "value": v})
+		}
+	}
 }
 
 func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) {
@@ -354,6 +366,7 @@ func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) 
 		KeepContext:          viper.GetBool(keepContext),
 		EmbedCerts:           viper.GetBool(embedCerts),
 	}
+
 	kcs.SetPath(kubeconfig.PathFromEnv())
 	if err := kubeconfig.Update(kcs); err != nil {
 		return kcs, err
