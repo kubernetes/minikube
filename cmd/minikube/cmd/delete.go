@@ -70,6 +70,9 @@ func (error DeletionError) Error() string {
 
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
+	if len(args) > 0 {
+		exit.UsageT("Usage: minikube delete")
+	}
 	profileFlag, err := cmd.Flags().GetString("profile")
 	if err != nil {
 		exit.WithError("Could not get profile flag", err)
