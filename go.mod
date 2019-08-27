@@ -36,7 +36,14 @@ require (
 	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
 	github.com/jimmidyson/go-download v0.0.0-20161028105827-7f9a90c8c95b
 	github.com/johanneswuerbach/nfsexports v0.0.0-20181204082207-1aa528dcb345
-	github.com/juju/fslock v0.0.0-20160525022230-4d5c94c67b4b
+	github.com/juju/clock v0.0.0-20190205081909-9c5c9712527c
+	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d // indirect
+	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
+	github.com/juju/mutex v0.0.0-20180619145857-d21b13acf4bf
+	github.com/juju/retry v0.0.0-20180821225755-9058e192b216 // indirect
+	github.com/juju/testing v0.0.0-20190723135506-ce30eb24acd2 // indirect
+	github.com/juju/utils v0.0.0-20180820210520-bf9cc5bdd62d // indirect
+	github.com/juju/version v0.0.0-20180108022336-b64dbd566305 // indirect
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
 	github.com/mattn/go-isatty v0.0.8
@@ -67,6 +74,7 @@ require (
 	golang.org/x/text v0.3.2
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
+	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
