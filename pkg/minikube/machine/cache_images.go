@@ -347,10 +347,20 @@ func CacheImage(image, dst string) error {
 }
 
 func retrieveImage(ref name.Reference) (v1.Image, error) {
+	glog.Infof("retrieving image: %+v", ref)
 	img, err := daemon.Image(ref)
 	if err == nil {
 		glog.Infof("found %s locally; caching", ref.Name())
 		return img, err
 	}
-	return remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	glog.Infof("daemon image for %+v: %v", img, err)
+	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	if img, err != nil {
+		glog.Warningf("failed authn download for %+v (trying anon): %+v", ref, err)
+		img, err = remote.Image(ref)
+		if err != nil {
+			glog.Warningf("failed anon download for %+v: %+v", ref, err)
+		}
+	}
+	return img, err
 }
