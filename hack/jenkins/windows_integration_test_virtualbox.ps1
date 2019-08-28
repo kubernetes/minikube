@@ -19,7 +19,8 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 
 ./out/minikube-windows-amd64.exe delete
 
-out/e2e-windows-amd64.exe -minikube-start-args="--vm-driver=virtualbox --bootstrapper=kubeadm" -minikube-args="--v=10 --logtostderr" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=65m -json | Tee-Object -FilePath test.json
+# TODO: use "| Tee-Object -FilePath test.json" once non-last exit codes can be figured out.
+out/e2e-windows-amd64.exe -minikube-start-args="--vm-driver=virtualbox --bootstrapper=kubeadm" -minikube-args="--v=10 --logtostderr" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=65m -json > test.json
 $env:result=$lastexitcode
 # If the last exit code was 0->success, x>0->error
 If($env:result -eq 0){$env:status="success"}
