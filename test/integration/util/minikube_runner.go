@@ -122,7 +122,7 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ..
 		if exitError, ok := err.(*exec.ExitError); ok {
 			exitCode = string(exitError.Stderr)
 		}
-		errMsg := fmt.Sprintf("Error RunCommand : %s \n\t Begin RunCommand log block ---> \n\t With Profile: %s \n\t With ExitCode: %q \n\t With STDOUT %s \n\t With STDERR %s \n\t <--- End of RunCommand log block", cmdStr, m.Profile, exitCode, stdout, stderr)
+		errMsg := fmt.Sprintf("%s exited with code %d.\nstdout:\n%s\nstderr:%s", cmdStr, exitCode, stdout, stderr)
 		if failError {
 			m.T.Fatalf(errMsg)
 		} else {
@@ -170,7 +170,7 @@ func (m *MinikubeRunner) RunDaemon(cmdStr string) (*exec.Cmd, *bufio.Reader) {
 
 	err = cmd.Start()
 	if err != nil {
-		m.T.Fatalf("Error running command: %s %v", cmdStr, err)
+		m.T.Fatalf("daemon failed: %s %v", cmdStr, err)
 	}
 	return cmd, bufio.NewReader(stdoutPipe)
 
@@ -194,7 +194,7 @@ func (m *MinikubeRunner) RunDaemon2(cmdStr string) (*exec.Cmd, *bufio.Reader, *b
 
 	err = cmd.Start()
 	if err != nil {
-		m.T.Fatalf("Error running command: %s %v", cmdStr, err)
+		m.T.Fatalf("daemon2 failed: %s %v", cmdStr, err)
 	}
 	return cmd, bufio.NewReader(stdoutPipe), bufio.NewReader(stderrPipe)
 }
@@ -228,7 +228,7 @@ func (m *MinikubeRunner) MustStart(opts ...string) (stdout string, stderr string
 	stdout, stderr, err := m.start(opts...)
 	// the reason for this formatting is, the logs are very big but useful and also in parallel testing logs are harder to identify
 	if err != nil {
-		m.T.Fatalf("%s Failed to start minikube With error: %v \n\t begin Start log block ------------> \n\t With Profile: %s \n\t With Args: %v \n\t With Global Args: %s  \n\t With Driver Args: %s \n\t With STDOUT: \n \t %s \n\t With STDERR: \n \t %s \n\t <------------ End of Start (%s) log block", m.T.Name(), err, m.Profile, strings.Join(opts, " "), m.GlobalArgs, m.StartArgs, stdout, stderr, m.Profile)
+		m.T.Fatalf("minikube %s failed: %v\nstdout: %s\nstderr: %s", strings.Join(opts, " "), stdout, stderr)
 	}
 	return stdout, stderr
 }

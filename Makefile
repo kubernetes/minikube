@@ -100,6 +100,8 @@ CMD_SOURCE_DIRS = cmd pkg
 SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
+JSON_TEST_OUTPUT = out/test.json
+
 # kvm2 ldflags
 KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT)
 
@@ -154,6 +156,12 @@ out/e2e-%: out/minikube-%
 	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
 
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
+	cp $< $@
+
+out/test-json-to-html-%:
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go build -a -o $@ k8s.io/minikube/hack/test_json_to_html
+
+out/test-json-to-html$(IS_EXE): out/test-json-to-html-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 minikube_iso: # old target kept for making tests happy
@@ -215,6 +223,10 @@ docker-machine-driver-kvm2: out/docker-machine-driver-kvm2
 .PHONY: integration
 integration: out/minikube
 	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
+
+.PHONY: integration-json
+integration-json: out/minikube
+	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS) -json > $(JSON_TEST_OUTPUT)
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)

@@ -69,6 +69,7 @@ export PATH
 echo ""
 echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/go_test_json_to_html-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out
@@ -80,7 +81,12 @@ gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 
 # Set the executable bit on the e2e binary and out binary
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
+export JSON_HTML_BIN="out/go_test_json_to_html-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
+
+JSON_OUT="${TEST_HOME}/tests.json"
+HTML_OUT="${TEST_HOME}/tests.html"
+
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
 procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
@@ -281,9 +287,10 @@ echo ">> ISO URL"
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
+  -json \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
-  -test.v -test.timeout=100m -test.parallel=${PARALLEL_COUNT}  -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+  -test.v -test.timeout=100m -test.parallel=${PARALLEL_COUNT} -binary="${MINIKUBE_BIN}" | tee "${JSON_OUT}" && result=$? || result=$?
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
@@ -296,6 +303,11 @@ else
   source print-debug-info.sh
 fi
 
+# Generate well-formed test output
+"${JSON_TO_HTML_BIN}" -in "${JSON_OUT}" -out "${HTML_OUT}"
+gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
+gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
+
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
 ${SUDO_PREFIX}${MINIKUBE_BIN} delete >/dev/null 2>/dev/null || true
@@ -307,7 +319,7 @@ rmdir "${TEST_HOME}"
 echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
-  readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
+  readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
   curl -s "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
   -H "Content-Type: application/json" \
   -X POST \

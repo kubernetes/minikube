@@ -34,7 +34,7 @@ func TestMain(m *testing.M) {
 
 var startTimeout = flag.Duration("timeout", 25*time.Minute, "max duration to wait for a full minikube start")
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
-var globalArgs = flag.String("minikube-args", "", "Arguments to pass to minikube")
+var globalArgs = flag.String("minikube-args", "--alsologtostderr -v=1", "Arguments to pass to minikube")
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
 var mountArgs = flag.String("minikube-mount-args", "", "Arguments to pass to minikube mount")
 var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
