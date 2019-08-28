@@ -20,10 +20,11 @@ import (
 	"bytes"
 	"crypto/tls"
 
-	// WARNING: Do not use filepath here unless you want bizarre paths to be used in Windows
 	"fmt"
 	"net"
 	"net/http"
+
+	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 	"path"
 	"runtime"
 	"strings"
