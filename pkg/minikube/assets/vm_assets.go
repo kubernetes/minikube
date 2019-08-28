@@ -23,7 +23,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
