@@ -529,7 +529,7 @@ Huge thank you for this release towards our contributors:
 * Updating e2e tests instructions [#3509](https://github.com/kubernetes/minikube/pull/3509)
 * Defer dashboard deployment until "minikube dashboard" is executed [#3485](https://github.com/kubernetes/minikube/pull/3485)
 * Change minikube-hostpath storage class addon from Reconcile to EnsureExists [#3497](https://github.com/kubernetes/minikube/pull/3497)
-* Tell user given driver has been ignored if exising VM is different [#3374](https://github.com/kubernetes/minikube/pull/3374)
+* Tell user given driver has been ignored if existing VM is different [#3374](https://github.com/kubernetes/minikube/pull/3374)
 
 Thank you to all to everyone who contributed to this massive release:
 
@@ -719,7 +719,7 @@ Huge Thank You for this release to our contributors:
 ## Version 0.28.1 - 7/16/2018
 
 * vboxsf Host Mounting fixed (Linux Kernel version downgraded to 4.15 from 4.16) [#2986](https://github.com/kubernetes/minikube/pull/2986)
-* cri-tools udpated to 1.11.1 [#2986](https://github.com/kubernetes/minikube/pull/2986)
+* cri-tools updated to 1.11.1 [#2986](https://github.com/kubernetes/minikube/pull/2986)
 * Feature Gates support added to kubeadm bootstrapper [#2951](https://github.com/kubernetes/minikube/pull/2951)
 * Kubernetes 1.11 build support added [#2943](https://github.com/kubernetes/minikube/pull/2943)
 * GPU support for kvm2 driver added [#2936](https://github.com/kubernetes/minikube/pull/2936)
