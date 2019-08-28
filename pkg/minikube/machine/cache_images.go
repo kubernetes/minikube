@@ -76,6 +76,7 @@ func CacheImages(images []string, cacheDir string) error {
 			dst := filepath.Join(cacheDir, image)
 			dst = sanitizeCacheDir(dst)
 			if err := CacheImage(image, dst); err != nil {
+				glog.Errorf("CacheImage %s -> %s failed: %v", image, dst, err)
 				return errors.Wrapf(err, "caching image %s", dst)
 			}
 			glog.Infof("CacheImage %s -> %s succeeded", image, dst)
