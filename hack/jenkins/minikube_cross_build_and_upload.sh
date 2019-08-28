@@ -39,6 +39,8 @@ declare -rx TAG="${ghprbActualCommit}"
 
 docker kill $(docker ps -q) || true
 docker rm $(docker ps -aq) || true
+
+grep "^all:" Makefile || true
 make -j 16 all && failed=$? || failed=$?
 
 gsutil cp "gs://${bucket}/logs/index.html" \

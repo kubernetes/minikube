@@ -122,7 +122,7 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ..
 		if exitError, ok := err.(*exec.ExitError); ok {
 			exitCode = string(exitError.Stderr)
 		}
-		errMsg := fmt.Sprintf("%s exited with code %d.\nstdout:\n%s\nstderr:%s", cmdStr, exitCode, stdout, stderr)
+		errMsg := fmt.Sprintf("%s exited with code %s.\nstdout:\n%s\nstderr:%s", cmdStr, exitCode, stdout, stderr)
 		if failError {
 			m.T.Fatalf(errMsg)
 		} else {
@@ -228,7 +228,7 @@ func (m *MinikubeRunner) MustStart(opts ...string) (stdout string, stderr string
 	stdout, stderr, err := m.start(opts...)
 	// the reason for this formatting is, the logs are very big but useful and also in parallel testing logs are harder to identify
 	if err != nil {
-		m.T.Fatalf("minikube %s failed: %v\nstdout: %s\nstderr: %s", strings.Join(opts, " "), stdout, stderr)
+		m.T.Fatalf("minikube %s failed: %v\nstdout: %s\nstderr: %s", strings.Join(opts, " "), err, stdout, stderr)
 	}
 	return stdout, stderr
 }

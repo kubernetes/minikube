@@ -25,7 +25,7 @@ $env:result=$lastexitcode
 If($env:result -eq 0){$env:status="success"}
 Else {$env:status="failure"}
 
-out/test-json-to-html -in test.json -out test.html
+out/test-html-windows-amd64 -in test.json -out test.html
 gsutil.cmd -m cp test.json gs://minikube-builds/$env:MINIKUBE_LOCATION/VirtualBox_Windows.json
 gsutil.cmd -m cp test.html gs://minikube-builds/$env:MINIKUBE_LOCATION/VirtualBox_Windows.html
 

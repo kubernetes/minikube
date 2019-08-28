@@ -158,10 +158,13 @@ out/e2e-%: out/minikube-%
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
 
-out/test-json-to-html-%:
-	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go build -a -o $@ k8s.io/minikube/hack/test_json_to_html
+out/test-html-windows-amd64.exe: out/test-html-windows-amd64
+	cp $< $@
 
-out/test-json-to-html$(IS_EXE): out/test-json-to-html-$(GOOS)-$(GOARCH)$(IS_EXE)
+out/test-html-%:
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go build -a -o $@ k8s.io/minikube/hack/test_html
+
+out/test-html$(IS_EXE): out/test-html-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 minikube_iso: # old target kept for making tests happy
@@ -209,7 +212,7 @@ test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross out/gvisor-addon
+all: cross drivers e2e-cross test-html-cross out/gvisor-addon
 
 .PHONY: drivers
 drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2
@@ -279,6 +282,9 @@ linux: minikube-linux-amd64
 
 .PHONY: e2e-cross
 e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
+
+.PHONY: test-html-cross
+test-html-cross: out/test-html-linux-amd64 out/test-html-darwin-amd64 out/test-html-windows-amd64.exe
 
 .PHONY: checksum
 checksum:

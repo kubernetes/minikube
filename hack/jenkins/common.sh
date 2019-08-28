@@ -69,7 +69,7 @@ export PATH
 echo ""
 echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
-  "gs://minikube-builds/${MINIKUBE_LOCATION}/go_test_json_to_html-${OS_ARCH}" \
+  "gs://minikube-builds/${MINIKUBE_LOCATION}/test-html-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out
@@ -81,7 +81,7 @@ gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 
 # Set the executable bit on the e2e binary and out binary
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
-export JSON_HTML_BIN="out/go_test_json_to_html-${OS_ARCH}"
+export TEST_HTML_BIN="out/test-html-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 
 JSON_OUT="${TEST_HOME}/tests.json"
@@ -304,7 +304,7 @@ else
 fi
 
 # Generate well-formed test output
-"${JSON_TO_HTML_BIN}" -in "${JSON_OUT}" -out "${HTML_OUT}"
+"${TEST_HTML_BIN}" -in "${JSON_OUT}" -out "${HTML_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
 gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 

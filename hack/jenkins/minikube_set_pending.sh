@@ -43,7 +43,7 @@ jobs=(
 )
 
 for j in ${jobs[@]}; do
-  target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}.txt"
+  target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}.html"
   curl "https://api.github.com/repos/kubernetes/minikube/statuses/${ghprbActualCommit}?access_token=$access_token" \
     -H "Content-Type: application/json" \
     -X POST \
