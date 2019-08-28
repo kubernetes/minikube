@@ -970,18 +970,14 @@ func saveConfig(clusterCfg *cfg.Config) error {
 }
 
 func validateDriverVersion(vmDriver string) {
-	var (
-		driverExecutable    string
-		driverDocumentation string
-	)
+	var driverExecutable string
+	driverDocumentation := fmt.Sprintf("%s%s#driver-installation", constants.DriverDocumentation, vmDriver)
 
 	switch vmDriver {
 	case constants.DriverKvm2:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverKvm2)
-		driverDocumentation = fmt.Sprintf("%s#%s", constants.DriverDocumentation, "kvm2-upgrade")
 	case constants.DriverHyperkit:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverHyperkit)
-		driverDocumentation = fmt.Sprintf("%s#%s", constants.DriverDocumentation, "hyperkit-upgrade")
 	default: // driver doesn't support version
 		return
 	}
@@ -1002,7 +998,7 @@ func validateDriverVersion(vmDriver string) {
 	if len(v) == 0 && !viper.GetBool(force) {
 		exit.WithCodeT(
 			exit.Failure,
-			"Please upgrade the '{{.driver_executable}}'. {{.documentation_url}}",
+			"The installed version of '{{.driver_executable}}' is obsolete. Upgrade: {{.documentation_url}}",
 			out.V{"driver_executable": driverExecutable, "documentation_url": driverDocumentation},
 		)
 	}
@@ -1021,8 +1017,8 @@ func validateDriverVersion(vmDriver string) {
 
 	if vmDriverVersion.LT(minikubeVersion) {
 		out.WarningT(
-			"There's a new version for '{{.driver_executable}}'. Please consider upgrading. {{.documentation_url}}",
-			out.V{"driver_executable": driverExecutable, "documentation_url": driverDocumentation},
+			"The installed version of '{{.driver_executable}}' ({{.driver_version}}) is no longer current. Upgrade: {{.documentation_url}}",
+			out.V{"driver_executable": driverExecutable, "driver_version": vmDriverVersion, "documentation_url": driverDocumentation},
 		)
 	}
 }
