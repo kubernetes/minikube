@@ -22,6 +22,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -50,7 +51,7 @@ type MinikubeRunner struct {
 
 // Remove removes a file
 func (m *MinikubeRunner) Remove(f assets.CopyableFile) error {
-	_, err := m.SSH(fmt.Sprintf("rm -rf %s", filepath.Join(f.GetTargetDir(), f.GetTargetName())))
+	_, err := m.SSH(fmt.Sprintf("rm -rf %s", path.Join(f.GetTargetDir(), f.GetTargetName())))
 	return err
 }
 

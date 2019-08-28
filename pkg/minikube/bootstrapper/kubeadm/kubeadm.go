@@ -19,10 +19,12 @@ package kubeadm
 import (
 	"bytes"
 	"crypto/tls"
+
+	// WARNING: Do not use filepath here unless you want bizarre paths to be used in Windows
 	"fmt"
 	"net"
 	"net/http"
-	"path/filepath"
+	"path"
 	"runtime"
 	"strings"
 	"time"
@@ -95,7 +97,7 @@ var PodsByLayer = []pod{
 }
 
 // yamlConfigPath is the path to the kubeadm configuration
-var yamlConfigPath = filepath.Join(constants.GuestEphemeralDir, "kubeadm.yaml")
+var yamlConfigPath = path.Join(constants.GuestEphemeralDir, "kubeadm.yaml")
 
 // SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
 var SkipAdditionalPreflights = map[string][]string{}
@@ -200,7 +202,7 @@ func createFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 
 // etcdDataDir is where etcd data is stored.
 func etcdDataDir() string {
-	return filepath.Join(constants.GuestPersistentDir, "etcd")
+	return path.Join(constants.GuestPersistentDir, "etcd")
 }
 
 // createCompatSymlinks creates compatibility symlinks to transition running services to new directory structures
@@ -538,7 +540,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 	}{
 		ExtraOptions:     convertToFlags(extraOpts),
 		ContainerRuntime: k8s.ContainerRuntime,
-		KubeletPath:      filepath.Join(binRoot(k8s.KubernetesVersion), "kubelet"),
+		KubeletPath:      path.Join(binRoot(k8s.KubernetesVersion), "kubelet"),
 	}
 	if err := kubeletSystemdTemplate.Execute(&b, opts); err != nil {
 		return nil, err
@@ -700,7 +702,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, er
 // NewKubeletService returns a generated systemd unit file for the kubelet
 func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 	var b bytes.Buffer
-	opts := struct{ KubeletPath string }{KubeletPath: filepath.Join(binRoot(cfg.KubernetesVersion), "kubelet")}
+	opts := struct{ KubeletPath string }{KubeletPath: path.Join(binRoot(cfg.KubernetesVersion), "kubelet")}
 	if err := kubeletServiceTemplate.Execute(&b, opts); err != nil {
 		return nil, errors.Wrap(err, "template execute")
 	}
@@ -725,7 +727,7 @@ func configFiles(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, ku
 
 // binDir returns the persistent path binaries are stored in
 func binRoot(version string) string {
-	return filepath.Join(constants.GuestPersistentDir, "binaries", version)
+	return path.Join(constants.GuestPersistentDir, "binaries", version)
 }
 
 // invokeKubeadm returns the invocation command for Kubeadm
@@ -744,7 +746,7 @@ func transferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 				return errors.Wrapf(err, "downloading %s", name)
 			}
 
-			dst := filepath.Join(binRoot(cfg.KubernetesVersion), name)
+			dst := path.Join(binRoot(cfg.KubernetesVersion), name)
 			if err := machine.CopyBinary(c, src, dst); err != nil {
 				return errors.Wrapf(err, "copybinary %s -> %s", src, dst)
 			}
