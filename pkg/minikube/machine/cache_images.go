@@ -355,12 +355,13 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 	}
 	glog.Infof("daemon image for %+v: %v", img, err)
 	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
-	if img, err != nil {
-		glog.Warningf("failed authn download for %+v (trying anon): %+v", ref, err)
-		img, err = remote.Image(ref)
-		if err != nil {
-			glog.Warningf("failed anon download for %+v: %+v", ref, err)
-		}
+	if err == nil {
+		return img, err
+	}
+	glog.Warningf("failed authn download for %+v (trying anon): %+v", ref, err)
+	img, err = remote.Image(ref)
+	if err != nil {
+		glog.Warningf("failed anon download for %+v: %+v", ref, err)
 	}
 	return img, err
 }
