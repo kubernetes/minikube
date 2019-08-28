@@ -44,7 +44,7 @@ import (
 )
 
 // loadRoot is where images should be loaded from within the guest VM
-var loadRoot = filepath.Join(constants.GuestPersistentDir, "images")
+var loadRoot = path.Join(constants.GuestPersistentDir, "images")
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
 
