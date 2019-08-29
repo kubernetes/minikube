@@ -36,11 +36,9 @@ func TestIsValidEnv(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.env, func(t *testing.T) {
-			got := isValidEnv(tc.env)
-			if got != tc.want {
+			if got := isValidEnv(tc.env); got != tc.want {
 				t.Errorf("isValidEnv(\"%v\") got %v; want %v", tc.env, got, tc.want)
 			}
-
 		})
 	}
 
@@ -140,16 +138,12 @@ func TestCheckEnv(t *testing.T) {
 				}
 			}()
 
-			// defer os.Setenv(tc.envName, originalEnv)
-			err := os.Setenv(tc.envName, tc.mockEnvValue) // setting up the test case
-			if err != nil {
+			if err := os.Setenv(tc.envName, tc.mockEnvValue); err != nil {
 				t.Error("Error setting env var for taste case")
 			}
-			got := checkEnv(tc.ip, tc.envName)
-			if got != tc.want {
+			if got := checkEnv(tc.ip, tc.envName); got != tc.want {
 				t.Errorf("CheckEnv(%v,%v) got  %v ; want is %v", tc.ip, tc.envName, got, tc.want)
 			}
-
 		})
 	}
 
