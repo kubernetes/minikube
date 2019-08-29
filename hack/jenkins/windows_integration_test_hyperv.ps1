@@ -15,17 +15,19 @@
 mkdir -p out
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/minikube-windows-amd64.exe out/
 gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.exe out/
+gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/test-html-windows-amd64.exe out/
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 
 ./out/minikube-windows-amd64.exe delete
 
 # TODO: use "| Tee-Object -FilePath test.json" once non-last exit codes can be figured out.
-out/e2e-windows-amd64.exe -minikube-start-args="--vm-driver=hyperv --hyperv-virtual-switch=primary-virtual-switch --bootstrapper=kubeadm" -minikube-args="--v=10 --logtostderr" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=65m -json > test.json
+out/e2e-windows-amd64.exe -minikube-start-args="--vm-driver=hyperv --hyperv-virtual-switch=primary-virtual-switch --bootstrapper=kubeadm" -minikube-args="--v=10 --logtostderr" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=65m > test.out
 $env:result=$lastexitcode
 # If the last exit code was 0->success, x>0->error
 If($env:result -eq 0){$env:status="success"}
 Else {$env:status="failure"}
 
+type test.out | go tool test2json > test.json
 out/test-html-windows-amd64 -in test.json -out test.html
 gsutil.cmd -m cp test.json gs://minikube-builds/$env:MINIKUBE_LOCATION/VirtualBox_Windows.json
 gsutil.cmd -m cp test.html gs://minikube-builds/$env:MINIKUBE_LOCATION/VirtualBox_Windows.html

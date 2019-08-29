@@ -1,4 +1,4 @@
-#!/bin/bash
+JS#!/bin/bash
 
 # Copyright 2016 The Kubernetes Authors All rights reserved.
 #
@@ -84,8 +84,9 @@ export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export TEST_HTML_BIN="out/test-html-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 
-JSON_OUT="${TEST_HOME}/tests.json"
-HTML_OUT="${TEST_HOME}/tests.html"
+TEST_OUT="${TEST_HOME}/test.out"
+JSON_OUT="${TEST_HOME}/test.json"
+HTML_OUT="${TEST_HOME}/test.html"
 
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
@@ -287,10 +288,9 @@ echo ">> ISO URL"
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
-  -json \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
-  -test.v -test.timeout=100m -test.parallel=${PARALLEL_COUNT} -binary="${MINIKUBE_BIN}" | tee "${JSON_OUT}" && result=$? || result=$?
+  -test.v -test.timeout=100m -test.parallel=${PARALLEL_COUNT} -binary="${MINIKUBE_BIN}" | tee "${TEST_OUT}" && result=$? || result=$?
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
@@ -304,6 +304,7 @@ else
 fi
 
 # Generate well-formed test output
+go tool test2json < "${TEST_OUT}" > "${JSON_OUT}"
 "${TEST_HTML_BIN}" -in "${JSON_OUT}" -out "${HTML_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
 gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
