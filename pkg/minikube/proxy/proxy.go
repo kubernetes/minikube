@@ -57,6 +57,11 @@ func isInBlock(ip string, block string) (bool, error) {
 
 // ExcludeIP will exclude the ip from the http(s)_proxy
 func ExcludeIP(ip string) error {
+	if netIp := net.ParseIP(ip); netIp == nil {
+		if _, _, err := net.ParseCIDR(ip); err != nil {
+			return fmt.Errorf("ExcludeIP(%v) requires IP as a parameter or CIDR", ip)
+		}
+	}
 	return updateEnv(ip, "NO_PROXY")
 }
 
