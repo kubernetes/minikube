@@ -25,6 +25,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -44,7 +45,7 @@ import (
 )
 
 // loadRoot is where images should be loaded from within the guest VM
-var loadRoot = filepath.Join(constants.GuestPersistentDir, "images")
+var loadRoot = path.Join(constants.GuestPersistentDir, "images")
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
 
@@ -75,8 +76,10 @@ func CacheImages(images []string, cacheDir string) error {
 			dst := filepath.Join(cacheDir, image)
 			dst = sanitizeCacheDir(dst)
 			if err := CacheImage(image, dst); err != nil {
+				glog.Errorf("CacheImage %s -> %s failed: %v", image, dst, err)
 				return errors.Wrapf(err, "caching image %s", dst)
 			}
+			glog.Infof("CacheImage %s -> %s succeeded", image, dst)
 			return nil
 		})
 	}
@@ -143,7 +146,9 @@ func CacheAndLoadImages(images []string) error {
 func sanitizeCacheDir(image string) string {
 	if runtime.GOOS == "windows" && hasWindowsDriveLetter(image) {
 		// not sanitize Windows drive letter.
-		return image[:2] + strings.Replace(image[2:], ":", "_", -1)
+		s := image[:2] + strings.Replace(image[2:], ":", "_", -1)
+		glog.Infof("windows sanitize: %s -> %s", image, s)
+		return s
 	}
 	return strings.Replace(image, ":", "_", -1)
 }
@@ -286,8 +291,14 @@ func getDstPath(dst string) (string, error) {
 
 // CacheImage caches an image
 func CacheImage(image, dst string) error {
-	glog.Infof("Attempting to cache image: %s at %s\n", image, dst)
+	start := time.Now()
+	glog.Infof("CacheImage: %s -> %s", image, dst)
+	defer func() {
+		glog.Infof("CacheImage: %s -> %s completed in %s", image, dst, time.Since(start))
+	}()
+
 	if _, err := os.Stat(dst); err == nil {
+		glog.Infof("%s exists", dst)
 		return nil
 	}
 
@@ -331,14 +342,26 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
+	glog.Infof("%s exists", dst)
 	return nil
 }
 
 func retrieveImage(ref name.Reference) (v1.Image, error) {
+	glog.Infof("retrieving image: %+v", ref)
 	img, err := daemon.Image(ref)
 	if err == nil {
 		glog.Infof("found %s locally; caching", ref.Name())
 		return img, err
 	}
-	return remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	glog.Infof("daemon image for %+v: %v", img, err)
+	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	if err == nil {
+		return img, err
+	}
+	glog.Warningf("failed authn download for %+v (trying anon): %+v", ref, err)
+	img, err = remote.Image(ref)
+	if err != nil {
+		glog.Warningf("failed anon download for %+v: %+v", ref, err)
+	}
+	return img, err
 }
