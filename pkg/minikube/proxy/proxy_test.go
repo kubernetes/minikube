@@ -59,7 +59,7 @@ func TestIsInBlock(t *testing.T) {
 		{"192.168.0.1", "foo", false, true},
 	}
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%s in %s", tc.ip, tc.block), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s in %s Want: %t WantAErr: %t", tc.ip, tc.block, tc.want, tc.wanntAErr), func(t *testing.T) {
 			got, err := isInBlock(tc.ip, tc.block)
 			gotErr := false
 			if err != nil {
@@ -90,7 +90,7 @@ func TestUpdateEnv(t *testing.T) {
 		{"192.168.0.13", "NPROXY", true},
 	}
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%s in %s", tc.ip, tc.env), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%s in %s WantAErr: %t", tc.ip, tc.env, tc.wantErr), func(t *testing.T) {
 			origVal := os.Getenv(tc.env)
 			gotErr := false
 			err := updateEnv(tc.ip, tc.env)
