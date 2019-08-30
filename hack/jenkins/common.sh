@@ -40,6 +40,7 @@ echo "kernel:    $(uname -v)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
+echo "go    :    $(go version)"
 
 case "${VM_DRIVER}" in
   kvm2)
@@ -91,6 +92,12 @@ export E2E_BIN="out/e2e-${OS_ARCH}"
 TEST_OUT="${TEST_HOME}/test.out"
 JSON_OUT="${TEST_HOME}/test.json"
 HTML_OUT="${TEST_HOME}/test.html"
+
+# Validate that our tools work
+echo STARTING | go tool test2json > "${JSON_OUT}"
+"${TEST_HTML_BIN}" -in "${JSON_OUT}" -out "${HTML_OUT}"
+gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
+gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
