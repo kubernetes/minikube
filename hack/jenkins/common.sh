@@ -66,6 +66,10 @@ fi
 PATH="$(pwd)/out/":$PATH
 export PATH
 
+# Avoid unexpectedly set paths
+GOPATH=""
+export GOPATH
+
 echo ""
 echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
