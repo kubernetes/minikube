@@ -53,53 +53,62 @@ func TestRegistry(t *testing.T) {
 	}
 
 	registry := createRegistry()
+	t.Run("registry.Register", func(t *testing.T) {
+		t.Run("foo", func(t *testing.T) {
+			if err := registry.Register(foo); err != nil {
+				t.Fatal("expect nil")
+			}
+		})
+		t.Run("fooAlreadyExist", func(t *testing.T) {
+			if err := registry.Register(foo); err != ErrDriverNameExist {
+				t.Fatal("expect ErrDriverNameExist")
+			}
+		})
+		t.Run("bar", func(t *testing.T) {
+			if err := registry.Register(bar); err != nil {
+				t.Fatal("expect nil")
+			}
+		})
+	})
+	t.Run("registry.List", func(t *testing.T) {
+		list := registry.List()
+		if len(list) != 2 {
+			t.Fatalf("expect len(list) to be %d; got %d", 2, len(list))
+		}
+		if !(list[0].Name == "bar" && list[1].Name == "foo" || list[0].Name == "foo" && list[1].Name == "bar") {
+			t.Fatalf("expect registry.List return %s; got %s", []string{"bar", "foo"}, list)
+		}
+		if drivers := ListDrivers(); len(list) == len(drivers) {
+			t.Fatalf("Expectect ListDrivers and registry.List() to return same number of items")
+		}
+	})
 
-	if err := registry.Register(foo); err != nil {
-		t.Fatal("expect nil")
-	}
-
-	if err := registry.Register(foo); err != ErrDriverNameExist {
-		t.Fatal("expect ErrDriverNameExist")
-	}
-
-	if err := registry.Register(bar); err != nil {
-		t.Fatal("expect nil")
-	}
-
-	list := registry.List()
-	if len(list) != 2 {
-		t.Fatalf("expect len(list) to be %d; got %d", 2, len(list))
-	}
-
-	if !(list[0].Name == "bar" && list[1].Name == "foo" || list[0].Name == "foo" && list[1].Name == "bar") {
-		t.Fatalf("expect registry.List return %s; got %s", []string{"bar", "foo"}, list)
-	}
-	if drivers := ListDrivers(); len(list) == len(drivers) {
-		t.Fatalf("Expectect ListDrivers and registry.List() to return same number of items")
-	}
-
-	driver, err := registry.Driver("foo")
-	if err != nil {
-		t.Fatal("expect nil")
-	}
-	if driver.Name != "foo" {
-		t.Fatal("expect registry.Driver(foo) returns registered driver")
-	}
-
-	_, err = registry.Driver("foo2")
-	if err != ErrDriverNotFound {
-		t.Fatal("expect ErrDriverNotFound")
-	}
-
-	if _, err := Driver("no_such_driver"); err == nil {
-		t.Fatal("expect to get error during not existing driver")
-	}
-
+	t.Run("Driver", func(t *testing.T) {
+		driver, err := registry.Driver("foo")
+		if err != nil {
+			t.Fatal("expect nil")
+		}
+		if driver.Name != "foo" {
+			t.Fatal("expect registry.Driver(foo) returns registered driver")
+		}
+	})
+	t.Run("NotExistingDriver", func(t *testing.T) {
+		_, err := registry.Driver("foo2")
+		if err != ErrDriverNotFound {
+			t.Fatal("expect ErrDriverNotFound")
+		}
+	})
+	t.Run("Driver", func(t *testing.T) {
+		if _, err := Driver("no_such_driver"); err == nil {
+			t.Fatal("expect to get error during not existing driver")
+		}
+	})
 	if _, err := Driver("foo"); err == nil {
 		t.Fatal("expect to not get error during existing driver foo")
 	}
-
-	if err := Register(foo); err != nil {
-		t.Fatal("expect to not get error during registering driver foo")
-	}
+	t.Run("Register", func(t *testing.T) {
+		if err := Register(foo); err != nil {
+			t.Fatal("expect to not get error during registering driver foo")
+		}
+	})
 }
