@@ -30,12 +30,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/version"
 )
-
-const updateLinkPrefix = "https://github.com/kubernetes/minikube/releases/tag/v"
 
 var (
 	timeLayout              = time.RFC1123
@@ -66,13 +65,9 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) {
 		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
 			glog.Errorf("write time failed: %v", err)
 		}
-		console.ErrStyle(console.WarningType, `There is a newer version of minikube available (%s%s).  Download it here:
-%s%s
-
-To disable this notification, run the following:
-minikube config set WantUpdateNotification false
-`,
-			version.VersionPrefix, latestVersion, updateLinkPrefix, latestVersion)
+		url := "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
+		out.ErrT(out.WarningType, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
+		out.T(out.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'")
 	}
 }
 
@@ -136,7 +131,7 @@ func GetAllVersionsFromURL(url string) (Releases, error) {
 }
 
 func writeTimeToFile(path string, inputTime time.Time) error {
-	err := ioutil.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0644)
+	err := lock.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0644)
 	if err != nil {
 		return errors.Wrap(err, "Error writing current update time to file: ")
 	}

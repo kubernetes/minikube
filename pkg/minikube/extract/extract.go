@@ -31,21 +31,24 @@ import (
 
 	"github.com/golang-collections/collections/stack"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // blacklist is a list of strings to explicitly omit from translation files.
 var blacklist = []string{
-	"%s: %v",
-	"%s.%s=%s",
-	"%s/%d",
-	"%s=%s",
-	"%v",
-	"GID:      %s",
-	"MSize:    %d",
-	"UID:      %s",
-	"env %s",
-	"opt %s",
+	"{{.error}}",
+	"{{.url}}",
+	"{{.msg}}: {{.err}}",
+	"{{.key}}={{.value}}",
+	"opt {{.docker_option}}",
+	"kube-system",
+	"env {{.docker_env}}",
+	"\\n",
+	"==\u003e {{.name}} \u003c==",
 }
+
+// ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.
+const ErrMapFile string = "pkg/minikube/problem/err_map.go"
 
 // state is a struct that represent the current state of the extraction process
 type state struct {
@@ -112,16 +115,6 @@ func setParentFunc(e *state, f string) {
 
 // TranslatableStrings finds all strings to that need to be translated in paths and prints them out to all json files in output
 func TranslatableStrings(paths []string, functions []string, output string) error {
-	cwd, err := os.Getwd()
-	if err != nil {
-		return errors.Wrap(err, "Getting current working directory")
-	}
-
-	if strings.Contains(cwd, "cmd") {
-		fmt.Println("Run extract.go from the minikube root directory.")
-		os.Exit(1)
-	}
-
 	e, err := newExtractor(functions)
 
 	if err != nil {
@@ -173,6 +166,10 @@ func inspectFile(e *state) error {
 		return err
 	}
 
+	if e.filename == ErrMapFile {
+		return extractAdvice(file, e)
+	}
+
 	ast.Inspect(file, func(x ast.Node) bool {
 		if fi, ok := x.(*ast.File); ok {
 			e.currentPackage = fi.Name.String()
@@ -197,6 +194,11 @@ func checkNode(stmt ast.Node, e *state) {
 	if expr, ok := stmt.(*ast.CallExpr); ok {
 		checkCallExpression(expr, e)
 	}
+
+	// Check all key value pairs for possible help text
+	if kvp, ok := stmt.(*ast.KeyValueExpr); ok {
+		checkKeyValueExpression(kvp, e)
+	}
 }
 
 // checkCallExpression takes a function call, and checks its arguments for strings
@@ -219,6 +221,10 @@ func checkCallExpression(s *ast.CallExpr, e *state) {
 		// Parse out the package of the call
 		sfi, ok := sf.X.(*ast.Ident)
 		if !ok {
+			if sfc, ok := sf.X.(*ast.CallExpr); ok {
+				extractFlagHelpText(s, sfc, e)
+				return
+			}
 			return
 		}
 		packageName = sfi.Name
@@ -245,12 +251,14 @@ func checkCallExpression(s *ast.CallExpr, e *state) {
 	checkArguments(s, e)
 }
 
+// checkArguments checks the arguments of a function call for strings
 func checkArguments(s *ast.CallExpr, e *state) {
 	matched := false
 	for _, arg := range s.Args {
 		// This argument is an identifier.
 		if i, ok := arg.(*ast.Ident); ok {
-			if checkIdentForStringValue(i, e) {
+			if s := checkIdentForStringValue(i); s != "" {
+				e.translations[s] = ""
 				matched = true
 				break
 			}
@@ -258,52 +266,63 @@ func checkArguments(s *ast.CallExpr, e *state) {
 
 		// This argument is a string.
 		if argString, ok := arg.(*ast.BasicLit); ok {
-			if addStringToList(argString.Value, e) {
+			if s := checkString(argString.Value); s != "" {
+				e.translations[s] = ""
 				matched = true
 				break
 			}
 		}
 	}
 
+	// No string arguments were found, check everything the calls this function for strings
 	if !matched {
 		addParentFuncToList(e)
 	}
 
 }
 
-// checkIdentForStringValye takes a identifier and sees if it's a variable assigned to a string
-func checkIdentForStringValue(i *ast.Ident, e *state) bool {
+// checkIdentForStringValue takes a identifier and sees if it's a variable assigned to a string
+func checkIdentForStringValue(i *ast.Ident) string {
 	// This identifier is nil
 	if i.Obj == nil {
-		return false
+		return ""
 	}
 
-	as, ok := i.Obj.Decl.(*ast.AssignStmt)
+	var s string
 
-	// This identifier wasn't assigned anything
-	if !ok {
-		return false
+	// This identifier was directly assigned a value
+	if as, ok := i.Obj.Decl.(*ast.AssignStmt); ok {
+		if rhs, ok := as.Rhs[0].(*ast.BasicLit); ok {
+			s = rhs.Value
+		}
+
 	}
 
-	rhs, ok := as.Rhs[0].(*ast.BasicLit)
-
-	// This identifier was not assigned a string/basic value
-	if !ok {
-		return false
+	// This Identifier is part of the const or var declaration
+	if vs, ok := i.Obj.Decl.(*ast.ValueSpec); ok {
+		for j, n := range vs.Names {
+			if n.Name == i.Name {
+				if len(vs.Values) < j+1 {
+					// There's no way anything was assigned here, abort
+					return ""
+				}
+				if v, ok := vs.Values[j].(*ast.BasicLit); ok {
+					s = v.Value
+					break
+				}
+			}
+		}
 	}
 
-	if addStringToList(rhs.Value, e) {
-		return true
-	}
+	return checkString(s)
 
-	return false
 }
 
-// addStringToList takes a string, makes sure it's meant to be translated then adds it to the list if so
-func addStringToList(s string, e *state) bool {
+// checkString checks if a string is meant to be translated
+func checkString(s string) string {
 	// Empty strings don't need translating
 	if len(s) <= 2 {
-		return false
+		return ""
 	}
 
 	// Parse out quote marks
@@ -311,29 +330,108 @@ func addStringToList(s string, e *state) bool {
 
 	// Don't translate integers
 	if _, err := strconv.Atoi(stringToTranslate); err == nil {
-		return false
+		return ""
 	}
 
 	// Don't translate URLs
 	if u, err := url.Parse(stringToTranslate); err == nil && u.Scheme != "" && u.Host != "" {
-		return false
+		return ""
 	}
 
 	// Don't translate commands
 	if strings.HasPrefix(stringToTranslate, "sudo ") {
-		return false
+		return ""
 	}
 
 	// Don't translate blacklisted strings
 	for _, b := range blacklist {
 		if b == stringToTranslate {
-			return false
+			return ""
 		}
 	}
 
 	// Hooray, we can translate the string!
-	e.translations[stringToTranslate] = ""
-	return true
+	return stringToTranslate
+}
+
+// checkKeyValueExpression checks all kvps for help text
+func checkKeyValueExpression(kvp *ast.KeyValueExpr, e *state) {
+	// The key must be an identifier
+	i, ok := kvp.Key.(*ast.Ident)
+	if !ok {
+		return
+	}
+
+	// Specifically, it needs to be "Short" or "Long"
+	if i.Name == "Short" || i.Name == "Long" {
+		// The help text is directly a string, the most common case
+		if help, ok := kvp.Value.(*ast.BasicLit); ok {
+			s := checkString(help.Value)
+			if s != "" {
+				e.translations[s] = ""
+			}
+		}
+
+		// The help text is assigned to a variable, only happens if it's very long
+		if help, ok := kvp.Value.(*ast.Ident); ok {
+			s := checkIdentForStringValue(help)
+			if s != "" {
+				e.translations[s] = ""
+			}
+		}
+
+		// Ok now this is just a mess
+		if help, ok := kvp.Value.(*ast.BinaryExpr); ok {
+			s := checkBinaryExpression(help, e)
+			if s != "" {
+				e.translations[s] = ""
+			}
+		}
+	}
+}
+
+// checkBinaryExpression checks binary expressions, stuff of the form x + y, for strings and concats them
+func checkBinaryExpression(b *ast.BinaryExpr, e *state) string {
+	// Check the left side
+	var s string
+	if l, ok := b.X.(*ast.BasicLit); ok {
+		if x := checkString(l.Value); x != "" {
+			s += x
+		}
+	}
+
+	if i, ok := b.X.(*ast.Ident); ok {
+		if x := checkIdentForStringValue(i); x != "" {
+			s += x
+		}
+	}
+
+	if b1, ok := b.X.(*ast.BinaryExpr); ok {
+		if x := checkBinaryExpression(b1, e); x != "" {
+			s += x
+		}
+	}
+
+	//Check the right side
+	if l, ok := b.Y.(*ast.BasicLit); ok {
+		if x := checkString(l.Value); x != "" {
+			s += x
+		}
+	}
+
+	if i, ok := b.Y.(*ast.Ident); ok {
+		if x := checkIdentForStringValue(i); x != "" {
+			s += x
+		}
+	}
+
+	if b1, ok := b.Y.(*ast.BinaryExpr); ok {
+		if x := checkBinaryExpression(b1, e); x != "" {
+			s += x
+		}
+	}
+
+	return s
 }
 
 // writeStringsToFiles writes translations to all translation files in output
@@ -377,7 +475,7 @@ func writeStringsToFiles(e *state, output string) error {
 		if err != nil {
 			return errors.Wrap(err, "marshalling translations")
 		}
-		err = ioutil.WriteFile(path, c, info.Mode())
+		err = lock.WriteFile(path, c, info.Mode())
 		if err != nil {
 			return errors.Wrap(err, "writing translation file")
 		}
@@ -392,5 +490,59 @@ func addParentFuncToList(e *state) {
 	if _, ok := e.funcs[e.parentFunc]; !ok {
 		e.funcs[e.parentFunc] = struct{}{}
 		e.fs.Push(e.parentFunc)
+	}
+}
+
+// extractAdvice specifically extracts Advice strings in err_map.go, since they don't conform to our normal translatable string format.
+func extractAdvice(f ast.Node, e *state) error {
+	ast.Inspect(f, func(x ast.Node) bool {
+		// We want the "Advice: <advice string>" key-value pair
+		// First make sure we're looking at a kvp
+		kvp, ok := x.(*ast.KeyValueExpr)
+		if !ok {
+			return true
+		}
+
+		// Now make sure we're looking at an Advice kvp
+		i, ok := kvp.Key.(*ast.Ident)
+		if !ok {
+			return true
+		}
+
+		if i.Name == "Advice" {
+			// At this point we know the value in the kvp is guaranteed to be a string
+			advice, _ := kvp.Value.(*ast.BasicLit)
+			s := checkString(advice.Value)
+			if s != "" {
+				e.translations[s] = ""
+			}
+		}
+		return true
+	})
+
+	return nil
+}
+
+// extractFlagHelpText finds usage text for all command flags and adds them to the list to translate
+func extractFlagHelpText(c *ast.CallExpr, sfc *ast.CallExpr, e *state) {
+	// We're looking for calls of the form cmd.Flags().VarP()
+	flags, ok := sfc.Fun.(*ast.SelectorExpr)
+	if !ok {
+		return
+	}
+
+	if flags.Sel.Name != "Flags" || len(c.Args) == 1 {
+		return
+	}
+
+	// The usage text for flags is always the final argument in the Flags() call
+	usage, ok := c.Args[len(c.Args)-1].(*ast.BasicLit)
+	if !ok {
+		// Something has gone wrong, abort
+		return
+	}
+	s := checkString(usage.Value)
+	if s != "" {
+		e.translations[s] = ""
 	}
 }

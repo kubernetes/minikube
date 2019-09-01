@@ -35,12 +35,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/service"
-	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 var (
@@ -58,7 +58,7 @@ var dashboardCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cc, err := pkg_config.Load()
 		if err != nil && !os.IsNotExist(err) {
-			console.ErrLn("Error loading profile config: %v", err)
+			exit.WithError("Error loading profile config", err)
 		}
 
 		api, err := machine.NewAPIClient()
@@ -76,8 +76,7 @@ var dashboardCmd = &cobra.Command{
 		if _, err = api.Load(pkg_config.GetMachineName()); err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
-				console.OutStyle(console.Meh, "%q cluster does not exist", pkg_config.GetMachineName())
-				os.Exit(exit.Unavailable)
+				exit.WithCodeT(exit.Unavailable, "{{.name}} cluster does not exist", out.V{"name": pkg_config.GetMachineName()})
 			default:
 				exit.WithError("Error getting cluster", err)
 			}
@@ -90,7 +89,7 @@ var dashboardCmd = &cobra.Command{
 
 		kubectl, err := exec.LookPath("kubectl")
 		if err != nil {
-			exit.WithCode(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+			exit.WithCodeT(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		}
 
 		cluster.EnsureMinikubeRunningOrExit(api, 1)
@@ -100,7 +99,7 @@ var dashboardCmd = &cobra.Command{
 		dashboardStatus, _ := dashboardAddon.IsEnabled()
 		if !dashboardStatus {
 			// Send status messages to stderr for folks re-using this output.
-			console.ErrStyle(console.Enabling, "Enabling dashboard ...")
+			out.ErrT(out.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
 			err = configcmd.Set("dashboard", "true")
 			if err != nil {
@@ -110,29 +109,31 @@ var dashboardCmd = &cobra.Command{
 
 		ns := "kube-system"
 		svc := "kubernetes-dashboard"
-		console.ErrStyle(console.Verifying, "Verifying dashboard health ...")
-		if err = util.RetryAfter(180, func() error { return service.CheckService(ns, svc) }, 1*time.Second); err != nil {
-			exit.WithCode(exit.Unavailable, "%s:%s is not running: %v", ns, svc, err)
+		out.ErrT(out.Verifying, "Verifying dashboard health ...")
+		checkSVC := func() error { return service.CheckService(ns, svc) }
+		if err = retry.Expo(checkSVC, 1*time.Second, time.Minute*3); err != nil {
+			exit.WithCodeT(exit.Unavailable, "dashboard service is not running: {{.error}}", out.V{"error": err})
 		}
 
-		console.ErrStyle(console.Launch, "Launching proxy ...")
+		out.ErrT(out.Launch, "Launching proxy ...")
 		p, hostPort, err := kubectlProxy(kubectl)
 		if err != nil {
 			exit.WithError("kubectl proxy", err)
 		}
 		url := dashboardURL(hostPort, ns, svc)
 
-		console.ErrStyle(console.Verifying, "Verifying proxy health ...")
-		if err = util.RetryAfter(60, func() error { return checkURL(url) }, 1*time.Second); err != nil {
-			exit.WithCode(exit.Unavailable, "%s is not responding properly: %v", url, err)
+		out.ErrT(out.Verifying, "Verifying proxy health ...")
+		chkURL := func() error { return checkURL(url) }
+		if err = retry.Expo(chkURL, 1*time.Second, 3*time.Minute); err != nil {
+			exit.WithCodeT(exit.Unavailable, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
 		}
 
 		if dashboardURLMode {
-			console.OutLn(url)
+			out.Ln(url)
 		} else {
-			console.ErrStyle(console.Celebrate, "Opening %s in your default browser...", url)
+			out.T(out.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
 			if err = browser.OpenURL(url); err != nil {
-				console.Failure("failed to open browser: %v", err)
+				exit.WithCodeT(exit.Software, "failed to open browser: {{.error}}", out.V{"error": err})
 			}
 		}
 
@@ -220,7 +221,7 @@ func checkURL(url string) error {
 		return errors.Wrap(err, "checkURL")
 	}
 	if resp.StatusCode != http.StatusOK {
-		return &util.RetriableError{
+		return &retry.RetriableError{
 			Err: fmt.Errorf("unexpected response code: %d", resp.StatusCode),
 		}
 	}
@@ -229,5 +230,4 @@ func checkURL(url string) error {
 
 func init() {
 	dashboardCmd.Flags().BoolVar(&dashboardURLMode, "url", false, "Display dashboard URL instead of opening a browser")
-	RootCmd.AddCommand(dashboardCmd)
 }

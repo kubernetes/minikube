@@ -19,6 +19,7 @@ package config
 import (
 	"github.com/spf13/cobra"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
@@ -29,7 +30,7 @@ var configSetCmd = &cobra.Command{
 	These values can be overwritten by flags or environment variables at runtime.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 2 {
-			exit.Usage("usage: minikube config set PROPERTY_NAME PROPERTY_VALUE")
+			exit.UsageT("usage: minikube config set PROPERTY_NAME PROPERTY_VALUE")
 		}
 		err := Set(args[0], args[1])
 		if err != nil {
@@ -55,7 +56,7 @@ func Set(name string, value string) error {
 	}
 
 	// Set the value
-	config, err := pkgConfig.ReadConfig()
+	config, err := pkgConfig.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return err
 	}
@@ -71,5 +72,5 @@ func Set(name string, value string) error {
 	}
 
 	// Write the value
-	return WriteConfig(config)
+	return pkgConfig.WriteConfig(constants.ConfigFile, config)
 }

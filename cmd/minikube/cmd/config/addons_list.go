@@ -41,7 +41,7 @@ var addonsListCmd = &cobra.Command{
 	Long:  "Lists all available minikube addons as well as their current statuses (enabled/disabled)",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) != 0 {
-			exit.Usage("usage: minikube addons list")
+			exit.UsageT("usage: minikube addons list")
 		}
 		err := addonList()
 		if err != nil {

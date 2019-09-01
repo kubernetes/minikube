@@ -25,6 +25,11 @@ set -eux -o pipefail
 
 readonly bucket="minikube-builds"
 
+# Make sure the right golang version is installed based on Makefile
+WANT_GOLANG_VERSION=$(grep '^GO_VERSION' Makefile | awk '{ print $3 }')
+./hack/jenkins/installers/check_install_golang.sh $WANT_GOLANG_VERSION /usr/local
+
+
 declare -rx BUILD_IN_DOCKER=y
 declare -rx GOPATH=/var/lib/jenkins/go
 declare -rx ISO_BUCKET="${bucket}/${ghprbPullId}"
@@ -49,8 +54,8 @@ git diff ${ghprbActualCommit} --name-only \
   | grep -q deploy/iso/minikube && rebuild=1 || rebuild=0
 
 if [[ "${rebuild}" -eq 1 ]]; then
-	echo "ISO changes detected ... rebuilding ISO"
-	make release-iso
+  echo "ISO changes detected ... rebuilding ISO"
+  make release-iso
 fi
 
 cp -r test/integration/testdata out/

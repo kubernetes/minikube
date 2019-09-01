@@ -19,8 +19,15 @@ package config
 import (
 	"net"
 
+	"github.com/blang/semver"
 	"k8s.io/minikube/pkg/util"
 )
+
+// Profile represents a minikube profile
+type Profile struct {
+	Name   string
+	Config *Config
+}
 
 // Config contains machine and k8s config
 type Config struct {
@@ -31,6 +38,7 @@ type Config struct {
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
 	KeepContext         bool // used by start and profile command to or not to switch kubectl's current context
+	EmbedCerts          bool // used by kubeconfig.Setup
 	MinikubeISO         string
 	Memory              int
 	CPUs                int
@@ -39,7 +47,6 @@ type MachineConfig struct {
 	ContainerRuntime    string
 	HyperkitVpnKitSock  string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts  []string // Only used by the Hyperkit driver
-	XhyveDiskDriver     string   // Only used by the xhyve driver
 	DockerEnv           []string // Each entry is formatted as KEY=VALUE.
 	InsecureRegistry    []string
 	RegistryMirror      []string
@@ -51,7 +58,7 @@ type MachineConfig struct {
 	KVMHidden           bool               // Only used by kvm2
 	Downloader          util.ISODownloader `json:"-"`
 	DockerOpt           []string           // Each entry is formatted as KEY=VALUE.
-	DisableDriverMounts bool               // Only used by virtualbox and xhyve
+	DisableDriverMounts bool               // Only used by virtualbox
 	NFSShare            []string
 	NFSSharesRoot       string
 	UUID                string // Only used by hyperkit to restore the mac address
@@ -76,8 +83,33 @@ type KubernetesConfig struct {
 	FeatureGates      string
 	ServiceCIDR       string
 	ImageRepository   string
-	ExtraOptions      util.ExtraOptionSlice
+	ExtraOptions      ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool
+}
+
+// VersionedExtraOption holds information on flags to apply to a specific range
+// of versions
+type VersionedExtraOption struct {
+	// Special Cases:
+	//
+	// If LessThanOrEqual and GreaterThanOrEqual are both nil, the flag will be applied
+	// to all versions
+	//
+	// If LessThanOrEqual == GreaterThanOrEqual, the flag will only be applied to that
+	// specific version
+
+	// The flag and component that will be set
+	Option ExtraOption
+
+	// This flag will only be applied to versions before or equal to this version
+	// If it is the default value, it will have no upper bound on versions the
+	// flag is applied to
+	LessThanOrEqual semver.Version
+
+	// The flag will only be applied to versions after or equal to this version
+	// If it is the default value, it will have no lower bound on versions the
+	// flag is applied to
+	GreaterThanOrEqual semver.Version
 }

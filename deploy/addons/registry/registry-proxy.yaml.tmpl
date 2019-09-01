@@ -1,4 +1,4 @@
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   labels:
@@ -7,9 +7,15 @@ metadata:
   name: registry-proxy
   namespace: kube-system
 spec:
+  selector:
+    matchLabels:
+      registry-proxy: "true"
+      kubernetes.io/minikube-addons: registry
   template:
     metadata:
       labels:
+        registry-proxy: "true"
+        kubernetes.io/minikube-addons: registry
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:

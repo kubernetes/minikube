@@ -1,9 +1,14 @@
 language: go
 os: linux
-sudo: required
 
-go:
-  - 1.x
+env:
+  - GOPROXY=https://proxy.golang.org
+matrix:
+  include:
+    - go: 1.12.9
+    - language: python
+      before_install: pip install flake8
+      script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
 before_install:
   - sudo apt-get install -y libvirt-dev
@@ -13,3 +18,6 @@ script:
   - make test
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+notifications:
+    webhooks: https://www.travisbuddy.com/
+    on_success: never # travisbuddy don't comment on successfull 

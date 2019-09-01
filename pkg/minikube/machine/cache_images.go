@@ -25,10 +25,13 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/pkg/errors"
@@ -41,7 +44,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
-const tempLoadDir = "/tmp"
+// loadRoot is where images should be loaded from within the guest VM
+var loadRoot = path.Join(constants.GuestPersistentDir, "images")
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
 
@@ -72,8 +76,10 @@ func CacheImages(images []string, cacheDir string) error {
 			dst := filepath.Join(cacheDir, image)
 			dst = sanitizeCacheDir(dst)
 			if err := CacheImage(image, dst); err != nil {
+				glog.Errorf("CacheImage %s -> %s failed: %v", image, dst, err)
 				return errors.Wrapf(err, "caching image %s", dst)
 			}
+			glog.Infof("CacheImage %s -> %s succeeded", image, dst)
 			return nil
 		})
 	}
@@ -86,6 +92,9 @@ func CacheImages(images []string, cacheDir string) error {
 
 // LoadImages loads previously cached images into the container runtime
 func LoadImages(cmd command.Runner, images []string, cacheDir string) error {
+	glog.Infof("LoadImages start: %s", images)
+	defer glog.Infof("LoadImages end")
+
 	var g errgroup.Group
 	// Load profile cluster config from file
 	cc, err := config.Load()
@@ -97,7 +106,7 @@ func LoadImages(cmd command.Runner, images []string, cacheDir string) error {
 		g.Go(func() error {
 			src := filepath.Join(cacheDir, image)
 			src = sanitizeCacheDir(src)
-			if err := loadImageFromCache(cmd, cc.KubernetesConfig, src); err != nil {
+			if err := transferAndLoadImage(cmd, cc.KubernetesConfig, src); err != nil {
 				glog.Warningf("Failed to load %s: %v", src, err)
 				return errors.Wrapf(err, "loading image %s", src)
 			}
@@ -137,7 +146,9 @@ func CacheAndLoadImages(images []string) error {
 func sanitizeCacheDir(image string) string {
 	if runtime.GOOS == "windows" && hasWindowsDriveLetter(image) {
 		// not sanitize Windows drive letter.
-		return image[:2] + strings.Replace(image[2:], ":", "_", -1)
+		s := image[:2] + strings.Replace(image[2:], ":", "_", -1)
+		glog.Infof("windows sanitize: %s -> %s", image, s)
+		return s
 	}
 	return strings.Replace(image, ":", "_", -1)
 }
@@ -194,15 +205,15 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 	return vname, nil
 }
 
-// loadImageFromCache loads a single image from the cache
-func loadImageFromCache(cr command.Runner, k8s config.KubernetesConfig, src string) error {
+// transferAndLoadImage transfers and loads a single image from the cache
+func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src string) error {
 	glog.Infof("Loading image from cache: %s", src)
 	filename := filepath.Base(src)
 	if _, err := os.Stat(src); err != nil {
 		return err
 	}
-	dst := path.Join(tempLoadDir, filename)
-	f, err := assets.NewFileAsset(src, tempLoadDir, filename, "0777")
+	dst := path.Join(loadRoot, filename)
+	f, err := assets.NewFileAsset(src, loadRoot, filename, "0644")
 	if err != nil {
 		return errors.Wrapf(err, "creating copyable file asset: %s", filename)
 	}
@@ -222,9 +233,6 @@ func loadImageFromCache(cr command.Runner, k8s config.KubernetesConfig, src stri
 		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
 
-	if err := cr.Run("sudo rm -rf " + dst); err != nil {
-		return errors.Wrap(err, "deleting temp docker image location")
-	}
 	glog.Infof("Successfully loaded image %s from cache", src)
 	return nil
 }
@@ -283,8 +291,14 @@ func getDstPath(dst string) (string, error) {
 
 // CacheImage caches an image
 func CacheImage(image, dst string) error {
-	glog.Infof("Attempting to cache image: %s at %s\n", image, dst)
+	start := time.Now()
+	glog.Infof("CacheImage: %s -> %s", image, dst)
+	defer func() {
+		glog.Infof("CacheImage: %s -> %s completed in %s", image, dst, time.Since(start))
+	}()
+
 	if _, err := os.Stat(dst); err == nil {
+		glog.Infof("%s exists", dst)
 		return nil
 	}
 
@@ -302,9 +316,9 @@ func CacheImage(image, dst string) error {
 		return errors.Wrap(err, "creating docker image name")
 	}
 
-	img, err := remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	img, err := retrieveImage(ref)
 	if err != nil {
-		return errors.Wrap(err, "fetching remote image")
+		return errors.Wrap(err, "fetching image")
 	}
 
 	glog.Infoln("OPENING: ", dstPath)
@@ -312,7 +326,11 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
-	err = tarball.Write(ref, img, f)
+	tag, err := name.NewTag(image, name.WeakValidation)
+	if err != nil {
+		return err
+	}
+	err = tarball.Write(tag, img, &tarball.WriteOptions{}, f)
 	if err != nil {
 		return err
 	}
@@ -324,5 +342,26 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
+	glog.Infof("%s exists", dst)
 	return nil
+}
+
+func retrieveImage(ref name.Reference) (v1.Image, error) {
+	glog.Infof("retrieving image: %+v", ref)
+	img, err := daemon.Image(ref)
+	if err == nil {
+		glog.Infof("found %s locally; caching", ref.Name())
+		return img, err
+	}
+	glog.Infof("daemon image for %+v: %v", img, err)
+	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	if err == nil {
+		return img, err
+	}
+	glog.Warningf("failed authn download for %+v (trying anon): %+v", ref, err)
+	img, err = remote.Image(ref)
+	if err != nil {
+		glog.Warningf("failed anon download for %+v: %+v", ref, err)
+	}
+	return img, err
 }

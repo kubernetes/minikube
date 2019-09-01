@@ -41,10 +41,10 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
-	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // K8sClient represents a kubernetes client
@@ -218,7 +218,7 @@ func CheckService(namespace string, service string) error {
 
 	svc, err := client.Services(namespace).Get(service, meta.GetOptions{})
 	if err != nil {
-		return &util.RetriableError{
+		return &retry.RetriableError{
 			Err: errors.Wrapf(err, "Error getting service %s", service),
 		}
 	}
@@ -263,8 +263,9 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	if interval == 0 {
 		interval = 1
 	}
-	attempts := wait/interval + 1
-	if err := util.RetryAfter(attempts, func() error { return CheckService(namespace, service) }, time.Duration(interval)*time.Second); err != nil {
+	chkSVC := func() error { return CheckService(namespace, service) }
+
+	if err := retry.Expo(chkSVC, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
 		return errors.Wrapf(err, "Could not find finalized endpoint being pointed to by %s", service)
 	}
 
@@ -284,7 +285,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	}
 
 	if len(urls) == 0 {
-		console.OutStyle(console.Sad, "service %s/%s has no node port", namespace, service)
+		out.T(out.Sad, "service {{.namespace_name}}/{{.service_name}} has no node port", out.V{"namespace_name": namespace, "service_name": service})
 		return nil
 	}
 
@@ -292,11 +293,11 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
 
 		if urlMode || !isHTTPSchemedURL {
-			console.OutLn(urlString)
+			out.T(out.Empty, urlString)
 		} else {
-			console.OutStyle(console.Celebrate, "Opening kubernetes service %s/%s in default browser...", namespace, service)
+			out.T(out.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": service})
 			if err := browser.OpenURL(urlString); err != nil {
-				console.Err("browser failed to open url: %v", err)
+				out.ErrT(out.Empty, "browser failed to open url: {{.error}}", out.V{"error": err})
 			}
 		}
 	}
@@ -307,7 +308,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 func GetServiceListByLabel(namespace string, key string, value string) (*core.ServiceList, error) {
 	client, err := K8s.GetCoreClient()
 	if err != nil {
-		return &core.ServiceList{}, &util.RetriableError{Err: err}
+		return &core.ServiceList{}, &retry.RetriableError{Err: err}
 	}
 	return getServiceListFromServicesByLabel(client.Services(namespace), key, value)
 }
@@ -316,7 +317,7 @@ func getServiceListFromServicesByLabel(services typed_core.ServiceInterface, key
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{key: value}))
 	serviceList, err := services.List(meta.ListOptions{LabelSelector: selector.String()})
 	if err != nil {
-		return &core.ServiceList{}, &util.RetriableError{Err: err}
+		return &core.ServiceList{}, &retry.RetriableError{Err: err}
 	}
 
 	return serviceList, nil
@@ -326,7 +327,7 @@ func getServiceListFromServicesByLabel(services typed_core.ServiceInterface, key
 func CreateSecret(namespace, name string, dataValues map[string]string, labels map[string]string) error {
 	client, err := K8s.GetCoreClient()
 	if err != nil {
-		return &util.RetriableError{Err: err}
+		return &retry.RetriableError{Err: err}
 	}
 	secrets := client.Secrets(namespace)
 	secret, _ := secrets.Get(name, meta.GetOptions{})
@@ -335,7 +336,7 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 	if len(secret.Name) > 0 {
 		err = DeleteSecret(namespace, name)
 		if err != nil {
-			return &util.RetriableError{Err: err}
+			return &retry.RetriableError{Err: err}
 		}
 	}
 
@@ -357,7 +358,7 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 
 	_, err = secrets.Create(secretObj)
 	if err != nil {
-		return &util.RetriableError{Err: err}
+		return &retry.RetriableError{Err: err}
 	}
 
 	return nil
@@ -367,13 +368,13 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 func DeleteSecret(namespace, name string) error {
 	client, err := K8s.GetCoreClient()
 	if err != nil {
-		return &util.RetriableError{Err: err}
+		return &retry.RetriableError{Err: err}
 	}
 
 	secrets := client.Secrets(namespace)
 	err = secrets.Delete(name, &meta.DeleteOptions{})
 	if err != nil {
-		return &util.RetriableError{Err: err}
+		return &retry.RetriableError{Err: err}
 	}
 
 	return nil

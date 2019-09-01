@@ -31,13 +31,20 @@ export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export RPM_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
 export GOPATH=~/go
 
+# Make sure the right golang version is installed based on Makefile
+WANT_GOLANG_VERSION=$(grep '^GO_VERSION' Makefile | awk '{ print $3 }')
+./hack/jenkins/installers/check_install_golang.sh $WANT_GOLANG_VERSION /usr/local
+
+
 # Make sure the tag matches the Makefile
 cat Makefile | grep "VERSION_MAJOR ?=" | grep $VERSION_MAJOR
 cat Makefile | grep "VERSION_MINOR ?=" | grep $VERSION_MINOR
 cat Makefile | grep "VERSION_BUILD ?=" | grep $VERSION_BUILD
 
 # Build and upload
-BUILD_IN_DOCKER=y make -j 16 all out/minikube-installer.exe out/minikube_${DEB_VERSION}.deb out/minikube-${RPM_VERSION}.rpm
+BUILD_IN_DOCKER=y make -j 16 all out/minikube-installer.exe \
+out/minikube_${DEB_VERSION}.deb out/minikube-${RPM_VERSION}.rpm \
+out/docker-machine-driver-kvm2_${DEB_VERSION}.deb out/docker-machine-driver-kvm2-${RPM_VERSION}.rpm
 make checksum
 
 gsutil -m cp out/* gs://$BUCKET/releases/$TAGNAME/

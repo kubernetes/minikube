@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // CRIO contains CRIO runtime state
@@ -36,8 +36,8 @@ func (r *CRIO) Name() string {
 }
 
 // Style is the console style for CRIO
-func (r *CRIO) Style() console.StyleEnum {
-	return console.CRIO
+func (r *CRIO) Style() out.StyleEnum {
+	return out.CRIO
 }
 
 // Version retrieves the current version of this runtime
@@ -132,4 +132,9 @@ func (r *CRIO) StopContainers(ids []string) error {
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
 func (r *CRIO) ContainerLogCmd(id string, len int, follow bool) string {
 	return criContainerLogCmd(id, len, follow)
+}
+
+// SystemLogCmd returns the command to retrieve system logs
+func (r *CRIO) SystemLogCmd(len int) string {
+	return fmt.Sprintf("sudo journalctl -u crio -n %d", len)
 }
