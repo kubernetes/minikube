@@ -77,7 +77,7 @@ subjects:
   name: glusterfile-provisioner
 ---
 kind: Deployment
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 metadata:
   namespace: storage-gluster
   name: glusterfile-provisioner
@@ -89,6 +89,10 @@ metadata:
     description: Defines how to deploy the glusterfile provisioner pod.
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+      glusterfs: file-provisioner-pod
+      glusterfile: provisioner-pod
   strategy:
     type: Recreate
   template:

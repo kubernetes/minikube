@@ -43,6 +43,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/provision"
@@ -122,7 +123,7 @@ func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host
 func (api *LocalClient) Load(name string) (*host.Host, error) {
 	h, err := api.Filestore.Load(name)
 	if err != nil {
-		return nil, errors.Wrap(err, "filestore")
+		return nil, errors.Wrapf(err, "filestore %q", name)
 	}
 
 	var def registry.DriverDef
@@ -146,6 +147,9 @@ func (api *LocalClient) Close() error {
 
 // CommandRunner returns best available command runner for this host
 func CommandRunner(h *host.Host) (command.Runner, error) {
+	if h.DriverName == constants.DriverMock {
+		return &command.FakeCommandRunner{}, nil
+	}
 	if h.DriverName == constants.DriverNone {
 		return &command.ExecRunner{}, nil
 	}
@@ -269,7 +273,7 @@ func registerDriver(driverName string) {
 	def, err := registry.Driver(driverName)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
-			exit.Usage("unsupported driver: %s", driverName)
+			exit.UsageT("unsupported driver: {{.name}}", out.V{"name": driverName})
 		}
 		exit.WithError("error getting driver", err)
 	}

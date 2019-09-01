@@ -26,7 +26,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/util"
 )
 
 func TestGenerateKubeletConfig(t *testing.T) {
@@ -44,13 +43,12 @@ func TestGenerateKubeletConfig(t *testing.T) {
 				NodeName:          "minikube",
 				ContainerRuntime:  "docker",
 			},
-			expected: `
-[Unit]
+			expected: `[Unit]
 Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/var/lib/minikube/binaries/v1.10.13/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,
@@ -63,13 +61,12 @@ ExecStart=/usr/bin/kubelet --allow-privileged=true --authorization-mode=Webhook 
 				NodeName:          "minikube",
 				ContainerRuntime:  "cri-o",
 			},
-			expected: `
-[Unit]
+			expected: `[Unit]
 Wants=crio.service
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=remote --container-runtime-endpoint=/var/run/crio/crio.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=/var/run/crio/crio.sock --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+ExecStart=/var/lib/minikube/binaries/v1.16.0-beta.1/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=remote --container-runtime-endpoint=/var/run/crio/crio.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=/var/run/crio/crio.sock --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
 `,
@@ -82,13 +79,12 @@ ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/
 				NodeName:          "minikube",
 				ContainerRuntime:  "containerd",
 			},
-			expected: `
-[Unit]
+			expected: `[Unit]
 Wants=containerd.service
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+ExecStart=/var/lib/minikube/binaries/v1.15.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
 `,
@@ -102,13 +98,12 @@ ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/
 				ContainerRuntime:  "docker",
 				ImageRepository:   "docker-proxy-image.io/google_containers",
 			},
-			expected: `
-[Unit]
+			expected: `[Unit]
 Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/var/lib/minikube/binaries/v1.15.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,
@@ -134,7 +129,7 @@ ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/
 
 			diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 				A:        difflib.SplitLines(tc.expected),
-				B:        difflib.SplitLines(got),
+				B:        difflib.SplitLines(string(got)),
 				FromFile: "Expected",
 				ToFile:   "Got",
 				Context:  1,
@@ -149,29 +144,29 @@ ExecStart=/usr/bin/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/
 	}
 }
 
-func getExtraOpts() []util.ExtraOption {
-	return util.ExtraOptionSlice{
-		util.ExtraOption{
+func getExtraOpts() []config.ExtraOption {
+	return config.ExtraOptionSlice{
+		config.ExtraOption{
 			Component: Apiserver,
 			Key:       "fail-no-swap",
 			Value:     "true",
 		},
-		util.ExtraOption{
+		config.ExtraOption{
 			Component: ControllerManager,
 			Key:       "kube-api-burst",
 			Value:     "32",
 		},
-		util.ExtraOption{
+		config.ExtraOption{
 			Component: Scheduler,
 			Key:       "scheduler-name",
 			Value:     "mini-scheduler",
 		},
-		util.ExtraOption{
+		config.ExtraOption{
 			Component: Kubeadm,
 			Key:       "ignore-preflight-errors",
 			Value:     "true",
 		},
-		util.ExtraOption{
+		config.ExtraOption{
 			Component: Kubeadm,
 			Key:       "dry-run",
 			Value:     "true",
@@ -179,9 +174,9 @@ func getExtraOpts() []util.ExtraOption {
 	}
 }
 
-func getExtraOptsPodCidr() []util.ExtraOption {
-	return util.ExtraOptionSlice{
-		util.ExtraOption{
+func getExtraOptsPodCidr() []config.ExtraOption {
+	return config.ExtraOptionSlice{
+		config.ExtraOption{
 			Component: Kubeadm,
 			Key:       "pod-network-cidr",
 			Value:     "192.168.32.0/20",
@@ -191,7 +186,7 @@ func getExtraOptsPodCidr() []util.ExtraOption {
 
 func recentReleases() ([]string, error) {
 	// test the 6 most recent releases
-	versions := []string{"v1.15", "v1.14", "v1.13", "v1.12", "v1.11", "v1.10"}
+	versions := []string{"v1.16", "v1.15", "v1.14", "v1.13", "v1.12", "v1.11", "v1.10"}
 	foundNewest := false
 	foundDefault := false
 
@@ -233,7 +228,7 @@ func TestGenerateConfig(t *testing.T) {
 		{"crio", "crio", false, config.KubernetesConfig{}},
 		{"options", "docker", false, config.KubernetesConfig{ExtraOptions: extraOpts}},
 		{"crio-options-gates", "crio", false, config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}},
-		{"unknown-component", "docker", true, config.KubernetesConfig{ExtraOptions: util.ExtraOptionSlice{util.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}},
+		{"unknown-component", "docker", true, config.KubernetesConfig{ExtraOptions: config.ExtraOptionSlice{config.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}},
 		{"containerd-api-port", "containerd", false, config.KubernetesConfig{NodePort: 12345}},
 		{"containerd-pod-network-cidr", "containerd", false, config.KubernetesConfig{ExtraOptions: extraOptsPodCidr}},
 		{"image-repository", "docker", false, config.KubernetesConfig{ImageRepository: "test/repo"}},
@@ -267,7 +262,7 @@ func TestGenerateConfig(t *testing.T) {
 				}
 				diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
 					A:        difflib.SplitLines(string(expected)),
-					B:        difflib.SplitLines(got),
+					B:        difflib.SplitLines(string(got)),
 					FromFile: "Expected",
 					ToFile:   "Got",
 					Context:  1,

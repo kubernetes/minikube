@@ -18,6 +18,7 @@ package bootstrapper
 
 import (
 	"net"
+	"time"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -39,7 +40,7 @@ type Bootstrapper interface {
 	UpdateCluster(config.KubernetesConfig) error
 	RestartCluster(config.KubernetesConfig) error
 	DeleteCluster(config.KubernetesConfig) error
-	WaitCluster(config.KubernetesConfig) error
+	WaitCluster(config.KubernetesConfig, time.Duration) error
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(LogOptions) map[string]string
 	SetupCerts(cfg config.KubernetesConfig) error
@@ -56,7 +57,7 @@ const (
 func GetCachedBinaryList(bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		return constants.GetKubeadmCachedBinaries()
+		return constants.KubeadmBinaries
 	default:
 		return []string{}
 	}

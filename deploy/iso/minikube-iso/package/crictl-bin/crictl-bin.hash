@@ -1,2 +1,3 @@
 sha256 ccf83574556793ceb01717dc91c66b70f183c60c2bbec70283939aae8fdef768  crictl-v1.11.1-linux-amd64.tar.gz
 sha256 9bdbea7a2b382494aff2ff014da328a042c5aba9096a7772e57fdf487e5a1d51  crictl-v1.13.0-linux-amd64.tar.gz
+sha256 c3b71be1f363e16078b51334967348aab4f72f46ef64a61fe7754e029779d45a  crictl-v1.15.0-linux-amd64.tar.gz

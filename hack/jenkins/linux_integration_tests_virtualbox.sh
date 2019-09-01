@@ -15,7 +15,7 @@
 # limitations under the License.
 
 
-# This script runs the integration tests on a Linux machine for the Virtualbox Driver
+# This script runs the integration tests on a Linux machine for the VirtualBox Driver
 
 # The script expects the following env variables:
 # MINIKUBE_LOCATION: GIT_COMMIT from upstream build.
@@ -27,7 +27,8 @@ set -e
 
 OS_ARCH="linux-amd64"
 VM_DRIVER="virtualbox"
-JOB_NAME="Linux-VirtualBox"
+JOB_NAME="VirtualBox_Linux"
+PARALLEL_COUNT=4
 
 # Download files and set permissions
 source ./common.sh

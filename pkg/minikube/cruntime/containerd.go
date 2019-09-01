@@ -21,7 +21,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/console"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // Containerd contains containerd runtime state
@@ -36,8 +36,8 @@ func (r *Containerd) Name() string {
 }
 
 // Style is the console style for containerd
-func (r *Containerd) Style() console.StyleEnum {
-	return console.Containerd
+func (r *Containerd) Style() out.StyleEnum {
+	return out.Containerd
 }
 
 // Version retrieves the current version of this runtime
@@ -92,7 +92,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
 	}
-	// Oherwise, containerd will fail API requests with 'Unimplemented'
+	// Otherwise, containerd will fail API requests with 'Unimplemented'
 	return r.Runner.Run("sudo systemctl restart containerd")
 }
 
@@ -104,7 +104,7 @@ func (r *Containerd) Disable() error {
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	return r.Runner.Run(fmt.Sprintf("sudo ctr images import %s", path))
+	return r.Runner.Run(fmt.Sprintf("sudo ctr -n=k8s.io images import %s", path))
 }
 
 // KubeletOptions returns kubelet options for a containerd
@@ -135,4 +135,9 @@ func (r *Containerd) StopContainers(ids []string) error {
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
 func (r *Containerd) ContainerLogCmd(id string, len int, follow bool) string {
 	return criContainerLogCmd(id, len, follow)
+}
+
+// SystemLogCmd returns the command to retrieve system logs
+func (r *Containerd) SystemLogCmd(len int) string {
+	return fmt.Sprintf("sudo journalctl -u containerd -n %d", len)
 }

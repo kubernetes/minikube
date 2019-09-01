@@ -20,11 +20,11 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // updateContextCmd represents the update-context command
@@ -44,19 +44,15 @@ var updateContextCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error host driver ip status", err)
 		}
-		updated, err := util.UpdateKubeconfigIP(ip, constants.KubeconfigPath, machineName)
+		updated, err := kubeconfig.UpdateIP(ip, constants.KubeconfigPath, machineName)
 		if err != nil {
 			exit.WithError("update config", err)
 		}
 		if updated {
-			console.OutStyle(console.Celebrate, "%s IP has been updated to point at %s", machineName, ip)
+			out.T(out.Celebrate, "{{.machine}} IP has been updated to point at {{.ip}}", out.V{"machine": machineName, "ip": ip})
 		} else {
-			console.OutStyle(console.Meh, "%s IP was already correctly configured for %s", machineName, ip)
+			out.T(out.Meh, "{{.machine}} IP was already correctly configured for {{.ip}}", out.V{"machine": machineName, "ip": ip})
 		}
 
 	},
-}
-
-func init() {
-	RootCmd.AddCommand(updateContextCmd)
 }

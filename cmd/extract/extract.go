@@ -24,6 +24,9 @@ Usage: from the root minikube directory, go run cmd/extract/extract.go
 package main
 
 import (
+	"os"
+	"strings"
+
 	"k8s.io/minikube/pkg/minikube/extract"
 )
 
@@ -31,7 +34,19 @@ func main() {
 	paths := []string{"cmd", "pkg"}
 	functions := []string{"translate.T"}
 	outDir := "translations"
-	err := extract.TranslatableStrings(paths, functions, outDir)
+	cwd, err := os.Getwd()
+	if err != nil {
+		panic("Getting current working directory failed")
+	}
+
+	if strings.Contains(cwd, "cmd") {
+		panic("run extract.go from the minikube root directory")
+	}
+
+	if _, err = os.Stat(extract.ErrMapFile); os.IsNotExist(err) {
+		panic("err_map.go doesn't exist")
+	}
+	err = extract.TranslatableStrings(paths, functions, outDir)
 
 	if err != nil {
 		panic(err)

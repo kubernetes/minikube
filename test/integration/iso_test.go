@@ -25,26 +25,36 @@ import (
 )
 
 func TestISO(t *testing.T) {
-
-	minikubeRunner := NewMinikubeRunner(t)
-
-	minikubeRunner.RunCommand("delete", false)
-	minikubeRunner.Start()
+	p := profileName(t)
+	if shouldRunInParallel(t) {
+		t.Parallel()
+	}
+	mk := NewMinikubeRunner(t, p, "--wait=false")
+	mk.MustRun("delete")
+		stdout, stderr := mk.MustStart()
+	if err != nil {
+		t.Fatalf("failed to start minikube (for profile %s) %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+	}
+	if !isTestNoneDriver(t) { // none driver doesn't need to be deleted
+		defer mk.TearDown(t)
+	}
 
 	t.Run("permissions", testMountPermissions)
 	t.Run("packages", testPackages)
 	t.Run("persistence", testPersistence)
+
 }
 
 func testMountPermissions(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
+	p := profileName(t)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 	// test mount permissions
 	mountPoints := []string{"/Users", "/hosthome"}
 	perms := "drwxr-xr-x"
 	foundMount := false
 
 	for _, dir := range mountPoints {
-		output, err := minikubeRunner.SSH(fmt.Sprintf("ls -l %s", dir))
+		output, err := mk.SSH(fmt.Sprintf("ls -l %s", dir))
 		if err != nil {
 			continue
 		}
@@ -59,7 +69,8 @@ func testMountPermissions(t *testing.T) {
 }
 
 func testPackages(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
+	p := profileName(t)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	packages := []string{
 		"git",
@@ -73,7 +84,7 @@ func testPackages(t *testing.T) {
 	}
 
 	for _, pkg := range packages {
-		if output, err := minikubeRunner.SSH(fmt.Sprintf("which %s", pkg)); err != nil {
+		if output, err := mk.SSH(fmt.Sprintf("which %s", pkg)); err != nil {
 			t.Errorf("Error finding package: %s. Error: %v. Output: %s", pkg, err, output)
 		}
 	}
@@ -81,7 +92,8 @@ func testPackages(t *testing.T) {
 }
 
 func testPersistence(t *testing.T) {
-	minikubeRunner := NewMinikubeRunner(t)
+	p := profileName(t)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
 
 	for _, dir := range []string{
 		"/data",
@@ -92,7 +104,7 @@ func testPersistence(t *testing.T) {
 		"/var/lib/toolbox",
 		"/var/lib/boot2docker",
 	} {
-		output, err := minikubeRunner.SSH(fmt.Sprintf("df %s | tail -n 1 | awk '{print $1}'", dir))
+		output, err := mk.SSH(fmt.Sprintf("df %s | tail -n 1 | awk '{print $1}'", dir))
 		if err != nil {
 			t.Errorf("Error checking device for %s. Error: %v", dir, err)
 		}

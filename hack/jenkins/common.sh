@@ -23,7 +23,7 @@
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
-#
+# PARALLEL_COUNT: number of tests to run in parallel
 
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
@@ -75,6 +75,9 @@ gsutil -qm cp \
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
 
+gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
+
+
 # Set the executable bit on the e2e binary and out binary
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
@@ -82,7 +85,7 @@ chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
 
 procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
 if [[ "${procs}" != "" ]]; then
-  echo "ERROR: found stale test processes to kill:"
+  echo "Warning: found stale test processes to kill:"
   ps -f -p ${procs} || true
   kill ${procs} || true
   kill -9 ${procs} || true
@@ -123,6 +126,18 @@ for stale_dir in ${TEST_ROOT}/*; do
   rmdir "${stale_dir}" || true
 done
 
+
+# sometimes tests left over zombie procs that won't exit
+# for example:
+# jenkins  20041  0.0  0.0      0     0 ?        Z    Aug19   0:00 [minikube-linux-] <defunct>
+zombie_defuncts=$(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}')
+if [[ "${zombie_defuncts}" != "" ]]; then
+  echo "Found zombie defunct procs to kill..."
+  ps -f -p ${zombie_defuncts} || true
+  sudo -E kill ${zombie_defuncts} || true
+fi
+
+
 if type -P virsh; then
   virsh -c qemu:///system list --all
   virsh -c qemu:///system list --all \
@@ -130,6 +145,13 @@ if type -P virsh; then
     | awk '{ print $2 }' \
     | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
     || true
+  virsh -c qemu:///system list --all \
+    | grep Test \
+    | awk '{ print $2 }' \
+    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
+    || true
+  echo ">> Virsh VM list after clean up (should be empty) :"
+  virsh -c qemu:///system list --all || true
 fi
 
 if type -P vboxmanage; then
@@ -139,7 +161,23 @@ if type -P vboxmanage; then
     | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
+  vboxmanage list vms \
+    | grep Test \
+    | cut -d'"' -f2 \
+    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
+    || true
+
+  # remove inaccessible stale VMs https://github.com/kubernetes/minikube/issues/4872
+  vboxmanage list vms \
+    | grep inaccessible \
+    | cut -d'"' -f3 \
+    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
+    || true
+
+  # list them again after clean up
+  vboxmanage list vms || true
 fi
+
 
 if type -P hdiutil; then
   hdiutil info | grep -E "/dev/disk[1-9][^s]" || true
@@ -150,6 +188,23 @@ if type -P hdiutil; then
       || true
 fi
 
+# cleaning up stale hyperkits
+if type -P hyperkit; then
+  # find all hyperkits excluding com.docker
+  hyper_procs=$(ps aux | grep hyperkit | grep -v com.docker | grep -v grep | grep -v osx_integration_tests_hyperkit.sh | awk '{print $2}' || true)
+  if [[ "${hyper_procs}" != "" ]]; then
+    echo "Found stale hyperkits test processes to kill : "
+    for p in $hyper_procs
+    do
+    echo "Killing stale hyperkit $p"
+    ps -f -p $p || true
+    kill $p || true
+    kill -9 $p || true
+    done
+  fi
+fi
+
+
 if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   if [[ -e out/docker-machine-driver-hyperkit ]]; then
     sudo chown root:wheel out/docker-machine-driver-hyperkit || true
@@ -157,12 +212,33 @@ if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   fi
 fi
 
+vboxprocs=$(pgrep VBox || true)
+if [[ "${vboxprocs}" != "" ]]; then
+  echo "error: killing left over virtualbox processes ..."
+  ps -f -p ${vboxprocs} || true
+  sudo -E kill ${vboxprocs} || true
+fi
+
+
 kprocs=$(pgrep kubectl || true)
 if [[ "${kprocs}" != "" ]]; then
   echo "error: killing hung kubectl processes ..."
   ps -f -p ${kprocs} || true
-  ${SUDO_PREFIX} kill ${kprocs} || true
+  sudo -E kill ${kprocs} || true
 fi
+
+# clean up none drivers binding on 8443
+  none_procs=$(sudo lsof -i :8443 | tail -n +2 | awk '{print $2}' || true)
+  if [[ "${none_procs}" != "" ]]; then
+    echo "Found stale api servers listening on 8443 processes to kill: "
+    for p in $none_procs
+    do
+    echo "Kiling stale none driver:  $p"
+    sudo -E ps -f -p $p || true
+    sudo -E kill $p || true
+    sudo -E kill -9 $p || true
+    done
+  fi
 
 function cleanup_stale_routes() {
   local show="netstat -rn -f inet"
@@ -187,6 +263,16 @@ export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export MINIKUBE_WANTREPORTERRORPROMPT=False
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
+# Build the gvisor image. This will be copied into minikube and loaded by ctr.
+# Used by TestContainerd for Gvisor Test.
+# TODO: move this to integration test setup.
+chmod +x ./testdata/gvisor-addon
+# skipping gvisor mac because ofg https://github.com/kubernetes/minikube/issues/5137
+if [ "$(uname)" != "Darwin" ]; then
+  docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile ./testdata
+fi
+
+
 # Display the default image URL
 echo ""
 echo ">> ISO URL"
@@ -197,7 +283,7 @@ echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
-  -test.v -test.timeout=90m -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+  -test.v -test.timeout=100m -test.parallel=${PARALLEL_COUNT}  -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 

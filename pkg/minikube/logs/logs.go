@@ -29,12 +29,12 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/console"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // rootCauseRe is a regular expression that matches known failure root causes
-var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted|tls: bad certificate`)
+var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted|tls: bad certificate|kubelet.*no API client|kubelet.*No api server|STDIN.*127.0.0.1:8080`)
 
 // ignoreRe is a regular expression that matches spurious errors to not surface
 var ignoreCauseRe = regexp.MustCompile("error: no objects passed to apply")
@@ -100,12 +100,12 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner comma
 // OutputProblems outputs discovered problems.
 func OutputProblems(problems map[string][]string, maxLines int) {
 	for name, lines := range problems {
-		console.OutStyle(console.FailureType, "Problems detected in %q:", name)
+		out.T(out.FailureType, "Problems detected in {{.name}}:", out.V{"name": name})
 		if len(lines) > maxLines {
 			lines = lines[len(lines)-maxLines:]
 		}
 		for _, l := range lines {
-			console.OutStyle(console.LogEntry, l)
+			out.T(out.LogEntry, l)
 		}
 	}
 }
@@ -113,23 +113,22 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 // Output displays logs from multiple sources in tail(1) format
 func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner, lines int) error {
 	cmds := logCommands(r, bs, lines, false)
-
-	// These are not technically logs, but are useful to have in bug reports.
-	cmds["kernel"] = "uptime && uname -a"
+	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 
 	names := []string{}
 	for k := range cmds {
 		names = append(names, k)
 	}
-	sort.Strings(names)
 
+	sort.Strings(names)
 	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
-			console.OutLn("")
+			out.T(out.Empty, "")
 		}
-		console.OutLn("==> %s <==", name)
+		out.T(out.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
+
 		err := runner.CombinedOutputTo(cmds[name], &b)
 		if err != nil {
 			glog.Errorf("failed: %v", err)
@@ -138,9 +137,10 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 		}
 		scanner := bufio.NewScanner(&b)
 		for scanner.Scan() {
-			console.OutLn(scanner.Text())
+			out.T(out.Empty, scanner.Text())
 		}
 	}
+
 	if len(failed) > 0 {
 		return fmt.Errorf("unable to fetch logs for: %s", strings.Join(failed, ", "))
 	}
@@ -163,5 +163,9 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 		}
 		cmds[pod] = r.ContainerLogCmd(ids[0], length, follow)
 	}
+	cmds[r.Name()] = r.SystemLogCmd(length)
+	// Works across container runtimes with good formatting
+	// Fallback to 'docker ps' if it fails (none driver)
+	cmds["container status"] = "sudo crictl ps -a || sudo docker ps -a"
 	return cmds
 }

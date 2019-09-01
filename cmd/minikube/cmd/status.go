@@ -25,13 +25,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
-	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var statusFormat string
@@ -61,7 +61,7 @@ var statusCmd = &cobra.Command{
 		var returnCode = 0
 		api, err := machine.NewAPIClient()
 		if err != nil {
-			exit.WithCode(exit.Unavailable, "Error getting client: %v", err)
+			exit.WithCodeT(exit.Unavailable, "Error getting client: {{.error}}", out.V{"error": err})
 		}
 		defer api.Close()
 
@@ -75,7 +75,7 @@ var statusCmd = &cobra.Command{
 		apiserverSt := state.None.String()
 
 		if hostSt == state.Running.String() {
-			clusterBootstrapper, err := GetClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+			clusterBootstrapper, err := getClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 			if err != nil {
 				exit.WithError("Error getting bootstrapper", err)
 			}
@@ -92,10 +92,10 @@ var statusCmd = &cobra.Command{
 				glog.Errorln("Error host driver ip status:", err)
 			}
 
-			apiserverPort, err := pkgutil.GetPortFromKubeConfig(util.GetKubeConfigPath(), config.GetMachineName())
+			apiserverPort, err := kubeconfig.Port(config.GetMachineName())
 			if err != nil {
 				// Fallback to presuming default apiserver port
-				apiserverPort = pkgutil.APIServerPort
+				apiserverPort = constants.APIServerPort
 			}
 
 			apiserverSt, err = clusterBootstrapper.GetAPIServerStatus(ip, apiserverPort)
@@ -105,7 +105,7 @@ var statusCmd = &cobra.Command{
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ks, err := pkgutil.GetKubeConfigStatus(ip, util.GetKubeConfigPath(), config.GetMachineName())
+			ks, err := kubeconfig.IsClusterInConfig(ip, config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
 			}
@@ -143,5 +143,4 @@ func init() {
 	statusCmd.Flags().StringVar(&statusFormat, "format", constants.DefaultStatusFormat,
 		`Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
-	RootCmd.AddCommand(statusCmd)
 }
