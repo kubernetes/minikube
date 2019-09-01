@@ -850,7 +850,7 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	if err != nil {
-		exit.WithCodeT(exit.Data, "Unable to parse oldest Kubernetes version from constants: %v", err)
+		exit.WithCodeT(exit.Data, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
 	}
 
 	if nvs.LT(oldestVersion) {
