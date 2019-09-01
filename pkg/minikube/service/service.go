@@ -216,7 +216,11 @@ func CheckService(namespace string, service string) error {
 		return errors.Wrap(err, "Error getting kubernetes client")
 	}
 
-	svc, err := client.Services(namespace).Get(service, meta.GetOptions{})
+	svcs := client.Services(namespace)
+	if svcs == nil {
+		return fmt.Errorf("cannot get services from namespace %s", namespace)
+	}
+	svc, err := svcs.Get(service, meta.GetOptions{})
 	if err != nil {
 		return &retry.RetriableError{
 			Err: errors.Wrapf(err, "Error getting service %s", service),
@@ -310,7 +314,11 @@ func GetServiceListByLabel(namespace string, key string, value string) (*core.Se
 	if err != nil {
 		return &core.ServiceList{}, &retry.RetriableError{Err: err}
 	}
-	return getServiceListFromServicesByLabel(client.Services(namespace), key, value)
+	svc := client.Services(namespace)
+	if svc == nil {
+		return nil, fmt.Errorf("cannot get services from namespace %s", namespace)
+	}
+	return getServiceListFromServicesByLabel(svc, key, value)
 }
 
 func getServiceListFromServicesByLabel(services typed_core.ServiceInterface, key string, value string) (*core.ServiceList, error) {
@@ -330,8 +338,13 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 		return &retry.RetriableError{Err: err}
 	}
 	secrets := client.Secrets(namespace)
-	secret, _ := secrets.Get(name, meta.GetOptions{})
-
+	if secrets == nil {
+		return fmt.Errorf("cannot get secrets from namespace %s", namespace)
+	}
+	secret, err := secrets.Get(name, meta.GetOptions{})
+	if err != nil {
+		return &retry.RetriableError{Err: err}
+	}
 	// Delete existing secret
 	if len(secret.Name) > 0 {
 		err = DeleteSecret(namespace, name)
@@ -372,10 +385,12 @@ func DeleteSecret(namespace, name string) error {
 	}
 
 	secrets := client.Secrets(namespace)
+	if secrets == nil {
+		return fmt.Errorf("cannot get secrets from namespace %s", namespace)
+	}
 	err = secrets.Delete(name, &meta.DeleteOptions{})
 	if err != nil {
 		return &retry.RetriableError{Err: err}
 	}
-
 	return nil
 }
