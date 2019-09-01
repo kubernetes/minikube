@@ -854,11 +854,11 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 	}
 
 	if nvs.LT(oldestVersion) {
-		console.ErrT(console.Conflict, "Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", console.Arg{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
+		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
 		if viper.GetBool(force) {
-			out.WarningT("Kubernetes {{.version}} is not supported by this release of minikube", console.Arg{"version": nvs})
+			out.WarningT("Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 		} else {
-		  exit.WithCode(exit.Data, "Sorry, Kubernetes {{.version}} is not supported by this release of minikube", console.Arg{"version": nvs})
+		  exit.WithCode(exit.Data, "Sorry, Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 		}
 	}
 
