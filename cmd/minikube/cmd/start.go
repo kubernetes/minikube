@@ -30,6 +30,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/notify"
+
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -107,13 +109,14 @@ const (
 )
 
 var (
-	registryMirror   []string
-	dockerEnv        []string
-	dockerOpt        []string
-	insecureRegistry []string
-	apiServerNames   []string
-	apiServerIPs     []net.IP
-	extraOptions     cfg.ExtraOptionSlice
+	registryMirror           []string
+	dockerEnv                []string
+	dockerOpt                []string
+	insecureRegistry         []string
+	apiServerNames           []string
+	apiServerIPs             []net.IP
+	extraOptions             cfg.ExtraOptionSlice
+	enableUpdateNotification = true
 )
 
 func init() {
@@ -216,6 +219,11 @@ var startCmd = &cobra.Command{
 	Short: "Starts a local kubernetes cluster",
 	Long:  "Starts a local kubernetes cluster",
 	Run:   runStart,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if enableUpdateNotification {
+			notify.MaybePrintUpdateTextFromGithub()
+		}
+	},
 }
 
 // platform generates a user-readable platform message
