@@ -7,7 +7,7 @@ date: 2019-08-01
 
 ## Config option variables
 
-minikube supports passing environment variables instead of flags for every value listed in `minikube config list`.  This is done by passing an environment variable with the prefix `MINIKUBE_`.
+minikube supports passing environment variables instead of flags for every value listed in `minikube config view`.  This is done by passing an environment variable with the prefix `MINIKUBE_`.
 
 For example the `minikube start --iso-url="$ISO_URL"` flag can also be set by setting the `MINIKUBE_ISO_URL="$ISO_URL"` environment variable.
 
