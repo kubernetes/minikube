@@ -19,13 +19,13 @@ metadata:
   namespace: kube-system
   labels:
     component: kube-addon-manager
-    version: v9.0
+    version: v9.0.2
     kubernetes.io/minikube-addons: addon-manager
 spec:
   hostNetwork: true
   containers:
   - name: kube-addon-manager
-    image: {{default "k8s.gcr.io" .ImageRepository}}/kube-addon-manager{{.ExoticArch}}:v9.0
+    image: {{default "k8s.gcr.io" .ImageRepository}}/kube-addon-manager{{.ExoticArch}}:v9.0.2
     env:
     - name: KUBECONFIG
       value: /var/lib/minikube/kubeconfig
