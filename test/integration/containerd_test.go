@@ -29,75 +29,57 @@ import (
 	"k8s.io/minikube/test/integration/util"
 )
 
-func TestContainerd(t *testing.T) {
+// TestGvisorWorkload tests the gVisor addon for pods with the untrusted
+// workload annotation and gvisor runtime class.
+func TestGvisorWorkload(t *testing.T) {
 	if isTestNoneDriver(t) {
 		t.Skip("Can't run containerd backend with none driver")
 	}
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
 
-	t.Run("GvisorUntrustedWorkload", testGvisorUntrustedWorkload)
-	t.Run("GvisorRuntimeClass", testGvisorRuntimeClass)
-	t.Run("GvisorRestart", testGvisorRestart)
-}
-
-func testGvisorUntrustedWorkload(t *testing.T) {
 	p := profileName(t)
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
-	mk := NewMinikubeRunner(t, p, "--wait=false")
-	defer mk.TearDown(t)
-
-	mk.MustRun("addons enable gvisor", true)
-
-	t.Log("waiting for gvisor controller to come up")
-	if err := waitForGvisorControllerRunning(p); err != nil {
-		t.Fatalf("waiting for gvisor controller to be up: %v", err)
-	}
-
-	createUntrustedWorkload(t, p)
-	t.Log("making sure untrusted workload is Running")
-	if err := waitForUntrustedNginxRunning(p); err != nil {
-		t.Fatalf("waiting for nginx to be up: %v", err)
-	}
-	deleteUntrustedWorkload(t, p)
-}
-
-func testGvisorRuntimeClass(t *testing.T) {
-	p := profileName(t)
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
-	mk := NewMinikubeRunner(t, p, "--wait=false")
-	defer mk.TearDown(t)
-
-	mk.MustRun("addons enable gvisor", true)
-
-	t.Log("waiting for gvisor controller to come up")
-	if err := waitForGvisorControllerRunning(p); err != nil {
-		t.Fatalf("waiting for gvisor controller to be up: %v", err)
-	}
-
-	createGvisorWorkload(t, p)
-	t.Log("making sure gvisor workload is Running")
-	if err := waitForGvisorNginxRunning(p); err != nil {
-		t.Fatalf("waiting for nginx to be up: %v", err)
-	}
-	deleteGvisorWorkload(t, p)
-}
-
-func testGvisorRestart(t *testing.T) {
-	p := profileName(t)
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	defer mk.TearDown(t)
 
 	mk.MustStart("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	mk.MustRun("cache add gcr.io/k8s-minikube/gvisor-addon:latest")
+	// NOTE: addons are enabled globally.
+	mk.MustRun("addons enable gvisor")
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := waitForGvisorControllerRunning(p); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	// Test a pod with the untrusted workload annotation.
+	createUntrustedWorkload(t, p)
+	t.Log("making sure untrusted workload is Running")
+	if err := waitForUntrustedNginxRunning(p); err != nil {
+		t.Fatalf("waiting for untrusted-workload nginx to be up: %v", err)
+	}
+	deleteUntrustedWorkload(t, p)
+
+	// Test a pod with the gvisor runtime class.
+	createGvisorWorkload(t, p)
+	t.Log("making sure gvisor workload is Running")
+	if err := waitForGvisorNginxRunning(p); err != nil {
+		t.Fatalf("waiting for gvisor nginx to be up: %v", err)
+	}
+	deleteGvisorWorkload(t, p)
+}
+
+// TestGvisorRestart tests the gVisor addon is functional after a VM restart.
+func TestGvisorRestart(t *testing.T) {
+	if isTestNoneDriver(t) {
+		t.Skip("Can't run containerd backend with none driver")
+	}
+
+	p := profileName(t)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
+	defer mk.TearDown(t)
+
+	mk.MustStart("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	mk.MustRun("cache add gcr.io/k8s-minikube/gvisor-addon:latest")
+	// NOTE: addons are enabled globally.
 	mk.MustRun("addons enable gvisor")
 
 	t.Log("waiting for gvisor controller to come up")
