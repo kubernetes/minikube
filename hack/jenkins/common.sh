@@ -25,9 +25,13 @@
 # JOB_NAME: the name of the logfile and check name to update on github
 # PARALLEL_COUNT: number of tests to run in parallel
 
-
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
+
+export PATH="$(pwd)/out/":$PATH
+export GOPATH=""
+export KUBECONFIG="${TEST_HOME}/kubeconfig"
+
 echo ">> Starting at $(date)"
 echo ""
 echo "arch:      ${OS_ARCH}"
@@ -37,8 +41,7 @@ echo "job:       ${JOB_NAME}"
 echo "test home: ${TEST_HOME}"
 echo "sudo:      ${SUDO_PREFIX}"
 echo "kernel:    $(uname -v)"
-# Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
-echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
+echo "kubectl:   $(kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 echo "go    :    $(go version)"
 
@@ -63,14 +66,6 @@ if ! type -P gsutil >/dev/null; then
   PATH="$(pwd)/out/gsutil:$PATH"
 fi
 
-# Add the out/ directory to the PATH, for using new drivers.
-PATH="$(pwd)/out/":$PATH
-export PATH
-
-# Avoid unexpectedly set paths
-GOPATH=""
-export GOPATH
-
 echo ""
 echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
@@ -88,11 +83,7 @@ gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export TEST_HTML_BIN="out/test-html-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
-
-mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
-export MINIKUBE_WANTREPORTERRORPROMPT=False
-export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
 TEST_OUT="${TEST_HOME}/test.out"
 JSON_OUT="${TEST_HOME}/test.json"
