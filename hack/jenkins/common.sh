@@ -27,6 +27,7 @@
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
+readonly GO_BIN=/usr/local/go/bin/go
 
 export PATH="$(pwd)/out/":$PATH
 export GOPATH=""
@@ -43,7 +44,6 @@ echo "sudo:      ${SUDO_PREFIX}"
 echo "kernel:    $(uname -v)"
 echo "kubectl:   $(kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
-echo "go    :    $(go version)"
 
 case "${VM_DRIVER}" in
   kvm2)
@@ -54,8 +54,11 @@ case "${VM_DRIVER}" in
   ;;
 esac
 
-echo ""
-mkdir -p out/ testdata/
+mkdir -p out/ testdata/ "${TEST_HOME}"
+
+# Make sure the right golang version is installed based on Makefile
+GO_VERSION=$(grep '^GO_VERSION' Makefile | awk '{ print $3 }')
+./hack/jenkins/installers/check_install_golang.sh $GO_VERSION /usr/local
 
 # Install gsutil if necessary.
 if ! type -P gsutil >/dev/null; then
@@ -66,18 +69,13 @@ if ! type -P gsutil >/dev/null; then
   PATH="$(pwd)/out/gsutil:$PATH"
 fi
 
-echo ""
-echo ">> Downloading test inputs from ${MINIKUBE_LOCATION} ..."
 gsutil -qm cp \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/test-html-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/minikube-${OS_ARCH}" \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out
-
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
-
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
-
 
 # Set the executable bit on the e2e binary and out binary
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
@@ -90,7 +88,7 @@ JSON_OUT="${TEST_HOME}/test.json"
 HTML_OUT="${TEST_HOME}/test.html"
 
 # Validate that our tools work
-echo STARTING | go tool test2json > "${JSON_OUT}"
+echo STARTING | "${GO_BIN}" tool test2json > "${JSON_OUT}"
 "${TEST_HTML_BIN}" -in "${JSON_OUT}" -out "${HTML_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
 gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
@@ -306,7 +304,7 @@ else
 fi
 
 # Generate well-formed test output
-go tool test2json < "${TEST_OUT}" > "${JSON_OUT}"
+"${GO_BIN}" tool test2json < "${TEST_OUT}" > "${JSON_OUT}"
 "${TEST_HTML_BIN}" -in "${JSON_OUT}" -out "${HTML_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
 gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
