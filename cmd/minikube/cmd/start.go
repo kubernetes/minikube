@@ -1038,7 +1038,7 @@ func validateDriverVersion(vmDriver string) {
 	case constants.DriverKvm2:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverKvm2)
 		targetDir := constants.MakeMiniPath("bin")
-		err := drivers.Download(driverExecutable, targetDir, minikubeVersion)
+		err := drivers.InstallOrUpdate(driverExecutable, targetDir, minikubeVersion)
 		if err != nil {
 			out.WarningT("Error downloading driver: {{.error}}", out.V{"error": err})
 		}

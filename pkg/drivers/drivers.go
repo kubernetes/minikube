@@ -151,8 +151,8 @@ func fixPermissions(path string) error {
 	return nil
 }
 
-// Download downloads driver if it is not present, or if the version is old
-func Download(driver, destination string, minikubeVersion semver.Version) error {
+// InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
+func InstallOrUpdate(driver, destination string, minikubeVersion semver.Version) error {
 	_, err := exec.LookPath(driver)
 	// if file driver doesn't exist, download it
 	if err != nil {
