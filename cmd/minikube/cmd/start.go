@@ -30,6 +30,8 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/notify"
+
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -107,13 +109,14 @@ const (
 )
 
 var (
-	registryMirror   []string
-	dockerEnv        []string
-	dockerOpt        []string
-	insecureRegistry []string
-	apiServerNames   []string
-	apiServerIPs     []net.IP
-	extraOptions     cfg.ExtraOptionSlice
+	registryMirror           []string
+	dockerEnv                []string
+	dockerOpt                []string
+	insecureRegistry         []string
+	apiServerNames           []string
+	apiServerIPs             []net.IP
+	extraOptions             cfg.ExtraOptionSlice
+	enableUpdateNotification = true
 )
 
 func init() {
@@ -216,6 +219,11 @@ var startCmd = &cobra.Command{
 	Short: "Starts a local kubernetes cluster",
 	Long:  "Starts a local kubernetes cluster",
 	Run:   runStart,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if enableUpdateNotification {
+			notify.MaybePrintUpdateTextFromGithub()
+		}
+	},
 }
 
 // platform generates a user-readable platform message
@@ -253,6 +261,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
 	}
 	out.T(out.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
+	displayEnviron(os.Environ())
 
 	// if --registry-mirror specified when run minikube start,
 	// take arg precedence over MINIKUBE_REGISTRY_MIRROR
@@ -331,7 +340,18 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 	showKubectlConnectInfo(kubeconfig)
+}
 
+// displayEnviron makes the user aware of environment variables that will affect how minikube operates
+func displayEnviron(env []string) {
+	for _, kv := range env {
+		bits := strings.SplitN(kv, "=", 2)
+		k := bits[0]
+		v := bits[1]
+		if strings.HasPrefix(k, "MINIKUBE_") || k == constants.KubeconfigEnvVar {
+			out.T(out.Option, "{{.key}}={{.value}}", out.V{"key": k, "value": v})
+		}
+	}
 }
 
 func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) {
@@ -354,6 +374,7 @@ func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) 
 		KeepContext:          viper.GetBool(keepContext),
 		EmbedCerts:           viper.GetBool(embedCerts),
 	}
+
 	kcs.SetPath(kubeconfig.PathFromEnv())
 	if err := kubeconfig.Update(kcs); err != nil {
 		return kcs, err
@@ -957,18 +978,14 @@ func saveConfig(clusterCfg *cfg.Config) error {
 }
 
 func validateDriverVersion(vmDriver string) {
-	var (
-		driverExecutable    string
-		driverDocumentation string
-	)
+	var driverExecutable string
+	driverDocumentation := fmt.Sprintf("%s%s#driver-installation", constants.DriverDocumentation, vmDriver)
 
 	switch vmDriver {
 	case constants.DriverKvm2:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverKvm2)
-		driverDocumentation = fmt.Sprintf("%s#%s", constants.DriverDocumentation, "kvm2-upgrade")
 	case constants.DriverHyperkit:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverHyperkit)
-		driverDocumentation = fmt.Sprintf("%s#%s", constants.DriverDocumentation, "hyperkit-upgrade")
 	default: // driver doesn't support version
 		return
 	}
@@ -989,7 +1006,7 @@ func validateDriverVersion(vmDriver string) {
 	if len(v) == 0 && !viper.GetBool(force) {
 		exit.WithCodeT(
 			exit.Failure,
-			"Please upgrade the '{{.driver_executable}}'. {{.documentation_url}}",
+			"The installed version of '{{.driver_executable}}' is obsolete. Upgrade: {{.documentation_url}}",
 			out.V{"driver_executable": driverExecutable, "documentation_url": driverDocumentation},
 		)
 	}
@@ -1008,8 +1025,8 @@ func validateDriverVersion(vmDriver string) {
 
 	if vmDriverVersion.LT(minikubeVersion) {
 		out.WarningT(
-			"There's a new version for '{{.driver_executable}}'. Please consider upgrading. {{.documentation_url}}",
-			out.V{"driver_executable": driverExecutable, "documentation_url": driverDocumentation},
+			"The installed version of '{{.driver_executable}}' ({{.driver_version}}) is no longer current. Upgrade: {{.documentation_url}}",
+			out.V{"driver_executable": driverExecutable, "driver_version": vmDriverVersion, "documentation_url": driverDocumentation},
 		)
 	}
 }
