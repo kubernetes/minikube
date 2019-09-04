@@ -30,8 +30,12 @@ import (
 )
 
 func TestDriverInstallOrUpdate(t *testing.T) {
+	if isTestNoneDriver(t) {
+		t.Skip("Skip none driver.")
+	}
+
 	if runtime.GOOS != "linux" {
-		t.Skip()
+		t.Skip("Skip if not linux.")
 	}
 
 	tests := []struct {
