@@ -178,7 +178,7 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.15.2"
+var DefaultKubernetesVersion = "v1.16.0-beta.1"
 
 // NewestKubernetesVersion is the newest Kubernetes version to test against
 var NewestKubernetesVersion = "v1.16.0-beta.1"

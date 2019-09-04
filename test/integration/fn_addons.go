@@ -206,10 +206,7 @@ func testRegistry(t *testing.T) {
 	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", rs); err != nil {
 		t.Fatalf("waiting for registry pods: %v", err)
 	}
-	ps, err := labels.Parse("kubernetes.io/minikube-addons=registry,actual-registry!=true")
-	if err != nil {
-		t.Fatalf("Unable to parse selector: %v", err)
-	}
+	ps := labels.SelectorFromSet(labels.Set(map[string]string{"registry-proxy": "true"}))
 	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", ps); err != nil {
 		t.Fatalf("waiting for registry-proxy pods: %v", err)
 	}

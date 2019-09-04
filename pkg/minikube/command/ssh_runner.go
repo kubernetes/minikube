@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io"
 	"path"
-	"path/filepath"
 	"sync"
 
 	"github.com/golang/glog"
@@ -167,7 +166,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	// StdinPipe is closed. But let's use errgroup to make it explicit.
 	var g errgroup.Group
 	var copied int64
-	dst := filepath.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
+	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 	glog.Infof("Transferring %d bytes to %s", f.GetLength(), dst)
 
 	g.Go(func() error {
