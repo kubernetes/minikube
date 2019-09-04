@@ -17,45 +17,67 @@ limitations under the License.
 package lock
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/juju/fslock"
+	"github.com/juju/clock"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
-// WriteWithLock decorates ioutil.WriteFile with a file lock and retry
-func WriteFile(filename string, data []byte, perm os.FileMode) (err error) {
-	lock := fslock.New(filename)
+// WriteFile decorates ioutil.WriteFile with a file lock and retry
+func WriteFile(filename string, data []byte, perm os.FileMode) error {
+	spec := mutex.Spec{
+		Name:  getMutexName(filename),
+		Clock: clock.WallClock,
+		Delay: 13 * time.Second,
+	}
 	glog.Infof("attempting to write to file %q with filemode %v", filename, perm)
 
-	getLock := func() error {
-		lockErr := lock.TryLock()
-		if lockErr != nil {
-			glog.Warningf("temporary error : %v", lockErr.Error())
-			return errors.Wrapf(lockErr, "failed to acquire lock for %s > ", filename)
-		}
-		return nil
-	}
-
-	defer func() { // release the lock
-		err = lock.Unlock()
-		if err != nil {
-			err = errors.Wrapf(err, "error releasing lock for file: %s", filename)
-		}
-	}()
-
-	err = retry.Expo(getLock, 500*time.Millisecond, 13*time.Second)
+	releaser, err := mutex.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "error acquiring lock for %s", filename)
 	}
+
+	defer releaser.Release()
 
 	if err = ioutil.WriteFile(filename, data, perm); err != nil {
 		return errors.Wrapf(err, "error writing file %s", filename)
 	}
 
 	return err
+}
+
+func getMutexName(filename string) string {
+	// Make the mutex name the file name and its parent directory
+	dir, name := filepath.Split(filename)
+
+	// Replace underscores and periods with dashes, the only valid punctuation for mutex name
+	name = strings.ReplaceAll(name, ".", "-")
+	name = strings.ReplaceAll(name, "_", "-")
+
+	p := strings.ReplaceAll(filepath.Base(dir), ".", "-")
+	p = strings.ReplaceAll(p, "_", "-")
+	mutexName := fmt.Sprintf("%s-%s", p, strings.ReplaceAll(name, ".", "-"))
+
+	// Check if name starts with an int and prepend a string instead
+	if _, err := strconv.Atoi(mutexName[:1]); err == nil {
+		mutexName = "m" + mutexName
+	}
+	// There's an arbitrary hard max on mutex name at 40.
+	if len(mutexName) > 40 {
+		mutexName = mutexName[:40]
+	}
+
+	// Make sure name doesn't start or end with punctuation
+	mutexName = strings.TrimPrefix(mutexName, "-")
+	mutexName = strings.TrimSuffix(mutexName, "-")
+
+	return mutexName
 }

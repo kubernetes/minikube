@@ -15,10 +15,10 @@ description: >
 
 ## Using the KVM2 driver
 
-When using NVIDIA GPUs with the kvm2 vm-driver. We passthrough spare GPUs on the
+When using NVIDIA GPUs with the kvm2 vm-driver, we passthrough spare GPUs on the
 host to the minikube VM. Doing so has a few prerequisites:
 
-- You must install the [kvm2 driver](drivers.md#kvm2-driver). If you already had
+- You must install the [kvm2 driver](/docs/start/linux/#hypervisor-setup). If you already had
   this installed make sure that you fetch the latest
   `docker-machine-driver-kvm2` binary that has GPU support.
 
@@ -44,7 +44,7 @@ host to the minikube VM. Doing so has a few prerequisites:
 - Once you reboot the system after doing the above, you should be ready to use
   GPUs with kvm2. Run the following command to start minikube:
   ```shell
-  minikube start --vm-driver kvm2 --gpu
+  minikube start --vm-driver kvm2 --kvm-gpu
   ```
 
   This command will check if all the above conditions are satisfied and

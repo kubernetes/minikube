@@ -13,7 +13,7 @@
 # limitations under the License.
 
 ---
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: nginx-ingress-controller
@@ -42,7 +42,7 @@ spec:
       serviceAccountName: nginx-ingress
       terminationGracePeriodSeconds: 60
       containers:
-      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller{{.ExoticArch}}:0.25.0
+      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller{{.ExoticArch}}:0.25.1
         name: nginx-ingress-controller
         imagePullPolicy: IfNotPresent
         readinessProbe:

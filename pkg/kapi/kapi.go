@@ -142,7 +142,7 @@ func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.
 	return err
 }
 
-// WaitForDeploymentToStabilize waits till the Deployment has a matching generation/replica count between spec and status. used by integrationt tests
+// WaitForDeploymentToStabilize waits till the Deployment has a matching generation/replica count between spec and status. used by integration tests
 func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeout time.Duration) error {
 	options := meta.ListOptions{FieldSelector: fields.Set{
 		"metadata.name":      name,

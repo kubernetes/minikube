@@ -52,7 +52,7 @@ associated files.`,
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
-		exit.UsageT("usage: minikube delete")
+		exit.UsageT("Usage: minikube delete")
 	}
 	profile := viper.GetString(pkg_config.MachineProfile)
 	api, err := machine.NewAPIClient()
