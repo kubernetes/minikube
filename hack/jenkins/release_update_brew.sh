@@ -29,6 +29,11 @@ readonly NEW_SHA256=$(awk '{ print $1 }' "${REPO_DIR}/out/minikube-darwin-amd64.
 readonly BUILD_DIR=$(mktemp -d)
 readonly GITHUB_USER="minikube-bot"
 
+if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
+  echo "NOTE: ${NEW_VERSION} appears to be a non-standard release, not updating releases.json"
+  exit 0
+fi
+
 if [ -z "${NEW_SHA256}" ]; then
   echo "SHA256 is empty :("
   exit 1
