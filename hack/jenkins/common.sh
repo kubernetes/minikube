@@ -89,6 +89,11 @@ export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export TEST_HTML_BIN="out/test-html-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 
+mkdir -p "${TEST_HOME}"
+export MINIKUBE_HOME="${TEST_HOME}/.minikube"
+export MINIKUBE_WANTREPORTERRORPROMPT=False
+export KUBECONFIG="${TEST_HOME}/kubeconfig"
+
 TEST_OUT="${TEST_HOME}/test.out"
 JSON_OUT="${TEST_HOME}/test.json"
 HTML_OUT="${TEST_HOME}/test.html"
@@ -275,11 +280,6 @@ function cleanup_stale_routes() {
 }
 
 cleanup_stale_routes || true
-
-mkdir -p "${TEST_HOME}"
-export MINIKUBE_HOME="${TEST_HOME}/.minikube"
-export MINIKUBE_WANTREPORTERRORPROMPT=False
-export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
 # Build the gvisor image. This will be copied into minikube and loaded by ctr.
 # Used by TestContainerd for Gvisor Test.
