@@ -35,6 +35,11 @@ readonly GITHUB_ORGANIZATION="kubernetes"
 readonly GITHUB_REPO="minikube"
 readonly PROJECT_NAME="${GITHUB_REPO}"
 
+# Pre-release
+if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
+  RELEASE_FLAGS="-p"
+fi
+
 RELEASE_NOTES=$(perl -e "\$p=0; while(<>) { if(/^## Version ${VERSION}/) { \$p=1 } elsif (/^##/) { \$p=0 }; if (\$p) { print }}" < CHANGELOG.md)
 if [[ "${RELEASE_NOTES}" = "" ]]; then
   RELEASE_NOTES="(missing for ${VERSION})"
@@ -61,7 +66,7 @@ github-release delete \
   || true
 
 # Creating a new release in github
-github-release release \
+github-release release ${RELEASE_FLAGS} \
     --user "${GITHUB_ORGANIZATION}" \
     --repo "${GITHUB_REPO}" \
     --tag "${TAGNAME}" \
