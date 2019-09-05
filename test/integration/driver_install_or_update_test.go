@@ -42,8 +42,8 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 		name string
 		path string
 	}{
-		{name: "driver-without-version-support", path: "./testdata/kvm2-driver-without-version"},
-		{name: "driver-with-older-version", path: "./testdata/kvm2-driver-without-version"},
+		{name: "driver-without-version-support", path: path.Join(*testdataDir, "kvm2-driver-without-version")},
+		{name: "driver-with-older-version", path: path.Join(*testdataDir, "kvm2-driver-without-version")},
 	}
 
 	for _, tc := range tests {
