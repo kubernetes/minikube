@@ -60,7 +60,7 @@ func TestUpgrade(t *testing.T) {
 		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, rpath, "status", "--format={{.Host}}", "-p", profile)
+	rr, err = RunCmd(ctx, t, rpath, "-p", profile, "status", "--format={{.Host}}")
 	if err != nil {
 		t.Logf("status error: %v (may be ok)", err)
 	}
