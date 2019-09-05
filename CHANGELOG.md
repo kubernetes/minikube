@@ -1,18 +1,21 @@
 # Release Notes
 
-# 1.4.0-beta.0 - 2019-09-04
+## Version 1.4.0-beta.0 - 2019-09-04
 
-* Get make builds working on Windows [#5253](https://github.com/kubernetes/minikube/pull/5253)
 * Upgrade default Kubernetes version to v1.16.0-beta1 [#5250](https://github.com/kubernetes/minikube/pull/5250)
+* Move root filesystem from rootfs to tmpfs [#5133](https://github.com/kubernetes/minikube/pull/5133)
+* Upgrade containerd to 1.2.8. [#5194](https://github.com/kubernetes/minikube/pull/5194)
+* Update gvisor runsc version [#4494](https://github.com/kubernetes/minikube/pull/4494)
+* Upgrade nginx to security patch v0.25.1 [#5197](https://github.com/kubernetes/minikube/pull/5197)
+* Minimum CPUs check [#5086](https://github.com/kubernetes/minikube/pull/5086)
+* Exit if --kubernetes-version is older than the oldest supported version [#4759](https://github.com/kubernetes/minikube/pull/4759)
+* Get make builds working on Windows [#5253](https://github.com/kubernetes/minikube/pull/5253)
 * More logs: exited containers, controller manager, double line count [#5249](https://github.com/kubernetes/minikube/pull/5249)
 * Moved warning to minikube start command and print it to stderr [#5241](https://github.com/kubernetes/minikube/pull/5241)
 * Removing undocumented MINIKUBE_WANTREPORTERRORPROMPT [#5218](https://github.com/kubernetes/minikube/pull/5218)
 * Announce environmental overrides up front [#5212](https://github.com/kubernetes/minikube/pull/5212)
 * Upgrade addons to use apps/v1 instead of extensions/v1beta1  [#5028](https://github.com/kubernetes/minikube/pull/5028)
-* Upgrade nginx to security patch v0.25.1 [#5197](https://github.com/kubernetes/minikube/pull/5197)
-* Upgrade containerd to 1.2.8. [#5194](https://github.com/kubernetes/minikube/pull/5194)
 * Fix and continue French translation [#5198](https://github.com/kubernetes/minikube/pull/5198)
-* Move root filesystem from rootfs to tmpfs [#5133](https://github.com/kubernetes/minikube/pull/5133)
 * Re-Added time synchronization between host/VM  [#4991](https://github.com/kubernetes/minikube/pull/4991)
 * Fix downgrade warning is unhelpful and confusing [#5155](https://github.com/kubernetes/minikube/pull/5155)
 * Exit if uid=0, add --force flag to override [#5179](https://github.com/kubernetes/minikube/pull/5179)
@@ -25,7 +28,6 @@
 * Support adding untrusted root CA certificates (corp certs) [#5015](https://github.com/kubernetes/minikube/pull/5015)
 * Advice user on non-existing profile instead of crash [#4896](https://github.com/kubernetes/minikube/pull/4896)
 * [FEATURE] allow to set container-runtime via config [#4834](https://github.com/kubernetes/minikube/pull/4834)
-* Improve the release tarballs with compression and checksum [#4751](https://github.com/kubernetes/minikube/pull/4751)
 * Improve handling KUBECONFIG environment variable with invalid entries [#5056](https://github.com/kubernetes/minikube/pull/5056)
 
 Thank you to our contributors:
@@ -33,37 +35,39 @@ Thank you to our contributors:
 - AllenZMC
 - Alok Kumar
 - Anders F Björklund
+- bpopovschi
 - Carlos Sanchez
+- chentanjun
+- Deepika Pandhi
 - Diego Mendes
+- ethan
 - Guangming Wang
 - Ian Lewis
 - Ivan Ogasawara
 - Jituri, Pranav
+- josedonizetti
 - Marcin Niemira
+- Max K
 - Medya Ghazizadeh
 - Michaël Bitard
 - Miguel Moll
 - Olivier Lemasle
 - Pankaj Patil
+- phillipahereza
 - Phillip Ahereza
 - Pranav Jituri
 - Praveen Sastry
 - Priya Wadhwa
 - RA489
 - Rishabh Budhiraja
+- serhatcetinkaya
 - Sharif Elgamal
 - Thomas Strömberg
 - Vydruth
 - William Zhang
+- xieyanker
 - Zhongcheng Lao
 - Zoltán Reegn
-- bpopovschi
-- chentanjun
-- ethan
-- josedonizetti
-- phillipahereza
-- tstromberg
-- xieyanker
 
 ## Version 1.3.1 - 2019-08-13
 
