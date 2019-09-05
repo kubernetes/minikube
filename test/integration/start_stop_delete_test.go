@@ -19,36 +19,31 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"fmt"
-	"net"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func TestStartStop(t *testing.T) {
-	p := profileName(t) // gets profile name used for minikube and kube context
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
-
+	MaybeParallel(t)
 	t.Run("group", func(t *testing.T) {
-		if shouldRunInParallel(t) {
-			t.Parallel()
-		}
 		tests := []struct {
 			name string
 			args []string
 		}{
-			{"oldest", []string{
+			{"docker", []string{
 				"--cache-images=false",
 				fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
 				// default is the network created by libvirt, if we change the name minikube won't boot
 				// because the given network doesn't exist
 				"--kvm-network=default",
 				"--kvm-qemu-uri=qemu:///system",
+				"--wait=false",
 			}},
 			{"cni", []string{
 				"--feature-gates",
@@ -57,53 +52,64 @@ func TestStartStop(t *testing.T) {
 				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 				fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
+				"--wait=false",
 			}},
 			{"containerd", []string{
 				"--container-runtime=containerd",
 				"--docker-opt containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
+				"--wait=false",
 			}},
 			{"crio", []string{
 				"--container-runtime=crio",
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
+				"--wait=false",
 			}},
 		}
 
 		for _, tc := range tests {
-			n := tc.name // because similar to https://golang.org/doc/faq#closures_and_goroutines
 			t.Run(tc.name, func(t *testing.T) {
-				if shouldRunInParallel(t) {
-					t.Parallel()
-				}
-
-				pn := p + n // TestStartStopoldest
-				mk := NewMinikubeRunner(t, pn, "--wait=false")
-				// TODO : redundant first clause ? never happens?
-				if !strings.Contains(pn, "docker") && isTestNoneDriver(t) {
+				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
 
-				mk.MustRun("config set WantReportErrorPrompt false")
-				mk.MustStart(tc.args...)
+				profile := Profile(tc.name)
+				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+				defer CleanupWithLogs(t, profile, cancel)
 
-				mk.CheckStatus(state.Running.String())
-
-				ip, stderr := mk.MustRun("ip")
-				ip = strings.TrimRight(ip, "\n")
-				if net.ParseIP(ip) == nil {
-					t.Fatalf("IP command returned an invalid address: %s \n %s", ip, stderr)
-				}
-
-				mk.MustRun("stop")
-				err := mk.CheckStatusNoFail(state.Stopped.String())
+				args := append([]string{"start", "-p", profile}, tc.args...)
+				rr, err := RunCmd(ctx, t, Target(), args...)
 				if err != nil {
-					t.Errorf("expected status to be %s but got error %v ", state.Stopped.String(), err)
+					t.Errorf("%s failed: %v", rr.Cmd.Args, err)
 				}
-				mk.MustStart(tc.args...)
-				mk.CheckStatus(state.Running.String())
-				mk.MustRun("delete")
-				mk.CheckStatus(state.None.String())
+
+				rr, err = RunCmd(ctx, t, Target(), "stop", "-p", profile)
+				if err != nil {
+					t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+				}
+
+				got := Status(ctx, t, Target(), profile)
+				if got != state.Stopped.String() {
+					t.Errorf("status = %q; want = %q", got, state.Stopped)
+				}
+
+				rr, err = RunCmd(ctx, t, Target(), "start", "-p", profile)
+				if err != nil {
+					// Explicit fatal so that failures don't move directly to deletion
+					t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
+				}
+
+				got = Status(ctx, t, Target(), profile)
+				if got != state.Running.String() {
+					t.Errorf("status = %q; want = %q", got, state.Running)
+				}
+
+				// Normally handled by cleanuprofile, but not fatal there
+				rr, err = RunCmd(ctx, t, Target(), "delete", "-p", profile)
+				if err != nil {
+					t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+				}
 			})
 		}
 	})

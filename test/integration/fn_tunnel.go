@@ -46,8 +46,8 @@ func testTunnel(t *testing.T) {
 	}
 
 	t.Log("starting tunnel test...")
-	p := profileName(t)
-	mk := NewMinikubeRunner(t, p, "--wait=false")
+	profile := Profile(t.Name())
+	mk := NewMinikubeRunner(t, profile, "--wait=false")
 	go func() {
 		output, stderr := mk.MustRun("tunnel --alsologtostderr -v 8 --logtostderr")
 		if t.Failed() {
@@ -62,7 +62,7 @@ func testTunnel(t *testing.T) {
 		t.Fatal(errors.Wrap(err, "cleaning up tunnels"))
 	}
 
-	kr := util.NewKubectlRunner(t, p)
+	kr := util.NewKubectlRunner(t, profile)
 
 	t.Log("deploying nginx...")
 	podPath := filepath.Join(*testdataDir, "testsvc.yaml")
@@ -70,7 +70,7 @@ func testTunnel(t *testing.T) {
 		t.Fatalf("creating nginx ingress resource: %s", err)
 	}
 
-	client, err := kapi.Client(p)
+	client, err := kapi.Client(profile)
 
 	if err != nil {
 		t.Fatal(errors.Wrap(err, "getting kubernetes client"))

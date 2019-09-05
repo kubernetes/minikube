@@ -19,41 +19,116 @@ limitations under the License.
 package integration
 
 import (
+	"context"
+	"strings"
 	"testing"
+	"time"
+
+	"k8s.io/minikube/test/integration/util"
 )
 
+
+type validateFunc func(context.Context, *testing.T, string)
+
+// TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
-	p := profileName(t)
-	mk := NewMinikubeRunner(t, p)
-	mk.MustStart()
-	if !isTestNoneDriver(t) { // none driver doesn't need to be deleted
-		defer mk.TearDown(t)
+	profile := Profile("functional")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer CleanupWithLogs(t, profile, cancel)
+
+	args := append([]string{"start", "-p", profile}, StartArgs()...)
+	rr, err := RunCmd(ctx, t, Target(), args...)
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
 	}
 
-	// group is needed to make sure tear down runs after parallel runs
-	// https://github.com/golang/go/issues/17791#issuecomment-258476786
-	t.Run("group", func(t *testing.T) {
-		// This one is not parallel, and ensures the cluster comes up
-		// before we run any other tests.
-		t.Run("Status", testClusterStatus)
-		t.Run("ProfileList", testProfileList)
-		t.Run("DNS", testClusterDNS)
-		t.Run("Logs", testClusterLogs)
-		t.Run("Addons", testAddons)
-		t.Run("Registry", testRegistry)
-		t.Run("Dashboard", testDashboard)
-		t.Run("ServicesList", testServicesList)
-		t.Run("Provisioning", testProvisioning)
-		t.Run("Tunnel", testTunnel)
-		t.Run("kubecontext", testKubeConfigCurrentCtx)
-
-		if !isTestNoneDriver(t) {
-			t.Run("EnvVars", testClusterEnv)
-			t.Run("SSH", testClusterSSH)
-			t.Run("IngressController", testIngressController)
-			t.Run("Mounting", testMounting)
+	t.Run("shared", func(t *testing.T) {
+		tests := []struct {
+			name string
+			noneCompatible bool
+			validator validateFunc
+		}{
+			{"AddonManager", true, validateAddonsCmd},
+			{"ComponentHealth", true, validateComponentHealth},
+			{"DNS", true, validateDNS},
+			{"DockerEnv", true, validateDockerEnv},
+			{"LogsCmd", true, validateLogsCmd},
+			{"KubeContext", true, validateKubeContext},
+			{"IngressAddon", false, validateIngressAddon)
+			{"MountCmd", false, validateMountCmd)
+			{"ProfileCmd", true, validateProfileCmd},
+			{"RegistryAddon", true, validateRegistryAddon),
+			{"ServicesCmd", true, validateServicesCmd},
+			{"PersistentVolumeClaim", true, validatePersistentVolumeClaim},
+			{"TunnelCmd", true, validateTunnelCmd},
+			{"SSHCmd",  false, validateSSHCmd},
 		}
-
 	})
+}
 
+func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
+	t.MaybeParallel()
+	rr, err := RunCmd(ctx, t, "kubectl", "config", "current-context")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
+	if !strings.Contains(cc.Stdout.String(), profile) {
+		t.Errorf("current-context = %q, want %q", rr.Stdout.String(), profile)
+	}
+}
+
+func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := RunCmd(ctx, t, Target(), "profile", "list")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
+}
+
+func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "logs")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
+	for _, word := range []string{"Docker", "apiserver", "Linux", "kubelet"} {
+		if !strings.Contains(rr.Stdout().String(), word) {
+			t.Errorf("minikube logs missing expected word: %q", word)
+		}
+	}
+}
+
+func validateServicesCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "services", "list")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
+	if !strings.Contains(rr.Stdout().String(), "kubernetes") {
+		t.Errorf("services list got %q, wanted *kubernetes*", rr.Stdout.String())
+	}
+}
+
+func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
+	want := "hello"
+	sshCmdOutput, stderr := mk.MustRun("ssh echo " + expectedStr)
+	if !strings.Contains(sshCmdOutput, expectedStr) {
+		t.Fatalf("ExpectedStr sshCmdOutput to be: %s. Output was: %s Stderr: %s", expectedStr, sshCmdOutput, stderr)
+	}				
+	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("echo %s", want))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
+	if rr.Stdout.String() != want {
+		t.Errorf("%v = %q, want = %q", rr.Cmd.Args, rr.Stdout.String(), word)
+	}
+}
+
+func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
+	MaybeParallel(t)
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("Could not get kubernetes client: %v", err)
+	}
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"component": "kube-addon-manager"}))
+	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
+		t.Errorf("Error waiting for addon manager to be up")
+	}
 }

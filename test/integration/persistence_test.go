@@ -19,45 +19,54 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
-	"github.com/docker/machine/libmachine/state"
-	"k8s.io/minikube/test/integration/util"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/minikube/pkg/kapi"
 )
 
-func TestPersistence(t *testing.T) {
-	if isTestNoneDriver(t) {
-		t.Skip("skipping test as none driver does not support persistence")
+func TestPodPersistence(t *testing.T) {
+	MaybeParallel(t)
+
+	profile := Profile("persist")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer CleanupWithLogs(t, profile, cancel)
+
+	rr, err := RunCmd(ctx, t, Target(), "start", "-p", profile)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
 	}
-	p := profileName(t)
-	if shouldRunInParallel(t) {
-		t.Parallel()
+
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
 	}
 
-	mk := NewMinikubeRunner(t, p, "--wait=false")
-	defer mk.TearDown(t)
-
-	mk.MustStart()
-	kr := util.NewKubectlRunner(t, p)
-	if _, err := kr.RunCommand([]string{"create", "-f", filepath.Join(*testdataDir, "busybox.yaml")}); err != nil {
-		t.Fatalf("creating busybox pod: %s", err)
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Errorf("client failed: %v", err)
 	}
-	verifyBusybox := func(t *testing.T) {
-		if err := util.WaitForBusyboxRunning(t, "default", p); err != nil {
-			t.Fatalf("waiting for busybox to be up: %v", err)
-		}
-
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
+	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		t.Errorf("wait failed: %v", err)
 	}
-	// Make sure everything is up before we stop.
-	verifyBusybox(t)
 
-	mk.MustRun("stop")
-	mk.CheckStatus(state.Stopped.String())
+	// Stop everything!
+	rr, err = RunCmd(ctx, t, Target(), "stop", "-p", profile)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
 
-	mk.MustStart()
-	mk.CheckStatus(state.Running.String())
+	// Start minikube, and validate that busybox is still running.
+	rr, err = RunCmd(ctx, t, Target(), "start", "-p", profile)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
 
-	// Make sure the same things come up after we've restarted.
-	verifyBusybox(t)
+	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		t.Errorf("wait failed: %v", err)
+	}
 }

@@ -39,13 +39,13 @@ func testMounting(t *testing.T) {
 	if runtime.GOOS == "darwin" {
 		t.Skip("mount tests disabled in darwin due to timeout (issue#3200)")
 	}
-	if isTestNoneDriver(t) {
+	if NoneDriver() {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
 
-	t.Parallel()
-	p := profileName(t)
-	mk := NewMinikubeRunner(t, p, "--wait=false")
+	MaybeParallel(t)
+	profile := Profile(t.Name())
+	mk := NewMinikubeRunner(t, profile, "--wait=false")
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
@@ -62,7 +62,7 @@ func testMounting(t *testing.T) {
 		}
 	}()
 
-	kr := util.NewKubectlRunner(t, p)
+	kr := util.NewKubectlRunner(t, profile)
 	podName := "busybox-mount"
 	podPath := filepath.Join(*testdataDir, "busybox-mount-test.yaml")
 	// Write file in mounted dir from host
@@ -91,7 +91,7 @@ func testMounting(t *testing.T) {
 		t.Fatal("mountTest failed with error:", err)
 	}
 
-	if err := waitForPods(map[string]string{"integration-test": "busybox-mount"}, p); err != nil {
+	if err := waitForPods(map[string]string{"integration-test": "busybox-mount"}, profile); err != nil {
 		t.Fatalf("Error waiting for busybox mount pod to be up: %v", err)
 	}
 	t.Logf("Pods appear to be running")

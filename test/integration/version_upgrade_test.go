@@ -17,9 +17,10 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
@@ -29,68 +30,71 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util/retry"
+
+	"github.com/hashicorp/go-getter"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
-func fileExists(fname string) error {
-	check := func() error {
-		info, err := os.Stat(fname)
-		if os.IsNotExist(err) {
-			return err
-		}
-		if info.IsDir() {
-			return fmt.Errorf("error expect file got dir")
-		}
-		return nil
-	}
-
-	if err := retry.Expo(check, 1*time.Second, 3); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Failed check if file (%q) exists,", fname))
-	}
-	return nil
-}
-
-// TestVersionUpgrade downloads latest version of minikube and runs with
+// TestUpgrade downloads latest version of minikube and runs with
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
-func TestVersionUpgrade(t *testing.T) {
-	p := profileName(t)
-	if shouldRunInParallel(t) {
-		t.Parallel()
+func TestUpgrade(t *testing.T) {
+	profile := Profile("vupgrade")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	MaybeParallel(t)
+
+	defer CleanupWithLogs(t, profile, cancel)
+	rpath, err := downloadMinikube()
+	if err != nil {
+		t.Fatalf("download minikube: %v", err)
 	}
-	// fname is the filename for the minikube's latetest binary. this file been pre-downloaded before test by hacks/jenkins/common.sh
-	fname := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
-	err := fileExists(fname)
-	if err != nil { // download file if it is not downloaded by other test
-		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
-		if runtime.GOOS == "windows" {
-			dest += ".exe"
-		}
-		err := downloadMinikubeBinary(t, dest, "latest")
-		if err != nil {
-			// binary is needed for the test
-			t.Fatalf("erorr downloading the latest minikube release %v", err)
+	defer os.Remove(rpath)
+
+	rr, err := RunCmd(ctx, t, rpath, "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
+
+	rr, err = RunCmd(ctx, t, rpath, "stop", "-p", profile)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
+
+	rr, err = RunCmd(ctx, t, rpath, "status", "--format={{.Host}}", "-p", profile)
+	if err != nil {
+		t.Logf("status error: %v (may be ok)", err)
+	}
+	got := strings.TrimSpace(rr.Stdout.String())
+	if got != state.Stopped.String() {
+		t.Errorf("status = %q; want = %q", got, state.Stopped.String())
+	}
+
+	// Upgrade!
+	rr, err = RunCmd(ctx, t, Target(), "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
+}
+
+// downloadMinikube downloads the minikube binary from github used by TestVersionUpgrade
+func downloadMinikube() (string, error) {
+	tf, err := ioutil.TempFile("", "minikube-release.*.exe")
+	if err != nil {
+		return tf.Name(), err
+	}
+
+	url := pkgutil.GetBinaryDownloadURL("latest", runtime.GOOS)
+	download := func() error {
+		return getter.GetFile(tf.Name(), url)
+	}
+
+	if err := retry.Expo(download, 3*time.Second, 3*time.Minute); err != nil {
+		return tf.Name(), errors.Wrap(err, "Failed to get latest release binary")
+	}
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(tf.Name(), 0700); err != nil {
+			return tf.Name(), err
 		}
 	}
-	defer os.Remove(fname)
-
-	mkHead := NewMinikubeRunner(t, p) // minikube from HEAD.
-	defer mkHead.TearDown(t)
-
-	mkRelease := NewMinikubeRunner(t, p) // lastest publicly released version minikbue.
-
-	// because the --wait-timeout is a new flag and the current latest release (1.3.1) doesn't have it
-	// this won't be necessary after we release the change with --wait-timeout flag
-	mkRelease.StartArgs = strings.Replace(mkRelease.StartArgs, "--wait-timeout=13m", "", 1)
-	mkRelease.BinaryPath = fname
-	// For full coverage: also test upgrading from oldest to newest supported k8s release
-	mkRelease.MustStart(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
-
-	mkRelease.CheckStatus(state.Running.String())
-	mkRelease.MustRun("stop")
-	mkRelease.CheckStatus(state.Stopped.String())
-
-	// Trim the leading "v" prefix to assert that we handle it properly.
-	mkHead.MustStart(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
-
-	mkHead.CheckStatus(state.Running.String())
+	return tf.Name(), nil
 }

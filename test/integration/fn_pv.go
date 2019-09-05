@@ -40,10 +40,10 @@ var (
 )
 
 func testProvisioning(t *testing.T) {
-	p := profileName(t)
-	t.Parallel()
+	profile := Profile(t.Name())
+	MaybeParallel(t)
 
-	kr := util.NewKubectlRunner(t, p)
+	kr := util.NewKubectlRunner(t, profile)
 
 	defer func() {
 		if out, err := kr.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
@@ -73,7 +73,7 @@ func testProvisioning(t *testing.T) {
 	// Check that the storage provisioner pod is running
 
 	checkPodRunning := func() error {
-		client, err := kapi.Client(p)
+		client, err := kapi.Client(profile)
 		if err != nil {
 			return errors.Wrap(err, "getting kubernetes client")
 		}

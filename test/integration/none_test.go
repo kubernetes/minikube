@@ -20,41 +20,49 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func TestNone(t *testing.T) {
-	if !isTestNoneDriver(t) {
+	if !NoneDriver() {
 		t.Skip("Only test none driver.")
 	}
 	if shouldRunInParallel(t) {
-		t.Parallel()
+		MaybeParallel(t)
 	}
 
 	err := os.Setenv("CHANGE_MINIKUBE_NONE_USER", "true")
 	if err != nil {
-		t.Fatalf("Failed to setup TestNone: set env: %v", err)
+		t.Fatalf("setenv: %v", err)
 	}
 
-	p := profileName(t)
-	mk := NewMinikubeRunner(t, p, "--wait=false")
-	mk.MustRun("delete")
-	stdout, stderr := mk.MustStart()
-	msg := "Configuring local host environment"
-	if !strings.Contains(stdout, msg) {
-		t.Errorf("Expected: stdout to contain %q, got: %s", msg, stdout)
+	profile := Profile("none")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	defer CleanupWithLogs(t, profile, cancel)
+
+	args := append([]string{"start", "--wait=false"}, StartArgs()...)
+	rr, err := RunCmd(ctx, t, Target(), "start", args...)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
 	}
-	msg = "may reduce system security and reliability."
-	if !strings.Contains(stderr, msg) {
-		t.Errorf("Expected: stderr to contain %q, got: %s", msg, stderr)
+
+	rr, err = RunCmd(ctx, t, Target(), "delete")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
+
+	rr, err := RunCmd(ctx, t, Target(), "start", args...)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
 	}
 
 	t.Run("minikube permissions", testNoneMinikubeFolderPermissions)

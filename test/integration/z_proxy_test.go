@@ -37,7 +37,6 @@ import (
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/test/integration/util"
 )
 
 // setUpProxy runs a local http proxy and sets the env vars for it.
@@ -67,24 +66,19 @@ func setUpProxy(t *testing.T) (*http.Server, error) {
 	return srv, nil
 }
 
-func TestProxy(t *testing.T) {
+func TestProxyWithDashboard(t *testing.T) {
 	origHP := os.Getenv("HTTP_PROXY")
 	origNP := os.Getenv("NO_PROXY")
-	p := profileName(t) // profile name
-	if isTestNoneDriver(t) {
-		// TODO fix this later
-		t.Skip("Skipping proxy warning for none")
-	}
 
 	srv, err := setUpProxy(t)
 	if err != nil {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
 
-	// making sure there is no running minikube to avoid https://github.com/kubernetes/minikube/issues/4132
-	mk := NewMinikubeRunner(t, p)
-	// Clean up after setting up proxy
+	profile := fmt.Sprintf("proxy-%d", time.Now().UTC().UnixNano())
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer func(t *testing.T) {
+		CleanupWithLogs(t, profile, cancel)
 		err = os.Setenv("HTTP_PROXY", origHP)
 		if err != nil {
 			t.Errorf("Error reverting the HTTP_PROXY env")
@@ -98,48 +92,37 @@ func TestProxy(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
-		if !isTestNoneDriver(t) {
-			mk.TearDown(t)
-		}
-
 	}(t)
-	t.Run("ProxyConsoleWarnning", testProxyWarning)
-	t.Run("ProxyDashboard", testProxyDashboard)
-	t.Run("KubeconfigContext", testKubeConfigCurrentCtx)
-}
 
-// testProxyWarning checks user is warned correctly about the proxy related env vars
-func testProxyWarning(t *testing.T) {
-	p := profileName(t) // profile name
-	mk := NewMinikubeRunner(t, p)
-	stdout, stderr := mk.MustStart("--wait=false")
-
-	msg := "Found network options:"
-	if !strings.Contains(stdout, msg) {
-		t.Errorf("Proxy wranning (%s) is missing from the output: %s", msg, stderr)
+	args := []string{"start", "-p", profile}
+	rr, err := RunCmd(ctx, t, Target(), args...)
+	if err != nil {
+		t.Errorf("%s failed: %v", args, err)
 	}
 
-	msg = "You appear to be using a proxy"
-	if !strings.Contains(stderr, msg) {
-		t.Errorf("Proxy wranning (%s) is missing from the output: %s", msg, stderr)
+	want := "Found network options:"
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("start stdout=%s, want: *%s*", rr.Stdout.String(), want)
 	}
-}
 
-// testProxyDashboard checks if dashboard URL is accessible if proxy is set
-func testProxyDashboard(t *testing.T) {
-	p := profileName(t) // profile name
-	mk := NewMinikubeRunner(t, p)
-	cmd, out := mk.RunDaemon("dashboard --url")
+	want = "You appear to be using a proxy"
+	if !strings.Contains(rr.Stderr.String(), want) {
+		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
+	}
+
+	args = []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
+	sr, err := StartCmd(ctx, t, Target(), args...)
 	defer func() {
-		err := cmd.Process.Kill()
+		err := sr.Cmd.Process.Kill()
 		if err != nil {
 			t.Logf("Failed to kill dashboard command: %v", err)
 		}
 	}()
 
-	s, err := readLineWithTimeout(out, 180*time.Second)
+	start := time.Now()
+	s, err := ReadLineWithTimeout(sr.Stdout, 300*time.Second)
 	if err != nil {
-		t.Fatalf("failed to read url: %v", err)
+		t.Fatalf("failed to read url within %s: %v\n", time.Since(start), err)
 	}
 
 	u, err := url.Parse(strings.TrimSpace(s))
@@ -149,27 +132,13 @@ func testProxyDashboard(t *testing.T) {
 
 	resp, err := retryablehttp.Get(u.String())
 	if err != nil {
-		t.Fatalf("failed get: %v", err)
+		t.Errorf("failed get: %v", err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			t.Fatalf("Unable to read http response body: %v", err)
+			t.Errorf("Unable to read http response body: %v", err)
 		}
 		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
-	}
-}
-
-// testKubeConfigCurrentCtx checks weather the current-context is set after star
-func testKubeConfigCurrentCtx(t *testing.T) {
-	p := profileName(t) // profile name
-	kr := util.NewKubectlRunner(t, p)
-	ctxAfter, err := kr.RunCommand([]string{"config", "current-context"}, false)
-	if err != nil {
-		t.Errorf("expected not to get error for kubectl config current-context but got error: %v", err)
-	}
-
-	if !strings.Contains(string(ctxAfter), p) {
-		t.Errorf("expected kubecontext after start to be %s but got %s", p, ctxAfter)
 	}
 }
