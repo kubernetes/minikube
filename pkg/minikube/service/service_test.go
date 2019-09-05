@@ -71,7 +71,7 @@ func (m *MockClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clie
 // Secrets return fake secret for foo namespace or secrets from mocked client
 func (m *MockCoreClient) Secrets(ns string) typed_core.SecretInterface {
 	if ns == "foo" {
-		return &fake.FakeSecrets{Fake: &fake.FakeCoreV1{&testing_fake.Fake{}}}
+		return &fake.FakeSecrets{Fake: &fake.FakeCoreV1{Fake: &testing_fake.Fake{}}}
 	}
 	return m.secretsMap[ns]
 }
@@ -647,7 +647,7 @@ func TestCheckService(t *testing.T) {
 	})
 	t.Run("ok", func(t *testing.T) {
 		if err := CheckService("default", "mock-dashboard"); err != nil {
-			t.Fatalf("Unexpected error: %v while checking exising service", err)
+			t.Fatalf("Unexpected error: %v while checking existing service", err)
 		}
 	})
 }
