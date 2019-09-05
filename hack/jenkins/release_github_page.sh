@@ -26,6 +26,9 @@
 
 set -eux -o pipefail
 readonly VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}"
+readonly DEB_VERSION="${VERSION/-/\~}"
+readonly RPM_VERSION="${DEB_VERSION}"
+
 readonly TAGNAME="v${VERSION}"
 
 readonly GITHUB_ORGANIZATION="kubernetes"
