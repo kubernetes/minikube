@@ -315,17 +315,17 @@ var Addons = map[string]*Addon{
 			"0640",
 			true),
 		MustBinAsset(
+			"deploy/addons/gvisor/gvisor-runtimeclass.yaml",
+			constants.GuestAddonsDir,
+			"gvisor-runtimeclass.yaml",
+			"0640",
+			false),
+		MustBinAsset(
 			"deploy/addons/gvisor/gvisor-config.toml",
 			constants.GvisorFilesPath,
 			constants.GvisorConfigTomlTargetName,
 			"0640",
 			true),
-		MustBinAsset(
-			"deploy/addons/gvisor/gvisor-containerd-shim.toml",
-			constants.GvisorFilesPath,
-			constants.GvisorContainerdShimTargetName,
-			"0640",
-			false),
 	}, false, "gvisor"),
 }
 
