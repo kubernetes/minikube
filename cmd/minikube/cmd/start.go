@@ -883,7 +883,7 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 		if viper.GetBool(force) {
 			out.WarningT("Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 		} else {
-		  exit.WithCodeT(exit.Data, "Sorry, Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+			exit.WithCodeT(exit.Data, "Sorry, Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 		}
 	}
 
