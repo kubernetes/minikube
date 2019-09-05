@@ -26,6 +26,8 @@
 
 set -eux -o pipefail
 readonly VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}"
+readonly DEB_VERSION="${VERSION/-/\~}"
+readonly RPM_VERSION="${DEB_VERSION}"
 readonly TAGNAME="v${VERSION}"
 
 # Make sure the tag matches the Makefile
@@ -41,10 +43,10 @@ env GOPATH=$HOME/go BUILD_IN_DOCKER=y \
   make -j 16 \
   all \
   out/minikube-installer.exe \
-  "out/minikube_${VERSION}.deb" \
-  "out/minikube-${VERSION}.rpm" \
-  "out/docker-machine-driver-kvm2_${VERSION}.deb" \
-  "out/docker-machine-driver-kvm2-${VERSION}.rpm"
+  "out/minikube_${DEB_VERSION}.deb" \
+  "out/minikube-${RPM_VERSION}.rpm" \
+  "out/docker-machine-driver-kvm2_${DEB_VERSION}.deb" \
+  "out/docker-machine-driver-kvm2-${RPM_VERSION}.rpm"
 
 make checksum
 
