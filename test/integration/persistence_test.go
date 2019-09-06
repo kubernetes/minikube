@@ -51,7 +51,7 @@ func TestPodPersistence(t *testing.T) {
 	}
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
 	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Errorf("wait failed: %v", err)
+		t.Errorf("integration-test:busybox is not running: %v", err)
 	}
 
 	// Stop everything!
@@ -67,6 +67,6 @@ func TestPodPersistence(t *testing.T) {
 	}
 
 	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Errorf("wait failed: %v", err)
+		t.Errorf("integration-test:busybox is not running: %v", err)
 	}
 }

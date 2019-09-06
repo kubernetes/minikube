@@ -42,9 +42,9 @@ func validateIngressAddon(ctx context.Context, t *testing.T, client kubernetes.I
 		}
 	}()
 
-	rr, err := RunCmd(ctx, t, Target(), "enable", "ingress")
+	rr, err := RunCmd(ctx, t, Target(), "addons", "enable", "ingress")
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
 	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", time.Minute*10); err != nil {
@@ -56,12 +56,12 @@ func validateIngressAddon(ctx context.Context, t *testing.T, client kubernetes.I
 		t.Errorf("waiting for ingress-controller pods: %v", err)
 	}
 
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml"))
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml"))
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

@@ -26,13 +26,19 @@ type RunResult struct {
 	Args     []string
 }
 
+// Command returns a human readable command string that does not induce eye fatigue
+func (rr RunResult) Command() string {
+	return fmt.Sprintf(`"%s %s"`, strings.TrimPrefix(rr.Args[0], "../../"), strings.Join(rr.Args[1:], " "))
+}
+
 func (rr RunResult) String() string {
 	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("Command: %v\n", rr.Command()))
 	if rr.Stdout.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("\n---- %s stdout ---- \n%s\n", rr.Args, rr.Stdout.Bytes()))
+		sb.WriteString(fmt.Sprintf("\n-- stdout -- \n%s\n", rr.Stdout.Bytes()))
 	}
 	if rr.Stderr.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("***** %s stderr ***** \n%s\n", rr.Args, rr.Stderr.Bytes()))
+		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n", rr.Stderr.Bytes()))
 	}
 	return sb.String()
 }
@@ -41,12 +47,11 @@ func (rr RunResult) String() string {
 func RunCmd(ctx context.Context, t *testing.T, name string, arg ...string) (*RunResult, error) {
 	t.Helper()
 	cmd := exec.CommandContext(ctx, name, arg...)
-	t.Logf("Run:    %v", cmd.Args)
-
 	var outb, errb bytes.Buffer
 	cmd.Stdout = &outb
 	cmd.Stderr = &errb
 	rr := &RunResult{Stdout: &outb, Stderr: &errb, Args: cmd.Args}
+	t.Logf("Run:    %v", rr.Command())
 
 	start := time.Now()
 	err := cmd.Run()
@@ -54,14 +59,14 @@ func RunCmd(ctx context.Context, t *testing.T, name string, arg ...string) (*Run
 	if err == nil {
 		// Reduce log spam
 		if elapsed > (1 * time.Second) {
-			t.Logf("Done:   %v: (%s)", cmd.Args, elapsed)
+			t.Logf("Done:   %v: (%s)", rr.Command(), elapsed)
 		}
 	} else {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
 		}
-		t.Logf("Non-zero exit: %v: %v (%s)", cmd.Args, err, elapsed)
-		t.Logf("Output: %v: %s", cmd.Args, rr)
+		t.Logf("Non-zero exit: %v: %v (%s)", rr.Command(), err, elapsed)
+		t.Logf(rr.String())
 	}
 	return rr, err
 }
@@ -123,7 +128,7 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 			t.Logf("failed cleanup: %v", err)
 		}
 	} else {
-		t.Logf("skipping cleanuprofile, because --cleanup=false")
+		t.Logf("Skipping Cleanup (--cleanup=false)")
 	}
 	cancel()
 }
@@ -153,11 +158,10 @@ func Status(ctx context.Context, t *testing.T, path string, profile string) stri
 
 // MaybeParallel sets that the test should run in parallel
 func MaybeParallel(t *testing.T) {
-	// TODO: Allow paralellized tests that don't require independent clusters
+	t.Helper()
+	// TODO: Allow paralellized tests on "none" that do not require independent clusters
 	if NoneDriver() {
 		return
-	}
-	t.Helper()
-	t.Logf("Setting %s to run in parallel", t.Name())
+	}	
 	t.Parallel()
 }

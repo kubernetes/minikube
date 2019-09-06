@@ -101,7 +101,7 @@ func validateComponentHealth(ctx context.Context, t *testing.T, _ kubernetes.Int
 	}
 	cs := api.ComponentStatusList{}
 	d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
-	if err := d.Decode(cs); err != nil {
+	if err := d.Decode(&cs); err != nil {
 		t.Fatalf("decode: %v", err)
 	}
 
@@ -214,12 +214,12 @@ func validateProfileCmd(ctx context.Context, t *testing.T, _ kubernetes.Interfac
 
 // validateServiceCmd asserts basic "service" command functionality
 func validateServicesCmd(ctx context.Context, t *testing.T, _ kubernetes.Interface, profile string) {
-	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "services", "list")
+	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "service", "list")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 	if !strings.Contains(rr.Stdout.String(), "kubernetes") {
-		t.Errorf("services list got %q, wanted *kubernetes*", rr.Stdout.String())
+		t.Errorf("service list got %q, wanted *kubernetes*", rr.Stdout.String())
 	}
 }
 

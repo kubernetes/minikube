@@ -17,7 +17,7 @@ import (
 )
 
 func validateRegistryAddon(ctx context.Context, t *testing.T, client kubernetes.Interface, profile string) {
-	ctx, cancel := context.WithTimeout(ctx, 15*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer func() {
 		cancel()
 		rr, err := RunCmd(context.Background(), t, Target(), "addons", "disable", "registry")
@@ -59,11 +59,10 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, client kubernetes.
 	checkExternalAccess := func() error {
 		resp, err := retryablehttp.Get(u.String())
 		if err != nil {
-			t.Errorf("failed get: %v", err)
+			return err
 		}
-
 		if resp.StatusCode != http.StatusOK {
-			t.Errorf("%s returned status code %d, expected %d.\n", u, resp.StatusCode, http.StatusOK)
+			return fmt.Errorf("%s = status code %d, want %d", u, resp.StatusCode, http.StatusOK)
 		}
 		return nil
 	}

@@ -75,7 +75,7 @@ func TestProxyWithDashboard(t *testing.T) {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
 
-	profile := fmt.Sprintf("proxy-%d", time.Now().UTC().UnixNano())
+	profile := Profile("proxy")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer func(t *testing.T) {
 		CleanupWithLogs(t, profile, cancel)
