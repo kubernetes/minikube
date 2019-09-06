@@ -141,6 +141,8 @@ const (
 	MinimumMemorySize = "1024mb"
 	// DefaultCPUS is the default number of cpus of a host
 	DefaultCPUS = 2
+	// MinimumCPUS is the minimum number of cpus of a host
+	MinimumCPUS = 2
 	// DefaultDiskSize is the default disk image size, in megabytes
 	DefaultDiskSize = "20000mb"
 	// MinimumDiskSize is the minimum disk image size, in megabytes
@@ -384,20 +386,16 @@ const (
 	GvisorFilesPath = "/tmp/gvisor"
 	// ContainerdConfigTomlPath is the path to the containerd config.toml
 	ContainerdConfigTomlPath = "/etc/containerd/config.toml"
-	// GvisorContainerdShimTomlPath is the path to gvisor-containerd-shim.toml
-	GvisorContainerdShimTomlPath = "/etc/containerd/gvisor-containerd-shim.toml"
 	// StoredContainerdConfigTomlPath is the path where the default config.toml will be stored
 	StoredContainerdConfigTomlPath = "/tmp/config.toml"
 
 	// GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
 	GvisorConfigTomlTargetName = "gvisor-config.toml"
-	// GvisorContainerdShimTargetName is the go-bindata target name for gvisor-containerd-shim
-	GvisorContainerdShimTargetName = "gvisor-containerd-shim.toml"
 
 	// GvisorContainerdShimURL is the url to download gvisor-containerd-shim
-	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.1-rc.0/gvisor-containerd-shim-v0.0.1-rc.0.linux-amd64"
+	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.3/containerd-shim-runsc-v1.linux-amd64"
 	// GvisorURL is the url to download gvisor
-	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2018-12-07/runsc"
+	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2019-01-14/runsc"
 )
 
 const (

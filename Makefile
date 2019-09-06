@@ -16,12 +16,15 @@
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 4
 VERSION_BUILD ?= 0-beta.0
+RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
+VERSION ?= v$(RAW_VERSION)
+
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
+# Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
+DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
+RPM_VERSION ?= $(DEB_VERSION)
 
-VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
-DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
-RPM_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 GO_VERSION ?= 1.12.9
 

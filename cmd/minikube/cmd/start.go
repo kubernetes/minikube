@@ -39,6 +39,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -582,6 +583,22 @@ func validateConfig() {
 			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
 	}
 
+	var cpuCount int
+	if viper.GetString(vmDriver) == constants.DriverNone {
+		// Uses the gopsutil cpu package to count the number of physical cpu cores
+		ci, err := cpu.Counts(false)
+		if err != nil {
+			glog.Warningf("Unable to get CPU info: %v", err)
+		} else {
+			cpuCount = ci
+		}
+	} else {
+		cpuCount = viper.GetInt(cpus)
+	}
+	if cpuCount < constants.MinimumCPUS {
+		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
+	}
+
 	// check that kubeadm extra args contain only whitelisted parameters
 	for param := range extraOptions.AsMap().Get(kubeadm.Kubeadm) {
 		if !cfg.ContainsParam(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
@@ -854,6 +871,20 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
 		return nv, isUpgrade
+	}
+
+	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
+	if err != nil {
+		exit.WithCodeT(exit.Data, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
+	}
+
+	if nvs.LT(oldestVersion) {
+		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
+		if viper.GetBool(force) {
+			out.WarningT("Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+		} else {
+			exit.WithCodeT(exit.Data, "Sorry, Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+		}
 	}
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
