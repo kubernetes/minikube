@@ -133,3 +133,95 @@ func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("Error waiting for addon manager to be up")
 	}
 }
+
+
+func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
+	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "get", "cs", "-o=json")
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
+	}
+	cs := api.ComponentStatusList{}
+	d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
+	if err := d.Decode(cs); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+
+	for _, i := range cs.Items {
+		status := api.ConditionFalse
+		for _, c := range i.Conditions {
+			if c.Type != api.ComponentHealthy {
+				continue
+			}
+			status = c.Status
+		}
+		if status != api.ConditionTrue {
+			t.Errorf("component %s is not Healthy! Status: %s", i.GetName(), status)
+		}
+	}
+}
+
+func validateClusterDNS(ctx context.Context, t *testing.T, profile string) {
+	MaybeParallel(t)
+
+	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
+	}
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Errorf("client failed: %v", err)
+	}
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
+	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		t.Errorf("wait failed: %v", err)
+	}
+	pods, err := client.CoreV1().Pods("default").List(metav1.ListOptions{LabelSelector: "integration-test=busybox"})
+	if err != nil {
+		t.Errorf("list error: %v", err)
+	}
+	pod := pods.Items[0].Name
+
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "exec", pod, "nslookup", "kubernetes.default")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+	}
+
+	want := []byte("10.96.0.1")
+	if !bytes.Contains(rr.Stdout.Bytes(), want) {
+		t.Errorf("nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
+	}
+}
+
+func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
+	MaybeParallel(t)
+	tests := []struct {
+		args    []string
+		wantOut string
+		wantErr string
+	}{
+		{[]string{"unset", "cpus"}, "", ""},
+		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
+		{[]string{"set", "cpus 2"}, "! These changes will take effect upon a minikube delete and then a minikube start", ""},
+		{[]string{"get", "cpus"}, "2", ""},
+		{[]string{"unset", "cpus"}, "", ""},
+		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
+	}
+
+	for _, tc := range tests {
+		args := append([]string{"-p", profile, "config"}, tc.args...)
+		rr, err := RunCmd(ctx, t, Target(), args...)
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		}
+
+		got := strings.TrimSpace(rr.Stdout.String())
+		if got != tc.wantOut {
+			t.Errorf("config %s stdout got: %q, want: %q", tc.args, got, tc.wantOut)
+		}
+		got = strings.TrimSpace(rr.Stderr.String())
+		if got != tc.wantErr {
+			t.Errorf("config %s stderr got: %q, want: %q", tc.args, got, tc.wantErr)
+		}
+	}
+}

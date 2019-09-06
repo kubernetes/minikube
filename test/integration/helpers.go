@@ -61,6 +61,18 @@ func RunCmd(ctx context.Context, t *testing.T, name string, arg ...string) (*Run
 	return rr, err
 }
 
+// JSONCmd is a helper to run a command and decode the JSON output from it. Errors are always fatal.
+func JSONCmd(ctx context.Context, t *testing.T, i interface{}, name string, arg ...string) (*RunResult) {
+	rr, err := RunCmd(ctx, t, name, arg...)
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
+	}
+	d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
+	if err := d.Decode(i); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+}
+
 // StreamingResult stores the result of an cmd.Start call
 type StreamingResult struct {
 	Stdout *bufio.Reader
