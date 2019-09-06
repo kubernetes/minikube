@@ -260,7 +260,6 @@ cleanup_stale_routes || true
 
 mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
-export MINIKUBE_WANTREPORTERRORPROMPT=False
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
 # Build the gvisor image. This will be copied into minikube and loaded by ctr.
@@ -282,8 +281,9 @@ echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
-  -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
-  -test.v -test.timeout=100m -test.parallel=${PARALLEL_COUNT}  -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+  -test.v -test.timeout=100m \
+  -test.parallel=${PARALLEL_COUNT} \
+  -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
@@ -293,7 +293,6 @@ if [[ $result -eq 0 ]]; then
 else
   status="failure"
   echo "minikube: FAIL"
-  source print-debug-info.sh
 fi
 
 echo ">> Cleaning up after ourselves ..."

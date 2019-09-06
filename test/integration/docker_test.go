@@ -33,12 +33,12 @@ func TestDocker(t *testing.T) {
 	args := append([]string{"start", "-p", profile, "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true"}, StartArgs()...)
 	rr, err := RunCmd(ctx, t, Target(), args...)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "ssh", "systemctl show docker --property=Environment --no-pager")
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	for _, envVar := range []string{"FOO=BAR", "BAZ=BAT"} {
@@ -49,7 +49,7 @@ func TestDocker(t *testing.T) {
 
 	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "ssh", "systemctl show docker --property=ExecStart --no-pager")
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 	for _, opt := range []string{"--debug", "--icc=true"} {
 		if !strings.Contains(rr.Stdout.String(), opt) {

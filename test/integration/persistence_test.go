@@ -23,9 +23,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/minikube/pkg/kapi"
 )
 
 func TestPodPersistence(t *testing.T) {
@@ -37,36 +34,31 @@ func TestPodPersistence(t *testing.T) {
 
 	rr, err := RunCmd(ctx, t, Target(), "start", "-p", profile)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
+		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	client, err := kapi.Client(profile)
-	if err != nil {
-		t.Errorf("client failed: %v", err)
-	}
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Errorf("wait failed: %v", err)
+	if _, err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 
 	// Stop everything!
 	rr, err = RunCmd(ctx, t, Target(), "stop", "-p", profile)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	// Start minikube, and validate that busybox is still running.
 	rr, err = RunCmd(ctx, t, Target(), "start", "-p", profile)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Errorf("wait failed: %v", err)
+	if _, err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox-mount", 1*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 }

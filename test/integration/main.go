@@ -18,21 +18,23 @@ package integration
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
 	"time"
-
-	"k8s.io/minikube/test/integration/util"
 )
 
-var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
+// General configuration: used to set the VM Driver
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
-var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
-var parallel = flag.Bool("parallel", true, "run the tests in parallel, set false for run sequentially")
+
+// Flags for faster local integration testing
+var forceProfile = flag.String("profile", "", "force tests to run against a particular profile")
 var cleanup = flag.Bool("cleanup", true, "cleanup failed test run")
-var mountArgs = flag.String("minikube-mount-args", "", "Arguments to pass to minikube mount")
-var startTimeout = flag.Duration("timeout", 25*time.Minute, "max duration to wait for a full minikube start")
+
+// Paths to files - normally set for CI
+var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
+var testdataDir = flag.String("testdata-dir", "testdata", "the directory relative to test/integration where the testdata lives")
 
 // TestMain is the test main
 func TestMain(m *testing.M) {
@@ -55,14 +57,14 @@ func NoneDriver() bool {
 	return strings.Contains(*startArgs, "--vm-driver=none")
 }
 
-// NewMinikubeRunner creates a new MinikubeRunner
-func NewMinikubeRunner(t *testing.T, profile string, extraStartArgs ...string) util.MinikubeRunner {
-	return util.MinikubeRunner{
-		Profile:      profile,
-		BinaryPath:   *binaryPath,
-		StartArgs:    *startArgs + " --wait-timeout=13m " + strings.Join(extraStartArgs, " "), // adding timeout per component
-		MountArgs:    *mountArgs,
-		TimeOutStart: *startTimeout, // timeout for all start
-		T:            t,
+// Profile returns a reasonable profile name
+func Profile(prefix string) string {
+	if *forceProfile != "" {
+		return *forceProfile
 	}
+	if NoneDriver() {
+		return "minikube"
+	}
+	p := strings.Split(prefix, "/")[0] // for i.e, TestFunctional/SSH returns TestFunctional
+	return fmt.Sprintf("%s-%d-%d", strings.ToLower(strings.TrimPrefix(p, "test")), time.Now().UTC().Unix(), os.Getpid())
 }

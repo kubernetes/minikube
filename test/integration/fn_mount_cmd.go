@@ -30,19 +30,17 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/minikube/pkg/kapi"
 )
 
 const guestMount = "/mount-9p"
 
 func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	defer cancel()
+
 	if NoneDriver() {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
-
-	MaybeParallel(t)
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
@@ -52,10 +50,9 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// Start the mount
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
-	sr, err := StartCmd(ctx, t, Target(), args...)
+	ss, err := StartCmd(ctx, t, Target(), args...)
 	defer func() {
-		err := sr.Cmd.Process.Kill()
-		if err != nil {
+		if err := ss.Stop(t); err != nil {
 			t.Logf("Failed to kill mount: %v", err)
 		}
 	}()
@@ -71,19 +68,13 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Start the "busybox-mount" pod.
-	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml"))
+	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml"))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
+		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	// Wait for busybox to come online
-	client, err := kapi.Client(profile)
-	if err != nil {
-		t.Fatalf("getting kubernetes client: %v", err)
-	}
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox-mount"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Errorf("wait failed: %v", err)
+	if _, err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 
 	// Read the file written by pod startup
@@ -99,7 +90,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	// test that file written from host was read in by the pod via cat /mount-9p/written-by-host;
 	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "logs", "busybox-mount")
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 	if !bytes.Equal(rr.Stdout.Bytes(), want) {
 		t.Errorf("logs = %v, want %v", rr.Stdout.Bytes(), want)
@@ -111,7 +102,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
 		rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", "stat", gp)
 		if err != nil {
-			t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+			t.Errorf("%s failed: %v", rr.Args, err)
 		}
 		if !bytes.Equal(rr.Stdout.Bytes(), want) {
 			t.Errorf("logs = %v, want %v", rr.Stdout.Bytes(), want)

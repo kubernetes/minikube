@@ -35,29 +35,34 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
-// TestUpgrade downloads latest version of minikube and runs with
+// TestVersionUpgrade downloads latest version of minikube and runs with
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
-func TestUpgrade(t *testing.T) {
+func TestVersionUpgrade(t *testing.T) {
 	profile := Profile("vupgrade")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	MaybeParallel(t)
 
 	defer CleanupWithLogs(t, profile, cancel)
-	rpath, err := downloadMinikube()
+
+	t.Logf("Downloading the latest release ...")
+	start := time.Now()
+	rpath, err := downloadLatestRelease()
 	if err != nil {
 		t.Fatalf("download minikube: %v", err)
 	}
+	t.Logf("Download completed within %s", time.Since(start))
 	defer os.Remove(rpath)
 
+	t.Logf("Starting last release with oldest Kubernetes version")
 	rr, err := RunCmd(ctx, t, rpath, "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
 	rr, err = RunCmd(ctx, t, rpath, "stop", "-p", profile)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
 	rr, err = RunCmd(ctx, t, rpath, "-p", profile, "status", "--format={{.Host}}")
@@ -69,15 +74,14 @@ func TestUpgrade(t *testing.T) {
 		t.Errorf("status = %q; want = %q", got, state.Stopped.String())
 	}
 
-	// Upgrade!
+	t.Logf("Restarting cluster with %s and newest possible Kubernetes", Target())
 	rr, err = RunCmd(ctx, t, Target(), "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 }
 
-// downloadMinikube downloads the minikube binary from github used by TestVersionUpgrade
-func downloadMinikube() (string, error) {
+func downloadLatestRelease() (string, error) {
 	tf, err := ioutil.TempFile("", "minikube-release.*.exe")
 	if err != nil {
 		return tf.Name(), err
