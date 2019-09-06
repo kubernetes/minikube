@@ -265,6 +265,10 @@ var settings = []Setting{
 		name: "embed-certs",
 		set:  SetBool,
 	},
+	{
+		name: "native-ssh",
+		set:  SetBool,
+	},
 }
 
 // ConfigCmd represents the config command
