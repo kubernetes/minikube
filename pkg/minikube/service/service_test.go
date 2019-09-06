@@ -599,7 +599,7 @@ users:
 			err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
 			defer func() { os.Remove(mockK8sConfigPath) }()
 			if err != nil {
-				t.Fatalf("Unexpected error when writting to file %v. Error: %v", test.kubeconfigPath, err)
+				t.Fatalf("Unexpected error when writing to file %v. Error: %v", test.kubeconfigPath, err)
 			}
 			os.Setenv("KUBECONFIG", mockK8sConfigPath)
 
