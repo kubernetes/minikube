@@ -30,7 +30,6 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
-	MaybeParallel(t)
 	t.Run("group", func(t *testing.T) {
 		tests := []struct {
 			name string
@@ -70,6 +69,8 @@ func TestStartStop(t *testing.T) {
 
 		for _, tc := range tests {
 			t.Run(tc.name, func(t *testing.T) {
+				MaybeParallel(t)
+
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
@@ -81,12 +82,12 @@ func TestStartStop(t *testing.T) {
 				args := append([]string{"start", "-p", profile}, tc.args...)
 				rr, err := RunCmd(ctx, t, Target(), args...)
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 
 				rr, err = RunCmd(ctx, t, Target(), "stop", "-p", profile)
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 
 				got := Status(ctx, t, Target(), profile)
@@ -97,7 +98,7 @@ func TestStartStop(t *testing.T) {
 				rr, err = RunCmd(ctx, t, Target(), "start", "-p", profile)
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
-					t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
+					t.Fatalf("%s failed: %v", rr.Args, err)
 				}
 
 				got = Status(ctx, t, Target(), profile)
@@ -108,7 +109,7 @@ func TestStartStop(t *testing.T) {
 				// Normally handled by cleanuprofile, but not fatal there
 				rr, err = RunCmd(ctx, t, Target(), "delete", "-p", profile)
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 			})
 		}

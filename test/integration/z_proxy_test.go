@@ -111,16 +111,15 @@ func TestProxyWithDashboard(t *testing.T) {
 	}
 
 	args = []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
-	sr, err := StartCmd(ctx, t, Target(), args...)
+	ss, err := StartCmd(ctx, t, Target(), args...)
 	defer func() {
-		err := sr.Cmd.Process.Kill()
-		if err != nil {
-			t.Logf("Failed to kill dashboard command: %v", err)
+		if err := ss.Stop(t); err != nil {
+			t.Logf("Failed to kill mount: %v", err)
 		}
 	}()
 
 	start := time.Now()
-	s, err := ReadLineWithTimeout(sr.Stdout, 300*time.Second)
+	s, err := ReadLineWithTimeout(ss.Stdout, 300*time.Second)
 	if err != nil {
 		t.Fatalf("failed to read url within %s: %v\n", time.Since(start), err)
 	}

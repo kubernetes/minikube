@@ -52,17 +52,17 @@ func TestNone(t *testing.T) {
 	args := append([]string{"start", "--wait=false"}, StartArgs()...)
 	rr, err := RunCmd(ctx, t, Target(), "start", args...)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	rr, err = RunCmd(ctx, t, Target(), "delete")
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	rr, err := RunCmd(ctx, t, Target(), "start", args...)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	t.Run("minikube permissions", testNoneMinikubeFolderPermissions)

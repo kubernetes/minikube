@@ -52,12 +52,12 @@ func TestUpgrade(t *testing.T) {
 
 	rr, err := RunCmd(ctx, t, rpath, "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	rr, err = RunCmd(ctx, t, rpath, "stop", "-p", profile)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	rr, err = RunCmd(ctx, t, rpath, "-p", profile, "status", "--format={{.Host}}")
@@ -72,7 +72,7 @@ func TestUpgrade(t *testing.T) {
 	// Upgrade!
 	rr, err = RunCmd(ctx, t, Target(), "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 }
 

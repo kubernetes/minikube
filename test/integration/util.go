@@ -10,19 +10,8 @@ package integration
 import (
 	"bufio"
 	"fmt"
-	"os"
-	"strings"
 	"time"
 )
-
-// Profile returns a reasonably unique profile name
-func Profile(prefix string) string {
-	if NoneDriver() {
-		return "minikube"
-	}
-	p := strings.Split(prefix, "/")[0] // for i.e, TestFunctional/SSH returns TestFunctional
-	return fmt.Sprintf("%s-%d-%d", strings.ToLower(strings.TrimPrefix(p, "test")), time.Now().UTC().Unix(), os.Getpid())
-}
 
 // ReadLineWithTimeout reads a line of text from a buffer with a timeout
 func ReadLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error) {

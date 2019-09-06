@@ -46,23 +46,23 @@ func TestGvisor(t *testing.T) {
 	args := append([]string{"start", "-p", profile, "--container-runtime=containerd", "--docker-opt", "containerd=/var/run/containerd/containerd.sock", "--wait=false"}, StartArgs()...)
 	rr, err := RunCmd(ctx, t, Target(), args...)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	// TODO: Re-examine if we should be pulling in an image which users don't normally use
-	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "cache", "add", "gcr.io/k8s-minikube/gvisor-addon:latest")
+	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "cache", "add", "gcr.io/k8s-minikube/gvisor-addon:latest")
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	rr, err := RunCmd(ctx, t, Target(), "addons", "enable", "gvisor")
+	rr, err = RunCmd(ctx, t, Target(), "addons", "enable", "gvisor")
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 	// mostly because addons are persistent across profiles :(
 	defer func() {
 		rr, err := RunCmd(ctx, t, Target(), "addons", "disable", "gvisor")
 		if err != nil {
-			t.Logf("%s failed: %v", rr.Cmd.Args, err)
+			t.Logf("%s failed: %v", rr.Args, err)
 		}
 	}()
 
@@ -73,11 +73,10 @@ func TestGvisor(t *testing.T) {
 
 	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "nginx-untrusted.yaml"))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
+	selector = labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
 	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Errof("waiting for nginx pods: %v", err)
+		t.Errorf("waiting for nginx pods: %v", err)
 	}
-	return nil
 }

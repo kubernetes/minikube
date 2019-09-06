@@ -34,7 +34,7 @@ func TestGuestEnvironment(t *testing.T) {
 	args := append([]string{"start", "-p", profile, "--wait=false"}, StartArgs()...)
 	rr, err := RunCmd(ctx, t, Target(), args...)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	// Run as a group so that our defer doesn't happen as tests are runnings
@@ -45,7 +45,7 @@ func TestGuestEnvironment(t *testing.T) {
 				t.Parallel()
 				rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("which %s", pkg))
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 			})
 		}
@@ -66,7 +66,7 @@ func TestGuestEnvironment(t *testing.T) {
 				t.Parallel()
 				rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount))
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 			})
 		}

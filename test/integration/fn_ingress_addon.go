@@ -26,70 +26,76 @@ import (
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
-
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
-	MaybeParallel(t)
-	client, err := kapi.Client(profile)
+func validateIngressAddon(ctx context.Context, t *testing.T, client kubernetes.Interface, profile string) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	defer func() {
+		cancel()
+		rr, err := RunCmd(context.Background(), t, Target(), "addons", "disable", "ingress")
+		if err != nil {
+			t.Logf("cleanup failed: %s: %v (probably ok)", rr.Args, err)
+		}
+	}()
+
+	rr, err := RunCmd(ctx, t, Target(), "enable", "ingress")
 	if err != nil {
-		return errors.Wrap(err, "getting kubernetes client")
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	mk.MustRun("addons enable ingress")
-
 	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", time.Minute*10); err != nil {
-		return errors.Wrap(err, "waiting for ingress-controller deployment to stabilize")
+		t.Errorf("waiting for ingress-controller deployment to stabilize: %v", err)
 	}
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app.kubernetes.io/name": "nginx-ingress-controller"}))
 	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
-		return errors.Wrap(err, "waiting for ingress-controller pods")
+		t.Errorf("waiting for ingress-controller pods: %v", err)
 	}
 
-	ingressPath := filepath.Join(*testdataDir, "nginx-ing.yaml")
-	if _, err := kr.RunCommand([]string{"create", "-f", ingressPath}); err != nil {
-		t.Fatalf("Failed creating nginx ingress resource: %v", err)
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	podPath := filepath.Join(*testdataDir, "nginx-pod-svc.yaml")
-	if _, err := kr.RunCommand([]string{"create", "-f", podPath}); err != nil {
-		t.Fatalf("Failed creating nginx ingress resource: %v", err)
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
+	selector = labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
 	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		return errors.Wrap(err, "waiting for nginx pods")
+		t.Errorf("waiting for nginx pods: %v", err)
 	}
 
 	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, time.Minute*10); err != nil {
 		t.Errorf("Error waiting for nginx service to be up")
 	}
 
+	want := "Welcome to nginx!"
 	checkIngress := func() error {
-		expectedStr := "Welcome to nginx!"
-		runCmd := fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'")
-		sshCmdOutput, _ := mk.SSH(runCmd)
-		if !strings.Contains(sshCmdOutput, expectedStr) {
-			return fmt.Errorf("ExpectedStr sshCmdOutput to be: %s. Output was: %s", expectedStr, sshCmdOutput)
+		rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'"))
+		if err != nil {
+			return err
+		}
+		if rr.Stderr.String() != "" {
+			t.Logf("%v: unexpected stderr: %s", rr.Args, rr.Stderr)
+		}
+		if !strings.Contains(rr.Stdout.String(), want) {
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Args, rr.Stdout, want)
 		}
 		return nil
 	}
 
 	if err := retry.Expo(checkIngress, 500*time.Millisecond, time.Minute); err != nil {
-		t.Fatalf(err.Error())
+		t.Errorf("ingress never responded as expected on 127.0.0.1:80: %v", err)
 	}
 
-	defer func() {
-		for _, p := range []string{podPath, ingressPath} {
-			if out, err := kr.RunCommand([]string{"delete", "-f", p}); err != nil {
-				t.Logf("delete -f %s failed: %v\noutput: %s\n", profile, err, out)
-			}
-		}
-	}()
-	mk.MustRun("addons disable ingress")
+	rr, err = RunCmd(ctx, t, Target(), "disable", "ingress")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
 }
