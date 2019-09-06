@@ -56,6 +56,6 @@ func testClusterStatus(t *testing.T) {
 	}
 
 	if err := retry.Expo(healthy, 500*time.Millisecond, time.Minute); err != nil {
-		t.Fatalf("Cluster is not healthy: %v", err)
+		t.Errorf("Cluster is not healthy: %v", err)
 	}
 }
