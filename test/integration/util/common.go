@@ -18,10 +18,13 @@ package util
 
 import (
 	"fmt"
+	"runtime"
+	"syscall"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/shirou/gopsutil/process"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/kapi"
 )
@@ -43,4 +46,39 @@ func Logf(str string, args ...interface{}) {
 	}
 	fmt.Printf(" %s | ", time.Now().Format("15:04:05"))
 	fmt.Println(fmt.Sprintf(str, args...))
+}
+
+// KillProcess kills the process associated with the given pid and all its children
+func KillProcess(pid int, t *testing.T) error {
+	if runtime.GOOS == "windows" {
+		p, err := process.NewProcess(int32(pid))
+		if err != nil {
+			// Process doesn't exist
+			return err
+		}
+		children, err := p.Children()
+		if err != nil {
+			// No children, log the error, don't exist
+			t.Log(err)
+		}
+		for _, c := range children {
+			err = c.Kill()
+			if err != nil {
+				// Log the error, but don't exit
+				t.Log(err)
+			}
+		}
+		err = p.Kill()
+		if err != nil {
+			return err
+		}
+	} else {
+		err := syscall.Kill(-pid, syscall.SIGKILL)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+
 }

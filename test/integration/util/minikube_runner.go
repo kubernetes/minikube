@@ -25,8 +25,10 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 
@@ -116,6 +118,9 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ..
 	path, _ := filepath.Abs(m.BinaryPath)
 
 	cmd := exec.Command(path, cmdArgs...)
+	if runtime.GOOS != "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	}
 	Logf("Run: %s", cmd.Args)
 	stdout, stderr, err := m.teeRun(cmd, waitForRun...)
 	if err != nil {
@@ -141,6 +146,9 @@ func (m *MinikubeRunner) RunWithContext(ctx context.Context, cmdStr string, wait
 	path, _ := filepath.Abs(m.BinaryPath)
 
 	cmd := exec.CommandContext(ctx, path, cmdArgs...)
+	if runtime.GOOS != "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	}
 	Logf("RunWithContext: %s", cmd.Args)
 	return m.teeRun(cmd, wait...)
 }
@@ -153,6 +161,9 @@ func (m *MinikubeRunner) RunDaemon(cmdStr string) (*exec.Cmd, *bufio.Reader) {
 	path, _ := filepath.Abs(m.BinaryPath)
 
 	cmd := exec.Command(path, cmdArgs...)
+	if runtime.GOOS != "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	}
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		m.T.Fatalf("stdout pipe failed: %s %v", cmdStr, err)
@@ -184,6 +195,9 @@ func (m *MinikubeRunner) RunDaemon2(cmdStr string) (*exec.Cmd, *bufio.Reader, *b
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, cmdArgs...)
+	if runtime.GOOS != "windows" {
+		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	}
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		m.T.Fatalf("stdout pipe failed: %s %v", cmdStr, err)
@@ -224,7 +238,7 @@ func (m *MinikubeRunner) start(opts ...string) (stdout string, stderr string, er
 	return m.RunWithContext(ctx, cmd, true)
 }
 
-// StartWithFail starts the cluster and fail the test if error
+// MustStart starts the cluster and fail the test if error
 func (m *MinikubeRunner) MustStart(opts ...string) (stdout string, stderr string) {
 	stdout, stderr, err := m.start(opts...)
 	// the reason for this formatting is, the logs are very big but useful and also in parallel testing logs are harder to identify
