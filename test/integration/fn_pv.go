@@ -39,23 +39,14 @@ var (
 	pvcCmd  = []string{"get", "pvc", pvcName}
 )
 
-func testProvisioning(t *testing.T) {
-	profile := Profile(t.Name())
-	MaybeParallel(t)
 
-	kr := util.NewKubectlRunner(t, profile)
-
-	defer func() {
-		if out, err := kr.RunCommand([]string{"delete", "pvc", pvcName}); err != nil {
-			t.Logf("delete pvc %s failed: %v\noutput: %s\n", pvcName, err, out)
-		}
-	}()
-
+func validatePersintentVolumeClaim(ctx context.Context, t *testing.T, profile string) {
 	// We have to make sure the addon-manager has created the StorageClass before creating
 	// a claim. Otherwise it will never get bound.
-
 	checkStorageClass := func() error {
 		scl := storage.StorageClassList{}
+
+
 		if err := kr.RunCommandParseOutput([]string{"get", "storageclass"}, &scl); err != nil {
 			return fmt.Errorf("get storageclass: %v", err)
 		}

@@ -19,9 +19,12 @@ limitations under the License.
 package integration
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -30,22 +33,16 @@ import (
 
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/kapi"
-	"k8s.io/minikube/pkg/util/lock"
-	"k8s.io/minikube/pkg/util/retry"
-	"k8s.io/minikube/test/integration/util"
 )
 
-func testMounting(t *testing.T) {
-	if runtime.GOOS == "darwin" {
-		t.Skip("mount tests disabled in darwin due to timeout (issue#3200)")
-	}
+const guestMount = "/mount-9p"
+
+func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
 
 	MaybeParallel(t)
-	profile := Profile(t.Name())
-	mk := NewMinikubeRunner(t, profile, "--wait=false")
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
@@ -53,146 +50,90 @@ func testMounting(t *testing.T) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	mountCmd := getMountCmd(mk, tempDir)
-	cmd, _, _ := mk.RunDaemon2(mountCmd)
+	// Start the mount
+	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
+	sr, err := StartCmd(ctx, t, Target(), args...)
 	defer func() {
-		err := cmd.Process.Kill()
+		err := sr.Cmd.Process.Kill()
 		if err != nil {
-			t.Logf("Failed to kill mount command: %v", err)
+			t.Logf("Failed to kill mount: %v", err)
 		}
 	}()
 
-	kr := util.NewKubectlRunner(t, profile)
-	podName := "busybox-mount"
-	podPath := filepath.Join(*testdataDir, "busybox-mount-test.yaml")
-	// Write file in mounted dir from host
-	expected := "test\n"
-	if err := writeFilesFromHost(tempDir, []string{"fromhost", "fromhostremove"}, expected); err != nil {
-		t.Fatalf(err.Error())
-	}
-
-	// Create the pods we need outside the main test loop.
-	setupTest := func() error {
-		t.Logf("Deploying pod from: %s", podPath)
-		if _, err := kr.RunCommand([]string{"create", "-f", podPath}); err != nil {
-			return err
-		}
-		return nil
-	}
-
-	defer func() {
-		t.Logf("Deleting pod from: %s", podPath)
-		if out, err := kr.RunCommand([]string{"delete", "-f", podPath}); err != nil {
-			t.Logf("delete -f %s failed: %v\noutput: %s\n", podPath, err, out)
-		}
-	}()
-
-	if err = retry.Expo(setupTest, 500*time.Millisecond, 4*time.Minute); err != nil {
-		t.Fatal("mountTest failed with error:", err)
-	}
-
-	if err := waitForPods(map[string]string{"integration-test": "busybox-mount"}, profile); err != nil {
-		t.Fatalf("Error waiting for busybox mount pod to be up: %v", err)
-	}
-	t.Logf("Pods appear to be running")
-
-	mountTest := func() error {
-		if err := verifyFiles(mk, kr, tempDir, podName, expected); err != nil {
-			t.Fatalf(err.Error())
-		}
-
-		return nil
-	}
-
-	if err = retry.Expo(mountTest, 500*time.Millisecond, 4*time.Minute); err != nil {
-		t.Fatalf("mountTest failed with error: %v", err)
-	}
-
-}
-
-func getMountCmd(mk util.MinikubeRunner, mountDir string) string {
-	var mountCmd string
-	if len(mk.MountArgs) > 0 {
-		mountCmd = fmt.Sprintf("mount %s %s:/mount-9p", mk.MountArgs, mountDir)
-	} else {
-		mountCmd = fmt.Sprintf("mount %s:/mount-9p", mountDir)
-	}
-	return mountCmd
-}
-
-func writeFilesFromHost(mountedDir string, files []string, content string) error {
-	for _, file := range files {
-		path := filepath.Join(mountedDir, file)
-		err := lock.WriteFile(path, []byte(content), 0644)
+	// Write local files
+	want := []byte(fmt.Sprintf("test-%d\n", time.Now().UnixNano()))
+	for _, name := range []string{"created-by-test", "removed-by-pod"} {
+		p := filepath.Join(tempDir, name)
+		err := ioutil.WriteFile(p, want, 0644)
 		if err != nil {
-			return fmt.Errorf("unexpected error while writing file %s: %v", path, err)
+			t.Errorf("WriteFile %s: %v", p, err)
 		}
 	}
-	return nil
-}
 
-func waitForPods(s map[string]string, profile string) error {
+	// Start the "busybox-mount" pod.
+	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Cmd.Args, err)
+	}
+
+	// Wait for busybox to come online
 	client, err := kapi.Client(profile)
 	if err != nil {
-		return fmt.Errorf("getting kubernetes client: %v", err)
+		t.Fatalf("getting kubernetes client: %v", err)
 	}
-	selector := labels.SelectorFromSet(labels.Set(s))
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox-mount"}))
 	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		return err
+		t.Errorf("wait failed: %v", err)
 	}
-	return nil
-}
 
-func verifyFiles(mk util.MinikubeRunner, kr *util.KubectlRunner, tempDir string, podName string, expected string) error {
-	path := filepath.Join(tempDir, "frompod")
-	out, err := ioutil.ReadFile(path)
+	// Read the file written by pod startup
+	p := filepath.Join(tempDir, "created-by-pod")
+	got, err := ioutil.ReadFile(p)
 	if err != nil {
-		return err
+		t.Errorf("readfile %s: %v", p, err)
 	}
-	// test that file written from pod can be read from host echo test > /mount-9p/frompod; in pod
-	if string(out) != expected {
-		return fmt.Errorf("expected file %s to contain text %q, was %q", path, expected, out)
+	if !bytes.Equal(got, want) {
+		t.Errorf("%s = %q, want %q", p, got, want)
 	}
 
-	// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
-	if out, err = kr.RunCommand([]string{"logs", podName}); err != nil {
-		return err
+	// test that file written from host was read in by the pod via cat /mount-9p/written-by-host;
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "logs", "busybox-mount")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Cmd.Args, err)
 	}
-	if string(out) != expected {
-		return fmt.Errorf("expected file %s to contain text %q, was %q", path, expected, out)
+	if !bytes.Equal(rr.Stdout.Bytes(), want) {
+		t.Errorf("logs = %v, want %v", rr.Stdout.Bytes(), want)
 	}
 
 	// test file timestamps are correct
-	files := []string{"fromhost", "frompod"}
-	for _, file := range files {
-		statCmd := fmt.Sprintf("stat /mount-9p/%s", file)
-		statOutput, err := mk.SSH(statCmd)
+	for _, name := range []string{"created-by-host", "created-by-pod"} {
+		gp := path.Join(guestMount, name)
+		// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
+		rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", "stat", gp)
 		if err != nil {
-			return fmt.Errorf("inable to stat %s via SSH. error %v, %s", file, err, statOutput)
+			t.Errorf("%s failed: %v", rr.Cmd.Args, err)
 		}
-
+		if !bytes.Equal(rr.Stdout.Bytes(), want) {
+			t.Errorf("logs = %v, want %v", rr.Stdout.Bytes(), want)
+		}
 		if runtime.GOOS == "windows" {
-			if strings.Contains(statOutput, "Access: 1970-01-01") {
-				return fmt.Errorf("invalid access time\n%s", statOutput)
+			if strings.Contains(rr.Stdout.String(), "Access: 1970-01-01") {
+				t.Errorf("invalid access time: %v", rr.Stdout)
 			}
 		}
 
-		if strings.Contains(statOutput, "Modify: 1970-01-01") {
-			return fmt.Errorf("invalid modify time\n%s", statOutput)
+		if strings.Contains(rr.Stdout.String(), "Modify: 1970-01-01") {
+			t.Errorf("invalid modify time: %v", rr.Stdout)
 		}
 	}
 
-	// test that fromhostremove was deleted by the pod from the mount via rm /mount-9p/fromhostremove
-	path = filepath.Join(tempDir, "fromhostremove")
-	if _, err := os.Stat(path); err == nil {
-		return fmt.Errorf("expected file %s to be removed", path)
+	p = filepath.Join(tempDir, "removed-by-pod")
+	if _, err := os.Stat(p); err == nil {
+		t.Errorf("expected file %s to be removed", p)
 	}
 
-	// test that frompodremove can be deleted on the host
-	path = filepath.Join(tempDir, "frompodremove")
-	if err := os.Remove(path); err != nil {
-		return fmt.Errorf("unexpected error removing file %s: %v", path, err)
+	p = filepath.Join(tempDir, "created-by-pod")
+	if err := os.Remove(p); err != nil {
+		t.Errorf("unexpected error removing file %s: %v", p, err)
 	}
-
-	return nil
 }

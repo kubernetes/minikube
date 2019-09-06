@@ -19,14 +19,13 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
+	"time"
 
-	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/kapi"
-	"k8s.io/minikube/test/integration/util"
 )
 
 func TestGvisor(t *testing.T) {
@@ -63,9 +62,9 @@ func TestGvisor(t *testing.T) {
 	defer func() {
 		rr, err := RunCmd(ctx, t, Target(), "addons", "disable", "gvisor")
 		if err != nil {
-			t.Errorf("%s failed: %v", rr.Cmd.Args, err)
+			t.Logf("%s failed: %v", rr.Cmd.Args, err)
 		}
-	}
+	}()
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"kubernetes.io/minikube-addons": "gvisor"}))
 	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {

@@ -19,14 +19,15 @@ limitations under the License.
 package integration
 
 import (
-	"context"
 	"bytes"
+	"context"
 	"encoding/json"
 	"testing"
+
 	api "k8s.io/kubernetes/pkg/apis/core"
 )
 
-func validateComponentHealth(ctx context.Context,t *testing.T, profile string) {
+func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "get", "cs", "-o=json")
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Cmd.Args, err)

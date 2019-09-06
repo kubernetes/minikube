@@ -20,13 +20,14 @@ package integration
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
-	"k8s.io/minikube/test/integration/util"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/minikube/pkg/kapi"
 )
-
 
 type validateFunc func(context.Context, *testing.T, string)
 
@@ -44,9 +45,9 @@ func TestFunctional(t *testing.T) {
 
 	t.Run("shared", func(t *testing.T) {
 		tests := []struct {
-			name string
+			name           string
 			noneCompatible bool
-			validator validateFunc
+			validator      validateFunc
 		}{
 			{"AddonManager", true, validateAddonsCmd},
 			{"ComponentHealth", true, validateComponentHealth},
@@ -54,14 +55,14 @@ func TestFunctional(t *testing.T) {
 			{"DockerEnv", true, validateDockerEnv},
 			{"LogsCmd", true, validateLogsCmd},
 			{"KubeContext", true, validateKubeContext},
-			{"IngressAddon", false, validateIngressAddon)
-			{"MountCmd", false, validateMountCmd)
+			{"IngressAddon", false, validateIngressAddon},
+			{"MountCmd", false, validateMountCmd},
 			{"ProfileCmd", true, validateProfileCmd},
-			{"RegistryAddon", true, validateRegistryAddon),
+			{"RegistryAddon", true, validateRegistryAddon},
 			{"ServicesCmd", true, validateServicesCmd},
 			{"PersistentVolumeClaim", true, validatePersistentVolumeClaim},
 			{"TunnelCmd", true, validateTunnelCmd},
-			{"SSHCmd",  false, validateSSHCmd},
+			{"SSHCmd", false, validateSSHCmd},
 		}
 	})
 }
@@ -111,7 +112,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	sshCmdOutput, stderr := mk.MustRun("ssh echo " + expectedStr)
 	if !strings.Contains(sshCmdOutput, expectedStr) {
 		t.Fatalf("ExpectedStr sshCmdOutput to be: %s. Output was: %s Stderr: %s", expectedStr, sshCmdOutput, stderr)
-	}				
+	}
 	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("echo %s", want))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Cmd.Args, err)

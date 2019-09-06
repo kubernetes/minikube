@@ -61,4 +61,3 @@ func validateClusterDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 	}
 }
-
