@@ -19,6 +19,8 @@ package service
 import (
 	"bytes"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -540,10 +542,76 @@ func revertK8sClient(k K8sClient) {
 }
 
 func TestGetCoreClient(t *testing.T) {
-	k8s := K8sClientGetter{}
-	_, err := k8s.GetCoreClient()
-	if err != nil {
-		t.Fatalf("GetCoreClient returned unexpected error: %v", err)
+	originalEnv := os.Getenv("KUBECONFIG")
+	defer func() {
+		err := os.Setenv("KUBECONFIG", originalEnv)
+		if err != nil {
+			t.Fatalf("Error reverting env KUBECONFIG to its original value. Got err (%s)", err)
+		}
+	}()
+
+	mockK8sConfig := `apiVersion: v1
+clusters:
+- cluster:
+    server: https://192.168.99.102:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+`
+	var tests = []struct {
+		description    string
+		kubeconfigPath string
+		config         string
+		err            bool
+	}{
+		{
+			description:    "ok",
+			kubeconfigPath: "/tmp/kube_config",
+			config:         mockK8sConfig,
+			err:            false,
+		},
+		{
+			description:    "empty config",
+			kubeconfigPath: "/tmp/kube_config",
+			config:         "",
+			err:            true,
+		},
+		{
+			description:    "broken config",
+			kubeconfigPath: "/tmp/kube_config",
+			config:         "this**is&&not: yaml::valid: file",
+			err:            true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			mockK8sConfigByte := []byte(test.config)
+			mockK8sConfigPath := test.kubeconfigPath
+			err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
+			defer func() { os.Remove(mockK8sConfigPath) }()
+			if err != nil {
+				t.Fatalf("Unexpected error when writting to file %v. Error: %v", test.kubeconfigPath, err)
+			}
+			os.Setenv("KUBECONFIG", mockK8sConfigPath)
+
+			k8s := K8sClientGetter{}
+			_, err = k8s.GetCoreClient()
+			if err != nil && !test.err {
+				t.Fatalf("GetCoreClient returned unexpected error: %v", err)
+			}
+			if err == nil && test.err {
+				t.Fatal("GetCoreClient expected to return error but got nil")
+			}
+		})
 	}
 }
 
