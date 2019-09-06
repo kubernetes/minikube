@@ -131,7 +131,7 @@ func testProxyDashboard(t *testing.T) {
 	mk := NewMinikubeRunner(t, p)
 	cmd, out := mk.RunDaemon("dashboard --url")
 	defer func() {
-		err := util.KillProcess(cmd.Process.Pid)
+		err := util.KillProcess(cmd.Process.Pid, t)
 		if err != nil {
 			t.Logf("Failed to kill dashboard command: %v", err)
 		}

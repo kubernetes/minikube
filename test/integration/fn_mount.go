@@ -56,7 +56,7 @@ func testMounting(t *testing.T) {
 	mountCmd := getMountCmd(mk, tempDir)
 	cmd, _, _ := mk.RunDaemon2(mountCmd)
 	defer func() {
-		err = util.KillProcess(cmd.Process.Pid)
+		err = util.KillProcess(cmd.Process.Pid, t)
 		if err != nil {
 			t.Logf("Failed to kill mount command: %v", err)
 		}
