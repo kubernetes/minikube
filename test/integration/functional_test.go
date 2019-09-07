@@ -44,7 +44,8 @@ func TestFunctional(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile}, StartArgs()...)
+	// Start a slightly larger VM to accept everything we are about to throw
+	args := append([]string{"start", "-p", profile, "-m", "2500"}, StartArgs()...)
 	rr, err := RunCmd(ctx, t, Target(), args...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -66,10 +67,8 @@ func TestFunctional(t *testing.T) {
 			{"DNS", true, validateDNS},
 			{"LogsCmd", true, validateLogsCmd},
 			{"KubeContext", true, validateKubeContext},
-			{"IngressAddon", false, validateIngressAddon},
 			{"MountCmd", false, validateMountCmd},
 			{"ProfileCmd", true, validateProfileCmd},
-			{"RegistryAddon", true, validateRegistryAddon},
 			{"ServicesCmd", true, validateServicesCmd},
 			{"PersistentVolumeClaim", true, validatePersistentVolumeClaim},
 			{"TunnelCmd", true, validateTunnelCmd},
@@ -121,14 +120,14 @@ func validateComponentHealth(ctx context.Context, t *testing.T, _ kubernetes.Int
 
 // validateDNS asserts that all Kubernetes DNS is healthy
 func validateDNS(ctx context.Context, t *testing.T, client kubernetes.Interface, profile string) {
-	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
+	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
 	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
 	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Errorf("wait failed: %v", err)
+		t.Fatalf("busybox not running: %v", err)
 	}
 	pods, err := client.CoreV1().Pods("default").List(metav1.ListOptions{LabelSelector: "integration-test=busybox"})
 	if err != nil {

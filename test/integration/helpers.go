@@ -46,13 +46,17 @@ func (rr RunResult) String() string {
 // RunCmd is a test helper to log a command being executed \_(ツ)_/¯
 func RunCmd(ctx context.Context, t *testing.T, name string, arg ...string) (*RunResult, error) {
 	t.Helper()
+
 	cmd := exec.CommandContext(ctx, name, arg...)
-	var outb, errb bytes.Buffer
-	cmd.Stdout = &outb
-	cmd.Stderr = &errb
-	rr := &RunResult{Stdout: &outb, Stderr: &errb, Args: cmd.Args}
+	rr := &RunResult{Args: cmd.Args}
+	if ctx.Err() != nil {
+		return rr, fmt.Errorf("test context: %v", ctx.Err())
+	}
 	t.Logf("Run:    %v", rr.Command())
 
+	var outb, errb bytes.Buffer
+	cmd.Stdout, rr.Stdout = &outb, &outb
+	cmd.Stderr, rr.Stderr = &errb, &errb
 	start := time.Now()
 	err := cmd.Run()
 	elapsed := time.Since(start)
