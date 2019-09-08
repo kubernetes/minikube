@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -49,11 +50,13 @@ func Test_extractVMDriverVersion(t *testing.T) {
 }
 
 func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
+	viper.SetDefault(memory, constants.DefaultMemorySize)
+	viper.SetDefault(humanReadableDiskSize, constants.DefaultDiskSize)
 	originalEnv := os.Getenv("HTTP_PROXY")
 	defer func() {
 		err := os.Setenv("HTTP_PROXY", originalEnv)
 		if err != nil {
-			t.Fatalf("Error reverting env HTTP_PROXY to it's original value. Got err (%s)", err)
+			t.Fatalf("Error reverting env HTTP_PROXY to it's original value. Got err: %s", err)
 		}
 	}()
 	k8sVersion := constants.NewestKubernetesVersion
@@ -62,9 +65,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 		proxy        string
 		proxyIgnored bool
 	}{
-		{
-			description: "no http_proxy",
-		},
+
 		{
 			description:  "http_proxy=127.0.0.1:3128",
 			proxy:        "127.0.0.1:3128",
@@ -79,14 +80,17 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 			description: "http_proxy=1.2.3.4:3128",
 			proxy:       "1.2.3.4:3128",
 		},
+		{
+			description: "no http_proxy",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			cmd := cobra.Command{}
+			cmd := &cobra.Command{}
 			if err := os.Setenv("HTTP_PROXY", test.proxy); err != nil {
 				t.Fatalf("Unexpected error setting HTTP_PROXY: %v", err)
 			}
-			config, err := generateCfgFromFlags(&cmd, k8sVersion)
+			config, err := generateCfgFromFlags(cmd, k8sVersion)
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
