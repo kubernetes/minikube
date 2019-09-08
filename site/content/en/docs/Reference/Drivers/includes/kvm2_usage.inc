@@ -30,12 +30,12 @@ virt-host-validate
 
 ## Usage
 
-To explicitly start minikube with KVM:
+Start a cluster using the kvm2 driver:
 
 ```shell
 minikube start --vm-driver=kvm2
 ```
-To make KVM the default driver:
+To make kvm2 the default driver:
 
 ```shell
 minikube config set vm-driver kvm2
