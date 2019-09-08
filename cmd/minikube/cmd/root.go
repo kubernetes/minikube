@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -51,6 +52,10 @@ var dirs = [...]string{
 	constants.MakeMiniPath("files"),
 	constants.MakeMiniPath("logs"),
 }
+
+var (
+	enableUpdateNotification = true
+)
 
 var viperWhiteList = []string{
 	"v",
@@ -86,6 +91,10 @@ var RootCmd = &cobra.Command{
 			if err := logDir.Value.Set(constants.MakeMiniPath("logs")); err != nil {
 				exit.WithError("logdir set failed", err)
 			}
+		}
+
+		if enableUpdateNotification {
+			notify.MaybePrintUpdateTextFromGithub()
 		}
 	},
 }
