@@ -10,7 +10,7 @@ The none driver requires minikube to be run as root, until [#3760](https://githu
 sudo minikube start --vm-driver=none
 ```
 
-To make none the default for future invocations, run:
+To make `none` the default driver:
 
 ```shell
 sudo minikube config set vm-driver none
