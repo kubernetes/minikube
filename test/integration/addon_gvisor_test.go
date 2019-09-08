@@ -36,7 +36,7 @@ func TestGvisorAddon(t *testing.T) {
 	MaybeParallel(t)
 
 	profile := Profile("gvisor")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer func() {
 		CleanupWithLogs(t, profile, cancel)
 	}()
@@ -51,13 +51,13 @@ func TestGvisorAddon(t *testing.T) {
 	if err != nil {
 		t.Fatalf("kubernetes client: %v", client)
 	}
-
+/*
 	// TODO: Re-examine if we should be pulling in an image which users don't normally use
 	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "cache", "add", "gcr.io/k8s-minikube/gvisor-addon:latest")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-
+*/
 	// NOTE: addons are global, but the addon must assert that the runtime is containerd
 	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "addons", "enable", "gvisor")
 	if err != nil {

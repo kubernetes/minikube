@@ -141,7 +141,7 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
 	if t.Failed() {
-		rr, err := RunCmd(context.Background(), t, Target(), "logs", "-p", profile)
+		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "logs", "-n", "100")
 		if err != nil {
 			t.Logf("failed logs error: %v", err)
 		}
