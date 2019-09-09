@@ -18,8 +18,6 @@ package util
 
 import (
 	"fmt"
-	"runtime"
-	"syscall"
 	"testing"
 	"time"
 
@@ -50,33 +48,26 @@ func Logf(str string, args ...interface{}) {
 
 // KillProcess kills the process associated with the given pid and all its children
 func KillProcess(pid int, t *testing.T) error {
-	if runtime.GOOS == "windows" {
-		p, err := process.NewProcess(int32(pid))
+	p, err := process.NewProcess(int32(pid))
+	if err != nil {
+		// Process doesn't exist
+		return err
+	}
+	children, err := p.Children()
+	if err != nil {
+		// No children, log the error, don't exist
+		t.Log(err)
+	}
+	for _, c := range children {
+		err = c.Kill()
 		if err != nil {
-			// Process doesn't exist
-			return err
-		}
-		children, err := p.Children()
-		if err != nil {
-			// No children, log the error, don't exist
+			// Log the error, but don't exit
 			t.Log(err)
 		}
-		for _, c := range children {
-			err = c.Kill()
-			if err != nil {
-				// Log the error, but don't exit
-				t.Log(err)
-			}
-		}
-		err = p.Kill()
-		if err != nil {
-			return err
-		}
-	} else {
-		err := syscall.Kill(-pid, syscall.SIGKILL)
-		if err != nil {
-			return err
-		}
+	}
+	err = p.Kill()
+	if err != nil {
+		return err
 	}
 
 	return nil

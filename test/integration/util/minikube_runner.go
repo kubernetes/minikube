@@ -146,9 +146,6 @@ func (m *MinikubeRunner) RunWithContext(ctx context.Context, cmdStr string, wait
 	path, _ := filepath.Abs(m.BinaryPath)
 
 	cmd := exec.CommandContext(ctx, path, cmdArgs...)
-	if runtime.GOOS != "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	}
 	Logf("RunWithContext: %s", cmd.Args)
 	return m.teeRun(cmd, wait...)
 }
@@ -161,9 +158,6 @@ func (m *MinikubeRunner) RunDaemon(cmdStr string) (*exec.Cmd, *bufio.Reader) {
 	path, _ := filepath.Abs(m.BinaryPath)
 
 	cmd := exec.Command(path, cmdArgs...)
-	if runtime.GOOS != "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	}
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		m.T.Fatalf("stdout pipe failed: %s %v", cmdStr, err)
@@ -195,9 +189,6 @@ func (m *MinikubeRunner) RunDaemon2(cmdStr string) (*exec.Cmd, *bufio.Reader, *b
 	cmdArgs := strings.Split(cmdStr, " ")
 	path, _ := filepath.Abs(m.BinaryPath)
 	cmd := exec.Command(path, cmdArgs...)
-	if runtime.GOOS != "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	}
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
 		m.T.Fatalf("stdout pipe failed: %s %v", cmdStr, err)
