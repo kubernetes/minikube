@@ -23,9 +23,6 @@ import (
 	"path/filepath"
 	"testing"
 	"time"
-
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/minikube/pkg/kapi"
 )
 
 func TestPodPersistence(t *testing.T) {
@@ -45,13 +42,8 @@ func TestPodPersistence(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	client, err := kapi.Client(profile)
-	if err != nil {
-		t.Errorf("client failed: %v", err)
-	}
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Errorf("integration-test:busybox is not running: %v", err)
+	if err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 
 	// Stop everything!
@@ -66,7 +58,7 @@ func TestPodPersistence(t *testing.T) {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Errorf("integration-test:busybox is not running: %v", err)
+	if err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox-mount", 1*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 }

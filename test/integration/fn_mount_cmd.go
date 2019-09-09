@@ -31,9 +31,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/minikube/pkg/kapi"
 )
 
 const guestMount = "/mount-9p"
@@ -77,9 +75,8 @@ func validateMountCmd(ctx context.Context, t *testing.T, client kubernetes.Inter
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox-mount"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Fatalf("busybox-mount not running: %v", err)
+	if err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 
 	// Read the file written by pod startup

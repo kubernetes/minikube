@@ -16,6 +16,11 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/minikube/pkg/kapi"
 )
 
 // RunResult stores the result of an cmd.Run call
@@ -141,7 +146,7 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
 	if t.Failed() {
-		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "logs", "-n", "100")
+		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "logs")
 		if err != nil {
 			t.Logf("failed logs error: %v", err)
 		}
@@ -150,7 +155,67 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	Cleanup(t, profile, cancel)
 }
 
-// Status returns the status as a string
+// WaitForPods waits for pods to achieve a running state.
+func WaitForPods(ctx context.Context, t *testing.T, profile string, ns string, selector string, timeout time.Duration) error {
+	t.Helper()
+	client, err := kapi.Client(profile)
+	if err != nil {
+		return err
+	}
+
+	// For example: kubernetes.io/minikube-addons=gvisor
+	listOpts := meta.ListOptions{LabelSelector: selector}
+	minUptime := 5 * time.Second
+	podStart := time.Time{}
+	start := time.Now()
+	t.Logf("Waiting for pods with labels '%v' in ns %q ...", selector, ns)
+	f := func() (bool, error) {
+		pods, err := client.CoreV1().Pods(ns).List(listOpts)
+		if err != nil {
+			t.Logf("Pod(%s).List(%v) returned error: %v", ns, selector, err)
+			podStart = time.Time{}
+			return false, nil
+		}
+		if len(pods.Items) == 0 {
+			podStart = time.Time{}
+			return false, nil
+		}
+
+		for _, pod := range pods.Items {
+			if pod.Status.Phase == core.PodRunning {
+				t.Logf("Found %q (%s) running since at least %s (labels=%s): %+v", pod.ObjectMeta.Name, time.Since(podStart), pod.ObjectMeta.CreationTimestamp, pod.ObjectMeta.Labels)
+
+				if podStart.IsZero() {
+					podStart = time.Now()
+				}
+				if time.Since(podStart) > minUptime {
+					return true, nil
+				}
+			} else {
+				t.Logf("pod %q created at %s (labels=%s, status=%+v)", pod.ObjectMeta.Name, pod.ObjectMeta.CreationTimestamp, pod.ObjectMeta.Labels, pod.Status)
+				podStart = time.Time{}
+				return false, nil
+			}
+		}
+		podStart = time.Time{}
+		return false, nil
+	}
+	err = wait.PollImmediate(1*time.Second, timeout, f)
+	if err == nil {
+		t.Logf("pods %s healthy in %s", selector, time.Since(start))
+		return nil
+	}
+	t.Logf("wait for %s: %v", selector, err)
+	rr, rerr := RunCmd(ctx, t, "kubectl", "--context", profile, "get", "po", "-A", "--show-labels")
+	if rerr != nil {
+		t.Logf("unable to display pods: %v", rerr)
+		return err
+	}
+	t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
+	return err
+}
+
+// Status returns the minikube cluster status as a string
 func Status(ctx context.Context, t *testing.T, path string, profile string) string {
 	t.Helper()
 	rr, err := RunCmd(ctx, t, path, "status", "--format={{.Host}}", "-p", profile)
@@ -166,6 +231,6 @@ func MaybeParallel(t *testing.T) {
 	// TODO: Allow paralellized tests on "none" that do not require independent clusters
 	if NoneDriver() {
 		return
-	}	
+	}
 	t.Parallel()
 }

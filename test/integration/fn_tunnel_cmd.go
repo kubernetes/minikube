@@ -107,11 +107,11 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, client kubernetes.Inte
 	req := func() error {
 		h := &http.Client{Timeout: time.Second * 10}
 		resp, err = h.Get(fmt.Sprintf("http://%s", nginxIP))
-		defer resp.Body.Close()		
 		if err != nil {
 			retriable := &retry.RetriableError{Err: err}
 			return retriable
 		}
+		defer resp.Body.Close()
 		return nil
 	}
 	if err = retry.Expo(req, time.Millisecond*500, 2*time.Minute, 6); err != nil {
