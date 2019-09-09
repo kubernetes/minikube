@@ -55,7 +55,7 @@ func KillProcess(pid int, t *testing.T) error {
 	}
 	children, err := p.Children()
 	if err != nil {
-		// No children, log the error, don't exist
+		// No children, log the error, don't exit
 		t.Log(err)
 	}
 	for _, c := range children {
