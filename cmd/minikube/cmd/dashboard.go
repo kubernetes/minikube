@@ -134,7 +134,7 @@ var dashboardCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Unable to get current user", err)
 		}
-		if dashboardURLMode && user.Uid == "0" {
+		if dashboardURLMode || user.Uid == "0" {
 			out.Ln(url)
 		} else {
 			out.T(out.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})
