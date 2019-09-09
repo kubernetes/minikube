@@ -25,7 +25,7 @@
 
 # Storage driver used to manage the storage of images and containers. Please
 # refer to containers-storage.conf(5) to see all available storage drivers.
-#storage_driver = ""
+#storage_driver = "overlay"
 
 # List to pass options to the storage driver. Please refer to
 # containers-storage.conf(5) to see all available storage options.
@@ -116,7 +116,7 @@ seccomp_profile = ""
 
 # Used to change the name of the default AppArmor profile of CRI-O. The default
 # profile name is "crio-default-" followed by the version string of CRI-O.
-apparmor_profile = "crio-default"
+apparmor_profile = "crio-default-1.15.1"
 
 # Cgroup management implementation used for the runtime.
 cgroup_manager = "cgroupfs"
