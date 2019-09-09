@@ -21,6 +21,8 @@ curl -LO $(curl -s $r/releases/latest | grep -o 'http.*darwin_amd64' | head -n1)
 
 ## Usage
 
+Start a cluster using the vmware driver:
+
 ```shell
 minikube start --vm-driver=vmware
 ```
