@@ -25,10 +25,8 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -118,9 +116,6 @@ func (m *MinikubeRunner) RunCommand(cmdStr string, failError bool, waitForRun ..
 	path, _ := filepath.Abs(m.BinaryPath)
 
 	cmd := exec.Command(path, cmdArgs...)
-	if runtime.GOOS != "windows" {
-		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	}
 	Logf("Run: %s", cmd.Args)
 	stdout, stderr, err := m.teeRun(cmd, waitForRun...)
 	if err != nil {
