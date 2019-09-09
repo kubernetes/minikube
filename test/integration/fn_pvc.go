@@ -36,7 +36,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
-	if _, err := WaitForPods(ctx, t, profile, "default", "integration-test=storage-provisioner", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "integration-test=storage-provisioner", 2*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 

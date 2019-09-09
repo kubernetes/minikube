@@ -68,6 +68,7 @@ func TestStartStop(t *testing.T) {
 		}
 
 		for _, tc := range tests {
+			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
 
@@ -79,7 +80,8 @@ func TestStartStop(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 				defer CleanupWithLogs(t, profile, cancel)
 
-				args := append([]string{"start", "-p", profile}, tc.args...)
+				// Use copious amounts of debugging for this stress test: we will need it.
+				args := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=8"}, tc.args...)
 				rr, err := RunCmd(ctx, t, Target(), args...)
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)

@@ -48,9 +48,13 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	defer os.RemoveAll(tempDir)
 
-	// Start the mount
-	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
+	// Start the mount (NOTE: add -v=1 for protocol level dumps)
+	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr"}
 	ss, err := StartCmd(ctx, t, Target(), args...)
+ 	if err != nil {
+		t.Fatalf("%v failed: %v", args, err)
+	}
+
 	defer func() {
 		if err := ss.Stop(t); err != nil {
 			t.Logf("Failed to kill mount: %v", err)
@@ -73,7 +77,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	if _, err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -83,6 +87,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("readfile %s: %v", p, err)
 	}
+	want = []byte("test\n")
 	if !bytes.Equal(got, want) {
 		t.Errorf("%s = %q, want %q", p, got, want)
 	}
@@ -93,7 +98,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 	if !bytes.Equal(rr.Stdout.Bytes(), want) {
-		t.Errorf("logs = %v, want %v", rr.Stdout.Bytes(), want)
+		t.Errorf("busybox-mount logs = %q, want %q", rr.Stdout.Bytes(), want)
 	}
 
 	// test file timestamps are correct
@@ -105,7 +110,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("%s failed: %v", rr.Args, err)
 		}
 		if !bytes.Equal(rr.Stdout.Bytes(), want) {
-			t.Errorf("logs = %v, want %v", rr.Stdout.Bytes(), want)
+			t.Errorf("logs = %q, want %q", rr.Stdout.Bytes(), want)
 		}
 		if runtime.GOOS == "windows" {
 			if strings.Contains(rr.Stdout.String(), "Access: 1970-01-01") {

@@ -41,13 +41,32 @@ func TestFunctional(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Start a slightly larger VM to accept everything we are about to throw
-	args := append([]string{"start", "-p", profile, "-m", "2500"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory", "2250"}, StartArgs()...)
 	rr, err := RunCmd(ctx, t, Target(), args...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	t.Run("shared", func(t *testing.T) {
+	// Serial tests
+	t.Run("serial", func(t *testing.T) {
+		tests := []struct {
+			name           string
+			noneCompatible bool
+			validator      validateFunc
+		}{
+			{"KubeContext", true, validateKubeContext}, // Racy: must come immediately after "minikube start"
+			{"ConfigCmd", true, validateConfigCmd},     // Each subtest causes necessary side effects
+		}
+		for _, tc := range tests {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				tc.validator(ctx, t, profile)
+			})
+		}
+	})
+
+	// Parallelized tests
+	t.Run("parallel", func(t *testing.T) {
 		tests := []struct {
 			name           string
 			noneCompatible bool
@@ -57,7 +76,6 @@ func TestFunctional(t *testing.T) {
 			{"ComponentHealth", true, validateComponentHealth},
 			{"DNS", true, validateDNS},
 			{"LogsCmd", true, validateLogsCmd},
-			{"KubeContext", true, validateKubeContext},
 			{"MountCmd", false, validateMountCmd},
 			{"ProfileCmd", true, validateProfileCmd},
 			{"ServicesCmd", true, validateServicesCmd},
@@ -75,9 +93,20 @@ func TestFunctional(t *testing.T) {
 	})
 }
 
+// validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
+func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
+	rr, err := RunCmd(ctx, t, "kubectl", "config", "current-context")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	if !strings.Contains(rr.Stdout.String(), profile) {
+		t.Errorf("current-context = %q, want %q", rr.Stdout.String(), profile)
+	}
+}
+
 // validateAddonManager asserts that the kube-addon-manager pod is deployed properly
 func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
-	if _, err := WaitForPods(ctx, t, profile, "kube-system", "component=kube-addon-manager", 1*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 1*time.Minute); err != nil {
 		t.Errorf("wait: %v", err)
 	}
 }
@@ -115,7 +144,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute)
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}
@@ -128,17 +157,6 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	want := []byte("10.96.0.1")
 	if !bytes.Contains(rr.Stdout.Bytes(), want) {
 		t.Errorf("nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
-	}
-}
-
-// validateKubeContext asserts that kubectl config is updated properly
-func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
-	rr, err := RunCmd(ctx, t, "kubectl", "config", "current-context")
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	if !strings.Contains(rr.Stdout.String(), profile) {
-		t.Errorf("current-context = %q, want %q", rr.Stdout.String(), profile)
 	}
 }
 
@@ -166,11 +184,11 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 
 		got := strings.TrimSpace(rr.Stdout.String())
 		if got != tc.wantOut {
-			t.Errorf("config %s stdout got: %q, want: %q", tc.args, got, tc.wantOut)
+			t.Errorf("%s stdout got: %q, want: %q", rr.Command(), got, tc.wantOut)
 		}
 		got = strings.TrimSpace(rr.Stderr.String())
 		if got != tc.wantErr {
-			t.Errorf("config %s stderr got: %q, want: %q", tc.args, got, tc.wantErr)
+			t.Errorf("%s stderr got: %q, want: %q", rr.Command(), got, tc.wantErr)
 		}
 	}
 }

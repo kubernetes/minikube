@@ -47,7 +47,7 @@ func TestNone(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "--wait=false"}, StartArgs()...)
+	args := append([]string{"start"}, StartArgs()...)
 	rr, err := RunCmd(ctx, t, Target(), args...)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)

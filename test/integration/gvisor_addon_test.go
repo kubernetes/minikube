@@ -26,6 +26,9 @@ import (
 )
 
 func TestGvisorAddon(t *testing.T) {
+	// TODO(tstromberg): Fix or remove addon.
+	//t.Skip("SKIPPING: Currently broken (gvisor-containerd-shim.toml CrashLoopBackoff): https://github.com/kubernetes/minikube/issues/5305")
+
 	if NoneDriver() {
 		t.Skip("Can't run containerd backend with none driver")
 	}
@@ -57,7 +60,7 @@ func TestGvisorAddon(t *testing.T) {
 		}
 	}()
 
-	if _, err := WaitForPods(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 2*time.Minute); err != nil {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
@@ -72,10 +75,10 @@ func TestGvisorAddon(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	if _, err := WaitForPods(ctx, t, profile, "kube-system", "run=nginx,untrusted=true", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", 2*time.Minute); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
-	if _, err := WaitForPods(ctx, t, profile, "kube-system", "run=nginx,runtime=gvisor", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", 2*time.Minute); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
 
@@ -89,13 +92,13 @@ func TestGvisorAddon(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
-	if _, err := WaitForPods(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 2*time.Minute); err != nil {
 		t.Errorf("waiting for gvisor controller to be up: %v", err)
 	}
-	if _, err := WaitForPods(ctx, t, profile, "kube-system", "run=nginx,untrusted=true", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", 2*time.Minute); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
-	if _, err := WaitForPods(ctx, t, profile, "kube-system", "run=nginx,runtime=gvisor", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", 2*time.Minute); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
 
