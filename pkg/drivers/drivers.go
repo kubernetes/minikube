@@ -17,6 +17,7 @@ limitations under the License.
 package drivers
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -168,6 +169,8 @@ func InstallOrUpdate(driver, destination string, minikubeVersion semver.Version)
 
 	v := ExtractVMDriverVersion(string(output))
 
+	fmt.Printf("InstallOrUpdate extracted version %s\n", v)
+
 	// if the driver doesn't return any version, download it
 	if len(v) == 0 {
 		return download(driver, destination)
@@ -178,6 +181,7 @@ func InstallOrUpdate(driver, destination string, minikubeVersion semver.Version)
 		return errors.Wrap(err, "can't parse driver version")
 	}
 
+	fmt.Printf("InstallOrUpdate version %s\n", minikubeVersion.String())
 	// if the current driver version is older, download newer
 	if vmDriverVersion.LT(minikubeVersion) {
 		return download(driver, destination)
