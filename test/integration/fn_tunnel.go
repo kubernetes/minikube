@@ -51,8 +51,8 @@ func testTunnel(t *testing.T) {
 	go func() {
 		output, stderr := mk.MustRun("tunnel --alsologtostderr -v 8 --logtostderr")
 		if t.Failed() {
-			t.Errorf("tunnel stderr : %s", stderr)
-			t.Errorf("tunnel output : %s", output)
+			t.Logf("tunnel stderr : %s", stderr)
+			t.Logf("tunnel output : %s", output)
 		}
 	}()
 
