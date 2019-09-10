@@ -41,23 +41,6 @@ func TestDisplay(t *testing.T) {
 		expected    string
 	}{
 		{
-			problem:     Problem{},
-			description: "empty",
-			expected: `
-* Error: [] <no value>
-* Suggestion:
-`,
-		},
-		{
-			problem:     Problem{URL: "example.com"},
-			description: "url",
-			expected: `
-* Error: [] <no value>
-* Suggestion: 
-* Documentation: example.com
-`,
-		},
-		{
 			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test")},
 			description: "url, id and err",
 			expected: `
@@ -67,11 +50,24 @@ func TestDisplay(t *testing.T) {
 `,
 		},
 		{
-			problem:     Problem{Issues: []int{0, 1}},
+			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test"), Issues: []int{0, 1}, Advice: "you need a hug"},
+			description: "with 2 issues and suggestion",
+			expected: `
+* Error: [example] test
+* Suggestion: you need a hug
+* Documentation: example.com
+* Related issues:
+  - https://github.com/kubernetes/minikube/issues/0
+  - https://github.com/kubernetes/minikube/issues/1
+`,
+		},
+		{
+			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test"), Issues: []int{0, 1}},
 			description: "with 2 issues",
 			expected: `
-* Error: [] <no value>
+* Error: [example] test
 * Suggestion: 
+* Documentation: example.com
 * Related issues:
   - https://github.com/kubernetes/minikube/issues/0
   - https://github.com/kubernetes/minikube/issues/1
@@ -79,11 +75,12 @@ func TestDisplay(t *testing.T) {
 		},
 		// 6 issues should be trimmed to 3
 		{
-			problem:     Problem{Issues: []int{0, 1, 2, 3, 4, 5}},
+			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test"), Issues: []int{0, 1, 2, 3, 4, 5}},
 			description: "with 6 issues",
 			expected: `
-* Error: [] <no value>
+* Error: [example] test
 * Suggestion: 
+* Documentation: example.com
 * Related issues:
   - https://github.com/kubernetes/minikube/issues/0
   - https://github.com/kubernetes/minikube/issues/1
