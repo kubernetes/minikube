@@ -26,6 +26,10 @@ import (
 )
 
 func TestDocker(t *testing.T) {
+	if NoneDriver() {
+		t.Skip("skipping: none driver does not support ssh or bundle docker")
+	}
+
 	profile := Profile("docker")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer Cleanup(t, profile, cancel)

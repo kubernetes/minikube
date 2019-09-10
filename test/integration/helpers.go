@@ -84,7 +84,7 @@ func Run(ctx context.Context, t *testing.T, name string, arg ...string) (*RunRes
 		t.Logf("Out of time, unable to run %s: %v", rr.Command(), ctx.Err())
 		return rr, fmt.Errorf("test context: %v", ctx.Err())
 	}
-	t.Logf("(debug) Run: %v", rr.Command())
+	t.Logf("(dbg) Run:  %v", rr.Command())
 
 	var outb, errb bytes.Buffer
 	cmd.Stdout, rr.Stdout = &outb, &outb
@@ -95,14 +95,14 @@ func Run(ctx context.Context, t *testing.T, name string, arg ...string) (*RunRes
 	if err == nil {
 		// Reduce log spam
 		if elapsed > (1 * time.Second) {
-			t.Logf("(debug) Done:   %v: (%s)", rr.Command(), elapsed)
+			t.Logf("(dbg) Done: %v: (%s)", rr.Command(), elapsed)
 		}
 	} else {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
 		}
-		t.Logf("(debug) Non-zero exit: %v: %v (%s)", rr.Command(), err, elapsed)
-		t.Logf("(debug) %s", rr.String())
+		t.Logf("(dbg) Non-zero exit: %v: %v (%s)", rr.Command(), err, elapsed)
+		t.Logf("(dbg) %s", rr.String())
 	}
 	return rr, err
 }
@@ -157,14 +157,14 @@ func (ss *StartSession) Stop(t *testing.T) {
 			if err != nil {
 				t.Logf("read stdout failed: %v", err)
 			}
-			t.Logf("(debug) %s stdout:\n%s", ss.cmd.Args, stdout)
+			t.Logf("(dbg) %s stdout:\n%s", ss.cmd.Args, stdout)
 		}
 		if ss.Stderr.Size() > 0 {
 			stderr, err := ioutil.ReadAll(ss.Stderr)
 			if err != nil {
 				t.Logf("read stderr failed: %v", err)
 			}
-			t.Logf("(debug) %s stderr:\n%s", ss.cmd.Args, stderr)
+			t.Logf("(dbg) %s stderr:\n%s", ss.cmd.Args, stderr)
 		}
 	}
 }
@@ -239,8 +239,9 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 		pods, err := client.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
 			t.Logf("Pod(%s).List(%v) returned error: %v", ns, selector, err)
+			// Don't bother to retry: something is very wrong.
+			return true, err
 			podStart = time.Time{}
-			return false, nil
 		}
 		if len(pods.Items) == 0 {
 			podStart = time.Time{}
@@ -255,7 +256,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 				t.Log(msg)
 				lastMsg = msg
 			}
-			// Succesful termination of a short-lived process, will not be restarted
+			// Successful termination of a short-lived process, will not be restarted
 			if pod.Status.Phase == core.PodSucceeded {
 				return true, nil
 			}
@@ -300,8 +301,10 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 	rr, rerr := Run(ctx, t, "kubectl", "--context", profile, "get", "po", "-A", "--show-labels")
 	if rerr != nil {
 		t.Logf("%s: %v", rr.Command(), rerr)
+		// return now, because kubectl is hosed
+		return
 	} else {
-		t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
+		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 	}
 
 	for _, name := range names {
@@ -309,14 +312,14 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		} else {
-			t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
+			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 		}
 
 		rr, err = Run(ctx, t, "kubectl", "--context", profile, "logs", name, "-n", ns)
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		} else {
-			t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
+			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 		}
 	}
 }

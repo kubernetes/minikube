@@ -32,7 +32,8 @@ func TestPodPersistence(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
-	rr, err := Run(ctx, t, Target(), "start", "-p", profile)
+	startArgs := append([]string{"start", "-p", profile, "--wait=false"}, StartArgs()...)
+	rr, err := Run(ctx, t, Target(), startArgs...)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -53,7 +54,7 @@ func TestPodPersistence(t *testing.T) {
 	}
 
 	// Start minikube, and validate that busybox is still running.
-	rr, err = Run(ctx, t, Target(), "start", "-p", profile)
+	rr, err = Run(ctx, t, Target(), startArgs...)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

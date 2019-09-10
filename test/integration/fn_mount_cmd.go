@@ -43,16 +43,15 @@ const (
 )
 
 func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skip("skipping test for none driver as it does not need mount")
+	}
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
 		t.Fatalf("Unexpected error while creating tempDir: %v", err)
 	}
 
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
-
-	if NoneDriver() {
-		t.Skip("skipping test for none driver as it does not need mount")
-	}
 
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
 	ss, err := Start(ctx, t, Target(), args...)
@@ -76,7 +75,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		}
-		ss.Stop(t)	
+		ss.Stop(t)
 		cancel()
 		if *cleanup {
 			os.RemoveAll(tempDir)
@@ -100,7 +99,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		_, err := Run(ctx, t, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p")
 		return err
 	}
-	
+
 	start := time.Now()
 	if err := retry.Expo(checkMount, time.Second, 15*time.Second); err != nil {
 		t.Fatalf("/mount-9p did not appear within %s: %v", time.Since(start), err)

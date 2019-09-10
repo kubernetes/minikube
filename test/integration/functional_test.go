@@ -43,13 +43,12 @@ func TestFunctional(t *testing.T) {
 	// Serial tests
 	t.Run("serial", func(t *testing.T) {
 		tests := []struct {
-			name           string
-			noneCompatible bool
-			validator      validateFunc
+			name      string
+			validator validateFunc
 		}{
-			{"Start", true, validateStart},       // Set everything else up for success
-			{"KubeContext", true, validateKubeContext}, // Racy: must come immediately after "minikube start"
-			{"ConfigCmd", true, validateConfigCmd},     // Each subtest causes necessary side effects
+			{"Start", validateStart},             // Set everything else up for success
+			{"KubeContext", validateKubeContext}, // Racy: must come immediately after "minikube start"
+			{"ConfigCmd", validateConfigCmd},     // Each subtest causes necessary side effects
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -62,20 +61,19 @@ func TestFunctional(t *testing.T) {
 	// Parallelized tests
 	t.Run("parallel", func(t *testing.T) {
 		tests := []struct {
-			name           string
-			noneCompatible bool
-			validator      validateFunc
+			name      string
+			validator validateFunc
 		}{
-			{"AddonManager", true, validateAddonManager},
-			{"ComponentHealth", true, validateComponentHealth},
-			{"DNS", true, validateDNS},
-			{"LogsCmd", true, validateLogsCmd},
-			{"MountCmd", false, validateMountCmd},
-			{"ProfileCmd", true, validateProfileCmd},
-			{"ServicesCmd", true, validateServicesCmd},
-			{"PersistentVolumeClaim", true, validatePersistentVolumeClaim},
-			{"TunnelCmd", true, validateTunnelCmd},
-			{"SSHCmd", false, validateSSHCmd},
+			{"AddonManager", validateAddonManager},
+			{"ComponentHealth", validateComponentHealth},
+			{"DNS", validateDNS},
+			{"LogsCmd", validateLogsCmd},
+			{"MountCmd", validateMountCmd},
+			{"ProfileCmd", validateProfileCmd},
+			{"ServicesCmd", validateServicesCmd},
+			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
+			{"TunnelCmd", validateTunnelCmd},
+			{"SSHCmd", validateSSHCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -89,7 +87,7 @@ func TestFunctional(t *testing.T) {
 
 func validateStart(ctx context.Context, t *testing.T, profile string) {
 	// Start a slightly larger VM to accept everything we test here
-	args := append([]string{"start", "-p", profile, "--memory", "2250", "--alsologtostderr", "-v=8"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory", "2250", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err := Run(ctx, t, Target(), args...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -230,6 +228,9 @@ func validateServicesCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateSSHCmd asserts basic "ssh" command functionality
 func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("skipping: ssh unsupported by none")
+	}
 	want := "hello\r\n"
 	rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello"))
 	if err != nil {

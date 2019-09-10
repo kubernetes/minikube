@@ -31,6 +31,10 @@ import (
 )
 
 func TestIngressAddon(t *testing.T) {
+	if NoneDriver() {
+		t.Skipf("skipping: ssh unsupported by none")
+	}
+
 	profile := Profile("ingress")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer func() {

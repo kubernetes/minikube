@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util/retry"
 
@@ -40,32 +39,40 @@ import (
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
 	profile := Profile("vupgrade")
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	MaybeParallel(t)
 
 	defer CleanupWithLogs(t, profile, cancel)
 
-	t.Logf("Downloading the latest release ...")
-	start := time.Now()
-	rpath, err := downloadLatestRelease()
+	tf, err := ioutil.TempFile("", "minikube-release.*.exe")
 	if err != nil {
-		t.Fatalf("download minikube: %v", err)
+		t.Fatalf("tempfile: %v", err)
 	}
-	t.Logf("Download completed within %s", time.Since(start))
-	defer os.Remove(rpath)
+	defer os.Remove(tf.Name())
+	tf.Close()
 
-	t.Logf("Starting last release with oldest Kubernetes version")
-	rr, err := Run(ctx, t, rpath, "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
+	url := pkgutil.GetBinaryDownloadURL("latest", runtime.GOOS)
+	if err := retry.Expo(func() error { return getter.GetFile(tf.Name(), url) }, 3*time.Second, 3*time.Minute); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(tf.Name(), 0700); err != nil {
+			t.Errorf("chmod: %v", err)
+		}
+	}
+	args := append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion)}, StartArgs()...)
+	rr, err := Run(ctx, t, tf.Name(), args...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = Run(ctx, t, rpath, "stop", "-p", profile)
+	rr, err = Run(ctx, t, tf.Name(), "stop", "-p", profile)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = Run(ctx, t, rpath, "-p", profile, "status", "--format={{.Host}}")
+	rr, err = Run(ctx, t, tf.Name(), "-p", profile, "status", "--format={{.Host}}")
 	if err != nil {
 		t.Logf("status error: %v (may be ok)", err)
 	}
@@ -74,31 +81,9 @@ func TestVersionUpgrade(t *testing.T) {
 		t.Errorf("status = %q; want = %q", got, state.Stopped.String())
 	}
 
-	t.Logf("Restarting cluster with %s and newest possible Kubernetes", Target())
-	rr, err = Run(ctx, t, Target(), "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
+	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion)}, StartArgs()...)
+	rr, err = Run(ctx, t, Target(), args...)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-}
-
-func downloadLatestRelease() (string, error) {
-	tf, err := ioutil.TempFile("", "minikube-release.*.exe")
-	if err != nil {
-		return tf.Name(), err
-	}
-
-	url := pkgutil.GetBinaryDownloadURL("latest", runtime.GOOS)
-	download := func() error {
-		return getter.GetFile(tf.Name(), url)
-	}
-
-	if err := retry.Expo(download, 3*time.Second, 3*time.Minute); err != nil {
-		return tf.Name(), errors.Wrap(err, "Failed to get latest release binary")
-	}
-	if runtime.GOOS != "windows" {
-		if err := os.Chmod(tf.Name(), 0700); err != nil {
-			return tf.Name(), err
-		}
-	}
-	return tf.Name(), nil
 }

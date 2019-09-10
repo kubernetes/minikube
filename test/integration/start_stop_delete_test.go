@@ -85,6 +85,7 @@ func TestStartStop(t *testing.T) {
 
 				// Use copious amounts of debugging for this stress test: we will need it.
 				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=8"}, tc.args...)
+				startArgs = append(startArgs, StartArgs()...)
 				rr, err := Run(ctx, t, Target(), startArgs...)
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)

@@ -33,7 +33,7 @@ import (
 func TestRegistryAddon(t *testing.T) {
 	MaybeParallel(t)
 	profile := Profile("registry")
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer func() {
 		CleanupWithLogs(t, profile, cancel)
 	}()

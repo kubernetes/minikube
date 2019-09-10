@@ -36,7 +36,7 @@ import (
 // TestDownloadOnly tests the --download-only option
 func TestDownloadOnly(t *testing.T) {
 	profile := Profile("download")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer Cleanup(t, profile, cancel)
 
 	t.Run("group", func(t *testing.T) {
@@ -53,13 +53,16 @@ func TestDownloadOnly(t *testing.T) {
 					t.Errorf("%s failed: %v", args, err)
 				}
 
-				_, imgs := constants.GetKubeadmCachedImages("", v)
-				for _, img := range imgs {
-					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
-					fp := filepath.Join(constants.GetMinipath(), "cache", "images", img)
-					_, err := os.Stat(fp)
-					if err != nil {
-						t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+				// None driver does not cache images, so this test will fail
+				if !NoneDriver() {
+					_, imgs := constants.GetKubeadmCachedImages("", v)
+					for _, img := range imgs {
+						img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
+						fp := filepath.Join(constants.GetMinipath(), "cache", "images", img)
+						_, err := os.Stat(fp)
+						if err != nil {
+							t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+						}
 					}
 				}
 

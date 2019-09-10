@@ -46,7 +46,7 @@ func TestDashboardWithProxy(t *testing.T) {
 	}
 
 	profile := Profile("proxy")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer func() {
 		CleanupWithLogs(t, profile, cancel)
 		err := srv.Shutdown(context.Background())
@@ -55,7 +55,7 @@ func TestDashboardWithProxy(t *testing.T) {
 		}
 	}()
 
-	args := []string{"env", fmt.Sprintf("HTTP_PROXY=%s", srv.Addr), "NO_PROXY=", Target(), "start", "-p", profile}
+	args := []string{"env", fmt.Sprintf("HTTP_PROXY=%s", srv.Addr), "NO_PROXY=", Target(), "start", "-p", profile, "--wait=false"}
 	rr, err := Run(ctx, t, "/usr/bin/env", args...)
 	if err != nil {
 		t.Errorf("%s failed: %v", args, err)
@@ -73,6 +73,9 @@ func TestDashboardWithProxy(t *testing.T) {
 
 	args = []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
 	ss, err := Start(ctx, t, Target(), args...)
+	if err != nil {
+		t.Errorf("%s failed: %v", args, err)
+	}
 	defer func() {
 		ss.Stop(t)
 	}()

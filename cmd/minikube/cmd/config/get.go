@@ -32,11 +32,11 @@ var configGetCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if len(args) == 0 {
 			cmd.SilenceErrors = true
-			return errors.New("Not enough arguments.\nusage: minikube config get PROPERTY_NAME")
+			return errors.New("not enough arguments.\nusage: minikube config get PROPERTY_NAME")
 		}
 		if len(args) > 1 {
 			cmd.SilenceErrors = true
-			return fmt.Errorf("Too many arguments (%d)\nusage: minikube config get PROPERTY_NAME", len(args))
+			return fmt.Errorf("too many arguments (%d)\nusage: minikube config get PROPERTY_NAME", len(args))
 		}
 
 		cmd.SilenceUsage = true
