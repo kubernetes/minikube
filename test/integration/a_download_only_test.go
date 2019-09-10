@@ -48,7 +48,7 @@ func TestDownloadOnly(t *testing.T) {
 		for _, v := range versions {
 			t.Run(v, func(t *testing.T) {
 				args := append([]string{"start", "--download-only", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", v)}, StartArgs()...)
-				_, err := RunCmd(ctx, t, Target(), args...)
+				_, err := Run(ctx, t, Target(), args...)
 				if err != nil {
 					t.Errorf("%s failed: %v", args, err)
 				}

@@ -31,12 +31,12 @@ func TestDocker(t *testing.T) {
 	defer Cleanup(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true"}, StartArgs()...)
-	rr, err := RunCmd(ctx, t, Target(), args...)
+	rr, err := Run(ctx, t, Target(), args...)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "ssh", "systemctl show docker --property=Environment --no-pager")
+	rr, err = Run(ctx, t, Target(), "-p", profile, "ssh", "systemctl show docker --property=Environment --no-pager")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -47,13 +47,13 @@ func TestDocker(t *testing.T) {
 		}
 	}
 
-	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "ssh", "systemctl show docker --property=ExecStart --no-pager")
+	rr, err = Run(ctx, t, Target(), "-p", profile, "ssh", "systemctl show docker --property=RunStart --no-pager")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 	for _, opt := range []string{"--debug", "--icc=true"} {
 		if !strings.Contains(rr.Stdout.String(), opt) {
-			t.Fatalf("Option %s missing from ExecStart: %s.", opt, rr.Stdout)
+			t.Fatalf("Option %s missing from RunStart: %s.", opt, rr.Stdout)
 		}
 	}
 }

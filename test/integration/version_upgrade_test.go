@@ -55,17 +55,17 @@ func TestVersionUpgrade(t *testing.T) {
 	defer os.Remove(rpath)
 
 	t.Logf("Starting last release with oldest Kubernetes version")
-	rr, err := RunCmd(ctx, t, rpath, "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
+	rr, err := Run(ctx, t, rpath, "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, rpath, "stop", "-p", profile)
+	rr, err = Run(ctx, t, rpath, "stop", "-p", profile)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, rpath, "-p", profile, "status", "--format={{.Host}}")
+	rr, err = Run(ctx, t, rpath, "-p", profile, "status", "--format={{.Host}}")
 	if err != nil {
 		t.Logf("status error: %v (may be ok)", err)
 	}
@@ -75,7 +75,7 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 
 	t.Logf("Restarting cluster with %s and newest possible Kubernetes", Target())
-	rr, err = RunCmd(ctx, t, Target(), "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
+	rr, err = Run(ctx, t, Target(), "start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

@@ -47,7 +47,7 @@ func TestFunctional(t *testing.T) {
 			noneCompatible bool
 			validator      validateFunc
 		}{
-			{"StartCmd", true, validateStartCmd},       // Set everything else up for success
+			{"Start", true, validateStart},       // Set everything else up for success
 			{"KubeContext", true, validateKubeContext}, // Racy: must come immediately after "minikube start"
 			{"ConfigCmd", true, validateConfigCmd},     // Each subtest causes necessary side effects
 		}
@@ -87,10 +87,10 @@ func TestFunctional(t *testing.T) {
 	})
 }
 
-func validateStartCmd(ctx context.Context, t *testing.T, profile string) {
+func validateStart(ctx context.Context, t *testing.T, profile string) {
 	// Start a slightly larger VM to accept everything we test here
 	args := append([]string{"start", "-p", profile, "--memory", "2250", "--alsologtostderr", "-v=8"}, StartArgs()...)
-	rr, err := RunCmd(ctx, t, Target(), args...)
+	rr, err := Run(ctx, t, Target(), args...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -98,7 +98,7 @@ func validateStartCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
 func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
-	rr, err := RunCmd(ctx, t, "kubectl", "config", "current-context")
+	rr, err := Run(ctx, t, "kubectl", "config", "current-context")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -116,7 +116,7 @@ func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
-	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "get", "cs", "-o=json")
+	rr, err := Run(ctx, t, "kubectl", "--context", profile, "get", "cs", "-o=json")
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -142,7 +142,7 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 
 // validateDNS asserts that all Kubernetes DNS is healthy
 func validateDNS(ctx context.Context, t *testing.T, profile string) {
-	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
+	rr, err := Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -152,7 +152,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("wait: %v", err)
 	}
 
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "exec", names[0], "nslookup", "kubernetes.default")
+	rr, err = Run(ctx, t, "kubectl", "--context", profile, "exec", names[0], "nslookup", "kubernetes.default")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -180,7 +180,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 
 	for _, tc := range tests {
 		args := append([]string{"-p", profile, "config"}, tc.args...)
-		rr, err := RunCmd(ctx, t, Target(), args...)
+		rr, err := Run(ctx, t, Target(), args...)
 		if err != nil && tc.wantErr == "" {
 			t.Errorf("unexpected failure: %s failed: %v", rr.Args, err)
 		}
@@ -198,7 +198,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateLogsCmd asserts basic "logs" command functionality
 func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "logs")
+	rr, err := Run(ctx, t, Target(), "-p", profile, "logs")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -211,7 +211,7 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateProfileCmd asserts basic "profile" command functionality
 func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := RunCmd(ctx, t, Target(), "profile", "list")
+	rr, err := Run(ctx, t, Target(), "profile", "list")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -219,7 +219,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateServiceCmd asserts basic "service" command functionality
 func validateServicesCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "service", "list")
+	rr, err := Run(ctx, t, Target(), "-p", profile, "service", "list")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -231,7 +231,7 @@ func validateServicesCmd(ctx context.Context, t *testing.T, profile string) {
 // validateSSHCmd asserts basic "ssh" command functionality
 func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	want := "hello\r\n"
-	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello"))
+	rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

@@ -85,12 +85,12 @@ func TestStartStop(t *testing.T) {
 
 				// Use copious amounts of debugging for this stress test: we will need it.
 				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=8"}, tc.args...)
-				rr, err := RunCmd(ctx, t, Target(), startArgs...)
+				rr, err := Run(ctx, t, Target(), startArgs...)
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 
-				rr, err = RunCmd(ctx, t, Target(), "stop", "-p", profile)
+				rr, err = Run(ctx, t, Target(), "stop", "-p", profile)
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
@@ -100,7 +100,7 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("status = %q; want = %q", got, state.Stopped)
 				}
 
-				rr, err = RunCmd(ctx, t, Target(), startArgs...)
+				rr, err = Run(ctx, t, Target(), startArgs...)
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
 					t.Fatalf("%s failed: %v", rr.Args, err)
@@ -112,7 +112,7 @@ func TestStartStop(t *testing.T) {
 				}
 
 				// Normally handled by cleanuprofile, but not fatal there
-				rr, err = RunCmd(ctx, t, Target(), "delete", "-p", profile)
+				rr, err = Run(ctx, t, Target(), "delete", "-p", profile)
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}

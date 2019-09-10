@@ -56,7 +56,7 @@ func TestDashboardWithProxy(t *testing.T) {
 	}()
 
 	args := []string{"env", fmt.Sprintf("HTTP_PROXY=%s", srv.Addr), "NO_PROXY=", Target(), "start", "-p", profile}
-	rr, err := RunCmd(ctx, t, "/usr/bin/env", args...)
+	rr, err := Run(ctx, t, "/usr/bin/env", args...)
 	if err != nil {
 		t.Errorf("%s failed: %v", args, err)
 	}
@@ -72,11 +72,9 @@ func TestDashboardWithProxy(t *testing.T) {
 	}
 
 	args = []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
-	ss, err := StartCmd(ctx, t, Target(), args...)
+	ss, err := Start(ctx, t, Target(), args...)
 	defer func() {
-		if err := ss.Stop(t); err != nil {
-			t.Logf("Failed to kill mount: %v", err)
-		}
+		ss.Stop(t)
 	}()
 
 	start := time.Now()

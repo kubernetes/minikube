@@ -74,8 +74,8 @@ func (rr RunResult) String() string {
 	return sb.String()
 }
 
-// RunCmd is a test helper to log a command being executed \_(ツ)_/¯
-func RunCmd(ctx context.Context, t *testing.T, name string, arg ...string) (*RunResult, error) {
+// Run is a test helper to log a command being executed \_(ツ)_/¯
+func Run(ctx context.Context, t *testing.T, name string, arg ...string) (*RunResult, error) {
 	t.Helper()
 
 	cmd := exec.CommandContext(ctx, name, arg...)
@@ -84,7 +84,7 @@ func RunCmd(ctx context.Context, t *testing.T, name string, arg ...string) (*Run
 		t.Logf("Out of time, unable to run %s: %v", rr.Command(), ctx.Err())
 		return rr, fmt.Errorf("test context: %v", ctx.Err())
 	}
-	t.Logf("Run:    %v", rr.Command())
+	t.Logf("(debug) Run: %v", rr.Command())
 
 	var outb, errb bytes.Buffer
 	cmd.Stdout, rr.Stdout = &outb, &outb
@@ -95,14 +95,14 @@ func RunCmd(ctx context.Context, t *testing.T, name string, arg ...string) (*Run
 	if err == nil {
 		// Reduce log spam
 		if elapsed > (1 * time.Second) {
-			t.Logf("Done:   %v: (%s)", rr.Command(), elapsed)
+			t.Logf("(debug) Done:   %v: (%s)", rr.Command(), elapsed)
 		}
 	} else {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
 		}
-		t.Logf("Non-zero exit: %v: %v (%s)", rr.Command(), err, elapsed)
-		t.Logf(rr.String())
+		t.Logf("(debug) Non-zero exit: %v: %v (%s)", rr.Command(), err, elapsed)
+		t.Logf("(debug) %s", rr.String())
 	}
 	return rr, err
 }
@@ -114,8 +114,8 @@ type StartSession struct {
 	cmd    *exec.Cmd
 }
 
-// StartCmd starts a process in the background, streaming output
-func StartCmd(ctx context.Context, t *testing.T, name string, arg ...string) (*StartSession, error) {
+// Start starts a process in the background, streaming output
+func Start(ctx context.Context, t *testing.T, name string, arg ...string) (*StartSession, error) {
 	t.Helper()
 	cmd := exec.CommandContext(ctx, name, arg...)
 	t.Logf("Daemon: %v", cmd.Args)
@@ -134,25 +134,9 @@ func StartCmd(ctx context.Context, t *testing.T, name string, arg ...string) (*S
 }
 
 // Stop stops the started process
-func (ss *StartSession) Stop(t *testing.T) error {
+func (ss *StartSession) Stop(t *testing.T) {
+	t.Helper()
 	t.Logf("Stopping %s ...", ss.cmd.Args)
-	if t.Failed() {
-		if ss.Stdout.Size() > 0 {
-			stdout, err := ioutil.ReadAll(ss.Stdout)
-			if err != nil {
-				return fmt.Errorf("read stdout failed: %v", err)
-			}
-			t.Logf("%s stdout:\n%s", ss.cmd.Args, stdout)
-		}
-		if ss.Stderr.Size() > 0 {
-			stderr, err := ioutil.ReadAll(ss.Stderr)
-			if err != nil {
-				return fmt.Errorf("read stderr failed: %v", err)
-			}
-			t.Logf("%s stderr:\n%s", ss.cmd.Args, stderr)
-		}
-	}
-
 	// Amp up the signalling so that subprocesses can cleanup. Important for 'mount'!
 	if err := ss.cmd.Process.Signal(syscall.SIGINT); err != nil {
 		t.Logf("unable to send SIGINT: %v", err)
@@ -162,14 +146,34 @@ func (ss *StartSession) Stop(t *testing.T) error {
 		t.Logf("unable to send SIGTERM: %v", err)
 	}
 	time.Sleep(250 * time.Millisecond)
-	return ss.cmd.Process.Kill()
+
+	if err := ss.cmd.Process.Kill(); err != nil {
+		t.Logf("unable to kill: %v", err)
+	}
+
+	if t.Failed() {
+		if ss.Stdout.Size() > 0 {
+			stdout, err := ioutil.ReadAll(ss.Stdout)
+			if err != nil {
+				t.Logf("read stdout failed: %v", err)
+			}
+			t.Logf("(debug) %s stdout:\n%s", ss.cmd.Args, stdout)
+		}
+		if ss.Stderr.Size() > 0 {
+			stderr, err := ioutil.ReadAll(ss.Stderr)
+			if err != nil {
+				t.Logf("read stderr failed: %v", err)
+			}
+			t.Logf("(debug) %s stderr:\n%s", ss.cmd.Args, stderr)
+		}
+	}
 }
 
 // Cleanup cleans up after a test run
 func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
 	if *cleanup {
-		_, err := RunCmd(context.Background(), t, Target(), "delete", "-p", profile)
+		_, err := Run(context.Background(), t, Target(), "delete", "-p", profile)
 		if err != nil {
 			t.Logf("failed cleanup: %v", err)
 		}
@@ -184,7 +188,7 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
 	if t.Failed() && *postMortemLogs {
 		t.Logf("%s failed, collecting logs ...", t.Name())
-		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "logs", "-n", "10")
+		rr, err := Run(context.Background(), t, Target(), "-p", profile, "logs", "-n", "10")
 		if err != nil {
 			t.Logf("failed logs error: %v", err)
 		}
@@ -192,6 +196,26 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 		t.Logf("Sorry that %s failed :(", t.Name())
 	}
 	Cleanup(t, profile, cancel)
+}
+
+// podStatusMsg returns a human-readable pod status, for generating debug status
+func podStatusMsg(pod core.Pod) string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase))
+	for i, c := range pod.Status.Conditions {
+		if c.Reason != "" {
+			if i == 0 {
+				sb.WriteString(": ")
+			} else {
+				sb.WriteString(" / ")
+			}
+			sb.WriteString(fmt.Sprintf("%s:%s", c.Type, c.Reason))
+		}
+		if c.Message != "" {
+			sb.WriteString(fmt.Sprintf(" (%s)", c.Message))
+		}
+	}
+	return sb.String()
 }
 
 // PodWait waits for pods to achieve a running state.
@@ -225,12 +249,17 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 
 		for _, pod := range pods.Items {
 			foundNames[pod.ObjectMeta.Name] = true
+			msg := podStatusMsg(pod)
 			// Prevent spamming logs with identical messages
-			msg := fmt.Sprintf("%q (%s) %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase)
 			if msg != lastMsg {
 				t.Log(msg)
 				lastMsg = msg
 			}
+			// Succesful termination of a short-lived process, will not be restarted
+			if pod.Status.Phase == core.PodSucceeded {
+				return true, nil
+			}
+			// Long-running process state
 			if pod.Status.Phase != core.PodRunning {
 				if !podStart.IsZero() {
 					t.Logf("WARNING: %s was running %s ago - may be unstable", selector, time.Since(podStart))
@@ -242,6 +271,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 			if podStart.IsZero() {
 				podStart = time.Now()
 			}
+
 			if time.Since(podStart) > minUptime {
 				return true, nil
 			}
@@ -249,7 +279,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 		return false, nil
 	}
 
-	err = wait.PollImmediate(1*time.Second, timeout, f)
+	err = wait.PollImmediate(500*time.Millisecond, timeout, f)
 	names := []string{}
 	for n := range foundNames {
 		names = append(names, n)
@@ -267,7 +297,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 
 // showPodLogs logs debug info for pods
 func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, names []string) {
-	rr, rerr := RunCmd(ctx, t, "kubectl", "--context", profile, "get", "po", "-A", "--show-labels")
+	rr, rerr := Run(ctx, t, "kubectl", "--context", profile, "get", "po", "-A", "--show-labels")
 	if rerr != nil {
 		t.Logf("%s: %v", rr.Command(), rerr)
 	} else {
@@ -275,14 +305,14 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 	}
 
 	for _, name := range names {
-		rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "describe", "po", name, "-n", ns)
+		rr, err := Run(ctx, t, "kubectl", "--context", profile, "describe", "po", name, "-n", ns)
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		} else {
 			t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
 		}
 
-		rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "logs", name, "-n", ns)
+		rr, err = Run(ctx, t, "kubectl", "--context", profile, "logs", name, "-n", ns)
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		} else {
@@ -294,7 +324,7 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 // Status returns the minikube cluster status as a string
 func Status(ctx context.Context, t *testing.T, path string, profile string) string {
 	t.Helper()
-	rr, err := RunCmd(ctx, t, path, "status", "--format={{.Host}}", "-p", profile)
+	rr, err := Run(ctx, t, path, "status", "--format={{.Host}}", "-p", profile)
 	if err != nil {
 		t.Logf("status error: %v (may be ok)", err)
 	}

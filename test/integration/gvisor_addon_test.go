@@ -41,26 +41,26 @@ func TestGvisorAddon(t *testing.T) {
 	}()
 
 	startArgs := append([]string{"start", "-p", profile, "--container-runtime=containerd", "--docker-opt", "containerd=/var/run/containerd/containerd.sock", "--wait=false"}, StartArgs()...)
-	rr, err := RunCmd(ctx, t, Target(), startArgs...)
+	rr, err := Run(ctx, t, Target(), startArgs...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
 	// TODO: Re-examine if we should be pulling in an image which users don't normally invoke
-	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "cache", "add", "gcr.io/k8s-minikube/gvisor-addon:latest")
+	rr, err = Run(ctx, t, Target(), "-p", profile, "cache", "add", "gcr.io/k8s-minikube/gvisor-addon:latest")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	// NOTE: addons are global, but the addon must assert that the runtime is containerd
-	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "addons", "enable", "gvisor")
+	rr, err = Run(ctx, t, Target(), "-p", profile, "addons", "enable", "gvisor")
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
 	// Because addons are persistent across profiles :(
 	defer func() {
-		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "addons", "disable", "gvisor")
+		rr, err := Run(context.Background(), t, Target(), "-p", profile, "addons", "disable", "gvisor")
 		if err != nil {
 			t.Logf("%s failed: %v", rr.Args, err)
 		}
@@ -71,12 +71,12 @@ func TestGvisorAddon(t *testing.T) {
 	}
 
 	// Create an untrusted workload
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-untrusted.yaml"))
+	rr, err = Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-untrusted.yaml"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 	// Create gvisor workload
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-gvisor.yaml"))
+	rr, err = Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-gvisor.yaml"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -89,12 +89,12 @@ func TestGvisorAddon(t *testing.T) {
 	}
 
 	// Ensure that workloads survive a restart
-	rr, err = RunCmd(ctx, t, Target(), "stop", "-p", profile)
+	rr, err = Run(ctx, t, Target(), "stop", "-p", profile)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, Target(), startArgs...)
+	rr, err = Run(ctx, t, Target(), startArgs...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}

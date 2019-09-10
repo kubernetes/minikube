@@ -38,32 +38,27 @@ func TestNone(t *testing.T) {
 	}
 	MaybeParallel(t)
 
-	err := os.Setenv("CHANGE_MINIKUBE_NONE_USER", "true")
-	if err != nil {
-		t.Fatalf("setenv: %v", err)
-	}
-
 	profile := Profile("none")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start"}, StartArgs()...)
-	rr, err := RunCmd(ctx, t, Target(), args...)
+	startArgs := append([]string{"CHANGE_MINIKUBE_NONE_USER=true", Target(), "start"}, StartArgs()...)
+	rr, err := Run(ctx, t, "/usr/bin/env", startArgs...)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, Target(), "delete")
+	rr, err = Run(ctx, t, Target(), "delete")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err := RunCmd(ctx, t, Target(), "start", args...)
+	rr, err = Run(ctx, t, "/usr/bin/env", startArgs...)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, Target(), "status")
+	rr, err = Run(ctx, t, Target(), "status")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

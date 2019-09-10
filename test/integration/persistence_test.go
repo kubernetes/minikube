@@ -32,12 +32,12 @@ func TestPodPersistence(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
-	rr, err := RunCmd(ctx, t, Target(), "start", "-p", profile)
+	rr, err := Run(ctx, t, Target(), "start", "-p", profile)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
+	rr, err = Run(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -47,13 +47,13 @@ func TestPodPersistence(t *testing.T) {
 	}
 
 	// Stop everything!
-	rr, err = RunCmd(ctx, t, Target(), "stop", "-p", profile)
+	rr, err = Run(ctx, t, Target(), "stop", "-p", profile)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	// Start minikube, and validate that busybox is still running.
-	rr, err = RunCmd(ctx, t, Target(), "start", "-p", profile)
+	rr, err = Run(ctx, t, Target(), "start", "-p", profile)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

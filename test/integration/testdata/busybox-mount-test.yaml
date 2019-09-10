@@ -4,22 +4,23 @@ metadata:
   name: busybox-mount
   labels:
     integration-test: busybox-mount
-  
+
 spec:
+  restartPolicy: Never
   containers:
-    - image: busybox:1.28.4-glibc
+    - name: mount-munger
+      image: busybox:1.28.4-glibc
       command: ["/bin/sh", "-c", "--"]
       args:
-        [
-          "cat /mount-9p/created-by-test; echo test > /mount-9p/created-by-pod; rm /mount-9p/created-by-test-removed-by-pod; echo test > /mount-9p/created-by-pod-removed-by-test; date >> /mount-9p/pod-dates",
-        ]
-      name: busybox
+        - cat /mount-9p/created-by-test;
+          echo test > /mount-9p/created-by-pod;
+          rm /mount-9p/created-by-test-removed-by-pod;
+          echo test > /mount-9p/created-by-pod-removed-by-test
+          date >> /mount-9p/pod-dates
       volumeMounts:
         - mountPath: /mount-9p
           name: test-volume
-    restartPolicy: Never
   volumes:
     - name: test-volume
       hostPath:
-        # directory location on host
         path: /mount-9p

@@ -32,7 +32,7 @@ func TestGuestEnvironment(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--wait=false"}, StartArgs()...)
-	rr, err := RunCmd(ctx, t, Target(), args...)
+	rr, err := Run(ctx, t, Target(), args...)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -43,7 +43,7 @@ func TestGuestEnvironment(t *testing.T) {
 			pkg := pkg
 			t.Run(pkg, func(t *testing.T) {
 				t.Parallel()
-				rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("which %s", pkg))
+				rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("which %s", pkg))
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
@@ -64,7 +64,7 @@ func TestGuestEnvironment(t *testing.T) {
 			mount := mount
 			t.Run(mount, func(t *testing.T) {
 				t.Parallel()
-				rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount))
+				rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount))
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}

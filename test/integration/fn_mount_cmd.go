@@ -42,9 +42,6 @@ const (
 	createdByPodRemovedByTest = "created-by-pod-removed-by-test"
 )
 
-// For fast test iteration, use:
-// env TEST_ARGS="-test.v -test.run TestFunctional/parallel/MountCmd --profile=minikube --cleanup=false" make integration
-
 func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {
@@ -58,16 +55,15 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
-	ss, err := StartCmd(ctx, t, Target(), args...)
+	ss, err := Start(ctx, t, Target(), args...)
 	if err != nil {
 		t.Fatalf("%v failed: %v", args, err)
 	}
-	start := time.Now()
 
 	defer func() {
 		if t.Failed() {
 			t.Logf("%s failed, getting debug info...", t.Name())
-			rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates")
+			rr, err := Run(context.Background(), t, Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates")
 			if err != nil {
 				t.Logf("%s: %v", rr.Command(), err)
 			} else {
@@ -76,14 +72,11 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Cleanup in advance of future tests
-		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p")
+		rr, err := Run(context.Background(), t, Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p")
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		}
-
-		if err := ss.Stop(t); err != nil {
-			t.Logf("Failed to kill mount: %v", err)
-		}
+		ss.Stop(t)	
 		cancel()
 		if *cleanup {
 			os.RemoveAll(tempDir)
@@ -104,15 +97,17 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// Block until the mount succeeds to avoid file race
 	checkMount := func() error {
-		_, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p")
+		_, err := Run(ctx, t, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p")
 		return err
 	}
+	
+	start := time.Now()
 	if err := retry.Expo(checkMount, time.Second, 15*time.Second); err != nil {
 		t.Fatalf("/mount-9p did not appear within %s: %v", time.Since(start), err)
 	}
 
 	// Assert that we can access the mount without an error. Display for debugging.
-	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", "--", "ls", "-la", guestMount)
+	rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", "--", "ls", "-la", guestMount)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -120,7 +115,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// Assert that the mount contains our unique test marker, as opposed to a stale mount
 	tp := filepath.Join("/mount-9p", testMarker)
-	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "ssh", "cat", tp)
+	rr, err = Run(ctx, t, Target(), "-p", profile, "ssh", "cat", tp)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -131,12 +126,12 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Start the "busybox-mount" pod.
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml"))
+	rr, err = Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox-mount", 30*time.Second); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -152,7 +147,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// test that file written from host was read in by the pod via cat /mount-9p/written-by-host;
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "logs", "busybox-mount")
+	rr, err = Run(ctx, t, "kubectl", "--context", profile, "logs", "busybox-mount")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -164,7 +159,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	for _, name := range []string{createdByTest, createdByPod} {
 		gp := path.Join(guestMount, name)
 		// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
-		rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", "stat", gp)
+		rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", "stat", gp)
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Args, err)
 		}

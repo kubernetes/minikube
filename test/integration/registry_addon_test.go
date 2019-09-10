@@ -39,12 +39,12 @@ func TestRegistryAddon(t *testing.T) {
 	}()
 
 	args := append([]string{"start", "-p", profile, "--container-runtime=docker", "--wait=false"}, StartArgs()...)
-	rr, err := RunCmd(ctx, t, Target(), args...)
+	rr, err := Run(ctx, t, Target(), args...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "addons", "enable", "registry")
+	rr, err = Run(ctx, t, Target(), "-p", profile, "addons", "enable", "registry")
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -68,12 +68,12 @@ func TestRegistryAddon(t *testing.T) {
 	}
 
 	// Test from inside the cluster (no curl available on busybox)
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "delete", "po", "-l", "run=registry-test", "--now")
+	rr, err = Run(ctx, t, "kubectl", "--context", profile, "delete", "po", "-l", "run=registry-test", "--now")
 	if err != nil {
 		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Args, err)
 	}
 
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local")
+	rr, err = Run(ctx, t, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -83,7 +83,7 @@ func TestRegistryAddon(t *testing.T) {
 	}
 
 	// Test from outside the cluster
-	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "ip")
+	rr, err = Run(ctx, t, Target(), "-p", profile, "ip")
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -112,7 +112,7 @@ func TestRegistryAddon(t *testing.T) {
 		t.Errorf(err.Error())
 	}
 
-	rr, err = RunCmd(ctx, t, Target(), "addons", "disable", "registry")
+	rr, err = Run(ctx, t, Target(), "addons", "disable", "registry")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

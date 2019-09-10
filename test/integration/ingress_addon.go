@@ -35,18 +35,18 @@ func TestIngressAddon(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer func() {
 		CleanupWithLogs(t, profile, cancel)
-		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "addons", "disable", "ingress")
+		rr, err := Run(context.Background(), t, Target(), "-p", profile, "addons", "disable", "ingress")
 		if err != nil {
 			t.Logf("cleanup failed: %s: %v (probably ok)", rr.Args, err)
 		}
 	}()
 
 	args := append([]string{"start", "-p", profile, "--wait=false"}, StartArgs()...)
-	rr, err := RunCmd(ctx, t, Target(), args...)
+	rr, err := Run(ctx, t, Target(), args...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
-	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "addons", "enable", "ingress")
+	rr, err = Run(ctx, t, Target(), "-p", profile, "addons", "enable", "ingress")
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -63,11 +63,11 @@ func TestIngressAddon(t *testing.T) {
 		t.Fatalf("wait: %v", err)
 	}
 
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml"))
+	rr, err = Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml"))
+	rr, err = Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -81,7 +81,7 @@ func TestIngressAddon(t *testing.T) {
 
 	want := "Welcome to nginx!"
 	checkIngress := func() error {
-		rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'"))
+		rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'"))
 		if err != nil {
 			return err
 		}
@@ -98,7 +98,7 @@ func TestIngressAddon(t *testing.T) {
 		t.Errorf("ingress never responded as expected on 127.0.0.1:80: %v", err)
 	}
 
-	rr, err = RunCmd(ctx, t, Target(), "disable", "ingress")
+	rr, err = Run(ctx, t, Target(), "disable", "ingress")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
