@@ -821,6 +821,8 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 		namespace   string
 		service     string
 		expected    []string
+		urlMode     bool
+		https       bool
 		err         bool
 	}{
 		{
@@ -833,10 +835,35 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 			err: true,
 		},
 		{
-			description: "correctly return serviceURLs",
+			description: "correctly return serviceURLs, https, no url mode",
 			namespace:   "default",
 			service:     "mock-dashboard",
 			api:         defaultAPI,
+			https:       true,
+			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
+		},
+		{
+			description: "correctly return serviceURLs, no https, no url mode",
+			namespace:   "default",
+			service:     "mock-dashboard",
+			api:         defaultAPI,
+			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
+		},
+		{
+			description: "correctly return serviceURLs, no https, url mode",
+			namespace:   "default",
+			service:     "mock-dashboard",
+			api:         defaultAPI,
+			urlMode:     true,
+			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
+		},
+		{
+			description: "correctly return serviceURLs, https, url mode",
+			namespace:   "default",
+			service:     "mock-dashboard",
+			api:         defaultAPI,
+			urlMode:     true,
+			https:       true,
 			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
 		},
 		{
@@ -849,30 +876,20 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 		},
 	}
 	defer revertK8sClient(K8s)
-	for _, mode := range []bool{true, false} {
-		t.Run(fmt.Sprintf("url mode %v", mode), func(t *testing.T) {
-			for _, https := range []bool{true, false} {
-				t.Run(fmt.Sprintf("https %v", mode), func(t *testing.T) {
-
-					for _, test := range tests {
-						t.Run(test.description, func(t *testing.T) {
-							K8s = &MockClientGetter{
-								servicesMap:  serviceNamespaces,
-								endpointsMap: endpointNamespaces,
-							}
-
-							err := WaitAndMaybeOpenService(defaultAPI, test.namespace, test.service, defaultTemplate, mode, https, 1, 0)
-							if test.err && err == nil {
-								t.Fatalf("WaitAndMaybeOpenService expected to fail for test: %v", test)
-							}
-							if !test.err && err != nil {
-								t.Fatalf("WaitAndMaybeOpenService not expected to fail but got err: %v", err)
-							}
-
-						})
-					}
-				})
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
 			}
+			err := WaitAndMaybeOpenService(defaultAPI, test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
+			if test.err && err == nil {
+				t.Fatalf("WaitAndMaybeOpenService expected to fail for test: %v", test)
+			}
+			if !test.err && err != nil {
+				t.Fatalf("WaitAndMaybeOpenService not expected to fail but got err: %v", err)
+			}
+
 		})
 	}
 }
