@@ -62,11 +62,12 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("%v failed: %v", args, err)
 	}
+	start := time.Now()
 
 	defer func() {
 		if t.Failed() {
 			t.Logf("%s failed, getting debug info...", t.Name())
-			rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p")
+			rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates")
 			if err != nil {
 				t.Logf("%s: %v", rr.Command(), err)
 			} else {
@@ -107,12 +108,19 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		return err
 	}
 	if err := retry.Expo(checkMount, time.Second, 15*time.Second); err != nil {
-		t.Fatalf("/mount-9p did not appear: %v", err)
+		t.Fatalf("/mount-9p did not appear within %s: %v", time.Since(start), err)
 	}
+
+	// Assert that we can access the mount without an error. Display for debugging.
+	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", "--", "ls", "-la", guestMount)
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+	t.Logf("guest mount directory contents\n%s", rr.Stdout)
 
 	// Assert that the mount contains our unique test marker, as opposed to a stale mount
 	tp := filepath.Join("/mount-9p", testMarker)
-	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", "cat", tp)
+	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "ssh", "cat", tp)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}

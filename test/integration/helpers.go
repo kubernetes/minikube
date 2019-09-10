@@ -30,6 +30,7 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -151,6 +152,16 @@ func (ss *StartSession) Stop(t *testing.T) error {
 			t.Logf("%s stderr:\n%s", ss.cmd.Args, stderr)
 		}
 	}
+
+	// Amp up the signalling so that subprocesses can cleanup. Important for 'mount'!
+	if err := ss.cmd.Process.Signal(syscall.SIGINT); err != nil {
+		t.Logf("unable to send SIGINT: %v", err)
+	}
+	time.Sleep(250 * time.Millisecond)
+	if err := ss.cmd.Process.Signal(syscall.SIGTERM); err != nil {
+		t.Logf("unable to send SIGTERM: %v", err)
+	}
+	time.Sleep(250 * time.Millisecond)
 	return ss.cmd.Process.Kill()
 }
 
@@ -201,7 +212,6 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 	start := time.Now()
 	t.Logf("Waiting for pods with labels %q in namespace %q ...", selector, ns)
 	f := func() (bool, error) {
-		t.Helper()
 		pods, err := client.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
 			t.Logf("Pod(%s).List(%v) returned error: %v", ns, selector, err)
