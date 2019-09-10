@@ -46,14 +46,6 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "kvm2-driver-without-version")},
 	}
 
-	ingressPath := filepath.Join(*testdataDir, "nginx-ing.yaml")
-	_, err := os.Stat(ingressPath)
-	if err != nil {
-		t.Fatalf("Expected ingress-ing to exist. test: %s, got: %v", "TestDriverInstallOrUpdate", err)
-	} else {
-		fmt.Printf("TestDriverInstallOrUpdate ingress exist at: %s\n", ingressPath)
-	}
-
 	for _, tc := range tests {
 		dir, err := ioutil.TempDir("", tc.name)
 		if err != nil {
