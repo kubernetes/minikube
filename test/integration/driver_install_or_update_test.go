@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
 	"testing"
 
@@ -42,8 +42,16 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 		name string
 		path string
 	}{
-		{name: "driver-without-version-support", path: path.Join(*testdataDir, "kvm2-driver-without-version")},
-		{name: "driver-with-older-version", path: path.Join(*testdataDir, "kvm2-driver-without-version")},
+		{name: "driver-without-version-support", path: filepath.Join(*testdataDir, "kvm2-driver-without-version")},
+		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "kvm2-driver-without-version")},
+	}
+
+	ingressPath := filepath.Join(*testdataDir, "nginx-ing.yaml")
+	_, err := os.Stat(ingressPath)
+	if err != nil {
+		t.Fatalf("Expected ingress-ing to exist. test: %s, got: %v", "TestDriverInstallOrUpdate", err)
+	} else {
+		fmt.Printf("TestDriverInstallOrUpdate ingress exist at: %s\n", ingressPath)
 	}
 
 	for _, tc := range tests {
@@ -52,6 +60,11 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected to create tempdir. test: %s, got: %v", tc.name, err)
 		}
 		defer os.RemoveAll(dir)
+
+		_, err = os.Stat(filepath.Join(tc.path, "docker-machine-driver-kvm2"))
+		if err != nil {
+			t.Fatalf("Expected driver to exist. test: %s, got: %v", tc.name, err)
+		}
 
 		os.Setenv("PATH", fmt.Sprintf("%s:%s", tc.path, os.Getenv("PATH")))
 
@@ -65,7 +78,7 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected to update driver. test: %s, got: %v", tc.name, err)
 		}
 
-		_, err = os.Stat(path.Join(dir, "docker-machine-driver-kvm2"))
+		_, err = os.Stat(filepath.Join(dir, "docker-machine-driver-kvm2"))
 		if err != nil {
 			t.Fatalf("Expected driver to be download. test: %s, got: %v", tc.name, err)
 		}
