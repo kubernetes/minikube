@@ -17,6 +17,7 @@ limitations under the License.
 package drivers
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -153,7 +154,8 @@ func fixPermissions(path string) error {
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
 func InstallOrUpdate(driver, destination string, minikubeVersion semver.Version) error {
-	_, err := exec.LookPath(driver)
+	path, err := exec.LookPath(driver)
+	fmt.Printf("IntallOrUpdate: found driver at %s\n", path)
 	// if file driver doesn't exist, download it
 	if err != nil {
 		return download(driver, destination)
@@ -167,6 +169,8 @@ func InstallOrUpdate(driver, destination string, minikubeVersion semver.Version)
 	}
 
 	v := ExtractVMDriverVersion(string(output))
+
+	fmt.Printf("IntallOrUpdate: extracted version: %s minikube version: %s\n", v, minikubeVersion.String())
 
 	// if the driver doesn't return any version, download it
 	if len(v) == 0 {
