@@ -10,7 +10,7 @@ spec:
       command: ["/bin/sh", "-c", "--"]
       args:
         [
-          "cat /mount-9p/created-by-test; echo test > /mount-9p/written-by-pod; rm /mount-9p/removed-by-pod; echo test > /mount-9p/created-by-pod;",
+          "cat /mount-9p/created-by-test; echo test > /mount-9p/created-by-pod; rm /mount-9p/created-by-test-removed-by-pod; echo test > /mount-9p/created-by-pod-removed-by-test;",
         ]
       name: busybox
       volumeMounts:

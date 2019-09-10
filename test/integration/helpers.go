@@ -1,3 +1,19 @@
+/*
+Copyright 2019 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package integration
 
 // These are test helpers that:
@@ -55,6 +71,7 @@ func RunCmd(ctx context.Context, t *testing.T, name string, arg ...string) (*Run
 	cmd := exec.CommandContext(ctx, name, arg...)
 	rr := &RunResult{Args: cmd.Args}
 	if ctx.Err() != nil {
+		t.Logf("Out of time, unable to run %s: %v", rr.Command(), ctx.Err())
 		return rr, fmt.Errorf("test context: %v", ctx.Err())
 	}
 	t.Logf("Run:    %v", rr.Command())
@@ -137,7 +154,7 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 			t.Logf("failed cleanup: %v", err)
 		}
 	} else {
-		t.Logf("Skipping Cleanup (--cleanup=false)")
+		t.Logf("Skipping cleanup of %s (--cleanup=false)", profile)
 	}
 	cancel()
 }
@@ -146,30 +163,36 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
 	if t.Failed() {
-		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "logs")
+		t.Logf("%s failed, collecting logs ...", t.Name())
+		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "logs", "-n", "10")
 		if err != nil {
 			t.Logf("failed logs error: %v", err)
 		}
 		t.Logf("%s logs: %s\n", t.Name(), rr)
+		t.Logf("Sorry that %s failed :(", t.Name())
 	}
 	Cleanup(t, profile, cancel)
 }
 
-// WaitForPods waits for pods to achieve a running state.
-func WaitForPods(ctx context.Context, t *testing.T, profile string, ns string, selector string, timeout time.Duration) error {
+// PodWait waits for pods to achieve a running state.
+func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selector string, timeout time.Duration) ([]string, error) {
 	t.Helper()
 	client, err := kapi.Client(profile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// For example: kubernetes.io/minikube-addons=gvisor
 	listOpts := meta.ListOptions{LabelSelector: selector}
 	minUptime := 5 * time.Second
 	podStart := time.Time{}
+	foundNames := map[string]bool{}
+	lastMsg := ""
+
 	start := time.Now()
-	t.Logf("Waiting for pods with labels '%v' in ns %q ...", selector, ns)
+	t.Logf("Waiting for pods with labels %q in namespace %q ...", selector, ns)
 	f := func() (bool, error) {
+		t.Helper()
 		pods, err := client.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
 			t.Logf("Pod(%s).List(%v) returned error: %v", ns, selector, err)
@@ -182,37 +205,71 @@ func WaitForPods(ctx context.Context, t *testing.T, profile string, ns string, s
 		}
 
 		for _, pod := range pods.Items {
-			if pod.Status.Phase == core.PodRunning {
-				t.Logf("Found %q (%s) running since at least %s (labels=%s): %+v", pod.ObjectMeta.Name, time.Since(podStart), pod.ObjectMeta.CreationTimestamp, pod.ObjectMeta.Labels)
-
-				if podStart.IsZero() {
-					podStart = time.Now()
+			foundNames[pod.ObjectMeta.Name] = true
+			// Prevent spamming logs with identical messages
+			msg := fmt.Sprintf("%q (%s) %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase)
+			if msg != lastMsg {
+				t.Log(msg)
+				lastMsg = msg
+			}
+			if pod.Status.Phase != core.PodRunning {
+				if !podStart.IsZero() {
+					t.Logf("WARNING: %s was running %s ago - may be unstable", selector, time.Since(podStart))
 				}
-				if time.Since(podStart) > minUptime {
-					return true, nil
-				}
-			} else {
-				t.Logf("pod %q created at %s (labels=%s, status=%+v)", pod.ObjectMeta.Name, pod.ObjectMeta.CreationTimestamp, pod.ObjectMeta.Labels, pod.Status)
 				podStart = time.Time{}
 				return false, nil
 			}
+
+			if podStart.IsZero() {
+				podStart = time.Now()
+			}
+			if time.Since(podStart) > minUptime {
+				return true, nil
+			}
 		}
-		podStart = time.Time{}
 		return false, nil
 	}
+
 	err = wait.PollImmediate(1*time.Second, timeout, f)
-	if err == nil {
-		t.Logf("pods %s healthy in %s", selector, time.Since(start))
-		return nil
+	names := []string{}
+	for n := range foundNames {
+		names = append(names, n)
 	}
-	t.Logf("wait for %s: %v", selector, err)
+
+	if err == nil {
+		t.Logf("pods %s up and healthy within %s", selector, time.Since(start))
+		return names, nil
+	}
+
+	t.Logf("pods %q: %v", selector, err)
+	showPodLogs(ctx, t, profile, ns, names)
+	return names, fmt.Errorf("%s: %v", fmt.Sprintf("%s within %s", selector, timeout), err)
+}
+
+// showPodLogs logs debug info for pods
+func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, names []string) {
 	rr, rerr := RunCmd(ctx, t, "kubectl", "--context", profile, "get", "po", "-A", "--show-labels")
 	if rerr != nil {
-		t.Logf("unable to display pods: %v", rerr)
-		return err
+		t.Logf("%s: %v", rr.Command(), rerr)
+	} else {
+		t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
 	}
-	t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
-	return err
+
+	for _, name := range names {
+		rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "describe", "po", name, "-n", ns)
+		if err != nil {
+			t.Logf("%s: %v", rr.Command(), err)
+		} else {
+			t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
+		}
+
+		rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "logs", name, "-n", ns)
+		if err != nil {
+			t.Logf("%s: %v", rr.Command(), err)
+		} else {
+			t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
+		}
+	}
 }
 
 // Status returns the minikube cluster status as a string

@@ -42,7 +42,7 @@ func TestPodPersistence(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	if err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -58,7 +58,7 @@ func TestPodPersistence(t *testing.T) {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	if err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox-mount", 1*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox-mount", 1*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 }

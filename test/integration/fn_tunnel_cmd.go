@@ -31,14 +31,13 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
+
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-func validateTunnelCmd(ctx context.Context, t *testing.T, client kubernetes.Interface, profile string) {
+func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
@@ -47,6 +46,11 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, client kubernetes.Inte
 		if err := exec.Command("sudo", "-n", "route").Run(); err != nil {
 			t.Skipf("password required to execute 'route', skipping testTunnel: %v", err)
 		}
+	}
+
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("client: %v", err)
 	}
 
 	// Pre-Cleanup
@@ -68,10 +72,8 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, client kubernetes.Inte
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
-
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx-svc"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Fatal(errors.Wrap(err, "waiting for nginx pods"))
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", 2*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 
 	if err := kapi.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, 2*time.Minute); err != nil {

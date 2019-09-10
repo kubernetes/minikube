@@ -61,10 +61,11 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 	cmd := fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target, mntCmd(source, target, c))
 	glog.Infof("Will run: %s", cmd)
 	out, err := r.CombinedOutput(cmd)
-	glog.Infof("mount err=%s, out=%s", err, out)
 	if err != nil {
+		glog.Infof("%s failed: err=%s, output: %q", cmd, err, out)
 		return errors.Wrap(err, out)
 	}
+	glog.Infof("%s output: %q", cmd, out)
 	return nil
 }
 
@@ -145,7 +146,7 @@ func umountCmd(target string, force bool) string {
 
 // Unmount unmounts a path
 func Unmount(r mountRunner, target string) error {
-	cmd := umountCmd(target, false)
+	cmd := umountCmd(target, true)
 	glog.Infof("Will run: %s", cmd)
 	out, err := r.CombinedOutput(cmd)
 	if err == nil {

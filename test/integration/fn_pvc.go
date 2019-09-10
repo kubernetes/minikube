@@ -29,19 +29,15 @@ import (
 
 	core "k8s.io/api/core/v1"
 	storage "k8s.io/api/storage/v1"
-	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, client kubernetes.Interface, profile string) {
+func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile string) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
 	defer cancel()
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "storage-provisioner"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
-		t.Errorf("waiting for gvisor controller pod to stabilize: %v", err)
+	if _, err := PodWait(ctx, t, profile, "kube-system", "integration-test=storage-provisioner", 2*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 
 	checkStorageClass := func() error {
@@ -89,5 +85,4 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, client kub
 	if err := retry.Expo(checkStoragePhase, 2*time.Second, 2*time.Minute); err != nil {
 		t.Fatalf("PV Creation failed with error: %v", err)
 	}
-
 }

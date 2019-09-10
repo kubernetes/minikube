@@ -36,9 +36,7 @@ func TestNone(t *testing.T) {
 	if !NoneDriver() {
 		t.Skip("Only test none driver.")
 	}
-	if shouldRunInParallel(t) {
-		MaybeParallel(t)
-	}
+	MaybeParallel(t)
 
 	err := os.Setenv("CHANGE_MINIKUBE_NONE_USER", "true")
 	if err != nil {
@@ -49,8 +47,8 @@ func TestNone(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "--wait=false"}, StartArgs()...)
-	rr, err := RunCmd(ctx, t, Target(), "start", args...)
+	args := append([]string{"start"}, StartArgs()...)
+	rr, err := RunCmd(ctx, t, Target(), args...)
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -61,6 +59,11 @@ func TestNone(t *testing.T) {
 	}
 
 	rr, err := RunCmd(ctx, t, Target(), "start", args...)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	rr, err = RunCmd(ctx, t, Target(), "status")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

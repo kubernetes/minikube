@@ -43,6 +43,8 @@ func TestStartStop(t *testing.T) {
 				"--kvm-network=default",
 				"--kvm-qemu-uri=qemu:///system",
 				"--wait=false",
+				"--disable-driver-mounts",
+				"--keep-context=false",
 			}},
 			{"cni", []string{
 				"--feature-gates",
@@ -55,7 +57,8 @@ func TestStartStop(t *testing.T) {
 			}},
 			{"containerd", []string{
 				"--container-runtime=containerd",
-				"--docker-opt containerd=/var/run/containerd/containerd.sock",
+				"--docker-opt",
+				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
 				"--wait=false",
 			}},
@@ -68,6 +71,7 @@ func TestStartStop(t *testing.T) {
 		}
 
 		for _, tc := range tests {
+			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
 
@@ -79,8 +83,9 @@ func TestStartStop(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 				defer CleanupWithLogs(t, profile, cancel)
 
-				args := append([]string{"start", "-p", profile}, tc.args...)
-				rr, err := RunCmd(ctx, t, Target(), args...)
+				// Use copious amounts of debugging for this stress test: we will need it.
+				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=8"}, tc.args...)
+				rr, err := RunCmd(ctx, t, Target(), startArgs...)
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
@@ -95,7 +100,7 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("status = %q; want = %q", got, state.Stopped)
 				}
 
-				rr, err = RunCmd(ctx, t, Target(), "start", "-p", profile)
+				rr, err = RunCmd(ctx, t, Target(), startArgs...)
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
 					t.Fatalf("%s failed: %v", rr.Args, err)

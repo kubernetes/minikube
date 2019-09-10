@@ -29,14 +29,10 @@ import (
 	"time"
 
 	"golang.org/x/build/kubernetes/api"
-	"k8s.io/apimachinery/pkg/labels"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/minikube/pkg/kapi"
 )
 
 // validateFunc are for subtests that share a single setup
-type validateFunc func(context.Context, *testing.T, kubernetes.Interface, string)
+type validateFunc func(context.Context, *testing.T, string)
 
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
@@ -44,19 +40,27 @@ func TestFunctional(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
-	// Start a slightly larger VM to accept everything we are about to throw
-	args := append([]string{"start", "-p", profile, "-m", "2500"}, StartArgs()...)
-	rr, err := RunCmd(ctx, t, Target(), args...)
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
-	}
+	// Serial tests
+	t.Run("serial", func(t *testing.T) {
+		tests := []struct {
+			name           string
+			noneCompatible bool
+			validator      validateFunc
+		}{
+			{"StartCmd", true, validateStartCmd},       // Set everything else up for success
+			{"KubeContext", true, validateKubeContext}, // Racy: must come immediately after "minikube start"
+			{"ConfigCmd", true, validateConfigCmd},     // Each subtest causes necessary side effects
+		}
+		for _, tc := range tests {
+			tc := tc
+			t.Run(tc.name, func(t *testing.T) {
+				tc.validator(ctx, t, profile)
+			})
+		}
+	})
 
-	client, err := kapi.Client(profile)
-	if err != nil {
-		t.Fatalf("getting kubernetes client: %v", err)
-	}
-
-	t.Run("shared", func(t *testing.T) {
+	// Parallelized tests
+	t.Run("parallel", func(t *testing.T) {
 		tests := []struct {
 			name           string
 			noneCompatible bool
@@ -66,7 +70,6 @@ func TestFunctional(t *testing.T) {
 			{"ComponentHealth", true, validateComponentHealth},
 			{"DNS", true, validateDNS},
 			{"LogsCmd", true, validateLogsCmd},
-			{"KubeContext", true, validateKubeContext},
 			{"MountCmd", false, validateMountCmd},
 			{"ProfileCmd", true, validateProfileCmd},
 			{"ServicesCmd", true, validateServicesCmd},
@@ -78,22 +81,41 @@ func TestFunctional(t *testing.T) {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
-				tc.validator(ctx, t, client, profile)
+				tc.validator(ctx, t, profile)
 			})
 		}
 	})
 }
 
+func validateStartCmd(ctx context.Context, t *testing.T, profile string) {
+	// Start a slightly larger VM to accept everything we test here
+	args := append([]string{"start", "-p", profile, "--memory", "2250"}, StartArgs()...)
+	rr, err := RunCmd(ctx, t, Target(), args...)
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+}
+
+// validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
+func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
+	rr, err := RunCmd(ctx, t, "kubectl", "config", "current-context")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	if !strings.Contains(rr.Stdout.String(), profile) {
+		t.Errorf("current-context = %q, want %q", rr.Stdout.String(), profile)
+	}
+}
+
 // validateAddonManager asserts that the kube-addon-manager pod is deployed properly
-func validateAddonManager(ctx context.Context, t *testing.T, client kubernetes.Interface, profile string) {
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"component": "kube-addon-manager"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
-		t.Errorf("Error waiting for addon manager to be up")
+func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 1*time.Minute); err != nil {
+		t.Errorf("wait: %v", err)
 	}
 }
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
-func validateComponentHealth(ctx context.Context, t *testing.T, _ kubernetes.Interface, profile string) {
+func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "get", "cs", "-o=json")
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -119,23 +141,18 @@ func validateComponentHealth(ctx context.Context, t *testing.T, _ kubernetes.Int
 }
 
 // validateDNS asserts that all Kubernetes DNS is healthy
-func validateDNS(ctx context.Context, t *testing.T, client kubernetes.Interface, profile string) {
+func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"integration-test": "busybox"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Fatalf("busybox not running: %v", err)
-	}
-	pods, err := client.CoreV1().Pods("default").List(metav1.ListOptions{LabelSelector: "integration-test=busybox"})
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute)
 	if err != nil {
-		t.Errorf("list error: %v", err)
+		t.Fatalf("wait: %v", err)
 	}
-	pod := pods.Items[0].Name
 
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "exec", pod, "nslookup", "kubernetes.default")
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "exec", names[0], "nslookup", "kubernetes.default")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -146,19 +163,8 @@ func validateDNS(ctx context.Context, t *testing.T, client kubernetes.Interface,
 	}
 }
 
-// validateKubeContext asserts that kubectl config is updated properly
-func validateKubeContext(ctx context.Context, t *testing.T, _ kubernetes.Interface, profile string) {
-	rr, err := RunCmd(ctx, t, "kubectl", "config", "current-context")
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	if !strings.Contains(rr.Stdout.String(), profile) {
-		t.Errorf("current-context = %q, want %q", rr.Stdout.String(), profile)
-	}
-}
-
 // validateConfigCmd asserts basic "config" command functionality
-func validateConfigCmd(ctx context.Context, t *testing.T, _ kubernetes.Interface, profile string) {
+func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 	tests := []struct {
 		args    []string
 		wantOut string
@@ -181,17 +187,17 @@ func validateConfigCmd(ctx context.Context, t *testing.T, _ kubernetes.Interface
 
 		got := strings.TrimSpace(rr.Stdout.String())
 		if got != tc.wantOut {
-			t.Errorf("config %s stdout got: %q, want: %q", tc.args, got, tc.wantOut)
+			t.Errorf("%s stdout got: %q, want: %q", rr.Command(), got, tc.wantOut)
 		}
 		got = strings.TrimSpace(rr.Stderr.String())
 		if got != tc.wantErr {
-			t.Errorf("config %s stderr got: %q, want: %q", tc.args, got, tc.wantErr)
+			t.Errorf("%s stderr got: %q, want: %q", rr.Command(), got, tc.wantErr)
 		}
 	}
 }
 
 // validateLogsCmd asserts basic "logs" command functionality
-func validateLogsCmd(ctx context.Context, t *testing.T, _ kubernetes.Interface, profile string) {
+func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "logs")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
@@ -204,7 +210,7 @@ func validateLogsCmd(ctx context.Context, t *testing.T, _ kubernetes.Interface, 
 }
 
 // validateProfileCmd asserts basic "profile" command functionality
-func validateProfileCmd(ctx context.Context, t *testing.T, _ kubernetes.Interface, profile string) {
+func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := RunCmd(ctx, t, Target(), "profile", "list")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
@@ -212,7 +218,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, _ kubernetes.Interfac
 }
 
 // validateServiceCmd asserts basic "service" command functionality
-func validateServicesCmd(ctx context.Context, t *testing.T, _ kubernetes.Interface, profile string) {
+func validateServicesCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "service", "list")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
@@ -223,7 +229,7 @@ func validateServicesCmd(ctx context.Context, t *testing.T, _ kubernetes.Interfa
 }
 
 // validateSSHCmd asserts basic "ssh" command functionality
-func validateSSHCmd(ctx context.Context, t *testing.T, _ kubernetes.Interface, profile string) {
+func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	want := "hello\r\n"
 	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello"))
 	if err != nil {

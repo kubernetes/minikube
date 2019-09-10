@@ -1,3 +1,19 @@
+/*
+Copyright 2019 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package integration
 
 import (
@@ -10,7 +26,6 @@ import (
 	"time"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -23,7 +38,7 @@ func TestRegistryAddon(t *testing.T) {
 		CleanupWithLogs(t, profile, cancel)
 	}()
 
-	args := append([]string{"start", "-p", profile, "--wait=false"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--container-runtime=docker", "--wait=false"}, StartArgs()...)
 	rr, err := RunCmd(ctx, t, Target(), args...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -39,18 +54,35 @@ func TestRegistryAddon(t *testing.T) {
 		t.Fatalf("kubernetes client: %v", client)
 	}
 
-	if err := kapi.WaitForRCToStabilize(client, "kube-system", "registry", time.Minute*5); err != nil {
+	start := time.Now()
+	if err := kapi.WaitForRCToStabilize(client, "kube-system", "registry", 3*time.Minute); err != nil {
 		t.Errorf("waiting for registry replicacontroller to stabilize: %v", err)
 	}
-	rs := labels.SelectorFromSet(labels.Set(map[string]string{"actual-registry": "true"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", rs); err != nil {
-		t.Errorf("waiting for registry pods: %v", err)
+	t.Logf("registry stabilized in %s", time.Since(start))
+
+	if _, err := PodWait(ctx, t, profile, "kube-system", "actual-registry=true", 3*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
-	ps := labels.SelectorFromSet(labels.Set(map[string]string{"registry-proxy": "true"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", ps); err != nil {
-		t.Errorf("waiting for registry-proxy pods: %v", err)
+	if _, err := PodWait(ctx, t, profile, "kube-system", "registry-proxy=true", 3*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 
+	// Test from inside the cluster (no curl available on busybox)
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "delete", "po", "-l", "run=registry-test", "--now")
+	if err != nil {
+		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Args, err)
+	}
+
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	want := "HTTP/1.1 200"
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("curl = %q, want *%s*", rr.Stdout.String(), want)
+	}
+
+	// Test from outside the cluster
 	rr, err = RunCmd(ctx, t, Target(), "-p", profile, "ip")
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -65,7 +97,6 @@ func TestRegistryAddon(t *testing.T) {
 		t.Fatalf("failed to parse %q: %v", endpoint, err)
 	}
 
-	// Check access from outside the cluster on port 5000, validing connectivity via registry-proxy
 	checkExternalAccess := func() error {
 		resp, err := retryablehttp.Get(u.String())
 		if err != nil {
@@ -80,14 +111,7 @@ func TestRegistryAddon(t *testing.T) {
 	if err := retry.Expo(checkExternalAccess, 500*time.Millisecond, 2*time.Minute); err != nil {
 		t.Errorf(err.Error())
 	}
-	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "run", "registry-test", "--image=busybox", "-it", "--", "curl", "-vvv", "http://registry.kube-system.svc.cluster.local")
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	want := "HTTP/1.1 200"
-	if !strings.Contains(rr.Stdout.String(), want) {
-		t.Errorf("curl = %q, want *%s*", rr.Stdout.String(), want)
-	}
+
 	rr, err = RunCmd(ctx, t, Target(), "addons", "disable", "registry")
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)

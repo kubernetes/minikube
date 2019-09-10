@@ -25,7 +25,6 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -39,37 +38,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// setUpProxy runs a local http proxy and sets the env vars for it.
-func setUpProxy(t *testing.T) (*http.Server, error) {
-	port, err := freeport.GetFreePort()
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to get an open port")
-	}
-
-	addr := fmt.Sprintf("localhost:%d", port)
-	err = os.Setenv("NO_PROXY", "")
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to set no proxy env")
-	}
-	err = os.Setenv("HTTP_PROXY", addr)
-	if err != nil {
-		return nil, errors.Wrap(err, "Failed to set http proxy env")
-	}
-
-	proxy := goproxy.NewProxyHttpServer()
-	srv := &http.Server{Addr: addr, Handler: proxy}
-	go func(s *http.Server, t *testing.T) {
-		if err := s.ListenAndServe(); err != http.ErrServerClosed {
-			t.Errorf("Failed to start http server for proxy mock")
-		}
-	}(srv, t)
-	return srv, nil
-}
-
-func TestProxyWithDashboard(t *testing.T) {
-	origHP := os.Getenv("HTTP_PROXY")
-	origNP := os.Getenv("NO_PROXY")
-
+// TestDashboardWithProxy starts a minikube cluster using a proxy, and asserts that dashboard still works
+func TestDashboardWithProxy(t *testing.T) {
 	srv, err := setUpProxy(t)
 	if err != nil {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
@@ -77,25 +47,16 @@ func TestProxyWithDashboard(t *testing.T) {
 
 	profile := Profile("proxy")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
-	defer func(t *testing.T) {
+	defer func() {
 		CleanupWithLogs(t, profile, cancel)
-		err = os.Setenv("HTTP_PROXY", origHP)
-		if err != nil {
-			t.Errorf("Error reverting the HTTP_PROXY env")
-		}
-		err = os.Setenv("NO_PROXY", origNP)
-		if err != nil {
-			t.Errorf("Error reverting the NO_PROXY env")
-		}
-
-		err := srv.Shutdown(context.TODO()) // shutting down the http proxy after tests
+		err := srv.Shutdown(context.Background())
 		if err != nil {
 			t.Errorf("Error shutting down the http proxy")
 		}
-	}(t)
+	}()
 
-	args := []string{"start", "-p", profile}
-	rr, err := RunCmd(ctx, t, Target(), args...)
+	args := []string{"env", fmt.Sprintf("HTTP_PROXY=%s", srv.Addr), "NO_PROXY=", Target(), "start", "-p", profile}
+	rr, err := RunCmd(ctx, t, "/usr/bin/env", args...)
 	if err != nil {
 		t.Errorf("%s failed: %v", args, err)
 	}
@@ -140,4 +101,22 @@ func TestProxyWithDashboard(t *testing.T) {
 		}
 		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
 	}
+}
+
+// setUpProxy runs a local http proxy and sets the env vars for it.
+func setUpProxy(t *testing.T) (*http.Server, error) {
+	port, err := freeport.GetFreePort()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get an open port")
+	}
+
+	addr := fmt.Sprintf("localhost:%d", port)
+	proxy := goproxy.NewProxyHttpServer()
+	srv := &http.Server{Addr: addr, Handler: proxy}
+	go func(s *http.Server, t *testing.T) {
+		if err := s.ListenAndServe(); err != http.ErrServerClosed {
+			t.Errorf("Failed to start http server for proxy mock")
+		}
+	}(srv, t)
+	return srv, nil
 }

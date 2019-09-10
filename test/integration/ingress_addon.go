@@ -26,7 +26,6 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -57,30 +56,25 @@ func TestIngressAddon(t *testing.T) {
 		t.Fatalf("kubernetes client: %v", client)
 	}
 
-	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", time.Minute*10); err != nil {
+	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", time.Minute*5); err != nil {
 		t.Errorf("waiting for ingress-controller deployment to stabilize: %v", err)
 	}
-
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"app.kubernetes.io/name": "nginx-ingress-controller"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector); err != nil {
-		t.Errorf("waiting for ingress-controller pods: %v", err)
+	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=nginx-ingress-controller", 2*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 
 	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-
 	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	selector = labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
-	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
-		t.Errorf("waiting for nginx pods: %v", err)
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", 2*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
-
 	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, time.Minute*10); err != nil {
 		t.Errorf("Error waiting for nginx service to be up")
 	}

@@ -31,62 +31,116 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
-const guestMount = "/mount-9p"
+const (
+	guestMount                = "/mount-9p"
+	createdByPod              = "created-by-pod"
+	createdByTest             = "created-by-test"
+	createdByTestRemovedByPod = "created-by-test-removed-by-pod"
+	createdByPodRemovedByTest = "created-by-pod-removed-by-test"
+)
 
-func validateMountCmd(ctx context.Context, t *testing.T, client kubernetes.Interface, profile string) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
-	defer cancel()
+// For fast test iteration, use:
+// env TEST_ARGS="-test.v -test.run TestFunctional/parallel/MountCmd --profile=minikube --cleanup=false" make integration
+
+func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
+	tempDir, err := ioutil.TempDir("", "mounttest")
+	if err != nil {
+		t.Fatalf("Unexpected error while creating tempDir: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 
 	if NoneDriver() {
 		t.Skip("skipping test for none driver as it does not need mount")
 	}
 
-	tempDir, err := ioutil.TempDir("", "mounttest")
-	if err != nil {
-		t.Fatalf("Unexpected error while creating tempDir: %v", err)
-	}
-	defer os.RemoveAll(tempDir)
-
-	// Start the mount
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
 	ss, err := StartCmd(ctx, t, Target(), args...)
+	if err != nil {
+		t.Fatalf("%v failed: %v", args, err)
+	}
+
 	defer func() {
+		if t.Failed() {
+			t.Logf("%s failed, getting debug info...", t.Name())
+			rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p")
+			if err != nil {
+				t.Logf("%s: %v", rr.Command(), err)
+			} else {
+				t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
+			}
+		}
+
+		// Cleanup in advance of future tests
+		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p")
+		if err != nil {
+			t.Logf("%s: %v", rr.Command(), err)
+		}
+
 		if err := ss.Stop(t); err != nil {
 			t.Logf("Failed to kill mount: %v", err)
+		}
+		cancel()
+		if *cleanup {
+			os.RemoveAll(tempDir)
 		}
 	}()
 
 	// Write local files
-	want := []byte(fmt.Sprintf("test-%d\n", time.Now().UnixNano()))
-	for _, name := range []string{"created-by-test", "removed-by-pod"} {
+	testMarker := fmt.Sprintf("test-%d", time.Now().UnixNano())
+	wantFromTest := []byte(testMarker)
+	for _, name := range []string{createdByTest, createdByTestRemovedByPod, testMarker} {
 		p := filepath.Join(tempDir, name)
-		err := ioutil.WriteFile(p, want, 0644)
+		err := ioutil.WriteFile(p, wantFromTest, 0644)
+		t.Logf("wrote %q to %s", wantFromTest, p)
 		if err != nil {
 			t.Errorf("WriteFile %s: %v", p, err)
 		}
 	}
 
-	// Start the "busybox-mount" pod.
-	rr, err := RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml"))
+	// Block until the mount succeeds to avoid file race
+	checkMount := func() error {
+		_, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p")
+		return err
+	}
+	if err := retry.Expo(checkMount, time.Second, 15*time.Second); err != nil {
+		t.Fatalf("/mount-9p did not appear: %v", err)
+	}
+
+	// Assert that the mount contains our unique test marker, as opposed to a stale mount
+	tp := filepath.Join("/mount-9p", testMarker)
+	rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", "cat", tp)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	if err := WaitForPods(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
+	if !bytes.Equal(rr.Stdout.Bytes(), wantFromTest) {
+		// The mount is hosed, exit fast before wasting time launching pods.
+		t.Fatalf("%s = %q, want %q", tp, rr.Stdout.Bytes(), wantFromTest)
+	}
+
+	// Start the "busybox-mount" pod.
+	rr, err = RunCmd(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
 	// Read the file written by pod startup
-	p := filepath.Join(tempDir, "created-by-pod")
+	p := filepath.Join(tempDir, createdByPod)
 	got, err := ioutil.ReadFile(p)
 	if err != nil {
 		t.Errorf("readfile %s: %v", p, err)
 	}
-	if !bytes.Equal(got, want) {
-		t.Errorf("%s = %q, want %q", p, got, want)
+	wantFromPod := []byte("test\n")
+	if !bytes.Equal(got, wantFromPod) {
+		t.Errorf("%s = %q, want %q", p, got, wantFromPod)
 	}
 
 	// test that file written from host was read in by the pod via cat /mount-9p/written-by-host;
@@ -94,21 +148,19 @@ func validateMountCmd(ctx context.Context, t *testing.T, client kubernetes.Inter
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	if !bytes.Equal(rr.Stdout.Bytes(), want) {
-		t.Errorf("logs = %v, want %v", rr.Stdout.Bytes(), want)
+	if !bytes.Equal(rr.Stdout.Bytes(), wantFromTest) {
+		t.Errorf("busybox-mount logs = %q, want %q", rr.Stdout.Bytes(), wantFromTest)
 	}
 
 	// test file timestamps are correct
-	for _, name := range []string{"created-by-host", "created-by-pod"} {
+	for _, name := range []string{createdByTest, createdByPod} {
 		gp := path.Join(guestMount, name)
 		// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
 		rr, err := RunCmd(ctx, t, Target(), "-p", profile, "ssh", "stat", gp)
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Args, err)
 		}
-		if !bytes.Equal(rr.Stdout.Bytes(), want) {
-			t.Errorf("logs = %v, want %v", rr.Stdout.Bytes(), want)
-		}
+
 		if runtime.GOOS == "windows" {
 			if strings.Contains(rr.Stdout.String(), "Access: 1970-01-01") {
 				t.Errorf("invalid access time: %v", rr.Stdout)
@@ -120,12 +172,12 @@ func validateMountCmd(ctx context.Context, t *testing.T, client kubernetes.Inter
 		}
 	}
 
-	p = filepath.Join(tempDir, "removed-by-pod")
+	p = filepath.Join(tempDir, createdByTestRemovedByPod)
 	if _, err := os.Stat(p); err == nil {
 		t.Errorf("expected file %s to be removed", p)
 	}
 
-	p = filepath.Join(tempDir, "created-by-pod")
+	p = filepath.Join(tempDir, createdByPodRemovedByTest)
 	if err := os.Remove(p); err != nil {
 		t.Errorf("unexpected error removing file %s: %v", p, err)
 	}
