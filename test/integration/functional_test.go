@@ -89,7 +89,7 @@ func TestFunctional(t *testing.T) {
 
 func validateStartCmd(ctx context.Context, t *testing.T, profile string) {
 	// Start a slightly larger VM to accept everything we test here
-	args := append([]string{"start", "-p", profile, "--memory", "2250"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory", "2250", "--alsologtostderr", "-v=8"}, StartArgs()...)
 	rr, err := RunCmd(ctx, t, Target(), args...)
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -172,7 +172,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 	}{
 		{[]string{"unset", "cpus"}, "", ""},
 		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
-		{[]string{"set", "cpus 2"}, "! These changes will take effect upon a minikube delete and then a minikube start", ""},
+		{[]string{"set", "cpus", "2"}, "! These changes will take effect upon a minikube delete and then a minikube start", ""},
 		{[]string{"get", "cpus"}, "2", ""},
 		{[]string{"unset", "cpus"}, "", ""},
 		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
@@ -181,8 +181,8 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 	for _, tc := range tests {
 		args := append([]string{"-p", profile, "config"}, tc.args...)
 		rr, err := RunCmd(ctx, t, Target(), args...)
-		if err != nil {
-			t.Errorf("%s failed: %v", rr.Args, err)
+		if err != nil && tc.wantErr == "" {
+			t.Errorf("unexpected failure: %s failed: %v", rr.Args, err)
 		}
 
 		got := strings.TrimSpace(rr.Stdout.String())

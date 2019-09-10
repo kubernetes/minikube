@@ -31,6 +31,7 @@ var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to min
 // Flags for faster local integration testing
 var forceProfile = flag.String("profile", "", "force tests to run against a particular profile")
 var cleanup = flag.Bool("cleanup", true, "cleanup failed test run")
+var postMortemLogs = flag.Bool("postmortem-logs", true, "show logs after a failed test run")
 
 // Paths to files - normally set for CI
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")

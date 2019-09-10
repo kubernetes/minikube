@@ -49,7 +49,16 @@ type RunResult struct {
 
 // Command returns a human readable command string that does not induce eye fatigue
 func (rr RunResult) Command() string {
-	return fmt.Sprintf(`"%s %s"`, strings.TrimPrefix(rr.Args[0], "../../"), strings.Join(rr.Args[1:], " "))
+	var sb strings.Builder
+	sb.WriteString(strings.TrimPrefix(rr.Args[0], "../../"))
+	for _, a := range rr.Args[1:] {
+		if strings.Contains(a, " ") {
+			sb.WriteString(fmt.Sprintf(` "%s"`, a))
+			continue
+		}
+		sb.WriteString(fmt.Sprintf(" %s", a))
+	}
+	return sb.String()
 }
 
 func (rr RunResult) String() string {
@@ -162,7 +171,7 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 // CleanupWithLogs cleans up after a test run, fetching logs and deleting the profile
 func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
-	if t.Failed() {
+	if t.Failed() && *postMortemLogs {
 		t.Logf("%s failed, collecting logs ...", t.Name())
 		rr, err := RunCmd(context.Background(), t, Target(), "-p", profile, "logs", "-n", "10")
 		if err != nil {
