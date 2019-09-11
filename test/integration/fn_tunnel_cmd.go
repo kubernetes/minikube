@@ -38,7 +38,7 @@ import (
 )
 
 func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Minute)
 	defer cancel()
 
 	if runtime.GOOS != "windows" {
@@ -82,7 +82,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	// Wait until the nginx-svc has a loadbalancer ingress IP
 	nginxIP := ""
 	err = wait.PollImmediate(1*time.Second, 3*time.Minute, func() (bool, error) {
-		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "-f", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
 		if err != nil {
 			return false, err
 		}
