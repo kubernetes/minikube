@@ -266,7 +266,7 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	chkSVC := func() error { return CheckService(namespace, service) }
 
 	if err := retry.Expo(chkSVC, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return errors.Wrapf(err, "Could not find finalized endpoint being pointed to by %s", service)
+		return errors.Wrapf(err, "Service %s was not found in default namespace, please try again with 'minikube service %s -n %s'", service, service, namespace)
 	}
 
 	urls, err := GetServiceURLsForService(api, namespace, service, urlTemplate)
