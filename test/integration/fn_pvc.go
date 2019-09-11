@@ -34,7 +34,7 @@ import (
 )
 
 func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile string) {
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
 	if _, err := PodWait(ctx, t, profile, "kube-system", "integration-test=storage-provisioner", 2*time.Minute); err != nil {
