@@ -61,6 +61,9 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	// Start the tunnel
 	args := []string{"-p", profile, "tunnel", "--alsologtostderr", "-v=1"}
 	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("%s failed: %v", args, err)
+	}
 	defer ss.Stop(t)
 
 	// Start the "nginx" pod.
@@ -99,29 +102,29 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("kubectl get svc nginx-svc:\n%s", rr.Stdout)
 	}
 
-	// Try fetching against the IP
-	var resp *http.Response
-
-	req := func() error {
+	got := []byte{}
+	fetch := func() error {
 		h := &http.Client{Timeout: time.Second * 10}
-		resp, err = h.Get(fmt.Sprintf("http://%s", nginxIP))
+		resp, err := h.Get(fmt.Sprintf("http://%s", nginxIP))
 		if err != nil {
-			retriable := &retry.RetriableError{Err: err}
-			return retriable
+			return &retry.RetriableError{Err: err}
+		}
+		if resp.Body == nil {
+			return &retry.RetriableError{Err: fmt.Errorf("no body")}
 		}
 		defer resp.Body.Close()
+		got, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return &retry.RetriableError{Err: err}
+		}
 		return nil
 	}
-	if err = retry.Expo(req, time.Millisecond*500, 2*time.Minute, 6); err != nil {
+	if err = retry.Expo(fetch, time.Millisecond*500, 2*time.Minute, 6); err != nil {
 		t.Errorf("failed to contact nginx at %s: %v", nginxIP, err)
 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		t.Errorf("ReadAll: %v", err)
-	}
 	want := "Welcome to nginx!"
-	if !strings.Contains(string(body), want) {
-		t.Errorf("body = %q, want *%s*", body, want)
+	if !strings.Contains(string(got), want) {
+		t.Errorf("body = %q, want *%s*", got, want)
 	}
 }
