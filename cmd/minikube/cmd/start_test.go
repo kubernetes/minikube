@@ -25,30 +25,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-func Test_extractVMDriverVersion(t *testing.T) {
-	v := extractVMDriverVersion("")
-	if len(v) != 0 {
-		t.Error("Expected empty string")
-	}
-
-	v = extractVMDriverVersion("random text")
-	if len(v) != 0 {
-		t.Error("Expected empty string")
-	}
-
-	expectedVersion := "1.2.3"
-
-	v = extractVMDriverVersion("version: v1.2.3")
-	if expectedVersion != v {
-		t.Errorf("Expected version: %s, got: %s", expectedVersion, v)
-	}
-
-	v = extractVMDriverVersion("version: 1.2.3")
-	if expectedVersion != v {
-		t.Errorf("Expected version: %s, got: %s", expectedVersion, v)
-	}
-}
-
 func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 	viper.SetDefault(memory, constants.DefaultMemorySize)
 	viper.SetDefault(humanReadableDiskSize, constants.DefaultDiskSize)
