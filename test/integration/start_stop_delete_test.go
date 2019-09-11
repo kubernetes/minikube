@@ -81,7 +81,7 @@ func TestStartStop(t *testing.T) {
 				}
 
 				profile := UniqueProfileName(tc.name)
-				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+				ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 				defer CleanupWithLogs(t, profile, cancel)
 
 				// Use copious amounts of debugging for this stress test: we will need it.
