@@ -53,15 +53,12 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 		}
 		defer os.RemoveAll(dir)
 
-		fmt.Printf("InstallOrUpdate temp dir: %s\n", dir)
-
 		pwd, err := os.Getwd()
 		if err != nil {
 			t.Fatalf("Error not expected when getting working directory. test: %s, got: %v", tc.name, err)
 		}
 
 		path := filepath.Join(pwd, tc.path)
-		fmt.Printf("InstallOrUpdate path: %s\n", path)
 
 		_, err = os.Stat(filepath.Join(path, "docker-machine-driver-kvm2"))
 		if err != nil {
@@ -75,8 +72,6 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 		}
 
 		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, os.Getenv("PATH")))
-
-		fmt.Printf("InstallOrUpdate PATH: %s\n", os.Getenv("PATH"))
 
 		newerVersion, err := semver.Make("1.1.3")
 		if err != nil {
