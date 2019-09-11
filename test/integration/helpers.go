@@ -30,7 +30,6 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -137,20 +136,7 @@ func Start(ctx context.Context, t *testing.T, name string, arg ...string) (*Star
 func (ss *StartSession) Stop(t *testing.T) {
 	t.Helper()
 	t.Logf("Stopping %s ...", ss.cmd.Args)
-	// Amp up the signalling so that subprocesses can cleanup. Important for 'mount'!
-	if err := ss.cmd.Process.Signal(syscall.SIGINT); err != nil {
-		t.Logf("unable to send SIGINT: %v", err)
-	}
-	time.Sleep(250 * time.Millisecond)
-	if err := ss.cmd.Process.Signal(syscall.SIGTERM); err != nil {
-		t.Logf("unable to send SIGTERM: %v", err)
-	}
-	time.Sleep(250 * time.Millisecond)
-
-	if err := ss.cmd.Process.Kill(); err != nil {
-		t.Logf("unable to kill: %v", err)
-	}
-
+	KillProcessFamily(ss.cmd.Process.Pid)
 	if t.Failed() {
 		if ss.Stdout.Size() > 0 {
 			stdout, err := ioutil.ReadAll(ss.Stdout)
@@ -342,4 +328,30 @@ func MaybeParallel(t *testing.T) {
 		return
 	}
 	t.Parallel()
+}
+
+// killProcessFamily kills a pid and all of its children
+func killProcessFamily(pid int, t *testing.T) {
+	parent, err := process.NewProcess(int32(pid))
+	if err != nil {
+		t.Logf("unable to find parent, assuming dead: %v", err)
+		return
+	}
+	procs := []*process.Process{parent}
+	children, err := parent.Children()
+	if err == nil {
+		procs = append(children, parent)
+	}
+
+	for _, p := range procs {
+		if err := p.Terminate(); err != nil {
+			t.Logf("unable to terminate pid %d: %v", p.Pid, err)
+			continue
+		}
+		if err := p.Kill(); err != nil {
+			t.Logf("unable to kill pid %d: %v", p.Pid, err)
+			continue
+		}
+	}
+	return nil
 }

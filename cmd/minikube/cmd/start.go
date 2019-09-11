@@ -35,6 +35,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -107,6 +108,7 @@ const (
 	waitUntilHealthy      = "wait"
 	force                 = "force"
 	waitTimeout           = "wait-timeout"
+	nativeSSH             = "native-ssh"
 )
 
 var (
@@ -157,6 +159,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
 	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
 	startCmd.Flags().Duration(waitTimeout, 3*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
+	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -298,6 +301,12 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
 	skipCache(&config)
+
+	if viper.GetBool(nativeSSH) {
+		ssh.SetDefaultClient(ssh.Native)
+	} else {
+		ssh.SetDefaultClient(ssh.External)
+	}
 
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
