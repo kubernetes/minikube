@@ -38,6 +38,7 @@ import (
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // validateFunc are for subtests that share a single setup
@@ -105,7 +106,8 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
-	c := exec.CommandContext(ctx, Target(), "start", "-p", profile, "--wait=false")
+	startArgs := append([]string{"start", "-p", profile, "--wait=false"}, StartArgs()...)
+	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
 	env = append(env, "NO_PROXY=")
@@ -218,9 +220,14 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("wait: %v", err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "nslookup", "kubernetes.default"))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+	nslookup := func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "nslookup", "kubernetes.default"))
+		return err
+	}
+
+	// If the coredns process was stable, this retry wouldn't be necessary.
+	if err = retry.Expo(nslookup, 1*time.Second, 1*time.Minute); err != nil {
+		t.Errorf("nslookup failing: %v", err)
 	}
 
 	want := []byte("10.96.0.1")
