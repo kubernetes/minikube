@@ -882,7 +882,7 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 				servicesMap:  serviceNamespaces,
 				endpointsMap: endpointNamespaces,
 			}
-			err := WaitAndMaybeOpenService(defaultAPI, test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
+			err := WaitAndMaybeOpenService(test.api, test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
 			if test.err && err == nil {
 				t.Fatalf("WaitAndMaybeOpenService expected to fail for test: %v", test)
 			}
