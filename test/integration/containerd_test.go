@@ -29,27 +29,57 @@ import (
 	"k8s.io/minikube/test/integration/util"
 )
 
-func TestContainerd(t *testing.T) {
+// TestGvisorWorkload tests the gVisor addon for pods with the untrusted
+// workload annotation and gvisor runtime class.
+func TestGvisorWorkload(t *testing.T) {
 	if isTestNoneDriver(t) {
 		t.Skip("Can't run containerd backend with none driver")
 	}
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
 
-	t.Run("GvisorRestart", testGvisorRestart)
-}
-
-func testGvisorRestart(t *testing.T) {
 	p := profileName(t)
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	defer mk.TearDown(t)
 
 	mk.MustStart("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
 	mk.MustRun("cache add gcr.io/k8s-minikube/gvisor-addon:latest")
+	// NOTE: addons are enabled globally.
+	mk.MustRun("addons enable gvisor")
+
+	t.Log("waiting for gvisor controller to come up")
+	if err := waitForGvisorControllerRunning(p); err != nil {
+		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+	}
+
+	// Test a pod with the untrusted workload annotation.
+	createUntrustedWorkload(t, p)
+	t.Log("making sure untrusted workload is Running")
+	if err := waitForUntrustedNginxRunning(p); err != nil {
+		t.Fatalf("waiting for untrusted-workload nginx to be up: %v", err)
+	}
+	deleteUntrustedWorkload(t, p)
+
+	// Test a pod with the gvisor runtime class.
+	createGvisorWorkload(t, p)
+	t.Log("making sure gvisor workload is Running")
+	if err := waitForGvisorNginxRunning(p); err != nil {
+		t.Fatalf("waiting for gvisor nginx to be up: %v", err)
+	}
+	deleteGvisorWorkload(t, p)
+}
+
+// TestGvisorRestart tests the gVisor addon is functional after a VM restart.
+func TestGvisorRestart(t *testing.T) {
+	if isTestNoneDriver(t) {
+		t.Skip("Can't run containerd backend with none driver")
+	}
+
+	p := profileName(t)
+	mk := NewMinikubeRunner(t, p, "--wait=false")
+	defer mk.TearDown(t)
+
+	mk.MustStart("--container-runtime=containerd", "--docker-opt containerd=/var/run/containerd/containerd.sock")
+	mk.MustRun("cache add gcr.io/k8s-minikube/gvisor-addon:latest")
+	// NOTE: addons are enabled globally.
 	mk.MustRun("addons enable gvisor")
 
 	t.Log("waiting for gvisor controller to come up")
@@ -98,7 +128,24 @@ func deleteUntrustedWorkload(t *testing.T, profile string) {
 	}
 }
 
-// waitForGvisorControllerRunning waits for the gvisor controller pod to be running
+func createGvisorWorkload(t *testing.T, profile string) {
+	kr := util.NewKubectlRunner(t, profile)
+	gvisorPath := filepath.Join(*testdataDir, "nginx-gvisor.yaml")
+	t.Log("creating pod with gvisor workload annotation")
+	if _, err := kr.RunCommand([]string{"replace", "-f", gvisorPath, "--force"}); err != nil {
+		t.Fatalf("creating gvisor nginx resource: %v", err)
+	}
+}
+
+func deleteGvisorWorkload(t *testing.T, profile string) {
+	kr := util.NewKubectlRunner(t, profile)
+	gvisorPath := filepath.Join(*testdataDir, "nginx-gvisor.yaml")
+	if _, err := kr.RunCommand([]string{"delete", "-f", gvisorPath}); err != nil {
+		t.Logf("error deleting gvisor nginx resource: %v", err)
+	}
+}
+
+// waitForGvisorControllerRunning waits for the gvisor controller pod to be running.
 func waitForGvisorControllerRunning(p string) error {
 	client, err := kapi.Client(p)
 	if err != nil {
@@ -112,14 +159,30 @@ func waitForGvisorControllerRunning(p string) error {
 	return nil
 }
 
-// waitForUntrustedNginxRunning waits for the untrusted nginx pod to start running
+// waitForUntrustedNginxRunning waits for the untrusted nginx pod to start
+// running.
 func waitForUntrustedNginxRunning(miniProfile string) error {
 	client, err := kapi.Client(miniProfile)
 	if err != nil {
 		return errors.Wrap(err, "getting kubernetes client")
 	}
 
-	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx"}))
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx", "untrusted": "true"}))
+	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
+		return errors.Wrap(err, "waiting for nginx pods")
+	}
+	return nil
+}
+
+// waitForGvisorNginxRunning waits for the nginx pod with gvisor runtime class
+// to start running.
+func waitForGvisorNginxRunning(miniProfile string) error {
+	client, err := kapi.Client(miniProfile)
+	if err != nil {
+		return errors.Wrap(err, "getting kubernetes client")
+	}
+
+	selector := labels.SelectorFromSet(labels.Set(map[string]string{"run": "nginx", "runtime": "gvisor"}))
 	if err := kapi.WaitForPodsWithLabelRunning(client, "default", selector); err != nil {
 		return errors.Wrap(err, "waiting for nginx pods")
 	}

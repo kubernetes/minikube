@@ -30,6 +30,11 @@ export DARWIN_SHA256=$(cat out/minikube-darwin-amd64.sha256)
 export LINUX_SHA256=$(cat out/minikube-linux-amd64.sha256)
 export WINDOWS_SHA256=$(cat out/minikube-windows-amd64.exe.sha256)
 
+if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
+  echo "NOTE: ${TAGNAME} appears to be a non-standard release, not updating releases.json"
+  exit 0
+fi
+
 # Update releases.json w/ new release in gcs and github
 git config user.name "minikube-bot"
 git config user.email "minikube-bot@google.com"

@@ -67,7 +67,7 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) {
 		}
 		url := "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
 		out.ErrT(out.WarningType, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
-		out.T(out.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'")
+		out.ErrT(out.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'")
 	}
 }
 
