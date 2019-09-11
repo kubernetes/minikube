@@ -16,16 +16,10 @@ limitations under the License.
 
 package integration
 
-// These are utility functions for integration tests:
-//
-// - Do not accept *testing.T arguments (see helpers.go)
-// - Do not directly read flags (see main.go)
-// - Are used in multiple tests
-// - Must not compare test values
-
 import (
 	"bufio"
 	"fmt"
+	"os"
 	"time"
 )
 
@@ -52,4 +46,15 @@ func ReadLineWithTimeout(b *bufio.Reader, timeout time.Duration) (string, error)
 	case <-time.After(timeout):
 		return "", fmt.Errorf("timeout after %s", timeout)
 	}
+}
+
+// UniqueProfileName returns a reasonably unique profile name
+func UniqueProfileName(prefix string) string {
+	if *forceProfile != "" {
+		return *forceProfile
+	}
+	if NoneDriver() {
+		return "minikube"
+	}
+	return fmt.Sprintf("%s-%s-%d", prefix, time.Now().Format("20060102T150405.999999999"), os.Getpid())
 }

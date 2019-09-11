@@ -18,11 +18,9 @@ package integration
 
 import (
 	"flag"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
-	"time"
 )
 
 // General configuration: used to set the VM Driver
@@ -56,16 +54,4 @@ func Target() string {
 // NoneDriver returns whether or not this test is using the none driver
 func NoneDriver() bool {
 	return strings.Contains(*startArgs, "--vm-driver=none")
-}
-
-// Profile returns a reasonable profile name
-func Profile(prefix string) string {
-	if *forceProfile != "" {
-		return *forceProfile
-	}
-	if NoneDriver() {
-		return "minikube"
-	}
-	p := strings.Split(prefix, "/")[0] // for i.e, TestFunctional/SSH returns TestFunctional
-	return fmt.Sprintf("%s-%d-%d", strings.ToLower(strings.TrimPrefix(p, "test")), time.Now().UTC().Unix(), os.Getpid())
 }

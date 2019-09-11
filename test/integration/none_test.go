@@ -39,7 +39,7 @@ func TestChangeNoneUser(t *testing.T) {
 	}
 	MaybeParallel(t)
 
-	profile := Profile("none")
+	profile := UniqueProfileName("none")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 

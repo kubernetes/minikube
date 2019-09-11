@@ -79,7 +79,7 @@ func TestStartStop(t *testing.T) {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
 
-				profile := Profile(tc.name)
+				profile := UniqueProfileName(tc.name)
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 				defer CleanupWithLogs(t, profile, cancel)
 

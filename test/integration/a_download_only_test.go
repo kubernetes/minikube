@@ -35,7 +35,7 @@ import (
 // is used to cache images and binaries used by other parallel tests to avoid redownloading.
 // TestDownloadOnly tests the --download-only option
 func TestDownloadOnly(t *testing.T) {
-	profile := Profile("download")
+	profile := UniqueProfileName("download")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer Cleanup(t, profile, cancel)
 

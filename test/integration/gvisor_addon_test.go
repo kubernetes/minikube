@@ -34,7 +34,7 @@ func TestGvisorAddon(t *testing.T) {
 	}
 	MaybeParallel(t)
 
-	profile := Profile("gvisor")
+	profile := UniqueProfileName("gvisor")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer func() {
 		CleanupWithLogs(t, profile, cancel)

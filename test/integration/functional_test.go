@@ -47,7 +47,7 @@ type validateFunc func(context.Context, *testing.T, string)
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
 
-	profile := Profile("functional")
+	profile := UniqueProfileName("functional")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 

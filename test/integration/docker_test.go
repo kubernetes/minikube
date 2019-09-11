@@ -31,7 +31,7 @@ func TestDockerFlags(t *testing.T) {
 	}
 	MaybeParallel(t)
 
-	profile := Profile("docker-flags")
+	profile := UniqueProfileName("docker-flags")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer Cleanup(t, profile, cancel)
 
