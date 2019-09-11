@@ -345,6 +345,8 @@ func killProcessFamily(t *testing.T, pid int) {
 			t.Logf("unable to terminate pid %d: %v", p.Pid, err)
 			continue
 		}
+		// Allow process a chance to cleanup before instant death.
+		time.Sleep(100 * time.Millisecond)
 		if err := p.Kill(); err != nil {
 			t.Logf("unable to kill pid %d: %v", p.Pid, err)
 			continue
