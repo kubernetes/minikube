@@ -73,7 +73,7 @@ gsutil -qm cp \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out
 
-gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
+gsutil -qm cp -r "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 

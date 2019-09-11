@@ -24,7 +24,6 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -46,6 +45,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/klog"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -278,7 +278,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	if err := cmdcfg.IsValidDriver(runtime.GOOS, viper.GetString(vmDriver)); err != nil {
+	driver := viper.GetString(vmDriver)
+	if err := cmdcfg.IsValidDriver(runtime.GOOS, driver); err != nil {
 		exit.WithCodeT(
 			exit.Failure,
 			"The driver '{{.driver}}' is not supported on {{.os}}",
@@ -288,7 +289,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateConfig()
 	validateUser()
-	validateDriverVersion(viper.GetString(vmDriver))
+	validateDriverVersion(driver)
 
 	k8sVersion, isUpgrade := getKubernetesVersion()
 	config, err := generateCfgFromFlags(cmd, k8sVersion)
@@ -1027,9 +1028,21 @@ func validateDriverVersion(vmDriver string) {
 	var driverExecutable string
 	driverDocumentation := fmt.Sprintf("%s%s#driver-installation", constants.DriverDocumentation, vmDriver)
 
+	minikubeVersion, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minukube version: {{.error}}", out.V{"error": err})
+		return
+	}
+
 	switch vmDriver {
 	case constants.DriverKvm2:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverKvm2)
+		targetDir := constants.MakeMiniPath("bin")
+		err := drivers.InstallOrUpdate(driverExecutable, targetDir, minikubeVersion)
+		if err != nil {
+			out.WarningT("Error downloading driver: {{.error}}", out.V{"error": err})
+		}
+		return
 	case constants.DriverHyperkit:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverHyperkit)
 	default: // driver doesn't support version
@@ -1046,7 +1059,7 @@ func validateDriverVersion(vmDriver string) {
 		return
 	}
 
-	v := extractVMDriverVersion(string(output))
+	v := drivers.ExtractVMDriverVersion(string(output))
 
 	// if the driver doesn't have return any version, it is really old, we force a upgrade.
 	if len(v) == 0 && !viper.GetBool(force) {
@@ -1063,33 +1076,10 @@ func validateDriverVersion(vmDriver string) {
 		return
 	}
 
-	minikubeVersion, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-		return
-	}
-
 	if vmDriverVersion.LT(minikubeVersion) {
 		out.WarningT(
 			"The installed version of '{{.driver_executable}}' ({{.driver_version}}) is no longer current. Upgrade: {{.documentation_url}}",
 			out.V{"driver_executable": driverExecutable, "driver_version": vmDriverVersion, "documentation_url": driverDocumentation},
 		)
 	}
-}
-
-// extractVMDriverVersion extracts the driver version.
-// KVM and Hyperkit drivers support the 'version' command, that display the information as:
-// version: vX.X.X
-// commit: XXXX
-// This method returns the version 'vX.X.X' or empty if the version isn't found.
-func extractVMDriverVersion(s string) string {
-	versionRegex := regexp.MustCompile(`version:(.*)`)
-	matches := versionRegex.FindStringSubmatch(s)
-
-	if len(matches) != 2 {
-		return ""
-	}
-
-	v := strings.TrimSpace(matches[1])
-	return strings.TrimPrefix(v, version.VersionPrefix)
 }

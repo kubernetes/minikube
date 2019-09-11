@@ -20,6 +20,7 @@ import (
 	goflag "flag"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/docker/machine/libmachine"
@@ -94,6 +95,12 @@ func Execute() {
 	RootCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 		flag.Usage = translate.T(flag.Usage)
 	})
+
+	if runtime.GOOS == "linux" {
+		// add minikube binaries to the path
+		targetDir := constants.MakeMiniPath("bin")
+		addToPath(targetDir)
+	}
 
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
@@ -268,4 +275,9 @@ func getClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 	}
 
 	return b, nil
+}
+
+func addToPath(dir string) {
+	path := os.Getenv("PATH")
+	os.Setenv("PATH", fmt.Sprintf("%s:%s", dir, path))
 }
