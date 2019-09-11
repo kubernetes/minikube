@@ -16,12 +16,15 @@
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 4
 VERSION_BUILD ?= 0-beta.0
+RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
+VERSION ?= v$(RAW_VERSION)
+
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
+# Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
+DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
+RPM_VERSION ?= $(DEB_VERSION)
 
-VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
-DEB_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
-RPM_VERSION ?= $(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 GO_VERSION ?= 1.12.9
 
@@ -123,7 +126,7 @@ ifeq ($(IN_DOCKER),1)
 endif
 
 ifeq ($(GOOS),windows)
-	IS_EXE = ".exe"
+	IS_EXE = .exe
 endif
 
 
@@ -142,7 +145,7 @@ out/minikube-%: pkg/minikube/assets/assets.go pkg/minikube/translate/translation
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
-	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
 .PHONY: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
@@ -151,7 +154,7 @@ e2e-darwin-amd64: out/e2e-darwin-amd64
 e2e-windows-amd64.exe: out/e2e-windows-amd64.exe
 
 out/e2e-%: out/minikube-%
-	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$*))" go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
 
 out/e2e-windows-amd64.exe: out/e2e-windows-amd64
 	cp $< $@
@@ -179,7 +182,7 @@ linux-menuconfig:
 	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ savedefconfig
 	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux_defconfig
 
-out/minikube.iso: $(shell find deploy/iso/minikube-iso -type f)
+out/minikube.iso: $(shell find "deploy/iso/minikube-iso" -type f)
 ifeq ($(IN_DOCKER),1)
 	$(MAKE) minikube_iso
 else
@@ -233,18 +236,26 @@ extract:
 	go run cmd/extract/extract.go
 
 # Regenerates assets.go when template files have been updated
-pkg/minikube/assets/assets.go: $(shell find deploy/addons -type f)
+pkg/minikube/assets/assets.go: $(shell find "deploy/addons" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
+else ifeq ($(GOOS),windows)
+	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)\bin" go get github.com/jteeuwen/go-bindata/...
+	PATH="$(PATH);$(GOPATH)\bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
+	-gofmt -s -w $@
 else
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
 	-gofmt -s -w $@
 endif
 
-pkg/minikube/translate/translations.go: $(shell find translations/ -type f)
+pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
+else ifeq ($(GOOS),windows)
+	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)\bin" go get github.com/jteeuwen/go-bindata/...
+	PATH="$(PATH);$(GOPATH)\bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
+	-gofmt -s -w $@
 else
 	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
@@ -333,7 +344,7 @@ reportcard:
 mdlint:
 	@$(MARKDOWNLINT) $(MINIKUBE_MARKDOWN_FILES)
 
-out/docs/minikube.md: $(shell find cmd) $(shell find pkg/minikube/constants) pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
 out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64

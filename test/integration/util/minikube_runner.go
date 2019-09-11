@@ -224,7 +224,7 @@ func (m *MinikubeRunner) start(opts ...string) (stdout string, stderr string, er
 	return m.RunWithContext(ctx, cmd, true)
 }
 
-// StartWithFail starts the cluster and fail the test if error
+// MustStart starts the cluster and fail the test if error
 func (m *MinikubeRunner) MustStart(opts ...string) (stdout string, stderr string) {
 	stdout, stderr, err := m.start(opts...)
 	// the reason for this formatting is, the logs are very big but useful and also in parallel testing logs are harder to identify

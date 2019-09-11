@@ -30,6 +30,8 @@ cd minikube
 make
 ```
 
+Note: On Windows, this will only work in Git Bash or other terminals that support bash commands.
+
 ## Compiling minikube using Docker
 
 To cross-compile to/from different operating systems:

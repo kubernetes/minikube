@@ -82,7 +82,7 @@ func testDashboard(t *testing.T) {
 	mk := NewMinikubeRunner(t, p, "--wait=false")
 	cmd, out := mk.RunDaemon("dashboard --url")
 	defer func() {
-		err := cmd.Process.Kill()
+		err := util.KillProcess(cmd.Process.Pid, t)
 		if err != nil {
 			t.Logf("Failed to kill dashboard command: %v", err)
 		}

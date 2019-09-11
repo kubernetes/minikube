@@ -30,13 +30,17 @@ import (
 	"strings"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/notify"
+
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -104,16 +108,18 @@ const (
 	waitUntilHealthy      = "wait"
 	force                 = "force"
 	waitTimeout           = "wait-timeout"
+	nativeSSH             = "native-ssh"
 )
 
 var (
-	registryMirror   []string
-	dockerEnv        []string
-	dockerOpt        []string
-	insecureRegistry []string
-	apiServerNames   []string
-	apiServerIPs     []net.IP
-	extraOptions     cfg.ExtraOptionSlice
+	registryMirror           []string
+	dockerEnv                []string
+	dockerOpt                []string
+	insecureRegistry         []string
+	apiServerNames           []string
+	apiServerIPs             []net.IP
+	extraOptions             cfg.ExtraOptionSlice
+	enableUpdateNotification = true
 )
 
 func init() {
@@ -153,6 +159,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
 	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
 	startCmd.Flags().Duration(waitTimeout, 3*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
+	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -216,6 +223,11 @@ var startCmd = &cobra.Command{
 	Short: "Starts a local kubernetes cluster",
 	Long:  "Starts a local kubernetes cluster",
 	Run:   runStart,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		if enableUpdateNotification {
+			notify.MaybePrintUpdateTextFromGithub()
+		}
+	},
 }
 
 // platform generates a user-readable platform message
@@ -289,6 +301,12 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// With "none", images are persistently stored in Docker, so internal caching isn't necessary.
 	skipCache(&config)
+
+	if viper.GetBool(nativeSSH) {
+		ssh.SetDefaultClient(ssh.Native)
+	} else {
+		ssh.SetDefaultClient(ssh.External)
+	}
 
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
@@ -574,6 +592,22 @@ func validateConfig() {
 			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
 	}
 
+	var cpuCount int
+	if viper.GetString(vmDriver) == constants.DriverNone {
+		// Uses the gopsutil cpu package to count the number of physical cpu cores
+		ci, err := cpu.Counts(false)
+		if err != nil {
+			glog.Warningf("Unable to get CPU info: %v", err)
+		} else {
+			cpuCount = ci
+		}
+	} else {
+		cpuCount = viper.GetInt(cpus)
+	}
+	if cpuCount < constants.MinimumCPUS {
+		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
+	}
+
 	// check that kubeadm extra args contain only whitelisted parameters
 	for param := range extraOptions.AsMap().Get(kubeadm.Kubeadm) {
 		if !cfg.ContainsParam(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
@@ -654,6 +688,12 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string) (cfg.Config, er
 					// convert https_proxy to HTTPS_PROXY for linux
 					// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
 					k = strings.ToUpper(k)
+					if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
+						if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
+							out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
+							continue
+						}
+					}
 					dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
 				}
 			}
@@ -846,6 +886,20 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
 		return nv, isUpgrade
+	}
+
+	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
+	if err != nil {
+		exit.WithCodeT(exit.Data, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
+	}
+
+	if nvs.LT(oldestVersion) {
+		out.WarningT("Specified Kubernetes version {{.specified}} is less than the oldest supported version: {{.oldest}}", out.V{"specified": nvs, "oldest": constants.OldestKubernetesVersion})
+		if viper.GetBool(force) {
+			out.WarningT("Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+		} else {
+			exit.WithCodeT(exit.Data, "Sorry, Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
+		}
 	}
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))

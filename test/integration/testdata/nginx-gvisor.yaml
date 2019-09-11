@@ -1,13 +1,12 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: nginx-untrusted
+  name: nginx-gvisor
   labels:
     run: nginx
-    untrusted: "true"
-  annotations:
-    io.kubernetes.cri.untrusted-workload: "true"
+    runtime: gvisor
 spec:
+  runtimeClassName: gvisor
   containers:
   - name: nginx
     image: nginx

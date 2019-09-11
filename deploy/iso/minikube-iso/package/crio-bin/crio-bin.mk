@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.15.0
-CRIO_BIN_COMMIT = 485227d727401fa0472a449b5df3b0537e314ebb
+CRIO_BIN_VERSION = v1.15.1
+CRIO_BIN_COMMIT = f0827bb332854ffcff2f4d9f64d68b8139970b3d
 CRIO_BIN_SITE = https://github.com/cri-o/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = host-go libgpgme
@@ -25,8 +25,8 @@ endef
 define CRIO_BIN_CONFIGURE_CMDS
 	mkdir -p $(CRIO_BIN_GOPATH)/src/github.com/cri-o
 	ln -sf $(@D) $(CRIO_BIN_GOPATH)/src/github.com/cri-o/cri-o
-	# Generate conmon/config.h with a simplified bin/crio-config
-	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) BUILDTAGS="containers_image_ostree_stub exclude_graphdriver_btrfs exclude_graphdriver_devicemapper containers_image_openpgp" conmon/config.h
+	# Copy pre-generated conmon/config.h - see <https://github.com/cri-o/cri-o/issues/2575>
+	cp $(BR2_EXTERNAL_MINIKUBE_PATH)/package/crio-bin/conmon-config.h $(@D)/conmon/config.h
 endef
 
 define CRIO_BIN_BUILD_CMDS
