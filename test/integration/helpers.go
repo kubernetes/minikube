@@ -75,15 +75,9 @@ func (rr RunResult) String() string {
 }
 
 // Run is a test helper to log a command being executed \_(ツ)_/¯
-func Run(ctx context.Context, t *testing.T, name string, arg ...string) (*RunResult, error) {
+func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 	t.Helper()
-
-	cmd := exec.CommandContext(ctx, name, arg...)
 	rr := &RunResult{Args: cmd.Args}
-	if ctx.Err() != nil {
-		t.Logf("Out of time, unable to run %s: %v", rr.Command(), ctx.Err())
-		return rr, fmt.Errorf("test context: %v", ctx.Err())
-	}
 	t.Logf("(dbg) Run:  %v", rr.Command())
 
 	var outb, errb bytes.Buffer
@@ -115,9 +109,8 @@ type StartSession struct {
 }
 
 // Start starts a process in the background, streaming output
-func Start(ctx context.Context, t *testing.T, name string, arg ...string) (*StartSession, error) {
+func Start(t *testing.T, cmd *exec.Cmd) (*StartSession, error) {
 	t.Helper()
-	cmd := exec.CommandContext(ctx, name, arg...)
 	t.Logf("Daemon: %v", cmd.Args)
 
 	stdoutPipe, err := cmd.StdoutPipe()
@@ -164,7 +157,7 @@ func (ss *StartSession) Stop(t *testing.T) {
 func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 	// No helper because it makes the call log confusing.
 	if *cleanup {
-		_, err := Run(context.Background(), t, Target(), "delete", "-p", profile)
+		_, err := Run(t, exec.Command(Target(), "delete", "-p", profile))
 		if err != nil {
 			t.Logf("failed cleanup: %v", err)
 		}
@@ -179,7 +172,7 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
 	if t.Failed() && *postMortemLogs {
 		t.Logf("%s failed, collecting logs ...", t.Name())
-		rr, err := Run(context.Background(), t, Target(), "-p", profile, "logs", "-n", "10")
+		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "-n", "10"))
 		if err != nil {
 			t.Logf("failed logs error: %v", err)
 		}
@@ -288,7 +281,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 
 // showPodLogs logs debug info for pods
 func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, names []string) {
-	rr, rerr := Run(ctx, t, "kubectl", "--context", profile, "get", "po", "-A", "--show-labels")
+	rr, rerr := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
 	if rerr != nil {
 		t.Logf("%s: %v", rr.Command(), rerr)
 		// return now, because kubectl is hosed
@@ -297,14 +290,14 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 	t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 
 	for _, name := range names {
-		rr, err := Run(ctx, t, "kubectl", "--context", profile, "describe", "po", name, "-n", ns)
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", name, "-n", ns))
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		} else {
 			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 		}
 
-		rr, err = Run(ctx, t, "kubectl", "--context", profile, "logs", name, "-n", ns)
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", name, "-n", ns))
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		} else {
@@ -316,7 +309,7 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 // Status returns the minikube cluster status as a string
 func Status(ctx context.Context, t *testing.T, path string, profile string) string {
 	t.Helper()
-	rr, err := Run(ctx, t, path, "status", "--format={{.Host}}", "-p", profile)
+	rr, err := Run(t, exec.CommandContext(ctx, path, "status", "--format={{.Host}}", "-p", profile))
 	if err != nil {
 		t.Logf("status error: %v (may be ok)", err)
 	}

@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -41,7 +42,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 
 	checkStorageClass := func() error {
-		rr, err := Run(ctx, t, "kubectl", "--context", profile, "get", "storageclass", "-o=json")
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "storageclass", "-o=json"))
 		if err != nil {
 			return err
 		}
@@ -61,13 +62,13 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 
 	// Now create a testpvc
-	rr, err := Run(ctx, t, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "pvc.yaml"))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "pvc.yaml")))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
 	checkStoragePhase := func() error {
-		rr, err := Run(ctx, t, "kubectl", "--context", profile, "get", "pvc", "testpvc", "-o=json")
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pvc", "testpvc", "-o=json"))
 		if err != nil {
 			return err
 		}

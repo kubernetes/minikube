@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 	"testing"
@@ -62,17 +63,17 @@ func TestVersionUpgrade(t *testing.T) {
 		}
 	}
 	args := append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion)}, StartArgs()...)
-	rr, err := Run(ctx, t, tf.Name(), args...)
+	rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = Run(ctx, t, tf.Name(), "stop", "-p", profile)
+	rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), "stop", "-p", profile))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = Run(ctx, t, tf.Name(), "-p", profile, "status", "--format={{.Host}}")
+	rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), "-p", profile, "status", "--format={{.Host}}"))
 	if err != nil {
 		t.Logf("status error: %v (may be ok)", err)
 	}
@@ -82,7 +83,7 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 
 	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion)}, StartArgs()...)
-	rr, err = Run(ctx, t, Target(), args...)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

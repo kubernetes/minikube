@@ -60,11 +60,11 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// Start the tunnel
 	args := []string{"-p", profile, "tunnel", "--alsologtostderr", "-v=1"}
-	ss, err := Start(ctx, t, Target(), args...)
+	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	defer ss.Stop(t)
 
 	// Start the "nginx" pod.
-	rr, err := Run(ctx, t, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "testsvc.yaml"))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "testsvc.yaml")))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -79,7 +79,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	// Wait until the nginx-svc has a loadbalancer ingress IP
 	nginxIP := ""
 	err = wait.PollImmediate(1*time.Second, 3*time.Minute, func() (bool, error) {
-		rr, err := Run(ctx, t, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "-f", "jsonpath={.status.loadBalancer.ingress[0].ip}")
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "-f", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
 		if err != nil {
 			return false, err
 		}
@@ -92,7 +92,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("nginx-svc svc.status.loadBalancer.ingress never got an IP")
 
-		rr, err := Run(ctx, t, "kubectl", "--context", profile, "get", "svc", "nginx-svc")
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc"))
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Args, err)
 		}

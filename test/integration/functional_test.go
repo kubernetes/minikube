@@ -26,6 +26,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -37,9 +39,6 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
 )
-
-// ProxyAddress is the location of the currently configured HTTP server
-var ProxyAddress string
 
 // validateFunc are for subtests that share a single setup
 type validateFunc func(context.Context, *testing.T, string)
@@ -106,11 +105,14 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
-	ProxyAddress = srv.Addr
-	args := []string{"env", fmt.Sprintf("HTTP_PROXY=%s", ProxyAddress), "NO_PROXY=", Target(), "start", "-p", profile}
-	rr, err := Run(ctx, t, "/usr/bin/env", args...)
+	c := exec.CommandContext(ctx, Target(), "start", "-p", profile, "--wait=false")
+	env := os.Environ()
+	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
+	env = append(env, "NO_PROXY=")
+	c.Env = env
+	rr, err := Run(t, c)
 	if err != nil {
-		t.Errorf("%s failed: %v", args, err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	want := "Found network options:"
@@ -126,7 +128,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 // validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
 func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(ctx, t, "kubectl", "config", "current-context")
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "config", "current-context"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -144,7 +146,7 @@ func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
 
 // validateComponentHealth asserts that all Kubernetes components are healthy
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(ctx, t, "kubectl", "--context", profile, "get", "cs", "-o=json")
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "cs", "-o=json"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -171,7 +173,7 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 // validateDashboardCmd asserts that the dashboard command works
 func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
-	ss, err := Start(ctx, t, Target(), args...)
+	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("%s failed: %v", args, err)
 	}
@@ -205,7 +207,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateDNS asserts that all Kubernetes DNS is healthy
 func validateDNS(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -215,7 +217,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("wait: %v", err)
 	}
 
-	rr, err = Run(ctx, t, "kubectl", "--context", profile, "exec", names[0], "nslookup", "kubernetes.default")
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "nslookup", "kubernetes.default"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -231,7 +233,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cache unsupported by none")
 	}
-	rr, err := Run(ctx, t, Target(), "-p", profile, "cache", "add", "busybox")
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", "busybox"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -254,7 +256,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 
 	for _, tc := range tests {
 		args := append([]string{"-p", profile, "config"}, tc.args...)
-		rr, err := Run(ctx, t, Target(), args...)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil && tc.wantErr == "" {
 			t.Errorf("unexpected failure: %s failed: %v", rr.Args, err)
 		}
@@ -272,7 +274,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateLogsCmd asserts basic "logs" command functionality
 func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(ctx, t, Target(), "-p", profile, "logs")
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -285,7 +287,7 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateProfileCmd asserts basic "profile" command functionality
 func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(ctx, t, Target(), "profile", "list")
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -293,7 +295,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateServiceCmd asserts basic "service" command functionality
 func validateServicesCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(ctx, t, Target(), "-p", profile, "service", "list")
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -308,7 +310,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 	want := "hello\r\n"
-	rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello")))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

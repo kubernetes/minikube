@@ -22,6 +22,7 @@ package integration
 import (
 	"context"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strconv"
@@ -44,22 +45,22 @@ func TestChangeNoneUser(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	startArgs := append([]string{"CHANGE_MINIKUBE_NONE_USER=true", Target(), "start", "--wait=false"}, StartArgs()...)
-	rr, err := Run(ctx, t, "/usr/bin/env", startArgs...)
+	rr, err := Run(t, exec.CommandContext(ctx, "/usr/bin/env", startArgs...))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = Run(ctx, t, Target(), "delete")
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = Run(ctx, t, "/usr/bin/env", startArgs...)
+	rr, err = Run(t, exec.CommandContext(ctx, "/usr/bin/env", startArgs...))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = Run(ctx, t, Target(), "status")
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "status"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

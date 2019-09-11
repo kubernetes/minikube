@@ -20,6 +20,7 @@ package integration
 
 import (
 	"context"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
@@ -36,12 +37,12 @@ func TestDockerFlags(t *testing.T) {
 	defer Cleanup(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true"}, StartArgs()...)
-	rr, err := Run(ctx, t, Target(), args...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = Run(ctx, t, Target(), "-p", profile, "ssh", "systemctl show docker --property=Environment --no-pager")
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "systemctl show docker --property=Environment --no-pager"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -52,7 +53,7 @@ func TestDockerFlags(t *testing.T) {
 		}
 	}
 
-	rr, err = Run(ctx, t, Target(), "-p", profile, "ssh", "systemctl show docker --property=RunStart --no-pager")
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "systemctl show docker --property=RunStart --no-pager"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

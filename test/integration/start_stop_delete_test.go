@@ -21,6 +21,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -86,7 +87,7 @@ func TestStartStop(t *testing.T) {
 				// Use copious amounts of debugging for this stress test: we will need it.
 				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=8"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
-				rr, err := Run(ctx, t, Target(), startArgs...)
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
@@ -96,7 +97,7 @@ func TestStartStop(t *testing.T) {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
 				} else {
 					// schedule a pod to assert persistence
-					rr, err = Run(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
+					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 					if err != nil {
 						t.Fatalf("%s failed: %v", rr.Args, err)
 					}
@@ -106,7 +107,7 @@ func TestStartStop(t *testing.T) {
 					}
 				}
 
-				rr, err = Run(ctx, t, Target(), "stop", "-p", profile)
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
@@ -116,7 +117,7 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("status = %q; want = %q", got, state.Stopped)
 				}
 
-				rr, err = Run(ctx, t, Target(), startArgs...)
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
 					t.Fatalf("%s failed: %v", rr.Args, err)
@@ -124,11 +125,8 @@ func TestStartStop(t *testing.T) {
 
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-				} else {
-					// busybox should come back up
-					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
-						t.Fatalf("wait: %v", err)
-					}
+				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+					t.Fatalf("wait: %v", err)
 				}
 
 				got = Status(ctx, t, Target(), profile)
@@ -137,7 +135,7 @@ func TestStartStop(t *testing.T) {
 				}
 
 				// Normally handled by cleanuprofile, but not fatal there
-				rr, err = Run(ctx, t, Target(), "delete", "-p", profile)
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}

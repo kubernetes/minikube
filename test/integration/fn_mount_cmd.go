@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -54,7 +55,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	ctx, cancel := context.WithTimeout(ctx, 2*time.Minute)
 
 	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
-	ss, err := Start(ctx, t, Target(), args...)
+	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%v failed: %v", args, err)
 	}
@@ -62,7 +63,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	defer func() {
 		if t.Failed() {
 			t.Logf("%s failed, getting debug info...", t.Name())
-			rr, err := Run(context.Background(), t, Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates")
+			rr, err := Run(t, exec.Command(Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates"))
 			if err != nil {
 				t.Logf("%s: %v", rr.Command(), err)
 			} else {
@@ -71,7 +72,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 
 		// Cleanup in advance of future tests
-		rr, err := Run(context.Background(), t, Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p")
+		rr, err := Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p"))
 		if err != nil {
 			t.Logf("%s: %v", rr.Command(), err)
 		}
@@ -96,7 +97,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// Block until the mount succeeds to avoid file race
 	checkMount := func() error {
-		_, err := Run(ctx, t, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p")
+		_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "findmnt -T /mount-9p | grep 9p"))
 		return err
 	}
 
@@ -106,7 +107,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Assert that we can access the mount without an error. Display for debugging.
-	rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", "--", "ls", "-la", guestMount)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "--", "ls", "-la", guestMount))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -114,7 +115,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 
 	// Assert that the mount contains our unique test marker, as opposed to a stale mount
 	tp := filepath.Join("/mount-9p", testMarker)
-	rr, err = Run(ctx, t, Target(), "-p", profile, "ssh", "cat", tp)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat", tp))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -125,7 +126,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Start the "busybox-mount" pod.
-	rr, err = Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml"))
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml")))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -146,7 +147,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// test that file written from host was read in by the pod via cat /mount-9p/written-by-host;
-	rr, err = Run(ctx, t, "kubectl", "--context", profile, "logs", "busybox-mount")
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "busybox-mount"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -158,7 +159,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	for _, name := range []string{createdByTest, createdByPod} {
 		gp := path.Join(guestMount, name)
 		// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
-		rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", "stat", gp)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "stat", gp))
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Args, err)
 		}

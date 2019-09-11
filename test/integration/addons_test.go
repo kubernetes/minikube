@@ -23,6 +23,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -42,7 +43,7 @@ func TestAddons(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600"}, StartArgs()...)
-	rr, err := Run(ctx, t, Target(), args...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -71,7 +72,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 
-	rr, err := Run(ctx, t, Target(), "-p", profile, "addons", "enable", "ingress")
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "enable", "ingress"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -88,11 +89,11 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("wait: %v", err)
 	}
 
-	rr, err = Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml"))
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml")))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	rr, err = Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml"))
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml")))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -106,7 +107,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 
 	want := "Welcome to nginx!"
 	checkIngress := func() error {
-		rr, err := Run(ctx, t, Target(), "-p", profile, "ssh", fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'")))
 		if err != nil {
 			return err
 		}
@@ -123,14 +124,14 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("ingress never responded as expected on 127.0.0.1:80: %v", err)
 	}
 
-	rr, err = Run(ctx, t, Target(), "-p", profile, "addons", "disable", "ingress", "--alsologtostderr", "-v=1")
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 }
 
 func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(ctx, t, Target(), "-p", profile, "addons", "enable", "registry")
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "enable", "registry"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -154,12 +155,12 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Test from inside the cluster (no curl available on busybox)
-	rr, err = Run(ctx, t, "kubectl", "--context", profile, "delete", "po", "-l", "run=registry-test", "--now")
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "po", "-l", "run=registry-test", "--now"))
 	if err != nil {
 		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Args, err)
 	}
 
-	rr, err = Run(ctx, t, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local")
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -169,7 +170,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Test from outside the cluster
-	rr, err = Run(ctx, t, Target(), "-p", profile, "ip")
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ip"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
@@ -198,7 +199,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf(err.Error())
 	}
 
-	rr, err = Run(ctx, t, Target(), "-p", profile, "addons", "disable", "registry", "--alsologtostderr", "-v=1")
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "registry", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
