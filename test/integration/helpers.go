@@ -162,7 +162,7 @@ func (ss *StartSession) Stop(t *testing.T) {
 
 // Cleanup cleans up after a test run
 func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
-	t.Helper()
+	// No helper because it makes the call log confusing.
 	if *cleanup {
 		_, err := Run(context.Background(), t, Target(), "delete", "-p", profile)
 		if err != nil {

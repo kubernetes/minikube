@@ -59,7 +59,7 @@ func TestFunctional(t *testing.T) {
 		}{
 			{"StartWithProxy", validateStartWithProxy}, // Set everything else up for success
 			{"KubeContext", validateKubeContext},       // Racy: must come immediately after "minikube start"
-			{"ConfigCmd", validateConfigCmd},           // Each subtest causes necessary side effects
+			{"CacheCmd", validateCacheCmd},             // Caches images needed for subsequent tests because of proxy
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -80,6 +80,7 @@ func TestFunctional(t *testing.T) {
 		}{
 			{"AddonManager", validateAddonManager},
 			{"ComponentHealth", validateComponentHealth},
+			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DNS", validateDNS},
 			{"LogsCmd", validateLogsCmd},
@@ -222,6 +223,17 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	want := []byte("10.96.0.1")
 	if !bytes.Contains(rr.Stdout.Bytes(), want) {
 		t.Errorf("nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
+	}
+}
+
+// validateCacheCmd asserts basic "ssh" command functionality
+func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("skipping: cache unsupported by none")
+	}
+	rr, err := Run(ctx, t, Target(), "-p", profile, "cache", "add", "busybox")
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 }
 

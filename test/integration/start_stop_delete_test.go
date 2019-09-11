@@ -91,14 +91,19 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 
-				// schedule a pod to assert persistence
-				rr, err = Run(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
-				if err != nil {
-					t.Fatalf("%s failed: %v", rr.Args, err)
-				}
+				// SADNESS: 0/1 nodes are available: 1 node(s) had taints that the pod didn't tolerate.
+				if strings.Contains(tc.name, "cni") {
+					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+				} else {
+					// schedule a pod to assert persistence
+					rr, err = Run(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
+					if err != nil {
+						t.Fatalf("%s failed: %v", rr.Args, err)
+					}
 
-				if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
-					t.Fatalf("wait: %v", err)
+					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+						t.Fatalf("wait: %v", err)
+					}
 				}
 
 				rr, err = Run(ctx, t, Target(), "stop", "-p", profile)
@@ -117,9 +122,13 @@ func TestStartStop(t *testing.T) {
 					t.Fatalf("%s failed: %v", rr.Args, err)
 				}
 
-				// busybox should come back up
-				if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
-					t.Fatalf("wait: %v", err)
+				if strings.Contains(tc.name, "cni") {
+					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+				} else {
+					// busybox should come back up
+					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+						t.Fatalf("wait: %v", err)
+					}
 				}
 
 				got = Status(ctx, t, Target(), profile)
