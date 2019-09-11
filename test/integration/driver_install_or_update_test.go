@@ -60,7 +60,14 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected driver to exist. test: %s, got: %v", tc.name, err)
 		}
 
-		os.Setenv("PATH", fmt.Sprintf("%s:%s", tc.path, os.Getenv("PATH")))
+		pwd, err := os.Getwd()
+		if err != nil {
+			t.Fatalf("Not expected error getting working directory. test: %s, got: %v", tc.name, err)
+		}
+		path := filepath.Join(pwd, tc.path)
+		fmt.Printf("InstallOrUpdate path: %s\n", path)
+		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, os.Getenv("PATH")))
+
 		fmt.Printf("InstallOrUpdate PATH: %s\n", os.Getenv("PATH"))
 
 		newerVersion, err := semver.Make("1.1.3")
