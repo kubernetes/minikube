@@ -46,6 +46,9 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 		{name: "driver-with-older-version", path: filepath.Join(*testdataDir, "kvm2-driver-without-version")},
 	}
 
+	originalPath := os.Getenv("PATH")
+	defer os.Setenv("PATH", originalPath)
+
 	for _, tc := range tests {
 		dir, err := ioutil.TempDir("", tc.name)
 		if err != nil {
@@ -71,7 +74,7 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected not expected when changing driver permission. test: %s, got: %v", tc.name, err)
 		}
 
-		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, os.Getenv("PATH")))
+		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, originalPath))
 
 		newerVersion, err := semver.Make("1.1.3")
 		if err != nil {
