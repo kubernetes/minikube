@@ -340,11 +340,12 @@ func killProcessFamily(t *testing.T, pid int) {
 		t.Logf("unable to find parent, assuming dead: %v", err)
 		return
 	}
-	procs := []*process.Process{parent}
+	procs := []*process.Process{}
 	children, err := parent.Children()
 	if err == nil {
-		procs = append(children, parent)
+		procs = append(procs, children...)
 	}
+	procs = append(procs, parent)
 
 	for _, p := range procs {
 		if err := p.Terminate(); err != nil {
@@ -356,5 +357,4 @@ func killProcessFamily(t *testing.T, pid int) {
 			continue
 		}
 	}
-	return
 }
