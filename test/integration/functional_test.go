@@ -23,19 +23,30 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/elazarl/goproxy"
+	"github.com/hashicorp/go-retryablehttp"
+	"github.com/phayes/freeport"
+	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
 )
+
+// ProxyAddress is the location of the currently configured HTTP server
+var ProxyAddress string
 
 // validateFunc are for subtests that share a single setup
 type validateFunc func(context.Context, *testing.T, string)
 
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
+
 	profile := Profile("functional")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
@@ -46,9 +57,9 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"Start", validateStart},             // Set everything else up for success
-			{"KubeContext", validateKubeContext}, // Racy: must come immediately after "minikube start"
-			{"ConfigCmd", validateConfigCmd},     // Each subtest causes necessary side effects
+			{"StartWithProxy", validateStartWithProxy}, // Set everything else up for success
+			{"KubeContext", validateKubeContext},       // Racy: must come immediately after "minikube start"
+			{"ConfigCmd", validateConfigCmd},           // Each subtest causes necessary side effects
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -58,6 +69,9 @@ func TestFunctional(t *testing.T) {
 		}
 	})
 
+	// Now that we are out of the woods, lets go.
+	MaybeParallel(t)
+
 	// Parallelized tests
 	t.Run("parallel", func(t *testing.T) {
 		tests := []struct {
@@ -66,6 +80,7 @@ func TestFunctional(t *testing.T) {
 		}{
 			{"AddonManager", validateAddonManager},
 			{"ComponentHealth", validateComponentHealth},
+			{"DashboardCmd", validateDashboardCmd},
 			{"DNS", validateDNS},
 			{"LogsCmd", validateLogsCmd},
 			{"MountCmd", validateMountCmd},
@@ -85,12 +100,26 @@ func TestFunctional(t *testing.T) {
 	})
 }
 
-func validateStart(ctx context.Context, t *testing.T, profile string) {
-	// Start a slightly larger VM to accept everything we test here
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory", "2250", "--alsologtostderr", "-v=1"}, StartArgs()...)
-	rr, err := Run(ctx, t, Target(), args...)
+func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
+	srv, err := startHTTPProxy(t)
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("Failed to set up the test proxy: %s", err)
+	}
+	ProxyAddress = srv.Addr
+	args := []string{"env", fmt.Sprintf("HTTP_PROXY=%s", ProxyAddress), "NO_PROXY=", Target(), "start", "-p", profile}
+	rr, err := Run(ctx, t, "/usr/bin/env", args...)
+	if err != nil {
+		t.Errorf("%s failed: %v", args, err)
+	}
+
+	want := "Found network options:"
+	if !strings.Contains(rr.Stdout.String(), want) {
+		t.Errorf("start stdout=%s, want: *%s*", rr.Stdout.String(), want)
+	}
+
+	want = "You appear to be using a proxy"
+	if !strings.Contains(rr.Stderr.String(), want) {
+		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
 	}
 }
 
@@ -138,6 +167,41 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
+// validateDashboardCmd asserts that the dashboard command works
+func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
+	args := []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
+	ss, err := Start(ctx, t, Target(), args...)
+	if err != nil {
+		t.Errorf("%s failed: %v", args, err)
+	}
+	defer func() {
+		ss.Stop(t)
+	}()
+
+	start := time.Now()
+	s, err := ReadLineWithTimeout(ss.Stdout, 300*time.Second)
+	if err != nil {
+		t.Fatalf("failed to read url within %s: %v\n", time.Since(start), err)
+	}
+
+	u, err := url.Parse(strings.TrimSpace(s))
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", s, err)
+	}
+
+	resp, err := retryablehttp.Get(u.String())
+	if err != nil {
+		t.Errorf("failed get: %v", err)
+	}
+	if resp.StatusCode != http.StatusOK {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			t.Errorf("Unable to read http response body: %v", err)
+		}
+		t.Errorf("%s returned status code %d, expected %d.\nbody:\n%s", u, resp.StatusCode, http.StatusOK, body)
+	}
+}
+
 // validateDNS asserts that all Kubernetes DNS is healthy
 func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(ctx, t, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
@@ -145,7 +209,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 3*time.Minute)
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}
@@ -239,4 +303,22 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	if rr.Stdout.String() != want {
 		t.Errorf("%v = %q, want = %q", rr.Args, rr.Stdout.String(), want)
 	}
+}
+
+// startHTTPProxy runs a local http proxy and sets the env vars for it.
+func startHTTPProxy(t *testing.T) (*http.Server, error) {
+	port, err := freeport.GetFreePort()
+	if err != nil {
+		return nil, errors.Wrap(err, "Failed to get an open port")
+	}
+
+	addr := fmt.Sprintf("localhost:%d", port)
+	proxy := goproxy.NewProxyHttpServer()
+	srv := &http.Server{Addr: addr, Handler: proxy}
+	go func(s *http.Server, t *testing.T) {
+		if err := s.ListenAndServe(); err != http.ErrServerClosed {
+			t.Errorf("Failed to start http server for proxy mock")
+		}
+	}(srv, t)
+	return srv, nil
 }

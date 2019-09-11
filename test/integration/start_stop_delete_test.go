@@ -21,6 +21,7 @@ package integration
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -30,6 +31,8 @@ import (
 )
 
 func TestStartStop(t *testing.T) {
+	MaybeParallel(t)
+
 	t.Run("group", func(t *testing.T) {
 		tests := []struct {
 			name string
@@ -42,9 +45,9 @@ func TestStartStop(t *testing.T) {
 				// because the given network doesn't exist
 				"--kvm-network=default",
 				"--kvm-qemu-uri=qemu:///system",
-				"--wait=false",
 				"--disable-driver-mounts",
 				"--keep-context=false",
+				"--container-runtime=docker",
 			}},
 			{"cni", []string{
 				"--feature-gates",
@@ -53,20 +56,17 @@ func TestStartStop(t *testing.T) {
 				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 				fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
-				"--wait=false",
 			}},
 			{"containerd", []string{
 				"--container-runtime=containerd",
 				"--docker-opt",
 				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
-				"--wait=false",
 			}},
 			{"crio", []string{
 				"--container-runtime=crio",
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
-				"--wait=false",
 			}},
 		}
 
@@ -91,6 +91,16 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 
+				// schedule a pod to assert persistence
+				rr, err = Run(ctx, t, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml"))
+				if err != nil {
+					t.Fatalf("%s failed: %v", rr.Args, err)
+				}
+
+				if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+					t.Fatalf("wait: %v", err)
+				}
+
 				rr, err = Run(ctx, t, Target(), "stop", "-p", profile)
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
@@ -105,6 +115,11 @@ func TestStartStop(t *testing.T) {
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
 					t.Fatalf("%s failed: %v", rr.Args, err)
+				}
+
+				// busybox should come back up
+				if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+					t.Fatalf("wait: %v", err)
 				}
 
 				got = Status(ctx, t, Target(), profile)

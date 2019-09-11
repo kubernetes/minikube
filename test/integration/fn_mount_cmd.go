@@ -130,7 +130,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox-mount", 30*time.Second); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox-mount", 2*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 

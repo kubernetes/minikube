@@ -25,12 +25,13 @@ import (
 	"time"
 )
 
-func TestDocker(t *testing.T) {
+func TestDockerFlags(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support ssh or bundle docker")
 	}
+	MaybeParallel(t)
 
-	profile := Profile("docker")
+	profile := Profile("docker-flags")
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer Cleanup(t, profile, cancel)
 
@@ -57,7 +58,7 @@ func TestDocker(t *testing.T) {
 	}
 	for _, opt := range []string{"--debug", "--icc=true"} {
 		if !strings.Contains(rr.Stdout.String(), opt) {
-			t.Fatalf("Option %s missing from RunStart: %s.", opt, rr.Stdout)
+			t.Fatalf("%s = %q, want *%s*", rr.Command(), rr.Stdout, opt)
 		}
 	}
 }

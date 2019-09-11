@@ -33,6 +33,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/shirou/gopsutil/process"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -136,7 +137,11 @@ func Start(ctx context.Context, t *testing.T, name string, arg ...string) (*Star
 func (ss *StartSession) Stop(t *testing.T) {
 	t.Helper()
 	t.Logf("Stopping %s ...", ss.cmd.Args)
-	KillProcessFamily(ss.cmd.Process.Pid)
+	if ss.cmd.Process == nil {
+		t.Logf("%s has a nil Process. Maybe it's dead? How weird!", ss.cmd.Args)
+		return
+	}
+	killProcessFamily(t, ss.cmd.Process.Pid)
 	if t.Failed() {
 		if ss.Stdout.Size() > 0 {
 			stdout, err := ioutil.ReadAll(ss.Stdout)
@@ -227,7 +232,6 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 			t.Logf("Pod(%s).List(%v) returned error: %v", ns, selector, err)
 			// Don't bother to retry: something is very wrong.
 			return true, err
-			podStart = time.Time{}
 		}
 		if len(pods.Items) == 0 {
 			podStart = time.Time{}
@@ -289,9 +293,8 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 		t.Logf("%s: %v", rr.Command(), rerr)
 		// return now, because kubectl is hosed
 		return
-	} else {
-		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 	}
+	t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 
 	for _, name := range names {
 		rr, err := Run(ctx, t, "kubectl", "--context", profile, "describe", "po", name, "-n", ns)
@@ -331,7 +334,7 @@ func MaybeParallel(t *testing.T) {
 }
 
 // killProcessFamily kills a pid and all of its children
-func killProcessFamily(pid int, t *testing.T) {
+func killProcessFamily(t *testing.T, pid int) {
 	parent, err := process.NewProcess(int32(pid))
 	if err != nil {
 		t.Logf("unable to find parent, assuming dead: %v", err)
@@ -353,5 +356,5 @@ func killProcessFamily(pid int, t *testing.T) {
 			continue
 		}
 	}
-	return nil
+	return
 }
