@@ -55,17 +55,25 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 
 		fmt.Printf("InstallOrUpdate temp dir: %s\n", dir)
 
-		_, err = os.Stat(filepath.Join(tc.path, "docker-machine-driver-kvm2"))
+		pwd, err := os.Getwd()
+		if err != nil {
+			t.Fatalf("Error not expected when getting working directory. test: %s, got: %v", tc.name, err)
+		}
+
+		path := filepath.Join(pwd, tc.path)
+		fmt.Printf("InstallOrUpdate path: %s\n", path)
+
+		_, err = os.Stat(filepath.Join(path, "docker-machine-driver-kvm2"))
 		if err != nil {
 			t.Fatalf("Expected driver to exist. test: %s, got: %v", tc.name, err)
 		}
 
-		pwd, err := os.Getwd()
+		// change permission to allow driver to be executable
+		err = os.Chmod(filepath.Join(path, "docker-machine-driver-kvm2"), 0777)
 		if err != nil {
-			t.Fatalf("Not expected error getting working directory. test: %s, got: %v", tc.name, err)
+			t.Fatalf("Expected not expected when changing driver permission. test: %s, got: %v", tc.name, err)
 		}
-		path := filepath.Join(pwd, tc.path)
-		fmt.Printf("InstallOrUpdate path: %s\n", path)
+
 		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, os.Getenv("PATH")))
 
 		fmt.Printf("InstallOrUpdate PATH: %s\n", os.Getenv("PATH"))
