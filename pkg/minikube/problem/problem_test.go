@@ -17,9 +17,88 @@ limitations under the License.
 package problem
 
 import (
+	"bytes"
 	"fmt"
+	"strings"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/out"
 )
+
+type buffFd struct {
+	bytes.Buffer
+	uptr uintptr
+}
+
+func (b buffFd) Fd() uintptr { return b.uptr }
+
+func TestDisplay(t *testing.T) {
+	buffErr := buffFd{}
+	out.SetErrFile(&buffErr)
+	var tests = []struct {
+		description string
+		problem     Problem
+		expected    string
+	}{
+		{
+			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test")},
+			description: "url, id and err",
+			expected: `
+* Error: [example] test
+* Suggestion: 
+* Documentation: example.com
+`,
+		},
+		{
+			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test"), Issues: []int{0, 1}, Advice: "you need a hug"},
+			description: "with 2 issues and suggestion",
+			expected: `
+* Error: [example] test
+* Suggestion: you need a hug
+* Documentation: example.com
+* Related issues:
+  - https://github.com/kubernetes/minikube/issues/0
+  - https://github.com/kubernetes/minikube/issues/1
+`,
+		},
+		{
+			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test"), Issues: []int{0, 1}},
+			description: "with 2 issues",
+			expected: `
+* Error: [example] test
+* Suggestion: 
+* Documentation: example.com
+* Related issues:
+  - https://github.com/kubernetes/minikube/issues/0
+  - https://github.com/kubernetes/minikube/issues/1
+`,
+		},
+		// 6 issues should be trimmed to 3
+		{
+			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test"), Issues: []int{0, 1, 2, 3, 4, 5}},
+			description: "with 6 issues",
+			expected: `
+* Error: [example] test
+* Suggestion: 
+* Documentation: example.com
+* Related issues:
+  - https://github.com/kubernetes/minikube/issues/0
+  - https://github.com/kubernetes/minikube/issues/1
+  - https://github.com/kubernetes/minikube/issues/2
+`,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.description, func(t *testing.T) {
+			buffErr.Truncate(0)
+			tc.problem.Display()
+			errStr := buffErr.String()
+			if strings.TrimSpace(errStr) != strings.TrimSpace(tc.expected) {
+				t.Fatalf("Expected errString:\n%v\ngot:\n%v\n", tc.expected, errStr)
+			}
+		})
+	}
+}
 
 func TestFromError(t *testing.T) {
 	var tests = []struct {
