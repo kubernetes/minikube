@@ -48,7 +48,7 @@ type validateFunc func(context.Context, *testing.T, string)
 func TestFunctional(t *testing.T) {
 
 	profile := UniqueProfileName("functional")
-	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Serial tests
