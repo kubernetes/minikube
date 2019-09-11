@@ -24,7 +24,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 func main() {
@@ -81,6 +81,6 @@ func main() {
 		return ioutil.WriteFile(path, cf, info.Mode())
 	})
 	if err != nil {
-		glog.Errorf("Walk failed: %v", err)
+		klog.Errorf("Walk failed: %v", err)
 	}
 }

@@ -25,7 +25,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
@@ -43,16 +43,16 @@ func (router *osRouter) EnsureRouteIsAdded(route *Route) error {
 	serviceCIDR := route.DestCIDR.String()
 	gatewayIP := route.Gateway.String()
 
-	glog.Infof("Adding route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
+	klog.Infof("Adding route for CIDR %s to gateway %s", serviceCIDR, gatewayIP)
 	command := exec.Command("sudo", "route", "-n", "add", serviceCIDR, gatewayIP)
-	glog.Infof("About to run command: %s", command.Args)
+	klog.Infof("About to run command: %s", command.Args)
 	stdInAndOut, err := command.CombinedOutput()
 	message := fmt.Sprintf("%s", stdInAndOut)
 	re := regexp.MustCompile(fmt.Sprintf("add net (.*): gateway %s\n", gatewayIP))
 	if !re.MatchString(message) {
 		return fmt.Errorf("error adding Route: %s, %d", message, len(strings.Split(message, "\n")))
 	}
-	glog.Infof("%s", stdInAndOut)
+	klog.Infof("%s", stdInAndOut)
 
 	return err
 }
@@ -97,9 +97,9 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 
 		_, ipNet, err := net.ParseCIDR(dstCIDRString)
 		if err != nil {
-			glog.V(4).Infof("skipping line: can't parse CIDR from routing table: %s", dstCIDRString)
+			klog.V(4).Infof("skipping line: can't parse CIDR from routing table: %s", dstCIDRString)
 		} else if gatewayIP == nil {
-			glog.V(4).Infof("skipping line: can't parse IP from routing table: %s", gatewayIPString)
+			klog.V(4).Infof("skipping line: can't parse IP from routing table: %s", gatewayIPString)
 		} else {
 			tableLine := routingTableLine{
 				route: &Route{
@@ -148,7 +148,7 @@ func (router *osRouter) padCIDR(origCIDR string) string {
 }
 
 func (router *osRouter) Cleanup(route *Route) error {
-	glog.V(3).Infof("Cleaning up %s\n", route)
+	klog.V(3).Infof("Cleaning up %s\n", route)
 	exists, err := isValidToAddOrDelete(router, route)
 	if err != nil {
 		return err
@@ -162,7 +162,7 @@ func (router *osRouter) Cleanup(route *Route) error {
 		return err
 	}
 	message := fmt.Sprintf("%s", stdInAndOut)
-	glog.V(4).Infof("%s", message)
+	klog.V(4).Infof("%s", message)
 	re := regexp.MustCompile("^delete net ([^:]*)$")
 	if !re.MatchString(message) {
 		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))

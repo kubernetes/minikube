@@ -22,10 +22,10 @@ import (
 	"path"
 	"runtime"
 
-	"github.com/golang/glog"
 	"github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -60,7 +60,7 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 	_, err := os.Stat(targetFilepath)
 	// If it exists, do no verification and continue
 	if err == nil {
-		glog.Infof("Not caching binary, using %s", url)
+		klog.Infof("Not caching binary, using %s", url)
 		return targetFilepath, nil
 	}
 	if !os.IsNotExist(err) {

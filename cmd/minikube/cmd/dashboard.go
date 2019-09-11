@@ -28,10 +28,10 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/golang/glog"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -66,7 +66,7 @@ var dashboardCmd = &cobra.Command{
 		defer func() {
 			err := api.Close()
 			if err != nil {
-				glog.Warningf("Failed to close API: %v", err)
+				klog.Warningf("Failed to close API: %v", err)
 			}
 		}()
 
@@ -85,7 +85,7 @@ var dashboardCmd = &cobra.Command{
 
 		err = proxy.ExcludeIP(cc.KubernetesConfig.NodeIP) // to be used for http get calls
 		if err != nil {
-			glog.Errorf("Error excluding IP from proxy: %s", err)
+			klog.Errorf("Error excluding IP from proxy: %s", err)
 		}
 
 		kubectl, err := exec.LookPath("kubectl")
@@ -143,9 +143,9 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
-		glog.Infof("Success! I will now quietly sit around until kubectl proxy exits!")
+		klog.Infof("Success! I will now quietly sit around until kubectl proxy exits!")
 		if err = p.Wait(); err != nil {
-			glog.Errorf("Wait: %v", err)
+			klog.Errorf("Wait: %v", err)
 		}
 	},
 }
@@ -162,12 +162,12 @@ func kubectlProxy(path string) (*exec.Cmd, string, error) {
 		return nil, "", errors.Wrap(err, "cmd stdout")
 	}
 
-	glog.Infof("Executing: %s %s", cmd.Path, cmd.Args)
+	klog.Infof("Executing: %s %s", cmd.Path, cmd.Args)
 	if err := cmd.Start(); err != nil {
 		return nil, "", errors.Wrap(err, "proxy start")
 	}
 
-	glog.Infof("Waiting for kubectl to output host:port ...")
+	klog.Infof("Waiting for kubectl to output host:port ...")
 	reader := bufio.NewReader(stdoutPipe)
 
 	var out []byte
@@ -180,12 +180,12 @@ func kubectlProxy(path string) (*exec.Cmd, string, error) {
 			break
 		}
 		if timedOut {
-			glog.Infof("timed out waiting for input: possibly due to an old kubectl version.")
+			klog.Infof("timed out waiting for input: possibly due to an old kubectl version.")
 			break
 		}
 		out = append(out, r)
 	}
-	glog.Infof("proxy stdout: %s", string(out))
+	klog.Infof("proxy stdout: %s", string(out))
 	return cmd, hostPortRe.FindString(string(out)), nil
 }
 
@@ -222,7 +222,7 @@ func dashboardURL(proxy string, ns string, svc string) string {
 // checkURL checks if a URL returns 200 HTTP OK
 func checkURL(url string) error {
 	resp, err := http.Get(url)
-	glog.Infof("%s response: %v %+v", url, err, resp)
+	klog.Infof("%s response: %v %+v", url, err, resp)
 	if err != nil {
 		return errors.Wrap(err, "checkURL")
 	}

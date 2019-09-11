@@ -21,7 +21,6 @@ import (
 	"net"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	rbac "k8s.io/api/rbac/v1beta1"
@@ -29,6 +28,7 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/apimachinery/pkg/util/strategicpatch"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/util/retry"
@@ -114,7 +114,7 @@ func elevateKubeSystemPrivileges() error {
 	}
 
 	if _, err := client.RbacV1beta1().ClusterRoleBindings().Get(rbacName, meta.GetOptions{}); err == nil {
-		glog.Infof("Role binding %s already exists. Skipping creation.", rbacName)
+		klog.Infof("Role binding %s already exists. Skipping creation.", rbacName)
 		return nil
 	}
 	_, err = client.RbacV1beta1().ClusterRoleBindings().Create(clusterRoleBinding)
@@ -125,6 +125,6 @@ func elevateKubeSystemPrivileges() error {
 		}
 		return errors.Wrap(err, "creating clusterrolebinding")
 	}
-	glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
+	klog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
 	return nil
 }

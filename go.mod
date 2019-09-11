@@ -23,7 +23,6 @@ require (
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
-	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.3.0
 	github.com/google/go-github/v25 v25.0.2
 	github.com/gorilla/mux v1.7.1 // indirect
@@ -78,6 +77,7 @@ require (
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
+	k8s.io/klog v0.3.1
 	k8s.io/kubectl v0.0.0-00010101000000-000000000000
 	sigs.k8s.io/sig-storage-lib-external-provisioner v4.0.0+incompatible
 )

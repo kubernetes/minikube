@@ -36,7 +36,6 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/ssh"
-	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
@@ -45,6 +44,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/klog"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
@@ -238,17 +238,17 @@ func platform() string {
 	hi, err := gopshost.Info()
 	if err == nil {
 		s.WriteString(fmt.Sprintf("%s %s", strings.Title(hi.Platform), hi.PlatformVersion))
-		glog.Infof("hostinfo: %+v", hi)
+		klog.Infof("hostinfo: %+v", hi)
 	} else {
-		glog.Warningf("gopshost.Info returned error: %v", err)
+		klog.Warningf("gopshost.Info returned error: %v", err)
 		s.WriteString(runtime.GOOS)
 	}
 
 	vsys, vrole, err := gopshost.Virtualization()
 	if err != nil {
-		glog.Warningf("gopshost.Virtualization returned error: %v", err)
+		klog.Warningf("gopshost.Virtualization returned error: %v", err)
 	} else {
-		glog.Infof("virtualization: %s %s", vsys, vrole)
+		klog.Infof("virtualization: %s %s", vsys, vrole)
 	}
 
 	// This environment is exotic, let's output a bit more.
@@ -484,7 +484,7 @@ func showKubectlConnectInfo(kcs *kubeconfig.Settings) {
 func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
-	glog.Infof("selecting image repository for country %s ...", mirrorCountry)
+	klog.Infof("selecting image repository for country %s ...", mirrorCountry)
 
 	if mirrorCountry != "" {
 		localRepos, ok := constants.ImageRepositories[mirrorCountry]
@@ -545,7 +545,7 @@ func minikubeCmd() string {
 func validateUser() {
 	u, err := user.Current()
 	if err != nil {
-		glog.Errorf("Error getting the current user: %v", err)
+		klog.Errorf("Error getting the current user: %v", err)
 		return
 	}
 
@@ -580,7 +580,7 @@ func validateConfig() {
 
 	err := autoSetOptions(viper.GetString(vmDriver))
 	if err != nil {
-		glog.Errorf("Error autoSetOptions : %v", err)
+		klog.Errorf("Error autoSetOptions : %v", err)
 	}
 
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
@@ -597,7 +597,7 @@ func validateConfig() {
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
 		ci, err := cpu.Counts(false)
 		if err != nil {
-			glog.Warningf("Unable to get CPU info: %v", err)
+			klog.Warningf("Unable to get CPU info: %v", err)
 		} else {
 			cpuCount = ci
 		}
@@ -627,7 +627,7 @@ func validateRegistryMirror() {
 		for _, loc := range registryMirror {
 			URL, err := url.Parse(loc)
 			if err != nil {
-				glog.Errorln("Error Parsing URL: ", err)
+				klog.Errorln("Error Parsing URL: ", err)
 			}
 			if (URL.Scheme != "http" && URL.Scheme != "https") || URL.Path != "" {
 				exit.UsageT("Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}", out.V{"url": loc})
@@ -659,7 +659,7 @@ func waitCacheImages(g *errgroup.Group) {
 		return
 	}
 	if err := g.Wait(); err != nil {
-		glog.Errorln("Error caching images: ", err)
+		klog.Errorln("Error caching images: ", err)
 	}
 }
 
@@ -830,7 +830,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, mc)
 		if err != nil {
-			glog.Errorf("StartHost: %v", err)
+			klog.Errorf("StartHost: %v", err)
 		}
 		return err
 	}
@@ -904,7 +904,7 @@ func validateKubernetesVersions(old *cfg.Config) (string, bool) {
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
 	if err != nil {
-		glog.Errorf("Error parsing old version %q: %v", old.KubernetesConfig.KubernetesVersion, err)
+		klog.Errorf("Error parsing old version %q: %v", old.KubernetesConfig.KubernetesVersion, err)
 	}
 
 	if nvs.LT(ovs) {
@@ -1001,12 +1001,12 @@ func configureMounts() {
 	out.T(out.Mounting, "Creating mount {{.name}} ...", out.V{"name": viper.GetString(mountString)})
 	path := os.Args[0]
 	mountDebugVal := 0
-	if glog.V(8) {
+	if klog.V(8) {
 		mountDebugVal = 1
 	}
 	mountCmd := exec.Command(path, "mount", fmt.Sprintf("--v=%d", mountDebugVal), viper.GetString(mountString))
 	mountCmd.Env = append(os.Environ(), constants.IsMinikubeChildProcess+"=true")
-	if glog.V(8) {
+	if klog.V(8) {
 		mountCmd.Stdout = os.Stdout
 		mountCmd.Stderr = os.Stderr
 	}

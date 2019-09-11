@@ -23,10 +23,10 @@ import (
 	"path"
 	"sync"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/util"
 )
@@ -81,14 +81,14 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	wg.Add(2)
 
 	go func() {
-		if err := util.TeePrefix(util.ErrPrefix, errPipe, errB, glog.Infof); err != nil {
-			glog.Errorf("tee stderr: %v", err)
+		if err := util.TeePrefix(util.ErrPrefix, errPipe, errB, klog.Infof); err != nil {
+			klog.Errorf("tee stderr: %v", err)
 		}
 		wg.Done()
 	}()
 	go func() {
-		if err := util.TeePrefix(util.OutPrefix, outPipe, outB, glog.Infof); err != nil {
-			glog.Errorf("tee stdout: %v", err)
+		if err := util.TeePrefix(util.OutPrefix, outPipe, outB, klog.Infof); err != nil {
+			klog.Errorf("tee stdout: %v", err)
 		}
 		wg.Done()
 	}()
@@ -99,7 +99,7 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 
 // Run starts a command on the remote and waits for it to return.
 func (s *SSHRunner) Run(cmd string) error {
-	glog.Infof("SSH: %s", cmd)
+	klog.Infof("SSH: %s", cmd)
 	sess, err := s.c.NewSession()
 	if err != nil {
 		return errors.Wrap(err, "NewSession")
@@ -108,7 +108,7 @@ func (s *SSHRunner) Run(cmd string) error {
 	defer func() {
 		if err := sess.Close(); err != nil {
 			if err != io.EOF {
-				glog.Errorf("session close: %v", err)
+				klog.Errorf("session close: %v", err)
 			}
 		}
 	}()
@@ -135,7 +135,7 @@ func (s *SSHRunner) CombinedOutputTo(cmd string, w io.Writer) error {
 // CombinedOutput runs the command on the remote and returns its combined
 // standard output and standard error.
 func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
-	glog.Infoln("Run with output:", cmd)
+	klog.Infoln("Run with output:", cmd)
 	sess, err := s.c.NewSession()
 	if err != nil {
 		return "", errors.Wrap(err, "NewSession")
@@ -167,14 +167,14 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	var g errgroup.Group
 	var copied int64
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
-	glog.Infof("Transferring %d bytes to %s", f.GetLength(), dst)
+	klog.Infof("Transferring %d bytes to %s", f.GetLength(), dst)
 
 	g.Go(func() error {
 		defer w.Close()
 		header := fmt.Sprintf("C%s %d %s\n", f.GetPermissions(), f.GetLength(), f.GetTargetName())
 		fmt.Fprint(w, header)
 		if f.GetLength() == 0 {
-			glog.Warningf("%s is a 0 byte asset!", f.GetTargetName())
+			klog.Warningf("%s is a 0 byte asset!", f.GetTargetName())
 			fmt.Fprint(w, "\x00")
 			return nil
 		}
@@ -186,7 +186,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		if copied != int64(f.GetLength()) {
 			return fmt.Errorf("%s: expected to copy %d bytes, but copied %d instead", f.GetTargetName(), f.GetLength(), copied)
 		}
-		glog.Infof("%s: copied %d bytes", f.GetTargetName(), copied)
+		klog.Infof("%s: copied %d bytes", f.GetTargetName(), copied)
 		fmt.Fprint(w, "\x00")
 		return nil
 	})

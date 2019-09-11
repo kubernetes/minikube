@@ -25,9 +25,9 @@ import (
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/klog"
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
@@ -270,7 +270,7 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 
 	kubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesVersionStr, minikubeVersion.VersionPrefix))
 	if err != nil {
-		glog.Errorln("Error parsing version semver: ", err)
+		klog.Errorln("Error parsing version semver: ", err)
 	}
 
 	var images []string

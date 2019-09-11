@@ -22,8 +22,8 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -45,19 +45,19 @@ var tunnelCmd = &cobra.Command{
 		manager := tunnel.NewManager()
 
 		if cleanup {
-			glog.Info("Checking for tunnels to cleanup...")
+			klog.Info("Checking for tunnels to cleanup...")
 			if err := manager.CleanupNotRunningTunnels(); err != nil {
-				glog.Errorf("error cleaning up: %s", err)
+				klog.Errorf("error cleaning up: %s", err)
 			}
 			return
 		}
 
-		glog.Infof("Creating docker machine client...")
+		klog.Infof("Creating docker machine client...")
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			exit.WithError("error creating machine client", err)
 		}
-		glog.Infof("Creating k8s client...")
+		klog.Infof("Creating k8s client...")
 
 		// Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
 		// We define the tunnel and minikube error free if the API server responds within a second.

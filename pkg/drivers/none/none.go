@@ -24,9 +24,9 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
+	"k8s.io/klog"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -66,7 +66,7 @@ func NewDriver(c Config) *Driver {
 	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
 	// Libraries shouldn't panic, but there is no way for drivers to return error :(
 	if err != nil {
-		glog.Fatalf("unable to create container runtime: %v", err)
+		klog.Fatalf("unable to create container runtime: %v", err)
 	}
 	return &Driver{
 		BaseDriver: &drivers.BaseDriver{
@@ -126,7 +126,7 @@ func (d *Driver) GetURL() (string, error) {
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	if err := checkKubelet(d.exec); err != nil {
-		glog.Infof("kubelet not running: %v", err)
+		klog.Infof("kubelet not running: %v", err)
 		return state.Stopped, nil
 	}
 	return state.Running, nil
@@ -169,10 +169,10 @@ func (d *Driver) Remove() error {
 	if err := d.Kill(); err != nil {
 		return errors.Wrap(err, "kill")
 	}
-	glog.Infof("Removing: %s", cleanupPaths)
+	klog.Infof("Removing: %s", cleanupPaths)
 	cmd := fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " "))
 	if err := d.exec.Run(cmd); err != nil {
-		glog.Errorf("cleanup incomplete: %v", err)
+		klog.Errorf("cleanup incomplete: %v", err)
 	}
 	return nil
 }
@@ -220,18 +220,18 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 
 // stopKubelet idempotently stops the kubelet
 func stopKubelet(exec command.Runner) error {
-	glog.Infof("stopping kubelet.service ...")
+	klog.Infof("stopping kubelet.service ...")
 	stop := func() error {
 		cmdStop := "sudo systemctl stop kubelet.service"
 		cmdCheck := "sudo systemctl show -p SubState kubelet"
 		err := exec.Run(cmdStop)
 		if err != nil {
-			glog.Errorf("temporary error for %q : %v", cmdStop, err)
+			klog.Errorf("temporary error for %q : %v", cmdStop, err)
 		}
 		var out bytes.Buffer
 		errStatus := exec.CombinedOutputTo(cmdCheck, &out)
 		if errStatus != nil {
-			glog.Errorf("temporary error: for %q : %v", cmdCheck, errStatus)
+			klog.Errorf("temporary error: for %q : %v", cmdCheck, errStatus)
 		}
 		if !strings.Contains(out.String(), "dead") && !strings.Contains(out.String(), "failed") {
 			return fmt.Errorf("unexpected kubelet state: %q", out)
@@ -248,12 +248,12 @@ func stopKubelet(exec command.Runner) error {
 
 // restartKubelet restarts the kubelet
 func restartKubelet(exec command.Runner) error {
-	glog.Infof("restarting kubelet.service ...")
+	klog.Infof("restarting kubelet.service ...")
 	return exec.Run("sudo systemctl restart kubelet.service")
 }
 
 // checkKubelet returns an error if the kubelet is not running.
 func checkKubelet(exec command.Runner) error {
-	glog.Infof("checking for running kubelet ...")
+	klog.Infof("checking for running kubelet ...")
 	return exec.Run("systemctl is-active --quiet service kubelet")
 }

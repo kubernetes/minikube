@@ -18,7 +18,6 @@ package cluster
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -37,12 +36,12 @@ import (
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
+	"k8s.io/klog"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -63,14 +62,7 @@ var (
 	maxClockDesyncSeconds = 2.1
 )
 
-// This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
-// INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()
-// see: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/util/logs/logs.go#L32-L34
 func init() {
-	if err := flag.Set("logtostderr", "false"); err != nil {
-		exit.WithError("unable to set logtostderr", err)
-	}
-
 	// Setting the default client to native gives much better performance.
 	ssh.SetDefaultClient(ssh.Native)
 }
@@ -90,12 +82,12 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrapf(err, "exists: %s", cfg.GetMachineName())
 	}
 	if !exists {
-		glog.Infoln("Machine does not exist... provisioning new machine")
-		glog.Infof("Provisioning machine with config: %+v", config)
+		klog.Infoln("Machine does not exist... provisioning new machine")
+		klog.Infof("Provisioning machine with config: %+v", config)
 		return createHost(api, config)
 	}
 
-	glog.Infoln("Skipping create...Using existing machine configuration")
+	klog.Infoln("Skipping create...Using existing machine configuration")
 
 	h, err := api.Load(cfg.GetMachineName())
 	if err != nil {
@@ -114,7 +106,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	s, err := h.Driver.GetState()
-	glog.Infoln("Machine state: ", s)
+	klog.Infoln("Machine state: ", s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting state for host")
 	}
@@ -132,7 +124,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	e := engineOptions(config)
-	glog.Infof("engine options: %+v", e)
+	klog.Infof("engine options: %+v", e)
 
 	out.T(out.Waiting, "Waiting for the host to be provisioned ...")
 	err = configureHost(h, e)
@@ -152,22 +144,22 @@ func localDriver(name string) bool {
 
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
-	glog.Infof("configureHost: %T %+v", h, h)
+	klog.Infof("configureHost: %T %+v", h, h)
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
-		glog.Infof("Detecting provisioner ...")
+		klog.Infof("Detecting provisioner ...")
 		provisioner, err := provision.DetectProvisioner(h.Driver)
 		if err != nil {
 			return errors.Wrap(err, "detecting provisioner")
 		}
-		glog.Infof("Provisioning with %s: %+v", provisioner.String(), *h.HostOptions)
+		klog.Infof("Provisioning with %s: %+v", provisioner.String(), *h.HostOptions)
 		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
 			return errors.Wrap(err, "provision")
 		}
 	}
 
 	if !localDriver(h.Driver.DriverName()) {
-		glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
+		klog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
 		if err := h.ConfigureAuth(); err != nil {
 			return &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 		}
@@ -181,11 +173,11 @@ func configureHost(h *host.Host, e *engine.Options) error {
 func ensureSyncedGuestClock(h hostRunner) error {
 	d, err := guestClockDelta(h, time.Now())
 	if err != nil {
-		glog.Warningf("Unable to measure system clock delta: %v", err)
+		klog.Warningf("Unable to measure system clock delta: %v", err)
 		return nil
 	}
 	if math.Abs(d.Seconds()) < maxClockDesyncSeconds {
-		glog.Infof("guest clock delta is within tolerance: %s", d)
+		klog.Infof("guest clock delta is within tolerance: %s", d)
 		return nil
 	}
 	if err := adjustGuestClock(h, time.Now()); err != nil {
@@ -201,7 +193,7 @@ func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
 	if err != nil {
 		return 0, errors.Wrap(err, "get clock")
 	}
-	glog.Infof("guest clock: %s", out)
+	klog.Infof("guest clock: %s", out)
 	ns := strings.Split(strings.TrimSpace(out), ".")
 	secs, err := strconv.ParseInt(strings.TrimSpace(ns[0]), 10, 64)
 	if err != nil {
@@ -214,14 +206,14 @@ func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
 	// NOTE: In a synced state, remote is a few hundred ms ahead of local
 	remote := time.Unix(secs, nsecs)
 	d := remote.Sub(local)
-	glog.Infof("Guest: %s Remote: %s (delta=%s)", remote, local, d)
+	klog.Infof("Guest: %s Remote: %s (delta=%s)", remote, local, d)
 	return d, nil
 }
 
 // adjustSystemClock adjusts the guest system clock to be nearer to the host system clock
 func adjustGuestClock(h hostRunner, t time.Time) error {
 	out, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", t.Unix()))
-	glog.Infof("clock set: %s (err=%v)", out, err)
+	klog.Infof("clock set: %s (err=%v)", out, err)
 	return err
 }
 
@@ -229,18 +221,18 @@ func adjustGuestClock(h hostRunner, t time.Time) error {
 func trySSHPowerOff(h *host.Host) error {
 	s, err := h.Driver.GetState()
 	if err != nil {
-		glog.Warningf("unable to get state: %v", err)
+		klog.Warningf("unable to get state: %v", err)
 		return err
 	}
 	if s != state.Running {
-		glog.Infof("host is in state %s", s)
+		klog.Infof("host is in state %s", s)
 		return nil
 	}
 
 	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": cfg.GetMachineName()})
 	out, err := h.RunSSHCommand("sudo poweroff")
 	// poweroff always results in an error, since the host disconnects.
-	glog.Infof("poweroff result: out=%s, err=%v", out, err)
+	klog.Infof("poweroff result: out=%s, err=%v", out, err)
 	return nil
 }
 
@@ -253,7 +245,7 @@ func StopHost(api libmachine.API) error {
 
 	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
 	if host.DriverName == constants.DriverHyperv {
-		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
+		klog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
 		if err := trySSHPowerOff(host); err != nil {
 			return errors.Wrap(err, "ssh power off")
 		}
@@ -278,7 +270,7 @@ func DeleteHost(api libmachine.API) error {
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
 	if host.Driver.DriverName() == constants.DriverHyperv {
 		if err := trySSHPowerOff(host); err != nil {
-			glog.Infof("Unable to power off minikube because the host was not found.")
+			klog.Infof("Unable to power off minikube because the host was not found.")
 		}
 	}
 
@@ -356,17 +348,17 @@ func megs(bytes uint64) int {
 func getHostInfo() (*hostInfo, error) {
 	i, err := cpu.Info()
 	if err != nil {
-		glog.Warningf("Unable to get cpu info: %v", err)
+		klog.Warningf("Unable to get cpu info: %v", err)
 		return nil, err
 	}
 	v, err := mem.VirtualMemory()
 	if err != nil {
-		glog.Warningf("Unable to get mem info: %v", err)
+		klog.Warningf("Unable to get mem info: %v", err)
 		return nil, err
 	}
 	d, err := disk.Usage("/")
 	if err != nil {
-		glog.Warningf("Unable to get disk info: %v", err)
+		klog.Warningf("Unable to get disk info: %v", err)
 		return nil, err
 	}
 
@@ -381,13 +373,13 @@ func getHostInfo() (*hostInfo, error) {
 func showLocalOsRelease() {
 	osReleaseOut, err := ioutil.ReadFile("/etc/os-release")
 	if err != nil {
-		glog.Errorf("ReadFile: %v", err)
+		klog.Errorf("ReadFile: %v", err)
 		return
 	}
 
 	osReleaseInfo, err := provision.NewOsRelease(osReleaseOut)
 	if err != nil {
-		glog.Errorf("NewOsRelease: %v", err)
+		klog.Errorf("NewOsRelease: %v", err)
 		return
 	}
 
@@ -398,17 +390,17 @@ func showLocalOsRelease() {
 func showRemoteOsRelease(driver drivers.Driver) {
 	provisioner, err := provision.DetectProvisioner(driver)
 	if err != nil {
-		glog.Errorf("DetectProvisioner: %v", err)
+		klog.Errorf("DetectProvisioner: %v", err)
 		return
 	}
 
 	osReleaseInfo, err := provisioner.GetOsReleaseInfo()
 	if err != nil {
-		glog.Errorf("GetOsReleaseInfo: %v", err)
+		klog.Errorf("GetOsReleaseInfo: %v", err)
 		return
 	}
 
-	glog.Infof("Provisioned with %s", osReleaseInfo.PrettyName)
+	klog.Infof("Provisioned with %s", osReleaseInfo.PrettyName)
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {

@@ -33,11 +33,11 @@ import (
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/klog"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -150,7 +150,7 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string,
 	}
 	client := &http.Client{Transport: tr}
 	resp, err := client.Get(url)
-	glog.Infof("%s response: %v %+v", url, err, resp)
+	klog.Infof("%s response: %v %+v", url, err, resp)
 	// Connection refused, usually.
 	if err != nil {
 		return state.Stopped.String(), nil
@@ -210,11 +210,11 @@ func etcdDataDir() string {
 func (k *Bootstrapper) createCompatSymlinks() error {
 	legacyEtcd := "/data/minikube"
 	if err := k.c.Run(fmt.Sprintf("sudo test -d %s", legacyEtcd)); err != nil {
-		glog.Infof("%s check failed, skipping compat symlinks: %v", legacyEtcd, err)
+		klog.Infof("%s check failed, skipping compat symlinks: %v", legacyEtcd, err)
 		return nil
 	}
 
-	glog.Infof("Found %s, creating compatibility symlinks ...", legacyEtcd)
+	klog.Infof("Found %s, creating compatibility symlinks ...", legacyEtcd)
 	cmd := fmt.Sprintf("sudo ln -s %s %s", legacyEtcd, etcdDataDir())
 	out, err := k.c.CombinedOutput(cmd)
 	if err != nil {
@@ -250,7 +250,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	// Allow older kubeadm versions to function with newer Docker releases.
 	if version.LT(semver.MustParse("1.13.0")) {
-		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
+		klog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
 		ignore = append(ignore, "SystemVerification")
 	}
 
@@ -270,14 +270,14 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	glog.Infof("Configuring cluster permissions ...")
+	klog.Infof("Configuring cluster permissions ...")
 
 	if err := retry.Expo(elevateKubeSystemPrivileges, time.Millisecond*500, 60*time.Second); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
 
 	if err := k.adjustResourceLimits(); err != nil {
-		glog.Warningf("unable to adjust resource limits: %v", err)
+		klog.Warningf("unable to adjust resource limits: %v", err)
 	}
 	return nil
 }
@@ -288,12 +288,12 @@ func (k *Bootstrapper) adjustResourceLimits() error {
 	if err != nil {
 		return errors.Wrap(err, "oom_adj check")
 	}
-	glog.Infof("apiserver oom_adj: %s", score)
+	klog.Infof("apiserver oom_adj: %s", score)
 	// oom_adj is already a negative number
 	if strings.HasPrefix(score, "-") {
 		return nil
 	}
-	glog.Infof("adjusting apiserver oom_adj to -10")
+	klog.Infof("adjusting apiserver oom_adj to -10")
 
 	// Prevent the apiserver from OOM'ing before other pods, as it is our gateway into the cluster.
 	// It'd be preferable to do this via Kubernetes, but kubeadm doesn't have a way to set pod QoS.
@@ -367,10 +367,10 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 
 // RestartCluster restarts the Kubernetes cluster configured by kubeadm
 func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
-	glog.Infof("RestartCluster start")
+	klog.Infof("RestartCluster start")
 	start := time.Now()
 	defer func() {
-		glog.Infof("RestartCluster took %s", time.Since(start))
+		klog.Infof("RestartCluster took %s", time.Since(start))
 	}()
 
 	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
@@ -386,7 +386,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	if err := k.createCompatSymlinks(); err != nil {
-		glog.Errorf("failed to create compat symlinks: %v", err)
+		klog.Errorf("failed to create compat symlinks: %v", err)
 	}
 
 	baseCmd := fmt.Sprintf("%s %s", invokeKubeadm(k8s.KubernetesVersion), phase)
@@ -413,7 +413,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	if err := k.adjustResourceLimits(); err != nil {
-		glog.Warningf("unable to adjust resource limits: %v", err)
+		klog.Warningf("unable to adjust resource limits: %v", err)
 	}
 	return nil
 }
@@ -422,16 +422,16 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 	start := time.Now()
 	defer func() {
-		glog.Infof("duration metric: took %s to wait for apiserver status ...", time.Since(start))
+		klog.Infof("duration metric: took %s to wait for apiserver status ...", time.Since(start))
 	}()
 
-	glog.Infof("Waiting for apiserver process ...")
+	klog.Infof("Waiting for apiserver process ...")
 	// To give a better error message, first check for process existence via ssh
 	// Needs minutes in case the image isn't cached (such as with v1.10.x)
 	err := wait.PollImmediate(time.Millisecond*300, time.Minute*3, func() (bool, error) {
 		ierr := k.c.Run(`sudo pgrep kube-apiserver`)
 		if ierr != nil {
-			glog.Warningf("pgrep apiserver: %v", ierr)
+			klog.Warningf("pgrep apiserver: %v", ierr)
 			return false, nil
 		}
 		return true, nil
@@ -440,12 +440,12 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 		return fmt.Errorf("apiserver process never appeared")
 	}
 
-	glog.Infof("Waiting for apiserver to port healthy status ...")
+	klog.Infof("Waiting for apiserver to port healthy status ...")
 	f := func() (bool, error) {
 		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
-		glog.Infof("apiserver status: %s, err: %v", status, err)
+		klog.Infof("apiserver status: %s, err: %v", status, err)
 		if err != nil {
-			glog.Warningf("status: %v", err)
+			klog.Warningf("status: %v", err)
 			return false, nil
 		}
 		if status != "Running" {
@@ -577,12 +577,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		return errors.Wrap(err, "generating kubelet service")
 	}
 
-	glog.Infof("kubelet %s config:\n%s", cfg.KubernetesVersion, kubeletCfg)
+	klog.Infof("kubelet %s config:\n%s", cfg.KubernetesVersion, kubeletCfg)
 
 	// stop kubelet to avoid "Text File Busy" error
 	err = k.c.Run(`pgrep kubelet && sudo systemctl stop kubelet`)
 	if err != nil {
-		glog.Warningf("unable to stop kubelet: %s", err)
+		klog.Warningf("unable to stop kubelet: %s", err)
 	}
 	if err := transferBinaries(cfg, k.c); err != nil {
 		return errors.Wrap(err, "downloading binaries")

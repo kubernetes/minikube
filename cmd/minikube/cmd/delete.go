@@ -25,11 +25,11 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/golang/glog"
 	ps "github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/klog"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
@@ -131,12 +131,12 @@ func killMountProcess() error {
 		return nil
 	}
 
-	glog.Infof("Found %s ...", pidPath)
+	klog.Infof("Found %s ...", pidPath)
 	out, err := ioutil.ReadFile(pidPath)
 	if err != nil {
 		return errors.Wrap(err, "ReadFile")
 	}
-	glog.Infof("pidfile contents: %s", out)
+	klog.Infof("pidfile contents: %s", out)
 	pid, err := strconv.Atoi(string(out))
 	if err != nil {
 		return errors.Wrap(err, "error parsing pid")
@@ -147,7 +147,7 @@ func killMountProcess() error {
 		return errors.Wrap(err, "ps.FindProcess")
 	}
 	if entry == nil {
-		glog.Infof("Stale pid: %d", pid)
+		klog.Infof("Stale pid: %d", pid)
 		if err := os.Remove(pidPath); err != nil {
 			return errors.Wrap(err, "Removing stale pid")
 		}
@@ -155,15 +155,15 @@ func killMountProcess() error {
 	}
 
 	// We found a process, but it still may not be ours.
-	glog.Infof("Found process %d: %s", pid, entry.Executable())
+	klog.Infof("Found process %d: %s", pid, entry.Executable())
 	proc, err := os.FindProcess(pid)
 	if err != nil {
 		return errors.Wrap(err, "os.FindProcess")
 	}
 
-	glog.Infof("Killing pid %d ...", pid)
+	klog.Infof("Killing pid %d ...", pid)
 	if err := proc.Kill(); err != nil {
-		glog.Infof("Kill failed with %v - removing probably stale pid...", err)
+		klog.Infof("Kill failed with %v - removing probably stale pid...", err)
 		if err := os.Remove(pidPath); err != nil {
 			return errors.Wrap(err, "Removing likely stale unkillable pid")
 		}

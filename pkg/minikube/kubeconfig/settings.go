@@ -20,9 +20,9 @@ import (
 	"io/ioutil"
 	"sync/atomic"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/klog"
 )
 
 // Settings is the minikubes settings for kubeconfig
@@ -116,7 +116,7 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
 func Update(kcs *Settings) error {
-	glog.Infoln("Using kubeconfig: ", kcs.filePath())
+	klog.Infoln("Using kubeconfig: ", kcs.filePath())
 
 	// read existing config or create new if does not exist
 	kcfg, err := readOrNew(kcs.filePath())

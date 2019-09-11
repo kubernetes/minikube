@@ -26,9 +26,9 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -90,7 +90,7 @@ var mountCmd = &cobra.Command{
 			exit.UsageT("Target directory {{.path}} must be an absolute path", out.V{"path": vmPath})
 		}
 		var debugVal int
-		if glog.V(1) {
+		if klog.V(1) {
 			debugVal = 1 // ufs.StartServer takes int debug param
 		}
 		api, err := machine.NewAPIClient()

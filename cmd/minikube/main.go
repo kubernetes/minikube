@@ -17,18 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
-	"fmt"
-	"log"
+	"flag"
 	"os"
-	"strconv"
 
-	// initflag must be imported before any other minikube pkg.
-	// Fix for https://github.com/kubernetes/minikube/issues/4866
-	_ "k8s.io/minikube/pkg/initflag"
-
-	"github.com/golang/glog"
 	"github.com/pkg/profile"
+	"github.com/spf13/pflag"
+	"k8s.io/klog"
 	"k8s.io/minikube/cmd/minikube/cmd"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -39,8 +33,13 @@ import (
 const minikubeEnableProfile = "MINIKUBE_ENABLE_PROFILING"
 
 func main() {
-	captureStdLogMessages()
-	defer glog.Flush()
+	klog.InitFlags(nil)
+	flag.Set("logtostderr", "false")
+	flag.Parse()
+
+	klog.CopyStandardLogTo("INFO")
+
+	pflag.CommandLine.AddGoFlagSet(flag.CommandLine)
 
 	if os.Getenv(minikubeEnableProfile) == "1" {
 		defer profile.Start(profile.TraceProfile).Stop()
@@ -51,32 +50,5 @@ func main() {
 	out.SetOutFile(os.Stdout)
 	out.SetErrFile(os.Stderr)
 	cmd.Execute()
-}
-
-// captureStdLogMessages arranges for messages written to the Go "log" package's to appear in glog
-func captureStdLogMessages() {
-	log.SetFlags(log.Lshortfile)
-	log.SetOutput(logBridge{})
-}
-
-type logBridge struct{}
-
-// Write parses the standard logging line and passes its components to glog
-func (lb logBridge) Write(b []byte) (n int, err error) {
-	// Split "d.go:23: message" into "d.go", "23", and "message".
-	parts := bytes.SplitN(b, []byte{':'}, 3)
-	if len(parts) != 3 || len(parts[0]) < 1 || len(parts[2]) < 1 {
-		glog.Errorf("bad log format: %s", b)
-		return
-	}
-
-	file := string(parts[0])
-	text := string(parts[2][1:]) // skip leading space
-	line, err := strconv.Atoi(string(parts[1]))
-	if err != nil {
-		text = fmt.Sprintf("bad line number: %s", b)
-		line = 0
-	}
-	glog.Infof("stdlog: %s:%d %s", file, line, text)
-	return len(b), nil
+	klog.Flush()
 }

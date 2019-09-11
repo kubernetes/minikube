@@ -23,8 +23,8 @@ import (
 	"runtime"
 	"syscall"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -68,7 +68,7 @@ kubectl get pods --namespace kube-system`,
 			exit.WithError("Failed to download kubectl", err)
 		}
 
-		glog.Infof("Running %s %v", path, args)
+		klog.Infof("Running %s %v", path, args)
 		c := exec.Command(path, args...)
 		c.Stdin = os.Stdin
 		c.Stdout = os.Stdout

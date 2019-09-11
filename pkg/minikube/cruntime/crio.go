@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -81,7 +81,7 @@ func (r *CRIO) Active() bool {
 func (r *CRIO) Enable(disOthers bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
-			glog.Warningf("disableOthers: %v", err)
+			klog.Warningf("disableOthers: %v", err)
 		}
 	}
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
@@ -100,7 +100,7 @@ func (r *CRIO) Disable() error {
 
 // LoadImage loads an image into this runtime
 func (r *CRIO) LoadImage(path string) error {
-	glog.Infof("Loading image: %s", path)
+	klog.Infof("Loading image: %s", path)
 	return r.Runner.Run(fmt.Sprintf("sudo podman load -i %s", path))
 }
 

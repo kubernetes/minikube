@@ -24,8 +24,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	isatty "github.com/mattn/go-isatty"
+	"k8s.io/klog"
 )
 
 // By design, this package uses global references to language and output objects, in preference
@@ -69,12 +69,12 @@ func T(style StyleEnum, format string, a ...V) {
 // String writes a basic formatted string to stdout
 func String(format string, a ...interface{}) {
 	if outFile == nil {
-		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
+		klog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
 	_, err := fmt.Fprintf(outFile, format, a...)
 	if err != nil {
-		glog.Errorf("Fprintf failed: %v", err)
+		klog.Errorf("Fprintf failed: %v", err)
 	}
 }
 
@@ -92,12 +92,12 @@ func ErrT(style StyleEnum, format string, a ...V) {
 // Err writes a basic formatted string to stderr
 func Err(format string, a ...interface{}) {
 	if errFile == nil {
-		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
+		klog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
 	_, err := fmt.Fprintf(errFile, format, a...)
 	if err != nil {
-		glog.Errorf("Fprint failed: %v", err)
+		klog.Errorf("Fprint failed: %v", err)
 	}
 }
 
@@ -128,14 +128,14 @@ func FailureT(format string, a ...V) {
 
 // SetOutFile configures which writer standard output goes to.
 func SetOutFile(w fdWriter) {
-	glog.Infof("Setting OutFile to fd %d ...", w.Fd())
+	klog.V(2).Infof("Setting OutFile to fd %d ...", w.Fd())
 	outFile = w
 	useColor = wantsColor(w.Fd())
 }
 
 // SetErrFile configures which writer error output goes to.
 func SetErrFile(w fdWriter) {
-	glog.Infof("Setting ErrFile to fd %d...", w.Fd())
+	klog.V(2).Infof("Setting ErrFile to fd %d...", w.Fd())
 	errFile = w
 	useColor = wantsColor(w.Fd())
 }
@@ -150,11 +150,11 @@ func wantsColor(fd uintptr) bool {
 	// If unset, we try to automatically determine suitability from the environment.
 	val := os.Getenv(OverrideEnv)
 	if val != "" {
-		glog.Infof("%s=%q\n", OverrideEnv, os.Getenv(OverrideEnv))
+		klog.Infof("%s=%q\n", OverrideEnv, os.Getenv(OverrideEnv))
 		override, err := strconv.ParseBool(val)
 		if err != nil {
 			// That's OK, we will just fall-back to automatic detection.
-			glog.Errorf("ParseBool(%s): %v", OverrideEnv, err)
+			klog.Errorf("ParseBool(%s): %v", OverrideEnv, err)
 		} else {
 			return override
 		}
@@ -163,11 +163,11 @@ func wantsColor(fd uintptr) bool {
 	term := os.Getenv("TERM")
 	// Example: term-256color
 	if !strings.Contains(term, "color") {
-		glog.Infof("TERM=%s, which probably does not support color", term)
+		klog.Infof("TERM=%s, which probably does not support color", term)
 		return false
 	}
 
 	isT := isatty.IsTerminal(fd)
-	glog.Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
+	klog.V(2).Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
 	return isT
 }

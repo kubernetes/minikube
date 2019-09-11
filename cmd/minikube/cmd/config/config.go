@@ -19,8 +19,8 @@ package config
 import (
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -279,7 +279,7 @@ var ConfigCmd = &cobra.Command{
 Configurable fields: ` + "\n\n" + configurableFields(),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := cmd.Help(); err != nil {
-			glog.Errorf("help: %v", err)
+			klog.Errorf("help: %v", err)
 		}
 	},
 }

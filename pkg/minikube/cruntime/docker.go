@@ -21,7 +21,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -81,7 +81,7 @@ func (r *Docker) Active() bool {
 func (r *Docker) Enable(disOthers bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
-			glog.Warningf("disableOthers: %v", err)
+			klog.Warningf("disableOthers: %v", err)
 		}
 	}
 	return r.Runner.Run("sudo systemctl start docker")
@@ -94,7 +94,7 @@ func (r *Docker) Disable() error {
 
 // LoadImage loads an image into this runtime
 func (r *Docker) LoadImage(path string) error {
-	glog.Infof("Loading image: %s", path)
+	klog.Infof("Loading image: %s", path)
 	return r.Runner.Run(fmt.Sprintf("docker load -i %s", path))
 }
 
@@ -126,7 +126,7 @@ func (r *Docker) KillContainers(ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	glog.Infof("Killing containers: %s", ids)
+	klog.Infof("Killing containers: %s", ids)
 	return r.Runner.Run(fmt.Sprintf("docker rm -f %s", strings.Join(ids, " ")))
 }
 
@@ -135,7 +135,7 @@ func (r *Docker) StopContainers(ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	glog.Infof("Stopping containers: %s", ids)
+	klog.Infof("Stopping containers: %s", ids)
 	return r.Runner.Run(fmt.Sprintf("docker stop %s", strings.Join(ids, " ")))
 }
 

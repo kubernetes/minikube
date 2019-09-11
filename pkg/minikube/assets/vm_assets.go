@@ -24,8 +24,8 @@ import (
 	"os"
 	"path"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // CopyableFile is something that can be copied
@@ -77,9 +77,9 @@ func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset
 	return NewMemoryAsset(d, path.Dir(targetPath), path.Base(targetPath), permissions)
 }
 
-// NewFileAsset creates a new FileAsset
+// 	 creates a new FileAsset
 func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, error) {
-	glog.Infof("NewFileAsset: %s -> %s", src, path.Join(targetDir, targetName))
+	klog.V(1).Infof("NewFileAsset: %s -> %s", src, path.Join(targetDir, targetName))
 	f, err := os.Open(src)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error opening file asset: %s", src)
@@ -201,7 +201,7 @@ func (m *BinAsset) loadData(isTemplate bool) error {
 
 	m.length = len(contents)
 	m.reader = bytes.NewReader(contents)
-	glog.Infof("Created asset %s with %d bytes", m.AssetName, m.length)
+	klog.Infof("Created asset %s with %d bytes", m.AssetName, m.length)
 	if m.length == 0 {
 		return fmt.Errorf("%s is an empty asset", m.AssetName)
 	}

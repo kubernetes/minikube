@@ -26,7 +26,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -75,11 +75,11 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner comma
 	pMap := map[string][]string{}
 	cmds := logCommands(r, bs, lookBackwardsCount, false)
 	for name, cmd := range cmds {
-		glog.Infof("Gathering logs for %s ...", name)
+		klog.Infof("Gathering logs for %s ...", name)
 		var b bytes.Buffer
 		err := runner.CombinedOutputTo(cmds[name], &b)
 		if err != nil {
-			glog.Warningf("failed %s: %s: %v", name, cmd, err)
+			klog.Warningf("failed %s: %s: %v", name, cmd, err)
 			continue
 		}
 		scanner := bufio.NewScanner(&b)
@@ -87,7 +87,7 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner comma
 		for scanner.Scan() {
 			l := scanner.Text()
 			if IsProblem(l) {
-				glog.Warningf("Found %s problem: %s", name, l)
+				klog.Warningf("Found %s problem: %s", name, l)
 				problems = append(problems, l)
 			}
 		}
@@ -132,7 +132,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 
 		err := runner.CombinedOutputTo(cmds[name], &b)
 		if err != nil {
-			glog.Errorf("failed: %v", err)
+			klog.Errorf("failed: %v", err)
 			failed = append(failed, name)
 			continue
 		}
@@ -154,12 +154,12 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 	for _, pod := range importantPods {
 		ids, err := r.ListContainers(pod)
 		if err != nil {
-			glog.Errorf("Failed to list containers for %q: %v", pod, err)
+			klog.Errorf("Failed to list containers for %q: %v", pod, err)
 			continue
 		}
-		glog.Infof("%d containers: %s", len(ids), ids)
+		klog.Infof("%d containers: %s", len(ids), ids)
 		if len(ids) == 0 {
-			glog.Warningf("No container was found matching %q", pod)
+			klog.Warningf("No container was found matching %q", pod)
 			continue
 		}
 		for _, i := range ids {

@@ -21,9 +21,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
 	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -56,7 +56,7 @@ func (f DefaultDownloader) GetISOFileURI(isoURL string) string {
 // CacheMinikubeISOFromURL downloads the ISO, if it doesn't exist in cache
 func (f DefaultDownloader) CacheMinikubeISOFromURL(url string) error {
 	if !f.ShouldCacheMinikubeISO(url) {
-		glog.Infof("Not caching ISO, using %s", url)
+		klog.Infof("Not caching ISO, using %s", url)
 		return nil
 	}
 
@@ -77,7 +77,7 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(url string) error {
 		Options: opts,
 	}
 
-	glog.Infof("full url: %s", urlWithChecksum)
+	klog.Infof("full url: %s", urlWithChecksum)
 	out.T(out.ISODownload, "Downloading VM boot image ...")
 	if err := client.Get(); err != nil {
 		return errors.Wrap(err, url)

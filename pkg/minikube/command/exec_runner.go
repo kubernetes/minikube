@@ -25,8 +25,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
@@ -37,7 +37,7 @@ type ExecRunner struct{}
 
 // Run starts the specified command in a bash shell and waits for it to complete.
 func (*ExecRunner) Run(cmd string) error {
-	glog.Infoln("Run:", cmd)
+	klog.Infoln("Run:", cmd)
 	c := exec.Command("/bin/bash", "-c", cmd)
 	if err := c.Run(); err != nil {
 		return errors.Wrapf(err, "running command: %s", cmd)
@@ -48,7 +48,7 @@ func (*ExecRunner) Run(cmd string) error {
 // CombinedOutputTo runs the command and stores both command
 // output and error to out.
 func (*ExecRunner) CombinedOutputTo(cmd string, out io.Writer) error {
-	glog.Infoln("Run with output:", cmd)
+	klog.Infoln("Run with output:", cmd)
 	c := exec.Command("/bin/bash", "-c", cmd)
 	c.Stdout = out
 	c.Stderr = out

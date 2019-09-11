@@ -21,9 +21,9 @@ import (
 	"text/template"
 
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/klog"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -81,7 +81,7 @@ var statusCmd = &cobra.Command{
 			}
 			kubeletSt, err = clusterBootstrapper.GetKubeletStatus()
 			if err != nil {
-				glog.Warningf("kubelet err: %v", err)
+				klog.Warningf("kubelet err: %v", err)
 				returnCode |= clusterNotRunningStatusFlag
 			} else if kubeletSt != state.Running.String() {
 				returnCode |= clusterNotRunningStatusFlag
@@ -89,7 +89,7 @@ var statusCmd = &cobra.Command{
 
 			ip, err := cluster.GetHostDriverIP(api, config.GetMachineName())
 			if err != nil {
-				glog.Errorln("Error host driver ip status:", err)
+				klog.Errorln("Error host driver ip status:", err)
 			}
 
 			apiserverPort, err := kubeconfig.Port(config.GetMachineName())
@@ -100,14 +100,14 @@ var statusCmd = &cobra.Command{
 
 			apiserverSt, err = clusterBootstrapper.GetAPIServerStatus(ip, apiserverPort)
 			if err != nil {
-				glog.Errorln("Error apiserver status:", err)
+				klog.Errorln("Error apiserver status:", err)
 			} else if apiserverSt != state.Running.String() {
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
 			ks, err := kubeconfig.IsClusterInConfig(ip, config.GetMachineName())
 			if err != nil {
-				glog.Errorln("Error kubeconfig status:", err)
+				klog.Errorln("Error kubeconfig status:", err)
 			}
 			if ks {
 				kubeconfigSt = "Correctly Configured: pointing to minikube-vm at " + ip.String()

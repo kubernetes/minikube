@@ -21,7 +21,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
@@ -163,12 +163,12 @@ func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ..
 	var buf bytes.Buffer
 	t, err := template.New(format).Parse(format)
 	if err != nil {
-		glog.Errorf("unable to parse %q: %v - returning raw string.", format, err)
+		klog.Errorf("unable to parse %q: %v - returning raw string.", format, err)
 		return format
 	}
 	err = t.Execute(&buf, a[0])
 	if err != nil {
-		glog.Errorf("unable to execute %s: %v - returning raw string.", format, err)
+		klog.Errorf("unable to execute %s: %v - returning raw string.", format, err)
 		return format
 	}
 	outStyled := buf.String()

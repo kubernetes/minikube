@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -83,7 +83,7 @@ func (r *Containerd) Available() error {
 func (r *Containerd) Enable(disOthers bool) error {
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
-			glog.Warningf("disableOthers: %v", err)
+			klog.Warningf("disableOthers: %v", err)
 		}
 	}
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
@@ -103,7 +103,7 @@ func (r *Containerd) Disable() error {
 
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
-	glog.Infof("Loading image: %s", path)
+	klog.Infof("Loading image: %s", path)
 	return r.Runner.Run(fmt.Sprintf("sudo ctr -n=k8s.io images import %s", path))
 }
 

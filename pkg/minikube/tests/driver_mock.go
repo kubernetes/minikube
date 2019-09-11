@@ -24,8 +24,8 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // MockDriver is a struct used to mock out libmachine.Driver
@@ -42,7 +42,7 @@ type MockDriver struct {
 // Logf logs mock interactions
 func (driver *MockDriver) Logf(format string, args ...interface{}) {
 	if driver.T == nil {
-		glog.Infof(format, args...)
+		klog.Infof(format, args...)
 		return
 	}
 	driver.T.Logf(format, args...)

@@ -23,9 +23,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog"
 )
 
 // EnvVars are variables we plumb through to the underlying container runtime
@@ -130,7 +130,7 @@ func UpdateTransport(cfg *rest.Config) *rest.Config {
 			ht.Proxy = nil
 			rt = ht
 		} else {
-			glog.Errorf("Error while casting RoundTripper (of type %T) to *http.Transport : %v", rt, ok)
+			klog.Errorf("Error while casting RoundTripper (of type %T) to *http.Transport : %v", rt, ok)
 		}
 		return rt
 	}

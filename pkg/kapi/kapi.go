@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
@@ -35,6 +34,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 	watchtools "k8s.io/client-go/tools/watch"
+	"k8s.io/klog"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/proxy"
 )
@@ -71,18 +71,18 @@ func Client(kubectlContext ...string) (kubernetes.Interface, error) {
 // WaitForPodsWithLabelRunning waits for all matching pods to become Running and at least one matching pod exists.
 func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels.Selector, timeOut ...time.Duration) error {
 	start := time.Now()
-	glog.Infof("Waiting for pod with label %q in ns %q ...", ns, label)
+	klog.Infof("Waiting for pod with label %q in ns %q ...", ns, label)
 	lastKnownPodNumber := -1
 	f := func() (bool, error) {
 		listOpts := meta.ListOptions{LabelSelector: label.String()}
 		pods, err := c.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
-			glog.Infof("temporary error: getting Pods with label selector %q : [%v]\n", label.String(), err)
+			klog.Infof("temporary error: getting Pods with label selector %q : [%v]\n", label.String(), err)
 			return false, nil
 		}
 
 		if lastKnownPodNumber != len(pods.Items) {
-			glog.Infof("Found %d Pods for label selector %s\n", len(pods.Items), label.String())
+			klog.Infof("Found %d Pods for label selector %s\n", len(pods.Items), label.String())
 			lastKnownPodNumber = len(pods.Items)
 		}
 
@@ -92,7 +92,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 
 		for _, pod := range pods.Items {
 			if pod.Status.Phase != core.PodRunning {
-				glog.Infof("waiting for pod %q, current state: %s: [%v]\n", label.String(), pod.Status.Phase, err)
+				klog.Infof("waiting for pod %q, current state: %s: [%v]\n", label.String(), pod.Status.Phase, err)
 				return false, nil
 			}
 		}
@@ -104,7 +104,7 @@ func WaitForPodsWithLabelRunning(c kubernetes.Interface, ns string, label labels
 		t = timeOut[0]
 	}
 	err := wait.PollImmediate(kconst.APICallRetryInterval, t, f)
-	glog.Infof("duration metric: took %s to wait for %s ...", time.Since(start), label)
+	klog.Infof("duration metric: took %s to wait for %s ...", time.Since(start), label)
 	return err
 }
 
@@ -134,7 +134,7 @@ func WaitForRCToStabilize(c kubernetes.Interface, ns, name string, timeout time.
 				*(rc.Spec.Replicas) == rc.Status.Replicas {
 				return true, nil
 			}
-			glog.Infof("Waiting for rc %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
+			klog.Infof("Waiting for rc %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
 				name, rc.Generation, rc.Status.ObservedGeneration, *(rc.Spec.Replicas), rc.Status.Replicas)
 		}
 		return false, nil
@@ -167,7 +167,7 @@ func WaitForDeploymentToStabilize(c kubernetes.Interface, ns, name string, timeo
 				*(dp.Spec.Replicas) == dp.Status.Replicas {
 				return true, nil
 			}
-			glog.Infof("Waiting for deployment %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
+			klog.Infof("Waiting for deployment %s to stabilize, generation %v observed generation %v spec.replicas %d status.replicas %d",
 				name, dp.Generation, dp.Status.ObservedGeneration, *(dp.Spec.Replicas), dp.Status.Replicas)
 		}
 		return false, nil
@@ -181,16 +181,16 @@ func WaitForService(c kubernetes.Interface, namespace, name string, exist bool, 
 		_, err := c.CoreV1().Services(namespace).Get(name, meta.GetOptions{})
 		switch {
 		case err == nil:
-			glog.Infof("Service %s in namespace %s found.", name, namespace)
+			klog.Infof("Service %s in namespace %s found.", name, namespace)
 			return exist, nil
 		case apierr.IsNotFound(err):
-			glog.Infof("Service %s in namespace %s disappeared.", name, namespace)
+			klog.Infof("Service %s in namespace %s disappeared.", name, namespace)
 			return !exist, nil
 		case !IsRetryableAPIError(err):
-			glog.Info("Non-retryable failure while getting service.")
+			klog.Info("Non-retryable failure while getting service.")
 			return false, err
 		default:
-			glog.Infof("Get service %s in namespace %s failed: %v", name, namespace, err)
+			klog.Infof("Get service %s in namespace %s failed: %v", name, namespace, err)
 			return false, nil
 		}
 	})

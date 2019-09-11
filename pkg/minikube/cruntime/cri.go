@@ -23,7 +23,7 @@ import (
 	"path"
 	"strings"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 )
 
 // listCRIContainers returns a list of containers using crictl
@@ -53,7 +53,7 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	glog.Infof("Killing containers: %s", ids)
+	klog.Infof("Killing containers: %s", ids)
 	return cr.Run(fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
 }
 
@@ -62,7 +62,7 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 	if len(ids) == 0 {
 		return nil
 	}
-	glog.Infof("Stopping containers: %s", ids)
+	klog.Infof("Stopping containers: %s", ids)
 	return cr.Run(fmt.Sprintf("sudo crictl stop %s", strings.Join(ids, " ")))
 }
 

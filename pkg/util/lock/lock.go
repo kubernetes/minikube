@@ -25,10 +25,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/glog"
 	"github.com/juju/clock"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // WriteFile decorates ioutil.WriteFile with a file lock and retry
@@ -38,7 +38,7 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 		Clock: clock.WallClock,
 		Delay: 13 * time.Second,
 	}
-	glog.Infof("attempting to write to file %q with filemode %v", filename, perm)
+	klog.Infof("attempting to write to file %q with filemode %v", filename, perm)
 
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {

@@ -22,7 +22,7 @@ import (
 	"os"
 	"runtime"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/problem"
 	"k8s.io/minikube/pkg/minikube/translate"
@@ -96,7 +96,7 @@ func WithLogEntries(msg string, err error, entries map[string][]string) {
 
 func displayError(msg string, err error) {
 	// use Warning because Error will display a duplicate message to stderr
-	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
+	klog.Warningf(fmt.Sprintf("%s: %v", msg, err))
 	out.ErrT(out.Empty, "")
 	out.FatalT("{{.msg}}: {{.err}}", out.V{"msg": translate.T(msg), "err": err})
 	out.ErrT(out.Empty, "")

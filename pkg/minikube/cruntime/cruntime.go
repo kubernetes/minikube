@@ -20,8 +20,8 @@ package cruntime
 import (
 	"fmt"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -113,7 +113,7 @@ func disableOthers(me Manager, cr CommandRunner) error {
 			continue
 		}
 		if err = r.Disable(); err != nil {
-			glog.Warningf("disable failed: %v", err)
+			klog.Warningf("disable failed: %v", err)
 		}
 		// Validate that the runtime really is offline - and that Active & Disable are properly written.
 		if r.Active() {

@@ -23,8 +23,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 )
 
 // MountConfig defines the options available to the Mount command
@@ -59,9 +59,9 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 	}
 
 	cmd := fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target, mntCmd(source, target, c))
-	glog.Infof("Will run: %s", cmd)
+	klog.Infof("Will run: %s", cmd)
 	out, err := r.CombinedOutput(cmd)
-	glog.Infof("mount err=%s, out=%s", err, out)
+	klog.Infof("mount err=%s, out=%s", err, out)
 	if err != nil {
 		return errors.Wrap(err, out)
 	}
@@ -146,18 +146,18 @@ func umountCmd(target string, force bool) string {
 // Unmount unmounts a path
 func Unmount(r mountRunner, target string) error {
 	cmd := umountCmd(target, false)
-	glog.Infof("Will run: %s", cmd)
+	klog.Infof("Will run: %s", cmd)
 	out, err := r.CombinedOutput(cmd)
 	if err == nil {
 		return nil
 	}
-	glog.Warningf("initial unmount error: %v, out: %s", err, out)
+	klog.Warningf("initial unmount error: %v, out: %s", err, out)
 
 	// Try again, using force if needed.
 	cmd = umountCmd(target, true)
-	glog.Infof("Will run: %s", cmd)
+	klog.Infof("Will run: %s", cmd)
 	out, err = r.CombinedOutput(cmd)
-	glog.Infof("unmount force err=%v, out=%s", err, out)
+	klog.Infof("unmount force err=%v, out=%s", err, out)
 	if err != nil {
 		return errors.Wrap(err, out)
 	}

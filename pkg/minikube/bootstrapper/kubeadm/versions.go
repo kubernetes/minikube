@@ -24,8 +24,8 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/klog"
 	"k8s.io/kubernetes/cmd/kubeadm/app/features"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -53,7 +53,7 @@ func ExtraConfigForComponent(component string, opts config.ExtraOptionSlice, ver
 	for _, opt := range opts {
 		if opt.Component == component {
 			if val, ok := versionedOpts[opt.Key]; ok {
-				glog.Infof("Overwriting default %s=%s with user provided %s=%s for component %s", opt.Key, val, opt.Key, opt.Value, component)
+				klog.Infof("Overwriting default %s=%s with user provided %s=%s for component %s", opt.Key, val, opt.Key, opt.Value, component)
 			}
 			versionedOpts[opt.Key] = opt.Value
 		}

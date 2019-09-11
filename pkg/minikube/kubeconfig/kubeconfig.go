@@ -25,11 +25,11 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/constants"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
@@ -93,7 +93,7 @@ func PathFromEnv() string {
 		if kubeConfigFile != "" {
 			return kubeConfigFile
 		}
-		glog.Infof("Ignoring empty entry in %s env var", constants.KubeconfigEnvVar)
+		klog.Infof("Ignoring empty entry in %s env var", constants.KubeconfigEnvVar)
 	}
 	return constants.KubeconfigPath
 }
@@ -169,7 +169,7 @@ func writeToFile(config runtime.Object, configPath ...string) error {
 	}
 
 	if config == nil {
-		glog.Errorf("could not write to '%s': config can't be nil", fPath)
+		klog.Errorf("could not write to '%s': config can't be nil", fPath)
 	}
 
 	// encode config to YAML

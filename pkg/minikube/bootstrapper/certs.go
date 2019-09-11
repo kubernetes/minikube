@@ -26,11 +26,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -54,7 +54,7 @@ var (
 // SetupCerts gets the generated credentials required to talk to the APIServer.
 func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	localPath := constants.GetMinipath()
-	glog.Infof("Setting up certificates for IP: %s\n", k8s.NodeIP)
+	klog.Infof("Setting up certificates for IP: %s\n", k8s.NodeIP)
 
 	if err := generateCerts(k8s); err != nil {
 		return errors.Wrap(err, "Error generating certs")
@@ -313,7 +313,7 @@ func configureCACerts(cmd command.Runner, caCerts map[string]string) error {
 	}
 
 	if !hasSSLBinary && len(caCerts) > 0 {
-		glog.Warning("OpenSSL not found. Please recreate the cluster with the latest minikube ISO.")
+		klog.Warning("OpenSSL not found. Please recreate the cluster with the latest minikube ISO.")
 	}
 
 	for _, caCertFile := range caCerts {

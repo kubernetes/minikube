@@ -19,17 +19,15 @@ package cmd
 import (
 	goflag "flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/log"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
+	"k8s.io/klog"
 	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -68,17 +66,6 @@ var RootCmd = &cobra.Command{
 			if err := os.MkdirAll(path, 0777); err != nil {
 				exit.WithError("Error creating minikube directory", err)
 			}
-		}
-
-		// Log level 3 or greater enables libmachine logs
-		if !glog.V(3) {
-			log.SetOutWriter(ioutil.Discard)
-			log.SetErrWriter(ioutil.Discard)
-		}
-
-		// Log level 7 or greater enables debug level logs
-		if glog.V(7) {
-			log.SetDebug(true)
 		}
 
 		logDir := pflag.Lookup("log_dir")
@@ -231,6 +218,7 @@ func init() {
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
 		exit.WithError("Unable to bind flags", err)
 	}
+
 	cobra.OnInitialize(initConfig)
 
 }
@@ -242,7 +230,7 @@ func initConfig() {
 	viper.SetConfigType("json")
 	err := viper.ReadInConfig()
 	if err != nil {
-		glog.Warningf("Error reading config file at %s: %v", configPath, err)
+		klog.Warningf("Error reading config file at %s: %v", configPath, err)
 	}
 	setupViper()
 }

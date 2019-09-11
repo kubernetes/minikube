@@ -22,7 +22,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/glog"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -62,7 +62,7 @@ func CreateProfile(name string, cfg *Config, miniHome ...string) error {
 	if err != nil {
 		return err
 	}
-	glog.Infof("Saving config:\n%s", data)
+	klog.Infof("Saving config:\n%s", data)
 	path := profileFilePath(name, miniHome...)
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err

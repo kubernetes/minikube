@@ -27,7 +27,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
@@ -39,6 +38,7 @@ import (
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/klog"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -225,7 +225,7 @@ func CheckService(namespace string, service string) error {
 	if len(svc.Spec.Ports) == 0 {
 		return fmt.Errorf("%s:%s has no ports", namespace, service)
 	}
-	glog.Infof("Found service: %+v", svc)
+	klog.Infof("Found service: %+v", svc)
 	return nil
 }
 
