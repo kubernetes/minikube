@@ -47,14 +47,9 @@ var (
 )
 
 // Client gets the kubernetes client from default kubeconfig
-func Client(kubectlContext ...string) (kubernetes.Interface, error) {
+func Client(kubectlContext string) (kubernetes.Interface, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
 	configOverrides := &clientcmd.ConfigOverrides{}
-	if kubectlContext != nil {
-		configOverrides = &clientcmd.ConfigOverrides{
-			CurrentContext: kubectlContext[0],
-		}
-	}
 	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := kubeConfig.ClientConfig()
 	if err != nil {
