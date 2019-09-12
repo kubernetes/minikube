@@ -1,5 +1,28 @@
 # Release Notes
 
+## Version 1.4.0-beta.1 - 2019-09-11
+
+* Add error if a non-default profile name is used with the none driver [#5321](https://github.com/kubernetes/minikube/pull/5321)
+* Download kvm2 driver [#5085](https://github.com/kubernetes/minikube/pull/5085)
+* Skip http proxy localhost for docker env [#5289](https://github.com/kubernetes/minikube/pull/5289)
+* Upgrade to latest machine-drivers/machine [#5311](https://github.com/kubernetes/minikube/pull/5311)
+* dashboard: When run as root, show URL instead of opening browser [#5292](https://github.com/kubernetes/minikube/pull/5292)
+* Upgrade crio to 1.15.1 [#5304](https://github.com/kubernetes/minikube/pull/5304)
+* Upgrade Docker, from 18.09.8 to 18.09.9 [#5303](https://github.com/kubernetes/minikube/pull/5303)
+* Add driver usage [#5296](https://github.com/kubernetes/minikube/pull/5296)
+* Add 'native-ssh' flag to 'minikube start' and 'minikube ssh' [#4510](https://github.com/kubernetes/minikube/pull/4510)
+
+Thank you to our recent contributors:
+
+- Anders F Björklund
+- Deepika Pandhi
+- Marcin Niemira
+- Matt Morrissette
+- Sharif Elgamal
+- Thomas Strömberg
+- Zachariusz Karwacki
+- josedonizetti
+
 ## Version 1.4.0-beta.0 - 2019-09-04
 
 * Upgrade default Kubernetes version to v1.16.0-beta1 [#5250](https://github.com/kubernetes/minikube/pull/5250)
