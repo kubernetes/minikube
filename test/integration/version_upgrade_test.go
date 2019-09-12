@@ -62,10 +62,17 @@ func TestVersionUpgrade(t *testing.T) {
 			t.Errorf("chmod: %v", err)
 		}
 	}
+
 	args := append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion)}, StartArgs()...)
-	rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), args...))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+	rr := &RunResult{}
+	releaseStart := func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
+		return err
+	}
+
+	// Retry to allow flakiness for the previous release
+	if err := retry.Expo(releaseStart, 1*time.Second, 20*time.Minute); err != nil {
+		t.Fatalf("release start failed: %v", err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), "stop", "-p", profile))
