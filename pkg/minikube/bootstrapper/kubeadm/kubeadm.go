@@ -106,12 +106,14 @@ var SkipAdditionalPreflights = map[string][]string{}
 
 // Bootstrapper is a bootstrapper using kubeadm
 type Bootstrapper struct {
-	c command.Runner
+	c           command.Runner
+	contextName string
 }
 
 // NewKubeadmBootstrapper creates a new kubeadm.Bootstrapper
 func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
-	h, err := api.Load(config.GetMachineName())
+	name := config.GetMachineName()
+	h, err := api.Load(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
 	}
@@ -119,7 +121,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "command runner")
 	}
-	return &Bootstrapper{c: runner}, nil
+	return &Bootstrapper{c: runner, contextName: name}, nil
 }
 
 // GetKubeletStatus returns the kubelet status
@@ -349,7 +351,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 	}
 
 	// Catch case if WaitCluster was called with a stale ~/.kube/config
-	config, err := kapi.ClientConfig(k8s.NodeName)
+	config, err := kapi.ClientConfig(k.contextName)
 	if err != nil {
 		return errors.Wrap(err, "client config")
 	}
