@@ -91,6 +91,12 @@ var vmProblems = map[string]match{
 		Advice: "Run 'sudo modprobe vboxdrv' and reinstall VirtualBox if it fails.",
 		Issues: []int{4043},
 	},
+	"VBOX_REGISTRY_DRIVER_NOT_FOUND": {
+		Regexp: re(`virtualbox registry driver not found and delete doesn't work`),
+		Advice: "Run 'rm -Rf ~/.minikube/profiles/minikube ~/.minikube/machines/minikube' as workaround.",
+		Issues: []int{5295},
+	},
+
 	"KVM2_NOT_FOUND": {
 		Regexp: re(`Driver "kvm2" not found. Do you have the plugin binary .* accessible in your PATH`),
 		Advice: "Please install the minikube kvm2 VM driver, or select an alternative --vm-driver",
