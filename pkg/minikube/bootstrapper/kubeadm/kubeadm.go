@@ -350,6 +350,10 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 
 	// Catch case if WaitCluster was called with a stale ~/.kube/config
 	config, err := kapi.ClientConfig(k8s.NodeName)
+	if err != nil {
+		return errors.Wrap(err, "client config")
+	}
+
 	endpoint := fmt.Sprintf("https://%s:%d", k8s.NodeIP, k8s.NodePort)
 	if config.Host != endpoint {
 		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
