@@ -339,7 +339,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
 	out.T(out.WaitingPods, "Waiting for:")
-	client, err := kapi.Client()
+	client, err := kapi.Client(k8s.NodeName)
 	if err != nil {
 		return errors.Wrap(err, "k8s client")
 	}
