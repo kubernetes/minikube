@@ -186,7 +186,7 @@ var DefaultKubernetesVersion = "v1.16.0-beta.1"
 var NewestKubernetesVersion = "v1.16.0-beta.1"
 
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
-var OldestKubernetesVersion = "v1.11.10"
+var OldestKubernetesVersion = "v1.10.13"
 
 // ConfigFile is the path of the config file
 var ConfigFile = MakeMiniPath("config", "config.json")
