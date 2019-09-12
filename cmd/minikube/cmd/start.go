@@ -595,6 +595,10 @@ func validateConfig() {
 
 	var cpuCount int
 	if viper.GetString(vmDriver) == constants.DriverNone {
+		if cfg.GetMachineName() != constants.DefaultMachineName {
+			exit.WithCodeT(exit.Config, "The 'none' driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+		}
+
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
 		ci, err := cpu.Counts(false)
 		if err != nil {
