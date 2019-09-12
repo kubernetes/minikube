@@ -38,6 +38,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -339,10 +340,6 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
 	out.T(out.WaitingPods, "Waiting for:")
-	client, err := kapi.Client(k8s.NodeName)
-	if err != nil {
-		return errors.Wrap(err, "k8s client")
-	}
 
 	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
 	// pod shows up as registered, but need the webserver for all subsequent queries.
@@ -351,6 +348,18 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 		return errors.Wrap(err, "waiting for apiserver")
 	}
 
+	// Catch case if WaitCluster was called with a stale ~/.kube/config
+	config, err := kapi.ClientConfig(k8s.NodeName)
+	endpoint := fmt.Sprintf("https://%s:%d", k8s.NodeIP, k8s.NodePort)
+	if config.Host != endpoint {
+		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
+		config.Host = endpoint
+	}
+
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "k8s client")
+	}
 	for _, p := range PodsByLayer {
 		if componentsOnly && p.key != "component" { // skip component check if network plugin is cni
 			continue

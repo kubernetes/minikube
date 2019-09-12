@@ -328,14 +328,14 @@ func runStart(cmd *cobra.Command, args []string) {
 	showVersionInfo(k8sVersion, cr)
 	waitCacheImages(&cacheGroup)
 
-	// setup kube adm and certs and return bootstrapperx
-	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
-
-	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
+	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
 	kubeconfig, err := setupKubeconfig(host, &config)
 	if err != nil {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
+
+	// setup kubeadm (must come after setupKubeconfig)
+	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
 
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)

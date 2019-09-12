@@ -22,7 +22,6 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	apps "k8s.io/api/apps/v1"
 	core "k8s.io/api/core/v1"
 	apierr "k8s.io/apimachinery/pkg/api/errors"
@@ -33,6 +32,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	watchtools "k8s.io/client-go/tools/watch"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -46,21 +46,26 @@ var (
 	ReasonableStartTime = time.Minute * 5
 )
 
-// Client gets the kubernetes client from default kubeconfig
-func Client(kubectlContext string) (kubernetes.Interface, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	config, err := kubeConfig.ClientConfig()
+// ClientConfig returns the client configuration for a kubectl context
+func ClientConfig(context string) (*rest.Config, error) {
+	loader := clientcmd.NewDefaultClientConfigLoadingRules()
+	cc := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loader, &clientcmd.ConfigOverrides{CurrentContext: context})
+	c, err := cc.ClientConfig()
 	if err != nil {
-		return nil, fmt.Errorf("error creating kubeConfig: %v", err)
+		return nil, fmt.Errorf("client config: %v", err)
 	}
-	config = proxy.UpdateTransport(config)
-	client, err := kubernetes.NewForConfig(config)
+	c = proxy.UpdateTransport(c)
+	glog.V(1).Infof("client config for %s: %+v", context, c)
+	return c, nil
+}
+
+// Client gets the kubernetes client for a kubectl context name
+func Client(context string) (*kubernetes.Clientset, error) {
+	c, err := ClientConfig(context)
 	if err != nil {
-		return nil, errors.Wrap(err, "error creating new client from kubeConfig.ClientConfig()")
+		return nil, err
 	}
-	return client, nil
+	return kubernetes.NewForConfig(c)
 }
 
 // WaitForPodsWithLabelRunning waits for all matching pods to become Running and at least one matching pod exists.
