@@ -79,7 +79,7 @@ func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset
 
 // NewFileAsset creates a new FileAsset
 func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, error) {
-	glog.Infof("NewFileAsset: %s -> %s", src, path.Join(targetDir, targetName))
+	glog.V(4).Infof("NewFileAsset: %s -> %s", src, path.Join(targetDir, targetName))
 	f, err := os.Open(src)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error opening file asset: %s", src)
