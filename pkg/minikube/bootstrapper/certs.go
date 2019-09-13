@@ -25,6 +25,7 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -37,6 +38,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/util"
+
+	"github.com/juju/clock"
+	"github.com/juju/mutex"
 )
 
 const (
@@ -122,13 +126,25 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 }
 
 func generateCerts(k8s config.KubernetesConfig) error {
+	// TODO: Instead of racey manipulation of a shared certificate, use per-profile certs
+	spec := mutex.Spec{
+		Name:  "generateCerts",
+		Clock: clock.WallClock,
+		Delay: 10 * time.Second,
+	}
+	glog.Infof("acquiring lock: %+v", spec)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
+	}
+	defer releaser.Release()
+
 	serviceIP, err := util.GetServiceClusterIP(k8s.ServiceCIDR)
 	if err != nil {
 		return errors.Wrap(err, "getting service cluster ip")
 	}
 
 	localPath := constants.GetMinipath()
-
 	caCertPath := filepath.Join(localPath, "ca.crt")
 	caKeyPath := filepath.Join(localPath, "ca.key")
 
