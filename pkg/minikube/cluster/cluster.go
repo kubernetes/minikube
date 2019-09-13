@@ -463,6 +463,11 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 
 	if !localDriver(config.VMDriver) {
 		showRemoteOsRelease(h.Driver)
+		// Ensure that even new VM's have proper time synchronization up front
+		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
+		if err := ensureSyncedGuestClock(h); err != nil {
+			return h, err
+		}
 	} else {
 		showLocalOsRelease()
 	}
@@ -470,10 +475,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	if err := api.Save(h); err != nil {
 		return nil, errors.Wrap(err, "save")
 	}
-
-	// Ensure that even new VM's have proper time synchronization up front
-	// It's 2019, and I can't believe I am still dealing with time desync as a problem.
-	return h, ensureSyncedGuestClock(h)
+	return h, nil
 }
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm

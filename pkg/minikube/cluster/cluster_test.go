@@ -76,6 +76,7 @@ func TestCreateHost(t *testing.T) {
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
+
 	_, err := createHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
@@ -215,7 +216,7 @@ func TestStartHostConfig(t *testing.T) {
 	provision.SetDetector(md)
 
 	config := config.MachineConfig{
-		VMDriver:   constants.DefaultVMDriver,
+		VMDriver:   constants.DriverMock,
 		DockerEnv:  []string{"FOO=BAR"},
 		DockerOpt:  []string{"param=value"},
 		Downloader: MockDownloader{},
