@@ -275,6 +275,7 @@ echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
+  -test.v \
   -test.timeout=60m \
   -test.parallel=${PARALLEL_COUNT} \
   -binary="${MINIKUBE_BIN}" && result=$? || result=$?
