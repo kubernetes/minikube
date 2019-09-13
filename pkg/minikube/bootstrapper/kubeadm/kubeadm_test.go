@@ -48,7 +48,7 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.10.13/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/var/lib/minikube/binaries/v1.11.10/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-dns=10.96.0.10 --cluster-domain=cluster.local --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,
@@ -186,7 +186,7 @@ func getExtraOptsPodCidr() []config.ExtraOption {
 
 func recentReleases() ([]string, error) {
 	// test the 6 most recent releases
-	versions := []string{"v1.16", "v1.15", "v1.14", "v1.13", "v1.12", "v1.11", "v1.10"}
+	versions := []string{"v1.16", "v1.15", "v1.14", "v1.13", "v1.12", "v1.11"}
 	foundNewest := false
 	foundDefault := false
 
