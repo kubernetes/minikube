@@ -42,7 +42,7 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
