@@ -33,7 +33,7 @@ func TestDockerFlags(t *testing.T) {
 	MaybeParallel(t)
 
 	profile := UniqueProfileName("docker-flags")
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer Cleanup(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true", "--alsologtostderr", "-v=8"}, StartArgs()...)
