@@ -23,8 +23,6 @@
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
-# PARALLEL_COUNT: number of tests to run in parallel
-
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
@@ -276,7 +274,6 @@ echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=60m \
-  -test.parallel=${PARALLEL_COUNT} \
   -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""

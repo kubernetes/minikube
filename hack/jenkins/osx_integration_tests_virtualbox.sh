@@ -28,8 +28,6 @@ set -e
 OS_ARCH="darwin-amd64"
 VM_DRIVER="virtualbox"
 JOB_NAME="VirtualBox_macOS"
-EXTRA_ARGS="--bootstrapper=kubeadm"
-PARALLEL_COUNT=3
 
 # Download files and set permissions
 source common.sh

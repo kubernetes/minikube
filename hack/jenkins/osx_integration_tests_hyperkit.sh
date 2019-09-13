@@ -29,9 +29,6 @@ set -e
 OS_ARCH="darwin-amd64"
 VM_DRIVER="hyperkit"
 JOB_NAME="HyperKit_macOS"
-EXTRA_ARGS="--bootstrapper=kubeadm"
-EXTRA_START_ARGS=""
-PARALLEL_COUNT=3
 
 # Download files and set permissions
 source common.sh
