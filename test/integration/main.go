@@ -18,9 +18,11 @@ package integration
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 // General configuration: used to set the VM Driver
@@ -38,7 +40,10 @@ var testdataDir = flag.String("testdata-dir", "testdata", "the directory relativ
 // TestMain is the test main
 func TestMain(m *testing.M) {
 	flag.Parse()
-	os.Exit(m.Run())
+	start := time.Now()
+	code := m.Run()
+	fmt.Printf("Tests completed in %s (result code %d)\n", time.Since(start), code)
+	os.Exit(code)
 }
 
 // StartArgs returns the arguments normally used for starting minikube

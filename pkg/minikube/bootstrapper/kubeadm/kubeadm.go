@@ -404,7 +404,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		glog.Errorf("failed to create compat symlinks: %v", err)
 	}
 
-	baseCmd := fmt.Sprintf("%s -v=1 %s", invokeKubeadm(k8s.KubernetesVersion), phase)
+	baseCmd := fmt.Sprintf("%s %s", invokeKubeadm(k8s.KubernetesVersion), phase)
 	cmds := []string{
 		fmt.Sprintf("%s phase certs all --config %s", baseCmd, yamlConfigPath),
 		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, yamlConfigPath),

@@ -152,7 +152,12 @@ func localDriver(name string) bool {
 
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
-	glog.Infof("configureHost: %T %+v", h, h)
+	start := time.Now()
+	glog.Infof("configureHost: %+v", h.Driver)
+	defer func() {
+		glog.Infof("configureHost completed within %s", time.Since(start))
+	}()
+
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		glog.Infof("Detecting provisioner ...")
