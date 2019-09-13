@@ -201,7 +201,7 @@ func (m *BinAsset) loadData(isTemplate bool) error {
 
 	m.length = len(contents)
 	m.reader = bytes.NewReader(contents)
-	glog.Infof("Created asset %s with %d bytes", m.AssetName, m.length)
+	glog.V(1).Infof("Created asset %s with %d bytes", m.AssetName, m.length)
 	if m.length == 0 {
 		return fmt.Errorf("%s is an empty asset", m.AssetName)
 	}

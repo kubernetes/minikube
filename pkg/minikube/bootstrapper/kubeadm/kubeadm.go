@@ -38,6 +38,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -105,12 +106,14 @@ var SkipAdditionalPreflights = map[string][]string{}
 
 // Bootstrapper is a bootstrapper using kubeadm
 type Bootstrapper struct {
-	c command.Runner
+	c           command.Runner
+	contextName string
 }
 
 // NewKubeadmBootstrapper creates a new kubeadm.Bootstrapper
 func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
-	h, err := api.Load(config.GetMachineName())
+	name := config.GetMachineName()
+	h, err := api.Load(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
 	}
@@ -118,7 +121,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "command runner")
 	}
-	return &Bootstrapper{c: runner}, nil
+	return &Bootstrapper{c: runner, contextName: name}, nil
 }
 
 // GetKubeletStatus returns the kubelet status
@@ -339,10 +342,6 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
 	out.T(out.WaitingPods, "Waiting for:")
-	client, err := kapi.Client()
-	if err != nil {
-		return errors.Wrap(err, "k8s client")
-	}
 
 	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
 	// pod shows up as registered, but need the webserver for all subsequent queries.
@@ -351,6 +350,22 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 		return errors.Wrap(err, "waiting for apiserver")
 	}
 
+	// Catch case if WaitCluster was called with a stale ~/.kube/config
+	config, err := kapi.ClientConfig(k.contextName)
+	if err != nil {
+		return errors.Wrap(err, "client config")
+	}
+
+	endpoint := fmt.Sprintf("https://%s:%d", k8s.NodeIP, k8s.NodePort)
+	if config.Host != endpoint {
+		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
+		config.Host = endpoint
+	}
+
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return errors.Wrap(err, "k8s client")
+	}
 	for _, p := range PodsByLayer {
 		if componentsOnly && p.key != "component" { // skip component check if network plugin is cni
 			continue

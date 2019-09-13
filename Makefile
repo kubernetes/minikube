@@ -197,7 +197,7 @@ iso_in_docker:
 		$(ISO_BUILD_IMAGE) /bin/bash
 
 test-iso: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
-	go test -v ./test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
+	go test -v ./test/integration --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
 .PHONY: test-pkg
 test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
