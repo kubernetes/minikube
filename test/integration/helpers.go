@@ -62,14 +62,13 @@ func (rr RunResult) Command() string {
 	return sb.String()
 }
 
-func (rr RunResult) String() string {
+func (rr RunResult) Output() string {
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Command: %v\n", rr.Command()))
 	if rr.Stdout.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("\n-- stdout -- \n%s\n", rr.Stdout.Bytes()))
+		sb.WriteString(fmt.Sprintf("-- stdout --\n%s\n-- /stdout --", rr.Stdout.Bytes()))
 	}
 	if rr.Stderr.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n", rr.Stderr.Bytes()))
+		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n** /stderr **", rr.Stderr.Bytes()))
 	}
 	return sb.String()
 }
@@ -95,8 +94,7 @@ func Run(t *testing.T, cmd *exec.Cmd) (*RunResult, error) {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
 		}
-		t.Logf("(dbg) Non-zero exit: %v: %v (%s)", rr.Command(), err, elapsed)
-		t.Logf("(dbg) %s", rr.String())
+		t.Logf("(dbg) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
 	}
 	return rr, err
 }
@@ -111,7 +109,7 @@ type StartSession struct {
 // Start starts a process in the background, streaming output
 func Start(t *testing.T, cmd *exec.Cmd) (*StartSession, error) {
 	t.Helper()
-	t.Logf("Daemon: %v", cmd.Args)
+	t.Logf("(dbg) daemon: %v", cmd.Args)
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {
@@ -129,7 +127,7 @@ func Start(t *testing.T, cmd *exec.Cmd) (*StartSession, error) {
 // Stop stops the started process
 func (ss *StartSession) Stop(t *testing.T) {
 	t.Helper()
-	t.Logf("Stopping %s ...", ss.cmd.Args)
+	t.Logf("(dbg) stopping %s ...", ss.cmd.Args)
 	if ss.cmd.Process == nil {
 		t.Logf("%s has a nil Process. Maybe it's dead? How weird!", ss.cmd.Args)
 		return
@@ -162,7 +160,7 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 			t.Logf("failed cleanup: %v", err)
 		}
 	} else {
-		t.Logf("Skipping cleanup of %s (--cleanup=false)", profile)
+		t.Logf("skipping cleanup of %s (--cleanup=false)", profile)
 	}
 	cancel()
 }
@@ -172,11 +170,11 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
 	if t.Failed() && *postMortemLogs {
 		t.Logf("%s failed, collecting logs ...", t.Name())
-		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "-n", "10"))
+		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "-n", "5"))
 		if err != nil {
 			t.Logf("failed logs error: %v", err)
 		}
-		t.Logf("%s logs: %s\n", t.Name(), rr)
+		t.Logf("%s logs: %s", t.Name(), rr.Stdout)
 		t.Logf("Sorry that %s failed :(", t.Name())
 	}
 	Cleanup(t, profile, cancel)
@@ -218,7 +216,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 	lastMsg := ""
 
 	start := time.Now()
-	t.Logf("Waiting for pods with labels %q in namespace %q ...", selector, ns)
+	t.Logf("(dbg) waiting for pods with labels %q in namespace %q ...", selector, ns)
 	f := func() (bool, error) {
 		pods, err := client.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
@@ -270,11 +268,11 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 	}
 
 	if err == nil {
-		t.Logf("pods %s up and healthy within %s", selector, time.Since(start))
+		t.Logf("(dbg) pods %s up and healthy within %s", selector, time.Since(start))
 		return names, nil
 	}
 
-	t.Logf("pods %q: %v", selector, err)
+	t.Logf("pod %q failed to start: %v", selector, err)
 	showPodLogs(ctx, t, profile, ns, names)
 	return names, fmt.Errorf("%s: %v", fmt.Sprintf("%s within %s", selector, timeout), err)
 }
