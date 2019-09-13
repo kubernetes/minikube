@@ -264,15 +264,6 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrapf(err, "cmd failed: %s\n%s\n", cmd, out)
 	}
 
-	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
-		// TODO(r2d4): get rid of global here
-		master = k8s.NodeName
-
-		if err := retry.Expo(unmarkMaster, time.Millisecond*500, time.Second*113); err != nil {
-			return errors.Wrap(err, "timed out waiting to unmark master")
-		}
-	}
-
 	glog.Infof("Configuring cluster permissions ...")
 
 	if err := retry.Expo(elevateKubeSystemPrivileges, time.Millisecond*500, 60*time.Second); err != nil {
@@ -695,10 +686,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, er
 		opts.ServiceCIDR = k8s.ServiceCIDR
 	}
 
-	if version.GTE(semver.MustParse("1.10.0-alpha.0")) {
-		opts.NoTaintMaster = true
-	}
-
+	opts.NoTaintMaster = true
 	b := bytes.Buffer{}
 	configTmpl := configTmplV1Alpha1
 	if version.GTE(semver.MustParse("1.12.0")) {
