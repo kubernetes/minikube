@@ -29,8 +29,6 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/notify"
-
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -58,6 +56,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -223,11 +222,6 @@ var startCmd = &cobra.Command{
 	Short: "Starts a local kubernetes cluster",
 	Long:  "Starts a local kubernetes cluster",
 	Run:   runStart,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if enableUpdateNotification {
-			notify.MaybePrintUpdateTextFromGithub()
-		}
-	},
 }
 
 // platform generates a user-readable platform message
@@ -264,7 +258,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
 		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
 	}
-	out.T(out.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
+
+	versionState := out.Happy
+	if notify.MaybePrintUpdateTextFromGithub() {
+		versionState = out.Meh
+	}
+
+	out.T(versionState, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
 	displayEnviron(os.Environ())
 
 	// if --registry-mirror specified when run minikube start,
