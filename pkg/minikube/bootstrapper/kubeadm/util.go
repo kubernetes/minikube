@@ -24,8 +24,7 @@ import (
 	"github.com/pkg/errors"
 	rbac "k8s.io/api/rbac/v1beta1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/service"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -35,13 +34,8 @@ const (
 
 // elevateKubeSystemPrivileges gives the kube-system service account
 // cluster admin privileges to work with RBAC.
-func elevateKubeSystemPrivileges() error {
+func elevateKubeSystemPrivileges(client kubernetes.Interface) error {
 	start := time.Now()
-	k8s := service.K8s
-	client, err := k8s.GetClientset(constants.DefaultK8sClientTimeout)
-	if err != nil {
-		return errors.Wrap(err, "getting clientset")
-	}
 	clusterRoleBinding := &rbac.ClusterRoleBinding{
 		ObjectMeta: meta.ObjectMeta{
 			Name: rbacName,
@@ -63,8 +57,7 @@ func elevateKubeSystemPrivileges() error {
 		glog.Infof("Role binding %s already exists. Skipping creation.", rbacName)
 		return nil
 	}
-	_, err = client.RbacV1beta1().ClusterRoleBindings().Create(clusterRoleBinding)
-	if err != nil {
+	if _, err := client.RbacV1beta1().ClusterRoleBindings().Create(clusterRoleBinding); err != nil {
 		netErr, ok := err.(net.Error)
 		if ok && netErr.Timeout() {
 			return &retry.RetriableError{Err: errors.Wrap(err, "creating clusterrolebinding")}

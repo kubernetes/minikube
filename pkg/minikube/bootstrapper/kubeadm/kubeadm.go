@@ -228,6 +228,12 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
+	start := time.Now()
+	glog.Infof("StartCluster: %+v", k8s)
+	defer func() {
+		glog.Infof("StartCluster complete in %s", time.Since(start))
+	}()
+
 	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
@@ -266,7 +272,15 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	glog.Infof("Configuring cluster permissions ...")
 
-	if err := retry.Expo(elevateKubeSystemPrivileges, time.Millisecond*500, 60*time.Second); err != nil {
+	elevate := func() error {
+		client, err := k.client(k8s)
+		if err != nil {
+			return err
+		}
+		return elevateKubeSystemPrivileges(client)
+	}
+
+	if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
 
@@ -326,6 +340,23 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 	return nil
 }
 
+// client returns a Kubernetes client to use to speak to a kubeadm launched apiserver
+func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientset, error) {
+	// Catch case if WaitCluster was called with a stale ~/.kube/config
+	config, err := kapi.ClientConfig(k.contextName)
+	if err != nil {
+		return nil, errors.Wrap(err, "client config")
+	}
+
+	endpoint := fmt.Sprintf("https://%s:%d", k8s.NodeIP, k8s.NodePort)
+	if config.Host != endpoint {
+		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
+		config.Host = endpoint
+	}
+
+	return kubernetes.NewForConfig(config)
+}
+
 // WaitCluster blocks until Kubernetes appears to be healthy.
 func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
@@ -341,22 +372,11 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 		return errors.Wrap(err, "waiting for apiserver")
 	}
 
-	// Catch case if WaitCluster was called with a stale ~/.kube/config
-	config, err := kapi.ClientConfig(k.contextName)
+	client, err := k.client(k8s)
 	if err != nil {
-		return errors.Wrap(err, "client config")
+		return errors.Wrap(err, "client")
 	}
 
-	endpoint := fmt.Sprintf("https://%s:%d", k8s.NodeIP, k8s.NodePort)
-	if config.Host != endpoint {
-		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
-		config.Host = endpoint
-	}
-
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return errors.Wrap(err, "k8s client")
-	}
 	for _, p := range PodsByLayer {
 		if componentsOnly && p.key != "component" { // skip component check if network plugin is cni
 			continue
