@@ -463,6 +463,11 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 
 	if !localDriver(config.VMDriver) {
 		showRemoteOsRelease(h.Driver)
+		// Ensure that even new VM's have proper time synchronization up front
+		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
+		if err := ensureSyncedGuestClock(h); err != nil {
+			return h, err
+		}
 	} else {
 		showLocalOsRelease()
 	}
