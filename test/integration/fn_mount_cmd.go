@@ -47,6 +47,9 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support mount")
 	}
+	if HyperVDriver() {
+		t.Skip("skipping: mount broken on hyperv: https://github.com/kubernetes/minikube/issues/5029")
+	}
 
 	tempDir, err := ioutil.TempDir("", "mounttest")
 	if err != nil {

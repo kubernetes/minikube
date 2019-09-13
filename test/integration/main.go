@@ -55,3 +55,8 @@ func Target() string {
 func NoneDriver() bool {
 	return strings.Contains(*startArgs, "--vm-driver=none")
 }
+
+// HyperVDriver returns whether or not this test is using the Hyper-V driver
+func HyperVDriver() bool {
+	return strings.Contains(*startArgs, "--vm-driver=hyperv")
+}
