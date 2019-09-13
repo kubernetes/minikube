@@ -152,7 +152,12 @@ func localDriver(name string) bool {
 
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
-	glog.Infof("configureHost: %T %+v", h, h)
+	start := time.Now()
+	glog.Infof("configureHost: %+v", h.Driver)
+	defer func() {
+		glog.Infof("configureHost completed within %s", time.Since(start))
+	}()
+
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		glog.Infof("Detecting provisioner ...")
@@ -166,15 +171,15 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		}
 	}
 
-	if !localDriver(h.Driver.DriverName()) {
-		glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
-		if err := h.ConfigureAuth(); err != nil {
-			return &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
-		}
-		return ensureSyncedGuestClock(h)
+	if localDriver(h.Driver.DriverName()) {
+		glog.Infof("%s is a local driver, skipping auth/time setup", h.Driver.DriverName())
+		return nil
 	}
-
-	return nil
+	glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
+	if err := h.ConfigureAuth(); err != nil {
+		return &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
+	}
+	return ensureSyncedGuestClock(h)
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync

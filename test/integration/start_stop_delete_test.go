@@ -84,12 +84,12 @@ func TestStartStop(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
 				defer CleanupWithLogs(t, profile, cancel)
 
-				// Use copious amounts of debugging for this stress test: we will need it.
-				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=8"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=1"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
+					// Fatal so that we may collect logs before stop/delete steps
+					t.Fatalf("%s failed: %v", rr.Args, err)
 				}
 
 				// SADNESS: 0/1 nodes are available: 1 node(s) had taints that the pod didn't tolerate.
