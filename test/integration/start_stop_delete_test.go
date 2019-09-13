@@ -88,7 +88,8 @@ func TestStartStop(t *testing.T) {
 				startArgs = append(startArgs, StartArgs()...)
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
+					// Fatal so that we may collect logs before stop/delete steps
+					t.Fatalf("%s failed: %v", rr.Args, err)
 				}
 
 				// SADNESS: 0/1 nodes are available: 1 node(s) had taints that the pod didn't tolerate.
