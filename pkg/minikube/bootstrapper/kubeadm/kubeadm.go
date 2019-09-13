@@ -478,8 +478,12 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 			return false, nil
 		}
 		return true, nil
+
+		// TODO: Check apiserver/kubelet logs for fatal errors so that users don't
+		// need to wait minutes to find out their flag didn't work.
+
 	}
-	err = wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, f)
+	err = wait.PollImmediate(kconst.APICallRetryInterval, 2*kconst.DefaultControlPlaneTimeout, f)
 	return err
 }
 
