@@ -34,7 +34,7 @@ func TestDockerFlags(t *testing.T) {
 
 	profile := UniqueProfileName("docker-flags")
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
-	defer Cleanup(t, profile, cancel)
+	defer CleanupWithLogs(t, profile, cancel)
 
 	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
 	args := append([]string{"start", "-p", profile, "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true", "--alsologtostderr", "-v=8"}, StartArgs()...)
