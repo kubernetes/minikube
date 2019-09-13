@@ -57,8 +57,26 @@ var (
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
 func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
+	// WARNING: This function was not designed for multiple profiles, so it is VERY racey:
+	//
+	// It updates a shared certificate file and uploads it to the apiserver before launch.
+	//
+	// If another process updates the shared certificate, it's invalid.
+	// TODO: Instead of racey manipulation of a shared certificate, use per-profile certs
+	spec := mutex.Spec{
+		Name:  "setupCerts",
+		Clock: clock.WallClock,
+		Delay: 15 * time.Second,
+	}
+	glog.Infof("acquiring lock: %+v", spec)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
+	}
+	defer releaser.Release()
+
 	localPath := constants.GetMinipath()
-	glog.Infof("Setting up certificates for IP: %s\n", k8s.NodeIP)
+	glog.Infof("Setting up %s for IP: %s\n", localPath, k8s.NodeIP)
 
 	if err := generateCerts(k8s); err != nil {
 		return errors.Wrap(err, "Error generating certs")
@@ -126,19 +144,6 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 }
 
 func generateCerts(k8s config.KubernetesConfig) error {
-	// TODO: Instead of racey manipulation of a shared certificate, use per-profile certs
-	spec := mutex.Spec{
-		Name:  "generateCerts",
-		Clock: clock.WallClock,
-		Delay: 10 * time.Second,
-	}
-	glog.Infof("acquiring lock: %+v", spec)
-	releaser, err := mutex.Acquire(spec)
-	if err != nil {
-		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
-	}
-	defer releaser.Release()
-
 	serviceIP, err := util.GetServiceClusterIP(k8s.ServiceCIDR)
 	if err != nil {
 		return errors.Wrap(err, "getting service cluster ip")
