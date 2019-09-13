@@ -331,8 +331,8 @@ lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/l
 
 # lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
 .PHONY: lint-ci
-lint-ci: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint
-	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint run \
+lint-ci: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION)
+	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint-$(GOLINT_VERSION) run \
 	--concurrency ${GOLINT_JOBS} ${GOLINT_OPTIONS} ./...
 
 .PHONY: reportcard
