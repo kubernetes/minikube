@@ -1,5 +1,22 @@
 # Release Notes
 
+## Version 1.4.0-beta.2 - 2019-09-13
+
+* Integration de-flake: expand lock scopes, sync clock at creation [#5348](https://github.com/kubernetes/minikube/pull/5348)
+* Update default Kubernetes release to v1.16.0-rc.2 [#5320](https://github.com/kubernetes/minikube/pull/5320)
+* Move update notification out of PersistentPreRun, improve update UI [#5344](https://github.com/kubernetes/minikube/pull/5344)
+* Retire Kubernetes v1.10 support, update OldestKubernetesVersion to v1.11 [#5342](https://github.com/kubernetes/minikube/pull/5342)
+* Upgrade crio to 1.15.2 [#5338](https://github.com/kubernetes/minikube/pull/5338)
+* Sync default service versions for kubeadm v1.16 [#5324](https://github.com/kubernetes/minikube/pull/5324)
+* Remove "Ignoring --vm-driver" warning [#5016](https://github.com/kubernetes/minikube/pull/5016)
+
+Huge thank you for this release towards our contributors: 
+
+- Anders F Björklund
+- John Pfuntner
+- RA489
+- Thomas Strömberg
+
 ## Version 1.4.0-beta.1 - 2019-09-11
 
 * Add error if a non-default profile name is used with the none driver [#5321](https://github.com/kubernetes/minikube/pull/5321)
