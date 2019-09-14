@@ -17,6 +17,7 @@ limitations under the License.
 package drivers
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -42,7 +43,8 @@ import (
 )
 
 const (
-	driverKVMDownloadURL = "https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2"
+	driverKVMDownloadURL      = "https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2"
+	driverHyperKitDownloadURL = "https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit"
 )
 
 // GetDiskPath returns the path of the machine disk image
@@ -187,17 +189,23 @@ func InstallOrUpdate(driver, destination string, minikubeVersion semver.Version)
 }
 
 func download(driver, destination string) error {
-	// only support kvm2 for now
-	if driver != "docker-machine-driver-kvm2" {
+	// supports kvm2 and hyperkit
+	if driver != "docker-machine-driver-kvm2" && driver != "docker-machine-driver-hyperkit" {
 		return nil
 	}
 
 	out.T(out.Happy, "Downloading driver {{.driver}}:", out.V{"driver": driver})
 
-	targetFilepath := path.Join(destination, "docker-machine-driver-kvm2")
+	targetFilepath := path.Join(destination, driver)
 	os.Remove(targetFilepath)
 
-	url := driverKVMDownloadURL
+	var url string
+	switch driver {
+	case "docker-machine-driver-kvm2":
+		url = driverKVMDownloadURL
+	case "docker-machine-driver-hyperkit":
+		url = driverHyperKitDownloadURL
+	}
 
 	opts := []getter.ClientOption{getter.WithProgress(util.DefaultProgressBar)}
 	client := &getter.Client{
@@ -214,6 +222,13 @@ func download(driver, destination string) error {
 	err := os.Chmod(targetFilepath, 0777)
 	if err != nil {
 		return errors.Wrap(err, "chmod error")
+	}
+
+	if driver == "docker-machine-driver-hyperkit" {
+		err := setHyperKitPermissions(targetFilepath)
+		if err != nil {
+			return errors.Wrap(err, "setting hyperkit permission")
+		}
 	}
 
 	return nil
@@ -234,4 +249,23 @@ func ExtractVMDriverVersion(s string) string {
 
 	v := strings.TrimSpace(matches[1])
 	return strings.TrimPrefix(v, version.VersionPrefix)
+}
+
+func setHyperKitPermissions(driverPath string) error {
+	msg := fmt.Sprintf("A new hyperkit driver was installed. It needs elevated permissions to run. The following commands will be executed\nsudo chown root:wheel %s\nsudo chmod u+s %s", driverPath, driverPath)
+	out.T(out.Happy, msg, out.V{})
+
+	cmd := exec.Command("sudo", "chown", "root:wheel", driverPath)
+	err := cmd.Run()
+	if err != nil {
+		return errors.Wrap(err, "chown root:wheel")
+	}
+
+	cmd = exec.Command("sudo", "chmod", "u+s", driverPath)
+	err = cmd.Run()
+	if err != nil {
+		return errors.Wrap(err, "chmod u+s")
+	}
+
+	return nil
 }
