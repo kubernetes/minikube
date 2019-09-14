@@ -17,7 +17,6 @@ limitations under the License.
 package storageclass
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -67,7 +66,6 @@ func SetDefaultStorageClass(name string) error {
 	if err != nil {
 		return errors.Wrap(err, "Error listing StorageClasses")
 	}
-	fmt.Println(scList)
 	for _, sc := range scList.Items {
 		err = annotateDefaultStorageClass(s, &sc, sc.Name == name)
 		if err != nil {
@@ -78,7 +76,6 @@ func SetDefaultStorageClass(name string) error {
 			return errors.Wrapf(err, "Error while marking storage class %s as %s", sc.Name, isDefault)
 		}
 	}
-
 	return nil
 }
 
