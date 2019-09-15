@@ -1050,5 +1050,4 @@ func installOrUpdateDriver(vmDriver string) {
 	if err != nil {
 		out.WarningT("Error downloading driver: {{.error}}", out.V{"error": err})
 	}
-	return
 }
