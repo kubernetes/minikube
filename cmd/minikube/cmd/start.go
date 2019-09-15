@@ -1035,13 +1035,13 @@ func installOrUpdateDriver(vmDriver string) {
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverKvm2)
 	case constants.DriverHyperkit:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverHyperkit)
-	default: // driver doesn't installOrUpdate
+	default: // driver doesn't install or update
 		return
 	}
 
 	minikubeVersion, err := version.GetSemverVersion()
 	if err != nil {
-		out.WarningT("Error parsing minukube version: {{.error}}", out.V{"error": err})
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
 		return
 	}
 
