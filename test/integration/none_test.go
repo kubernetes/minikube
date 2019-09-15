@@ -20,49 +20,51 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"strconv"
-	"strings"
 	"syscall"
 	"testing"
+	"time"
 
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-func TestNone(t *testing.T) {
-	if !isTestNoneDriver(t) {
+// None-driver specific test for CHANGE_MINIKUBE_NONE_USER
+func TestChangeNoneUser(t *testing.T) {
+	if !NoneDriver() {
 		t.Skip("Only test none driver.")
 	}
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
+	MaybeParallel(t)
 
-	err := os.Setenv("CHANGE_MINIKUBE_NONE_USER", "true")
+	profile := UniqueProfileName("none")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer CleanupWithLogs(t, profile, cancel)
+
+	startArgs := append([]string{"CHANGE_MINIKUBE_NONE_USER=true", Target(), "start", "--wait=false"}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, "/usr/bin/env", startArgs...))
 	if err != nil {
-		t.Fatalf("Failed to setup TestNone: set env: %v", err)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	p := profileName(t)
-	mk := NewMinikubeRunner(t, p, "--wait=false")
-	mk.MustRun("delete")
-	stdout, stderr := mk.MustStart()
-	msg := "Configuring local host environment"
-	if !strings.Contains(stdout, msg) {
-		t.Errorf("Expected: stdout to contain %q, got: %s", msg, stdout)
-	}
-	msg = "may reduce system security and reliability."
-	if !strings.Contains(stderr, msg) {
-		t.Errorf("Expected: stderr to contain %q, got: %s", msg, stderr)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	t.Run("minikube permissions", testNoneMinikubeFolderPermissions)
-	t.Run("kubeconfig permissions", testNoneKubeConfigPermissions)
+	rr, err = Run(t, exec.CommandContext(ctx, "/usr/bin/env", startArgs...))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
 
-}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "status"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
 
-func testNoneMinikubeFolderPermissions(t *testing.T) {
 	username := os.Getenv("SUDO_USER")
 	if username == "" {
 		t.Fatal("Expected $SUDO_USER env to not be empty")
@@ -75,39 +77,15 @@ func testNoneMinikubeFolderPermissions(t *testing.T) {
 	if err != nil {
 		t.Errorf("Failed to convert uid to int: %v", err)
 	}
-	info, err := os.Stat(constants.GetMinipath())
-	if err != nil {
-		t.Fatalf("Failed to get .minikube dir info, %v", err)
-	}
-	fileUID := info.Sys().(*syscall.Stat_t).Uid
 
-	if fileUID != uint32(uid) {
-		t.Errorf("Expected .minikube folder user: %d, got: %d", uint32(uid), fileUID)
+	for _, p := range []string{constants.GetMinipath(), filepath.Join(u.HomeDir, ".kube/config")} {
+		info, err := os.Stat(p)
+		if err != nil {
+			t.Errorf("stat(%s): %v", p, err)
+		}
+		got := info.Sys().(*syscall.Stat_t).Uid
+		if got != uint32(uid) {
+			t.Errorf("uid(%s) = %d, want %d", p, got, uint32(uid))
+		}
 	}
-
-}
-
-func testNoneKubeConfigPermissions(t *testing.T) {
-	username := os.Getenv("SUDO_USER")
-	if username == "" {
-		t.Fatal("Expected $SUDO_USER env to not be empty")
-	}
-	u, err := user.Lookup(username)
-	if err != nil {
-		t.Fatalf("Getting user failed: %v", err)
-	}
-	uid, err := strconv.Atoi(u.Uid)
-	if err != nil {
-		t.Errorf("Failed to convert uid to int: %v", err)
-	}
-	info, err := os.Stat(filepath.Join(u.HomeDir, ".kube/config"))
-	if err != nil {
-		t.Errorf("Failed to get .minikube dir info, %v", err)
-	}
-	fileUID := info.Sys().(*syscall.Stat_t).Uid
-
-	if fileUID != uint32(uid) {
-		t.Errorf("Expected .minikube folder user: %d, got: %d", uint32(uid), fileUID)
-	}
-
 }

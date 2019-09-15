@@ -73,7 +73,7 @@ gsutil -qm cp \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/docker-machine-driver"-* \
   "gs://minikube-builds/${MINIKUBE_LOCATION}/e2e-${OS_ARCH}" out
 
-gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
+gsutil -qm cp -r "gs://minikube-builds/${MINIKUBE_LOCATION}/testdata"/* testdata/
 
 gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 
@@ -260,7 +260,6 @@ cleanup_stale_routes || true
 
 mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
-export MINIKUBE_WANTREPORTERRORPROMPT=False
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
 # Build the gvisor image. This will be copied into minikube and loaded by ctr.
@@ -272,18 +271,13 @@ if [ "$(uname)" != "Darwin" ]; then
   docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile ./testdata
 fi
 
-
-# Display the default image URL
-echo ""
-echo ">> ISO URL"
-"${MINIKUBE_BIN}" start -h | grep iso-url || true
-
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
-  -minikube-args="--v=10 --logtostderr ${EXTRA_ARGS}" \
-  -test.v -test.timeout=100m -test.parallel=${PARALLEL_COUNT}  -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+  -test.timeout=60m \
+  -test.parallel=${PARALLEL_COUNT} \
+  -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
@@ -293,7 +287,6 @@ if [[ $result -eq 0 ]]; then
 else
   status="failure"
   echo "minikube: FAIL"
-  source print-debug-info.sh
 fi
 
 echo ">> Cleaning up after ourselves ..."

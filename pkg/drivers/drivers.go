@@ -20,15 +20,29 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"path"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"syscall"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
+	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/version"
+
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util"
+)
+
+const (
+	driverKVMDownloadURL = "https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2"
 )
 
 // GetDiskPath returns the path of the machine disk image
@@ -135,4 +149,89 @@ func fixPermissions(path string) error {
 		}
 	}
 	return nil
+}
+
+// InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
+func InstallOrUpdate(driver, destination string, minikubeVersion semver.Version) error {
+	_, err := exec.LookPath(driver)
+	// if file driver doesn't exist, download it
+	if err != nil {
+		return download(driver, destination)
+	}
+
+	cmd := exec.Command(driver, "version")
+	output, err := cmd.Output()
+	// if driver doesnt support 'version', it is old, download it
+	if err != nil {
+		return download(driver, destination)
+	}
+
+	v := ExtractVMDriverVersion(string(output))
+
+	// if the driver doesn't return any version, download it
+	if len(v) == 0 {
+		return download(driver, destination)
+	}
+
+	vmDriverVersion, err := semver.Make(v)
+	if err != nil {
+		return errors.Wrap(err, "can't parse driver version")
+	}
+
+	// if the current driver version is older, download newer
+	if vmDriverVersion.LT(minikubeVersion) {
+		return download(driver, destination)
+	}
+
+	return nil
+}
+
+func download(driver, destination string) error {
+	// only support kvm2 for now
+	if driver != "docker-machine-driver-kvm2" {
+		return nil
+	}
+
+	out.T(out.Happy, "Downloading driver {{.driver}}:", out.V{"driver": driver})
+
+	targetFilepath := path.Join(destination, "docker-machine-driver-kvm2")
+	os.Remove(targetFilepath)
+
+	url := driverKVMDownloadURL
+
+	opts := []getter.ClientOption{getter.WithProgress(util.DefaultProgressBar)}
+	client := &getter.Client{
+		Src:     url,
+		Dst:     targetFilepath,
+		Mode:    getter.ClientModeFile,
+		Options: opts,
+	}
+
+	if err := client.Get(); err != nil {
+		return errors.Wrapf(err, "can't download driver %s from: %s", driver, url)
+	}
+
+	err := os.Chmod(targetFilepath, 0777)
+	if err != nil {
+		return errors.Wrap(err, "chmod error")
+	}
+
+	return nil
+}
+
+// ExtractVMDriverVersion extracts the driver version.
+// KVM and Hyperkit drivers support the 'version' command, that display the information as:
+// version: vX.X.X
+// commit: XXXX
+// This method returns the version 'vX.X.X' or empty if the version isn't found.
+func ExtractVMDriverVersion(s string) string {
+	versionRegex := regexp.MustCompile(`version:(.*)`)
+	matches := versionRegex.FindStringSubmatch(s)
+
+	if len(matches) != 2 {
+		return ""
+	}
+
+	v := strings.TrimSpace(matches[1])
+	return strings.TrimPrefix(v, version.VersionPrefix)
 }

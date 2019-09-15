@@ -20,54 +20,47 @@ package integration
 
 import (
 	"context"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/docker/machine/libmachine/state"
 )
 
-func TestDocker(t *testing.T) {
-	if isTestNoneDriver(t) {
-		t.Skip("skipping test as none driver does not bundle docker")
+func TestDockerFlags(t *testing.T) {
+	if NoneDriver() {
+		t.Skip("skipping: none driver does not support ssh or bundle docker")
 	}
-	p := profileName(t)
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
-	mk := NewMinikubeRunner(t, p, "--wait=false")
-	defer mk.TearDown(t)
+	MaybeParallel(t)
 
-	// Start a timer for all remaining commands, to display failure output before a panic.
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
-	defer cancel()
+	profile := UniqueProfileName("docker-flags")
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
+	defer CleanupWithLogs(t, profile, cancel)
 
-	if _, _, err := mk.RunWithContext(ctx, "delete"); err != nil {
-		t.Logf("pre-delete failed (probably ok): %v", err)
-	}
-
-	mk.MustStart("--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", " --docker-opt=icc=true")
-
-	mk.CheckStatus(state.Running.String())
-
-	stdout, stderr, err := mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=Environment --no-pager")
+	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
+	args := append([]string{"start", "-p", profile, "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true", "--alsologtostderr", "-v=8"}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("docker env: %v\nstderr: %s", err, stderr)
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "systemctl show docker --property=Environment --no-pager"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	for _, envVar := range []string{"FOO=BAR", "BAZ=BAT"} {
-		if !strings.Contains(stdout, envVar) {
-			t.Errorf("Env var %s missing: %s.", envVar, stdout)
+		if !strings.Contains(rr.Stdout.String(), envVar) {
+			t.Errorf("env var %s missing: %s.", envVar, rr.Stdout)
 		}
 	}
 
-	stdout, stderr, err = mk.RunWithContext(ctx, "ssh -- systemctl show docker --property=ExecStart --no-pager")
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "systemctl show docker --property=ExecStart --no-pager"))
 	if err != nil {
-		t.Errorf("ssh show docker: %v\nstderr: %s", err, stderr)
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 	for _, opt := range []string{"--debug", "--icc=true"} {
-		if !strings.Contains(stdout, opt) {
-			t.Fatalf("Option %s missing from ExecStart: %s.", opt, stdout)
+		if !strings.Contains(rr.Stdout.String(), opt) {
+			t.Fatalf("%s = %q, want *%s*", rr.Command(), rr.Stdout, opt)
 		}
 	}
 }

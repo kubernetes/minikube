@@ -24,13 +24,10 @@ import (
 	"os/exec"
 	"os/user"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
-
-	"k8s.io/minikube/pkg/minikube/notify"
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
@@ -46,6 +43,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -58,6 +56,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -158,7 +157,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
 	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
-	startCmd.Flags().Duration(waitTimeout, 3*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
+	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 }
 
@@ -223,11 +222,6 @@ var startCmd = &cobra.Command{
 	Short: "Starts a local kubernetes cluster",
 	Long:  "Starts a local kubernetes cluster",
 	Run:   runStart,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		if enableUpdateNotification {
-			notify.MaybePrintUpdateTextFromGithub()
-		}
-	},
 }
 
 // platform generates a user-readable platform message
@@ -264,7 +258,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
 		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
 	}
-	out.T(out.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
+
+	versionState := out.Happy
+	if notify.MaybePrintUpdateTextFromGithub() {
+		versionState = out.Meh
+	}
+
+	out.T(versionState, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
 	displayEnviron(os.Environ())
 
 	// if --registry-mirror specified when run minikube start,
@@ -278,7 +278,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	if err := cmdcfg.IsValidDriver(runtime.GOOS, viper.GetString(vmDriver)); err != nil {
+	driver := viper.GetString(vmDriver)
+	if err := cmdcfg.IsValidDriver(runtime.GOOS, driver); err != nil {
 		exit.WithCodeT(
 			exit.Failure,
 			"The driver '{{.driver}}' is not supported on {{.os}}",
@@ -288,7 +289,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateConfig()
 	validateUser()
-	validateDriverVersion(viper.GetString(vmDriver))
+	validateDriverVersion(driver)
 
 	k8sVersion, isUpgrade := getKubernetesVersion()
 	config, err := generateCfgFromFlags(cmd, k8sVersion)
@@ -327,14 +328,14 @@ func runStart(cmd *cobra.Command, args []string) {
 	showVersionInfo(k8sVersion, cr)
 	waitCacheImages(&cacheGroup)
 
-	// setup kube adm and certs and return bootstrapperx
-	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
-
-	// The kube config must be update must come before bootstrapping, otherwise health checks may use a stale IP
+	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
 	kubeconfig, err := setupKubeconfig(host, &config)
 	if err != nil {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
+
+	// setup kubeadm (must come after setupKubeconfig)
+	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
 
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
@@ -594,6 +595,10 @@ func validateConfig() {
 
 	var cpuCount int
 	if viper.GetString(vmDriver) == constants.DriverNone {
+		if cfg.GetMachineName() != constants.DefaultMachineName {
+			exit.WithCodeT(exit.Config, "The 'none' driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+		}
+
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
 		ci, err := cpu.Counts(false)
 		if err != nil {
@@ -1027,9 +1032,21 @@ func validateDriverVersion(vmDriver string) {
 	var driverExecutable string
 	driverDocumentation := fmt.Sprintf("%s%s#driver-installation", constants.DriverDocumentation, vmDriver)
 
+	minikubeVersion, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minukube version: {{.error}}", out.V{"error": err})
+		return
+	}
+
 	switch vmDriver {
 	case constants.DriverKvm2:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverKvm2)
+		targetDir := constants.MakeMiniPath("bin")
+		err := drivers.InstallOrUpdate(driverExecutable, targetDir, minikubeVersion)
+		if err != nil {
+			out.WarningT("Error downloading driver: {{.error}}", out.V{"error": err})
+		}
+		return
 	case constants.DriverHyperkit:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverHyperkit)
 	default: // driver doesn't support version
@@ -1046,7 +1063,7 @@ func validateDriverVersion(vmDriver string) {
 		return
 	}
 
-	v := extractVMDriverVersion(string(output))
+	v := drivers.ExtractVMDriverVersion(string(output))
 
 	// if the driver doesn't have return any version, it is really old, we force a upgrade.
 	if len(v) == 0 && !viper.GetBool(force) {
@@ -1063,33 +1080,10 @@ func validateDriverVersion(vmDriver string) {
 		return
 	}
 
-	minikubeVersion, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-		return
-	}
-
 	if vmDriverVersion.LT(minikubeVersion) {
 		out.WarningT(
 			"The installed version of '{{.driver_executable}}' ({{.driver_version}}) is no longer current. Upgrade: {{.documentation_url}}",
 			out.V{"driver_executable": driverExecutable, "driver_version": vmDriverVersion, "documentation_url": driverDocumentation},
 		)
 	}
-}
-
-// extractVMDriverVersion extracts the driver version.
-// KVM and Hyperkit drivers support the 'version' command, that display the information as:
-// version: vX.X.X
-// commit: XXXX
-// This method returns the version 'vX.X.X' or empty if the version isn't found.
-func extractVMDriverVersion(s string) string {
-	versionRegex := regexp.MustCompile(`version:(.*)`)
-	matches := versionRegex.FindStringSubmatch(s)
-
-	if len(matches) != 2 {
-		return ""
-	}
-
-	v := strings.TrimSpace(matches[1])
-	return strings.TrimPrefix(v, version.VersionPrefix)
 }
