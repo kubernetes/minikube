@@ -14,15 +14,15 @@
 
 apiVersion: v1
 kind: Pod
-metadata: 
+metadata:
   name: gvisor
   namespace: kube-system
   labels:
     addonmanager.kubernetes.io/mode: Reconcile
     kubernetes.io/minikube-addons: gvisor
-spec: 
+spec:
   hostPID: true
-  containers: 
+  containers:
     - name: gvisor
       image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/gvisor-addon:latest
       securityContext:
@@ -47,6 +47,7 @@ spec:
           value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/node/bin
         - name: SYSTEMD_IGNORE_CHROOT
           value: "yes"
+      imagePullPolicy: IfNotPresent
   volumes:
   - name: node
     hostPath:

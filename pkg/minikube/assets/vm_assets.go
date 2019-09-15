@@ -78,14 +78,15 @@ func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset
 }
 
 // NewFileAsset creates a new FileAsset
-func NewFileAsset(path, targetDir, targetName, permissions string) (*FileAsset, error) {
-	f, err := os.Open(path)
+func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, error) {
+	glog.V(4).Infof("NewFileAsset: %s -> %s", src, path.Join(targetDir, targetName))
+	f, err := os.Open(src)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error opening file asset: %s", path)
+		return nil, errors.Wrapf(err, "Error opening file asset: %s", src)
 	}
 	return &FileAsset{
 		BaseAsset: BaseAsset{
-			AssetName:   path,
+			AssetName:   src,
 			TargetDir:   targetDir,
 			TargetName:  targetName,
 			Permissions: permissions,
@@ -200,7 +201,7 @@ func (m *BinAsset) loadData(isTemplate bool) error {
 
 	m.length = len(contents)
 	m.reader = bytes.NewReader(contents)
-	glog.Infof("Created asset %s with %d bytes", m.AssetName, m.length)
+	glog.V(1).Infof("Created asset %s with %d bytes", m.AssetName, m.length)
 	if m.length == 0 {
 		return fmt.Errorf("%s is an empty asset", m.AssetName)
 	}

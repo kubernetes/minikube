@@ -20,14 +20,14 @@ kind: ClusterConfiguration
 apiServer:
   extraArgs:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-certificatesDir: /var/lib/minikube/certs/
+certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
 controlPlaneEndpoint: localhost:12345
 dns:
   type: CoreDNS
 etcd:
   local:
-    dataDir: /data/minikube
+    dataDir: /var/lib/minikube/etcd
 kubernetesVersion: v1.15.0
 networking:
   dnsDomain: cluster.local

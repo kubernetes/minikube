@@ -26,6 +26,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/util"
 )
@@ -80,13 +81,13 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	wg.Add(2)
 
 	go func() {
-		if err := util.TeePrefix(util.ErrPrefix, errPipe, errB, glog.Infof); err != nil {
+		if err := util.TeePrefix(util.ErrPrefix, errPipe, errB, glog.V(2).Infof); err != nil {
 			glog.Errorf("tee stderr: %v", err)
 		}
 		wg.Done()
 	}()
 	go func() {
-		if err := util.TeePrefix(util.OutPrefix, outPipe, outB, glog.Infof); err != nil {
+		if err := util.TeePrefix(util.OutPrefix, outPipe, outB, glog.V(2).Infof); err != nil {
 			glog.Errorf("tee stdout: %v", err)
 		}
 		wg.Done()
@@ -152,14 +153,6 @@ func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
 
 // Copy copies a file to the remote over SSH.
 func (s *SSHRunner) Copy(f assets.CopyableFile) error {
-	deleteCmd := fmt.Sprintf("sudo rm -f %s", path.Join(f.GetTargetDir(), f.GetTargetName()))
-	mkdirCmd := fmt.Sprintf("sudo mkdir -p %s", f.GetTargetDir())
-	for _, cmd := range []string{deleteCmd, mkdirCmd} {
-		if err := s.Run(cmd); err != nil {
-			return errors.Wrapf(err, "pre-copy")
-		}
-	}
-
 	sess, err := s.c.NewSession()
 	if err != nil {
 		return errors.Wrap(err, "NewSession")
@@ -170,40 +163,38 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return errors.Wrap(err, "StdinPipe")
 	}
 	// The scpcmd below *should not* return until all data is copied and the
-	// StdinPipe is closed. But let's use a WaitGroup to make it expicit.
-	var wg sync.WaitGroup
-	wg.Add(1)
-	var ierr error
+	// StdinPipe is closed. But let's use errgroup to make it explicit.
+	var g errgroup.Group
 	var copied int64
+	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
+	glog.Infof("Transferring %d bytes to %s", f.GetLength(), dst)
 
-	go func() {
-		defer wg.Done()
+	g.Go(func() error {
 		defer w.Close()
-		glog.Infof("Transferring %d bytes to %s", f.GetLength(), f.GetTargetName())
 		header := fmt.Sprintf("C%s %d %s\n", f.GetPermissions(), f.GetLength(), f.GetTargetName())
 		fmt.Fprint(w, header)
 		if f.GetLength() == 0 {
 			glog.Warningf("%s is a 0 byte asset!", f.GetTargetName())
 			fmt.Fprint(w, "\x00")
-			return
+			return nil
 		}
 
-		copied, ierr = io.Copy(w, f)
+		copied, err = io.Copy(w, f)
+		if err != nil {
+			return errors.Wrap(err, "io.Copy")
+		}
 		if copied != int64(f.GetLength()) {
-			glog.Warningf("%s: expected to copy %d bytes, but copied %d instead", f.GetTargetName(), f.GetLength(), copied)
-		} else {
-			glog.Infof("%s: copied %d bytes", f.GetTargetName(), copied)
+			return fmt.Errorf("%s: expected to copy %d bytes, but copied %d instead", f.GetTargetName(), f.GetLength(), copied)
 		}
-		if ierr != nil {
-			glog.Errorf("io.Copy failed: %v", ierr)
-		}
+		glog.Infof("%s: copied %d bytes", f.GetTargetName(), copied)
 		fmt.Fprint(w, "\x00")
-	}()
+		return nil
+	})
 
-	_, err = sess.CombinedOutput(fmt.Sprintf("sudo scp -t %s", f.GetTargetDir()))
+	scp := fmt.Sprintf("sudo mkdir -p %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
+	out, err := sess.CombinedOutput(scp)
 	if err != nil {
-		return err
+		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
 	}
-	wg.Wait()
-	return ierr
+	return g.Wait()
 }

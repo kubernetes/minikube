@@ -87,7 +87,7 @@ var styles = map[StyleEnum]style{
 	Caching:          {Prefix: "🤹  "},
 	StartingVM:       {Prefix: "🔥  "},
 	StartingNone:     {Prefix: "🤹  "},
-	Provisioner:      {Prefix: "ℹ️  "},
+	Provisioner:      {Prefix: "ℹ️   "},
 	Resetting:        {Prefix: "🔄  "},
 	DeletingHost:     {Prefix: "🔥  "},
 	Copying:          {Prefix: "✨  "},
@@ -156,7 +156,7 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 
 func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...V) string {
 	if a == nil {
-		a = []V{V{}}
+		a = []V{{}}
 	}
 	format = applyStyle(style, useColor, format)
 

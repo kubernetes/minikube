@@ -27,6 +27,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/kubernetes/cmd/kubeadm/app/features"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util"
 )
@@ -43,7 +44,7 @@ const (
 
 // ExtraConfigForComponent generates a map of flagname-value pairs for a k8s
 // component.
-func ExtraConfigForComponent(component string, opts util.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
+func ExtraConfigForComponent(component string, opts config.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
 	versionedOpts, err := DefaultOptionsForComponentAndVersion(component, version)
 	if err != nil {
 		return nil, errors.Wrapf(err, "setting version specific options for %s", component)
@@ -78,7 +79,7 @@ var componentToKubeadmConfigKey = map[string]string{
 }
 
 // NewComponentExtraArgs creates a new ComponentExtraArgs
-func NewComponentExtraArgs(opts util.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
+func NewComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
 	var kubeadmExtraArgs []ComponentExtraArgs
 	for _, extraOpt := range opts {
 		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
@@ -158,8 +159,8 @@ func Supports(featureName string) bool {
 	return false
 }
 
-// ParseKubernetesVersion parses the kubernetes version
-func ParseKubernetesVersion(version string) (semver.Version, error) {
+// parseKubernetesVersion parses the kubernetes version
+func parseKubernetesVersion(version string) (semver.Version, error) {
 	// Strip leading 'v' prefix from version for semver parsing
 	v, err := semver.Make(version[1:])
 	if err != nil {
@@ -182,45 +183,9 @@ func convertToFlags(opts map[string]string) string {
 	return strings.Join(flags, " ")
 }
 
-// VersionedExtraOption holds information on flags to apply to a specific range
-// of versions
-type VersionedExtraOption struct {
-	// Special Cases:
-	//
-	// If LessThanOrEqual and GreaterThanOrEqual are both nil, the flag will be applied
-	// to all versions
-	//
-	// If LessThanOrEqual == GreaterThanOrEqual, the flag will only be applied to that
-	// specific version
-
-	// The flag and component that will be set
-	Option util.ExtraOption
-
-	// This flag will only be applied to versions before or equal to this version
-	// If it is the default value, it will have no upper bound on versions the
-	// flag is applied to
-	LessThanOrEqual semver.Version
-
-	// The flag will only be applied to versions after or equal to this version
-	// If it is the default value, it will have no lower bound on versions the
-	// flag is applied to
-	GreaterThanOrEqual semver.Version
-}
-
-// NewUnversionedOption returns a VersionedExtraOption that applies to all versions.
-func NewUnversionedOption(component, k, v string) VersionedExtraOption {
-	return VersionedExtraOption{
-		Option: util.ExtraOption{
-			Component: component,
-			Key:       k,
-			Value:     v,
-		},
-	}
-}
-
-var versionSpecificOpts = []VersionedExtraOption{
+var versionSpecificOpts = []config.VersionedExtraOption{
 	{
-		Option: util.ExtraOption{
+		Option: config.ExtraOption{
 			Component: Kubelet,
 			Key:       "fail-swap-on",
 			Value:     "false",
@@ -228,22 +193,22 @@ var versionSpecificOpts = []VersionedExtraOption{
 		GreaterThanOrEqual: semver.MustParse("1.8.0-alpha.0"),
 	},
 	// Kubeconfig args
-	NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
-	NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
+	config.NewUnversionedOption(Kubelet, "kubeconfig", "/etc/kubernetes/kubelet.conf"),
+	config.NewUnversionedOption(Kubelet, "bootstrap-kubeconfig", "/etc/kubernetes/bootstrap-kubelet.conf"),
 	{
-		Option: util.ExtraOption{
+		Option: config.ExtraOption{
 			Component: Kubelet,
 			Key:       "require-kubeconfig",
 			Value:     "true",
 		},
 		LessThanOrEqual: semver.MustParse("1.9.10"),
 	},
-	NewUnversionedOption(Kubelet, "hostname-override", constants.DefaultNodeName),
+	config.NewUnversionedOption(Kubelet, "hostname-override", constants.DefaultNodeName),
 
 	// System pods args
-	NewUnversionedOption(Kubelet, "pod-manifest-path", "/etc/kubernetes/manifests"),
+	config.NewUnversionedOption(Kubelet, "pod-manifest-path", constants.GuestManifestsDir),
 	{
-		Option: util.ExtraOption{
+		Option: config.ExtraOption{
 			Component: Kubelet,
 			Key:       "allow-privileged",
 			Value:     "true",
@@ -252,26 +217,17 @@ var versionSpecificOpts = []VersionedExtraOption{
 	},
 
 	// Network args
-	NewUnversionedOption(Kubelet, "cluster-dns", "10.96.0.10"),
-	NewUnversionedOption(Kubelet, "cluster-domain", "cluster.local"),
+	config.NewUnversionedOption(Kubelet, "cluster-dns", "10.96.0.10"),
+	config.NewUnversionedOption(Kubelet, "cluster-domain", "cluster.local"),
 
 	// Auth args
-	NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
-	NewUnversionedOption(Kubelet, "client-ca-file", path.Join(util.DefaultCertPath, "ca.crt")),
+	config.NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
+	config.NewUnversionedOption(Kubelet, "client-ca-file", path.Join(constants.GuestCertsDir, "ca.crt")),
 
 	// Cgroup args
-	NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
+	config.NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
 	{
-		Option: util.ExtraOption{
-			Component: Apiserver,
-			Key:       "admission-control",
-			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
-		},
-		LessThanOrEqual:    semver.MustParse("1.10.1000"), // Semver doesn't support wildcards.
-		GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
-	},
-	{
-		Option: util.ExtraOption{
+		Option: config.ExtraOption{
 			Component: Apiserver,
 			Key:       "enable-admission-plugins",
 			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
@@ -280,7 +236,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 		LessThanOrEqual:    semver.MustParse("1.13.1000"),
 	},
 	{
-		Option: util.ExtraOption{
+		Option: config.ExtraOption{
 			Component: Apiserver,
 			Key:       "enable-admission-plugins",
 			Value:     strings.Join(util.DefaultV114AdmissionControllers, ","),
@@ -289,7 +245,7 @@ var versionSpecificOpts = []VersionedExtraOption{
 	},
 
 	{
-		Option: util.ExtraOption{
+		Option: config.ExtraOption{
 			Component: Kubelet,
 			Key:       "cadvisor-port",
 			Value:     "0",

@@ -1,9 +1,11 @@
 language: go
 os: linux
 
+env:
+  - GOPROXY=https://proxy.golang.org
 matrix:
   include:
-    - go: 1.12.7
+    - go: 1.12.9
     - language: python
       before_install: pip install flake8
       script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
@@ -16,3 +18,6 @@ script:
   - make test
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+notifications:
+    webhooks: https://www.travisbuddy.com/
+    on_success: never # travisbuddy don't comment on successfull 

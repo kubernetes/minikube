@@ -31,8 +31,8 @@ import (
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
-// APIServerPort is the port that the API server should listen on.
 const (
+	APIServerPort    = 8443
 	APIServerName    = "minikubeCA"
 	ClusterDNSDomain = "cluster.local"
 )
@@ -129,6 +129,8 @@ func MakeMiniPath(fileName ...string) string {
 var MountProcessFileName = ".mount-process"
 
 const (
+	// DefaultEmbedCerts  is if the certs should be embedded in the kubeconfig file
+	DefaultEmbedCerts = false
 	// DefaultKeepContext is if we should keep context by default
 	DefaultKeepContext = false
 	// SHASuffix is the suffix of a SHA-256 checksum file
@@ -139,6 +141,8 @@ const (
 	MinimumMemorySize = "1024mb"
 	// DefaultCPUS is the default number of cpus of a host
 	DefaultCPUS = 2
+	// MinimumCPUS is the minimum number of cpus of a host
+	MinimumCPUS = 2
 	// DefaultDiskSize is the default disk image size, in megabytes
 	DefaultDiskSize = "20000mb"
 	// MinimumDiskSize is the minimum disk image size, in megabytes
@@ -176,56 +180,35 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.15.1"
+var DefaultKubernetesVersion = "v1.16.0-rc.2"
 
 // NewestKubernetesVersion is the newest Kubernetes version to test against
-var NewestKubernetesVersion = "v1.15.1"
+var NewestKubernetesVersion = "v1.16.0-rc.2"
 
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
-var OldestKubernetesVersion = "v1.10.13"
-
-// ConfigFilePath is the path of the config directory
-var ConfigFilePath = MakeMiniPath("config")
+var OldestKubernetesVersion = "v1.11.10"
 
 // ConfigFile is the path of the config file
 var ConfigFile = MakeMiniPath("config", "config.json")
-
-// GetProfileFile returns the Minikube profile config file
-func GetProfileFile(profile string, miniHome ...string) string {
-	miniPath := GetMinipath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "profiles", profile, "config.json")
-}
-
-// GetProfilePath returns the Minikube profile path of config file
-func GetProfilePath(profile string, miniHome ...string) string {
-	miniPath := GetMinipath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "profiles", profile)
-}
-
-// AddonsPath is the default path of the addons configuration
-const AddonsPath = "/etc/kubernetes/addons"
-
-// FilesPath is the default path of files
-const FilesPath = "/files"
 
 const (
 	// KubeletServiceFile is the path to the kubelet systemd service
 	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
 	// KubeletSystemdConfFile is the path to the kubelet systemd configuration
 	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	// KubeadmConfigFile is the path to the kubeadm configuration
-	KubeadmConfigFile = "/var/lib/kubeadm.yaml"
 	// DefaultCNIConfigPath is the path to the CNI configuration
 	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
-)
 
-const (
+	// GuestAddonsDir is the default path of the addons configuration
+	GuestAddonsDir = "/etc/kubernetes/addons"
+	// GuestManifestsDir is where the kubelet should look for static Pod manifests
+	GuestManifestsDir = "/etc/kubernetes/manifests"
+	// GuestEphemeralDir is the path where ephemeral data should be stored within the VM
+	GuestEphemeralDir = "/var/tmp/minikube"
+	// PersistentDir is the path where persistent data should be stored within the VM (not tmpfs)
+	GuestPersistentDir = "/var/lib/minikube"
+	// GuestCertsDir are where Kubernetes certificates are kept on the guest
+	GuestCertsDir = GuestPersistentDir + "/certs"
 	// DefaultUfsPort is the default port of UFS
 	DefaultUfsPort = "5640"
 	// DefaultUfsDebugLvl is the default debug level of UFS
@@ -236,6 +219,11 @@ const (
 	DefaultMsize = 262144
 	// DefaultMountVersion is the default 9p version to use for mount
 	DefaultMountVersion = "9p2000.L"
+
+	// IsMinikubeChildProcess is the name of "is minikube child process" variable
+	IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
+	// FileScheme is the file scheme
+	FileScheme = "file"
 )
 
 // ImageRepositories contains all known image repositories
@@ -254,16 +242,8 @@ func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) s
 	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version, osName, archName))
 }
 
-// IsMinikubeChildProcess is the name of "is minikube child process" variable
-const IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
-
-// FileScheme is the file scheme
-const FileScheme = "file"
-
-// GetKubeadmCachedBinaries gets the binaries to cache for kubeadm
-func GetKubeadmCachedBinaries() []string {
-	return []string{"kubelet", "kubeadm"}
-}
+// KubeadmBinaries are Kubernetes release binaries required for kubeadm
+var KubeadmBinaries = []string{"kubelet", "kubeadm"}
 
 // GetKubeadmCachedImages gets the images to cache for kubeadm for a version
 func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string) (string, []string) {
@@ -278,14 +258,11 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 	if !strings.HasSuffix(minikubeRepository, "/") {
 		minikubeRepository += "/"
 	}
-
-	v1_14plus := semver.MustParseRange(">=1.14.0")
+	v1_16plus := semver.MustParseRange(">=1.16.0")
+	v1_14plus := semver.MustParseRange(">=1.14.0 <1.16.0")
 	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
 	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
 	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
-	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
-	v1_9 := semver.MustParseRange(">=1.9.0 <1.10.0")
-	v1_8 := semver.MustParseRange(">=1.8.0 <1.9.0")
 	v1_12plus := semver.MustParseRange(">=1.12.0")
 
 	kubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesVersionStr, minikubeVersion.VersionPrefix))
@@ -311,7 +288,18 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 	}
 
 	var podInfraContainerImage string
-	if v1_14plus(kubernetesVersion) {
+	if v1_16plus(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause:3.1"
+		images = append(images, []string{
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.13",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.13",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.13",
+			imageRepository + "etcd" + ArchTag(false) + "3.3.15-0",
+			imageRepository + "coredns" + ArchTag(false) + "1.6.2",
+		}...)
+
+	} else if v1_14plus(kubernetesVersion) {
 		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
@@ -354,37 +342,6 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 			imageRepository + "etcd" + ArchTag(true) + "3.2.18",
 			imageRepository + "coredns:1.1.3",
 		}...)
-
-	} else if v1_10(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
-			imageRepository + "etcd" + ArchTag(true) + "3.1.12",
-		}...)
-
-	} else if v1_9(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.7",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.7",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.7",
-			imageRepository + "etcd" + ArchTag(true) + "3.1.10",
-		}...)
-
-	} else if v1_8(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.5",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.5",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.5",
-			imageRepository + "etcd" + ArchTag(true) + "3.0.17",
-		}...)
-
 	} else {
 		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
 	}
@@ -406,23 +363,19 @@ const (
 	GvisorFilesPath = "/tmp/gvisor"
 	// ContainerdConfigTomlPath is the path to the containerd config.toml
 	ContainerdConfigTomlPath = "/etc/containerd/config.toml"
-	// GvisorContainerdShimTomlPath is the path to gvisor-containerd-shim.toml
-	GvisorContainerdShimTomlPath = "/etc/containerd/gvisor-containerd-shim.toml"
 	// StoredContainerdConfigTomlPath is the path where the default config.toml will be stored
 	StoredContainerdConfigTomlPath = "/tmp/config.toml"
 
 	// GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
 	GvisorConfigTomlTargetName = "gvisor-config.toml"
-	// GvisorContainerdShimTargetName is the go-bindata target name for gvisor-containerd-shim
-	GvisorContainerdShimTargetName = "gvisor-containerd-shim.toml"
 
 	// GvisorContainerdShimURL is the url to download gvisor-containerd-shim
-	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.1-rc.0/gvisor-containerd-shim-v0.0.1-rc.0.linux-amd64"
+	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.3/containerd-shim-runsc-v1.linux-amd64"
 	// GvisorURL is the url to download gvisor
-	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2018-12-07/runsc"
+	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2019-01-14/runsc"
 )
 
 const (
 	// DriverDocumentation the documentation of the KVM driver
-	DriverDocumentation = "https://github.com/kubernetes/minikube/blob/master/docs/drivers.md"
+	DriverDocumentation = "https://minikube.sigs.k8s.io/docs/reference/drivers/"
 )
