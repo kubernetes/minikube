@@ -15,9 +15,9 @@ limitations under the License.
 */
 
 // This file implements a go-getter wrapper for cheggaaa progress bar
-
 // based on:
 // https://github.com/hashicorp/go-getter/blob/master/cmd/go-getter/progress_tracking.go
+
 package util
 
 import (
@@ -29,7 +29,7 @@ import (
 	"github.com/hashicorp/go-getter"
 )
 
-var defaultProgressBar getter.ProgressTracker = &progressBar{}
+var DefaultProgressBar getter.ProgressTracker = &progressBar{}
 
 type progressBar struct {
 	lock     sync.Mutex

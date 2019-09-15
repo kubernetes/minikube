@@ -28,7 +28,7 @@ minikube makes it easy to open this exposed endpoint in your browser:
 
 `minikube service hello-minikube`
 
-Start a second local cluster:
+Start a second local cluster (_note: This will not work if minikube is using the bare-metal/none driver_):
 
 `minikube start -p cluster2`
 

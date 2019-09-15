@@ -180,13 +180,13 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.16.0-beta.1"
+var DefaultKubernetesVersion = "v1.16.0-rc.2"
 
 // NewestKubernetesVersion is the newest Kubernetes version to test against
-var NewestKubernetesVersion = "v1.16.0-beta.1"
+var NewestKubernetesVersion = "v1.16.0-rc.2"
 
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
-var OldestKubernetesVersion = "v1.10.13"
+var OldestKubernetesVersion = "v1.11.10"
 
 // ConfigFile is the path of the config file
 var ConfigFile = MakeMiniPath("config", "config.json")
@@ -258,14 +258,11 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 	if !strings.HasSuffix(minikubeRepository, "/") {
 		minikubeRepository += "/"
 	}
-
-	v1_14plus := semver.MustParseRange(">=1.14.0")
+	v1_16plus := semver.MustParseRange(">=1.16.0")
+	v1_14plus := semver.MustParseRange(">=1.14.0 <1.16.0")
 	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
 	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
 	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
-	v1_10 := semver.MustParseRange(">=1.10.0 <1.11.0")
-	v1_9 := semver.MustParseRange(">=1.9.0 <1.10.0")
-	v1_8 := semver.MustParseRange(">=1.8.0 <1.9.0")
 	v1_12plus := semver.MustParseRange(">=1.12.0")
 
 	kubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesVersionStr, minikubeVersion.VersionPrefix))
@@ -291,7 +288,18 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 	}
 
 	var podInfraContainerImage string
-	if v1_14plus(kubernetesVersion) {
+	if v1_16plus(kubernetesVersion) {
+		podInfraContainerImage = imageRepository + "pause:3.1"
+		images = append(images, []string{
+			podInfraContainerImage,
+			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.13",
+			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.13",
+			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.13",
+			imageRepository + "etcd" + ArchTag(false) + "3.3.15-0",
+			imageRepository + "coredns" + ArchTag(false) + "1.6.2",
+		}...)
+
+	} else if v1_14plus(kubernetesVersion) {
 		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
@@ -334,37 +342,6 @@ func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string)
 			imageRepository + "etcd" + ArchTag(true) + "3.2.18",
 			imageRepository + "coredns:1.1.3",
 		}...)
-
-	} else if v1_10(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
-			imageRepository + "etcd" + ArchTag(true) + "3.1.12",
-		}...)
-
-	} else if v1_9(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.7",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.7",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.7",
-			imageRepository + "etcd" + ArchTag(true) + "3.1.10",
-		}...)
-
-	} else if v1_8(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.5",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.5",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.5",
-			imageRepository + "etcd" + ArchTag(true) + "3.0.17",
-		}...)
-
 	} else {
 		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
 	}

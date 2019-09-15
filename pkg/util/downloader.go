@@ -69,7 +69,7 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(url string) error {
 	// Predictable temp destination so that resume can function
 	tmpDst := dst + ".download"
 
-	opts := []getter.ClientOption{getter.WithProgress(defaultProgressBar)}
+	opts := []getter.ClientOption{getter.WithProgress(DefaultProgressBar)}
 	client := &getter.Client{
 		Src:     urlWithChecksum,
 		Dst:     tmpDst,

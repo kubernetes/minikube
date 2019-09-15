@@ -229,15 +229,6 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 	{
 		Option: config.ExtraOption{
 			Component: Apiserver,
-			Key:       "admission-control",
-			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
-		},
-		LessThanOrEqual:    semver.MustParse("1.10.1000"), // Semver doesn't support wildcards.
-		GreaterThanOrEqual: semver.MustParse("1.9.0-alpha.0"),
-	},
-	{
-		Option: config.ExtraOption{
-			Component: Apiserver,
 			Key:       "enable-admission-plugins",
 			Value:     strings.Join(util.DefaultLegacyAdmissionControllers, ","),
 		},
