@@ -41,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // BuildrootProvisioner provisions the custom system based on Buildroot
@@ -68,6 +69,11 @@ func (p *BuildrootProvisioner) String() string {
 	return "buildroot"
 }
 
+// CompatibleWithHost checks if provisioner is compatible with host
+func (p *BuildrootProvisioner) CompatibleWithHost() bool {
+	return p.OsReleaseInfo.ID == "buildroot"
+}
+
 // escapeSystemdDirectives escapes special characters in the input variables used to create the
 // systemd unit file, which would otherwise be interpreted as systemd directives. An example
 // are template specifiers (e.g. '%i') which are predefined variables that get evaluated dynamically
@@ -86,6 +92,13 @@ func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision
 	driverNameLabel := fmt.Sprintf("provider=%s", p.Driver.DriverName())
 	p.EngineOptions.Labels = append(p.EngineOptions.Labels, driverNameLabel)
 
+	noPivot := true
+	// Using pivot_root is not supported on fstype rootfs
+	if fstype, err := rootFileSystemType(p); err == nil {
+		log.Debugf("root file system type: %s", fstype)
+		noPivot = fstype == "rootfs"
+	}
+
 	engineConfigTmpl := `[Unit]
 Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
@@ -95,8 +108,15 @@ Requires= minikube-automount.service docker.socket
 [Service]
 Type=notify
 
+`
+	if noPivot {
+		log.Warn("Using fundamentally insecure --no-pivot option")
+		engineConfigTmpl += `
 # DOCKER_RAMDISK disables pivot_root in Docker, using MS_MOVE instead.
 Environment=DOCKER_RAMDISK=yes
+`
+	}
+	engineConfigTmpl += `
 {{range .EngineOptions.Env}}Environment={{.}}
 {{end}}
 
@@ -154,6 +174,14 @@ WantedBy=multi-user.target
 	}, nil
 }
 
+func rootFileSystemType(p *BuildrootProvisioner) (string, error) {
+	fs, err := p.SSHCommand("df --output=fstype / | tail -n 1")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(fs), nil
+}
+
 // Package installs a package
 func (p *BuildrootProvisioner) Package(name string, action pkgaction.PackageAction) error {
 	return nil
@@ -174,13 +202,14 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	log.Debugf("set auth options %+v", p.AuthOptions)
 
 	log.Debugf("setting up certificates")
-	configureAuth := func() error {
+	configAuth := func() error {
 		if err := configureAuth(p); err != nil {
-			return &util.RetriableError{Err: err}
+			return &retry.RetriableError{Err: err}
 		}
 		return nil
 	}
-	err := util.RetryAfter(5, configureAuth, time.Second*10)
+
+	err := retry.Expo(configAuth, time.Second, 2*time.Minute)
 	if err != nil {
 		log.Debugf("Error configuring auth during provisioning %v", err)
 		return err

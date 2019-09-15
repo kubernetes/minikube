@@ -36,15 +36,15 @@ oom_score = 0
     max_container_log_line_size = 16384
     [plugins.cri.containerd]
       snapshotter = "overlayfs"
-      no_pivot = true
+      no_pivot = false
       [plugins.cri.containerd.default_runtime]
         runtime_type = "io.containerd.runtime.v1.linux"
         runtime_engine = ""
         runtime_root = ""
-      [plugins.cri.containerd.untrusted_workload_runtime]
-        runtime_type = "io.containerd.runtime.v1.linux"
-        runtime_engine = "/usr/local/bin/runsc"
-        runtime_root = "/run/containerd/runsc"
+      [plugins.cri.containerd.runtimes.untrusted]
+        runtime_type = "io.containerd.runsc.v1"
+      [plugins.cri.containerd.runtimes.runsc]
+        runtime_type = "io.containerd.runsc.v1"
     [plugins.cri.cni]
       bin_dir = "/opt/cni/bin"
       conf_dir = "/etc/cni/net.d"
@@ -56,7 +56,6 @@ oom_score = 0
   [plugins.diff-service]
     default = ["walking"]
   [plugins.linux]
-    shim = "gvisor-containerd-shim"
     runtime = "runc"
     runtime_root = ""
     no_shim = false

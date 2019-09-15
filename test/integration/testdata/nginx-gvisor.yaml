@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-gvisor
+  labels:
+    run: nginx
+    runtime: gvisor
+spec:
+  runtimeClassName: gvisor
+  containers:
+  - name: nginx
+    image: nginx

@@ -19,7 +19,7 @@ package command
 import (
 	"fmt"
 	"io"
-	"path/filepath"
+	"path"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 )
@@ -54,5 +54,5 @@ type Runner interface {
 }
 
 func getDeleteFileCommand(f assets.CopyableFile) string {
-	return fmt.Sprintf("sudo rm %s", filepath.Join(f.GetTargetDir(), f.GetTargetName()))
+	return fmt.Sprintf("sudo rm %s", path.Join(f.GetTargetDir(), f.GetTargetName()))
 }

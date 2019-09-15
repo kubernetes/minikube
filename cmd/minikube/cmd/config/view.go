@@ -55,7 +55,7 @@ For the list of accessible variables for the template, see the struct values her
 
 // View displays the current config
 func View() error {
-	cfg, err := config.ReadConfig()
+	cfg, err := config.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return err
 	}

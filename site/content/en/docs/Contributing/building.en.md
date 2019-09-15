@@ -1,12 +1,9 @@
 ---
-title: "Building minikube"
+linkTitle: "Building"
+title: "Building the minikube binary"
 date: 2019-07-31
-weight: 4
-description: >
-  Building minikube
+weight: 2
 ---
-
-This guide covers both building the minikube binary and the ISO.
 
 ## Prerequisites
 
@@ -27,13 +24,17 @@ git clone https://github.com/kubernetes/minikube.git
 cd minikube
 ```
 
-## Building the binary
+## Compiling minikube
 
 ```shell
 make
 ```
 
-Alternatively, you may cross-compile to/from different operating systems:
+Note: On Windows, this will only work in Git Bash or other terminals that support bash commands.
+
+## Compiling minikube using Docker
+
+To cross-compile to/from different operating systems:
 
 ```shell
 MINIKUBE_BUILD_IN_DOCKER=y make cross
@@ -51,71 +52,7 @@ Start the cluster using your built minikube with:
 
 ## Building the ISO
 
-The minikube ISO is booted by each hypervisor to provide a stable minimal Linux environment to start Kubernetes from. It is based on coreboot, uses systemd, and includes all necessary container runtimes and hypervisor guest drivers.
-
-### Prerequisites
-
-See the above requirements for building the minikube binary. Additionally, you will need:
-
-```shell
-sudo apt-get install build-essential gnupg2 p7zip-full git wget cpio python \
-    unzip bc gcc-multilib automake libtool locales
-```
-### Build instructions
-
-```shell
-$ make buildroot-image
-$ make out/minikube.iso
-```
-
-The build will occur inside a docker container. If you want to do this on
-baremetal, replace `make out/minikube.iso` with `IN_DOCKER=1 make out/minikube.iso`.
-The bootable ISO image will be available in `out/minikube.iso`.
-
-### Using a local ISO image
-
-```shell
-$ ./out/minikube start --iso-url=file://$(pwd)/out/minikube.iso
-```
-
-### Modifying buildroot components
-
-To change which Linux userland components are included by the guest VM, use this to modify the buildroot configuration:
-
-```shell
-cd out/buildroot
-make menuconfig
-make
-```
-
-To save these configuration changes, execute:
-
-```shell
-make savedefconfig
-```
-
-The changes will be reflected in the `minikube-iso/configs/minikube_defconfig` file.
-
-### Adding kernel modules
-
-To make kernel configuration changes and save them, execute:
-
-```shell
-$ make linux-menuconfig
-```
-
-This will open the kernel configuration menu, and then save your changes to our
-iso directory after they've been selected.
-
-### Adding third-party packages
-
-To add your own package to the minikube ISO, create a package directory under `iso/minikube-iso/package`.  This directory will require at least 3 files:
-
-`<package name>.mk` - A Makefile describing how to download the source code and build the program
-`<package name>.hash` - Checksums to verify the downloaded source code
-`Config.in` - buildroot configuration.
-
-For a relatively simple example to start with, you may want to reference the `podman` package.
+See [Building the minikube ISO](../iso)
 
 ## Continuous Integration Builds
 

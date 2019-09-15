@@ -24,25 +24,38 @@
 # BUCKET: The GCP bucket the build files should be uploaded to.
 # GITHUB_TOKEN: The Github API access token. Injected by the Jenkins credential provider.
 
-set -e
-
-export TAGNAME=v${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
-export DEB_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
-export RPM_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
-export GOPATH=~/go
+set -eux -o pipefail
+readonly VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}"
+readonly DEB_VERSION="${VERSION/-/\~}"
+readonly RPM_VERSION="${DEB_VERSION}"
+readonly TAGNAME="v${VERSION}"
 
 # Make sure the tag matches the Makefile
-cat Makefile | grep "VERSION_MAJOR ?=" | grep $VERSION_MAJOR
-cat Makefile | grep "VERSION_MINOR ?=" | grep $VERSION_MINOR
-cat Makefile | grep "VERSION_BUILD ?=" | grep $VERSION_BUILD
+grep -E "^VERSION_MAJOR \\?=" Makefile | grep "${VERSION_MAJOR}"
+grep -E "^VERSION_MINOR \\?=" Makefile | grep "${VERSION_MINOR}"
+grep -E "^VERSION_BUILD \\?=" Makefile | grep "${VERSION_BUILD}"
+
+# Diagnostics
+go env GOPATH
 
 # Build and upload
-BUILD_IN_DOCKER=y make -j 16 all out/minikube-installer.exe \
-out/minikube_${DEB_VERSION}.deb out/minikube-${RPM_VERSION}.rpm \
-out/docker-machine-driver-kvm2_${DEB_VERSION}.deb out/docker-machine-driver-kvm2-${RPM_VERSION}.rpm
+env GOPATH=$HOME/go BUILD_IN_DOCKER=y \
+  make -j 16 \
+  all \
+  out/minikube-installer.exe \
+  "out/minikube_${DEB_VERSION}.deb" \
+  "out/minikube-${RPM_VERSION}.rpm" \
+  "out/docker-machine-driver-kvm2_${DEB_VERSION}.deb" \
+  "out/docker-machine-driver-kvm2-${RPM_VERSION}.rpm"
+
 make checksum
 
-gsutil -m cp out/* gs://$BUCKET/releases/$TAGNAME/
+gsutil -m cp out/* "gs://$BUCKET/releases/$TAGNAME/"
 
-# Bump latest
-gsutil cp -r gs://$BUCKET/releases/$TAGNAME/* gs://$BUCKET/releases/latest/
+# Update "latest" release for non-beta/non-alpha builds
+if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
+  echo "NOTE: ${VERSION} appears to be a non-standard release, not updating /releases/latest"
+else
+  echo "Updating latest bucket for ${VERSION} release"
+  gsutil cp -r "gs://${BUCKET}/releases/${TAGNAME}/*" "gs://${BUCKET}/releases/latest/"
+fi

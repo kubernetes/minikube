@@ -19,14 +19,14 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 
 ./out/minikube-windows-amd64.exe delete
 
-out/e2e-windows-amd64.exe -minikube-start-args="--vm-driver=virtualbox --bootstrapper=kubeadm" -minikube-args="--v=10 --logtostderr" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=30m
+out/e2e-windows-amd64.exe -minikube-start-args="--vm-driver=virtualbox" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=30m
 $env:result=$lastexitcode
 # If the last exit code was 0->success, x>0->error
 If($env:result -eq 0){$env:status="success"}
 Else {$env:status="failure"}
 
-$env:target_url="https://storage.googleapis.com/minikube-builds/logs/$env:MINIKUBE_LOCATION/Windows-virtualbox.txt"
-$json = "{`"state`": `"$env:status`", `"description`": `"Jenkins`", `"target_url`": `"$env:target_url`", `"context`": `"Windows-virtualbox`"}"
+$env:target_url="https://storage.googleapis.com/minikube-builds/logs/$env:MINIKUBE_LOCATION/VirtualBox_Windows.txt"
+$json = "{`"state`": `"$env:status`", `"description`": `"Jenkins`", `"target_url`": `"$env:target_url`", `"context`": `"VirtualBox_Windows`"}"
 Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
 Exit $env:result

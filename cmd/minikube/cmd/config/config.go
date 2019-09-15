@@ -49,6 +49,12 @@ var settings = []Setting{
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
+		name:        "container-runtime",
+		set:         SetString,
+		validations: []setFn{IsContainerdRuntime},
+		callbacks:   []setFn{RequiresRestartMsg},
+	},
+	{
 		name:      "feature-gates",
 		set:       SetString,
 		callbacks: []setFn{RequiresRestartMsg},
@@ -172,6 +178,12 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "insecure-registry",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:        "registry",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
@@ -253,6 +265,10 @@ var settings = []Setting{
 		name: "embed-certs",
 		set:  SetBool,
 	},
+	{
+		name: "native-ssh",
+		set:  SetBool,
+	},
 }
 
 // ConfigCmd represents the config command
@@ -278,7 +294,7 @@ func configurableFields() string {
 
 // ListConfigMap list entries from config file
 func ListConfigMap(name string) ([]string, error) {
-	configFile, err := config.ReadConfig()
+	configFile, err := config.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return nil, err
 	}
@@ -298,7 +314,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig()
+	cfg, err := config.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return err
 	}
@@ -325,7 +341,7 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig()
+	cfg, err := config.ReadConfig(constants.ConfigFile)
 	if err != nil {
 		return err
 	}

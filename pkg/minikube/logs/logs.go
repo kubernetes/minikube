@@ -34,9 +34,9 @@ import (
 )
 
 // rootCauseRe is a regular expression that matches known failure root causes
-var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted|tls: bad certificate`)
+var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted|tls: bad certificate|kubelet.*no API client|kubelet.*No api server|STDIN.*127.0.0.1:8080`)
 
-// ignoreRe is a regular expression that matches spurious errors to not surface
+// ignoreCauseRe is a regular expression that matches spurious errors to not surface
 var ignoreCauseRe = regexp.MustCompile("error: no objects passed to apply")
 
 // importantPods are a list of pods to retrieve logs for, in addition to the bootstrapper logs.
@@ -48,6 +48,7 @@ var importantPods = []string{
 	"kube-addon-manager",
 	"kubernetes-dashboard",
 	"storage-provisioner",
+	"kube-controller-manager",
 }
 
 // lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
@@ -161,7 +162,10 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 			glog.Warningf("No container was found matching %q", pod)
 			continue
 		}
-		cmds[pod] = r.ContainerLogCmd(ids[0], length, follow)
+		for _, i := range ids {
+			key := fmt.Sprintf("%s [%s]", pod, i)
+			cmds[key] = r.ContainerLogCmd(i, length, follow)
+		}
 	}
 	cmds[r.Name()] = r.SystemLogCmd(length)
 	// Works across container runtimes with good formatting

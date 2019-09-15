@@ -32,10 +32,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/version"
 )
-
-const updateLinkPrefix = "https://github.com/kubernetes/minikube/releases/tag/v"
 
 var (
 	timeLayout              = time.RFC1123
@@ -43,33 +42,35 @@ var (
 )
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
-func MaybePrintUpdateTextFromGithub() {
-	MaybePrintUpdateText(constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
+func MaybePrintUpdateTextFromGithub() bool {
+	return MaybePrintUpdateText(constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
-// MaybePrintUpdateText prints update text if needed
-func MaybePrintUpdateText(url string, lastUpdatePath string) {
+// MaybePrintUpdateText prints update text, returns a bool if life is good.
+func MaybePrintUpdateText(url string, lastUpdatePath string) bool {
 	if !shouldCheckURLVersion(lastUpdatePath) {
-		return
+		return false
 	}
 	latestVersion, err := getLatestVersionFromURL(url)
 	if err != nil {
 		glog.Warning(err)
-		return
+		return true
 	}
 	localVersion, err := version.GetSemverVersion()
 	if err != nil {
 		glog.Warning(err)
-		return
+		return true
 	}
 	if localVersion.Compare(latestVersion) < 0 {
 		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
 			glog.Errorf("write time failed: %v", err)
 		}
-		url := fmt.Sprintf("%s/%s", updateLinkPrefix, latestVersion)
-		out.ErrT(out.WarningType, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
-		out.T(out.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'")
+		url := "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()
+		out.ErrT(out.Celebrate, `minikube {{.version}} is available! Download it: {{.url}}`, out.V{"version": latestVersion, "url": url})
+		out.ErrT(out.Tip, "To disable this notice, run: 'minikube config set WantUpdateNotification false'\n")
+		return true
 	}
+	return false
 }
 
 func shouldCheckURLVersion(filePath string) bool {
@@ -132,7 +133,7 @@ func GetAllVersionsFromURL(url string) (Releases, error) {
 }
 
 func writeTimeToFile(path string, inputTime time.Time) error {
-	err := ioutil.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0644)
+	err := lock.WriteFile(path, []byte(inputTime.Format(timeLayout)), 0644)
 	if err != nil {
 		return errors.Wrap(err, "Error writing current update time to file: ")
 	}

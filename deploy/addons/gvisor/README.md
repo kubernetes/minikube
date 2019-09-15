@@ -1,5 +1,5 @@
 ## gVisor Addon
-[gVisor](https://github.com/google/gvisor/blob/master/README.md), a sandboxed container runtime, allows users to securely run pods with untrusted workloads within Minikube.
+[gVisor](https://gvisor.dev/), a sandboxed container runtime, allows users to securely run pods with untrusted workloads within Minikube.
 
 ### Starting Minikube
 gVisor depends on the containerd runtime to run in Minikube.
@@ -17,21 +17,27 @@ To enable this addon, simply run:
 $ minikube addons enable gvisor
 ```
 
-Within one minute, the addon manager should pick up the change and you should see the `gvisor` pod:
+Within one minute, the addon manager should pick up the change and you should
+see the `gvisor` pod and `gvisor` [Runtime Class](https://kubernetes.io/docs/concepts/containers/runtime-class/):
 
 ```
-$ kubectl get pod gvisor -n kube-system
-NAME      READY     STATUS    RESTARTS   AGE
-gvisor    1/1       Running   0          3m
+$ kubectl get pod,runtimeclass gvisor -n kube-system
+NAME         READY   STATUS    RESTARTS   AGE
+pod/gvisor   1/1     Running   0          2m52s
+
+NAME                              CREATED AT
+runtimeclass.node.k8s.io/gvisor   2019-06-15T04:35:09Z
 ```
 
-Once the pod has status `Running`, gVisor is enabled in Minikube. 
+Once the pod has status `Running`, gVisor is enabled in Minikube.
 
 ### Running pods in gVisor
-To run a pod in gVisor, add this annotation to the Kubernetes yaml:
+
+To run a pod in gVisor, add the `gvisor` runtime class to the Pod spec in your
+Kubernetes yaml:
 
 ```
-io.kubernetes.cri.untrusted-workload: "true"
+runtimeClassName: gvisor
 ```
 
 An example Pod is shown below:
@@ -41,17 +47,15 @@ apiVersion: v1
 kind: Pod
 metadata:
   name: nginx-untrusted
-  annotations:
-    io.kubernetes.cri.untrusted-workload: "true"
 spec:
+  runtimeClassName: gvisor
   containers:
   - name: nginx
     image: nginx
 ```
 
-_Note: this annotation will not be necessary once the RuntimeClass Kubernetes feature is available broadly._
-
 ### Disabling gVisor
+
 To disable gVisor, run:
 
 ```
@@ -67,4 +71,4 @@ NAME      READY     STATUS        RESTARTS   AGE
 gvisor    1/1       Terminating   0          5m
 ```
 
-_Note: Once gVisor is disabled, any pod with the `io.kubernetes.cri.untrusted-workload` annotation will fail with a FailedCreatePodSandBox error._
+_Note: Once gVisor is disabled, any pod with the `gvisor` Runtime Class or `io.kubernetes.cri.untrusted-workload` annotation will fail with a FailedCreatePodSandBox error._
