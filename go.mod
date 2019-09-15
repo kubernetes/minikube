@@ -22,8 +22,10 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/gogo/protobuf v1.3.0 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/golang/mock v1.3.1 // indirect
 	github.com/google/go-cmp v0.3.0
 	github.com/google/go-github/v25 v25.0.2
 	github.com/gorilla/mux v1.7.1 // indirect
@@ -44,13 +46,16 @@ require (
 	github.com/juju/testing v0.0.0-20190723135506-ce30eb24acd2 // indirect
 	github.com/juju/utils v0.0.0-20180820210520-bf9cc5bdd62d // indirect
 	github.com/juju/version v0.0.0-20180108022336-b64dbd566305 // indirect
+	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
-	github.com/mattn/go-isatty v0.0.8
+	github.com/magiconair/properties v1.8.1 // indirect
+	github.com/mattn/go-isatty v0.0.9
 	github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
 	github.com/olekukonko/tablewriter v0.0.0-20160923125401-bdcc175572fd
 	github.com/pborman/uuid v1.2.0
+	github.com/pelletier/go-toml v1.4.0 // indirect
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/browser v0.0.0-20160118053552-9302be274faa
 	github.com/pkg/errors v0.8.1
@@ -59,19 +64,22 @@ require (
 	github.com/samalba/dockerclient v0.0.0-20160414174713-91d7393ff859 // indirect
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
-	github.com/sirupsen/logrus v1.4.1 // indirect
+	github.com/sirupsen/logrus v1.4.2 // indirect
+	github.com/spf13/afero v1.2.2 // indirect
 	github.com/spf13/cobra v0.0.5
+	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.3
-	github.com/spf13/viper v1.3.2
+	github.com/spf13/viper v1.4.0
 	github.com/xeipuuv/gojsonpointer v0.0.0-20151027082146-e0fe6f683076 // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20150808065054-e02fc20de94c // indirect
 	github.com/xeipuuv/gojsonschema v0.0.0-20160623135812-c539bca196be
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	golang.org/x/build v0.0.0-20190111050920-041ab4dc3f9d
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
+	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
 	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
-	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb
+	golang.org/x/sys v0.0.0-20190913121621-c3b328c6e5a7
 	golang.org/x/text v0.3.2
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
