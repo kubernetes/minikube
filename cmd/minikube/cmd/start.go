@@ -289,7 +289,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateConfig()
 	validateUser()
-	validateDriverVersion(driver)
+	installOrUpdateDriver(driver)
 
 	k8sVersion, isUpgrade := getKubernetesVersion()
 	config, err := generateCfgFromFlags(cmd, k8sVersion)
@@ -1028,62 +1028,26 @@ func saveConfig(clusterCfg *cfg.Config) error {
 	return cfg.CreateProfile(viper.GetString(cfg.MachineProfile), clusterCfg)
 }
 
-func validateDriverVersion(vmDriver string) {
+func installOrUpdateDriver(vmDriver string) {
 	var driverExecutable string
-	driverDocumentation := fmt.Sprintf("%s%s#driver-installation", constants.DriverDocumentation, vmDriver)
-
-	minikubeVersion, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minukube version: {{.error}}", out.V{"error": err})
-		return
-	}
-
 	switch vmDriver {
 	case constants.DriverKvm2:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverKvm2)
-		targetDir := constants.MakeMiniPath("bin")
-		err := drivers.InstallOrUpdate(driverExecutable, targetDir, minikubeVersion)
-		if err != nil {
-			out.WarningT("Error downloading driver: {{.error}}", out.V{"error": err})
-		}
-		return
 	case constants.DriverHyperkit:
 		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverHyperkit)
-	default: // driver doesn't support version
+	default: // driver doesn't install or update
 		return
 	}
 
-	cmd := exec.Command(driverExecutable, "version")
-	output, err := cmd.Output()
-
-	// we don't want to fail if an error was returned,
-	// libmachine has a nice message for the user if the driver isn't present
+	minikubeVersion, err := version.GetSemverVersion()
 	if err != nil {
-		out.WarningT("Error checking driver version: {{.error}}", out.V{"error": err})
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
 		return
 	}
 
-	v := drivers.ExtractVMDriverVersion(string(output))
-
-	// if the driver doesn't have return any version, it is really old, we force a upgrade.
-	if len(v) == 0 && !viper.GetBool(force) {
-		exit.WithCodeT(
-			exit.Failure,
-			"The installed version of '{{.driver_executable}}' is obsolete. Upgrade: {{.documentation_url}}",
-			out.V{"driver_executable": driverExecutable, "documentation_url": driverDocumentation},
-		)
-	}
-
-	vmDriverVersion, err := semver.Make(v)
+	targetDir := constants.MakeMiniPath("bin")
+	err = drivers.InstallOrUpdate(driverExecutable, targetDir, minikubeVersion)
 	if err != nil {
-		out.WarningT("Error parsing vmDriver version: {{.error}}", out.V{"error": err})
-		return
-	}
-
-	if vmDriverVersion.LT(minikubeVersion) {
-		out.WarningT(
-			"The installed version of '{{.driver_executable}}' ({{.driver_version}}) is no longer current. Upgrade: {{.documentation_url}}",
-			out.V{"driver_executable": driverExecutable, "driver_version": vmDriverVersion, "documentation_url": driverDocumentation},
-		)
+		out.WarningT("Error downloading driver: {{.error}}", out.V{"error": err})
 	}
 }
