@@ -82,4 +82,5 @@ const (
 	MountOptions
 	Fileserver
 	Empty
+	Workaround
 )
