@@ -327,6 +327,26 @@ var Addons = map[string]*Addon{
 			"0640",
 			true),
 	}, false, "gvisor"),
+	"helm": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/helm/helm-dp.tmpl",
+			constants.GuestAddonsDir,
+			"helm-dp.yaml",
+			"0640",
+			true),
+		MustBinAsset(
+			"deploy/addons/helm/helm-rbac.tmpl",
+			constants.GuestAddonsDir,
+			"helm-rbac.yaml",
+			"0640",
+			true),
+		MustBinAsset(
+			"deploy/addons/helm/helm-svc.tmpl",
+			constants.GuestAddonsDir,
+			"helm-svc.yaml",
+			"0640",
+			true),
+	}, false, "helm"),
 }
 
 // AddMinikubeDirAssets adds all addons and files to the list
