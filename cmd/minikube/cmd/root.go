@@ -109,7 +109,7 @@ func Execute() {
 		flag.Usage = translate.T(flag.Usage)
 	})
 
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS != "windows" {
 		// add minikube binaries to the path
 		targetDir := constants.MakeMiniPath("bin")
 		addToPath(targetDir)
