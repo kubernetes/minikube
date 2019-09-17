@@ -111,6 +111,8 @@ for stale_dir in ${TEST_ROOT}/*; do
     sudo rm -f "${kconfig}"
   done
 
+  # test.out, test.json, etc.
+  rm "${stale_dir}/test*" || true
   rmdir "${stale_dir}" || ls "${stale_dir}"
 done
 
