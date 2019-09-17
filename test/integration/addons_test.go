@@ -36,7 +36,7 @@ import (
 
 // TestAddons tests addons that require no special environment -- in parallel
 func TestAddons(t *testing.T) {
-	MaybeParallel(t)
+	MaybeSlowParallel(t)
 
 	profile := UniqueProfileName("addons")
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
