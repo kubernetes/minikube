@@ -50,6 +50,9 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 	if _, ok := extraOpts["node-ip"]; !ok {
 		extraOpts["node-ip"] = k8s.NodeIP
 	}
+	if k8s.NodeName != "" {
+		extraOpts["hostname-override"] = k8s.NodeName
+	}
 
 	pauseImage := images.Pause(k8s.ImageRepository)
 	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
