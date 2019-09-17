@@ -194,7 +194,7 @@ func download(driver, destination string) error {
 		return nil
 	}
 
-	out.T(out.Happy, "Downloading driver {{.driver}}:", out.V{"driver": driver})
+	out.T(out.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": driver})
 
 	targetFilepath := path.Join(destination, driver)
 	os.Remove(targetFilepath)
@@ -252,8 +252,8 @@ func ExtractVMDriverVersion(s string) string {
 }
 
 func setHyperKitPermissions(driverPath string) error {
-	msg := fmt.Sprintf("A new hyperkit driver was installed. It needs elevated permissions to run. The following commands will be executed\nsudo chown root:wheel %s\nsudo chmod u+s %s", driverPath, driverPath)
-	out.T(out.Happy, msg, out.V{})
+	msg := fmt.Sprintf("A new hyperkit driver was installed. It needs elevated permissions to run. The following commands will be executed:\n  sudo chown root:wheel %s\n  sudo chmod u+s %s", driverPath, driverPath)
+	out.T(out.Permissions, msg, out.V{})
 
 	cmd := exec.Command("sudo", "chown", "root:wheel", driverPath)
 	err := cmd.Run()
