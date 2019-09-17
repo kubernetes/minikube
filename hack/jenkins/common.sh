@@ -125,7 +125,7 @@ if [[ "${zombie_defuncts}" != "" ]]; then
 fi
 
 if type -P virsh; then
-  virsh -c qemu:///system list --all \
+  virsh -c qemu:///system list --all --uuid \
     | awk '{ print $2 }' \
     | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
     || true
@@ -136,6 +136,7 @@ fi
 if type -P vboxmanage; then
   vboxmanage list vms || true
   vboxmanage list vms \
+    | egrep -o '{.*?}' \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
 
