@@ -22,3 +22,8 @@ See `main.go` for details.
 
 ## Testing philosophy
 
+- Tests should be so simple as to be correct by inspection
+- Readers should need to read only the test body to understand the test
+- Top-to-bottom readability is more important than code de-duplication
+
+Tests are typically read with a great air of skepticism, because chances are they are being read only when things are broken. 

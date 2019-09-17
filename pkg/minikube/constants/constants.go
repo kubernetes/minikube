@@ -374,8 +374,3 @@ const (
 	// GvisorURL is the url to download gvisor
 	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2019-01-14/runsc"
 )
-
-const (
-	// DriverDocumentation the documentation of the KVM driver
-	DriverDocumentation = "https://minikube.sigs.k8s.io/docs/reference/drivers/"
-)

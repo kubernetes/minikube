@@ -109,7 +109,7 @@ func Execute() {
 		flag.Usage = translate.T(flag.Usage)
 	})
 
-	if runtime.GOOS == "linux" {
+	if runtime.GOOS != "windows" {
 		// add minikube binaries to the path
 		targetDir := constants.MakeMiniPath("bin")
 		addToPath(targetDir)
@@ -290,6 +290,7 @@ func getClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 }
 
 func addToPath(dir string) {
-	path := os.Getenv("PATH")
-	os.Setenv("PATH", fmt.Sprintf("%s:%s", dir, path))
+	new := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
+	glog.Infof("Updating PATH: %s", dir)
+	os.Setenv("PATH", new)
 }
