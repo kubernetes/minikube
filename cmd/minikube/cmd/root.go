@@ -19,13 +19,11 @@ package cmd
 import (
 	goflag "flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"runtime"
 	"strings"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/log"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -69,17 +67,6 @@ var RootCmd = &cobra.Command{
 			if err := os.MkdirAll(path, 0777); err != nil {
 				exit.WithError("Error creating minikube directory", err)
 			}
-		}
-
-		// Log level 3 or greater enables libmachine logs
-		if !glog.V(3) {
-			log.SetOutWriter(ioutil.Discard)
-			log.SetErrWriter(ioutil.Discard)
-		}
-
-		// Log level 7 or greater enables debug level logs
-		if glog.V(7) {
-			log.SetDebug(true)
 		}
 
 		logDir := pflag.Lookup("log_dir")
