@@ -280,15 +280,15 @@ func TestPrintURLsForService(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			urls, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
+			svcURL, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
 			if err != nil && !test.err {
 				t.Errorf("Error: %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
 			}
-			if !reflect.DeepEqual(urls, test.expectedOutput) {
-				t.Errorf("\nExpected %v \nActual: %v \n\n", test.expectedOutput, urls)
+			if !reflect.DeepEqual(svcURL.URLs, test.expectedOutput) {
+				t.Errorf("\nExpected %v \nActual: %v \n\n", test.expectedOutput, svcURL.URLs)
 			}
 		})
 	}
@@ -384,16 +384,18 @@ func TestGetServiceURLs(t *testing.T) {
 			description: "correctly return serviceURLs",
 			namespace:   "default",
 			api:         defaultAPI,
-			expected: []URL{
+			expected: []SvcURL{
 				{
 					Namespace: "default",
 					Name:      "mock-dashboard",
 					URLs:      []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
+					PortNames: []string{"port1", "port2"},
 				},
 				{
 					Namespace: "default",
 					Name:      "mock-dashboard-no-ports",
 					URLs:      []string{},
+					PortNames: []string{},
 				},
 			},
 		},
@@ -477,15 +479,15 @@ func TestGetServiceURLsForService(t *testing.T) {
 				servicesMap:  serviceNamespaces,
 				endpointsMap: endpointNamespaces,
 			}
-			urls, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
+			svcURL, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
 			if err != nil && !test.err {
 				t.Errorf("Error GetServiceURLsForService %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Test should have failed, but didn't")
 			}
-			if !reflect.DeepEqual(urls, test.expected) {
-				t.Errorf("URLs did not match, expected %+v \n\n got %+v", test.expected, urls)
+			if !reflect.DeepEqual(svcURL.URLs, test.expected) {
+				t.Errorf("URLs did not match, expected %+v \n\n got %+v", test.expected, svcURL.URLs)
 			}
 		})
 	}
