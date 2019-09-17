@@ -77,7 +77,8 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 
 		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, originalPath))
 
-		newerVersion, err := semver.Make("1.1.3")
+		// NOTE: This should be a real version, as it impacts the downloaded URL
+		newerVersion, err := semver.Make("1.3.0")
 		if err != nil {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
