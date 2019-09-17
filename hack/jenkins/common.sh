@@ -126,7 +126,6 @@ fi
 
 if type -P virsh; then
   virsh -c qemu:///system list --all --uuid \
-    | awk '{ print $2 }' \
     | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
     || true
   echo ">> virsh VM list after clean up (should be empty):"
