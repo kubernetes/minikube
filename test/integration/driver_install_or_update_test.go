@@ -84,7 +84,7 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 
 		err = drivers.InstallOrUpdate("docker-machine-driver-kvm2", dir, newerVersion)
 		if err != nil {
-			t.Fatalf("Expected to update driver. test: %s, got: %v", tc.name, err)
+			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
 
 		_, err = os.Stat(filepath.Join(dir, "docker-machine-driver-kvm2"))
