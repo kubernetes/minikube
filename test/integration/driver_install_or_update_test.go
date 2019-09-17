@@ -70,7 +70,7 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 		}
 
 		// change permission to allow driver to be executable
-		err = os.Chmod(filepath.Join(path, "docker-machine-driver-kvm2"), 0777)
+		err = os.Chmod(filepath.Join(path, "docker-machine-driver-kvm2"), 0700)
 		if err != nil {
 			t.Fatalf("Expected not expected when changing driver permission. test: %s, got: %v", tc.name, err)
 		}
