@@ -203,19 +203,18 @@ func download(driver, destination string) error {
 	out.T(out.Happy, "Downloading driver {{.driver}}:", out.V{"driver": driver})
 	targetFilepath := path.Join(destination, driver)
 	os.Remove(targetFilepath)
-
-	opts := []getter.ClientOption{getter.WithProgress(util.DefaultProgressBar)}
+	url := driverWithChecksumURL(driver, version.GetVersion())
 	client := &getter.Client{
-		Src:     driverWithChecksumURL(driver, version.GetVersion()),
+		Src:     url,
 		Dst:     targetFilepath,
 		Mode:    getter.ClientModeFile,
-		Options: opts,
+		Options: []getter.ClientOption{getter.WithProgress(util.DefaultProgressBar)},
 	}
 
 	glog.Infof("Downloading: %+v", client)
 
 	if err := client.Get(); err != nil {
-		return errors.Wrapf(err, "download failed")
+		return errors.Wrapf(err, "download failed: %s", url)
 	}
 
 	err := os.Chmod(targetFilepath, 0755)
