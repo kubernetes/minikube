@@ -42,11 +42,6 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-const (
-	driverKVMDownloadURL      = "https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2"
-	driverHyperKitDownloadURL = "https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-hyperkit"
-)
-
 // GetDiskPath returns the path of the machine disk image
 func GetDiskPath(d *drivers.BaseDriver) string {
 	return filepath.Join(d.ResolveStorePath("."), d.GetMachineName()+".rawdisk")
@@ -154,72 +149,75 @@ func fixPermissions(path string) error {
 }
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
-func InstallOrUpdate(driver, destination string, minikubeVersion semver.Version) error {
+func InstallOrUpdate(driver, destination string, v semver.Version) error {
+	glog.Infof("InstallOrUpdate(%s): dest=%s, version=%s, PATH=%s", driver, destination, v, os.Getenv("PATH"))
+
 	_, err := exec.LookPath(driver)
 	// if file driver doesn't exist, download it
 	if err != nil {
-		return download(driver, destination)
+		glog.Infof("LookPath %s: %v", driver, err)
+		return download(driver, v, destination)
 	}
 
 	cmd := exec.Command(driver, "version")
 	output, err := cmd.Output()
 	// if driver doesnt support 'version', it is old, download it
 	if err != nil {
-		return download(driver, destination)
+		glog.Infof("%s version: %v", driver, err)
+		return download(driver, v, destination)
 	}
 
-	v := ExtractVMDriverVersion(string(output))
+	ev := ExtractVMDriverVersion(string(output))
 
 	// if the driver doesn't return any version, download it
-	if len(v) == 0 {
-		return download(driver, destination)
+	if len(ev) == 0 {
+		glog.Infof("%s: unable to extract version from %q", driver, output)
+		return download(driver, v, destination)
 	}
 
-	vmDriverVersion, err := semver.Make(v)
+	vmDriverVersion, err := semver.Make(ev)
 	if err != nil {
 		return errors.Wrap(err, "can't parse driver version")
 	}
 
 	// if the current driver version is older, download newer
-	if vmDriverVersion.LT(minikubeVersion) {
-		return download(driver, destination)
+	if vmDriverVersion.LT(v) {
+		glog.Infof("%s is version %s, want %s", driver, vmDriverVersion, v)
+		return download(driver, v, destination)
 	}
 
 	return nil
 }
 
-func download(driver, destination string) error {
+func driverWithChecksumURL(driver string, v semver.Version) string {
+	base := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/v%s/%s", v, driver)
+	return fmt.Sprintf("%s?checksum=file:%s.sha256", base, base)
+}
+
+func download(driver string, v semver.Version, destination string) error {
 	// supports kvm2 and hyperkit
 	if driver != "docker-machine-driver-kvm2" && driver != "docker-machine-driver-hyperkit" {
 		return nil
 	}
 
 	out.T(out.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": driver})
-
 	targetFilepath := path.Join(destination, driver)
 	os.Remove(targetFilepath)
-
-	var url string
-	switch driver {
-	case "docker-machine-driver-kvm2":
-		url = driverKVMDownloadURL
-	case "docker-machine-driver-hyperkit":
-		url = driverHyperKitDownloadURL
-	}
-
-	opts := []getter.ClientOption{getter.WithProgress(util.DefaultProgressBar)}
+	url := driverWithChecksumURL(driver, v)
 	client := &getter.Client{
 		Src:     url,
 		Dst:     targetFilepath,
 		Mode:    getter.ClientModeFile,
-		Options: opts,
+		Options: []getter.ClientOption{getter.WithProgress(util.DefaultProgressBar)},
 	}
+
+	glog.Infof("Downloading: %+v", client)
 
 	if err := client.Get(); err != nil {
-		return errors.Wrapf(err, "can't download driver %s from: %s", driver, url)
+		return errors.Wrapf(err, "download failed: %s", url)
 	}
 
-	err := os.Chmod(targetFilepath, 0777)
+	err := os.Chmod(targetFilepath, 0755)
 	if err != nil {
 		return errors.Wrap(err, "chmod error")
 	}

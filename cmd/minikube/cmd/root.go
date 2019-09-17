@@ -290,6 +290,7 @@ func getClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 }
 
 func addToPath(dir string) {
-	path := os.Getenv("PATH")
-	os.Setenv("PATH", fmt.Sprintf("%s:%s", dir, path))
+	new := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
+	glog.Infof("Updating PATH: %s", dir)
+	os.Setenv("PATH", new)
 }
