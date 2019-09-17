@@ -74,7 +74,7 @@ func TestStartStop(t *testing.T) {
 		for _, tc := range tests {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
-				MaybeParallel(t)
+				MaybeSlowParallel(t)
 
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
