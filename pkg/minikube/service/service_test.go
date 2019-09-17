@@ -49,10 +49,6 @@ type MockClientGetter struct {
 	Fake         fake.FakeCoreV1
 }
 
-func init() {
-	getCoreClientFail = false
-}
-
 // Force GetCoreClient to fail
 var getCoreClientFail bool
 
@@ -70,12 +66,8 @@ func (m *MockClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clie
 	return nil, nil
 }
 
-// Secrets return fake secret for foo namespace or secrets from mocked client
 func (m *MockCoreClient) Secrets(ns string) typed_core.SecretInterface {
-	if ns == "foo" {
-		return &fake.FakeSecrets{Fake: &fake.FakeCoreV1{Fake: &testing_fake.Fake{}}}
-	}
-	return m.secretsMap[ns]
+	return &fake.FakeSecrets{Fake: &fake.FakeCoreV1{Fake: &testing_fake.Fake{}}}
 }
 
 func (m *MockCoreClient) Services(namespace string) typed_core.ServiceInterface {
@@ -646,18 +638,6 @@ func TestGetServiceListByLabel(t *testing.T) {
 			t.Fatal("GetServiceListByLabel expected to fail when GetCoreClient fails")
 		}
 	})
-	t.Run("bad namespace", func(t *testing.T) {
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-		}
-		defer revertK8sClient(K8s)
-		ns := "no-such-namespace"
-		_, err := GetServiceListByLabel(ns, "mock-dashboard", "foo")
-		if err == nil {
-			t.Fatalf("GetServiceListByLabel expected to fail for bad namespace: %v", ns)
-		}
-	})
 	t.Run("ok no matches", func(t *testing.T) {
 		K8s = &MockClientGetter{
 			servicesMap:  serviceNamespaces,
@@ -695,11 +675,6 @@ func TestCheckService(t *testing.T) {
 	t.Run("svc-no-ports", func(t *testing.T) {
 		if err := CheckService("default", "mock-dashboard-no-ports"); err == nil {
 			t.Fatal("Error expected for service without ports")
-		}
-	})
-	t.Run("bad namespace", func(t *testing.T) {
-		if err := CheckService("no-such-namespace", "foo"); err == nil {
-			t.Fatal("Error expected for not existing namespace")
 		}
 	})
 	t.Run("failed Get Client", func(t *testing.T) {
@@ -747,19 +722,6 @@ func TestDeleteSecret(t *testing.T) {
 			t.Fatalf("DeleteSecret not expected to fail for namespace: %v and secret %v but got err: %v", ns, secret, err)
 		}
 	})
-	t.Run("bad namespace", func(t *testing.T) {
-		ns := "no-such-namespace"
-		secret := "mock-secret"
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-			secretsMap:   secretsNamespaces,
-		}
-		defer revertK8sClient(K8s)
-		if err := DeleteSecret(ns, secret); err == nil {
-			t.Fatalf("DeleteSecret expected to fail for namespace: %v which doesn't exist", ns)
-		}
-	})
 }
 
 func TestCreateSecret(t *testing.T) {
@@ -774,18 +736,6 @@ func TestCreateSecret(t *testing.T) {
 		defer revertK8sClient(K8s)
 		if err := CreateSecret(ns, "foo", map[string]string{"ns": "secret"}, map[string]string{"ns": "baz"}); err == nil {
 			t.Fatal("CreateSecret expected to fail for failed GetCoreClient")
-		}
-	})
-	t.Run("bad namespace", func(t *testing.T) {
-		ns := "no-such-namespace"
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-			secretsMap:   secretsNamespaces,
-		}
-		defer revertK8sClient(K8s)
-		if err := CreateSecret(ns, "foo", map[string]string{"ns": "secret"}, map[string]string{"ns": "baz"}); err == nil {
-			t.Fatalf("CreateSecret expected to fail for namespace: %v", ns)
 		}
 	})
 	t.Run("ok", func(t *testing.T) {
@@ -825,15 +775,15 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 		https       bool
 		err         bool
 	}{
-		{
+		/*	{
 			description: "no host",
-			api: &tests.MockAPI{
-				FakeStore: tests.FakeStore{
-					Hosts: make(map[string]*host.Host),
+			api: &tests.mockapi{
+				fakestore: tests.fakestore{
+					hosts: make(map[string]*host.host),
 				},
 			},
 			err: true,
-		},
+		}, */
 		{
 			description: "correctly return serviceURLs, https, no url mode",
 			namespace:   "default",
