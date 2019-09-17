@@ -96,36 +96,23 @@ echo ""
 echo ">> Cleaning up after previous test runs ..."
 
 for stale_dir in ${TEST_ROOT}/*; do
-  echo "* Cleaning stale test: ${stale_dir}"
-  export MINIKUBE_HOME="${stale_dir}/.minikube"
-  export KUBECONFIG="${stale_dir}/kubeconfig"
+  echo "* Cleaning stale test root: ${stale_dir}"
 
-  if [[ -d "${MINIKUBE_HOME}" ]]; then
-    if [[ -r "${MINIKUBE_HOME}/tunnels.json" ]]; then
-      cat "${MINIKUBE_HOME}/tunnels.json"
-      ${MINIKUBE_BIN} tunnel --cleanup || true
-    fi
-    echo "Shutting down stale minikube instance ..."
-    if [[ -w "${MINIKUBE_HOME}" ]]; then
-        "${MINIKUBE_BIN}" delete || true
-        rm -Rf "${MINIKUBE_HOME}"
-    else
-      sudo -E "${MINIKUBE_BIN}" delete || true
-      sudo rm -Rf "${MINIKUBE_HOME}"
-    fi
-  fi
+  for tunnel in $(find ${stale_dir} -name tunnels.json -type f); do
+    env MINIKUBE_HOME="$(dirname ${tunnel})" ${MINIKUBE_BIN} tunnel --cleanup || true
+  done
 
-  if [[ -f "${KUBECONFIG}" ]]; then
-    if [[ -w "${KUBECONFIG}" ]]; then
-      rm -f "${KUBECONFIG}"
-    else
-      sudo rm -f "${KUBECONFIG}" || true
-    fi
-  fi
+  for home in $(find ${stale_dir} -name .minikube -type d); do
+   env MINIKUBE_HOME="$(dirname ${home})" ${MINIKUBE_BIN} delete || true
+   sudo rm -Rf "${home}"
+  done
 
-  rmdir "${stale_dir}" || true
+  for kconfig in $(find ${stale_dir} -name kubeconfig -type f); do
+    sudo rm -f "${kconfig}"
+  done
+
+  rmdir "${stale_dir}" || ls "${stale_dir}"
 done
-
 
 # sometimes tests left over zombie procs that won't exit
 # for example:
@@ -134,47 +121,25 @@ zombie_defuncts=$(ps -A -ostat,ppid | awk '/[zZ]/ && !a[$2]++ {print $2}')
 if [[ "${zombie_defuncts}" != "" ]]; then
   echo "Found zombie defunct procs to kill..."
   ps -f -p ${zombie_defuncts} || true
-  sudo -E kill ${zombie_defuncts} || true
+  kill ${zombie_defuncts} || true
 fi
 
-
 if type -P virsh; then
-  virsh -c qemu:///system list --all
   virsh -c qemu:///system list --all \
-    | grep minikube \
     | awk '{ print $2 }' \
     | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
     || true
-  virsh -c qemu:///system list --all \
-    | grep Test \
-    | awk '{ print $2 }' \
-    | xargs -I {} sh -c "virsh -c qemu:///system destroy {}; virsh -c qemu:///system undefine {}" \
-    || true
-  echo ">> Virsh VM list after clean up (should be empty) :"
+  echo ">> virsh VM list after clean up (should be empty):"
   virsh -c qemu:///system list --all || true
 fi
 
 if type -P vboxmanage; then
   vboxmanage list vms || true
   vboxmanage list vms \
-    | grep minikube \
-    | cut -d'"' -f2 \
-    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
-    || true
-  vboxmanage list vms \
-    | grep Test \
-    | cut -d'"' -f2 \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
     || true
 
-  # remove inaccessible stale VMs https://github.com/kubernetes/minikube/issues/4872
-  vboxmanage list vms \
-    | grep inaccessible \
-    | cut -d'"' -f3 \
-    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
-    || true
-
-  # list them again after clean up
+  echo ">> VirtualBox VM list after clean up (should be empty):"
   vboxmanage list vms || true
 fi
 
@@ -190,20 +155,13 @@ fi
 
 # cleaning up stale hyperkits
 if type -P hyperkit; then
-  # find all hyperkits excluding com.docker
-  hyper_procs=$(ps aux | grep hyperkit | grep -v com.docker | grep -v grep | grep -v osx_integration_tests_hyperkit.sh | awk '{print $2}' || true)
-  if [[ "${hyper_procs}" != "" ]]; then
-    echo "Found stale hyperkits test processes to kill : "
-    for p in $hyper_procs
-    do
-    echo "Killing stale hyperkit $p"
-    ps -f -p $p || true
-    kill $p || true
-    kill -9 $p || true
-    done
-  fi
+  for pid in $(pgrep hyperkit); do
+    echo "Killing stale hyperkit $pid"
+    ps -f -p $pid || true
+    kill $pid || true
+    kill -9 $pid || true
+  done
 fi
-
 
 if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
   if [[ -e out/docker-machine-driver-hyperkit ]]; then
@@ -211,14 +169,6 @@ if [[ "${VM_DRIVER}" == "hyperkit" ]]; then
     sudo chmod u+s out/docker-machine-driver-hyperkit || true
   fi
 fi
-
-vboxprocs=$(pgrep VBox || true)
-if [[ "${vboxprocs}" != "" ]]; then
-  echo "error: killing left over virtualbox processes ..."
-  ps -f -p ${vboxprocs} || true
-  sudo -E kill ${vboxprocs} || true
-fi
-
 
 kprocs=$(pgrep kubectl || true)
 if [[ "${kprocs}" != "" ]]; then
