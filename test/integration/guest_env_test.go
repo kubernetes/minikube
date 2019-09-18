@@ -27,7 +27,7 @@ import (
 )
 
 func TestGuestEnvironment(t *testing.T) {
-	MaybeParallel(t)
+	MaybeSlowParallel(t)
 	profile := UniqueProfileName("guest")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
