@@ -157,7 +157,7 @@ func InstallOrUpdate(driver string, directory string, v semver.Version, interact
 	executable := fmt.Sprintf("docker-machine-driver-%s", driver)
 	path, err := validateDriver(executable, v)
 	if err != nil {
-		glog.Warningf("%s: %v", driver, executable)
+		glog.Warningf("%s: %v", executable, err)
 		path = filepath.Join(directory, executable)
 		derr := download(executable, path, v)
 		if derr != nil {
@@ -169,32 +169,22 @@ func InstallOrUpdate(driver string, directory string, v semver.Version, interact
 
 // fixDriverPermissions fixes the permissions on a driver
 func fixDriverPermissions(driver string, path string, interactive bool) error {
-	// Everything is easy but hyperkit
+	// This method only supports hyperkit so far (because it's complicated)
 	if driver != constants.DriverHyperkit {
-		return os.Chmod(path, 0755)
-	}
-
-	// Hyperkit land
-	info, err := os.Stat(path)
-	if err != nil {
-		return err
-	}
-
-	cmds := []*exec.Cmd{}
-	owner := info.Sys().(*syscall.Stat_t).Uid
-	m := info.Mode()
-	glog.Infof("%s owner: %d - permissions: %s", path, owner, m)
-	if owner != 0 {
-		cmds = append(cmds, exec.Command("sudo", "chown", "root:wheel", path))
-	}
-
-	if m&os.ModeSetuid == 0 {
-		cmds = append(cmds, exec.Command("sudo", "chmod", "u+s", path))
-	}
-
-	// No work to be done!
-	if len(cmds) == 0 {
 		return nil
+	}
+
+	// Using the find command for hyperkit is far easier than cross-platform uid checks in Go.
+	stdout, err := exec.Command("find", path, "-uid", "0", "-perm", "4755").Output()
+	glog.Infof("stdout: %s", stdout)
+	if err == nil && strings.TrimSpace(string(stdout)) == path {
+		glog.Infof("%s looks good", path)
+		return nil
+	}
+
+	cmds := []*exec.Cmd{
+		exec.Command("sudo", "chown", "root:wheel", path),
+		exec.Command("sudo", "chmod", "u+s", path),
 	}
 
 	var example strings.Builder
@@ -224,6 +214,7 @@ func fixDriverPermissions(driver string, path string, interactive bool) error {
 
 // validateDriver validates if a driver appears to be up-to-date and installed properly
 func validateDriver(driver string, v semver.Version) (string, error) {
+	glog.Infof("Validating %s, PATH=%s", driver, os.Getenv("PATH"))
 	path, err := exec.LookPath(driver)
 	if err != nil {
 		return path, err
@@ -270,7 +261,8 @@ func download(driver string, destination string, v semver.Version) error {
 	if err := client.Get(); err != nil {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
-	return nil
+	// Give downloaded drivers a baseline decent file permission
+	return os.Chmod(destination, 0755)
 }
 
 // extractVMDriverVersion extracts the driver version.
