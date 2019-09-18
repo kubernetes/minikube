@@ -149,22 +149,16 @@ func fixMachinePermissions(path string) error {
 }
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
-func InstallOrUpdate(driver string, interactive bool) error {
+func InstallOrUpdate(driver string, directory string, v semver.Version, interactive bool) error {
 	if driver != constants.DriverKvm2 && driver != constants.DriverHyperkit {
 		return nil
-	}
-
-	v, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-		return err
 	}
 
 	executable := fmt.Sprintf("docker-machine-driver-%s", driver)
 	path, err := validateDriver(executable, v)
 	if err != nil {
 		glog.Warningf("%s: %v", driver, executable)
-		path = filepath.Join(constants.MakeMiniPath("bin"), executable)
+		path = filepath.Join(directory, executable)
 		derr := download(executable, path, v)
 		if derr != nil {
 			return derr
