@@ -593,8 +593,12 @@ func validateUser(driver string) {
 	}
 
 	out.T(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": driver})
-	out.T(out.Tip, "If you are running minikube within a VM, consider using '--vm-driver=none': https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+	out.T(out.Tip, "If you are running minikube within a VM, consider using --vm-driver=none:")
+	out.T(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 
+	if !useForce {
+		os.Exit(exit.Permissions)
+	}
 	_, err = cfg.Load()
 	if err == nil || !os.IsNotExist(err) {
 		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
