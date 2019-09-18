@@ -510,11 +510,11 @@ func selectDriver(oldConfig *cfg.Config) string {
 		return driver
 	}
 
-	if h.Driver.DriverName() == driver {
+	if h.Driver.DriverName() == driver || h.Driver.DriverName() == "not-found" {
 		return driver
 	}
 
-	out.ErrT(out.Conflict, `You have an existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
+	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
 		out.V{"profile_name": cfg.GetMachineName(), "driver": driver, "old_driver": h.Driver.DriverName()})
 
 	out.ErrT(out.Workaround, `To proceed, either:
