@@ -37,9 +37,10 @@ var vmProblems = map[string]match{
 		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/#troubleshooting",
 	},
 	"DRIVER_NOT_FOUND": {
-		Regexp: re(`registry: driver not found`),
-		Advice: "Your minikube config refers to an unsupported driver. Erase ~/.minikube, and try again.",
-		Issues: []int{5295},
+		Regexp:         re(`registry: driver not found`),
+		Advice:         "Your minikube config refers to an unsupported driver. Erase ~/.minikube, and try again.",
+		Issues:         []int{5295},
+		HideCreateLink: true,
 	},
 	"MACHINE_NOT_FOUND": {
 		Regexp: re(`Machine does not exist for api.Exists`),
@@ -63,9 +64,10 @@ var vmProblems = map[string]match{
 
 	// Hyper-V
 	"HYPERV_NO_VSWITCH": {
-		Regexp: re(`no External vswitch found. A valid vswitch must be available for this command to run.`),
-		Advice: "Configure an external network switch following the official documentation, then add `--hyperv-virtual-switch=<switch-name>` to `minikube start`",
-		URL:    "https://docs.docker.com/machine/drivers/hyper-v/",
+		Regexp:         re(`no External vswitch found. A valid vswitch must be available for this command to run.`),
+		Advice:         "Configure an external network switch following the official documentation, then add `--hyperv-virtual-switch=<switch-name>` to `minikube start`",
+		URL:            "https://docs.docker.com/machine/drivers/hyper-v/",
+		HideCreateLink: true,
 	},
 	"HYPERV_VSWITCH_NOT_FOUND": {
 		Regexp:         re(`precreate: vswitch.*not found`),
@@ -74,9 +76,10 @@ var vmProblems = map[string]match{
 		HideCreateLink: true,
 	},
 	"HYPERV_POWERSHELL_NOT_FOUND": {
-		Regexp: re(`Powershell was not found in the path`),
-		Advice: "To start minikube with HyperV Powershell must be in your PATH`",
-		URL:    "https://docs.docker.com/machine/drivers/hyper-v/",
+		Regexp:         re(`Powershell was not found in the path`),
+		Advice:         "To start minikube with HyperV Powershell must be in your PATH`",
+		URL:            "https://docs.docker.com/machine/drivers/hyper-v/",
+		HideCreateLink: true,
 	},
 	"HYPERV_AS_ADMIN": {
 		Regexp:         re(`Hyper-v commands have to be run as an Administrator`),
@@ -114,26 +117,30 @@ var vmProblems = map[string]match{
 		Issues: []int{4249, 3566},
 	},
 	"KVM2_NETWORK_DEFINE_XML": {
-		Regexp: re(`not supported by the connection driver: virNetworkDefineXML`),
-		Advice: "Rebuild libvirt with virt-network support",
-		URL:    "https://forums.gentoo.org/viewtopic-t-981692-start-0.html",
-		Issues: []int{4195},
+		Regexp:         re(`not supported by the connection driver: virNetworkDefineXML`),
+		Advice:         "Rebuild libvirt with virt-network support",
+		URL:            "https://forums.gentoo.org/viewtopic-t-981692-start-0.html",
+		Issues:         []int{4195},
+		HideCreateLink: true,
 	},
 	"KVM2_QEMU_MONITOR": {
-		Regexp: re(`qemu unexpectedly closed the monitor`),
-		Advice: "Upgrade to QEMU v3.1.0+, run 'virt-host-validate', or ensure that you are not running in a nested VM environment.",
-		Issues: []int{4277},
+		Regexp:         re(`qemu unexpectedly closed the monitor`),
+		Advice:         "Upgrade to QEMU v3.1.0+, run 'virt-host-validate', or ensure that you are not running in a nested VM environment.",
+		Issues:         []int{4277},
+		HideCreateLink: true,
 	},
 	"KVM_UNAVAILABLE": {
-		Regexp: re(`invalid argument: could not find capabilities for domaintype=kvm`),
-		Advice: "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
-		URL:    "http://mikko.repolainen.fi/documents/virtualization-with-kvm",
-		Issues: []int{2991},
+		Regexp:         re(`invalid argument: could not find capabilities for domaintype=kvm`),
+		Advice:         "Your host does not support KVM virtualization. Ensure that qemu-kvm is installed, and run 'virt-host-validate' to debug the problem",
+		URL:            "http://mikko.repolainen.fi/documents/virtualization-with-kvm",
+		Issues:         []int{2991},
+		HideCreateLink: true,
 	},
 	"KVM_CONNECTION_ERROR": {
-		Regexp: re(`error connecting to libvirt socket`),
-		Advice: "Have you set up libvirt correctly?",
-		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
+		Regexp:         re(`error connecting to libvirt socket`),
+		Advice:         "Have you set up libvirt correctly?",
+		URL:            "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
+		HideCreateLink: true,
 	},
 
 	// None
@@ -147,10 +154,11 @@ var vmProblems = map[string]match{
 
 	// VirtualBox
 	"VBOX_BLOCKED": {
-		Regexp: re(`NS_ERROR_FAILURE.*0x80004005`),
-		Advice: "Reinstall VirtualBox and verify that it is not blocked: System Preferences -> Security & Privacy -> General -> Some system software was blocked from loading",
-		Issues: []int{4107},
-		GOOS:   "darwin",
+		Regexp:         re(`NS_ERROR_FAILURE.*0x80004005`),
+		Advice:         "Reinstall VirtualBox and verify that it is not blocked: System Preferences -> Security & Privacy -> General -> Some system software was blocked from loading",
+		Issues:         []int{4107},
+		GOOS:           "darwin",
+		HideCreateLink: true,
 	},
 	"VBOX_DRV_NOT_LOADED": {
 		Regexp:         re(`vboxdrv kernel module is not loaded`),
@@ -165,17 +173,19 @@ var vmProblems = map[string]match{
 		HideCreateLink: true,
 	},
 	"VBOX_HARDENING": {
-		Regexp: re(`terminated unexpectedly.*VBoxHardening`),
-		Advice: "VirtualBox is broken. Disable real-time anti-virus software, reboot, and reinstall VirtualBox if the problem continues.",
-		Issues: []int{3859, 3910},
-		URL:    "https://forums.virtualbox.org/viewtopic.php?f=25&t=82106",
-		GOOS:   "windows",
+		Regexp:         re(`terminated unexpectedly.*VBoxHardening`),
+		Advice:         "VirtualBox is broken. Disable real-time anti-virus software, reboot, and reinstall VirtualBox if the problem continues.",
+		Issues:         []int{3859, 3910},
+		URL:            "https://forums.virtualbox.org/viewtopic.php?f=25&t=82106",
+		GOOS:           "windows",
+		HideCreateLink: true,
 	},
 	"VBOX_NS_ERRROR": {
-		Regexp: re(`terminated unexpectedly.*NS_ERROR_FAILURE.*0x80004005`),
-		Advice: "VirtualBox is broken. Reinstall VirtualBox, reboot, and run 'minikube delete'.",
-		Issues: []int{5227},
-		GOOS:   "linux",
+		Regexp:         re(`terminated unexpectedly.*NS_ERROR_FAILURE.*0x80004005`),
+		Advice:         "VirtualBox is broken. Reinstall VirtualBox, reboot, and run 'minikube delete'.",
+		Issues:         []int{5227},
+		GOOS:           "linux",
+		HideCreateLink: true,
 	},
 	"VBOX_HOST_ADAPTER": {
 		Regexp:         re(`The host-only adapter we just created is not visible`),
@@ -191,14 +201,16 @@ var vmProblems = map[string]match{
 		Issues: []int{3584},
 	},
 	"VBOX_HYPERV_64_BOOT": {
-		Regexp: re(`VirtualBox won't boot a 64bits VM when Hyper-V is activated`),
-		Advice: "VirtualBox and Hyper-V are having a conflict. Use '--vm-driver=hyperv' or disable Hyper-V using: 'bcdedit /set hypervisorlaunchtype off'",
-		Issues: []int{4051, 4783},
+		Regexp:         re(`VirtualBox won't boot a 64bits VM when Hyper-V is activated`),
+		Advice:         "VirtualBox and Hyper-V are having a conflict. Use '--vm-driver=hyperv' or disable Hyper-V using: 'bcdedit /set hypervisorlaunchtype off'",
+		Issues:         []int{4051, 4783},
+		HideCreateLink: true,
 	},
 	"VBOX_HYPERV_NEM_VM": {
-		Regexp: re(`vrc=VERR_NEM_VM_CREATE_FAILED`),
-		Advice: "VirtualBox and Hyper-V are having a conflict. Use '--vm-driver=hyperv' or disable Hyper-V using: 'bcdedit /set hypervisorlaunchtype off'",
-		Issues: []int{4587},
+		Regexp:         re(`vrc=VERR_NEM_VM_CREATE_FAILED`),
+		Advice:         "VirtualBox and Hyper-V are having a conflict. Use '--vm-driver=hyperv' or disable Hyper-V using: 'bcdedit /set hypervisorlaunchtype off'",
+		Issues:         []int{4587},
+		HideCreateLink: true,
 	},
 	"VBOX_NOT_FOUND": {
 		Regexp:         re(`VBoxManage not found. Make sure VirtualBox is installed and VBoxManage is in the path`),
@@ -214,9 +226,10 @@ var vmProblems = map[string]match{
 		HideCreateLink: true,
 	},
 	"VBOX_VTX_DISABLED": {
-		Regexp: re(`This computer doesn't have VT-X/AMD-v enabled`),
-		Advice: "Your host does not support virtualization. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, enable virtualization in your BIOS",
-		Issues: []int{3900, 4730},
+		Regexp:         re(`This computer doesn't have VT-X/AMD-v enabled`),
+		Advice:         "Your host does not support virtualization. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, enable virtualization in your BIOS",
+		Issues:         []int{3900, 4730},
+		HideCreateLink: true,
 	},
 	"VBOX_VERR_VMX_NO_VMX": {
 		Regexp:         re(`VT-x is not available.*VERR_VMX_NO_VMX`),
@@ -225,7 +238,7 @@ var vmProblems = map[string]match{
 		HideCreateLink: true,
 	},
 	"VBOX_HOST_NETWORK": {
-		Regexp: re(`Error setting up host only network on machine start`),
+		Regexp: re(`Error setting up host only network on machine start.*Unspecified error`),
 		Advice: "VirtualBox cannot create a network, probably because it conflicts with an existing network that minikube no longer knows about. Try running 'minikube delete'",
 		Issues: []int{5260},
 	},
@@ -312,8 +325,9 @@ var deployProblems = map[string]match{
 		Issues: []int{3952},
 	},
 	"INVALID_KUBERNETES_VERSION": {
-		Regexp: re(`No Major.Minor.Patch elements found`),
-		Advice: "Specify --kubernetes-version in v<major>.<minor.<build> form. example: 'v1.1.14'",
+		Regexp:         re(`No Major.Minor.Patch elements found`),
+		Advice:         "Specify --kubernetes-version in v<major>.<minor.<build> form. example: 'v1.1.14'",
+		HideCreateLink: true,
 	},
 	"KUBERNETES_VERSION_MISSING_V": {
 		Regexp: re(`strconv.ParseUint: parsing "": invalid syntax`),
@@ -365,10 +379,11 @@ var osProblems = map[string]match{
 		Issues: []int{1574},
 	},
 	"SYSTEMCTL_EXIT_1": {
-		Regexp: re(`Failed to enable container runtime: .*sudo systemctl start docker: exit status 1`),
-		Advice: "If using the none driver, ensure that systemctl is installed",
-		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/none/",
-		Issues: []int{2704},
+		Regexp:         re(`Failed to enable container runtime: .*sudo systemctl start docker: exit status 1`),
+		Advice:         "If using the none driver, ensure that systemctl is installed",
+		URL:            "https://minikube.sigs.k8s.io/docs/reference/drivers/none/",
+		Issues:         []int{2704},
+		HideCreateLink: true,
 	},
 	"KUBECONFIG_WRITE_FAIL": {
 		Regexp: re(`Failed to setup kubeconfig: writing kubeconfig`),
@@ -380,9 +395,10 @@ var osProblems = map[string]match{
 // stateProblems are issues relating to local state
 var stateProblems = map[string]match{
 	"MACHINE_DOES_NOT_EXST": {
-		Regexp: re(`Error getting state for host: machine does not exist`),
-		Advice: "Run 'minikube delete' to delete the stale VM",
-		Issues: []int{3864},
+		Regexp:         re(`Error getting state for host: machine does not exist`),
+		Advice:         "Run 'minikube delete' to delete the stale VM",
+		Issues:         []int{3864},
+		HideCreateLink: true,
 	},
 	"IP_NOT_FOUND": {
 		Regexp: re(`Error getting ssh host name for driver: IP not found`),
