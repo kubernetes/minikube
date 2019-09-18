@@ -17,18 +17,29 @@ limitations under the License.
 package drivers
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
+	"path"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"syscall"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
+	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/version"
+
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util"
 )
 
 // GetDiskPath returns the path of the machine disk image
@@ -134,5 +145,125 @@ func fixPermissions(path string) error {
 			return errors.Wrap(err, "chown file")
 		}
 	}
+	return nil
+}
+
+// InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
+func InstallOrUpdate(driver, destination string, v semver.Version) error {
+	glog.Infof("InstallOrUpdate(%s): dest=%s, version=%s, PATH=%s", driver, destination, v, os.Getenv("PATH"))
+
+	_, err := exec.LookPath(driver)
+	// if file driver doesn't exist, download it
+	if err != nil {
+		glog.Infof("LookPath %s: %v", driver, err)
+		return download(driver, v, destination)
+	}
+
+	cmd := exec.Command(driver, "version")
+	output, err := cmd.Output()
+	// if driver doesnt support 'version', it is old, download it
+	if err != nil {
+		glog.Infof("%s version: %v", driver, err)
+		return download(driver, v, destination)
+	}
+
+	ev := ExtractVMDriverVersion(string(output))
+
+	// if the driver doesn't return any version, download it
+	if len(ev) == 0 {
+		glog.Infof("%s: unable to extract version from %q", driver, output)
+		return download(driver, v, destination)
+	}
+
+	vmDriverVersion, err := semver.Make(ev)
+	if err != nil {
+		return errors.Wrap(err, "can't parse driver version")
+	}
+
+	// if the current driver version is older, download newer
+	if vmDriverVersion.LT(v) {
+		glog.Infof("%s is version %s, want %s", driver, vmDriverVersion, v)
+		return download(driver, v, destination)
+	}
+
+	return nil
+}
+
+func driverWithChecksumURL(driver string, v semver.Version) string {
+	base := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/v%s/%s", v, driver)
+	return fmt.Sprintf("%s?checksum=file:%s.sha256", base, base)
+}
+
+func download(driver string, v semver.Version, destination string) error {
+	// supports kvm2 and hyperkit
+	if driver != "docker-machine-driver-kvm2" && driver != "docker-machine-driver-hyperkit" {
+		return nil
+	}
+
+	out.T(out.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": driver})
+	targetFilepath := path.Join(destination, driver)
+	os.Remove(targetFilepath)
+	url := driverWithChecksumURL(driver, v)
+	client := &getter.Client{
+		Src:     url,
+		Dst:     targetFilepath,
+		Mode:    getter.ClientModeFile,
+		Options: []getter.ClientOption{getter.WithProgress(util.DefaultProgressBar)},
+	}
+
+	glog.Infof("Downloading: %+v", client)
+
+	if err := client.Get(); err != nil {
+		return errors.Wrapf(err, "download failed: %s", url)
+	}
+
+	err := os.Chmod(targetFilepath, 0755)
+	if err != nil {
+		return errors.Wrap(err, "chmod error")
+	}
+
+	if driver == "docker-machine-driver-hyperkit" {
+		err := setHyperKitPermissions(targetFilepath)
+		if err != nil {
+			return errors.Wrap(err, "setting hyperkit permission")
+		}
+	}
+
+	return nil
+}
+
+// ExtractVMDriverVersion extracts the driver version.
+// KVM and Hyperkit drivers support the 'version' command, that display the information as:
+// version: vX.X.X
+// commit: XXXX
+// This method returns the version 'vX.X.X' or empty if the version isn't found.
+func ExtractVMDriverVersion(s string) string {
+	versionRegex := regexp.MustCompile(`version:(.*)`)
+	matches := versionRegex.FindStringSubmatch(s)
+
+	if len(matches) != 2 {
+		return ""
+	}
+
+	v := strings.TrimSpace(matches[1])
+	return strings.TrimPrefix(v, version.VersionPrefix)
+}
+
+func setHyperKitPermissions(driverPath string) error {
+	msg := fmt.Sprintf("A new hyperkit driver was installed. It needs elevated permissions to run. The following commands will be executed:\n  sudo chown root:wheel %s\n  sudo chmod u+s %s", driverPath, driverPath)
+	out.T(out.Permissions, msg, out.V{})
+
+	cmd := exec.Command("sudo", "chown", "root:wheel", driverPath)
+	err := cmd.Run()
+	if err != nil {
+		return errors.Wrap(err, "chown root:wheel")
+	}
+
+	cmd = exec.Command("sudo", "chmod", "u+s", driverPath)
+	err = cmd.Run()
+	if err != nil {
+		return errors.Wrap(err, "chmod u+s")
+	}
+
 	return nil
 }

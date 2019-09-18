@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.15.1
-CRIO_BIN_COMMIT = f0827bb332854ffcff2f4d9f64d68b8139970b3d
+CRIO_BIN_VERSION = v1.15.2
+CRIO_BIN_COMMIT = b7316701c17ebc7901d10a716f15e66008c52525
 CRIO_BIN_SITE = https://github.com/cri-o/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = host-go libgpgme

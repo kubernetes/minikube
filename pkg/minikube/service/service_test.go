@@ -317,15 +317,15 @@ func TestPrintURLsForService(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			urls, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
+			svcURL, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
 			if err != nil && !test.err {
 				t.Errorf("Error: %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
 			}
-			if !reflect.DeepEqual(urls, test.expectedOutput) {
-				t.Errorf("\nExpected %v \nActual: %v \n\n", test.expectedOutput, urls)
+			if !reflect.DeepEqual(svcURL.URLs, test.expectedOutput) {
+				t.Errorf("\nExpected %v \nActual: %v \n\n", test.expectedOutput, svcURL.URLs)
 			}
 		})
 	}
@@ -421,16 +421,18 @@ func TestGetServiceURLs(t *testing.T) {
 			description: "correctly return serviceURLs",
 			namespace:   "default",
 			api:         defaultAPI,
-			expected: []URL{
+			expected: []SvcURL{
 				{
 					Namespace: "default",
 					Name:      "mock-dashboard",
 					URLs:      []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
+					PortNames: []string{"port1", "port2"},
 				},
 				{
 					Namespace: "default",
 					Name:      "mock-dashboard-no-ports",
 					URLs:      []string{},
+					PortNames: []string{},
 				},
 			},
 		},
@@ -514,15 +516,15 @@ func TestGetServiceURLsForService(t *testing.T) {
 				servicesMap:  serviceNamespaces,
 				endpointsMap: endpointNamespaces,
 			}
-			urls, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
+			svcURL, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
 			if err != nil && !test.err {
 				t.Errorf("Error GetServiceURLsForService %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Test should have failed, but didn't")
 			}
-			if !reflect.DeepEqual(urls, test.expected) {
-				t.Errorf("URLs did not match, expected %+v \n\n got %+v", test.expected, urls)
+			if !reflect.DeepEqual(svcURL.URLs, test.expected) {
+				t.Errorf("URLs did not match, expected %+v \n\n got %+v", test.expected, svcURL.URLs)
 			}
 		})
 	}
@@ -610,13 +612,13 @@ users:
 func TestPrintServiceList(t *testing.T) {
 	var buf bytes.Buffer
 	out := &buf
-	input := [][]string{{"foo", "bar", "baz"}}
+	input := [][]string{{"foo", "bar", "baz", "nah"}}
 	PrintServiceList(out, input)
-	expected := `|-----------|------|-----|
-| NAMESPACE | NAME | URL |
-|-----------|------|-----|
-| foo       | bar  | baz |
-|-----------|------|-----|
+	expected := `|-----------|------|-------------|-----|
+| NAMESPACE | NAME | TARGET PORT | URL |
+|-----------|------|-------------|-----|
+| foo       | bar  | baz         | nah |
+|-----------|------|-------------|-----|
 `
 	got := out.String()
 	if got != expected {
@@ -625,63 +627,16 @@ func TestPrintServiceList(t *testing.T) {
 }
 
 func TestGetServiceListByLabel(t *testing.T) {
-	t.Run("failed Get Client", func(t *testing.T) {
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-		}
-		getCoreClientFail = true
-		defer revertK8sClient(K8s)
-		ns := "foo"
-		_, err := GetServiceListByLabel(ns, "mock-dashboard", "foo")
-		if err == nil {
-			t.Fatal("GetServiceListByLabel expected to fail when GetCoreClient fails")
-		}
-	})
-	t.Run("ok no matches", func(t *testing.T) {
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-		}
-		defer revertK8sClient(K8s)
-		ns, svc, label := "default", "mock-dashboard", "foo"
-		svcs, err := GetServiceListByLabel(ns, svc, label)
-		if err != nil {
-			t.Fatalf("GetServiceListByLabel not expected to fail but got err: %v. Namespace %v Service: %v, Label: %v", err, ns, svc, label)
-		}
-		if len(svcs.Items) == 1 {
-			t.Fatalf("GetServiceListByLabel for no matches should return empty list but got: %v", svcs.Items)
-		}
-	})
-
-	t.Run("ok", func(t *testing.T) {
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-		}
-		defer revertK8sClient(K8s)
-		ns, svc, label := "default", "mock-dashboard", "mock"
-		svcs, err := GetServiceListByLabel(ns, svc, label)
-		if err != nil {
-			t.Fatalf("GetServiceListByLabel not expected to fail but got err: %v. Namespace %v Service: %v, Label: %v", err, ns, svc, label)
-		}
-		if len(svcs.Items) >= 1 {
-			t.Fatalf("GetServiceListByLabel for matching data should return at least 1 item but got: %v", svcs.Items)
-		}
-	})
-}
-
-func TestCheckService(t *testing.T) {
 	var tests = []struct {
-		description, ns, name string
-		failedGetClient, err  bool
+		description, ns, name, label string
+		items                        int
+		failedGetClient, err         bool
 	}{
 		{
-			description:     "ok",
-			name:            "mock-dashboard",
-			ns:              "default",
-			failedGetClient: false,
-			err:             false,
+			description: "ok",
+			name:        "mock-dashboard",
+			ns:          "default",
+			items:       1,
 		},
 		{
 			description:     "failed get client",
@@ -691,11 +646,61 @@ func TestCheckService(t *testing.T) {
 			err:             true,
 		},
 		{
-			description:     "svc no ports",
-			name:            "mock-dashboard-no-ports",
+			description: "no matches",
+			name:        "mock-dashboard-no-ports",
+			ns:          "default",
+			label:       "foo",
+			items:       1,
+		},
+	}
+
+	defer revertK8sClient(K8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
+				secretsMap:   secretsNamespaces,
+			}
+			getCoreClientFail = test.failedGetClient
+			svcs, err := GetServiceListByLabel(test.ns, test.name, test.label)
+			if err != nil && !test.err {
+				t.Fatalf("Test %v got unexpected error: %v", test.description, err)
+			}
+			if err == nil && test.err {
+				t.Fatalf("Test %v expected error but got nil", test.description)
+			}
+			if err != nil {
+				if len(svcs.Items) != test.items {
+					t.Fatalf("GetServiceListByLabel for test: %v data should return %d elements, but got: %v", test.description, test.items, svcs.Items)
+				}
+			}
+		})
+	}
+}
+
+func TestCheckService(t *testing.T) {
+	var tests = []struct {
+		description, ns, name string
+		failedGetClient, err  bool
+	}{
+		{
+			description: "ok",
+			name:        "mock-dashboard",
+			ns:          "default",
+		},
+		{
+			description:     "failed get client",
+			name:            "mock-dashboard",
 			ns:              "default",
-			failedGetClient: false,
+			failedGetClient: true,
 			err:             true,
+		},
+		{
+			description: "svc no ports",
+			name:        "mock-dashboard-no-ports",
+			ns:          "default",
+			err:         true,
 		},
 	}
 
@@ -725,11 +730,9 @@ func TestDeleteSecret(t *testing.T) {
 		failedGetClient, err  bool
 	}{
 		{
-			description:     "ok",
-			name:            "foo",
-			ns:              "foo",
-			failedGetClient: false,
-			err:             false,
+			description: "ok",
+			name:        "foo",
+			ns:          "foo",
 		},
 		{
 			description:     "failed get client",
@@ -766,11 +769,9 @@ func TestCreateSecret(t *testing.T) {
 		failedGetClient, err  bool
 	}{
 		{
-			description:     "ok",
-			name:            "foo",
-			ns:              "foo",
-			failedGetClient: false,
-			err:             false,
+			description: "ok",
+			name:        "foo",
+			ns:          "foo",
 		},
 		{
 			description:     "failed get client",

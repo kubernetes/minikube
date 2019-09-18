@@ -17,80 +17,81 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"fmt"
+	"io/ioutil"
 	"os"
-	"path/filepath"
+	"os/exec"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util/retry"
+
+	"github.com/hashicorp/go-getter"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
-
-func fileExists(fname string) error {
-	check := func() error {
-		info, err := os.Stat(fname)
-		if os.IsNotExist(err) {
-			return err
-		}
-		if info.IsDir() {
-			return fmt.Errorf("error expect file got dir")
-		}
-		return nil
-	}
-
-	if err := retry.Expo(check, 1*time.Second, 3); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("Failed check if file (%q) exists,", fname))
-	}
-	return nil
-}
 
 // TestVersionUpgrade downloads latest version of minikube and runs with
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
-	p := profileName(t)
-	if shouldRunInParallel(t) {
-		t.Parallel()
+	profile := UniqueProfileName("vupgrade")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	MaybeSlowParallel(t)
+
+	defer CleanupWithLogs(t, profile, cancel)
+
+	tf, err := ioutil.TempFile("", "minikube-release.*.exe")
+	if err != nil {
+		t.Fatalf("tempfile: %v", err)
 	}
-	// fname is the filename for the minikube's latetest binary. this file been pre-downloaded before test by hacks/jenkins/common.sh
-	fname := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
-	err := fileExists(fname)
-	if err != nil { // download file if it is not downloaded by other test
-		dest := filepath.Join(*testdataDir, fmt.Sprintf("minikube-%s-%s-latest-stable", runtime.GOOS, runtime.GOARCH))
-		if runtime.GOOS == "windows" {
-			dest += ".exe"
-		}
-		err := downloadMinikubeBinary(t, dest, "latest")
-		if err != nil {
-			// binary is needed for the test
-			t.Fatalf("erorr downloading the latest minikube release %v", err)
+	defer os.Remove(tf.Name())
+	tf.Close()
+
+	url := pkgutil.GetBinaryDownloadURL("latest", runtime.GOOS)
+	if err := retry.Expo(func() error { return getter.GetFile(tf.Name(), url) }, 3*time.Second, 3*time.Minute); err != nil {
+		t.Fatalf("get failed: %v", err)
+	}
+
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(tf.Name(), 0700); err != nil {
+			t.Errorf("chmod: %v", err)
 		}
 	}
-	defer os.Remove(fname)
 
-	mkHead := NewMinikubeRunner(t, p) // minikube from HEAD.
-	defer mkHead.TearDown(t)
+	args := append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	rr := &RunResult{}
+	releaseStart := func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
+		return err
+	}
 
-	mkRelease := NewMinikubeRunner(t, p) // lastest publicly released version minikbue.
+	// Retry to allow flakiness for the previous release
+	if err := retry.Expo(releaseStart, 1*time.Second, 30*time.Minute, 3); err != nil {
+		t.Fatalf("release start failed: %v", err)
+	}
 
-	// because the --wait-timeout is a new flag and the current latest release (1.3.1) doesn't have it
-	// this won't be necessary after we release the change with --wait-timeout flag
-	mkRelease.StartArgs = strings.Replace(mkRelease.StartArgs, "--wait-timeout=13m", "", 1)
-	mkRelease.BinaryPath = fname
-	// For full coverage: also test upgrading from oldest to newest supported k8s release
-	mkRelease.MustStart(fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion))
+	rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), "stop", "-p", profile))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
 
-	mkRelease.CheckStatus(state.Running.String())
-	mkRelease.MustRun("stop")
-	mkRelease.CheckStatus(state.Stopped.String())
+	rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), "-p", profile, "status", "--format={{.Host}}"))
+	if err != nil {
+		t.Logf("status error: %v (may be ok)", err)
+	}
+	got := strings.TrimSpace(rr.Stdout.String())
+	if got != state.Stopped.String() {
+		t.Errorf("status = %q; want = %q", got, state.Stopped.String())
+	}
 
-	// Trim the leading "v" prefix to assert that we handle it properly.
-	mkHead.MustStart(fmt.Sprintf("--kubernetes-version=%s", strings.TrimPrefix(constants.NewestKubernetesVersion, "v")))
-
-	mkHead.CheckStatus(state.Running.String())
+	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
 }
