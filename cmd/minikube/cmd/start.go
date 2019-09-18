@@ -105,6 +105,7 @@ const (
 	hostDNSResolver       = "host-dns-resolver"
 	waitUntilHealthy      = "wait"
 	force                 = "force"
+	interactive           = "interactive"
 	waitTimeout           = "wait-timeout"
 	nativeSSH             = "native-ssh"
 )
@@ -140,6 +141,7 @@ func initMinikubeFlags() {
 	viper.AutomaticEnv()
 
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
+	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM.")
 	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
@@ -290,7 +292,10 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateFlags(driver)
 	validateUser(driver)
-	installOrUpdateDriver(driver)
+	if err := drivers.InstallOrUpdate(driver, viper.GetBool(interactive)); err != nil {
+		glog.Errorf("error: %v", err)
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+	}
 
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driver)
@@ -1054,28 +1059,4 @@ func configureMounts() {
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func saveConfig(clusterCfg *cfg.Config) error {
 	return cfg.CreateProfile(viper.GetString(cfg.MachineProfile), clusterCfg)
-}
-
-func installOrUpdateDriver(driver string) {
-	var driverExecutable string
-	switch driver {
-	case constants.DriverKvm2:
-		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverKvm2)
-	case constants.DriverHyperkit:
-		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverHyperkit)
-	default: // driver doesn't install or update
-		return
-	}
-
-	minikubeVersion, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-		return
-	}
-
-	targetDir := constants.MakeMiniPath("bin")
-	err = drivers.InstallOrUpdate(driverExecutable, targetDir, minikubeVersion)
-	if err != nil {
-		out.WarningT("Error downloading driver: {{.error}}", out.V{"error": err})
-	}
 }
