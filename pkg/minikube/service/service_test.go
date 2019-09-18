@@ -54,7 +54,7 @@ var getCoreClientFail bool
 
 func (m *MockClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
 	if getCoreClientFail {
-		return nil, fmt.Errorf("test Error - Get")
+		return nil, fmt.Errorf("test Error - Mocked Get")
 	}
 	return &MockCoreClient{
 		servicesMap:  m.servicesMap,
@@ -672,84 +672,133 @@ func TestGetServiceListByLabel(t *testing.T) {
 }
 
 func TestCheckService(t *testing.T) {
-	t.Run("svc-no-ports", func(t *testing.T) {
-		if err := CheckService("default", "mock-dashboard-no-ports"); err == nil {
-			t.Fatal("Error expected for service without ports")
-		}
-	})
-	t.Run("failed Get Client", func(t *testing.T) {
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-		}
-		getCoreClientFail = true
-		defer revertK8sClient(K8s)
-		if err := CheckService("default", "mock-dashboard"); err == nil {
-			t.Fatal("Expected to fail for failed GetCoreClient")
-		}
-	})
-	t.Run("ok", func(t *testing.T) {
-		if err := CheckService("default", "mock-dashboard"); err != nil {
-			t.Fatalf("Unexpected error: %v while checking existing service", err)
-		}
-	})
+	var tests = []struct {
+		description, ns, name string
+		failedGetClient, err  bool
+	}{
+		{
+			description:     "ok",
+			name:            "mock-dashboard",
+			ns:              "default",
+			failedGetClient: false,
+			err:             false,
+		},
+		{
+			description:     "failed get client",
+			name:            "mock-dashboard",
+			ns:              "default",
+			failedGetClient: true,
+			err:             true,
+		},
+		{
+			description:     "svc no ports",
+			name:            "mock-dashboard-no-ports",
+			ns:              "default",
+			failedGetClient: false,
+			err:             true,
+		},
+	}
+
+	defer revertK8sClient(K8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
+				secretsMap:   secretsNamespaces,
+			}
+			getCoreClientFail = test.failedGetClient
+			err := CheckService(test.ns, test.name)
+			if err == nil && test.err {
+				t.Fatalf("Test %v expected error but got nil", test.description)
+			}
+			if err != nil && !test.err {
+				t.Fatalf("Test %v got unexpected error: %v", test.description, err)
+			}
+		})
+	}
 }
 
 func TestDeleteSecret(t *testing.T) {
-	t.Run("failed Get Client", func(t *testing.T) {
-		ns := "foo"
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-			secretsMap:   secretsNamespaces,
-		}
-		getCoreClientFail = true
-		defer revertK8sClient(K8s)
-		if err := DeleteSecret(ns, "foo"); err == nil {
-			t.Fatal("CreateSecret expected to fail for failed GetCoreClient")
-		}
-	})
-	t.Run("ok", func(t *testing.T) {
-		ns := "foo"
-		secret := "mock-secret"
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-			secretsMap:   secretsNamespaces,
-		}
-		defer revertK8sClient(K8s)
-		if err := DeleteSecret(ns, secret); err != nil {
-			t.Fatalf("DeleteSecret not expected to fail for namespace: %v and secret %v but got err: %v", ns, secret, err)
-		}
-	})
+	var tests = []struct {
+		description, ns, name string
+		failedGetClient, err  bool
+	}{
+		{
+			description:     "ok",
+			name:            "foo",
+			ns:              "foo",
+			failedGetClient: false,
+			err:             false,
+		},
+		{
+			description:     "failed get client",
+			name:            "foo",
+			ns:              "foo",
+			failedGetClient: true,
+			err:             true,
+		},
+	}
+
+	defer revertK8sClient(K8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
+				secretsMap:   secretsNamespaces,
+			}
+			getCoreClientFail = test.failedGetClient
+			err := DeleteSecret(test.ns, test.name)
+			if err == nil && test.err {
+				t.Fatalf("Test %v expected error but got nil", test.description)
+			}
+			if err != nil && !test.err {
+				t.Fatalf("Test %v got unexpected error: %v", test.description, err)
+			}
+		})
+	}
 }
 
 func TestCreateSecret(t *testing.T) {
-	t.Run("failed Get Client", func(t *testing.T) {
-		ns := "foo"
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-			secretsMap:   secretsNamespaces,
-		}
-		getCoreClientFail = true
-		defer revertK8sClient(K8s)
-		if err := CreateSecret(ns, "foo", map[string]string{"ns": "secret"}, map[string]string{"ns": "baz"}); err == nil {
-			t.Fatal("CreateSecret expected to fail for failed GetCoreClient")
-		}
-	})
-	t.Run("ok", func(t *testing.T) {
-		ns := "foo"
-		K8s = &MockClientGetter{
-			servicesMap:  serviceNamespaces,
-			endpointsMap: endpointNamespaces,
-			secretsMap:   secretsNamespaces,
-		}
-		defer revertK8sClient(K8s)
-		if err := CreateSecret(ns, "foo", map[string]string{"ns": "secret"}, map[string]string{"ns": "baz"}); err != nil {
-			t.Fatalf("CreateSecret not expected to fail but got: %v", err)
-		}
-	})
+	var tests = []struct {
+		description, ns, name string
+		failedGetClient, err  bool
+	}{
+		{
+			description:     "ok",
+			name:            "foo",
+			ns:              "foo",
+			failedGetClient: false,
+			err:             false,
+		},
+		{
+			description:     "failed get client",
+			name:            "foo",
+			ns:              "foo",
+			failedGetClient: true,
+			err:             true,
+		},
+	}
+
+	defer revertK8sClient(K8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
+				secretsMap:   secretsNamespaces,
+			}
+			getCoreClientFail = test.failedGetClient
+			err := CreateSecret(test.ns, test.name, map[string]string{"ns": "secret"}, map[string]string{"ns": "baz"})
+			if err == nil && test.err {
+				t.Fatalf("Test %v expected error but got nil", test.description)
+			}
+			if err != nil && !test.err {
+				t.Fatalf("Test %v got unexpected error: %v", test.description, err)
+			}
+		})
+	}
 }
 
 func TestWaitAndMaybeOpenService(t *testing.T) {
