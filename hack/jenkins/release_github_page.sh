@@ -95,7 +95,7 @@ ISO_FILES=("minikube-v${VERSION}.iso" "minikube-v${VERSION}.iso.sha256")
 for DOWNLOAD in "${ISO_FILES[@]}"
 do
   gsutil cp "gs://${ISO_BUCKET}/${DOWNLOAD}" out/ \
-    && FILES_TO_UPLOAD+=($DOWNLOAD) \
+    && FILES_TO_UPLOAD+=("${DOWNLOAD}") \
     || echo "${DOWNLOAD} was not generated for this release"
 done
 
@@ -110,7 +110,7 @@ do
           --tag "${TAGNAME}" \
           --name "$UPLOAD" \
           --file "out/$UPLOAD" && break
-        n=$[$n+1]
+        n=$((n+1))
         sleep 15
     done
 done
