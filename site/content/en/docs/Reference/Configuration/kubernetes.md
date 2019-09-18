@@ -17,7 +17,7 @@ minikube defaults to the latest stable version of Kubernetes. You may select a d
 
   `minikube start --kubernetes-version=v1.11.10`
 
-minikube follows the [Kubernetes Version and Version Skew Support Policy](https://kubernetes.io/docs/setup/version-skew-policy/), so we guarantee support for the latest build for the last 3 minor Kubernetes releases. When practical, minikube aims for the the last 6 minor releases so that users can emulate legacy environments.
+minikube follows the [Kubernetes Version and Version Skew Support Policy](https://kubernetes.io/docs/setup/version-skew-policy/), so we guarantee support for the latest build for the last 3 minor Kubernetes releases. When practical, minikube aims for the last 6 minor releases so that users can emulate legacy environments.
 
 As of September 2019, this means that minikube supports and actively tests against the latest builds of:
 
