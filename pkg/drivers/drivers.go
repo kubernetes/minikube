@@ -250,7 +250,7 @@ func ExtractVMDriverVersion(s string) string {
 }
 
 func setHyperKitPermissions(driverPath string) error {
-	msg := fmt.Sprintf("A new hyperkit driver was installed. It needs elevated permissions to run. The following commands will be executed:\n  sudo chown root:wheel %s\n  sudo chmod u+s %s", driverPath, driverPath)
+	msg := fmt.Sprintf("A new hyperkit driver was installed. It needs elevated permissions to run. The following commands will be executed:\n\n    $ sudo chown root:wheel %s\n    $ sudo chmod u+s %s\n", driverPath, driverPath)
 	out.T(out.Permissions, msg, out.V{})
 
 	cmd := exec.Command("sudo", "chown", "root:wheel", driverPath)
