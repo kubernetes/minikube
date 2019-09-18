@@ -25,15 +25,21 @@ import (
 	"k8s.io/minikube/pkg/storage"
 )
 
+const defaultPvDir = "/pvc"
+const pvDirParam = "pv-dir"
+
 func main() {
 	// Glog requires that /tmp exists.
 	if err := os.MkdirAll("/tmp", 0755); err != nil {
 		fmt.Fprintf(os.Stderr, "Error creating tmpdir: %v\n", err)
 		os.Exit(1)
 	}
+
+	var pvDir = flag.String(pvDirParam, defaultPvDir, "Directory for dynamically provisioned persistent volumes")
+
 	flag.Parse()
 
-	if err := storage.StartStorageProvisioner(); err != nil {
+	if err := storage.StartStorageProvisioner(*pvDir); err != nil {
 		glog.Exit(err)
 	}
 

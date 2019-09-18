@@ -55,9 +55,15 @@ spec:
     command: ["/storage-provisioner"]
     imagePullPolicy: IfNotPresent
     volumeMounts:
+    - mountPath: /pvc
+      name: pvc
     - mountPath: /tmp
       name: tmp
   volumes:
+  - name: pvc
+    hostPath:
+      path: /pvc
+      type: Directory
   - name: tmp
     hostPath:
       path: /tmp
