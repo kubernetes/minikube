@@ -592,8 +592,13 @@ func validateUser(driver string) {
 		return
 	}
 
-	out.T(out.Stopped, "The {{.driver_name}} driver should not be used with root privileges.", out.V{"driver_name": driver})
+	out.T(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": driver})
+	out.T(out.Tip, "If you are running minikube within a VM, consider using --vm-driver=none:")
+	out.T(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 
+	if !useForce {
+		os.Exit(exit.Permissions)
+	}
 	_, err = cfg.Load()
 	if err == nil || !os.IsNotExist(err) {
 		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
@@ -636,7 +641,7 @@ func validateFlags(driver string) {
 		cpuCount = viper.GetInt(cpus)
 	}
 	if cpuCount < constants.MinimumCPUS {
-		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
+		exit.UsageT("Requested CPU count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
