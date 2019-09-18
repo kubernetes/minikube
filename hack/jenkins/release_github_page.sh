@@ -28,7 +28,7 @@ set -eux -o pipefail
 readonly VERSION="${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}"
 readonly DEB_VERSION="${VERSION/-/\~}"
 readonly RPM_VERSION="${DEB_VERSION}"
-
+readonly ISO_BUCKET="minikube/iso"
 readonly TAGNAME="v${VERSION}"
 
 readonly GITHUB_ORGANIZATION="kubernetes"
@@ -40,7 +40,7 @@ if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
   RELEASE_FLAGS="-p"
 fi
 
-RELEASE_NOTES=$(perl -e "\$p=0; while(<>) { if(/^## Version ${VERSION}/) { \$p=1 } elsif (/^##/) { \$p=0 }; if (\$p) { print }}" < CHANGELOG.md)
+RELEASE_NOTES=$(perl -e "\$p=0; while(<>) { if(/^## Version ${VERSION} -/) { \$p=1 } elsif (/^##/) { \$p=0 }; if (\$p) { print }}" < CHANGELOG.md)
 if [[ "${RELEASE_NOTES}" = "" ]]; then
   RELEASE_NOTES="(missing for ${VERSION})"
 fi
@@ -90,6 +90,15 @@ FILES_TO_UPLOAD=(
     'docker-machine-driver-hyperkit.sha256'
 )
 
+# ISO files are special, as they are generated pre-release tagging
+ISO_FILES=("minikube-v${VERSION}.iso" "minikube-v${VERSION}.iso.sha256")
+for DOWNLOAD in "${ISO_FILES[@]}"
+do
+  gsutil cp "gs://${ISO_BUCKET}/${DOWNLOAD}" out/ \
+    && FILES_TO_UPLOAD+=("${DOWNLOAD}") \
+    || echo "${DOWNLOAD} was not generated for this release"
+done
+
 for UPLOAD in "${FILES_TO_UPLOAD[@]}"
 do
     n=0
@@ -101,7 +110,7 @@ do
           --tag "${TAGNAME}" \
           --name "$UPLOAD" \
           --file "out/$UPLOAD" && break
-        n=$[$n+1]
+        n=$((n+1))
         sleep 15
     done
 done
