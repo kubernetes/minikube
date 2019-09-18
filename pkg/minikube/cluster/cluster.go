@@ -361,7 +361,7 @@ func megs(bytes uint64) int {
 func getHostInfo() (*hostInfo, error) {
 	i, err := cpu.Info()
 	if err != nil {
-		glog.Warningf("Unable to get cpu info: %v", err)
+		glog.Warningf("Unable to get CPU info: %v", err)
 		return nil, err
 	}
 	v, err := mem.VirtualMemory()
