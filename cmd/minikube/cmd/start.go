@@ -636,7 +636,7 @@ func validateFlags(driver string) {
 		cpuCount = viper.GetInt(cpus)
 	}
 	if cpuCount < constants.MinimumCPUS {
-		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
+		exit.UsageT("Requested CPU count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
