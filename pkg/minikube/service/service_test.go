@@ -636,7 +636,7 @@ func TestGetServiceListByLabel(t *testing.T) {
 			description: "ok",
 			name:        "mock-dashboard",
 			ns:          "default",
-			items:       1,
+			items:       2,
 		},
 		{
 			description:     "failed get client",
@@ -650,7 +650,7 @@ func TestGetServiceListByLabel(t *testing.T) {
 			name:        "mock-dashboard-no-ports",
 			ns:          "default",
 			label:       "foo",
-			items:       1,
+			items:       0,
 		},
 	}
 
@@ -670,9 +670,9 @@ func TestGetServiceListByLabel(t *testing.T) {
 			if err == nil && test.err {
 				t.Fatalf("Test %v expected error but got nil", test.description)
 			}
-			if err != nil {
+			if err == nil {
 				if len(svcs.Items) != test.items {
-					t.Fatalf("GetServiceListByLabel for test: %v data should return %d elements, but got: %v", test.description, test.items, svcs.Items)
+					t.Fatalf("GetServiceListByLabel for test: %v data should return %d elements, but got: %d", test.description, test.items, len(svcs.Items))
 				}
 			}
 		})
