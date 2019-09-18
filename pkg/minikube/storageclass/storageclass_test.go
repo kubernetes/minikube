@@ -30,13 +30,9 @@ import (
 	testing_client "k8s.io/client-go/testing"
 )
 
-var orgGetStoragev1 func() (storagev1.StorageV1Interface, error)
-var orgMockStorageProvisioner, mockK8sConfig string
-
-func init() {
-	orgMockStorageProvisioner = "foo"
-	orgGetStoragev1 = getStoragev1
-	mockK8sConfig = `apiVersion: v1
+var orgMockStorageProvisioner = "foo"
+var orgGetStoragev1 = getStoragev1
+var mockK8sConfig = `apiVersion: v1
 clusters:
 - cluster:
     server: https://example.com:443
@@ -52,8 +48,6 @@ preferences: {}
 users:
 - name: minikube
 `
-
-}
 
 func mockGetStoragev1() (storagev1.StorageV1Interface, error) {
 	client := fake.Clientset{Fake: testing_client.Fake{}}
