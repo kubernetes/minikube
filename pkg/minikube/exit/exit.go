@@ -72,9 +72,11 @@ func WithProblem(msg string, p *problem.Problem) {
 	out.ErrT(out.Empty, "")
 	out.FatalT(msg)
 	p.Display()
-	out.ErrT(out.Empty, "")
-	out.ErrT(out.Sad, "If the above advice does not help, please let us know: ")
-	out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+	if !p.HideCreateLink {
+		out.ErrT(out.Empty, "")
+		out.ErrT(out.Sad, "If the above advice does not help, please let us know: ")
+		out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
+	}
 	os.Exit(Config)
 }
 
