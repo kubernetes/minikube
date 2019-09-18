@@ -84,7 +84,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
-		err = drivers.InstallOrUpdate("docker-machine-driver-kvm2", dir, newerVersion)
+		err = drivers.InstallOrUpdate("docker-machine-driver-kvm2", dir, newerVersion, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
@@ -147,7 +147,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
-		err = drivers.InstallOrUpdate("docker-machine-driver-hyperkit", dir, newerVersion)
+		err = drivers.InstallOrUpdate("docker-machine-driver-hyperkit", dir, newerVersion, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}

@@ -292,9 +292,15 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateFlags(driver)
 	validateUser(driver)
-	if err := drivers.InstallOrUpdate(driver, viper.GetBool(interactive)); err != nil {
-		glog.Errorf("error: %v", err)
-		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+
+	v, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+	} else {
+		if err := drivers.InstallOrUpdate(driver, constants.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
+			glog.Errorf("error: %v", err)
+			out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+		}
 	}
 
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
