@@ -561,7 +561,8 @@ func validateUser() {
 		return
 	}
 
-	out.T(out.Stopped, "The {{.driver_name}} driver should not be used with root privileges.", out.V{"driver_name": d})
+	out.T(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": d})
+	out.T(out.Tip, "If you are running minikube within a VM, consider using '--vm-driver=none': https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 
 	_, err = cfg.Load()
 	if err == nil || !os.IsNotExist(err) {
