@@ -62,8 +62,8 @@ func CreateProfile(name string, cfg *Config, miniHome ...string) error {
 	if err != nil {
 		return err
 	}
-	glog.Infof("Saving config:\n%s", data)
 	path := profileFilePath(name, miniHome...)
+	glog.Infof("Saving config to %s ...", path)
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}

@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 4
-VERSION_BUILD ?= 0-beta.0
+VERSION_BUILD ?= 0-beta.2
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -51,7 +51,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.15
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.17.1
+GOLINT_VERSION ?= v1.18.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -197,7 +197,7 @@ iso_in_docker:
 		$(ISO_BUILD_IMAGE) /bin/bash
 
 test-iso: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
-	go test -v ./test/integration --tags=iso --minikube-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
+	go test -v ./test/integration --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
 .PHONY: test-pkg
 test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
@@ -319,19 +319,20 @@ golint:
 gocyclo:
 	@gocyclo -over 15 `find $(SOURCE_DIRS) -type f -name "*.go"`
 
-out/linters/golangci-lint:
+out/linters/golangci-lint-$(GOLINT_VERSION):
 	mkdir -p out/linters
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b out/linters $(GOLINT_VERSION)
+	mv out/linters/golangci-lint out/linters/golangci-lint-$(GOLINT_VERSION)
 
 # this one is meant for local use
 .PHONY: lint
-lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint
-	./out/linters/golangci-lint run ${GOLINT_OPTIONS} ./...
+lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION)
+	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
 
 # lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
 .PHONY: lint-ci
-lint-ci: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint
-	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint run \
+lint-ci: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION)
+	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint-$(GOLINT_VERSION) run \
 	--concurrency ${GOLINT_JOBS} ${GOLINT_OPTIONS} ./...
 
 .PHONY: reportcard
