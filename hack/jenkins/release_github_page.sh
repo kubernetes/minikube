@@ -51,7 +51,7 @@ ${RELEASE_NOTES}
 
 ## Installation
 
-See [https://minikube.sigs.k8s.io/docs/start/](Getting Started)
+See [Getting Started](https://minikube.sigs.k8s.io/docs/start/)
 
 ## ISO Checksum
 
