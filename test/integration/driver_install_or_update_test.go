@@ -70,21 +70,22 @@ func TestDriverInstallOrUpdate(t *testing.T) {
 		}
 
 		// change permission to allow driver to be executable
-		err = os.Chmod(filepath.Join(path, "docker-machine-driver-kvm2"), 0777)
+		err = os.Chmod(filepath.Join(path, "docker-machine-driver-kvm2"), 0700)
 		if err != nil {
 			t.Fatalf("Expected not expected when changing driver permission. test: %s, got: %v", tc.name, err)
 		}
 
 		os.Setenv("PATH", fmt.Sprintf("%s:%s", path, originalPath))
 
-		newerVersion, err := semver.Make("1.1.3")
+		// NOTE: This should be a real version, as it impacts the downloaded URL
+		newerVersion, err := semver.Make("1.3.0")
 		if err != nil {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
 		err = drivers.InstallOrUpdate("docker-machine-driver-kvm2", dir, newerVersion)
 		if err != nil {
-			t.Fatalf("Expected to update driver. test: %s, got: %v", tc.name, err)
+			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
 
 		_, err = os.Stat(filepath.Join(dir, "docker-machine-driver-kvm2"))

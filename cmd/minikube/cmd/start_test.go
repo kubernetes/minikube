@@ -66,7 +66,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 			if err := os.Setenv("HTTP_PROXY", test.proxy); err != nil {
 				t.Fatalf("Unexpected error setting HTTP_PROXY: %v", err)
 			}
-			config, err := generateCfgFromFlags(cmd, k8sVersion)
+			config, err := generateCfgFromFlags(cmd, k8sVersion, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
