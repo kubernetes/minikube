@@ -87,11 +87,6 @@ const DefaultStorageClassProvisioner = "standard"
 // Cache is used to modify the cache field in the config file
 const Cache = "cache"
 
-// TunnelRegistryPath returns the path to the runnel registry file
-func TunnelRegistryPath() string {
-	return filepath.Join(localpath.MiniPath(), "tunnels.json")
-}
-
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName ...string) string {
 	args := []string{localpath.MiniPath()}
