@@ -77,15 +77,9 @@ var Addons = map[string]*Addon{
 	}, true, "addon-manager"),
 	"dashboard": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/dashboard/dashboard-dp.yaml.tmpl",
+			"deploy/addons/dashboard/dashboard.yaml",
 			constants.GuestAddonsDir,
-			"dashboard-dp.yaml",
-			"0640",
-			true),
-		MustBinAsset(
-			"deploy/addons/dashboard/dashboard-svc.yaml.tmpl",
-			constants.GuestAddonsDir,
-			"dashboard-svc.yaml",
+			"dashboard.yaml",
 			"0640",
 			false),
 	}, false, "dashboard"),
