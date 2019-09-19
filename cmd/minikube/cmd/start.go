@@ -194,7 +194,7 @@ func initKubernetesFlags() {
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().String(nodeName, constants.DefaultNodeName, "The node name")
+	startCmd.Flags().String(nodeName, "", "The node name")
 }
 
 // initDriverFlags inits the commandline flags for vm drivers
@@ -888,6 +888,16 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
+	kubeNodeName := viper.GetString(nodeName)
+	if kubeNodeName == "" {
+		machineName := viper.GetString(cfg.MachineProfile)
+		if machineName != constants.DefaultMachineName {
+			kubeNodeName = fmt.Sprintf("%s-%s", constants.DefaultNodeName, machineName)
+		} else {
+			kubeNodeName = constants.DefaultNodeName
+		}
+	}
+
 	cfg := cfg.MachineConfig{
 		Name:                viper.GetString(cfg.MachineProfile),
 		KeepContext:         viper.GetBool(keepContext),
@@ -923,7 +933,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			NodePort:               viper.GetInt(apiServerPort),
-			NodeName:               viper.GetString(nodeName),
+			NodeName:               kubeNodeName,
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,
 			APIServerIPs:           apiServerIPs,
