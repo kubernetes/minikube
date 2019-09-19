@@ -25,6 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -42,7 +43,7 @@ func init() {
 }
 
 func createVMwareFusionHost(config cfg.MachineConfig) interface{} {
-	d := vmwarefusion.NewDriver(cfg.GetMachineName(), constants.GetMinipath()).(*vmwarefusion.Driver)
+	d := vmwarefusion.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*vmwarefusion.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs

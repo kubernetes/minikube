@@ -46,6 +46,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -444,8 +445,8 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "new host")
 	}
 
-	h.HostOptions.AuthOptions.CertDir = constants.GetMinipath()
-	h.HostOptions.AuthOptions.StorePath = constants.GetMinipath()
+	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
+	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
 	h.HostOptions.EngineOptions = engineOptions(config)
 
 	if err := api.Create(h); err != nil {

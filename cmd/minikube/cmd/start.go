@@ -54,6 +54,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/drivers/none"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/notify"
@@ -855,8 +856,8 @@ func prepareNone() {
 		out.T(out.Tip, "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
 	}
 
-	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(constants.GetMinipath()); err != nil {
-		exit.WithCodeT(exit.Permissions, "Failed to change permissions for {{.minikube_dir_path}}: {{.error}}", out.V{"minikube_dir_path": constants.GetMinipath(), "error": err})
+	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(localpath.MiniPath()); err != nil {
+		exit.WithCodeT(exit.Permissions, "Failed to change permissions for {{.minikube_dir_path}}: {{.error}}", out.V{"minikube_dir_path": localpath.MiniPath(), "error": err})
 	}
 }
 
@@ -1057,7 +1058,7 @@ func configureMounts() {
 	if err := mountCmd.Start(); err != nil {
 		exit.WithError("Error starting mount", err)
 	}
-	if err := lock.WriteFile(filepath.Join(constants.GetMinipath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
+	if err := lock.WriteFile(filepath.Join(localpath.MiniPath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
 		exit.WithError("Error writing mount pid", err)
 	}
 }

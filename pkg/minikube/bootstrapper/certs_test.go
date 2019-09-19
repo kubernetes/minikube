@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/util"
 )
@@ -70,10 +71,10 @@ func TestSetupCerts(t *testing.T) {
 
 	var filesToBeTransferred []string
 	for _, cert := range certs {
-		filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), cert))
+		filesToBeTransferred = append(filesToBeTransferred, filepath.Join(localpath.MiniPath(), cert))
 	}
-	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), "ca.crt"))
-	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(constants.GetMinipath(), "certs", "mycert.pem"))
+	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(localpath.MiniPath(), "ca.crt"))
+	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(localpath.MiniPath(), "certs", "mycert.pem"))
 
 	if err := SetupCerts(f, k8s); err != nil {
 		t.Fatalf("Error starting cluster: %v", err)
