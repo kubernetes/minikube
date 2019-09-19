@@ -17,12 +17,19 @@ limitations under the License.
 package sshutil
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/tests"
 )
+
+type MockDriverBadPort struct{ tests.MockDriver }
+
+func (MockDriverBadPort) GetSSHPort() (int, error) {
+	return 22, fmt.Errorf("bad port err")
+}
 
 func TestNewSSHClient(t *testing.T) {
 	s, err := tests.NewSSHServer(t)
@@ -67,6 +74,54 @@ func TestNewSSHClient(t *testing.T) {
 	}
 }
 
+func TestNewSSHClientError(t *testing.T) {
+	t.Run("Bad Port", func(t *testing.T) {
+		d := MockDriverBadPort{}
+		_, err := NewSSHClient(&d)
+		if err == nil {
+			t.Fatalf("Expected to fail dor driver: %v", d)
+		}
+	})
+	t.Run("Bad ssh key path", func(t *testing.T) {
+		s, err := tests.NewSSHServer(t)
+		if err != nil {
+			t.Fatalf("NewSSHServer: %v", err)
+		}
+		port, err := s.Start()
+		if err != nil {
+			t.Fatalf("Error starting ssh server: %v", err)
+		}
+		defer s.Stop()
+
+		d := &tests.MockDriver{
+			Port: port,
+			BaseDriver: drivers.BaseDriver{
+				IPAddress:  "127.0.0.1",
+				SSHKeyPath: "/etc/hosts",
+			},
+			T: t,
+		}
+		_, err = NewSSHClient(d)
+		if err == nil {
+			t.Fatalf("Expected to fail for driver: %v", d)
+		}
+	})
+	t.Run("Dial err", func(t *testing.T) {
+		d := &tests.MockDriver{
+			Port: 22,
+			BaseDriver: drivers.BaseDriver{
+				IPAddress:  "127.0.0.1",
+				SSHKeyPath: "",
+			},
+			T: t,
+		}
+		_, err := NewSSHClient(d)
+		if err == nil {
+			t.Fatalf("Expected to fail for driver: %v", d)
+		}
+	})
+}
+
 func TestNewSSHHost(t *testing.T) {
 	sshKeyPath := "mypath"
 	ip := "localhost"
@@ -96,10 +151,18 @@ func TestNewSSHHost(t *testing.T) {
 }
 
 func TestNewSSHHostError(t *testing.T) {
-	d := tests.MockDriver{HostError: true}
-
-	_, err := newSSHHost(&d)
-	if err == nil {
-		t.Fatal("Expected error creating host, got nil")
-	}
+	t.Run("Host error", func(t *testing.T) {
+		d := tests.MockDriver{HostError: true}
+		_, err := newSSHHost(&d)
+		if err == nil {
+			t.Fatal("Expected error for creating newSSHHost with host error, but got nil")
+		}
+	})
+	t.Run("Bad port", func(t *testing.T) {
+		d := MockDriverBadPort{}
+		_, err := newSSHHost(&d)
+		if err == nil {
+			t.Fatal("Expected error for creating newSSHHost with bad port, but got nil")
+		}
+	})
 }
