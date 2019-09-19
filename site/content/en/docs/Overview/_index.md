@@ -47,3 +47,5 @@ Then minikube is for you.
 
 * [Getting Started](/docs/start/): Get started with minikube
 * [Examples](/docs/examples/): Check out some minikube examples!
+
+📣😀 **Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A)** so that we can learn how & why you use minikube, and what improvements we should make. Thank you! 💃🏽🎉

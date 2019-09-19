@@ -38,7 +38,9 @@ As well as developer-friendly features:
 
 ## Installation
 
-Installation methods can be found in the [Getting Started Guide](https://minikube.sigs.k8s.io/docs/start/)
+See the [Getting Started Guide](https://minikube.sigs.k8s.io/docs/start/)
+
+:mega: **Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A)** so that we can learn how & why you use minikube, and what improvements we should make. Thank you! :dancers:
 
 ## Documentation
 
