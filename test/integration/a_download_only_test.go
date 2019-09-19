@@ -29,6 +29,7 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
@@ -57,7 +58,7 @@ func TestDownloadOnly(t *testing.T) {
 
 				// None driver does not cache images, so this test will fail
 				if !NoneDriver() {
-					_, imgs := constants.GetKubeadmCachedImages("", v)
+					_, imgs := images.CachedImages("", v)
 					for _, img := range imgs {
 						img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
 						fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)

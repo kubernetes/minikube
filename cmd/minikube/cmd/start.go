@@ -45,6 +45,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -297,7 +298,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	v, err := version.GetSemverVersion()
 	if err != nil {
 		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := drivers.InstallOrUpdate(driver, constants.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
+	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
 		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
 	}
 
@@ -551,7 +552,7 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	}
 
 	checkRepository := func(repo string) error {
-		podInfraContainerImage, _ := constants.GetKubeadmCachedImages(repo, k8sVersion)
+		podInfraContainerImage, _ := images.CachedImages(repo, k8sVersion)
 
 		ref, err := name.ParseReference(podInfraContainerImage, name.WeakValidation)
 		if err != nil {
