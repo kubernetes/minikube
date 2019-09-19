@@ -489,7 +489,7 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 	envMap := map[string]string{
 		"DOCKER_TLS_VERIFY": "1",
 		"DOCKER_HOST":       tcpPrefix + net.JoinHostPort(ip, port),
-		"DOCKER_CERT_PATH":  constants.MakeMiniPath("certs"),
+		"DOCKER_CERT_PATH":  localpath.MakeMiniPath("certs"),
 	}
 	return envMap, nil
 }

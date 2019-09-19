@@ -87,13 +87,6 @@ const DefaultStorageClassProvisioner = "standard"
 // Cache is used to modify the cache field in the config file
 const Cache = "cache"
 
-// MakeMiniPath is a utility to calculate a relative path to our directory.
-func MakeMiniPath(fileName ...string) string {
-	args := []string{localpath.MiniPath()}
-	args = append(args, fileName...)
-	return filepath.Join(args...)
-}
-
 // MountProcessFileName is the filename of the mount process
 var MountProcessFileName = ".mount-process"
 
@@ -158,7 +151,7 @@ var NewestKubernetesVersion = "v1.16.0"
 var OldestKubernetesVersion = "v1.11.10"
 
 // ConfigFile is the path of the config file
-var ConfigFile = MakeMiniPath("config", "config.json")
+var ConfigFile = localpath.MakeMiniPath("config", "config.json")
 
 const (
 	// KubeletServiceFile is the path to the kubelet systemd service
@@ -205,7 +198,7 @@ var ImageRepositories = map[string][]string{
 var KubeadmBinaries = []string{"kubelet", "kubeadm"}
 
 // ImageCacheDir is the path to the image cache directory
-var ImageCacheDir = MakeMiniPath("cache", "images")
+var ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 
 const (
 	// GvisorFilesPath is the path to the gvisor files saved by go-bindata

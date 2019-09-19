@@ -30,7 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -63,7 +63,7 @@ func KubernetesReleaseURLSHA1(binaryName, version, osName, archName string) stri
 
 // CacheBinary will cache a binary on the host
 func CacheBinary(binary, version, osName, archName string) (string, error) {
-	targetDir := constants.MakeMiniPath("cache", version)
+	targetDir := localpath.MakeMiniPath("cache", version)
 	targetFilepath := path.Join(targetDir, binary)
 
 	url := KubernetesReleaseURL(binary, version, osName, archName)

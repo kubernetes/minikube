@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -331,10 +332,10 @@ var Addons = map[string]*Addon{
 // AddMinikubeDirAssets adds all addons and files to the list
 // of files to be copied to the vm.
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {
-	if err := addMinikubeDirToAssets(constants.MakeMiniPath("addons"), constants.GuestAddonsDir, assets); err != nil {
+	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("addons"), constants.GuestAddonsDir, assets); err != nil {
 		return errors.Wrap(err, "adding addons folder to assets")
 	}
-	if err := addMinikubeDirToAssets(constants.MakeMiniPath("files"), "", assets); err != nil {
+	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("files"), "", assets); err != nil {
 		return errors.Wrap(err, "adding files rootfs to assets")
 	}
 

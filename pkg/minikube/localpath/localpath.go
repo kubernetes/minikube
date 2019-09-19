@@ -36,3 +36,10 @@ func MiniPath() string {
 	}
 	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
 }
+
+// MakeMiniPath is a utility to calculate a relative path to our directory.
+func MakeMiniPath(fileName ...string) string {
+	args := []string{MiniPath()}
+	args = append(args, fileName...)
+	return filepath.Join(args...)
+}

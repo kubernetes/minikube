@@ -60,7 +60,7 @@ func NewRPCClient(storePath, certsDir string) libmachine.API {
 // NewAPIClient gets a new client.
 func NewAPIClient() (libmachine.API, error) {
 	storePath := localpath.MiniPath()
-	certsDir := constants.MakeMiniPath("certs")
+	certsDir := localpath.MakeMiniPath("certs")
 
 	return &LocalClient{
 		certsDir:     certsDir,
