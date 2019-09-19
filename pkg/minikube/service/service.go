@@ -332,7 +332,10 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 		return &retry.RetriableError{Err: err}
 	}
 	secrets := client.Secrets(namespace)
-	secret, _ := secrets.Get(name, meta.GetOptions{})
+	secret, err := secrets.Get(name, meta.GetOptions{})
+	if err != nil {
+		return &retry.RetriableError{Err: err}
+	}
 
 	// Delete existing secret
 	if len(secret.Name) > 0 {
