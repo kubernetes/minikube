@@ -4,6 +4,7 @@ metadata:
   name: nginx-untrusted
   labels:
     run: nginx
+    untrusted: "true"
   annotations:
     io.kubernetes.cri.untrusted-workload: "true"
 spec:

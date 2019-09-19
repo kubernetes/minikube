@@ -23,7 +23,7 @@ fi
 
 readonly version=$1
 readonly tag="v${version}"
-if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9a-z\.\-]+$ ]]; then
   echo "supplied version does not match expectations: ${version}"
   exit 2
 fi

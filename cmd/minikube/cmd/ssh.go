@@ -19,7 +19,10 @@ package cmd
 import (
 	"os"
 
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -46,6 +49,12 @@ var sshCmd = &cobra.Command{
 		if host.Driver.DriverName() == constants.DriverNone {
 			exit.UsageT("'none' driver does not support 'minikube ssh' command")
 		}
+		if viper.GetBool(nativeSSH) {
+			ssh.SetDefaultClient(ssh.Native)
+		} else {
+			ssh.SetDefaultClient(ssh.External)
+		}
+
 		err = cluster.CreateSSHShell(api, args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
@@ -54,4 +63,8 @@ var sshCmd = &cobra.Command{
 			os.Exit(exit.Failure)
 		}
 	},
+}
+
+func init() {
+	sshCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 }

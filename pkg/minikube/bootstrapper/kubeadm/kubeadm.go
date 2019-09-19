@@ -38,6 +38,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -105,12 +106,14 @@ var SkipAdditionalPreflights = map[string][]string{}
 
 // Bootstrapper is a bootstrapper using kubeadm
 type Bootstrapper struct {
-	c command.Runner
+	c           command.Runner
+	contextName string
 }
 
 // NewKubeadmBootstrapper creates a new kubeadm.Bootstrapper
 func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
-	h, err := api.Load(config.GetMachineName())
+	name := config.GetMachineName()
+	h, err := api.Load(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
 	}
@@ -118,7 +121,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "command runner")
 	}
-	return &Bootstrapper{c: runner}, nil
+	return &Bootstrapper{c: runner, contextName: name}, nil
 }
 
 // GetKubeletStatus returns the kubelet status
@@ -225,6 +228,12 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
+	start := time.Now()
+	glog.Infof("StartCluster: %+v", k8s)
+	defer func() {
+		glog.Infof("StartCluster complete in %s", time.Since(start))
+	}()
+
 	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
@@ -261,18 +270,17 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrapf(err, "cmd failed: %s\n%s\n", cmd, out)
 	}
 
-	if version.LT(semver.MustParse("1.10.0-alpha.0")) {
-		// TODO(r2d4): get rid of global here
-		master = k8s.NodeName
-
-		if err := retry.Expo(unmarkMaster, time.Millisecond*500, time.Second*113); err != nil {
-			return errors.Wrap(err, "timed out waiting to unmark master")
-		}
-	}
-
 	glog.Infof("Configuring cluster permissions ...")
 
-	if err := retry.Expo(elevateKubeSystemPrivileges, time.Millisecond*500, 60*time.Second); err != nil {
+	elevate := func() error {
+		client, err := k.client(k8s)
+		if err != nil {
+			return err
+		}
+		return elevateKubeSystemPrivileges(client)
+	}
+
+	if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
 
@@ -332,6 +340,23 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 	return nil
 }
 
+// client returns a Kubernetes client to use to speak to a kubeadm launched apiserver
+func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientset, error) {
+	// Catch case if WaitCluster was called with a stale ~/.kube/config
+	config, err := kapi.ClientConfig(k.contextName)
+	if err != nil {
+		return nil, errors.Wrap(err, "client config")
+	}
+
+	endpoint := fmt.Sprintf("https://%s:%d", k8s.NodeIP, k8s.NodePort)
+	if config.Host != endpoint {
+		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
+		config.Host = endpoint
+	}
+
+	return kubernetes.NewForConfig(config)
+}
+
 // WaitCluster blocks until Kubernetes appears to be healthy.
 func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
@@ -339,16 +364,17 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
 	componentsOnly := k8s.NetworkPlugin == "cni"
 	out.T(out.WaitingPods, "Waiting for:")
-	client, err := kapi.Client()
-	if err != nil {
-		return errors.Wrap(err, "k8s client")
-	}
 
 	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
 	// pod shows up as registered, but need the webserver for all subsequent queries.
 	out.String(" apiserver")
 	if err := k.waitForAPIServer(k8s); err != nil {
 		return errors.Wrap(err, "waiting for apiserver")
+	}
+
+	client, err := k.client(k8s)
+	if err != nil {
+		return errors.Wrap(err, "client")
 	}
 
 	for _, p := range PodsByLayer {
@@ -452,8 +478,12 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 			return false, nil
 		}
 		return true, nil
+
+		// TODO: Check apiserver/kubelet logs for fatal errors so that users don't
+		// need to wait minutes to find out their flag didn't work.
+
 	}
-	err = wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, f)
+	err = wait.PollImmediate(kconst.APICallRetryInterval, 2*kconst.DefaultControlPlaneTimeout, f)
 	return err
 }
 
@@ -680,10 +710,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, er
 		opts.ServiceCIDR = k8s.ServiceCIDR
 	}
 
-	if version.GTE(semver.MustParse("1.10.0-alpha.0")) {
-		opts.NoTaintMaster = true
-	}
-
+	opts.NoTaintMaster = true
 	b := bytes.Buffer{}
 	configTmpl := configTmplV1Alpha1
 	if version.GTE(semver.MustParse("1.12.0")) {

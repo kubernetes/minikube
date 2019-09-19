@@ -41,7 +41,6 @@ Set the switch you created as the minikube default:
 minikube config set hyperv-virtual-switch ExternalSwitch
 ```
 
-
 ```shell
 minikube start --vm-driver=hyperv 
 ```

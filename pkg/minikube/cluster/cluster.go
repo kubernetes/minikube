@@ -104,8 +104,8 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 
 	if h.Driver.DriverName() != config.VMDriver {
 		out.T(out.Empty, "\n")
-		out.WarningT(`Ignoring --vm-driver={{.driver_name}}, as the existing "{{.profile_name}}" VM was created using the {{.driver_name2}} driver.`,
-			out.V{"driver_name": config.VMDriver, "profile_name": cfg.GetMachineName(), "driver_name2": h.Driver.DriverName()})
+		exit.WithCodeT(exit.Config, `The existing "{{.profile_name}}" VM was created using the {{.driver_name}} driver.`,
+			out.V{"profile_name": cfg.GetMachineName(), "driver_name": config.VMDriver})
 		out.WarningT("To switch drivers, you may create a new VM using `minikube start -p <name> --vm-driver={{.driver_name}}`", out.V{"driver_name": config.VMDriver})
 		out.WarningT("Alternatively, you may delete the existing VM using `minikube delete -p {{.profile_name}}`", out.V{"profile_name": cfg.GetMachineName()})
 		out.T(out.Empty, "\n")
@@ -120,9 +120,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": config.VMDriver, "profile_name": cfg.GetMachineName()})
 	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": config.VMDriver, "profile_name": cfg.GetMachineName()})
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -152,7 +152,12 @@ func localDriver(name string) bool {
 
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
-	glog.Infof("configureHost: %T %+v", h, h)
+	start := time.Now()
+	glog.Infof("configureHost: %+v", h.Driver)
+	defer func() {
+		glog.Infof("configureHost completed within %s", time.Since(start))
+	}()
+
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		glog.Infof("Detecting provisioner ...")
@@ -166,15 +171,15 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		}
 	}
 
-	if !localDriver(h.Driver.DriverName()) {
-		glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
-		if err := h.ConfigureAuth(); err != nil {
-			return &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
-		}
-		return ensureSyncedGuestClock(h)
+	if localDriver(h.Driver.DriverName()) {
+		glog.Infof("%s is a local driver, skipping auth/time setup", h.Driver.DriverName())
+		return nil
 	}
-
-	return nil
+	glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
+	if err := h.ConfigureAuth(); err != nil {
+		return &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
+	}
+	return ensureSyncedGuestClock(h)
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
@@ -356,7 +361,7 @@ func megs(bytes uint64) int {
 func getHostInfo() (*hostInfo, error) {
 	i, err := cpu.Info()
 	if err != nil {
-		glog.Warningf("Unable to get cpu info: %v", err)
+		glog.Warningf("Unable to get CPU info: %v", err)
 		return nil, err
 	}
 	v, err := mem.VirtualMemory()
@@ -458,6 +463,11 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 
 	if !localDriver(config.VMDriver) {
 		showRemoteOsRelease(h.Driver)
+		// Ensure that even new VM's have proper time synchronization up front
+		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
+		if err := ensureSyncedGuestClock(h); err != nil {
+			return h, err
+		}
 	} else {
 		showLocalOsRelease()
 	}
