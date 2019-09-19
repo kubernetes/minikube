@@ -23,7 +23,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // MakeTempDir creates the temp dir and returns the path
@@ -41,8 +41,8 @@ func MakeTempDir() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.Setenv(constants.MinikubeHome, tempDir)
-	return constants.GetMinipath()
+	os.Setenv(localpath.MinikubeHome, tempDir)
+	return localpath.MiniPath()
 }
 
 // FakeFile satisfies fdWriter

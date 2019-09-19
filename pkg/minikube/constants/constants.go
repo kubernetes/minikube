@@ -18,7 +18,6 @@ package constants
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -28,6 +27,7 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
@@ -36,20 +36,6 @@ const (
 	APIServerName    = "minikubeCA"
 	ClusterDNSDomain = "cluster.local"
 )
-
-// MinikubeHome is the name of the minikube home directory variable.
-const MinikubeHome = "MINIKUBE_HOME"
-
-// GetMinipath returns the path to the user's minikube dir
-func GetMinipath() string {
-	if os.Getenv(MinikubeHome) == "" {
-		return DefaultMinipath
-	}
-	if filepath.Base(os.Getenv(MinikubeHome)) == ".minikube" {
-		return os.Getenv(MinikubeHome)
-	}
-	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
-}
 
 // ArchTag returns the archtag for images
 func ArchTag(hasTag bool) string {
@@ -115,12 +101,12 @@ const Cache = "cache"
 
 // TunnelRegistryPath returns the path to the runnel registry file
 func TunnelRegistryPath() string {
-	return filepath.Join(GetMinipath(), "tunnels.json")
+	return filepath.Join(localpath.MiniPath(), "tunnels.json")
 }
 
 // MakeMiniPath is a utility to calculate a relative path to our directory.
 func MakeMiniPath(fileName ...string) string {
-	args := []string{GetMinipath()}
+	args := []string{localpath.MiniPath()}
 	args = append(args, fileName...)
 	return filepath.Join(args...)
 }

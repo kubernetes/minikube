@@ -36,11 +36,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 var dirs = [...]string{
-	constants.GetMinipath(),
+	localpath.MiniPath(),
 	constants.MakeMiniPath("certs"),
 	constants.MakeMiniPath("machines"),
 	constants.MakeMiniPath("cache"),
