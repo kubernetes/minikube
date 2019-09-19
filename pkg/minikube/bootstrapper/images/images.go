@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubeadm
+package images
 
 import (
 	"runtime"
@@ -22,6 +22,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
+	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
 // CachedImages gets the images to cache for kubeadm for a version
