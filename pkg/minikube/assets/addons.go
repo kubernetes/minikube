@@ -66,6 +66,7 @@ func (a *Addon) IsEnabled() (bool, error) {
 }
 
 // Addons is the list of addons
+// TODO: Make dynamically loadable: move this data to a .yaml file within each addon directory
 var Addons = map[string]*Addon{
 	"addon-manager": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -76,12 +77,16 @@ var Addons = map[string]*Addon{
 			true),
 	}, true, "addon-manager"),
 	"dashboard": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/dashboard/dashboard.yaml",
-			constants.GuestAddonsDir,
-			"dashboard.yaml",
-			"0640",
-			false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", constants.GuestAddonsDir, "dashboard-clusterrole.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", constants.GuestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-configmap.yaml", constants.GuestAddonsDir, "dashboard-configmap.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-dp.yaml", constants.GuestAddonsDir, "dashboard-dp.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-ns.yaml", constants.GuestAddonsDir, "dashboard-ns.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-role.yaml", constants.GuestAddonsDir, "dashboard-role.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-rolebinding.yaml", constants.GuestAddonsDir, "dashboard-rolebinding.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-sa.yaml", constants.GuestAddonsDir, "dashboard-sa.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-secret.yaml", constants.GuestAddonsDir, "dashboard-secret.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-svc.yaml", constants.GuestAddonsDir, "dashboard-svc.yaml", "0640", false),
 	}, false, "dashboard"),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(
