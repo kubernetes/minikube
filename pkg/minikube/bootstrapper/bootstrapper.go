@@ -20,9 +20,9 @@ import (
 	"net"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 )
 
 // LogOptions are options to be passed to LogCommands
