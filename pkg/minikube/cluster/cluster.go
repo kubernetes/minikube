@@ -102,14 +102,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
 
-	if h.Driver.DriverName() != config.VMDriver {
-		out.T(out.Empty, "\n")
-		exit.WithCodeT(exit.Config, `The existing "{{.profile_name}}" VM was created using the {{.driver_name}} driver.`,
-			out.V{"profile_name": cfg.GetMachineName(), "driver_name": config.VMDriver})
-		out.WarningT("To switch drivers, you may create a new VM using `minikube start -p <name> --vm-driver={{.driver_name}}`", out.V{"driver_name": config.VMDriver})
-		out.WarningT("Alternatively, you may delete the existing VM using `minikube delete -p {{.profile_name}}`", out.V{"profile_name": cfg.GetMachineName()})
-		out.T(out.Empty, "\n")
-	} else if exists && cfg.GetMachineName() == constants.DefaultMachineName {
+	if exists && cfg.GetMachineName() == constants.DefaultMachineName {
 		out.T(out.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 
