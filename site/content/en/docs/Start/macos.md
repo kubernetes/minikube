@@ -50,11 +50,11 @@ brew cask reinstall minikube
 ## Hypervisor Setup
 
 {{% tabs %}}
-{{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.inc" %}}
-{{% /tab %}}
 {{% tab "Hyperkit" %}}
 {{% readfile file="/docs/Reference/Drivers/includes/hyperkit_usage.inc" %}}
+{{% /tab %}}
+{{% tab "VirtualBox" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.inc" %}}
 {{% /tab %}}
 {{% tab "Parallels" %}}
 {{% readfile file="/docs/Reference/Drivers/includes/parallels_usage.inc" %}}
