@@ -17,18 +17,29 @@ limitations under the License.
 package drivers
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"syscall"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
+	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/version"
+
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util"
 )
 
 // GetDiskPath returns the path of the machine disk image
@@ -112,14 +123,14 @@ func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) e
 			return errors.Wrapf(err, "createRawDiskImage(%s)", diskPath)
 		}
 		machPath := d.ResolveStorePath(".")
-		if err := fixPermissions(machPath); err != nil {
+		if err := fixMachinePermissions(machPath); err != nil {
 			return errors.Wrapf(err, "fixing permissions on %s", machPath)
 		}
 	}
 	return nil
 }
 
-func fixPermissions(path string) error {
+func fixMachinePermissions(path string) error {
 	glog.Infof("Fixing permissions on %s ...", path)
 	if err := os.Chown(path, syscall.Getuid(), syscall.Getegid()); err != nil {
 		return errors.Wrap(err, "chown dir")
@@ -135,4 +146,138 @@ func fixPermissions(path string) error {
 		}
 	}
 	return nil
+}
+
+// InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
+func InstallOrUpdate(driver string, directory string, v semver.Version, interactive bool) error {
+	if driver != constants.DriverKvm2 && driver != constants.DriverHyperkit {
+		return nil
+	}
+
+	executable := fmt.Sprintf("docker-machine-driver-%s", driver)
+	path, err := validateDriver(executable, v)
+	if err != nil {
+		glog.Warningf("%s: %v", executable, err)
+		path = filepath.Join(directory, executable)
+		derr := download(executable, path, v)
+		if derr != nil {
+			return derr
+		}
+	}
+	return fixDriverPermissions(driver, path, interactive)
+}
+
+// fixDriverPermissions fixes the permissions on a driver
+func fixDriverPermissions(driver string, path string, interactive bool) error {
+	// This method only supports hyperkit so far (because it's complicated)
+	if driver != constants.DriverHyperkit {
+		return nil
+	}
+
+	// Using the find command for hyperkit is far easier than cross-platform uid checks in Go.
+	stdout, err := exec.Command("find", path, "-uid", "0", "-perm", "4755").Output()
+	glog.Infof("stdout: %s", stdout)
+	if err == nil && strings.TrimSpace(string(stdout)) == path {
+		glog.Infof("%s looks good", path)
+		return nil
+	}
+
+	cmds := []*exec.Cmd{
+		exec.Command("sudo", "chown", "root:wheel", path),
+		exec.Command("sudo", "chmod", "u+s", path),
+	}
+
+	var example strings.Builder
+	for _, c := range cmds {
+		example.WriteString(fmt.Sprintf("    $ %s \n", strings.Join(c.Args, " ")))
+	}
+
+	out.T(out.Permissions, "The '{{.driver}}' driver requires elevated permissions. The following commands will be executed:\n\n{{ .example }}\n", out.V{"driver": driver, "example": example.String()})
+	for _, c := range cmds {
+		testArgs := append([]string{"-n"}, c.Args[1:]...)
+		test := exec.Command("sudo", testArgs...)
+		glog.Infof("testing: %v", test.Args)
+		if err := test.Run(); err != nil {
+			glog.Infof("%v may require a password: %v", c.Args, err)
+			if !interactive {
+				return fmt.Errorf("%v requires a password, and --interactive=false", c.Args)
+			}
+		}
+		glog.Infof("running: %v", c.Args)
+		err := c.Run()
+		if err != nil {
+			return errors.Wrapf(err, "%v", c.Args)
+		}
+	}
+	return nil
+}
+
+// validateDriver validates if a driver appears to be up-to-date and installed properly
+func validateDriver(driver string, v semver.Version) (string, error) {
+	glog.Infof("Validating %s, PATH=%s", driver, os.Getenv("PATH"))
+	path, err := exec.LookPath(driver)
+	if err != nil {
+		return path, err
+	}
+
+	output, err := exec.Command(path, "version").Output()
+	if err != nil {
+		return path, err
+	}
+
+	ev := extractVMDriverVersion(string(output))
+	if len(ev) == 0 {
+		return path, fmt.Errorf("%s: unable to extract version from %q", driver, output)
+	}
+
+	vmDriverVersion, err := semver.Make(ev)
+	if err != nil {
+		return path, errors.Wrap(err, "can't parse driver version")
+	}
+	if vmDriverVersion.LT(v) {
+		return path, fmt.Errorf("%s is version %s, want %s", driver, vmDriverVersion, v)
+	}
+	return path, nil
+}
+
+func driverWithChecksumURL(driver string, v semver.Version) string {
+	base := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/v%s/%s", v, driver)
+	return fmt.Sprintf("%s?checksum=file:%s.sha256", base, base)
+}
+
+// download an arbitrary driver
+func download(driver string, destination string, v semver.Version) error {
+	out.T(out.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": driver})
+	os.Remove(destination)
+	url := driverWithChecksumURL(driver, v)
+	client := &getter.Client{
+		Src:     url,
+		Dst:     destination,
+		Mode:    getter.ClientModeFile,
+		Options: []getter.ClientOption{getter.WithProgress(util.DefaultProgressBar)},
+	}
+
+	glog.Infof("Downloading: %+v", client)
+	if err := client.Get(); err != nil {
+		return errors.Wrapf(err, "download failed: %s", url)
+	}
+	// Give downloaded drivers a baseline decent file permission
+	return os.Chmod(destination, 0755)
+}
+
+// extractVMDriverVersion extracts the driver version.
+// KVM and Hyperkit drivers support the 'version' command, that display the information as:
+// version: vX.X.X
+// commit: XXXX
+// This method returns the version 'vX.X.X' or empty if the version isn't found.
+func extractVMDriverVersion(s string) string {
+	versionRegex := regexp.MustCompile(`version:(.*)`)
+	matches := versionRegex.FindStringSubmatch(s)
+
+	if len(matches) != 2 {
+		return ""
+	}
+
+	v := strings.TrimSpace(matches[1])
+	return strings.TrimPrefix(v, version.VersionPrefix)
 }

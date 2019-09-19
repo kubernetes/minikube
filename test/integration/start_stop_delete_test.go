@@ -19,36 +19,36 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"fmt"
-	"net"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 func TestStartStop(t *testing.T) {
-	p := profileName(t) // gets profile name used for minikube and kube context
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
+	MaybeParallel(t)
 
 	t.Run("group", func(t *testing.T) {
-		if shouldRunInParallel(t) {
-			t.Parallel()
-		}
 		tests := []struct {
 			name string
 			args []string
 		}{
-			{"oldest", []string{
+			{"docker", []string{
 				"--cache-images=false",
 				fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
 				// default is the network created by libvirt, if we change the name minikube won't boot
 				// because the given network doesn't exist
 				"--kvm-network=default",
 				"--kvm-qemu-uri=qemu:///system",
+				"--disable-driver-mounts",
+				"--keep-context=false",
+				"--container-runtime=docker",
 			}},
 			{"cni", []string{
 				"--feature-gates",
@@ -60,7 +60,8 @@ func TestStartStop(t *testing.T) {
 			}},
 			{"containerd", []string{
 				"--container-runtime=containerd",
-				"--docker-opt containerd=/var/run/containerd/containerd.sock",
+				"--docker-opt",
+				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
 			}},
 			{"crio", []string{
@@ -71,39 +72,73 @@ func TestStartStop(t *testing.T) {
 		}
 
 		for _, tc := range tests {
-			n := tc.name // because similar to https://golang.org/doc/faq#closures_and_goroutines
+			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
-				if shouldRunInParallel(t) {
-					t.Parallel()
-				}
+				MaybeSlowParallel(t)
 
-				pn := p + n // TestStartStopoldest
-				mk := NewMinikubeRunner(t, pn, "--wait=false")
-				// TODO : redundant first clause ? never happens?
-				if !strings.Contains(pn, "docker") && isTestNoneDriver(t) {
+				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
 
-				mk.MustRun("config set WantReportErrorPrompt false")
-				mk.MustStart(tc.args...)
+				profile := UniqueProfileName(tc.name)
+				ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
+				defer CleanupWithLogs(t, profile, cancel)
 
-				mk.CheckStatus(state.Running.String())
-
-				ip, stderr := mk.MustRun("ip")
-				ip = strings.TrimRight(ip, "\n")
-				if net.ParseIP(ip) == nil {
-					t.Fatalf("IP command returned an invalid address: %s \n %s", ip, stderr)
-				}
-
-				mk.MustRun("stop")
-				err := mk.CheckStatusNoFail(state.Stopped.String())
+				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=3"}, tc.args...)
+				startArgs = append(startArgs, StartArgs()...)
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
-					t.Errorf("expected status to be %s but got error %v ", state.Stopped.String(), err)
+					// Fatal so that we may collect logs before stop/delete steps
+					t.Fatalf("%s failed: %v", rr.Args, err)
 				}
-				mk.MustStart(tc.args...)
-				mk.CheckStatus(state.Running.String())
-				mk.MustRun("delete")
-				mk.CheckStatus(state.None.String())
+
+				// SADNESS: 0/1 nodes are available: 1 node(s) had taints that the pod didn't tolerate.
+				if strings.Contains(tc.name, "cni") {
+					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+				} else {
+					// schedule a pod to assert persistence
+					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
+					if err != nil {
+						t.Fatalf("%s failed: %v", rr.Args, err)
+					}
+
+					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+						t.Fatalf("wait: %v", err)
+					}
+				}
+
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
+				if err != nil {
+					t.Errorf("%s failed: %v", rr.Args, err)
+				}
+
+				got := Status(ctx, t, Target(), profile)
+				if got != state.Stopped.String() {
+					t.Errorf("status = %q; want = %q", got, state.Stopped)
+				}
+
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+				if err != nil {
+					// Explicit fatal so that failures don't move directly to deletion
+					t.Fatalf("%s failed: %v", rr.Args, err)
+				}
+
+				if strings.Contains(tc.name, "cni") {
+					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+					t.Fatalf("wait: %v", err)
+				}
+
+				got = Status(ctx, t, Target(), profile)
+				if got != state.Running.String() {
+					t.Errorf("status = %q; want = %q", got, state.Running)
+				}
+
+				// Normally handled by cleanuprofile, but not fatal there
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
+				if err != nil {
+					t.Errorf("%s failed: %v", rr.Args, err)
+				}
 			})
 		}
 	})

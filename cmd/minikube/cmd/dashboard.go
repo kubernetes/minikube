@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"os/user"
 	"regexp"
 	"time"
 
@@ -111,7 +112,7 @@ var dashboardCmd = &cobra.Command{
 		svc := "kubernetes-dashboard"
 		out.ErrT(out.Verifying, "Verifying dashboard health ...")
 		checkSVC := func() error { return service.CheckService(ns, svc) }
-		if err = retry.Expo(checkSVC, 1*time.Second, time.Minute*3); err != nil {
+		if err = retry.Expo(checkSVC, 1*time.Second, time.Minute*5); err != nil {
 			exit.WithCodeT(exit.Unavailable, "dashboard service is not running: {{.error}}", out.V{"error": err})
 		}
 
@@ -128,7 +129,12 @@ var dashboardCmd = &cobra.Command{
 			exit.WithCodeT(exit.Unavailable, "{{.url}} is not accessible: {{.error}}", out.V{"url": url, "error": err})
 		}
 
-		if dashboardURLMode {
+		//check if current user is root
+		user, err := user.Current()
+		if err != nil {
+			exit.WithError("Unable to get current user", err)
+		}
+		if dashboardURLMode || user.Uid == "0" {
 			out.Ln(url)
 		} else {
 			out.T(out.Celebrate, "Opening {{.url}} in your default browser...", out.V{"url": url})

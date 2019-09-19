@@ -19,12 +19,11 @@ package cmd
 import (
 	goflag "flag"
 	"fmt"
-	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/log"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -70,17 +69,6 @@ var RootCmd = &cobra.Command{
 			}
 		}
 
-		// Log level 3 or greater enables libmachine logs
-		if !glog.V(3) {
-			log.SetOutWriter(ioutil.Discard)
-			log.SetErrWriter(ioutil.Discard)
-		}
-
-		// Log level 7 or greater enables debug level logs
-		if glog.V(7) {
-			log.SetDebug(true)
-		}
-
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {
 			if err := logDir.Value.Set(constants.MakeMiniPath("logs")); err != nil {
@@ -107,6 +95,12 @@ func Execute() {
 	RootCmd.Flags().VisitAll(func(flag *pflag.Flag) {
 		flag.Usage = translate.T(flag.Usage)
 	})
+
+	if runtime.GOOS != "windows" {
+		// add minikube binaries to the path
+		targetDir := constants.MakeMiniPath("bin")
+		addToPath(targetDir)
+	}
 
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
@@ -280,4 +274,10 @@ func getClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 	}
 
 	return b, nil
+}
+
+func addToPath(dir string) {
+	new := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
+	glog.Infof("Updating PATH: %s", dir)
+	os.Setenv("PATH", new)
 }

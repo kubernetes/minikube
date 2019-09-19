@@ -78,8 +78,9 @@ var styles = map[StyleEnum]style{
 	Documentation: {Prefix: "📘  "},
 	Issues:        {Prefix: "⁉️   "},
 	Issue:         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
-	Check:         {Prefix: "✔️  "},
+	Check:         {Prefix: "✅  "},
 	Celebration:   {Prefix: "🎉  "},
+	Workaround:    {Prefix: "👉  ", LowPrefix: lowIndent},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},
