@@ -1,5 +1,4 @@
-
-# Copyright 2016 The Kubernetes Authors All rights reserved.
+# Copyright 2017 The Kubernetes Authors.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -13,19 +12,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-kind: Service
-apiVersion: v1
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
 metadata:
   name: kubernetes-dashboard
-  namespace: kube-system
   labels:
-    app: kubernetes-dashboard
-    addonmanager.kubernetes.io/mode: Reconcile
+    k8s-app: kubernetes-dashboard
     kubernetes.io/minikube-addons: dashboard
-    kubernetes.io/minikube-addons-endpoint: dashboard
-spec:
-  ports:
-  - port: 80
-    targetPort: 9090
-  selector:
-    app: kubernetes-dashboard
+    addonmanager.kubernetes.io/mode: Reconcile    
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: kubernetes-dashboard
+  namespace: kubernetes-dashboard
