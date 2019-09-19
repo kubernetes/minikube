@@ -22,6 +22,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/kubeadm"
 )
 
 // LogOptions are options to be passed to LogCommands
@@ -67,7 +68,7 @@ func GetCachedBinaryList(bootstrapper string) []string {
 func GetCachedImageList(imageRepository string, version string, bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		_, images := constants.GetKubeadmCachedImages(imageRepository, version)
+		_, images := kubeadm.CachedImages(imageRepository, version)
 		return images
 	default:
 		return []string{}

@@ -548,7 +548,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}
 
-	podInfraContainerImage, _ := constants.GetKubeadmCachedImages(k8s.ImageRepository, k8s.KubernetesVersion)
+	podInfraContainerImage, _ := CachedImages(k8s.ImageRepository, k8s.KubernetesVersion)
 	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && podInfraContainerImage != "" {
 		extraOpts["pod-infra-container-image"] = podInfraContainerImage
 	}
@@ -582,7 +582,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 
 // UpdateCluster updates the cluster
 func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
-	_, images := constants.GetKubeadmCachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
+	_, images := CachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
 	if cfg.ShouldLoadCachedImages {
 		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})

@@ -19,12 +19,8 @@ package constants
 import (
 	"fmt"
 	"path/filepath"
-	"runtime"
-	"strings"
 	"time"
 
-	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -36,14 +32,6 @@ const (
 	APIServerName    = "minikubeCA"
 	ClusterDNSDomain = "cluster.local"
 )
-
-// ArchTag returns the archtag for images
-func ArchTag(hasTag bool) string {
-	if runtime.GOARCH == "amd64" && !hasTag {
-		return ":"
-	}
-	return "-" + runtime.GOARCH + ":"
-}
 
 // DriverMock is a mock driver.
 const DriverMock = "mock-driver"
@@ -230,116 +218,6 @@ func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) s
 
 // KubeadmBinaries are Kubernetes release binaries required for kubeadm
 var KubeadmBinaries = []string{"kubelet", "kubeadm"}
-
-// GetKubeadmCachedImages gets the images to cache for kubeadm for a version
-func GetKubeadmCachedImages(imageRepository string, kubernetesVersionStr string) (string, []string) {
-	minikubeRepository := imageRepository
-	if imageRepository == "" {
-		imageRepository = "k8s.gcr.io"
-		minikubeRepository = "gcr.io/k8s-minikube"
-	}
-	if !strings.HasSuffix(imageRepository, "/") {
-		imageRepository += "/"
-	}
-	if !strings.HasSuffix(minikubeRepository, "/") {
-		minikubeRepository += "/"
-	}
-	v1_16plus := semver.MustParseRange(">=1.16.0")
-	v1_14plus := semver.MustParseRange(">=1.14.0 <1.16.0")
-	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
-	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
-	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
-	v1_12plus := semver.MustParseRange(">=1.12.0")
-
-	kubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesVersionStr, minikubeVersion.VersionPrefix))
-	if err != nil {
-		glog.Errorln("Error parsing version semver: ", err)
-	}
-
-	var images []string
-	if v1_12plus(kubernetesVersion) {
-		images = append(images, []string{
-			imageRepository + "kube-proxy" + ArchTag(false) + kubernetesVersionStr,
-			imageRepository + "kube-scheduler" + ArchTag(false) + kubernetesVersionStr,
-			imageRepository + "kube-controller-manager" + ArchTag(false) + kubernetesVersionStr,
-			imageRepository + "kube-apiserver" + ArchTag(false) + kubernetesVersionStr,
-		}...)
-	} else {
-		images = append(images, []string{
-			imageRepository + "kube-proxy" + ArchTag(true) + kubernetesVersionStr,
-			imageRepository + "kube-scheduler" + ArchTag(true) + kubernetesVersionStr,
-			imageRepository + "kube-controller-manager" + ArchTag(true) + kubernetesVersionStr,
-			imageRepository + "kube-apiserver" + ArchTag(true) + kubernetesVersionStr,
-		}...)
-	}
-
-	var podInfraContainerImage string
-	if v1_16plus(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.1"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.13",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.13",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.13",
-			imageRepository + "etcd" + ArchTag(false) + "3.3.15-0",
-			imageRepository + "coredns" + ArchTag(false) + "1.6.2",
-		}...)
-
-	} else if v1_14plus(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.1"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.13",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.13",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.13",
-			imageRepository + "etcd" + ArchTag(false) + "3.3.10",
-			imageRepository + "coredns" + ArchTag(false) + "1.3.1",
-		}...)
-
-	} else if v1_13(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
-			imageRepository + "etcd" + ArchTag(false) + "3.2.24",
-			imageRepository + "coredns:1.2.6",
-		}...)
-
-	} else if v1_12(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.1"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
-			imageRepository + "etcd" + ArchTag(false) + "3.2.24",
-			imageRepository + "coredns:1.2.2",
-		}...)
-
-	} else if v1_11(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
-		images = append(images, []string{
-			podInfraContainerImage,
-			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
-			imageRepository + "k8s-dns-dnsmasq-nanny" + ArchTag(true) + "1.14.8",
-			imageRepository + "k8s-dns-sidecar" + ArchTag(true) + "1.14.8",
-			imageRepository + "etcd" + ArchTag(true) + "3.2.18",
-			imageRepository + "coredns:1.1.3",
-		}...)
-	} else {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
-	}
-
-	images = append(images, []string{
-		"kubernetesui/dashboard:v2.0.0-beta4",
-		imageRepository + "kube-addon-manager" + ArchTag(false) + "v9.0.2",
-		minikubeRepository + "storage-provisioner" + ArchTag(false) + "v1.8.1",
-	}...)
-
-	return podInfraContainerImage, images
-}
 
 // ImageCacheDir is the path to the image cache directory
 var ImageCacheDir = MakeMiniPath("cache", "images")
