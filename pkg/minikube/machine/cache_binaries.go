@@ -51,14 +51,14 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 	return g.Wait()
 }
 
-// GetKubernetesReleaseURL gets the location of a kubernetes client
-func GetKubernetesReleaseURL(binaryName, version, osName, archName string) string {
+// KubernetesReleaseURL gets the location of a kubernetes client
+func KubernetesReleaseURL(binaryName, version, osName, archName string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
 }
 
-// GetKubernetesReleaseURLSHA1 gets the location of a kubernetes client checksum
-func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) string {
-	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version, osName, archName))
+// KubernetesReleaseURLSHA1 gets the location of a kubernetes client checksum
+func KubernetesReleaseURLSHA1(binaryName, version, osName, archName string) string {
+	return fmt.Sprintf("%s.sha1", KubernetesReleaseURL(binaryName, version, osName, archName))
 }
 
 // CacheBinary will cache a binary on the host
@@ -66,7 +66,7 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 	targetDir := constants.MakeMiniPath("cache", version)
 	targetFilepath := path.Join(targetDir, binary)
 
-	url := GetKubernetesReleaseURL(binary, version, osName, archName)
+	url := KubernetesReleaseURL(binary, version, osName, archName)
 
 	_, err := os.Stat(targetFilepath)
 	// If it exists, do no verification and continue
@@ -86,7 +86,7 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 		Mkdirs: download.MkdirAll,
 	}
 
-	options.Checksum = GetKubernetesReleaseURLSHA1(binary, version, osName, archName)
+	options.Checksum = KubernetesReleaseURLSHA1(binary, version, osName, archName)
 	options.ChecksumHash = crypto.SHA1
 
 	out.T(out.FileDownload, "Downloading {{.name}} {{.version}}", out.V{"name": binary, "version": version})
