@@ -393,9 +393,9 @@ func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) 
 	kcs := &kubeconfig.Settings{
 		ClusterName:          cfg.GetMachineName(),
 		ClusterServerAddress: addr,
-		ClientCertificate:    constants.MakeMiniPath("client.crt"),
-		ClientKey:            constants.MakeMiniPath("client.key"),
-		CertificateAuthority: constants.MakeMiniPath("ca.crt"),
+		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
+		ClientKey:            localpath.MakeMiniPath("client.key"),
+		CertificateAuthority: localpath.MakeMiniPath("ca.crt"),
 		KeepContext:          viper.GetBool(keepContext),
 		EmbedCerts:           viper.GetBool(embedCerts),
 	}

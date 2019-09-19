@@ -31,6 +31,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/version"
@@ -38,7 +39,7 @@ import (
 
 var (
 	timeLayout              = time.RFC1123
-	lastUpdateCheckFilePath = constants.MakeMiniPath("last_update_check")
+	lastUpdateCheckFilePath = localpath.MakeMiniPath("last_update_check")
 )
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
