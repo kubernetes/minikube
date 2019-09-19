@@ -296,11 +296,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	v, err := version.GetSemverVersion()
 	if err != nil {
 		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else {
-		if err := drivers.InstallOrUpdate(driver, constants.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
-			glog.Errorf("error: %v", err)
-			out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
-		}
+	} else if err := drivers.InstallOrUpdate(driver, constants.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
 	}
 
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
@@ -510,11 +507,11 @@ func selectDriver(oldConfig *cfg.Config) string {
 		return driver
 	}
 
-	if h.Driver.DriverName() == driver {
+	if h.Driver.DriverName() == driver || h.Driver.DriverName() == "not-found" {
 		return driver
 	}
 
-	out.ErrT(out.Conflict, `You have an existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
+	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
 		out.V{"profile_name": cfg.GetMachineName(), "driver": driver, "old_driver": h.Driver.DriverName()})
 
 	out.ErrT(out.Workaround, `To proceed, either:
