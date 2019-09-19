@@ -201,16 +201,6 @@ var ImageRepositories = map[string][]string{
 	"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
 }
 
-// GetKubernetesReleaseURL gets the location of a kubernetes client
-func GetKubernetesReleaseURL(binaryName, version, osName, archName string) string {
-	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
-}
-
-// GetKubernetesReleaseURLSHA1 gets the location of a kubernetes client checksum
-func GetKubernetesReleaseURLSHA1(binaryName, version, osName, archName string) string {
-	return fmt.Sprintf("%s.sha1", GetKubernetesReleaseURL(binaryName, version, osName, archName))
-}
-
 // KubeadmBinaries are Kubernetes release binaries required for kubeadm
 var KubeadmBinaries = []string{"kubelet", "kubeadm"}
 
