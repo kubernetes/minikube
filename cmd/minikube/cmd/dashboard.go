@@ -108,7 +108,7 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
-		ns := "kube-system"
+		ns := "kubernetes-dashboard"
 		svc := "kubernetes-dashboard"
 		out.ErrT(out.Verifying, "Verifying dashboard health ...")
 		checkSVC := func() error { return service.CheckService(ns, svc) }
