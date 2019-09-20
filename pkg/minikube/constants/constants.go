@@ -28,8 +28,11 @@ import (
 )
 
 const (
-	APIServerPort    = 8443
-	APIServerName    = "minikubeCA"
+	// APIServerPort is the default API server port
+	APIServerPort = 8443
+	// APIServerName is the default API server name
+	APIServerName = "minikubeCA"
+	// ClusterDNSDomain is the default DNS domain
 	ClusterDNSDomain = "cluster.local"
 )
 
@@ -167,7 +170,7 @@ const (
 	GuestManifestsDir = "/etc/kubernetes/manifests"
 	// GuestEphemeralDir is the path where ephemeral data should be stored within the VM
 	GuestEphemeralDir = "/var/tmp/minikube"
-	// PersistentDir is the path where persistent data should be stored within the VM (not tmpfs)
+	// GuestPersistentDir is the path where persistent data should be stored within the VM (not tmpfs)
 	GuestPersistentDir = "/var/lib/minikube"
 	// GuestCertsDir are where Kubernetes certificates are kept on the guest
 	GuestCertsDir = GuestPersistentDir + "/certs"
