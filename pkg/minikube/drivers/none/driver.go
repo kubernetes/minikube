@@ -24,6 +24,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/none"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -44,7 +45,7 @@ func init() {
 func createNoneHost(config cfg.MachineConfig) interface{} {
 	return none.NewDriver(none.Config{
 		MachineName:      cfg.GetMachineName(),
-		StorePath:        constants.GetMinipath(),
+		StorePath:        localpath.MiniPath(),
 		ContainerRuntime: config.ContainerRuntime,
 	})
 }

@@ -30,7 +30,7 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // None-driver specific test for CHANGE_MINIKUBE_NONE_USER
@@ -78,7 +78,7 @@ func TestChangeNoneUser(t *testing.T) {
 		t.Errorf("Failed to convert uid to int: %v", err)
 	}
 
-	for _, p := range []string{constants.GetMinipath(), filepath.Join(u.HomeDir, ".kube/config")} {
+	for _, p := range []string{localpath.MiniPath(), filepath.Join(u.HomeDir, ".kube/config")} {
 		info, err := os.Stat(p)
 		if err != nil {
 			t.Errorf("stat(%s): %v", p, err)
