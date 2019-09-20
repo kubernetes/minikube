@@ -87,14 +87,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	// In case DeleteHost didn't complete the job.
-	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
-	if _, err := os.Stat(machineDir); err == nil {
-		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
-		err := os.RemoveAll(machineDir)
-		if err != nil {
-			exit.WithError("Unable to remove machine directory: %v", err)
-		}
-	}
+	deleteProfileDirectory(profile)
 
 	if err := pkg_config.DeleteProfile(profile); err != nil {
 		if os.IsNotExist(err) {
@@ -122,6 +115,17 @@ func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsN
 		out.ErrT(out.Empty, "Unable to get bootstrapper: {{.error}}", out.V{"error": err})
 	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
 		out.ErrT(out.Empty, "Failed to delete cluster: {{.error}}", out.V{"error": err})
+	}
+}
+
+func deleteProfileDirectory(profile string) {
+	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
+	if _, err := os.Stat(machineDir); err == nil {
+		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
+		err := os.RemoveAll(machineDir)
+		if err != nil {
+			exit.WithError("Unable to remove machine directory: %v", err)
+		}
 	}
 }
 
