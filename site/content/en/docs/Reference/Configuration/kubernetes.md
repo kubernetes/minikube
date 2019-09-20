@@ -13,11 +13,11 @@ This flag is repeated, so you can pass it several times with several different v
 
 ## Selecting a Kubernetes version
 
-minikube defaults to the latest stable version of Kubernetes. You may select a different Kubernetes release by using the `--kubernetes-version` flag, for example:
+By default, minikube installs the latest stable version of Kubernetes that was available at the time of the minikube release. You may select a different Kubernetes release by using the `--kubernetes-version` flag, for example:
 
 `minikube start --kubernetes-version=v1.11.10`
   
-If you omit this flag, minikube will upgrade your cluster to the latest version. If you would like to pin to a specific Kubernetes version across clusters and restarts, use:
+If you omit this flag, minikube will upgrade your cluster to the default version. If you would like to pin to a specific Kubernetes version across clusters, restarts, and upgrades to minikube, use:
 
 `minikube config set kubernetes-version v1.11.0`
 
