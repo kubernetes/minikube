@@ -209,16 +209,20 @@ func EnableOrDisableStorageClasses(name, val string) error {
 	if name == "storage-provisioner-gluster" {
 		class = "glusterfile"
 	}
+	storagev1, err := storageclass.GetStoragev1()
+	if err != nil {
+		return errors.Wrapf(err, "Error getting storagev1 interface %v ", err)
+	}
 
 	if enable {
 		// Only StorageClass for 'name' should be marked as default
-		err := storageclass.SetDefaultStorageClass(class)
+		err = storageclass.SetDefaultStorageClass(storagev1, class)
 		if err != nil {
 			return errors.Wrapf(err, "Error making %s the default storage class", class)
 		}
 	} else {
 		// Unset the StorageClass as default
-		err := storageclass.DisableDefaultStorageClass(class)
+		err := storageclass.DisableDefaultStorageClass(storagev1, class)
 		if err != nil {
 			return errors.Wrapf(err, "Error disabling %s as the default storage class", class)
 		}
