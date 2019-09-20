@@ -30,6 +30,7 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -38,6 +39,11 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/kapi"
+)
+
+var (
+	antiRaceCounter = 0
+	antiRaceMutex   = &sync.Mutex{}
 )
 
 // RunResult stores the result of an cmd.Run call
@@ -62,6 +68,7 @@ func (rr RunResult) Command() string {
 	return sb.String()
 }
 
+// Output returns human-readable output for an execution result
 func (rr RunResult) Output() string {
 	var sb strings.Builder
 	if rr.Stdout.Len() > 0 {
@@ -320,6 +327,27 @@ func MaybeParallel(t *testing.T) {
 	// TODO: Allow paralellized tests on "none" that do not require independent clusters
 	if NoneDriver() {
 		return
+	}
+	t.Parallel()
+}
+
+// MaybeSlowParallel is a terrible workaround for tests which start clusters in a race-filled world
+// TODO: Try removing this hack once certificates are deployed per-profile
+func MaybeSlowParallel(t *testing.T) {
+	// NoneDriver shouldn't parallelize "minikube start"
+	if NoneDriver() {
+		return
+	}
+
+	antiRaceMutex.Lock()
+	antiRaceCounter++
+	antiRaceMutex.Unlock()
+
+	if antiRaceCounter > 0 {
+		// Slow enough to offset start, but not slow to be a major source of delay
+		penalty := time.Duration(5*antiRaceCounter) * time.Second
+		t.Logf("MaybeSlowParallel: Sleeping %s to avoid start race ...", penalty)
+		time.Sleep(penalty)
 	}
 	t.Parallel()
 }

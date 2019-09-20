@@ -33,7 +33,7 @@ func TestGvisorAddon(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("Can't run containerd backend with none driver")
 	}
-	MaybeParallel(t)
+	MaybeSlowParallel(t)
 
 	profile := UniqueProfileName("gvisor")
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)

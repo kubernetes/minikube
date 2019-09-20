@@ -97,17 +97,20 @@ func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clients
 	return client, nil
 }
 
-// URL represents service URL
-type URL struct {
+// SvcURL represents a service URL. Each item in the URLs field combines the service URL with one of the configured
+// node ports. The PortNames field contains the configured names of the ports in the URLs field (sorted correspondingly -
+// first item in PortNames belongs to the first item in URLs).
+type SvcURL struct {
 	Namespace string
 	Name      string
 	URLs      []string
+	PortNames []string
 }
 
 // URLs represents a list of URL
-type URLs []URL
+type URLs []SvcURL
 
-// GetServiceURLs returns all the node port URLs for every service in a particular namespace
+// GetServiceURLs returns a SvcURL object for every service in a particular namespace.
 // Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
 	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
@@ -132,52 +135,49 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 		return nil, err
 	}
 
-	var serviceURLs []URL
+	var serviceURLs []SvcURL
 	for _, svc := range svcs.Items {
-		urls, err := printURLsForService(client, ip, svc.Name, svc.Namespace, t)
+		svcURL, err := printURLsForService(client, ip, svc.Name, svc.Namespace, t)
 		if err != nil {
 			return nil, err
 		}
-		serviceURLs = append(serviceURLs, URL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls})
+		serviceURLs = append(serviceURLs, svcURL)
 	}
 
 	return serviceURLs, nil
 }
 
-// GetServiceURLsForService returns all the node ports for a service in a namespace
-// with optional formatting
-func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) ([]string, error) {
+// GetServiceURLsForService returns a SvcUrl object for a service in a namespace. Supports optional formatting.
+func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) (SvcURL, error) {
 	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
-		return nil, errors.Wrap(err, "Error checking if api exist and loading it")
+		return SvcURL{}, errors.Wrap(err, "Error checking if api exist and loading it")
 	}
 
 	ip, err := host.Driver.GetIP()
 	if err != nil {
-		return nil, errors.Wrap(err, "Error getting ip from host")
+		return SvcURL{}, errors.Wrap(err, "Error getting ip from host")
 	}
 
 	client, err := K8s.GetCoreClient()
 	if err != nil {
-		return nil, err
+		return SvcURL{}, err
 	}
 
 	return printURLsForService(client, ip, service, namespace, t)
 }
 
-func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace string, t *template.Template) ([]string, error) {
+func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace string, t *template.Template) (SvcURL, error) {
 	if t == nil {
-		return nil, errors.New("Error, attempted to generate service url with nil --format template")
+		return SvcURL{}, errors.New("Error, attempted to generate service url with nil --format template")
 	}
 
-	s := c.Services(namespace)
-	svc, err := s.Get(service, meta.GetOptions{})
+	svc, err := c.Services(namespace).Get(service, meta.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrapf(err, "service '%s' could not be found running", service)
+		return SvcURL{}, errors.Wrapf(err, "service '%s' could not be found running", service)
 	}
 
-	e := c.Endpoints(namespace)
-	endpoints, err := e.Get(service, meta.GetOptions{})
+	endpoints, err := c.Endpoints(namespace).Get(service, meta.GetOptions{})
 	m := make(map[int32]string)
 	if err == nil && endpoints != nil && len(endpoints.Subsets) > 0 {
 		for _, ept := range endpoints.Subsets {
@@ -188,6 +188,7 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 	}
 
 	urls := []string{}
+	portNames := []string{}
 	for _, port := range svc.Spec.Ports {
 		if port.NodePort > 0 {
 			var doc bytes.Buffer
@@ -201,12 +202,13 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 				m[port.TargetPort.IntVal],
 			})
 			if err != nil {
-				return nil, err
+				return SvcURL{}, err
 			}
 			urls = append(urls, doc.String())
+			portNames = append(portNames, m[port.TargetPort.IntVal])
 		}
 	}
-	return urls, nil
+	return SvcURL{Namespace: svc.Namespace, Name: svc.Name, URLs: urls, PortNames: portNames}, nil
 }
 
 // CheckService checks if a service is listening on a port.
@@ -249,7 +251,7 @@ func OptionallyHTTPSFormattedURLString(bareURLString string, https bool) (string
 // "Namespace", "Name" and "URL" columns to a writer
 func PrintServiceList(writer io.Writer, data [][]string) {
 	table := tablewriter.NewWriter(writer)
-	table.SetHeader([]string{"Namespace", "Name", "URL"})
+	table.SetHeader([]string{"Namespace", "Name", "Target Port", "URL"})
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
 	table.AppendBulk(data)
@@ -269,27 +271,27 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 		return errors.Wrapf(err, "Could not find finalized endpoint being pointed to by %s", service)
 	}
 
-	urls, err := GetServiceURLsForService(api, namespace, service, urlTemplate)
+	serviceURL, err := GetServiceURLsForService(api, namespace, service, urlTemplate)
 	if err != nil {
 		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
 	}
 
 	if !urlMode {
 		var data [][]string
-		if len(urls) == 0 {
-			data = append(data, []string{namespace, service, "No node port"})
+		if len(serviceURL.URLs) == 0 {
+			data = append(data, []string{namespace, service, "", "No node port"})
 		} else {
-			data = append(data, []string{namespace, service, strings.Join(urls, "\n")})
+			data = append(data, []string{namespace, service, strings.Join(serviceURL.PortNames, "\n"), strings.Join(serviceURL.URLs, "\n")})
 		}
 		PrintServiceList(os.Stdout, data)
 	}
 
-	if len(urls) == 0 {
+	if len(serviceURL.URLs) == 0 {
 		out.T(out.Sad, "service {{.namespace_name}}/{{.service_name}} has no node port", out.V{"namespace_name": namespace, "service_name": service})
 		return nil
 	}
 
-	for _, bareURLString := range urls {
+	for _, bareURLString := range serviceURL.URLs {
 		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
 
 		if urlMode || !isHTTPSchemedURL {
@@ -330,7 +332,10 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 		return &retry.RetriableError{Err: err}
 	}
 	secrets := client.Secrets(namespace)
-	secret, _ := secrets.Get(name, meta.GetOptions{})
+	secret, err := secrets.Get(name, meta.GetOptions{})
+	if err != nil {
+		return &retry.RetriableError{Err: err}
+	}
 
 	// Delete existing secret
 	if len(secret.Name) > 0 {
