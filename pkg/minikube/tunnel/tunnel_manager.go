@@ -17,6 +17,7 @@ limitations under the License.
 package tunnel
 
 import (
+	"path/filepath"
 	"time"
 
 	"context"
@@ -26,7 +27,7 @@ import (
 	"github.com/golang/glog"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // Manager can create, start and cleanup a tunnel
@@ -41,12 +42,17 @@ type Manager struct {
 // stateCheckInterval defines how frequently the cluster and route states are checked
 const stateCheckInterval = 5 * time.Second
 
+// RegistryPath returns the path to the runnel registry file
+func RegistryPath() string {
+	return filepath.Join(localpath.MiniPath(), "tunnels.json")
+}
+
 // NewManager creates a new Manager
 func NewManager() *Manager {
 	return &Manager{
 		delay: stateCheckInterval,
 		registry: &persistentRegistry{
-			path: constants.TunnelRegistryPath(),
+			path: RegistryPath(),
 		},
 		router: &osRouter{},
 	}

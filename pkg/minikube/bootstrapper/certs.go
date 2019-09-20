@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util"
 
 	"github.com/juju/clock"
@@ -75,7 +76,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	}
 	defer releaser.Release()
 
-	localPath := constants.GetMinipath()
+	localPath := localpath.MiniPath()
 	glog.Infof("Setting up %s for IP: %s\n", localPath, k8s.NodeIP)
 
 	if err := generateCerts(k8s); err != nil {
@@ -149,7 +150,7 @@ func generateCerts(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "getting service cluster ip")
 	}
 
-	localPath := constants.GetMinipath()
+	localPath := localpath.MiniPath()
 	caCertPath := filepath.Join(localPath, "ca.crt")
 	caKeyPath := filepath.Join(localPath, "ca.key")
 
@@ -269,7 +270,7 @@ func isValidPEMCertificate(filePath string) (bool, error) {
 // collectCACerts looks up all PEM certificates with .crt or .pem extension in ~/.minikube/certs to copy to the host.
 // minikube root CA is also included but libmachine certificates (ca.pem/cert.pem) are excluded.
 func collectCACerts() (map[string]string, error) {
-	localPath := constants.GetMinipath()
+	localPath := localpath.MiniPath()
 	certFiles := map[string]string{}
 
 	certsDir := filepath.Join(localPath, "certs")

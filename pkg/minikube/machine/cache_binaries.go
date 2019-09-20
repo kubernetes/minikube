@@ -18,6 +18,7 @@ package machine
 
 import (
 	"crypto"
+	"fmt"
 	"os"
 	"path"
 	"runtime"
@@ -29,7 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -50,12 +51,22 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 	return g.Wait()
 }
 
+// KubernetesReleaseURL gets the location of a kubernetes client
+func KubernetesReleaseURL(binaryName, version, osName, archName string) string {
+	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
+}
+
+// KubernetesReleaseURLSHA1 gets the location of a kubernetes client checksum
+func KubernetesReleaseURLSHA1(binaryName, version, osName, archName string) string {
+	return fmt.Sprintf("%s.sha1", KubernetesReleaseURL(binaryName, version, osName, archName))
+}
+
 // CacheBinary will cache a binary on the host
 func CacheBinary(binary, version, osName, archName string) (string, error) {
-	targetDir := constants.MakeMiniPath("cache", version)
+	targetDir := localpath.MakeMiniPath("cache", version)
 	targetFilepath := path.Join(targetDir, binary)
 
-	url := constants.GetKubernetesReleaseURL(binary, version, osName, archName)
+	url := KubernetesReleaseURL(binary, version, osName, archName)
 
 	_, err := os.Stat(targetFilepath)
 	// If it exists, do no verification and continue
@@ -75,7 +86,7 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 		Mkdirs: download.MkdirAll,
 	}
 
-	options.Checksum = constants.GetKubernetesReleaseURLSHA1(binary, version, osName, archName)
+	options.Checksum = KubernetesReleaseURLSHA1(binary, version, osName, archName)
 	options.ChecksumHash = crypto.SHA1
 
 	out.T(out.FileDownload, "Downloading {{.name}} {{.version}}", out.V{"name": binary, "version": version})

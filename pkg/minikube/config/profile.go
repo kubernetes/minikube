@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -40,7 +40,7 @@ func (p *Profile) isValid() bool {
 
 // ProfileExists returns true if there is a profile config (regardless of being valid)
 func ProfileExists(name string, miniHome ...string) bool {
-	miniPath := constants.GetMinipath()
+	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
@@ -101,7 +101,7 @@ func CreateProfile(name string, cfg *Config, miniHome ...string) error {
 }
 
 func DeleteProfile(profile string, miniHome ...string) error {
-	miniPath := constants.GetMinipath()
+	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
@@ -143,7 +143,7 @@ func loadProfile(name string, miniHome ...string) (*Profile, error) {
 
 // profileDirs gets all the folders in the user's profiles folder regardless of valid or invalid config
 func profileDirs(miniHome ...string) (dirs []string, err error) {
-	miniPath := constants.GetMinipath()
+	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
@@ -159,7 +159,7 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 
 // profileFilePath returns the Minikube profile config file
 func profileFilePath(profile string, miniHome ...string) string {
-	miniPath := constants.GetMinipath()
+	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
@@ -169,7 +169,7 @@ func profileFilePath(profile string, miniHome ...string) string {
 
 // profileFolderPath returns path of profile folder
 func profileFolderPath(profile string, miniHome ...string) string {
-	miniPath := constants.GetMinipath()
+	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
