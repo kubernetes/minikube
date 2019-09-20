@@ -45,8 +45,10 @@ import (
 )
 
 const (
+	// CACertificatesDir contains CA certificates
 	CACertificatesDir = "/usr/share/ca-certificates"
-	SSLCertStoreDir   = "/etc/ssl/certs"
+	// SSLCertStoreDir contains SSL certificates
+	SSLCertStoreDir = "/etc/ssl/certs"
 )
 
 var (
