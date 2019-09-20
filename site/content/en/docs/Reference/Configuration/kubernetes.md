@@ -17,7 +17,7 @@ minikube defaults to the latest stable version of Kubernetes. You may select a d
 
 `minikube start --kubernetes-version=v1.11.10`
   
-If you omit this flag, it will upgrade your cluster to the latest version. If you would like to permanently pin a version across clusters and restarts, use:
+If you omit this flag, minikube will upgrade your cluster to the latest version. If you would like to pin to a specific Kubernetes version across clusters and restarts, use:
 
 `minikube config set kubernetes-version v1.11.0`
 
