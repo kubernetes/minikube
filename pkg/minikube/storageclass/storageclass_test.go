@@ -30,8 +30,171 @@ import (
 	testing_client "k8s.io/client-go/testing"
 )
 
-var orgMockStorageProvisioner = "foo"
-var orgGetStoragev1 = getStoragev1
+type mockStorageV1InterfaceOk struct {
+	storagev1.StorageV1Interface
+}
+type mockStorageV1InterfaceListErr struct {
+	storagev1.StorageV1Interface
+}
+type mockStorageV1InterfaceWithBadItem struct {
+	storagev1.StorageV1Interface
+}
+type mockStorageClassInterfaceOk struct {
+	storagev1.StorageClassInterface
+}
+type mockStorageClassInterfaceListErr struct {
+	storagev1.StorageClassInterface
+}
+type mockStorageClassInterfaceWithBadItem struct {
+	storagev1.StorageClassInterface
+}
+
+func testStoragev1Ok() (storagev1.StorageV1Interface, error) {
+	client := fake.Clientset{Fake: testing_client.Fake{}}
+	return mockStorageV1InterfaceOk{client.StorageV1()}, nil
+}
+func testStoragev1ListErr() (storagev1.StorageV1Interface, error) {
+	client := fake.Clientset{Fake: testing_client.Fake{}}
+	return mockStorageV1InterfaceListErr{client.StorageV1()}, nil
+}
+func testStoragev1WithBadItem() (storagev1.StorageV1Interface, error) {
+	client := fake.Clientset{Fake: testing_client.Fake{}}
+	return mockStorageV1InterfaceWithBadItem{client.StorageV1()}, nil
+}
+
+func (mockStorageV1InterfaceOk) StorageClasses() storagev1.StorageClassInterface {
+	return mockStorageClassInterfaceOk{}
+}
+
+func (mockStorageV1InterfaceListErr) StorageClasses() storagev1.StorageClassInterface {
+	return mockStorageClassInterfaceListErr{}
+}
+
+func (mockStorageV1InterfaceWithBadItem) StorageClasses() storagev1.StorageClassInterface {
+	return mockStorageClassInterfaceWithBadItem{}
+}
+
+func (mockStorageClassInterfaceOk) Get(name string, options metav1.GetOptions) (*v1.StorageClass, error) {
+	if strings.HasPrefix(name, "bad-class") {
+		return nil, fmt.Errorf("mocked error. No such class")
+	}
+	sc := v1.StorageClass{Provisioner: name}
+	return &sc, nil
+}
+
+func (m mockStorageClassInterfaceOk) List(opts metav1.ListOptions) (*v1.StorageClassList, error) {
+	scl := v1.StorageClassList{}
+	sc := v1.StorageClass{Provisioner: "standard"}
+	scl.Items = append(scl.Items, sc)
+	return &scl, nil
+}
+
+func (m mockStorageClassInterfaceWithBadItem) List(opts metav1.ListOptions) (*v1.StorageClassList, error) {
+	scl := v1.StorageClassList{}
+	sc := v1.StorageClass{Provisioner: "bad", ObjectMeta: metav1.ObjectMeta{Name: "standard"}}
+	scl.Items = append(scl.Items, sc)
+	return &scl, nil
+}
+func (mockStorageClassInterfaceListErr) List(opts metav1.ListOptions) (*v1.StorageClassList, error) {
+	return nil, fmt.Errorf("mocked list error")
+}
+
+func (mockStorageClassInterfaceOk) Update(sc *v1.StorageClass) (*v1.StorageClass, error) {
+	if strings.HasPrefix(sc.Provisioner, "bad") {
+		return nil, fmt.Errorf("bad provisioner")
+	}
+	return &v1.StorageClass{}, nil
+}
+
+func (mockStorageClassInterfaceWithBadItem) Update(sc *v1.StorageClass) (*v1.StorageClass, error) {
+	if strings.HasPrefix(sc.Provisioner, "bad") {
+		return nil, fmt.Errorf("bad provisioner")
+	}
+	return &v1.StorageClass{}, nil
+}
+
+func TestDisableDefaultStorageClass(t *testing.T) {
+	var tests = []struct {
+		description string
+		class       string
+		err         bool
+		sv1Fixture  func() (storagev1.StorageV1Interface, error)
+	}{
+		{
+			description: "ok",
+			class:       "standard",
+			sv1Fixture:  testStoragev1Ok,
+		},
+		{
+			description: "no such class",
+			class:       "bad-class",
+			err:         true,
+			sv1Fixture:  testStoragev1Ok,
+		},
+		{
+			description: "bad existing class",
+			class:       "bad-existing-class",
+			err:         true,
+			sv1Fixture:  testStoragev1Ok,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			sv1, _ := test.sv1Fixture()
+			err := DisableDefaultStorageClass(sv1, test.class)
+			if err != nil && !test.err {
+				t.Fatalf("Unexpected err: %v for test: %v", err, test.description)
+			}
+			if err == nil && test.err {
+				t.Fatalf("Expected err for test: %v", test.description)
+			}
+		})
+	}
+}
+
+func TestSetDefaultStorageClass(t *testing.T) {
+	var tests = []struct {
+		description string
+		class       string
+		err         bool
+		sv1Fixture  func() (storagev1.StorageV1Interface, error)
+	}{
+		{
+			description: "ok (no fail)",
+			class:       "standard",
+			sv1Fixture:  testStoragev1Ok,
+		},
+		{
+			description: "ok (failed annotation)",
+			class:       "standard",
+			sv1Fixture:  testStoragev1WithBadItem,
+			err:         true,
+		},
+
+		{
+			description: "list error",
+			class:       "standard",
+			sv1Fixture:  testStoragev1ListErr,
+			err:         true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			sv1, _ := test.sv1Fixture()
+
+			err := SetDefaultStorageClass(sv1, test.class)
+			if err != nil && !test.err {
+				t.Fatalf("Unexpected err: %v for test: %v", err, test.description)
+			}
+			if err == nil && test.err {
+				t.Fatalf("Expected err for test: %v", test.description)
+			}
+		})
+	}
+}
+
 var mockK8sConfig = `apiVersion: v1
 clusters:
 - cluster:
@@ -49,122 +212,35 @@ users:
 - name: minikube
 `
 
-func mockGetStoragev1() (storagev1.StorageV1Interface, error) {
-	client := fake.Clientset{Fake: testing_client.Fake{}}
-	s := client.StorageV1()
-	return mockStorageV1Interface{s}, nil
-}
-
-func (mockStorageV1Interface) StorageClasses() storagev1.StorageClassInterface {
-	return mockStorageClassInterface{}
-}
-
-type mockStorageV1Interface struct {
-	storagev1.StorageV1Interface
-}
-
-type mockStorageClassInterface struct {
-	storagev1.StorageClassInterface
-}
-
-func (mockStorageClassInterface) Get(name string, options metav1.GetOptions) (*v1.StorageClass, error) {
-	if name == "no-such-class" {
-		return nil, fmt.Errorf("mocked error. No such class")
-	}
-	sc := v1.StorageClass{Provisioner: name}
-	return &sc, nil
-}
-
-var mockStorageProvisioner string
-
-func (mockStorageClassInterface) List(opts metav1.ListOptions) (*v1.StorageClassList, error) {
-	scl := v1.StorageClassList{}
-	scl.Items = append(scl.Items, v1.StorageClass{Provisioner: mockStorageProvisioner})
-	return &scl, nil
-}
-
-func (mockStorageClassInterface) Update(sc *v1.StorageClass) (*v1.StorageClass, error) {
-	if strings.HasPrefix(sc.Provisioner, "bad") {
-		return nil, fmt.Errorf("bad provisioner")
-	}
-	s := v1.StorageClass{}
-	return &s, nil
-}
-
-func TestSetDefaultStorageClassNoFake(t *testing.T) {
-	originalEnv := os.Getenv("KUBECONFIG")
-	defer func() {
-		err := os.Setenv("KUBECONFIG", originalEnv)
-		if err != nil {
-			t.Fatalf("Error reverting env KUBECONFIG to its original value. Got err (%s)", err)
-		}
-	}()
-	var tests = []struct {
-		description    string
-		kubeconfigPath string
-		config         string
-		class          string
-		err            bool
-	}{
-		{
-			description:    "list storage class error",
-			kubeconfigPath: "/tmp/kube_config",
-			config:         mockK8sConfig,
-			class:          "standard",
-			err:            true,
-		},
-		{
-			description:    "broken config",
-			kubeconfigPath: "/tmp/kube_config",
-			config:         "this**is&&not: yaml::valid: file",
-			class:          "standard",
-			err:            true,
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			if err := setK8SConfig(test.config, test.kubeconfigPath); err != nil {
-				t.Fatalf(err.Error())
-			}
-			defer func() { os.Remove(test.kubeconfigPath) }()
-
-			err := SetDefaultStorageClass(test.class)
-			if err != nil && !test.err {
-				t.Fatalf("Unexpected err: %v for test: %v", err, test.description)
-			}
-			if err == nil && test.err {
-				t.Fatalf("Expected err for test: %v", test.description)
-			}
-		})
-	}
-}
-
-func TestSetDefaultStorageClassFakeStorage(t *testing.T) {
-	getStoragev1 = mockGetStoragev1
-	defer func() { getStoragev1 = orgGetStoragev1 }()
+func TestGetClient(t *testing.T) {
 	var tests = []struct {
 		description string
-		name        string
-		provisioner string
+		config      string
 		err         bool
 	}{
 		{
 			description: "ok",
-			provisioner: "foo",
+			config:      mockK8sConfig,
 		},
 		{
-			description: "bad provisioner",
-			provisioner: "bad",
+			description: "no valid config",
+			config:      "this is not valid config",
 			err:         true,
 		},
 	}
-
+	configFile, err := ioutil.TempFile("/tmp", "")
+	if err != nil {
+		t.Fatalf(err.Error())
+	}
+	defer os.Remove(configFile.Name())
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			mockStorageProvisioner = test.provisioner
-			defer func() { mockStorageProvisioner = orgMockStorageProvisioner }()
-			err := SetDefaultStorageClass(test.name)
+
+			if err := setK8SConfig(test.config, configFile.Name()); err != nil {
+				t.Fatalf(err.Error())
+			}
+
+			_, err = getClient()
 			if err != nil && !test.err {
 				t.Fatalf("Unexpected err: %v for test: %v", err, test.description)
 			}
@@ -175,78 +251,34 @@ func TestSetDefaultStorageClassFakeStorage(t *testing.T) {
 	}
 }
 
-func TestSetDisableDefaultStorageClassFakeStorage(t *testing.T) {
-	getStoragev1 = mockGetStoragev1
-	defer func() { getStoragev1 = orgGetStoragev1 }()
+func TestGetStoragev1(t *testing.T) {
 	var tests = []struct {
-		class string
-		err   bool
+		description string
+		config      string
+		err         bool
 	}{
 		{
-			class: "no-such-class",
-			err:   true,
+			description: "ok",
+			config:      mockK8sConfig,
 		},
 		{
-			class: "bad-class-provisioner",
-			err:   true,
-		},
-		{
-			class: "default",
+			description: "no valid config",
+			config:      "this is not valid config",
+			err:         true,
 		},
 	}
-
-	for _, test := range tests {
-		t.Run(test.class, func(t *testing.T) {
-			err := DisableDefaultStorageClass(test.class)
-			if err != nil && !test.err {
-				t.Fatalf("Unexpected err: %v for test: %v", err, test.class)
-			}
-			if err == nil && test.err {
-				t.Fatalf("Expected err for test: %v", test.class)
-			}
-		})
+	configFile, err := ioutil.TempFile("/tmp", "")
+	if err != nil {
+		t.Fatalf(err.Error())
 	}
-}
-
-func TestDisableDefaultStorageClassNoFake(t *testing.T) {
-	originalEnv := os.Getenv("KUBECONFIG")
-	defer func() {
-		err := os.Setenv("KUBECONFIG", originalEnv)
-		if err != nil {
-			t.Fatalf("Error reverting env KUBECONFIG to its original value. Got err (%s)", err)
-		}
-	}()
-	var tests = []struct {
-		description    string
-		kubeconfigPath string
-		config         string
-		class          string
-		err            bool
-	}{
-		{
-			description:    "list storage class error",
-			kubeconfigPath: "/tmp/kube_config",
-			config:         mockK8sConfig,
-			class:          "standard",
-			err:            true,
-		},
-		{
-			description:    "broken config",
-			kubeconfigPath: "/tmp/kube_config",
-			config:         "this**is&&not: yaml::valid: file",
-			class:          "standard",
-			err:            true,
-		},
-	}
-
+	defer os.Remove(configFile.Name())
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if err := setK8SConfig(test.config, test.kubeconfigPath); err != nil {
+			if err := setK8SConfig(test.config, configFile.Name()); err != nil {
 				t.Fatalf(err.Error())
 			}
-			defer func() { os.Remove(test.kubeconfigPath) }()
 
-			err := DisableDefaultStorageClass(test.class)
+			_, err = GetStoragev1()
 			if err != nil && !test.err {
 				t.Fatalf("Unexpected err: %v for test: %v", err, test.description)
 			}
