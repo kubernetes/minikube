@@ -29,7 +29,6 @@ import (
 
 func annotateDefaultStorageClass(storage storagev1.StorageV1Interface, class *v1.StorageClass, enable bool) error {
 	isDefault := strconv.FormatBool(enable)
-
 	metav1.SetMetaDataAnnotation(&class.ObjectMeta, "storageclass.beta.kubernetes.io/is-default-class", isDefault)
 	_, err := storage.StorageClasses().Update(class)
 
@@ -38,17 +37,13 @@ func annotateDefaultStorageClass(storage storagev1.StorageV1Interface, class *v1
 
 // DisableDefaultStorageClass disables the default storage class provisioner
 // The addon-manager and kubectl apply cannot delete storageclasses
-func DisableDefaultStorageClass(class string) error {
-	s, err := getStoragev1()
-	if err != nil {
-		return err
-	}
-	sc, err := s.StorageClasses().Get(class, metav1.GetOptions{})
+func DisableDefaultStorageClass(storage storagev1.StorageV1Interface, class string) error {
+	sc, err := storage.StorageClasses().Get(class, metav1.GetOptions{})
 	if err != nil {
 		return errors.Wrapf(err, "Error getting storage class %s", class)
 	}
 
-	err = annotateDefaultStorageClass(s, sc, false)
+	err = annotateDefaultStorageClass(storage, sc, false)
 	if err != nil {
 		return errors.Wrapf(err, "Error marking storage class %s as non-default", class)
 	}
@@ -57,17 +52,13 @@ func DisableDefaultStorageClass(class string) error {
 
 // SetDefaultStorageClass makes sure only the class with @name is marked as
 // default.
-func SetDefaultStorageClass(name string) error {
-	s, err := getStoragev1()
-	if err != nil {
-		return err
-	}
-	scList, err := s.StorageClasses().List(metav1.ListOptions{})
+func SetDefaultStorageClass(storage storagev1.StorageV1Interface, name string) error {
+	scList, err := storage.StorageClasses().List(metav1.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "Error listing StorageClasses")
 	}
 	for _, sc := range scList.Items {
-		err = annotateDefaultStorageClass(s, &sc, sc.Name == name)
+		err = annotateDefaultStorageClass(storage, &sc, sc.Name == name)
 		if err != nil {
 			isDefault := "non-default"
 			if sc.Name == name {
@@ -79,7 +70,8 @@ func SetDefaultStorageClass(name string) error {
 	return nil
 }
 
-var getStoragev1 = func() (storagev1.StorageV1Interface, error) {
+// GetStorageV1 return storage v1 interface for client
+func GetStoragev1() (storagev1.StorageV1Interface, error) {
 	client, err := getClient()
 	if err != nil {
 		return nil, err
