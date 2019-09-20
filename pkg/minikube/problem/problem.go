@@ -39,6 +39,8 @@ type Problem struct {
 	URL string
 	// Issues are a list of related issues to this problem
 	Issues []int
+	// Hide the new issue link: it isn't our problem, and we won't be able to suggest additional assistance.
+	HideCreateLink bool
 }
 
 // match maps a regular expression to problem metadata.
@@ -49,6 +51,8 @@ type match struct {
 	Issues []int
 	// GOOS is what platforms this problem may be specific to, when disambiguation is necessary.
 	GOOS string
+	// Hide the new issue link: it isn't our problem, and we won't be able to suggest additional assistance.
+	HideCreateLink bool
 }
 
 // Display problem metadata to the console
@@ -87,11 +91,12 @@ func FromError(err error, os string) *Problem {
 			}
 			if v.Regexp.MatchString(err.Error()) {
 				return &Problem{
-					Err:    err,
-					Advice: v.Advice,
-					URL:    v.URL,
-					ID:     k,
-					Issues: v.Issues,
+					Err:            err,
+					Advice:         v.Advice,
+					URL:            v.URL,
+					ID:             k,
+					Issues:         v.Issues,
+					HideCreateLink: v.HideCreateLink,
 				}
 			}
 		}

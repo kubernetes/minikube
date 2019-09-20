@@ -50,24 +50,24 @@ func Test_createDiskImage(t *testing.T) {
 }
 
 func TestExtractVMDriverVersion(t *testing.T) {
-	v := ExtractVMDriverVersion("")
+	v := extractVMDriverVersion("")
 	if len(v) != 0 {
 		t.Error("Expected empty string")
 	}
 
-	v = ExtractVMDriverVersion("random text")
+	v = extractVMDriverVersion("random text")
 	if len(v) != 0 {
 		t.Error("Expected empty string")
 	}
 
 	expectedVersion := "1.2.3"
 
-	v = ExtractVMDriverVersion("version: v1.2.3")
+	v = extractVMDriverVersion("version: v1.2.3")
 	if expectedVersion != v {
 		t.Errorf("Expected version: %s, got: %s", expectedVersion, v)
 	}
 
-	v = ExtractVMDriverVersion("version: 1.2.3")
+	v = extractVMDriverVersion("version: 1.2.3")
 	if expectedVersion != v {
 		t.Errorf("Expected version: %s, got: %s", expectedVersion, v)
 	}

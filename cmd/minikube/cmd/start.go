@@ -105,6 +105,7 @@ const (
 	hostDNSResolver       = "host-dns-resolver"
 	waitUntilHealthy      = "wait"
 	force                 = "force"
+	interactive           = "interactive"
 	waitTimeout           = "wait-timeout"
 	nativeSSH             = "native-ssh"
 )
@@ -140,6 +141,7 @@ func initMinikubeFlags() {
 	viper.AutomaticEnv()
 
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
+	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 
 	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM.")
 	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
@@ -290,7 +292,13 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateFlags(driver)
 	validateUser(driver)
-	installOrUpdateDriver(driver)
+
+	v, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+	} else if err := drivers.InstallOrUpdate(driver, constants.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+	}
 
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driver)
@@ -499,11 +507,11 @@ func selectDriver(oldConfig *cfg.Config) string {
 		return driver
 	}
 
-	if h.Driver.DriverName() == driver {
+	if h.Driver.DriverName() == driver || h.Driver.DriverName() == "not-found" {
 		return driver
 	}
 
-	out.ErrT(out.Conflict, `You have an existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
+	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
 		out.V{"profile_name": cfg.GetMachineName(), "driver": driver, "old_driver": h.Driver.DriverName()})
 
 	out.ErrT(out.Workaround, `To proceed, either:
@@ -592,8 +600,13 @@ func validateUser(driver string) {
 		return
 	}
 
-	out.T(out.Stopped, "The {{.driver_name}} driver should not be used with root privileges.", out.V{"driver_name": driver})
+	out.T(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": driver})
+	out.T(out.Tip, "If you are running minikube within a VM, consider using --vm-driver=none:")
+	out.T(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 
+	if !useForce {
+		os.Exit(exit.Permissions)
+	}
 	_, err = cfg.Load()
 	if err == nil || !os.IsNotExist(err) {
 		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
@@ -636,7 +649,7 @@ func validateFlags(driver string) {
 		cpuCount = viper.GetInt(cpus)
 	}
 	if cpuCount < constants.MinimumCPUS {
-		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
+		exit.UsageT("Requested CPU count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
@@ -858,12 +871,15 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	start := func() (err error) {
 		host, err = cluster.StartHost(api, mc)
 		if err != nil {
-			glog.Errorf("StartHost: %v", err)
+			out.T(out.Resetting, "Retriable failure: {{.error}}", out.V{"error": err})
+			if derr := cluster.DeleteHost(api); derr != nil {
+				glog.Warningf("DeleteHost: %v", derr)
+			}
 		}
 		return err
 	}
 
-	if err = retry.Expo(start, 2*time.Second, 3*time.Minute, 5); err != nil {
+	if err = retry.Expo(start, 5*time.Second, 3*time.Minute, 3); err != nil {
 		exit.WithError("Unable to start VM", err)
 	}
 	return host, exists
@@ -1049,28 +1065,4 @@ func configureMounts() {
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func saveConfig(clusterCfg *cfg.Config) error {
 	return cfg.CreateProfile(viper.GetString(cfg.MachineProfile), clusterCfg)
-}
-
-func installOrUpdateDriver(driver string) {
-	var driverExecutable string
-	switch driver {
-	case constants.DriverKvm2:
-		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverKvm2)
-	case constants.DriverHyperkit:
-		driverExecutable = fmt.Sprintf("docker-machine-driver-%s", constants.DriverHyperkit)
-	default: // driver doesn't install or update
-		return
-	}
-
-	minikubeVersion, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-		return
-	}
-
-	targetDir := constants.MakeMiniPath("bin")
-	err = drivers.InstallOrUpdate(driverExecutable, targetDir, minikubeVersion)
-	if err != nil {
-		out.WarningT("Error downloading driver: {{.error}}", out.V{"error": err})
-	}
 }

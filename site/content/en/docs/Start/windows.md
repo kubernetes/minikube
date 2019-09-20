@@ -53,11 +53,11 @@ Hyper-V Requirements:     A hypervisor has been detected.
 ```
 
 {{% tabs %}}
-{{% tab "VirtualBox" %}}
-{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.inc" %}}
-{{% /tab %}}
 {{% tab "Hyper-V" %}}
 {{% readfile file="/docs/Reference/Drivers/includes/hyperv_usage.inc" %}}
+{{% /tab %}}
+{{% tab "VirtualBox" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.inc" %}}
 {{% /tab %}}
 {{% /tabs %}}
 

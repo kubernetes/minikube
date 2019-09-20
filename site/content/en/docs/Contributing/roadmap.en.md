@@ -26,8 +26,8 @@ Please send a PR to suggest any improvements to it.
 
 ## (#3) Cross-platform
 
-- [ ] Simplified installation process across all supported platforms
-- [ ] Users should never need to separately install supporting binaries
+- [x] Simplified installation process across all supported platforms
+- [x] Users should never need to separately install supporting binaries
 
 ## (#4) Support all Kubernetes features
 
