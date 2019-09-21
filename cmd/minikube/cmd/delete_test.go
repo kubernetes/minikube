@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -73,6 +74,8 @@ func TestDeleteProfileWithValidConfig(t *testing.T) {
 	if files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
 		t.Fatal("Did not delete exactly one profile")
 	}
+
+	viper.Set(config.MachineProfile, "")
 }
 
 func TestDeleteProfileWithEmptyProfileConfig(t *testing.T) {
@@ -121,6 +124,8 @@ func TestDeleteProfileWithEmptyProfileConfig(t *testing.T) {
 	if files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
 		t.Fatal("Did not delete exactly one profile")
 	}
+
+	viper.Set(config.MachineProfile, "")
 }
 
 func TestDeleteProfileWithInvalidProfileConfig(t *testing.T) {
@@ -169,6 +174,8 @@ func TestDeleteProfileWithInvalidProfileConfig(t *testing.T) {
 	if files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
 		t.Fatal("Did not delete exactly one profile")
 	}
+
+	viper.Set(config.MachineProfile, "")
 }
 
 func TestDeleteProfileWithPartialProfileConfig(t *testing.T) {
@@ -217,6 +224,8 @@ func TestDeleteProfileWithPartialProfileConfig(t *testing.T) {
 	if files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
 		t.Fatal("Did not delete exactly one profile")
 	}
+
+	viper.Set(config.MachineProfile, "")
 }
 
 func TestDeleteProfileWithMissingMachineConfig(t *testing.T) {
@@ -265,6 +274,8 @@ func TestDeleteProfileWithMissingMachineConfig(t *testing.T) {
 	if files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines")); len(files) != numberOfMachineDirs {
 		t.Fatal("Deleted a machine config when it should not")
 	}
+
+	viper.Set(config.MachineProfile, "")
 }
 
 func TestDeleteProfileWithEmptyMachineConfig(t *testing.T) {
@@ -313,6 +324,8 @@ func TestDeleteProfileWithEmptyMachineConfig(t *testing.T) {
 	if files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
 		t.Fatal("Did not delete exactly one profile")
 	}
+
+	viper.Set(config.MachineProfile, "")
 }
 
 func TestDeleteProfileWithInvalidMachineConfig(t *testing.T) {
@@ -361,6 +374,8 @@ func TestDeleteProfileWithInvalidMachineConfig(t *testing.T) {
 	if files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
 		t.Fatal("Did not delete exactly one profile")
 	}
+
+	viper.Set(config.MachineProfile, "")
 }
 
 func TestDeleteProfileWithPartialMachineConfig(t *testing.T) {
@@ -409,6 +424,8 @@ func TestDeleteProfileWithPartialMachineConfig(t *testing.T) {
 	if files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
 		t.Fatal("Did not delete exactly one profile")
 	}
+
+	viper.Set(config.MachineProfile, "")
 }
 
 func TestDeleteAllProfiles(t *testing.T) {
@@ -471,4 +488,6 @@ func TestDeleteAllProfiles(t *testing.T) {
 	if numberOfMachineDirs != 0 {
 		t.Errorf("Did not delete all profiles: still %d machines left", numberOfMachineDirs)
 	}
+
+	viper.Set(config.MachineProfile, "")
 }
