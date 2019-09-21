@@ -185,7 +185,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 
 	// In case DeleteHost didn't complete the job.
-	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
+	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile.Name)
 	if _, err := os.Stat(machineDir); err == nil {
 		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
 		err := os.RemoveAll(machineDir)
@@ -220,7 +220,7 @@ func deleteInvalidProfile(profile *pkg_config.Profile) []error {
 	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
-	pathToProfile := pkg_config.ProfileFolderPath(profile.Name, constants.GetMinipath())
+	pathToProfile := pkg_config.ProfileFolderPath(profile.Name, localpath.MiniPath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		err := os.RemoveAll(pathToProfile)
 		if err != nil {
@@ -228,7 +228,7 @@ func deleteInvalidProfile(profile *pkg_config.Profile) []error {
 		}
 	}
 
-	pathToMachine := cluster.MachinePath(profile.Name, constants.GetMinipath())
+	pathToMachine := cluster.MachinePath(profile.Name, localpath.MiniPath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		err := os.RemoveAll(pathToMachine)
 		if err != nil {

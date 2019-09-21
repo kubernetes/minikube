@@ -22,7 +22,7 @@ import (
 
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -103,7 +103,7 @@ func LoadMachine(name string) (*Machine, error) {
 }
 
 func machineDirs(miniHome ...string) (dirs []string, err error) {
-	miniPath := constants.GetMinipath()
+	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
@@ -119,7 +119,7 @@ func machineDirs(miniHome ...string) (dirs []string, err error) {
 
 // MachinePath returns the Minikube machine path of a machine
 func MachinePath(machine string, miniHome ...string) string {
-	miniPath := constants.GetMinipath()
+	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}

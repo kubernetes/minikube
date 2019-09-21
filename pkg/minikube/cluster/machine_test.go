@@ -22,7 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func TestListMachines(t *testing.T) {
@@ -39,12 +39,12 @@ func TestListMachines(t *testing.T) {
 		t.Errorf("error getting dir path for %s : %v", testMinikubeDir, err)
 	}
 
-	err = os.Setenv(constants.MinikubeHome, miniDir)
+	err = os.Setenv(localpath.MinikubeHome, miniDir)
 	if err != nil {
-		t.Errorf("error setting up test environment. could not set %s", constants.MinikubeHome)
+		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
 	}
 
-	files, _ := ioutil.ReadDir(filepath.Join(constants.GetMinipath(), "machines"))
+	files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
 	numberOfMachineDirs := len(files)
 
 	validMachines, inValidMachines, err := ListMachines()
