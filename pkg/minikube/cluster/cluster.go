@@ -284,10 +284,10 @@ func DeleteHost(api libmachine.API) error {
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
 	status, err := GetHostStatus(api)
 	if err != nil {
-		exit.WithCodeT(exit.Failure,"Unable to get the status of the cluster.")
+		exit.WithCodeT(exit.Failure, "Unable to get the status of the cluster.")
 	}
 	if status == state.None.String() {
-		return mcnerror.ErrHostDoesNotExist{Name:host.Name}
+		return mcnerror.ErrHostDoesNotExist{Name: host.Name}
 	}
 
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
