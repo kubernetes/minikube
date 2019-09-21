@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -48,7 +49,7 @@ func createHyperkitHost(config cfg.MachineConfig) interface{} {
 	return &hyperkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: cfg.GetMachineName(),
-			StorePath:   constants.GetMinipath(),
+			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),

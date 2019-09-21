@@ -25,6 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -60,7 +61,7 @@ func createKVM2Host(config cfg.MachineConfig) interface{} {
 	return &kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: cfg.GetMachineName(),
-			StorePath:   constants.GetMinipath(),
+			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},
 		Memory:         config.Memory,
@@ -69,8 +70,8 @@ func createKVM2Host(config cfg.MachineConfig) interface{} {
 		PrivateNetwork: "minikube-net",
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
 		DiskSize:       config.DiskSize,
-		DiskPath:       filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
-		ISO:            filepath.Join(constants.GetMinipath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
+		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
+		ISO:            filepath.Join(localpath.MiniPath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
 		GPU:            config.KVMGPU,
 		Hidden:         config.KVMHidden,
 		ConnectionURI:  config.KVMQemuURI,

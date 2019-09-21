@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -66,6 +67,7 @@ func (a *Addon) IsEnabled() (bool, error) {
 }
 
 // Addons is the list of addons
+// TODO: Make dynamically loadable: move this data to a .yaml file within each addon directory
 var Addons = map[string]*Addon{
 	"addon-manager": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -76,18 +78,16 @@ var Addons = map[string]*Addon{
 			true),
 	}, true, "addon-manager"),
 	"dashboard": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/dashboard/dashboard-dp.yaml.tmpl",
-			constants.GuestAddonsDir,
-			"dashboard-dp.yaml",
-			"0640",
-			true),
-		MustBinAsset(
-			"deploy/addons/dashboard/dashboard-svc.yaml.tmpl",
-			constants.GuestAddonsDir,
-			"dashboard-svc.yaml",
-			"0640",
-			false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", constants.GuestAddonsDir, "dashboard-clusterrole.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", constants.GuestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-configmap.yaml", constants.GuestAddonsDir, "dashboard-configmap.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-dp.yaml", constants.GuestAddonsDir, "dashboard-dp.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-ns.yaml", constants.GuestAddonsDir, "dashboard-ns.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-role.yaml", constants.GuestAddonsDir, "dashboard-role.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-rolebinding.yaml", constants.GuestAddonsDir, "dashboard-rolebinding.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-sa.yaml", constants.GuestAddonsDir, "dashboard-sa.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-secret.yaml", constants.GuestAddonsDir, "dashboard-secret.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-svc.yaml", constants.GuestAddonsDir, "dashboard-svc.yaml", "0640", false),
 	}, false, "dashboard"),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(
@@ -332,10 +332,10 @@ var Addons = map[string]*Addon{
 // AddMinikubeDirAssets adds all addons and files to the list
 // of files to be copied to the vm.
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {
-	if err := addMinikubeDirToAssets(constants.MakeMiniPath("addons"), constants.GuestAddonsDir, assets); err != nil {
+	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("addons"), constants.GuestAddonsDir, assets); err != nil {
 		return errors.Wrap(err, "adding addons folder to assets")
 	}
-	if err := addMinikubeDirToAssets(constants.MakeMiniPath("files"), "", assets); err != nil {
+	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("files"), "", assets); err != nil {
 		return errors.Wrap(err, "adding files rootfs to assets")
 	}
 

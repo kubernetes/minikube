@@ -29,7 +29,9 @@ import (
 	"testing"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // Note this test runs before all because filename is alphabetically first
@@ -56,10 +58,10 @@ func TestDownloadOnly(t *testing.T) {
 
 				// None driver does not cache images, so this test will fail
 				if !NoneDriver() {
-					_, imgs := constants.GetKubeadmCachedImages("", v)
+					_, imgs := images.CachedImages("", v)
 					for _, img := range imgs {
 						img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
-						fp := filepath.Join(constants.GetMinipath(), "cache", "images", img)
+						fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
 						_, err := os.Stat(fp)
 						if err != nil {
 							t.Errorf("expected image file exist at %q but got error: %v", fp, err)
@@ -69,7 +71,7 @@ func TestDownloadOnly(t *testing.T) {
 
 				// checking binaries downloaded (kubelet,kubeadm)
 				for _, bin := range constants.KubeadmBinaries {
-					fp := filepath.Join(constants.GetMinipath(), "cache", v, bin)
+					fp := filepath.Join(localpath.MiniPath(), "cache", v, bin)
 					_, err := os.Stat(fp)
 					if err != nil {
 						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)

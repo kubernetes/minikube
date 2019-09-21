@@ -46,6 +46,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 	pkgutil "k8s.io/minikube/pkg/util"
@@ -102,14 +103,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
 
-	if h.Driver.DriverName() != config.VMDriver {
-		out.T(out.Empty, "\n")
-		exit.WithCodeT(exit.Config, `The existing "{{.profile_name}}" VM was created using the {{.driver_name}} driver.`,
-			out.V{"profile_name": cfg.GetMachineName(), "driver_name": config.VMDriver})
-		out.WarningT("To switch drivers, you may create a new VM using `minikube start -p <name> --vm-driver={{.driver_name}}`", out.V{"driver_name": config.VMDriver})
-		out.WarningT("Alternatively, you may delete the existing VM using `minikube delete -p {{.profile_name}}`", out.V{"profile_name": cfg.GetMachineName()})
-		out.T(out.Empty, "\n")
-	} else if exists && cfg.GetMachineName() == constants.DefaultMachineName {
+	if exists && cfg.GetMachineName() == constants.DefaultMachineName {
 		out.T(out.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 
@@ -451,8 +445,8 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "new host")
 	}
 
-	h.HostOptions.AuthOptions.CertDir = constants.GetMinipath()
-	h.HostOptions.AuthOptions.StorePath = constants.GetMinipath()
+	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
+	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
 	h.HostOptions.EngineOptions = engineOptions(config)
 
 	if err := api.Create(h); err != nil {
@@ -495,7 +489,7 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 	envMap := map[string]string{
 		"DOCKER_TLS_VERIFY": "1",
 		"DOCKER_HOST":       tcpPrefix + net.JoinHostPort(ip, port),
-		"DOCKER_CERT_PATH":  constants.MakeMiniPath("certs"),
+		"DOCKER_CERT_PATH":  localpath.MakeMiniPath("certs"),
 	}
 	return envMap, nil
 }
