@@ -36,19 +36,20 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 var dirs = [...]string{
-	constants.GetMinipath(),
-	constants.MakeMiniPath("certs"),
-	constants.MakeMiniPath("machines"),
-	constants.MakeMiniPath("cache"),
-	constants.MakeMiniPath("cache", "iso"),
-	constants.MakeMiniPath("config"),
-	constants.MakeMiniPath("addons"),
-	constants.MakeMiniPath("files"),
-	constants.MakeMiniPath("logs"),
+	localpath.MiniPath(),
+	localpath.MakeMiniPath("certs"),
+	localpath.MakeMiniPath("machines"),
+	localpath.MakeMiniPath("cache"),
+	localpath.MakeMiniPath("cache", "iso"),
+	localpath.MakeMiniPath("config"),
+	localpath.MakeMiniPath("addons"),
+	localpath.MakeMiniPath("files"),
+	localpath.MakeMiniPath("logs"),
 }
 
 var viperWhiteList = []string{
@@ -71,7 +72,7 @@ var RootCmd = &cobra.Command{
 
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {
-			if err := logDir.Value.Set(constants.MakeMiniPath("logs")); err != nil {
+			if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
 				exit.WithError("logdir set failed", err)
 			}
 		}
@@ -98,7 +99,7 @@ func Execute() {
 
 	if runtime.GOOS != "windows" {
 		// add minikube binaries to the path
-		targetDir := constants.MakeMiniPath("bin")
+		targetDir := localpath.MakeMiniPath("bin")
 		addToPath(targetDir)
 	}
 

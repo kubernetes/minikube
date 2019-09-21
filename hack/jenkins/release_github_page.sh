@@ -35,9 +35,9 @@ readonly GITHUB_ORGANIZATION="kubernetes"
 readonly GITHUB_REPO="minikube"
 readonly PROJECT_NAME="${GITHUB_REPO}"
 
-# Pre-release
+RELEASE_FLAGS=""
 if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
-  RELEASE_FLAGS="-p"
+  RELEASE_FLAGS="-p"  # Pre-release
 fi
 
 RELEASE_NOTES=$(perl -e "\$p=0; while(<>) { if(/^## Version ${VERSION} -/) { \$p=1 } elsif (/^##/) { \$p=0 }; if (\$p) { print }}" < CHANGELOG.md)
@@ -45,7 +45,9 @@ if [[ "${RELEASE_NOTES}" = "" ]]; then
   RELEASE_NOTES="(missing for ${VERSION})"
 fi
 
-readonly DESCRIPTION="## Release Notes
+readonly DESCRIPTION="📣😀 **Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A)** so that we can learn how & why you use minikube, and what improvements we should make. Thank you! 💃🎉
+
+## Release Notes
 
 ${RELEASE_NOTES}
 

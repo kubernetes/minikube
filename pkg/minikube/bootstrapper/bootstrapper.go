@@ -20,6 +20,7 @@ import (
 	"net"
 	"time"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -67,7 +68,7 @@ func GetCachedBinaryList(bootstrapper string) []string {
 func GetCachedImageList(imageRepository string, version string, bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		_, images := constants.GetKubeadmCachedImages(imageRepository, version)
+		_, images := images.CachedImages(imageRepository, version)
 		return images
 	default:
 		return []string{}

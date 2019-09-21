@@ -18,3 +18,5 @@ minikube config set memory 4096
 ### Where to go next?
 
 Visit the [examples](/docs/examples) page to get an idea of what you can do with minikube.
+
+📣😀 **Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A)** so that we can learn how & why you use minikube, and what improvements we should make. Thank you! 💃🏽🎉

@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func setupTestDir() (string, error) {
@@ -32,7 +33,7 @@ func setupTestDir() (string, error) {
 		return "", err
 	}
 
-	os.Setenv(constants.MinikubeHome, path)
+	os.Setenv(localpath.MinikubeHome, path)
 	return path, err
 }
 

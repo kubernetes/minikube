@@ -22,7 +22,7 @@ import (
 
 	"github.com/docker/machine/libmachine/host"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
@@ -57,7 +57,7 @@ var defaultAPI = &tests.MockAPI{
 // Most of the shell cfg isn't configurable
 func newShellCfg(shell, prefix, suffix, delim string) *ShellConfig {
 	return &ShellConfig{
-		DockerCertPath:  constants.MakeMiniPath("certs"),
+		DockerCertPath:  localpath.MakeMiniPath("certs"),
 		DockerTLSVerify: "1",
 		DockerHost:      "tcp://127.0.0.1:2376",
 		UsageHint:       generateUsageHint(shell),
@@ -139,7 +139,7 @@ func TestShellCfgSet(t *testing.T) {
 			noProxyValue: "",
 			noProxyFlag:  true,
 			expectedShellCfg: &ShellConfig{
-				DockerCertPath:  constants.MakeMiniPath("certs"),
+				DockerCertPath:  localpath.MakeMiniPath("certs"),
 				DockerTLSVerify: "1",
 				DockerHost:      "tcp://127.0.0.1:2376",
 				UsageHint:       usageHintMap["bash"],
@@ -158,7 +158,7 @@ func TestShellCfgSet(t *testing.T) {
 			noProxyValue: "",
 			noProxyFlag:  true,
 			expectedShellCfg: &ShellConfig{
-				DockerCertPath:  constants.MakeMiniPath("certs"),
+				DockerCertPath:  localpath.MakeMiniPath("certs"),
 				DockerTLSVerify: "1",
 				DockerHost:      "tcp://127.0.0.1:2376",
 				UsageHint:       usageHintMap["bash"],
@@ -177,7 +177,7 @@ func TestShellCfgSet(t *testing.T) {
 			noProxyValue: "127.0.0.1",
 			noProxyFlag:  true,
 			expectedShellCfg: &ShellConfig{
-				DockerCertPath:  constants.MakeMiniPath("certs"),
+				DockerCertPath:  localpath.MakeMiniPath("certs"),
 				DockerTLSVerify: "1",
 				DockerHost:      "tcp://127.0.0.1:2376",
 				UsageHint:       usageHintMap["bash"],
@@ -196,7 +196,7 @@ func TestShellCfgSet(t *testing.T) {
 			noProxyValue: "0.0.0.0",
 			noProxyFlag:  true,
 			expectedShellCfg: &ShellConfig{
-				DockerCertPath:  constants.MakeMiniPath("certs"),
+				DockerCertPath:  localpath.MakeMiniPath("certs"),
 				DockerTLSVerify: "1",
 				DockerHost:      "tcp://127.0.0.1:2376",
 				UsageHint:       usageHintMap["bash"],
@@ -215,7 +215,7 @@ func TestShellCfgSet(t *testing.T) {
 			noProxyValue: "0.0.0.0,127.0.0.1",
 			noProxyFlag:  true,
 			expectedShellCfg: &ShellConfig{
-				DockerCertPath:  constants.MakeMiniPath("certs"),
+				DockerCertPath:  localpath.MakeMiniPath("certs"),
 				DockerTLSVerify: "1",
 				DockerHost:      "tcp://127.0.0.1:2376",
 				UsageHint:       usageHintMap["bash"],

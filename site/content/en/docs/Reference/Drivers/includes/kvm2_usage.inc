@@ -21,13 +21,6 @@ Once configured, validate that libvirt reports no errors:
 virt-host-validate
 ```
 
-## Driver installation
-
-```shell
- curl -LO https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 \
-  && sudo install docker-machine-driver-kvm2 /usr/local/bin/
-```
-
 ## Usage
 
 Start a cluster using the kvm2 driver:
