@@ -40,6 +40,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/translate"
 )
 
+const defaultClusterBootstrapper = "kubeadm"
+
 var dirs = [...]string{
 	localpath.MiniPath(),
 	localpath.MakeMiniPath("certs"),
@@ -161,7 +163,7 @@ func setFlagsUsingViper() {
 func init() {
 	translate.DetermineLocale()
 	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
-	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", constants.DefaultClusterBootstrapper, "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
+	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", defaultClusterBootstrapper, "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
 
 	groups := templates.CommandGroups{
 		{
@@ -243,7 +245,7 @@ func initConfig() {
 }
 
 func setupViper() {
-	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	viper.SetEnvPrefix(minikubeEnvPrefix)
 	// Replaces '-' in flags with '_' in env variables
 	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))

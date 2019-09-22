@@ -31,6 +31,8 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+const guestAddonsDir = "/etc/kubernetes/addons"
+
 // Addon is a named list of assets, that can be enabled
 type Addon struct {
 	Assets    []*BinAsset
@@ -78,21 +80,21 @@ var Addons = map[string]*Addon{
 			true),
 	}, true, "addon-manager"),
 	"dashboard": NewAddon([]*BinAsset{
-		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", constants.GuestAddonsDir, "dashboard-clusterrole.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", constants.GuestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-configmap.yaml", constants.GuestAddonsDir, "dashboard-configmap.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-dp.yaml", constants.GuestAddonsDir, "dashboard-dp.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-ns.yaml", constants.GuestAddonsDir, "dashboard-ns.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-role.yaml", constants.GuestAddonsDir, "dashboard-role.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-rolebinding.yaml", constants.GuestAddonsDir, "dashboard-rolebinding.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-sa.yaml", constants.GuestAddonsDir, "dashboard-sa.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-secret.yaml", constants.GuestAddonsDir, "dashboard-secret.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-svc.yaml", constants.GuestAddonsDir, "dashboard-svc.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", guestAddonsDir, "dashboard-clusterrole.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", guestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-configmap.yaml", guestAddonsDir, "dashboard-configmap.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-dp.yaml", guestAddonsDir, "dashboard-dp.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-ns.yaml", guestAddonsDir, "dashboard-ns.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-role.yaml", guestAddonsDir, "dashboard-role.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-rolebinding.yaml", guestAddonsDir, "dashboard-rolebinding.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-sa.yaml", guestAddonsDir, "dashboard-sa.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-secret.yaml", guestAddonsDir, "dashboard-secret.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-svc.yaml", guestAddonsDir, "dashboard-svc.yaml", "0640", false),
 	}, false, "dashboard"),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/storageclass/storageclass.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"storageclass.yaml",
 			"0640",
 			false),
@@ -100,7 +102,7 @@ var Addons = map[string]*Addon{
 	"storage-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/storage-provisioner/storage-provisioner.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"storage-provisioner.yaml",
 			"0640",
 			true),
@@ -108,25 +110,25 @@ var Addons = map[string]*Addon{
 	"storage-provisioner-gluster": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"storage-gluster-ns.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"glusterfs-daemonset.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"heketi-deployment.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"storage-privisioner-glusterfile.yaml",
 			"0640",
 			false),
@@ -134,31 +136,31 @@ var Addons = map[string]*Addon{
 	"heapster": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/heapster/influx-grafana-rc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"influxGrafana-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/heapster/grafana-svc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"grafana-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/heapster/influxdb-svc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"influxdb-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/heapster/heapster-rc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"heapster-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/heapster/heapster-svc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"heapster-svc.yaml",
 			"0640",
 			false),
@@ -166,37 +168,37 @@ var Addons = map[string]*Addon{
 	"efk": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/efk/elasticsearch-rc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"elasticsearch-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/efk/elasticsearch-svc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"elasticsearch-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/efk/fluentd-es-rc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"fluentd-es-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/efk/fluentd-es-configmap.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"fluentd-es-configmap.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/efk/kibana-rc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"kibana-rc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/efk/kibana-svc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"kibana-svc.yaml",
 			"0640",
 			false),
@@ -204,19 +206,19 @@ var Addons = map[string]*Addon{
 	"ingress": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/ingress/ingress-configmap.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"ingress-configmap.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/ingress/ingress-rbac.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"ingress-rbac.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/ingress/ingress-dp.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"ingress-dp.yaml",
 			"0640",
 			true),
@@ -224,19 +226,19 @@ var Addons = map[string]*Addon{
 	"metrics-server": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-apiservice.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"metrics-apiservice.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-server-deployment.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"metrics-server-deployment.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-server-service.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"metrics-server-service.yaml",
 			"0640",
 			false),
@@ -244,19 +246,19 @@ var Addons = map[string]*Addon{
 	"registry": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/registry/registry-rc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"registry-rc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/registry/registry-svc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"registry-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/registry/registry-proxy.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"registry-proxy.yaml",
 			"0640",
 			false),
@@ -264,7 +266,7 @@ var Addons = map[string]*Addon{
 	"registry-creds": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/registry-creds/registry-creds-rc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"registry-creds-rc.yaml",
 			"0640",
 			false),
@@ -272,7 +274,7 @@ var Addons = map[string]*Addon{
 	"freshpod": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/freshpod/freshpod-rc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"freshpod-rc.yaml",
 			"0640",
 			true),
@@ -280,7 +282,7 @@ var Addons = map[string]*Addon{
 	"nvidia-driver-installer": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/gpu/nvidia-driver-installer.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"nvidia-driver-installer.yaml",
 			"0640",
 			true),
@@ -288,7 +290,7 @@ var Addons = map[string]*Addon{
 	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640",
 			true),
@@ -296,13 +298,13 @@ var Addons = map[string]*Addon{
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"logviewer-dp-and-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/logviewer/logviewer-rbac.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"logviewer-rbac.yaml",
 			"0640",
 			false),
@@ -310,13 +312,13 @@ var Addons = map[string]*Addon{
 	"gvisor": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/gvisor/gvisor-pod.yaml.tmpl",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"gvisor-pod.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/gvisor/gvisor-runtimeclass.yaml",
-			constants.GuestAddonsDir,
+			guestAddonsDir,
 			"gvisor-runtimeclass.yaml",
 			"0640",
 			false),
@@ -352,7 +354,7 @@ var Addons = map[string]*Addon{
 // AddMinikubeDirAssets adds all addons and files to the list
 // of files to be copied to the vm.
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {
-	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("addons"), constants.GuestAddonsDir, assets); err != nil {
+	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("addons"), guestAddonsDir, assets); err != nil {
 		return errors.Wrap(err, "adding addons folder to assets")
 	}
 	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("files"), "", assets); err != nil {

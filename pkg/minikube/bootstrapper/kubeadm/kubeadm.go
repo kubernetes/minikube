@@ -57,8 +57,11 @@ import (
 // enum to differentiate kubeadm command line parameters from kubeadm config file parameters (see the
 // KubeadmExtraArgsWhitelist variable below for more info)
 const (
-	KubeadmCmdParam    = iota
-	KubeadmConfigParam = iota
+	KubeadmCmdParam        = iota
+	KubeadmConfigParam     = iota
+	defaultCNIConfigPath   = "/etc/cni/net.d/k8s.conf"
+	kubeletServiceFile     = "/lib/systemd/system/kubelet.service"
+	kubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
 )
 
 // KubeadmExtraArgsWhitelist is a whitelist of supported kubeadm params that can be supplied to kubeadm through
@@ -745,14 +748,14 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 func configFiles(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte) []assets.CopyableFile {
 	fs := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget(kubeadm, yamlConfigPath, "0640"),
-		assets.NewMemoryAssetTarget(kubelet, constants.KubeletSystemdConfFile, "0640"),
-		assets.NewMemoryAssetTarget(kubeletSvc, constants.KubeletServiceFile, "0640"),
+		assets.NewMemoryAssetTarget(kubelet, kubeletSystemdConfFile, "0640"),
+		assets.NewMemoryAssetTarget(kubeletSvc, kubeletServiceFile, "0640"),
 	}
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin
 	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
 	if cfg.EnableDefaultCNI {
-		fs = append(fs, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultCNIConfigPath, "0644"))
+		fs = append(fs, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), defaultCNIConfigPath, "0644"))
 	}
 	return fs
 }

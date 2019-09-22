@@ -85,6 +85,11 @@ const (
 	kvmQemuURI            = "kvm-qemu-uri"
 	kvmGPU                = "kvm-gpu"
 	kvmHidden             = "kvm-hidden"
+	minikubeEnvPrefix     = "MINIKUBE"
+	defaultEmbedCerts     = false
+	defaultKeepContext    = false
+	defaultMemorySize     = "2000mb"
+	defaultDiskSize       = "20000mb"
 	keepContext           = "keep-context"
 	createMount           = "mount"
 	featureGates          = "feature-gates"
@@ -110,6 +115,12 @@ const (
 	interactive           = "interactive"
 	waitTimeout           = "wait-timeout"
 	nativeSSH             = "native-ssh"
+	minimumMemorySize     = "1024mb"
+	defaultCPUS           = 2
+	minimumCPUS           = 2
+	minimumDiskSize       = "2000mb"
+	defaultVMDriver       = constants.DriverVirtualbox
+	defaultMountEndpoint  = "/minikube-host"
 )
 
 var (
@@ -136,7 +147,7 @@ func init() {
 
 // initMinikubeFlags includes commandline flags for minikube.
 func initMinikubeFlags() {
-	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	viper.SetEnvPrefix(minikubeEnvPrefix)
 	// Replaces '-' in flags with '_' in env variables
 	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -145,17 +156,17 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 
-	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM.")
-	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
-	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().Int(cpus, defaultCPUS, "Number of CPUs allocated to the minikube VM.")
+	startCmd.Flags().String(memory, defaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso.")
-	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
-	startCmd.Flags().Bool(embedCerts, constants.DefaultEmbedCerts, "if true, will embed the certs in kubeconfig.")
+	startCmd.Flags().Bool(keepContext, defaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
+	startCmd.Flags().Bool(embedCerts, defaultEmbedCerts, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
-	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+defaultMountEndpoint, "The argument to pass the minikube mount command on start.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
@@ -476,7 +487,7 @@ func selectDriver(oldConfig *cfg.Config) string {
 	driver := viper.GetString("vm-driver")
 	// By default, the driver is whatever we used last time
 	if driver == "" {
-		driver = constants.DefaultVMDriver
+		driver = defaultVMDriver
 		if oldConfig != nil {
 			driver = oldConfig.MachineConfig.VMDriver
 		}
@@ -619,17 +630,17 @@ func validateUser(driver string) {
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(driver string) {
 	diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
-	if diskSizeMB < pkgutil.CalculateSizeInMB(constants.MinimumDiskSize) && !viper.GetBool(force) {
-		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(constants.MinimumDiskSize)})
+	if diskSizeMB < pkgutil.CalculateSizeInMB(minimumDiskSize) && !viper.GetBool(force) {
+		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumDiskSize)})
 	}
 
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
-	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.MinimumMemorySize) && !viper.GetBool(force) {
-		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(constants.MinimumMemorySize)})
+	if memorySizeMB < pkgutil.CalculateSizeInMB(minimumMemorySize) && !viper.GetBool(force) {
+		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumMemorySize)})
 	}
-	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) && !viper.GetBool(force) {
+	if memorySizeMB < pkgutil.CalculateSizeInMB(defaultMemorySize) && !viper.GetBool(force) {
 		out.T(out.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default_memorysize}}MB. Beware that minikube might not work correctly or crash unexpectedly.",
-			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
+			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(defaultMemorySize)})
 	}
 
 	var cpuCount int
@@ -648,8 +659,8 @@ func validateFlags(driver string) {
 	} else {
 		cpuCount = viper.GetInt(cpus)
 	}
-	if cpuCount < constants.MinimumCPUS {
-		exit.UsageT("Requested CPU count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
+	if cpuCount < minimumCPUS {
+		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters

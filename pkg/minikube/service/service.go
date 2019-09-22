@@ -41,11 +41,12 @@ import (
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util/retry"
 )
+
+const defaultK8sClientTimeout = 60 * time.Second
 
 // K8sClient represents a kubernetes client
 type K8sClient interface {
@@ -65,7 +66,7 @@ func init() {
 
 // GetCoreClient returns a core client
 func (k *K8sClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
-	client, err := k.GetClientset(constants.DefaultK8sClientTimeout)
+	client, err := k.GetClientset(defaultK8sClientTimeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
 	}
