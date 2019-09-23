@@ -1,11 +1,11 @@
-## helm Addon
+## helm-tiller Addon
 [Kubernetes Helm](https://helm.sh) - The Kubernetes Package Manager
 
-### Enabling helm
+### Enabling helm-tiller
 To enable this addon, simply run:
 
 ```shell script
-minikube addons enable helm
+minikube addons enable helm-tiller
 ```
 
 In a minute or so tiller will be installed into your cluster. You could run `helm init` each time you create a new minikube instance or you could just enable this addon.
