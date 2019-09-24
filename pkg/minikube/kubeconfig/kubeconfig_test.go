@@ -571,7 +571,7 @@ func TestGetKubeConfigPath(t *testing.T) {
 	for _, test := range tests {
 		os.Setenv(clientcmd.RecommendedConfigPathEnvVar, test.input)
 		if result := PathFromEnv(); result != os.ExpandEnv(test.want) {
-			t.Errorf("Expected first splitted chunk, got: %s", result)
+			t.Errorf("Expected first split chunk, got: %s", result)
 		}
 	}
 }

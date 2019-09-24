@@ -34,6 +34,12 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
+func TestMaybePrintUpdateTextFromGithub(t *testing.T) {
+	if MaybePrintUpdateTextFromGithub() {
+		t.Fatal("MaybePrintUpdateTextFromGithub() expected to return true, bot got false")
+	}
+}
+
 func TestShouldCheckURL(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
@@ -146,39 +152,81 @@ func TestGetLatestVersionFromURLMalformed(t *testing.T) {
 func TestMaybePrintUpdateText(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
-
-	viper.Set(config.WantUpdateNotification, true)
-	viper.Set(config.ReminderWaitPeriodInHours, 24)
-
 	outputBuffer := tests.NewFakeFile()
 	out.SetErrFile(outputBuffer)
-	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
-	// test that no update text is printed if the latest version is lower/equal to the current version
-	latestVersionFromURL := "0.0.0-dev"
-	handler := &URLHandlerCorrect{
-		releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
+	var tc = []struct {
+		len                     int
+		wantUpdateNotification  bool
+		latestVersionFromURL    string
+		description             string
+		status                  bool
+		url                     string
+		lastUpdateCheckFilePath string
+	}{
+		{
+			len:                    1,
+			latestVersionFromURL:   "0.0.0-dev",
+			wantUpdateNotification: true,
+			description:            "latest version lower or equal",
+		},
+		{
+			len:                    0,
+			latestVersionFromURL:   "100.0.0-dev",
+			wantUpdateNotification: true,
+			description:            "latest version greater",
+			status:                 true,
+		},
+		{
+			len:                    1,
+			latestVersionFromURL:   "100.0.0-dev",
+			wantUpdateNotification: false,
+			description:            "notification unwanted",
+		},
+		{
+			len:                    1,
+			latestVersionFromURL:   "100.0.0-dev",
+			wantUpdateNotification: true,
+			description:            "bad url",
+			url:                    "this is not valid url",
+			status:                 true,
+		},
+		{
+			len:                     1,
+			latestVersionFromURL:    "10.0.0-dev",
+			wantUpdateNotification:  true,
+			description:             "bad lastUpdateCheckFilePath",
+			lastUpdateCheckFilePath: "/etc/passwd",
+			status:                  true,
+		},
 	}
-	server := httptest.NewServer(handler)
-	defer server.Close()
 
-	MaybePrintUpdateText(server.URL, lastUpdateCheckFilePath)
-	if len(outputBuffer.String()) != 0 {
-		t.Fatalf("Expected MaybePrintUpdateText to not output text as the current version is %s and version %s was served from URL but output was [%s]",
-			version.GetVersion(), latestVersionFromURL, outputBuffer.String())
-	}
-
-	// test that update text is printed if the latest version is greater than the current version
-	latestVersionFromURL = "100.0.0-dev"
-	handler = &URLHandlerCorrect{
-		releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
-	}
-	server = httptest.NewServer(handler)
-	defer server.Close()
-
-	MaybePrintUpdateText(server.URL, lastUpdateCheckFilePath)
-	if len(outputBuffer.String()) == 0 {
-		t.Fatalf("Expected MaybePrintUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
-			version.GetVersion(), latestVersionFromURL, outputBuffer.String())
+	viper.Set(config.ReminderWaitPeriodInHours, 24)
+	for _, test := range tc {
+		t.Run(test.description, func(t *testing.T) {
+			viper.Set(config.WantUpdateNotification, test.wantUpdateNotification)
+			lastUpdateCheckFilePath = filepath.Join(tempDir, "last_update_check")
+			if test.lastUpdateCheckFilePath != "" {
+				lastUpdateCheckFilePath = test.lastUpdateCheckFilePath
+			}
+			// test that no update text is printed if the latest version is lower/equal to the current version
+			latestVersionFromURL := test.latestVersionFromURL
+			handler := &URLHandlerCorrect{
+				releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
+			}
+			server := httptest.NewServer(handler)
+			defer server.Close()
+			if test.url == "" {
+				test.url = server.URL
+			}
+			status := MaybePrintUpdateText(test.url, "/dev/null")
+			if test.status != status {
+				t.Fatalf("MaybePrintUpdateText expected to return %v, but got %v", test.status, status)
+			}
+			if len(outputBuffer.String()) == test.len {
+				t.Fatalf("Expected MaybePrintUpdateText to output text as the current version is %s and version %s was served from URL but output was [%s]",
+					version.GetVersion(), latestVersionFromURL, outputBuffer.String())
+			}
+		})
 	}
 }
