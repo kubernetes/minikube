@@ -241,7 +241,7 @@ func TestUpdateTransport(t *testing.T) {
 		rt := c.WrapTransport(nil)
 
 		if rt == rc.WrapTransport(transport) {
-			t.Fatalf("Excpected to reuse existing RoundTripper(%v) but found %v", rt, transport)
+			t.Fatalf("Expected to reuse existing RoundTripper(%v) but found %v", rt, transport)
 		}
 
 	})
