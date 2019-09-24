@@ -91,7 +91,7 @@ func New(c Config) (Manager, error) {
 	case "crio", "cri-o":
 		return &CRIO{Socket: c.Socket, Runner: c.Runner, KubernetesConfig: c.KubernetesConfig}, nil
 	case "containerd":
-		return &Containerd{Socket: c.Socket, Runner: c.Runner}, nil
+		return &Containerd{Socket: c.Socket, Runner: c.Runner, KubernetesConfig: c.KubernetesConfig}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
 	}
