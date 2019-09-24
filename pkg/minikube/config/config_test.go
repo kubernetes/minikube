@@ -108,7 +108,7 @@ func TestReadConfig(t *testing.T) {
 	// non existing file
 	mkConfig, err := ReadConfig("non_existing_file")
 	if err != nil {
-		t.Fatalf("Error not exepected but got %v", err)
+		t.Fatalf("Error not expected but got %v", err)
 	}
 
 	if len(mkConfig) != 0 {
