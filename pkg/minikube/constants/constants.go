@@ -110,15 +110,6 @@ var OldestKubernetesVersion = "v1.11.10"
 var ConfigFile = localpath.MakeMiniPath("config", "config.json")
 
 const (
-	// GuestManifestsDir is where the kubelet should look for static Pod manifests
-	GuestManifestsDir = "/etc/kubernetes/manifests"
-	// GuestEphemeralDir is the path where ephemeral data should be stored within the VM
-	GuestEphemeralDir = "/var/tmp/minikube"
-	// GuestPersistentDir is the path where persistent data should be stored within the VM (not tmpfs)
-	GuestPersistentDir = "/var/lib/minikube"
-	// GuestCertsDir are where Kubernetes certificates are kept on the guest
-	GuestCertsDir = GuestPersistentDir + "/certs"
-
 	// IsMinikubeChildProcess is the name of "is minikube child process" variable
 	IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
 )

@@ -24,6 +24,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 func setupTestDir() (string, error) {
@@ -56,18 +57,18 @@ func TestAddMinikubeDirAssets(t *testing.T) {
 			}{
 				{
 					relativePath: "/dir1/file1.txt",
-					expectedPath: guestAddonsDir,
+					expectedPath: vmpath.GuestAddonsDir,
 				},
 				{
 					relativePath: "/dir1/file2.txt",
-					expectedPath: guestAddonsDir,
+					expectedPath: vmpath.GuestAddonsDir,
 				},
 				{
 					relativePath: "/dir2/file1.txt",
-					expectedPath: guestAddonsDir,
+					expectedPath: vmpath.GuestAddonsDir,
 				},
 			},
-			vmPath: guestAddonsDir,
+			vmPath: vmpath.GuestAddonsDir,
 		},
 		{
 			description: "absolute path assets",
