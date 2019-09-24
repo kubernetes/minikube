@@ -40,7 +40,7 @@ var listCacheCmd = &cobra.Command{
 	Short: "List all available images from the local cache.",
 	Long:  "List all available images from the local cache.",
 	Run: func(cmd *cobra.Command, args []string) {
-		images, err := cmdConfig.ListConfigMap(cache)
+		images, err := cmdConfig.ListConfigMap(cacheImageConfigKey)
 		if err != nil {
 			exit.WithError("Failed to get image map", err)
 		}
