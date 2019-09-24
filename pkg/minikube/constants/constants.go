@@ -162,6 +162,8 @@ const (
 	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
 	// CRIOConfFile is the path to the CRI-O configuration
 	CRIOConfFile = "/etc/crio/crio.conf"
+	// ContainerdConfFile is the path to the containerd configuration
+	ContainerdConfFile = "/etc/containerd/config.toml"
 
 	// GuestAddonsDir is the default path of the addons configuration
 	GuestAddonsDir = "/etc/kubernetes/addons"
