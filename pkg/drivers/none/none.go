@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -38,8 +39,8 @@ const driverName = constants.DriverNone
 
 // cleanupPaths are paths to be removed by cleanup, and are used by both kubeadm and minikube.
 var cleanupPaths = []string{
-	constants.GuestEphemeralDir,
-	constants.GuestManifestsDir,
+	vmpath.GuestEphemeralDir,
+	vmpath.GuestManifestsDir,
 	"/var/lib/minikube",
 }
 

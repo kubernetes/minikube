@@ -50,6 +50,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -103,7 +104,7 @@ var PodsByLayer = []pod{
 }
 
 // yamlConfigPath is the path to the kubeadm configuration
-var yamlConfigPath = path.Join(constants.GuestEphemeralDir, "kubeadm.yaml")
+var yamlConfigPath = path.Join(vmpath.GuestEphemeralDir, "kubeadm.yaml")
 
 // SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
 var SkipAdditionalPreflights = map[string][]string{}
@@ -210,7 +211,7 @@ func createFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 
 // etcdDataDir is where etcd data is stored.
 func etcdDataDir() string {
-	return path.Join(constants.GuestPersistentDir, "etcd")
+	return path.Join(vmpath.GuestPersistentDir, "etcd")
 }
 
 // createCompatSymlinks creates compatibility symlinks to transition running services to new directory structures
@@ -250,8 +251,8 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	ignore := []string{
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(constants.GuestManifestsDir, "/", "-", -1)),
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(constants.GuestPersistentDir, "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestManifestsDir, "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestPersistentDir, "/", "-", -1)),
 		"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
@@ -698,7 +699,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, er
 		FeatureArgs       map[string]bool
 		NoTaintMaster     bool
 	}{
-		CertDir:           constants.GuestCertsDir,
+		CertDir:           vmpath.GuestCertsDir,
 		ServiceCIDR:       util.DefaultServiceCIDR,
 		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
 		AdvertiseAddress:  k8s.NodeIP,
@@ -762,7 +763,7 @@ func configFiles(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, ku
 
 // binDir returns the persistent path binaries are stored in
 func binRoot(version string) string {
-	return path.Join(constants.GuestPersistentDir, "binaries", version)
+	return path.Join(vmpath.GuestPersistentDir, "binaries", version)
 }
 
 // invokeKubeadm returns the invocation command for Kubeadm

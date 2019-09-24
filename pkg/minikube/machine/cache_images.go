@@ -42,10 +42,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 // loadRoot is where images should be loaded from within the guest VM
-var loadRoot = path.Join(constants.GuestPersistentDir, "images")
+var loadRoot = path.Join(vmpath.GuestPersistentDir, "images")
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
 
