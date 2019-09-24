@@ -160,6 +160,8 @@ const (
 	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
 	// DefaultCNIConfigPath is the path to the CNI configuration
 	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
+	// CRIOConfFile is the path to the CRI-O configuration
+	CRIOConfFile = "/etc/crio/crio.conf"
 
 	// GuestAddonsDir is the default path of the addons configuration
 	GuestAddonsDir = "/etc/kubernetes/addons"
@@ -215,4 +217,10 @@ const (
 	GvisorContainerdShimURL = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.3/containerd-shim-runsc-v1.linux-amd64"
 	// GvisorURL is the url to download gvisor
 	GvisorURL = "https://storage.googleapis.com/gvisor/releases/nightly/2019-01-14/runsc"
+)
+
+const (
+	// Container runtimes
+	DockerContainerRuntime = "docker"
+	RemoteContainerRuntime = "remote"
 )

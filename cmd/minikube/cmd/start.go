@@ -336,7 +336,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	mRunner, preExists, machineAPI, host := startMachine(&config)
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, driver)
+	cr := configureRuntimes(mRunner, driver, config.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
 	waitCacheImages(&cacheGroup)
 
@@ -993,8 +993,8 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 }
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, driver string) cruntime.Manager {
-	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
+func configureRuntimes(runner cruntime.CommandRunner, driver string, k8s cfg.KubernetesConfig) cruntime.Manager {
+	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner, KubernetesConfig: k8s}
 	cr, err := cruntime.New(config)
 	if err != nil {
 		exit.WithError("Failed runtime", err)
