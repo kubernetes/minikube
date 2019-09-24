@@ -190,7 +190,7 @@ func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string 
 	}
 }
 
-// createFlagsFromExtraArgs converts kubeadm extra args into flags to be supplied from the commad linne
+// createFlagsFromExtraArgs converts kubeadm extra args into flags to be supplied from the command linne
 func createFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 	kubeadmExtraOpts := extraOptions.AsMap().Get(Kubeadm)
 

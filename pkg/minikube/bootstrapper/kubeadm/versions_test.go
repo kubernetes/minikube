@@ -46,7 +46,7 @@ func TestVersionIsBetween(t *testing.T) {
 			expected:    false,
 		},
 		{
-			description: "greather than max version",
+			description: "greater than max version",
 			ver:         semver.MustParse("2.8.0"),
 			gte:         semver.MustParse("1.7.0"),
 			lte:         semver.MustParse("1.9.0"),
