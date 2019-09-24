@@ -391,8 +391,8 @@ func generateCRIOConfig(cr CommandRunner, k8s config.KubernetesConfig) error {
 	if err != nil {
 		return err
 	}
-	podInfraContainerImage, _ := images.CachedImages(k8s.ImageRepository, k8s.KubernetesVersion)
-	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: podInfraContainerImage}
+	pauseImage := images.PauseImage(k8s.ImageRepository, k8s.KubernetesVersion)
+	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: pauseImage}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
 		return err
