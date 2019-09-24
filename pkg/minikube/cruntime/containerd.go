@@ -104,8 +104,8 @@ oom_score = 0
 
 // Containerd contains containerd runtime state
 type Containerd struct {
-	Socket string
-	Runner CommandRunner
+	Socket           string
+	Runner           CommandRunner
 	KubernetesConfig config.KubernetesConfig
 }
 

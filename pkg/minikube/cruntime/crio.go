@@ -27,8 +27,8 @@ import (
 
 // CRIO contains CRIO runtime state
 type CRIO struct {
-	Socket string
-	Runner CommandRunner
+	Socket           string
+	Runner           CommandRunner
 	KubernetesConfig config.KubernetesConfig
 }
 
