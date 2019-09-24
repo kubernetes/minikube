@@ -86,8 +86,6 @@ const (
 	kvmGPU                = "kvm-gpu"
 	kvmHidden             = "kvm-hidden"
 	minikubeEnvPrefix     = "MINIKUBE"
-	defaultEmbedCerts     = false
-	defaultKeepContext    = false
 	defaultMemorySize     = "2000mb"
 	defaultDiskSize       = "20000mb"
 	keepContext           = "keep-context"
@@ -116,11 +114,8 @@ const (
 	waitTimeout           = "wait-timeout"
 	nativeSSH             = "native-ssh"
 	minimumMemorySize     = "1024mb"
-	defaultCPUS           = 2
 	minimumCPUS           = 2
 	minimumDiskSize       = "2000mb"
-	defaultVMDriver       = constants.DriverVirtualbox
-	defaultMountEndpoint  = "/minikube-host"
 )
 
 var (
@@ -156,17 +151,17 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 
-	startCmd.Flags().Int(cpus, defaultCPUS, "Number of CPUs allocated to the minikube VM.")
+	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to the minikube VM.")
 	startCmd.Flags().String(memory, defaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso.")
-	startCmd.Flags().Bool(keepContext, defaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
-	startCmd.Flags().Bool(embedCerts, defaultEmbedCerts, "if true, will embed the certs in kubeconfig.")
+	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
+	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
-	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+defaultMountEndpoint, "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
@@ -487,7 +482,7 @@ func selectDriver(oldConfig *cfg.Config) string {
 	driver := viper.GetString("vm-driver")
 	// By default, the driver is whatever we used last time
 	if driver == "" {
-		driver = defaultVMDriver
+		driver = constants.DriverVirtualbox
 		if oldConfig != nil {
 			driver = oldConfig.MachineConfig.VMDriver
 		}
