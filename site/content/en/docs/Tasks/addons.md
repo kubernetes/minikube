@@ -22,6 +22,7 @@ minikube has a set of built-in addons that, when enabled, can be used within Kub
 * [logviewer](https://github.com/ivans3/minikube-log-viewer)
 * [gvisor](../deploy/addons/gvisor/README.md)
 * [storage-provisioner-gluster](../deploy/addons/storage-provisioner-gluster/README.md)
+* [helm-tiller](../deploy/addons/helm-tiller/README.md)
 
 ## Listing available addons
 
