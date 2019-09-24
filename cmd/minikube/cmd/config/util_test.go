@@ -31,7 +31,7 @@ var minikubeConfig = pkgConfig.MinikubeConfig{
 }
 
 func TestFindSettingNotFound(t *testing.T) {
-	s, err := findSetting("nonexistant")
+	s, err := findSetting("nonexistent")
 	if err == nil {
 		t.Fatalf("Shouldn't have found setting, but did. [%+v]", s)
 	}
@@ -50,7 +50,7 @@ func TestFindSetting(t *testing.T) {
 func TestSetString(t *testing.T) {
 	err := SetString(minikubeConfig, "vm-driver", constants.DriverVirtualbox)
 	if err != nil {
-		t.Fatalf("Couldnt set string: %v", err)
+		t.Fatalf("Couldn't set string: %v", err)
 	}
 }
 

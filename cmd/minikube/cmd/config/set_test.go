@@ -19,7 +19,7 @@ package config
 import "testing"
 
 func TestNotFound(t *testing.T) {
-	err := Set("nonexistant", "10")
+	err := Set("nonexistent", "10")
 	if err == nil {
 		t.Fatalf("Set did not return error for unknown property")
 	}
