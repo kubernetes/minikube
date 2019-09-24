@@ -552,9 +552,9 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 		extraOpts["node-ip"] = k8s.NodeIP
 	}
 
-	podInfraContainerImage, _ := images.CachedImages(k8s.ImageRepository, k8s.KubernetesVersion)
-	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && podInfraContainerImage != "" && k8s.ContainerRuntime != constants.RemoteContainerRuntime {
-		extraOpts["pod-infra-container-image"] = podInfraContainerImage
+	pauseImage := images.PauseImage(k8s.ImageRepository, k8s.KubernetesVersion)
+	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != constants.RemoteContainerRuntime {
+		extraOpts["pod-infra-container-image"] = pauseImage
 	}
 
 	// parses a map of the feature gates for kubelet
@@ -586,7 +586,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 
 // UpdateCluster updates the cluster
 func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
-	_, images := images.CachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
+	images := images.CachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
 	if cfg.ShouldLoadCachedImages {
 		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})

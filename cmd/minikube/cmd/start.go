@@ -552,9 +552,8 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	}
 
 	checkRepository := func(repo string) error {
-		podInfraContainerImage, _ := images.CachedImages(repo, k8sVersion)
-
-		ref, err := name.ParseReference(podInfraContainerImage, name.WeakValidation)
+		pauseImage := images.PauseImage(repo, k8sVersion)
+		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
 		if err != nil {
 			return err
 		}
