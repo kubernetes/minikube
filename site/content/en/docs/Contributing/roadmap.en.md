@@ -52,7 +52,6 @@ Please send a PR to suggest any improvements to it.
 
 - [x] Add offline support
 
-
 # 2020 (draft)
 
 ## (#1) Inclusive and community-driven
@@ -77,9 +76,8 @@ Please send a PR to suggest any improvements to it.
 
 ## (#4) Cross-platform
 
+- [ ] VM-free deployment to containers (Docker, Podman)
 - [ ] Windows as a first-class citizen
-- [ ] VM-free deployment to Docker
-- [ ] VM-free deployment to Podman
 - [ ] WSL2 support
 - [ ] Firecracker VM support
 
@@ -88,7 +86,7 @@ Please send a PR to suggest any improvements to it.
 - [ ] Resource alerts
 - [ ] Time synchronization on HyperKit
 - [ ] Consistent IP across restarts
-- [ ] Investigate replacing libmachine with a maintained alternative
+- [ ] Prototype post-libmachine implementation of minikube
 
 ## (#6) High Performance
 
