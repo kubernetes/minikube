@@ -7,7 +7,7 @@ MEP is based on a simplification of the [Kubernetes Enhancement Process](https:/
 ## Workflow
 
 1. Copy `template.md` to `proposed/<date>-title.md`
-1. Send PR out for review, titled: `Enhancement Proposal: <title>`
+1. Send PR out for review, titled: `Proposal: <title>`
 1. Proposal will be discussed at the bi-weekly minikube office hours
 1. After a 2-week review window, the proposal can be merged once there are 3 approving maintainers or reviewers. To keep proposals neutral, each reviewer must be independent and/or represent a different company.
 1. In your PR that implements the enhancement, move the proposal to the `implemented/` folder.
