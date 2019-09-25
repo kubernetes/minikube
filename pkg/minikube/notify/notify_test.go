@@ -209,7 +209,6 @@ func TestMaybePrintUpdateText(t *testing.T) {
 			if test.lastUpdateCheckFilePath != "" {
 				lastUpdateCheckFilePath = test.lastUpdateCheckFilePath
 			}
-			// test that no update text is printed if the latest version is lower/equal to the current version
 			latestVersionFromURL := test.latestVersionFromURL
 			handler := &URLHandlerCorrect{
 				releases: []Release{{Name: version.VersionPrefix + latestVersionFromURL}},
