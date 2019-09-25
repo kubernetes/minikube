@@ -22,7 +22,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -79,8 +78,10 @@ type Config struct {
 	Socket string
 	// Runner is the CommandRunner object to execute commands with
 	Runner CommandRunner
-	// Kubernetes config
-	KubernetesConfig config.KubernetesConfig
+	// ImageRepository image repository to download image from
+	ImageRepository string
+	// KubernetesVersion Kubernetes version
+	KubernetesVersion string
 }
 
 // New returns an appropriately configured runtime
@@ -89,9 +90,9 @@ func New(c Config) (Manager, error) {
 	case "", "docker":
 		return &Docker{Socket: c.Socket, Runner: c.Runner}, nil
 	case "crio", "cri-o":
-		return &CRIO{Socket: c.Socket, Runner: c.Runner, KubernetesConfig: c.KubernetesConfig}, nil
+		return &CRIO{Socket: c.Socket, Runner: c.Runner, ImageRepository: c.ImageRepository, KubernetesVersion: c.KubernetesVersion}, nil
 	case "containerd":
-		return &Containerd{Socket: c.Socket, Runner: c.Runner, KubernetesConfig: c.KubernetesConfig}, nil
+		return &Containerd{Socket: c.Socket, Runner: c.Runner, ImageRepository: c.ImageRepository, KubernetesVersion: c.KubernetesVersion}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
 	}

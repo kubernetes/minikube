@@ -26,7 +26,6 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -104,9 +103,10 @@ oom_score = 0
 
 // Containerd contains containerd runtime state
 type Containerd struct {
-	Socket           string
-	Runner           CommandRunner
-	KubernetesConfig config.KubernetesConfig
+	Socket            string
+	Runner            CommandRunner
+	ImageRepository   string
+	KubernetesVersion string
 }
 
 // Name is a human readable name for containerd
@@ -159,13 +159,13 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
-func generateContainerdConfig(cr CommandRunner, k8s config.KubernetesConfig) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
 	cPath := constants.ContainerdConfFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
 		return err
 	}
-	pauseImage := images.PauseImage(k8s.ImageRepository, k8s.KubernetesVersion)
+	pauseImage := images.PauseImage(imageRepository, k8sVersion)
 	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: pauseImage}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
@@ -184,7 +184,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.KubernetesConfig); err != nil {
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
