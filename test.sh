@@ -14,18 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -e -o pipefail
-# TODO: fix exit code numbers 
-if [[ -z "$TESTSUITE_LINT" && -z "$TESTSUITE_UNIT" && -z "$TESTSUITE_BOILERPLATE" ]]  
-then # if all of them are not set then it is a local run
-    TESTSUITE_LINT=true
-    TESTSUITE_UNIT=true
-    TESTSUITE_BOILETPLATE=true
-fi
+set -eu -o pipefail
 
+TESTSUITE="${TESTSUITE:-all}"
 exitcode=0
 
-if [[ ! -z "$TESTSUITE_LINT" ]]
+if [ "$TESTSUITE" = "lint" ] || [ "$TESTSUITE" = "all" ]
 then 
     echo "= make lint ============================================================="
     make -s lint-ci && echo ok || ((exitcode += 4))
@@ -35,15 +29,9 @@ then
 fi
 
 
-if [[ ! -z "$TESTSUITE_LINT" ]] 
-then 
-    echo "= make lint ============================================================="
-    make -s lint-ci && echo ok || ((exitcode += 4))
-fi
 
-
-if [[ ! -z "$TESTSUITE_BOILERPLATE" ]]
-then 
+if [ "$TESTSUITE" = "boilerplate" ] || [ "$TESTSUITE" = "all" ]
+then
     echo "= boilerplate ==========================================================="
     readonly PYTHON=$(type -P python || echo docker run --rm -it -v $(pwd):/minikube -w /minikube python python)
     readonly BDIR="./hack/boilerplate"
@@ -51,17 +39,17 @@ then
     if [[ -n "${missing}" ]]; then
         echo "boilerplate missing: $missing"
         echo "consider running: ${BDIR}/fix.sh"
-        ((exitcode += 4))
+        ((exitcode += 8))
     else
         echo "ok"
     fi
 fi
 
 
-if [[ ! -z "$TESTSUITE_UNIT" ]]
+if [ "$TESTSUITE" = "unittest" ] || [ "$TESTSUITE" = "all" ]
 then 
     echo "= schema_check =========================================================="
-    go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode += 8))
+    go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode += 16))
 
     echo "= go test ==============================================================="
     cov_tmp="$(mktemp)"
@@ -72,7 +60,7 @@ then
         -tags "container_image_ostree_stub containers_image_openpgp" \
         -covermode=count \
         -coverprofile="${cov_tmp}" \
-        ${pkgs} && echo ok || ((exitcode += 16))
+        ${pkgs} && echo ok || ((exitcode += 32))
     tail -n +2 "${cov_tmp}" >>"${COVERAGE_PATH}"
 fi
 
