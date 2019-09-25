@@ -25,10 +25,46 @@ import (
 	"path/filepath"
 	"strconv"
 
+	osexec "os/exec"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
+
+type ExecCmd struct {
+	Cmd *osexec.Cmd
+}
+
+func (ec *ExecCmd) Run() error {
+	glog.Infoln("Run:", ec.Cmd.Args)
+	err := ec.Cmd.Run()
+	if err != nil {
+		return errors.Wrapf(err, "running command: %s", ec.Cmd.Args)
+	}
+	return err
+}
+
+func (ec *ExecCmd) SetEnv(envs ...string) Cmd {
+	ec.Cmd.Env = envs
+	return ec
+}
+
+func (ec *ExecCmd) SetStdin(r io.Reader) Cmd {
+	ec.Cmd.Stdin = r
+	return ec
+}
+
+func (ec *ExecCmd) SetStdout(w io.Writer) Cmd {
+	ec.Cmd.Stdout = w
+	return ec
+}
+
+// SetStderr sets stderr
+func (ec *ExecCmd) SetStderr(w io.Writer) Cmd {
+	ec.Cmd.Stderr = w
+	return ec
+}
 
 // ExecRunner runs commands using the os/exec package.
 //
@@ -36,39 +72,32 @@ import (
 type ExecRunner struct{}
 
 // Run starts the specified command in a bash shell and waits for it to complete.
-func (*ExecRunner) Run(cmd string) error {
-	glog.Infoln("Run:", cmd)
+func (*ExecRunner) Command(cmd string) Cmd {
 	c := exec.Command("/bin/bash", "-c", cmd)
-	if err := c.Run(); err != nil {
-		return errors.Wrapf(err, "running command: %s", cmd)
+	return &ExecCmd{
+		Cmd: c,
 	}
-	return nil
+}
+
+// Run starts the specified command in a bash shell and waits for it to complete.
+func (*ExecRunner) Run(c Cmd) error {
+	return c.Run()
 }
 
 // CombinedOutputTo runs the command and stores both command
 // output and error to out.
-func (*ExecRunner) CombinedOutputTo(cmd string, out io.Writer) error {
-	glog.Infoln("Run with output:", cmd)
-	c := exec.Command("/bin/bash", "-c", cmd)
-	c.Stdout = out
-	c.Stderr = out
-	err := c.Run()
-	if err != nil {
-		return errors.Wrapf(err, "running command: %s\n.", cmd)
-	}
-
-	return nil
+func (*ExecRunner) CombinedOutputTo(c Cmd, out io.Writer) error {
+	c.SetStdout(out)
+	c.SetStderr(out)
+	return c.Run()
 }
 
 // CombinedOutput runs the command  in a bash shell and returns its
 // combined standard output and standard error.
-func (e *ExecRunner) CombinedOutput(cmd string) (string, error) {
+func (e *ExecRunner) CombinedOutput(c Cmd) (string, error) {
 	var b bytes.Buffer
-	err := e.CombinedOutputTo(cmd, &b)
-	if err != nil {
-		return "", errors.Wrapf(err, "running command: %s\n output: %s", cmd, b.Bytes())
-	}
-	return b.String(), nil
+	err := e.CombinedOutputTo(c, &b)
+	return b.String(), err
 
 }
 

@@ -24,10 +24,22 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+// Cmd abstracts over running a command somewhere, this is useful for testing
+type Cmd interface {
+	Run() error
+	// Each entry should be of the form "key=value"
+	SetEnv(...string) Cmd
+	SetStdin(io.Reader) Cmd
+	SetStdout(io.Writer) Cmd
+	SetStderr(io.Writer) Cmd
+}
+
 // Runner represents an interface to run commands.
 type Runner interface {
+	Command(c string) Cmd
+
 	// Run starts the specified command and waits for it to complete.
-	Run(cmd string) error
+	Run(c Cmd) error
 
 	// CombinedOutputTo runs the command and stores both command
 	// output and error to out. A typical usage is:
@@ -40,11 +52,11 @@ type Runner interface {
 	// error would show on your terminal immediately before you
 	// cmd exit. This is useful for a long run command such as
 	// continuously print running logs.
-	CombinedOutputTo(cmd string, out io.Writer) error
+	CombinedOutputTo(c Cmd, out io.Writer) error
 
 	// CombinedOutput runs the command and returns its combined standard
 	// output and standard error.
-	CombinedOutput(cmd string) (string, error)
+	CombinedOutput(c Cmd) (string, error)
 
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
