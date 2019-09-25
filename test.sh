@@ -14,22 +14,37 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-set -eu -o pipefail
+set -e -o pipefail
 # TODO: fix exit code numbers 
 # TODO: make test should work locally as it was before
+if [[ -z "$TESTSUITE_LINT" && -z "$TESTSUITE_UNIT" && -z "$TESTSUITE_BOILERPLATE" ]]  
+then # if all of them are not set then it is a local run
+    TESTSUITE_LINT=true
+    TESTSUITE_UNIT=true
+    TESTSUITE_BOILETPLATE=true
+fi
+
 exitcode=0
 
-echo "= go mod ================================================================"
-go mod download 2>&1 | grep -v "go: finding" || true
-go mod tidy -v && echo ok || ((exitcode += 2))
+if [[ ! -z "$TESTSUITE_LINT" ]]
+then 
+    echo "= make lint ============================================================="
+    make -s lint-ci && echo ok || ((exitcode += 4))
+    echo "= go mod ================================================================"
+    go mod download 2>&1 | grep -v "go: finding" || true
+    go mod tidy -v && echo ok || ((exitcode += 2))
+fi
 
-if [ ! -z "$TESTSUITE_LINT"] then 
+
+if [[ ! -z "$TESTSUITE_LINT" ]] 
+then 
     echo "= make lint ============================================================="
     make -s lint-ci && echo ok || ((exitcode += 4))
 fi
 
 
-if [ ! -z "$TESTSUITE_BOILERPLATE"] then 
+if [[ ! -z "$TESTSUITE_BOILERPLATE" ]]
+then 
     echo "= boilerplate ==========================================================="
     readonly PYTHON=$(type -P python || echo docker run --rm -it -v $(pwd):/minikube -w /minikube python python)
     readonly BDIR="./hack/boilerplate"
@@ -46,7 +61,8 @@ if [ ! -z "$TESTSUITE_BOILERPLATE"] then
 fi
 
 
-if [ ! -z "$TESTSUITE_UNIT"] then 
+if [[ ! -z "$TESTSUITE_UNIT" ]]
+then 
     echo "= go test ==============================================================="
     cov_tmp="$(mktemp)"
     readonly COVERAGE_PATH=./out/coverage.txt
