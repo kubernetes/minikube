@@ -20,16 +20,13 @@ A design review process for non-trivial enhancements to minikube.
 ## Goals
 
 * Facilitate communication about the "how" and "why" of an enhancement before code is written
+* Lightweight enough to not deter casual contributions
+* A process applicable to any roadmap-worthy enhancement
 
 ## Non-Goals
 
 * Coverage for smaller enhancements that would not be represented within the minikube roadmap.
-
-## Requirements
-
-* Lightweight enough to not deter casual contributions
-* A process applicable to any roadmap-worthy enhancement
-* Should not introduce lengthy delays to contributing software
+* Unnecessarily reductions in development velocity
 
 ## Design Details
 

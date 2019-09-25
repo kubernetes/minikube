@@ -7,9 +7,10 @@ Authors: <date>
 
 Please review this proposal with the following priorities:
 
-*   Does this fit with minikube's principles?
+*   Does this fit with minikube's [principles](https://minikube.sigs.k8s.io/docs/concepts/principles/)?
 *   Are there other approaches to consider?
 *   Could the implementation be made simpler?
+*   Are there usability, reliability, or technical debt concerns?
 
 Please leave the above text in your proposal as instructions to the reader.
 
@@ -26,10 +27,6 @@ _(1 paragraph) What are you proposing, and why is it important to users and/or d
 
 *   _A bulleted list of what is out of scope for this proposal_
 *   _Listing non-goals helps to focus the discussion_
-
-## Requirements
-
-*   _What are the constraints to the problem you are trying to solve?_
 
 ## Design Details
 
