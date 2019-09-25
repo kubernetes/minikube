@@ -19,7 +19,7 @@ set -eu -o pipefail
 TESTSUITE="${TESTSUITE:-all}" # if env variable not set run all the tests
 exitcode=0
 
-if [ "$TESTSUITE" = "lint" ] || [ "$TESTSUITE" = "all" ]
+if [[ "$TESTSUITE" = "lint" ]] || [[ "$TESTSUITE" = "all" ]]
 then 
     echo "= make lint ============================================================="
     make -s lint-ci && echo ok || ((exitcode += 4))
@@ -30,7 +30,7 @@ fi
 
 
 
-if [ "$TESTSUITE" = "boilerplate" ] || [ "$TESTSUITE" = "all" ]
+if [[ "$TESTSUITE" = "boilerplate" ]] || [[ "$TESTSUITE" = "all" ]]
 then
     echo "= boilerplate ==========================================================="
     readonly PYTHON=$(type -P python || echo docker run --rm -it -v $(pwd):/minikube -w /minikube python python)
@@ -46,7 +46,7 @@ then
 fi
 
 
-if [ "$TESTSUITE" = "unittest" ] || [ "$TESTSUITE" = "all" ]
+if [[ "$TESTSUITE" = "unittest" ]] || [[ "$TESTSUITE" = "all" ]]
 then 
     echo "= schema_check =========================================================="
     go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode += 16))
