@@ -9,12 +9,10 @@ env:
 matrix:
   include:
     - language: python
-      before_install: pip install flake8
-      script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-
-    - language: python
       env:
         - TESTSUITE_BOILERPLATE=true
+      before_install: 
+          - pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       script: make test
 
     - language: go

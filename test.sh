@@ -55,13 +55,14 @@ then
     else
         echo "ok"
     fi
-    echo "= schema_check =========================================================="
-    go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode += 8))
 fi
 
 
 if [[ ! -z "$TESTSUITE_UNIT" ]]
 then 
+    echo "= schema_check =========================================================="
+    go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode += 8))
+
     echo "= go test ==============================================================="
     cov_tmp="$(mktemp)"
     readonly COVERAGE_PATH=./out/coverage.txt
