@@ -34,7 +34,7 @@ var updateCheckCmd = &cobra.Command{
 		enableUpdateNotification = false
 	},
 	Run: func(command *cobra.Command, args []string) {
-		url := constants.GithubMinikubeReleasesURL
+		url := notify.GithubMinikubeReleasesURL
 		r, err := notify.GetAllVersionsFromURL(url)
 		if err != nil {
 			exit.WithError("Unable to fetch latest version info", err)

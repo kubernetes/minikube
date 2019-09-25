@@ -44,7 +44,7 @@ var (
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
 func MaybePrintUpdateTextFromGithub() bool {
-	return MaybePrintUpdateText(constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
+	return MaybePrintUpdateText(GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
 // MaybePrintUpdateText prints update text, returns a bool if life is good.
