@@ -1,5 +1,3 @@
-language: go
-os: linux
 env:
   global:
     - GOPROXY=https://proxy.golang.org
@@ -10,6 +8,7 @@ env:
 
 matrix:
   include:
+    - os: linux
     - go: 1.12.9
     - language: python
       before_install: pip install flake8
