@@ -16,7 +16,6 @@
 
 set -e -o pipefail
 # TODO: fix exit code numbers 
-# TODO: make test should work locally as it was before
 if [[ -z "$TESTSUITE_LINT" && -z "$TESTSUITE_UNIT" && -z "$TESTSUITE_BOILERPLATE" ]]  
 then # if all of them are not set then it is a local run
     TESTSUITE_LINT=true

@@ -6,7 +6,6 @@ go:
 env:
   global:
     - GOPROXY=https://proxy.golang.org
-
 matrix:
   include:
     - language: python
@@ -22,14 +21,16 @@ matrix:
       go: 1.12.9
       env:
         - TESTSUITE_LINT=true
+      before_install:
+        - sudo apt-get install -y libvirt-dev
       script: make test
 
     - language: go
       go: 1.12.9
       env:
         - TESTSUITE_UNIT=true
-      # before_install:
-      #   - sudo apt-get install -y libvirt-dev
+      before_install:
+        - sudo apt-get install -y libvirt-dev
       script: make test
 
 after_success:
