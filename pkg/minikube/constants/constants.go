@@ -83,8 +83,6 @@ var MountProcessFileName = ".mount-process"
 const (
 	// SHASuffix is the suffix of a SHA-256 checksum file
 	SHASuffix = ".sha256"
-	// GithubMinikubeReleasesURL is the URL of the minikube github releases JSON file
-	GithubMinikubeReleasesURL = "https://storage.googleapis.com/minikube/releases.json"
 	// DefaultWait is the default wait time, in seconds
 	DefaultWait = 20
 	// DefaultInterval is the default interval, in seconds
