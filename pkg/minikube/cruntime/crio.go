@@ -21,15 +21,15 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // CRIO contains CRIO runtime state
 type CRIO struct {
-	Socket           string
-	Runner           CommandRunner
-	KubernetesConfig config.KubernetesConfig
+	Socket            string
+	Runner            CommandRunner
+	ImageRepository   string
+	KubernetesVersion string
 }
 
 // Name is a human readable name for CRIO
@@ -89,7 +89,7 @@ func (r *CRIO) Enable(disOthers bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateCRIOConfig(r.Runner, r.KubernetesConfig); err != nil {
+	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {

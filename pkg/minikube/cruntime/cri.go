@@ -26,7 +26,6 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -385,13 +384,13 @@ image-endpoint: unix://{{.Socket}}
 }
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
-func generateCRIOConfig(cr CommandRunner, k8s config.KubernetesConfig) error {
+func generateCRIOConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
 	cPath := constants.CRIOConfFile
 	t, err := template.New("crio.conf").Parse(crioConfigTemplate)
 	if err != nil {
 		return err
 	}
-	pauseImage := images.PauseImage(k8s.ImageRepository, k8s.KubernetesVersion)
+	pauseImage := images.PauseImage(imageRepository, k8sVersion)
 	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: pauseImage}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
