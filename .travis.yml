@@ -20,4 +20,4 @@ after_success:
   - bash <(curl -s https://codecov.io/bash)
 notifications:
     webhooks: https://www.travisbuddy.com/
-    on_success: never # travisbuddy don't comment on successfull 
+    on_success: never # travisbuddy don't comment on successful 
