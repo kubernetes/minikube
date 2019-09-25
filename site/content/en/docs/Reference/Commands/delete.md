@@ -4,12 +4,12 @@ linkTitle: "delete"
 weight: 1
 date: 2019-08-01
 description: >
-  Deletes a local kubernetes cluster
+  Deletes a local Kubernetes cluster
 ---
 
 ### Overview
 
-Deletes a local kubernetes cluster. This command deletes the VM, and removes all
+Deletes a local Kubernetes cluster. This command deletes the VM, and removes all
 associated files.
 
 ## Usage
