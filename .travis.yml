@@ -6,10 +6,6 @@ go:
 env:
   global:
     - GOPROXY=https://proxy.golang.org
-  matrix:
-    - TESTSUITE_LINT=true
-    - TESTSUITE_BOILERPLATE=true
-    - TESTSUITE_UNIT=true
 
 matrix:
   include:
@@ -17,14 +13,28 @@ matrix:
       before_install: pip install flake8
       script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
-before_install:
-  - sudo apt-get install -y libvirt-dev
-install:
-  - echo "Don't run anything."
-script:
-  - make test
+    - language: python
+      env:
+        - TESTSUITE_BOILERPLATE=true
+      script: make test
+
+    - language: go
+      go: 1.12.9
+      env:
+        - TESTSUITE_LINT=true
+      script: make test
+
+    - language: go
+      go: 1.12.9
+      env:
+        - TESTSUITE_UNIT=true
+      # before_install:
+      #   - sudo apt-get install -y libvirt-dev
+      script: make test
+
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+
 notifications:
     webhooks: https://www.travisbuddy.com/
     on_success: never # travisbuddy don't comment on successful 
