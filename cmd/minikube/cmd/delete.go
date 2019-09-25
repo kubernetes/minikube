@@ -23,11 +23,12 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
 	ps "github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
+
+	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -176,8 +177,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	if err = cluster.DeleteHost(api); err != nil {
 		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("\"%s\" cluster does not exist", profile.Name))
-			return DeletionError{Err: delErr, Errtype: MissingCluster}
+			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": profile})
 		default:
 			out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
 			out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
