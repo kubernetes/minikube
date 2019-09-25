@@ -50,7 +50,7 @@ type Registry interface {
 // ConfigFactory is a function that creates a driver config from MachineConfig
 type ConfigFactory func(config.MachineConfig) interface{}
 
-// DriverFactory is a function that load a byte stream and create a driver
+// DriverFactory is a function that loads a byte stream and creates a driver.
 type DriverFactory func() drivers.Driver
 
 // DriverDef defines a machine driver metadata. It tells minikube how to initialize
@@ -63,7 +63,7 @@ type DriverDef struct {
 	// triggered through RPC.
 	Builtin bool
 
-	// ConfigCreator generate a raw driver object by minikube's machine config.
+	// ConfigCreator generates a raw driver object by minikube's machine config.
 	ConfigCreator ConfigFactory
 
 	// DriverCreator is the factory method that creates a machine driver instance.
