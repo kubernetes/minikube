@@ -16,7 +16,7 @@
 
 set -eu -o pipefail
 
-TESTSUITE="${TESTSUITE:-all}"
+TESTSUITE="${TESTSUITE:-all}" # if env variable not set run all the tests
 exitcode=0
 
 if [ "$TESTSUITE" = "lint" ] || [ "$TESTSUITE" = "all" ]
