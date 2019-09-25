@@ -10,7 +10,7 @@ matrix:
   include:
     - language: python
       env:
-        - TESTSUITE_BOILERPLATE=true
+        - TESTSUITE=boilerplate
       before_install: 
           - pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       script: make test
@@ -18,7 +18,7 @@ matrix:
     - language: go
       go: 1.12.9
       env:
-        - TESTSUITE_LINT=true
+        - TESTSUITE=lint
       before_install:
         - sudo apt-get install -y libvirt-dev
       script: make test
@@ -26,7 +26,7 @@ matrix:
     - language: go
       go: 1.12.9
       env:
-        - TESTSUITE_UNIT=true
+        - TESTSUITE=unittest
       before_install:
         - sudo apt-get install -y libvirt-dev
       script: make test
