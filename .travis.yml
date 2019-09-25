@@ -1,8 +1,13 @@
 language: go
 os: linux
-
 env:
-  - GOPROXY=https://proxy.golang.org
+  global:
+    - GOPROXY=https://proxy.golang.org
+  matrix:
+    - TESTSUITE_LINT=true
+    - TESTSUITE_BOILERPLATE=true
+    - TESTSUITE_UNIT=true
+
 matrix:
   include:
     - go: 1.12.9
