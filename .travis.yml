@@ -9,6 +9,7 @@ env:
 matrix:
   include:
     - language: python
+      name: Check Boilerplate 
       env:
         - TESTSUITE=boilerplate
       before_install: 
@@ -16,6 +17,7 @@ matrix:
       script: make test
 
     - language: go
+      name: Code Lint 
       go: 1.12.9
       env:
         - TESTSUITE=lint
@@ -24,6 +26,7 @@ matrix:
       script: make test
 
     - language: go
+      name: Unit Test
       go: 1.12.9
       env:
         - TESTSUITE=unittest
