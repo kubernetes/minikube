@@ -257,17 +257,7 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
-	prefix := ""
-	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
-		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
-	}
-
-	versionState := out.Happy
-	if notify.MaybePrintUpdateTextFromGithub() {
-		versionState = out.Meh
-	}
-
-	out.T(versionState, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
+	displayVersion(version.GetVersion())
 	displayEnviron(os.Environ())
 
 	// if --registry-mirror specified when run minikube start,
@@ -295,13 +285,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateFlags(driver)
 	validateUser(driver)
 
-	v, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
-		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
-	}
-
+	_ = getMinikubeVersion(driver)
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driver)
 	if err != nil {
@@ -366,6 +350,20 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 	showKubectlConnectInfo(kubeconfig)
+}
+
+func displayVersion(version string) {
+	prefix := ""
+	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
+		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
+	}
+
+	versionState := out.Happy
+	if notify.MaybePrintUpdateTextFromGithub() {
+		versionState = out.Meh
+	}
+
+	out.T(versionState, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version, "platform": platform()})
 }
 
 // displayEnviron makes the user aware of environment variables that will affect how minikube operates
@@ -727,23 +725,8 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 	}
 
 	// Feed Docker our host proxy environment by default, so that it can pull images
-	if _, ok := r.(*cruntime.Docker); ok {
-		if !cmd.Flags().Changed("docker-env") {
-			for _, k := range proxy.EnvVars {
-				if v := os.Getenv(k); v != "" {
-					// convert https_proxy to HTTPS_PROXY for linux
-					// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
-					k = strings.ToUpper(k)
-					if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
-						if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
-							out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
-							continue
-						}
-					}
-					dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
-				}
-			}
-		}
+	if _, ok := r.(*cruntime.Docker); ok && !cmd.Flags().Changed("docker-env") {
+		setDockerProxy()
 	}
 
 	repository := viper.GetString(imageRepository)
@@ -820,6 +803,24 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 		},
 	}
 	return cfg, nil
+}
+
+// setDockerProxy sets the proxy environment variables in the docker environment.
+func setDockerProxy() {
+	for _, k := range proxy.EnvVars {
+		if v := os.Getenv(k); v != "" {
+			// convert https_proxy to HTTPS_PROXY for linux
+			// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
+			k = strings.ToUpper(k)
+			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
+				if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
+					out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
+					continue
+				}
+			}
+			dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
 }
 
 // autoSetDriverOptions sets the options needed for specific vm-driver automatically.
@@ -914,6 +915,17 @@ func validateNetwork(h *host.Host) string {
 
 	// Here is where we should be checking connectivity to/from the VM
 	return ip
+}
+
+// getMinikubeVersion ensures that the driver binary is up to date
+func getMinikubeVersion(driver string) string {
+	v, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+	}
+	return v.String()
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable
