@@ -37,6 +37,7 @@ func getImageRepository(imageRepository string) string {
 	return imageRepository
 }
 
+// getMinikubeRepository returns either the minikube image registry on GCR or a mirror if specified
 func getMinikubeRepository(imageRepository string) string {
 	minikubeRepository := imageRepository
 	if minikubeRepository == "" {
@@ -144,6 +145,7 @@ func CachedImages(imageRepository string, kubernetesVersionStr string) []string 
 	return images
 }
 
+// PauseImage returns the image name for pause image (for pod infra)
 func PauseImage(imageRepository string, kubernetesVersionStr string) string {
 	imageRepository = getImageRepository(imageRepository)
 
