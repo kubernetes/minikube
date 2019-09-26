@@ -185,14 +185,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 
 	// In case DeleteHost didn't complete the job.
-	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile.Name)
-	if _, err := os.Stat(machineDir); err == nil {
-		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
-		err := os.RemoveAll(machineDir)
-		if err != nil {
-			return DeletionError{Err: fmt.Errorf("unable to remove machine directory: %v", err), Errtype: Fatal}
-		}
-	}
+	deleteProfileDirectory(profile.Name)
 
 	if err := pkg_config.DeleteProfile(profile.Name); err != nil {
 		if os.IsNotExist(err) {
@@ -291,6 +284,17 @@ func handleMultipleDeletionErrors(errors []error) {
 			glog.Errorln(deletionError.Error())
 		} else {
 			exit.WithError("Could not process errors from failed deletion", err)
+		}
+	}
+}
+
+func deleteProfileDirectory(profile string) {
+	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
+	if _, err := os.Stat(machineDir); err == nil {
+		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
+		err := os.RemoveAll(machineDir)
+		if err != nil {
+			exit.WithError("Unable to remove machine directory: %v", err)
 		}
 	}
 }
