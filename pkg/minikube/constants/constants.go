@@ -83,10 +83,6 @@ var MountProcessFileName = ".mount-process"
 const (
 	// SHASuffix is the suffix of a SHA-256 checksum file
 	SHASuffix = ".sha256"
-	// DefaultWait is the default wait time, in seconds
-	DefaultWait = 20
-	// DefaultInterval is the default interval, in seconds
-	DefaultInterval = 6
 )
 
 // DefaultISOURL is the default location of the minikube.iso file

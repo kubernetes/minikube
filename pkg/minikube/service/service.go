@@ -46,7 +46,13 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-const defaultK8sClientTimeout = 60 * time.Second
+const (
+	defaultK8sClientTimeout = 60 * time.Second
+	// DefaultWait is the default wait time, in seconds
+	DefaultWait = 20
+	// DefaultInterval is the default interval, in seconds
+	DefaultInterval = 6
+)
 
 // K8sClient represents a kubernetes client
 type K8sClient interface {
