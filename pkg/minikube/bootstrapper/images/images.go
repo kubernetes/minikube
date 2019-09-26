@@ -161,19 +161,26 @@ func PauseImage(imageRepository string, kubernetesVersionStr string) string {
 	}
 
 	var podInfraContainerImage string
-	if v1_16plus(kubernetesVersion) {
+	switch {
+	case v1_16plus(kubernetesVersion):
 		podInfraContainerImage = imageRepository + "pause:3.1"
-	} else if v1_14plus(kubernetesVersion) {
+
+	case v1_14plus(kubernetesVersion):
 		podInfraContainerImage = imageRepository + "pause:3.1"
-	} else if v1_13(kubernetesVersion) {
+
+	case v1_13(kubernetesVersion):
 		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
-	} else if v1_12(kubernetesVersion) {
+
+	case v1_12(kubernetesVersion):
 		podInfraContainerImage = imageRepository + "pause:3.1"
-	} else if v1_11(kubernetesVersion) {
+
+	case v1_11(kubernetesVersion):
 		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
-	} else {
+
+	default:
 		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
 	}
+
 	return podInfraContainerImage
 }
 
