@@ -22,8 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const defaultConfigViewFormat = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
@@ -57,7 +57,7 @@ For the list of accessible variables for the template, see the struct values her
 
 // View displays the current config
 func View() error {
-	cfg, err := config.ReadConfig(constants.ConfigFile)
+	cfg, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return err
 	}

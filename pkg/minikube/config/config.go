@@ -26,6 +26,7 @@ import (
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const (
@@ -59,7 +60,7 @@ type MinikubeConfig map[string]interface{}
 
 // Get gets a named value from config
 func Get(name string) (string, error) {
-	m, err := ReadConfig(constants.ConfigFile)
+	m, err := ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return "", err
 	}
@@ -94,13 +95,13 @@ func ReadConfig(configFile string) (MinikubeConfig, error) {
 		if os.IsNotExist(err) {
 			return make(map[string]interface{}), nil
 		}
-		return nil, fmt.Errorf("open %s: %v", constants.ConfigFile, err)
+		return nil, fmt.Errorf("open %s: %v", localpath.ConfigFile, err)
 	}
 	defer f.Close()
 
 	m, err := decode(f)
 	if err != nil {
-		return nil, fmt.Errorf("decode %s: %v", constants.ConfigFile, err)
+		return nil, fmt.Errorf("decode %s: %v", localpath.ConfigFile, err)
 	}
 
 	return m, nil
