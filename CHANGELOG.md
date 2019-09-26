@@ -784,7 +784,7 @@ Huge thank you for this release towards our contributors:
 
 * Issue #3037 change dependency management to dep [#3136](https://github.com/kubernetes/minikube/pull/3136)
 * Update dashboard version to v1.10.0 [#3122](https://github.com/kubernetes/minikube/pull/3122)
-* fix: --format outputs any string, --https only subsitute http URL scheme [#3114](https://github.com/kubernetes/minikube/pull/3114)
+* fix: --format outputs any string, --https only substitute http URL scheme [#3114](https://github.com/kubernetes/minikube/pull/3114)
 * Change default docker storage driver to overlay2 [#3121](https://github.com/kubernetes/minikube/pull/3121)
 * Add env variable for default ES_JAVA_OPTS [#3086](https://github.com/kubernetes/minikube/pull/3086)
 * fix(cli): `minikube start --mount --mountsting` without write permission [#2671](https://github.com/kubernetes/minikube/pull/2671)
