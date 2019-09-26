@@ -22,6 +22,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -70,7 +71,7 @@ var deleteCacheCmd = &cobra.Command{
 }
 
 func imagesInConfigFile() ([]string, error) {
-	configFile, err := config.ReadConfig(constants.ConfigFile)
+	configFile, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return nil, err
 	}

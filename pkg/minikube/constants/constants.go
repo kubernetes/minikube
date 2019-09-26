@@ -104,9 +104,6 @@ var NewestKubernetesVersion = "v1.16.0"
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
 var OldestKubernetesVersion = "v1.11.10"
 
-// ConfigFile is the path of the config file
-var ConfigFile = localpath.MakeMiniPath("config", "config.json")
-
 const (
 	// IsMinikubeChildProcess is the name of "is minikube child process" variable
 	IsMinikubeChildProcess = "IS_MINIKUBE_CHILD_PROCESS"
