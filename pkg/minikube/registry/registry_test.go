@@ -36,21 +36,19 @@ func TestDriverString(t *testing.T) {
 	}
 }
 
-func TestRegistry(t *testing.T) {
-	foo := DriverDef{
-		Name:    "foo",
+func testDriver(name string) DriverDef {
+	return DriverDef{
+		Name:    name,
 		Builtin: true,
 		ConfigCreator: func(_ config.MachineConfig) interface{} {
 			return nil
 		},
 	}
-	bar := DriverDef{
-		Name:    "bar",
-		Builtin: true,
-		ConfigCreator: func(_ config.MachineConfig) interface{} {
-			return nil
-		},
-	}
+}
+
+func TestRegistry1(t *testing.T) {
+	foo := testDriver("foo")
+	bar := testDriver("bar")
 
 	registry := createRegistry()
 	t.Run("registry.Register", func(t *testing.T) {
@@ -82,7 +80,19 @@ func TestRegistry(t *testing.T) {
 			t.Fatalf("expect len(list) to be %d; got %d", 2, len(list))
 		}
 	})
+}
 
+func TestRegistry2(t *testing.T) {
+	foo := testDriver("foo")
+	bar := testDriver("bar")
+
+	registry := createRegistry()
+	if err := registry.Register(foo); err != nil {
+		t.Skipf("error not expect but got: %v", err)
+	}
+	if err := registry.Register(bar); err != nil {
+		t.Skipf("error not expect but got: %v", err)
+	}
 	t.Run("Driver", func(t *testing.T) {
 		driverName := "foo"
 		driver, err := registry.Driver(driverName)
