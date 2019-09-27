@@ -27,9 +27,6 @@ import (
 )
 
 func TestGvisorAddon(t *testing.T) {
-	// TODO(tstromberg): Fix or remove addon.
-	t.Skip("SKIPPING: Currently broken (gvisor-containerd-shim.toml CrashLoopBackoff): https://github.com/kubernetes/minikube/issues/5305")
-
 	if NoneDriver() {
 		t.Skip("Can't run containerd backend with none driver")
 	}

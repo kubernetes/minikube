@@ -35,5 +35,10 @@ matrix:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 notifications:
-    webhooks: https://www.travisbuddy.com/
-    on_success: never # travisbuddy don't comment on successful 
+    webhooks: 
+      urls: 
+        - https://www.travisbuddy.com?only=failed,errored
+      on_success: never  # don't comment on successful builds.
+      on_failure: always
+      on_cancel:  always
+      on_error:   always
