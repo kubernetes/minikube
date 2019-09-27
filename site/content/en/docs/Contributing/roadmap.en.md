@@ -78,8 +78,9 @@ Please send a PR to suggest any improvements to it.
 
 - [ ] VM-free deployment to containers (Docker, Podman)
 - [ ] Windows as a first-class citizen
-- [ ] WSL2 support
+- [ ] WSL2 support (no additional VM required)
 - [ ] Firecracker VM support
+- [ ] Generic (SSH) driver support
 
 ## (#5) Reliable
 
