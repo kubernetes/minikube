@@ -44,13 +44,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
-// loadRoot is where images should be loaded from within the guest VM
-var loadRoot = path.Join(constants.GuestPersistentDir, "images")
+var (
+	// loadRoot is where images should be loaded from within the guest VM
+	loadRoot = path.Join(constants.GuestPersistentDir, "images")
 
-var getWindowsVolumeName = getWindowsVolumeNameCmd
+	getWindowsVolumeName = getWindowsVolumeNameCmd
 
-// loadImageLock is used to serialize image loads to avoid overloading the guest VM
-var loadImageLock sync.Mutex
+	// loadImageLock is used to serialize image loads to avoid overloading the guest VM
+	loadImageLock sync.Mutex
+)
 
 // CacheImagesForBootstrapper will cache images for a bootstrapper
 func CacheImagesForBootstrapper(imageRepository string, version string, clusterBootstrapper string) error {

@@ -42,8 +42,10 @@ var rootCmd = &cobra.Command{
 	},
 }
 
-const org = "kubernetes"
-const repo = "minikube"
+const (
+	org  = "kubernetes"
+	repo = "minikube"
+)
 
 func main() {
 	rootCmd.Flags().StringVar(&token, "token", "", "Specify personal Github Token if you are hitting a rate limit anonymously. https://github.com/settings/tokens")

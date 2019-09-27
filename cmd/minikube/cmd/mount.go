@@ -42,15 +42,17 @@ import (
 const nineP = "9p"
 
 // placeholders for flag values
-var mountIP string
-var mountVersion string
-var mountType string
-var isKill bool
-var uid string
-var gid string
-var mSize int
-var options []string
-var mode uint
+var (
+	mountIP      string
+	mountVersion string
+	mountType    string
+	isKill       bool
+	uid          string
+	gid          string
+	mSize        int
+	options      []string
+	mode         uint
+)
 
 // supportedFilesystems is a map of filesystem types to not warn against.
 var supportedFilesystems = map[string]bool{nineP: true}

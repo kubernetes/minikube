@@ -32,10 +32,12 @@ import (
 	"testing"
 )
 
-const RunningPid1 = 1234
-const RunningPid2 = 1235
-const NotRunningPid = 1236
-const NotRunningPid2 = 1237
+const (
+	RunningPid1    = 1234
+	RunningPid2    = 1235
+	NotRunningPid  = 1236
+	NotRunningPid2 = 1237
+)
 
 func mockPidChecker(pid int) (bool, error) {
 	if pid == NotRunningPid || pid == NotRunningPid2 {

@@ -251,8 +251,10 @@ var vmProblems = map[string]match{
 }
 
 // proxyDoc is the URL to proxy documentation
-const proxyDoc = "https://minikube.sigs.k8s.io/docs/reference/networking/proxy/"
-const vpnDoc = "https://minikube.sigs.k8s.io/docs/reference/networking/vpn/"
+const (
+	proxyDoc = "https://minikube.sigs.k8s.io/docs/reference/networking/proxy/"
+	vpnDoc   = "https://minikube.sigs.k8s.io/docs/reference/networking/vpn/"
+)
 
 // netProblems are network related problems.
 var netProblems = map[string]match{
