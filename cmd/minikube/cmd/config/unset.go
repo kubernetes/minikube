@@ -19,8 +19,8 @@ package config
 import (
 	"github.com/spf13/cobra"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 var configUnsetCmd = &cobra.Command{
@@ -44,10 +44,10 @@ func init() {
 
 // Unset unsets a property
 func Unset(name string) error {
-	m, err := pkgConfig.ReadConfig(constants.ConfigFile)
+	m, err := pkgConfig.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return err
 	}
 	delete(m, name)
-	return pkgConfig.WriteConfig(constants.ConfigFile, m)
+	return pkgConfig.WriteConfig(localpath.ConfigFile, m)
 }

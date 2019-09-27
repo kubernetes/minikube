@@ -151,7 +151,7 @@ evictionHard:
   imagefs.available: "0%"
 `))
 
-// kubeletSystemdTemplate hosts the override kubelet flags, written to constants.KubeletSystemdConfFile
+// kubeletSystemdTemplate hosts the override kubelet flags, written to kubeletSystemdConfFile
 var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`[Unit]
 {{if or (eq .ContainerRuntime "cri-o") (eq .ContainerRuntime "cri")}}Wants=crio.service{{else if eq .ContainerRuntime "containerd"}}Wants=containerd.service{{else}}Wants=docker.socket{{end}}
 
@@ -162,7 +162,7 @@ ExecStart={{.KubeletPath}}{{if .ExtraOptions}} {{.ExtraOptions}}{{end}}
 [Install]
 `))
 
-// kubeletServiceTemplate is the base kubelet systemd template, written to constanst.KubeletServiceFile
+// kubeletServiceTemplate is the base kubelet systemd template, written to kubeletServiceFile
 var kubeletServiceTemplate = template.Must(template.New("kubeletServiceTemplate").Parse(`[Unit]
 Description=kubelet: The Kubernetes Node Agent
 Documentation=http://kubernetes.io/docs/
