@@ -51,9 +51,9 @@ func getMinikubeRepository(imageRepository string) string {
 }
 
 // CachedImages gets the images to cache for kubeadm for a version
-func CachedImages(imageRepository string, kubernetesVersionStr string) []string {
-	imageRepository = getImageRepository(imageRepository)
-	minikubeRepository := getMinikubeRepository(imageRepository)
+func CachedImages(imageRepositoryStr string, kubernetesVersionStr string) []string {
+	imageRepository := getImageRepository(imageRepositoryStr)
+	minikubeRepository := getMinikubeRepository(imageRepositoryStr)
 
 	v1_16plus := semver.MustParseRange(">=1.16.0")
 	v1_14plus := semver.MustParseRange(">=1.14.0 <1.16.0")
@@ -146,8 +146,8 @@ func CachedImages(imageRepository string, kubernetesVersionStr string) []string 
 }
 
 // PauseImage returns the image name for pause image (for pod infra)
-func PauseImage(imageRepository string, kubernetesVersionStr string) string {
-	imageRepository = getImageRepository(imageRepository)
+func PauseImage(imageRepositoryStr string, kubernetesVersionStr string) string {
+	imageRepository := getImageRepository(imageRepositoryStr)
 
 	v1_16plus := semver.MustParseRange(">=1.16.0")
 	v1_14plus := semver.MustParseRange(">=1.14.0 <1.16.0")
