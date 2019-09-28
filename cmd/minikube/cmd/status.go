@@ -48,6 +48,11 @@ const (
 	minikubeNotRunningStatusFlag = 1 << 0
 	clusterNotRunningStatusFlag  = 1 << 1
 	k8sNotRunningStatusFlag      = 1 << 2
+	defaultStatusFormat          = `host: {{.Host}}
+kubelet: {{.Kubelet}}
+apiserver: {{.APIServer}}
+kubectl: {{.Kubeconfig}}
+`
 )
 
 // statusCmd represents the status command
@@ -140,7 +145,7 @@ var statusCmd = &cobra.Command{
 }
 
 func init() {
-	statusCmd.Flags().StringVar(&statusFormat, "format", constants.DefaultStatusFormat,
+	statusCmd.Flags().StringVar(&statusFormat, "format", defaultStatusFormat,
 		`Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
 }

@@ -50,6 +50,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -57,8 +58,11 @@ import (
 // enum to differentiate kubeadm command line parameters from kubeadm config file parameters (see the
 // KubeadmExtraArgsWhitelist variable below for more info)
 const (
-	KubeadmCmdParam    = iota
-	KubeadmConfigParam = iota
+	KubeadmCmdParam        = iota
+	KubeadmConfigParam     = iota
+	defaultCNIConfigPath   = "/etc/cni/net.d/k8s.conf"
+	kubeletServiceFile     = "/lib/systemd/system/kubelet.service"
+	kubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
 )
 
 // KubeadmExtraArgsWhitelist is a whitelist of supported kubeadm params that can be supplied to kubeadm through
@@ -100,7 +104,7 @@ var PodsByLayer = []pod{
 }
 
 // yamlConfigPath is the path to the kubeadm configuration
-var yamlConfigPath = path.Join(constants.GuestEphemeralDir, "kubeadm.yaml")
+var yamlConfigPath = path.Join(vmpath.GuestEphemeralDir, "kubeadm.yaml")
 
 // SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
 var SkipAdditionalPreflights = map[string][]string{}
@@ -207,7 +211,7 @@ func createFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 
 // etcdDataDir is where etcd data is stored.
 func etcdDataDir() string {
-	return path.Join(constants.GuestPersistentDir, "etcd")
+	return path.Join(vmpath.GuestPersistentDir, "etcd")
 }
 
 // createCompatSymlinks creates compatibility symlinks to transition running services to new directory structures
@@ -247,8 +251,8 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	ignore := []string{
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(constants.GuestManifestsDir, "/", "-", -1)),
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(constants.GuestPersistentDir, "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestManifestsDir, "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestPersistentDir, "/", "-", -1)),
 		"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
@@ -695,7 +699,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, er
 		FeatureArgs       map[string]bool
 		NoTaintMaster     bool
 	}{
-		CertDir:           constants.GuestCertsDir,
+		CertDir:           vmpath.GuestCertsDir,
 		ServiceCIDR:       util.DefaultServiceCIDR,
 		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
 		AdvertiseAddress:  k8s.NodeIP,
@@ -745,21 +749,21 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 func configFiles(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte) []assets.CopyableFile {
 	fs := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget(kubeadm, yamlConfigPath, "0640"),
-		assets.NewMemoryAssetTarget(kubelet, constants.KubeletSystemdConfFile, "0640"),
-		assets.NewMemoryAssetTarget(kubeletSvc, constants.KubeletServiceFile, "0640"),
+		assets.NewMemoryAssetTarget(kubelet, kubeletSystemdConfFile, "0640"),
+		assets.NewMemoryAssetTarget(kubeletSvc, kubeletServiceFile, "0640"),
 	}
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin
 	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
 	if cfg.EnableDefaultCNI {
-		fs = append(fs, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), constants.DefaultCNIConfigPath, "0644"))
+		fs = append(fs, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), defaultCNIConfigPath, "0644"))
 	}
 	return fs
 }
 
 // binDir returns the persistent path binaries are stored in
 func binRoot(version string) string {
-	return path.Join(constants.GuestPersistentDir, "binaries", version)
+	return path.Join(vmpath.GuestPersistentDir, "binaries", version)
 }
 
 // invokeKubeadm returns the invocation command for Kubeadm
