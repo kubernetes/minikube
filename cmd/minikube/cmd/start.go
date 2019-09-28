@@ -85,6 +85,9 @@ const (
 	kvmQemuURI            = "kvm-qemu-uri"
 	kvmGPU                = "kvm-gpu"
 	kvmHidden             = "kvm-hidden"
+	minikubeEnvPrefix     = "MINIKUBE"
+	defaultMemorySize     = "2000mb"
+	defaultDiskSize       = "20000mb"
 	keepContext           = "keep-context"
 	createMount           = "mount"
 	featureGates          = "feature-gates"
@@ -110,6 +113,9 @@ const (
 	interactive           = "interactive"
 	waitTimeout           = "wait-timeout"
 	nativeSSH             = "native-ssh"
+	minimumMemorySize     = "1024mb"
+	minimumCPUS           = 2
+	minimumDiskSize       = "2000mb"
 )
 
 var (
@@ -136,7 +142,7 @@ func init() {
 
 // initMinikubeFlags includes commandline flags for minikube.
 func initMinikubeFlags() {
-	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	viper.SetEnvPrefix(minikubeEnvPrefix)
 	// Replaces '-' in flags with '_' in env variables
 	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -145,17 +151,17 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 
-	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM.")
-	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
-	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to the minikube VM.")
+	startCmd.Flags().String(memory, defaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso.")
-	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
-	startCmd.Flags().Bool(embedCerts, constants.DefaultEmbedCerts, "if true, will embed the certs in kubeconfig.")
+	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
+	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
-	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
@@ -257,17 +263,7 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
-	prefix := ""
-	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
-		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
-	}
-
-	versionState := out.Happy
-	if notify.MaybePrintUpdateTextFromGithub() {
-		versionState = out.Meh
-	}
-
-	out.T(versionState, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
+	displayVersion(version.GetVersion())
 	displayEnviron(os.Environ())
 
 	// if --registry-mirror specified when run minikube start,
@@ -295,13 +291,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateFlags(driver)
 	validateUser(driver)
 
-	v, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
-		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
-	}
-
+	_ = getMinikubeVersion(driver)
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driver)
 	if err != nil {
@@ -366,6 +356,20 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 	showKubectlConnectInfo(kubeconfig)
+}
+
+func displayVersion(version string) {
+	prefix := ""
+	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
+		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
+	}
+
+	versionState := out.Happy
+	if notify.MaybePrintUpdateTextFromGithub() {
+		versionState = out.Meh
+	}
+
+	out.T(versionState, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version, "platform": platform()})
 }
 
 // displayEnviron makes the user aware of environment variables that will affect how minikube operates
@@ -478,7 +482,7 @@ func selectDriver(oldConfig *cfg.Config) string {
 	driver := viper.GetString("vm-driver")
 	// By default, the driver is whatever we used last time
 	if driver == "" {
-		driver = constants.DefaultVMDriver
+		driver = constants.DriverVirtualbox
 		if oldConfig != nil {
 			driver = oldConfig.MachineConfig.VMDriver
 		}
@@ -620,17 +624,17 @@ func validateUser(driver string) {
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(driver string) {
 	diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
-	if diskSizeMB < pkgutil.CalculateSizeInMB(constants.MinimumDiskSize) && !viper.GetBool(force) {
-		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(constants.MinimumDiskSize)})
+	if diskSizeMB < pkgutil.CalculateSizeInMB(minimumDiskSize) && !viper.GetBool(force) {
+		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumDiskSize)})
 	}
 
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
-	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.MinimumMemorySize) && !viper.GetBool(force) {
-		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(constants.MinimumMemorySize)})
+	if memorySizeMB < pkgutil.CalculateSizeInMB(minimumMemorySize) && !viper.GetBool(force) {
+		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumMemorySize)})
 	}
-	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) && !viper.GetBool(force) {
+	if memorySizeMB < pkgutil.CalculateSizeInMB(defaultMemorySize) && !viper.GetBool(force) {
 		out.T(out.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default_memorysize}}MB. Beware that minikube might not work correctly or crash unexpectedly.",
-			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
+			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(defaultMemorySize)})
 	}
 
 	var cpuCount int
@@ -649,8 +653,8 @@ func validateFlags(driver string) {
 	} else {
 		cpuCount = viper.GetInt(cpus)
 	}
-	if cpuCount < constants.MinimumCPUS {
-		exit.UsageT("Requested CPU count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
+	if cpuCount < minimumCPUS {
+		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
@@ -726,23 +730,8 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 	}
 
 	// Feed Docker our host proxy environment by default, so that it can pull images
-	if _, ok := r.(*cruntime.Docker); ok {
-		if !cmd.Flags().Changed("docker-env") {
-			for _, k := range proxy.EnvVars {
-				if v := os.Getenv(k); v != "" {
-					// convert https_proxy to HTTPS_PROXY for linux
-					// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
-					k = strings.ToUpper(k)
-					if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
-						if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
-							out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
-							continue
-						}
-					}
-					dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
-				}
-			}
-		}
+	if _, ok := r.(*cruntime.Docker); ok && !cmd.Flags().Changed("docker-env") {
+		setDockerProxy()
 	}
 
 	repository := viper.GetString(imageRepository)
@@ -819,6 +808,24 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 		},
 	}
 	return cfg, nil
+}
+
+// setDockerProxy sets the proxy environment variables in the docker environment.
+func setDockerProxy() {
+	for _, k := range proxy.EnvVars {
+		if v := os.Getenv(k); v != "" {
+			// convert https_proxy to HTTPS_PROXY for linux
+			// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
+			k = strings.ToUpper(k)
+			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
+				if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
+					out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
+					continue
+				}
+			}
+			dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
+		}
+	}
 }
 
 // autoSetDriverOptions sets the options needed for specific vm-driver automatically.
@@ -913,6 +920,17 @@ func validateNetwork(h *host.Host) string {
 
 	// Here is where we should be checking connectivity to/from the VM
 	return ip
+}
+
+// getMinikubeVersion ensures that the driver binary is up to date
+func getMinikubeVersion(driver string) string {
+	v, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+	}
+	return v.String()
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable

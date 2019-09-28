@@ -66,7 +66,7 @@ func (k *Settings) filePath() string {
 	return k.kubeConfigFile.Load().(string)
 }
 
-// Populate populates an api.Config object with values from *Settings
+// PopulateFromSettings populates an api.Config object with values from *Settings
 func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	var err error
 	clusterName := cfg.ClusterName
@@ -115,7 +115,7 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	return nil
 }
 
-// update reads config from disk, adds the minikube settings, and writes it back.
+// Update reads config from disk, adds the minikube settings, and writes it back.
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
 func Update(kcs *Settings) error {

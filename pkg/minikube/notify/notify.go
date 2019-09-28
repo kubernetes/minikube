@@ -30,7 +30,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
@@ -44,7 +43,7 @@ var (
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
 func MaybePrintUpdateTextFromGithub() bool {
-	return MaybePrintUpdateText(constants.GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
+	return MaybePrintUpdateText(GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
 }
 
 // MaybePrintUpdateText prints update text, returns a bool if life is good.

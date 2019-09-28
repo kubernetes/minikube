@@ -26,10 +26,12 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-const crioConfigTemplate = `# The CRI-O configuration file specifies all of the available configuration
+const (
+	// CRIOConfFile is the path to the CRI-O configuration
+	CRIOConfFile = "/etc/crio/crio.conf"
+	crioConfigTemplate = `# The CRI-O configuration file specifies all of the available configuration
 # options and command-line flags for the crio(8) OCI Kubernetes Container Runtime
 # daemon, but in a TOML format that can be more easily modified and versioned.
 #
@@ -324,6 +326,7 @@ plugin_dirs = [
 	"/opt/cni/bin/",
 ]
 `
+)
 
 // listCRIContainers returns a list of containers using crictl
 func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
@@ -385,7 +388,7 @@ image-endpoint: unix://{{.Socket}}
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
 func generateCRIOConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
-	cPath := constants.CRIOConfFile
+	cPath := CRIOConfFile
 	t, err := template.New("crio.conf").Parse(crioConfigTemplate)
 	if err != nil {
 		return err
