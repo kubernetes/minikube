@@ -35,9 +35,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 
 	"github.com/juju/clock"
@@ -45,8 +45,10 @@ import (
 )
 
 const (
+	// CACertificatesDir contains CA certificates
 	CACertificatesDir = "/usr/share/ca-certificates"
-	SSLCertStoreDir   = "/etc/ssl/certs"
+	// SSLCertStoreDir contains SSL certificates
+	SSLCertStoreDir = "/etc/ssl/certs"
 )
 
 var (
@@ -89,7 +91,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		if strings.HasSuffix(cert, ".key") {
 			perms = "0600"
 		}
-		certFile, err := assets.NewFileAsset(p, constants.GuestCertsDir, cert, perms)
+		certFile, err := assets.NewFileAsset(p, vmpath.GuestCertsDir, cert, perms)
 		if err != nil {
 			return err
 		}
@@ -112,9 +114,9 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	kcs := &kubeconfig.Settings{
 		ClusterName:          k8s.NodeName,
 		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
-		ClientCertificate:    path.Join(constants.GuestCertsDir, "apiserver.crt"),
-		ClientKey:            path.Join(constants.GuestCertsDir, "apiserver.key"),
-		CertificateAuthority: path.Join(constants.GuestCertsDir, "ca.crt"),
+		ClientCertificate:    path.Join(vmpath.GuestCertsDir, "apiserver.crt"),
+		ClientKey:            path.Join(vmpath.GuestCertsDir, "apiserver.key"),
+		CertificateAuthority: path.Join(vmpath.GuestCertsDir, "ca.crt"),
 		KeepContext:          false,
 	}
 
@@ -128,7 +130,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "encoding kubeconfig")
 	}
 
-	kubeCfgFile := assets.NewMemoryAsset(data, constants.GuestPersistentDir, "kubeconfig", "0644")
+	kubeCfgFile := assets.NewMemoryAsset(data, vmpath.GuestPersistentDir, "kubeconfig", "0644")
 	copyableFiles = append(copyableFiles, kubeCfgFile)
 
 	for _, f := range copyableFiles {

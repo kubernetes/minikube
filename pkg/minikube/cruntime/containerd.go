@@ -26,11 +26,13 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-const containerdConfigTemplate = `root = "/var/lib/containerd"
+const (
+	// ContainerdConfFile is the path to the containerd configuration
+	ContainerdConfFile = "/etc/containerd/config.toml"
+	containerdConfigTemplate = `root = "/var/lib/containerd"
 state = "/run/containerd"
 oom_score = 0
 
@@ -100,6 +102,7 @@ oom_score = 0
     schedule_delay = "0s"
     startup_delay = "100ms"
 `
+)
 
 // Containerd contains containerd runtime state
 type Containerd struct {
@@ -160,7 +163,7 @@ func (r *Containerd) Available() error {
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
 func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
-	cPath := constants.ContainerdConfFile
+	cPath := ContainerdConfFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
 		return err

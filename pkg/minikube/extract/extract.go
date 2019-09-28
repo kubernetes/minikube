@@ -328,6 +328,9 @@ func checkString(s string) string {
 	// Parse out quote marks
 	stringToTranslate := s[1 : len(s)-1]
 
+	// Trim whitespace
+	stringToTranslate = strings.TrimSpace(stringToTranslate)
+
 	// Don't translate integers
 	if _, err := strconv.Atoi(stringToTranslate); err == nil {
 		return ""

@@ -29,6 +29,7 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/features"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -206,7 +207,7 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 	config.NewUnversionedOption(Kubelet, "hostname-override", constants.DefaultNodeName),
 
 	// System pods args
-	config.NewUnversionedOption(Kubelet, "pod-manifest-path", constants.GuestManifestsDir),
+	config.NewUnversionedOption(Kubelet, "pod-manifest-path", vmpath.GuestManifestsDir),
 	{
 		Option: config.ExtraOption{
 			Component: Kubelet,
@@ -222,7 +223,7 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 
 	// Auth args
 	config.NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
-	config.NewUnversionedOption(Kubelet, "client-ca-file", path.Join(constants.GuestCertsDir, "ca.crt")),
+	config.NewUnversionedOption(Kubelet, "client-ca-file", path.Join(vmpath.GuestCertsDir, "ca.crt")),
 
 	// Cgroup args
 	config.NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),
