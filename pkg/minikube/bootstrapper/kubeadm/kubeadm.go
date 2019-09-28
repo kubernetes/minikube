@@ -65,6 +65,12 @@ const (
 	kubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
 )
 
+const (
+	// Container runtimes
+	dockerContainerRuntime = "docker"
+	remoteContainerRuntime = "remote"
+)
+
 // KubeadmExtraArgsWhitelist is a whitelist of supported kubeadm params that can be supplied to kubeadm through
 // minikube's ExtraArgs parameter. The list is split into two parts - params that can be supplied as flags on the
 // command line and params that have to be inserted into the kubeadm config file. This is because of a kubeadm
@@ -557,7 +563,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 	}
 
 	pauseImage := images.PauseImage(k8s.ImageRepository, k8s.KubernetesVersion)
-	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != constants.RemoteContainerRuntime {
+	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
 		extraOpts["pod-infra-container-image"] = pauseImage
 	}
 
