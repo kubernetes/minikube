@@ -124,9 +124,3 @@ const (
 	// GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
 	GvisorConfigTomlTargetName = "gvisor-config.toml"
 )
-
-const (
-	// Container runtimes
-	DockerContainerRuntime = "docker"
-	RemoteContainerRuntime = "remote"
-)
