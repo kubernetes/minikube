@@ -67,7 +67,6 @@ const (
 
 const (
 	// Container runtimes
-	dockerContainerRuntime = "docker"
 	remoteContainerRuntime = "remote"
 )
 
