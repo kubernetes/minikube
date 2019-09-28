@@ -26,8 +26,8 @@ import (
 )
 
 func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
-	viper.SetDefault(memory, constants.DefaultMemorySize)
-	viper.SetDefault(humanReadableDiskSize, constants.DefaultDiskSize)
+	viper.SetDefault(memory, defaultMemorySize)
+	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 	originalEnv := os.Getenv("HTTP_PROXY")
 	defer func() {
 		err := os.Setenv("HTTP_PROXY", originalEnv)

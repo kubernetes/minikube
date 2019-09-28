@@ -22,7 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // Bootstrapper is the name for bootstrapper
@@ -300,7 +300,7 @@ func configurableFields() string {
 
 // ListConfigMap list entries from config file
 func ListConfigMap(name string) ([]string, error) {
-	configFile, err := config.ReadConfig(constants.ConfigFile)
+	configFile, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return nil, err
 	}
@@ -320,7 +320,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig(constants.ConfigFile)
+	cfg, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return err
 	}
@@ -337,7 +337,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(constants.ConfigFile, cfg)
+	return config.WriteConfig(localpath.ConfigFile, cfg)
 }
 
 // DeleteFromConfigMap deletes entries from a map in the config file
@@ -347,7 +347,7 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig(constants.ConfigFile)
+	cfg, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return err
 	}
@@ -362,5 +362,5 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(constants.ConfigFile, cfg)
+	return config.WriteConfig(localpath.ConfigFile, cfg)
 }
