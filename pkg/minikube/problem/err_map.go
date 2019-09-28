@@ -227,8 +227,14 @@ var vmProblems = map[string]match{
 	},
 	"VBOX_VTX_DISABLED": {
 		Regexp:         re(`This computer doesn't have VT-X/AMD-v enabled`),
-		Advice:         "Your host does not support virtualization. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, enable virtualization in your BIOS",
+		Advice:         "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
 		Issues:         []int{3900, 4730},
+		HideCreateLink: true,
+	},
+	"VERR_VERR_VMX_DISABLED": {
+		Regexp:         re(`VT-x is disabled.*VERR_VMX_MSR_ALL_VMX_DISABLED`),
+		Advice:         "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
+		Issues:         []int{5282, 5456},
 		HideCreateLink: true,
 	},
 	"VBOX_VERR_VMX_NO_VMX": {

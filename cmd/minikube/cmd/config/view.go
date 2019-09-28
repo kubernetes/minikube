@@ -22,9 +22,11 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
+
+const defaultConfigViewFormat = "- {{.ConfigKey}}: {{.ConfigValue}}\n"
 
 var viewFormat string
 
@@ -47,7 +49,7 @@ var configViewCmd = &cobra.Command{
 }
 
 func init() {
-	configViewCmd.Flags().StringVar(&viewFormat, "format", constants.DefaultConfigViewFormat,
+	configViewCmd.Flags().StringVar(&viewFormat, "format", defaultConfigViewFormat,
 		`Go template format string for the config view output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/config#ConfigViewTemplate`)
 	ConfigCmd.AddCommand(configViewCmd)
@@ -55,7 +57,7 @@ For the list of accessible variables for the template, see the struct values her
 
 // View displays the current config
 func View() error {
-	cfg, err := config.ReadConfig(constants.ConfigFile)
+	cfg, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return err
 	}
