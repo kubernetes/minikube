@@ -31,7 +31,7 @@ import (
 
 const (
 	// ContainerdConfFile is the path to the containerd configuration
-	ContainerdConfFile = "/etc/containerd/config.toml"
+	containerdConfigFile     = "/etc/containerd/config.toml"
 	containerdConfigTemplate = `root = "/var/lib/containerd"
 state = "/run/containerd"
 oom_score = 0
@@ -163,7 +163,7 @@ func (r *Containerd) Available() error {
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
 func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
-	cPath := ContainerdConfFile
+	cPath := containerdConfigFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
 		return err
