@@ -1,23 +1,23 @@
 os: linux
 language: go
 go:
-  - 1.12.9
+  - 1.13.1
 env:
   global:
     - GOPROXY=https://proxy.golang.org
 matrix:
   include:
     - language: python
-      name: Check Boilerplate 
+      name: Check Boilerplate
       env:
         - TESTSUITE=boilerplate
-      before_install: 
+      before_install:
           - pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       script: make test
 
     - language: go
-      name: Code Lint 
-      go: 1.12.9
+      name: Code Lint
+      go: 1.13.1
       env:
         - TESTSUITE=lint
       before_install:
@@ -26,7 +26,7 @@ matrix:
 
     - language: go
       name: Unit Test
-      go: 1.12.9
+      go: 1.13.1
       env:
         - TESTSUITE=unittest
       before_install:
@@ -35,8 +35,8 @@ matrix:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 notifications:
-    webhooks: 
-      urls: 
+    webhooks:
+      urls:
         - https://www.travisbuddy.com?only=failed,errored
       on_success: never  # don't comment on successful builds.
       on_failure: always
