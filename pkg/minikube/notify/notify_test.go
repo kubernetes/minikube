@@ -36,7 +36,7 @@ import (
 
 func TestMaybePrintUpdateTextFromGithub(t *testing.T) {
 	if MaybePrintUpdateTextFromGithub() {
-		t.Fatal("MaybePrintUpdateTextFromGithub() expected to return true, bot got false")
+		t.Fatal("MaybePrintUpdateTextFromGithub() expected to return false for basic setup, bot got true")
 	}
 }
 
