@@ -749,8 +749,8 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 func configFiles(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte) []assets.CopyableFile {
 	fs := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget(kubeadm, yamlConfigPath, "0640"),
-		assets.NewMemoryAssetTarget(kubelet, kubeletSystemdConfFile, "0640"),
-		assets.NewMemoryAssetTarget(kubeletSvc, kubeletServiceFile, "0640"),
+		assets.NewMemoryAssetTarget(kubelet, kubeletSystemdConfFile, "0644"),
+		assets.NewMemoryAssetTarget(kubeletSvc, kubeletServiceFile, "0644"),
 	}
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin
