@@ -42,7 +42,7 @@ spec:
       serviceAccountName: nginx-ingress
       terminationGracePeriodSeconds: 60
       containers:
-      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller{{.ExoticArch}}:0.25.1
+      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller{{.ExoticArch}}:0.26.1
         name: nginx-ingress-controller
         imagePullPolicy: IfNotPresent
         readinessProbe:
