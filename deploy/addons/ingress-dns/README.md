@@ -62,6 +62,8 @@ timeout 5
 Replace `192.168.99.169` with your minikube ip and `profilename` is the name of the minikube profile for the 
 corresponding ip address
 
+If you have multiple minikube ips you must configure multiple files
+
 See https://www.unix.com/man-page/opendarwin/5/resolver/
 Note that even though the `port` feature is documented. It does not actually work.
 
@@ -72,8 +74,7 @@ search test
 nameserver 192.168.99.169
 timeout 5
 ```
-Replace `192.168.99.169` with your minikube ip and `profilename` is the name of the minikube profile for the 
-corresponding ip address
+Replace `192.168.99.169` with your minikube ip
 
 If your linux OS uses `systemctl` run the following commands
 ```bash
