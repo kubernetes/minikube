@@ -1,7 +1,7 @@
-# Your proposal title
+# Your inspiring proposal title
 
-First proposed: <date>
-Authors: <date>
+* First proposed: <date>
+* Authors: $full_name (@github-handle), $full_name2 (@github_handle2)
 
 ## Reviewer Priorities
 
@@ -16,7 +16,7 @@ Please leave the above text in your proposal as instructions to the reader.
 
 ## Summary
 
-_(1 paragraph) What are you proposing, and why is it important to users and/or developers?
+_(1 paragraph) What are you proposing, and why is it important to users and/or developers?_
 
 ## Goals
 
@@ -30,7 +30,7 @@ _(1 paragraph) What are you proposing, and why is it important to users and/or d
 
 ## Design Details
 
-_(2+ paragraphs) _A short overview of your implementation idea, containing only as much detail as required to convey your idea._
+_(2+ paragraphs) A short overview of your implementation idea, containing only as much detail as required to convey your idea._
 
 _If you have multiple ideas, list them concisely._
 
