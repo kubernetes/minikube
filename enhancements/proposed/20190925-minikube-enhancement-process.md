@@ -26,11 +26,11 @@ A design review process for non-trivial enhancements to minikube.
 ## Non-Goals
 
 * Coverage for smaller enhancements that would not be represented within the minikube roadmap.
-* Unnecessarily reductions in development velocity
+* Reduced development velocity
 
 ## Design Details
 
-The *minikube enhancement process (MEP)* is a way to proposed, communicate, and coordinate on new efforts for the minikube project. MEP is based on a simplification of the [Kubernetes Enhancement Process](https://github.com/kubernetes/enhancements/blob/master/keps/0001-kubernetes-enhancement-proposal-process.md).
+The *minikube enhancement process (MEP)* is a way to propose, communicate, and coordinate on new efforts for the minikube project. MEP is based on a simplification of the [Kubernetes Enhancement Process](https://github.com/kubernetes/enhancements/blob/master/keps/0001-kubernetes-enhancement-proposal-process.md).
 
 ### Proposal Workflow
 
