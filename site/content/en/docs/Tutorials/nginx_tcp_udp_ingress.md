@@ -9,9 +9,8 @@ description: >
 
 ## Overview
 
-
-The Minikube [ingress addon](https://github.com/kubernetes/minikube/tree/master/deploy/addons/ingress) enables developers 
-to route traffic from their Host OS (Laptop, Desktop, etc) to a kubernetes service running inside their minikube cluster.
+The minikube [ingress addon](https://github.com/kubernetes/minikube/tree/master/deploy/addons/ingress) enables developers 
+to route traffic from their host (Laptop, Desktop, etc) to a Kubernetes service running inside their minikube cluster.
 The ingress addon uses the [ingress nginx](https://github.com/kubernetes/ingress-nginx) controller which by default
 is only configured to listen on ports 80 and 443. TCP and UDP services listening on other ports can be enabled.
 
