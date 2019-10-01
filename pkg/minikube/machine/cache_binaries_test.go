@@ -36,13 +36,11 @@ func (copyFailRunner) Copy(a assets.CopyableFile) error {
 	return fmt.Errorf("test error during copy file")
 }
 
+func newFakeCommandRunnerCopyFail() command.Runner {
+	return copyFailRunner{command.NewFakeCommandRunner()}
+}
+
 func TestCopyBinary(t *testing.T) {
-
-	fakeCommandRunnerCopyFail := func() command.Runner {
-		r := command.NewFakeCommandRunner()
-		return copyFailRunner{r}
-	}
-
 	var tc = []struct {
 		lastUpdateCheckFilePath string
 		src, dst, desc          string
@@ -68,7 +66,7 @@ func TestCopyBinary(t *testing.T) {
 			dst:    "/etc/passwd",
 			src:    "/etc/hosts",
 			err:    true,
-			runner: fakeCommandRunnerCopyFail(),
+			runner: newFakeCommandRunnerCopyFail(),
 		},
 	}
 	for _, test := range tc {
