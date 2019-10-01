@@ -209,3 +209,12 @@ In the above example we did the following
 You can apply the same steps that were applied to `tcp-services` to the `udp-services` configmap as well if you have a 
 service that uses UDP and/or TCP
 
+## Caveats
+
+Each minikube instance can only be configured for exactly 1 service to be listening on any particular port. 
+Multiple services listening on the same port in the same minikube instance is not supported and can not be supported 
+until an update of the ingress spec is released. 
+Please see [this document](https://docs.google.com/document/d/1BxYbDovMwnEqe8lj8JwHo8YxHAt3oC7ezhlFsG_tyag/edit#) 
+for the latest info on these potential changes. 
+
+
