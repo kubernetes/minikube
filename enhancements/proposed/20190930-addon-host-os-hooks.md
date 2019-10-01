@@ -20,11 +20,19 @@ In order to provide a richer and more simplified development experience,
 some addons may be better equipped if they can be integrated with capabilities that run on the Host OS
 triggered by lifecycle actions that occur as part of enabling and disabling addons
 
+Addons that can only be applied to a cluster have limited usefulness as those same features can be easily installed 
+with kubectl or helm. If the point of an addon is to extend the functionality of minikube without modifying minikube's 
+core architecture then that extension should apply to the host OS not just the kubernetes cluster itself. Other prominent
+tools used with kubernetes like helm provide hooks on the host OS in order to enable a rich plugin ecosystem.
+
 ### Feature use cases
 - Enabling and starting a background process that monitors ingress resources in a kubernetes cluster and updates host 
   DNS resolver configurations
 - Enabling and starting a background process that monitors the ingress resource in kubernetes cluster and installs 
   SSL certificates for local domains on the host
+- Develop a notification architecture in minikube which can publish events to a pub/sub broker and services
+  started on the host OS as part of a plugin can subscribe to those events and perform additional actions on behalf
+  of the user
 - Start a background process that could notify an IDE of the minikube ips that are running so that the 
 IDE could be used for connecting to services which use the minikube ip address and NodePort to connect to the database
 - Better integrations for tools that currently are wrapping minikube like: 
