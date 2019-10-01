@@ -20,12 +20,11 @@ remove, and renamed. I call it the `/ets/hosts` pollution problem.
 
 ### Solution
 What if you could just access your local services magically without having to edit your `/etc/hosts` file? Well now you
-can. This project acts as a DNS service that runs inside your kubernetes cluster. All you have to do is install the 
+can. This addon acts as a DNS service that runs inside your kubernetes cluster. All you have to do is install the 
 service and add the `$(minikube ip)` as a DNS server on your host machine. Each time the dns service is queried an 
 API call is made to the kubernetes master service for a list of all the ingresses. If a match is found for the name a 
-response is given with an IP address as the `$(minikube ip)` which was provided when the helm chart was installed. So 
-for example lets say my minikube ip address is `192.168.99.106` and I have an ingress controller with the name of 
-`myservice.test` then I would get a result like so: 
+response is given with an IP address as the `$(minikube ip)`. So for example lets say my minikube ip address is 
+`192.168.99.106` and I have an ingress controller with the name of `myservice.test` then I would get a result like so: 
 
 ```text
 #bash:~$ nslookup myservice.test $(minikube ip)
