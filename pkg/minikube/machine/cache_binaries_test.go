@@ -62,7 +62,7 @@ func TestCopyBinary(t *testing.T) {
 			runner: command.NewFakeCommandRunner(),
 		},
 		{
-			desc:   "existing src, dst without permissions",
+			desc:   "existing src, copy fail",
 			dst:    "/etc/passwd",
 			src:    "/etc/hosts",
 			err:    true,
