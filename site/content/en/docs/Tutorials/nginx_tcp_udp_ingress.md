@@ -204,7 +204,6 @@ In the above example we did the following
 - Created a redis deployment and service in the `default` namespace
 - Patched the `tcp-services` configmap in the `kube-system` namespace
 - Patched the `nginx-ingress-controller` deployment in the `kube-system` namespace
-- Forced the `nginx-ingress-controller` to redeploy all of its pods
 - Connected to our service from the host via port 6379
 
 You can apply the same steps that were applied to `tcp-services` to the `udp-services` configmap as well if you have a 
