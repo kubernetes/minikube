@@ -194,4 +194,14 @@ being used
 
 #### Pros of doing this
 1. No approval or review process will be required from the minikube development team
-2. No development time is spent on testing and developing this feature
+2. No development time is spent by minikube team on testing and auditing this feature
+
+### Use a web hook to call a service on the Host OS from a minikube VM
+
+#### Cons of doing this: 
+1. Said service could not be started and stopped as part of an addon
+2. We couldn't call said service if no VM's are running
+3. We couldn't interrupt the user to provide user input as part of enabling a plugin
+
+### Pros of doing this
+1. We wouldn't have to identify what type of host minikube is running on
