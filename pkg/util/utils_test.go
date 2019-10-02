@@ -26,9 +26,7 @@ import (
 
 func TestGetBinaryDownloadURL(t *testing.T) {
 	testData := []struct {
-		version     string
-		platform    string
-		expectedURL string
+		version, platform, expectedURL string
 	}{
 		{"v0.0.1", "linux", "https://storage.googleapis.com/minikube/releases/v0.0.1/minikube-linux-amd64"},
 		{"v0.0.1", "darwin", "https://storage.googleapis.com/minikube/releases/v0.0.1/minikube-darwin-amd64"},
@@ -45,9 +43,10 @@ func TestGetBinaryDownloadURL(t *testing.T) {
 }
 
 func TestTeePrefix(t *testing.T) {
-	var in bytes.Buffer
-	var out bytes.Buffer
-	var logged strings.Builder
+	var (
+		in, out bytes.Buffer
+		logged  strings.Builder
+	)
 
 	logSink := func(format string, args ...interface{}) {
 		logged.WriteString("(" + fmt.Sprintf(format, args...) + ")")

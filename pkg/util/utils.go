@@ -34,14 +34,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// ErrPrefix notes an error
-const ErrPrefix = "! "
-
-// OutPrefix notes output
-const OutPrefix = "> "
-
 const (
 	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-amd64%s"
+	// OutPrefix notes output
+	OutPrefix = "> "
+	// ErrPrefix notes an error
+	ErrPrefix = "! "
 )
 
 // CalculateSizeInMB returns the number of MB in the human readable string
@@ -188,7 +186,7 @@ func ReplaceChars(src []string, replacer *strings.Replacer) []string {
 }
 
 // ConcatStrings concatenates each string in the src slice with prefix and postfix and returns a new slice
-func ConcatStrings(src []string, prefix string, postfix string) []string {
+func ConcatStrings(src []string, prefix, postfix string) []string {
 	var buf bytes.Buffer
 	ret := make([]string, len(src))
 	for i, s := range src {
