@@ -21,8 +21,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os/exec"
 	"path"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -96,6 +99,45 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	err = s.Run(cmd)
 	wg.Wait()
 	return err
+}
+
+// RunCmd implements the Command Runner interface to run a exec.Cmd object
+func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+	rr := &RunResult{Args: cmd.Args}
+	glog.Infof("(SSHRunner) Run:  %v", rr.Command())
+
+	var outb, errb bytes.Buffer
+	cmd.Stdout, rr.Stdout = &outb, &outb
+	cmd.Stderr, rr.Stderr = &errb, &errb
+	start := time.Now()
+
+	sess, err := s.c.NewSession()
+	if err != nil {
+		return rr, errors.Wrap(err, "NewSession")
+	}
+
+	defer func() {
+		if err := sess.Close(); err != nil {
+			if err != io.EOF {
+				glog.Errorf("session close: %v", err)
+			}
+		}
+	}()
+
+	elapsed := time.Since(start)
+	err = teeSSH(sess, strings.Join(cmd.Args, " "), &outb, &errb)
+	if err == nil {
+		// Reduce log spam
+		if elapsed > (1 * time.Second) {
+			glog.Infof("(SSHRunner) Done: %v: (%s)", rr.Command(), elapsed)
+		}
+	} else {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			rr.ExitCode = exitError.ExitCode()
+		}
+		glog.Infof("(SSHRunner) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
+	}
+	return rr, err
 }
 
 // Run starts a command on the remote and waits for it to return.
