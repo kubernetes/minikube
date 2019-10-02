@@ -19,19 +19,19 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
-
 	"github.com/blang/semver"
 	"github.com/spf13/viper"
+	"io/ioutil"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/version"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path"
+	"testing"
+	"time"
 )
 
 func TestMaybePrintUpdateTextFromGithub(t *testing.T) {
@@ -44,7 +44,7 @@ func TestShouldCheckURL(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
-	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
+	lastUpdateCheckFilePath := path.Join(tempDir, "last_update_check")
 
 	// test that if users disable update notification in config, the URL version does not get checked
 	viper.Set(config.WantUpdateNotification, false)
@@ -205,7 +205,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	for _, test := range tc {
 		t.Run(test.description, func(t *testing.T) {
 			viper.Set(config.WantUpdateNotification, test.wantUpdateNotification)
-			lastUpdateCheckFilePath = filepath.Join(tempDir, "last_update_check")
+			lastUpdateCheckFilePath = path.Join(tempDir, "last_update_check")
 			if test.lastUpdateCheckFilePath != "" {
 				lastUpdateCheckFilePath = test.lastUpdateCheckFilePath
 			}
@@ -218,7 +218,12 @@ func TestMaybePrintUpdateText(t *testing.T) {
 			if test.url == "" {
 				test.url = server.URL
 			}
-			status := MaybePrintUpdateText(test.url, "/dev/null")
+			tmpfile, err := ioutil.TempFile("", "")
+			if err != nil {
+				t.Fatalf("Cannot create temp file: %v", err)
+			}
+			defer os.Remove(tmpfile.Name())
+			status := MaybePrintUpdateText(test.url, tmpfile.Name())
 			if test.status != status {
 				t.Fatalf("MaybePrintUpdateText expected to return %v, but got %v", test.status, status)
 			}
