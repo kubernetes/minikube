@@ -20,9 +20,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os/exec"
+	"time"
 
 	"golang.org/x/sync/syncmap"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -41,6 +44,29 @@ type FakeCommandRunner struct {
 // The expected output of commands should be set with SetCommandToOutput
 func NewFakeCommandRunner() *FakeCommandRunner {
 	return &FakeCommandRunner{}
+}
+
+// RunCmd implements the Command Runner interface to run a exec.Cmd object
+func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+	rr := &RunResult{Args: cmd.Args}
+	glog.Infof("(FakeCommandRunner) Run:  %v", rr.Command())
+
+	start := time.Now()
+
+	out, ok := f.cmdMap.Load(cmd.Args)
+	rr.Stderr = bytes.NewBuffer([]byte(out.(string))) // converting fake output string to a buffer
+
+	elapsed := time.Since(start)
+	if ok {
+		// Reduce log spam
+		if elapsed > (1 * time.Second) {
+			glog.Infof("(FakeCommandRunner) Done: %v: (%s)", rr.Command(), elapsed)
+		}
+	} else {
+		glog.Infof("(FakeCommandRunner) Non-zero exit: %v: (%s)\n%s", rr.Command(), elapsed, rr.Output())
+		return rr, fmt.Errorf("unavailable command: %s", cmd)
+	}
+	return rr, nil
 }
 
 // Run returns nil if output has been set for the given command text.
