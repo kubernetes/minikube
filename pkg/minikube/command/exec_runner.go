@@ -24,6 +24,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -34,6 +35,31 @@ import (
 //
 // It implements the CommandRunner interface.
 type ExecRunner struct{}
+
+// RunCmd implements the Command Runner interface to run a exec.Cmd object
+func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+	rr := &RunResult{Args: cmd.Args}
+	glog.Infof("(ExecRunner) Run:  %v", rr.Command())
+
+	var outb, errb bytes.Buffer
+	cmd.Stdout, rr.Stdout = &outb, &outb
+	cmd.Stderr, rr.Stderr = &errb, &errb
+	start := time.Now()
+	err := cmd.Run()
+	elapsed := time.Since(start)
+	if err == nil {
+		// Reduce log spam
+		if elapsed > (1 * time.Second) {
+			glog.Infof("(ExecRunner) Done: %v: (%s)", rr.Command(), elapsed)
+		}
+	} else {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			rr.ExitCode = exitError.ExitCode()
+		}
+		glog.Infof("(ExecRunner) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
+	}
+	return rr, err
+}
 
 // Run starts the specified command in a bash shell and waits for it to complete.
 func (*ExecRunner) Run(cmd string) error {

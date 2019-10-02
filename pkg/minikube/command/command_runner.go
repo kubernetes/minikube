@@ -17,15 +17,29 @@ limitations under the License.
 package command
 
 import (
+	"bytes"
 	"fmt"
 	"io"
+	"os/exec"
 	"path"
+	"strings"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+type RunResult struct {
+	Stdout   *bytes.Buffer
+	Stderr   *bytes.Buffer
+	ExitCode int
+	Args     []string
+}
+
 // Runner represents an interface to run commands.
 type Runner interface {
+	// RunCmd is a new expermintal way to run commands, takes Cmd interface and returns run result.
+	// if succesfull will cause a clean up to get rid of older methods.
+	RunCmd(cmd *exec.Cmd) (*RunResult, error)
+
 	// Run starts the specified command and waits for it to complete.
 	Run(cmd string) error
 
@@ -55,4 +69,30 @@ type Runner interface {
 
 func getDeleteFileCommand(f assets.CopyableFile) string {
 	return fmt.Sprintf("sudo rm %s", path.Join(f.GetTargetDir(), f.GetTargetName()))
+}
+
+// Command returns a human readable command string that does not induce eye fatigue
+func (rr RunResult) Command() string {
+	var sb strings.Builder
+	sb.WriteString(strings.TrimPrefix(rr.Args[0], "../../"))
+	for _, a := range rr.Args[1:] {
+		if strings.Contains(a, " ") {
+			sb.WriteString(fmt.Sprintf(` "%s"`, a))
+			continue
+		}
+		sb.WriteString(fmt.Sprintf(" %s", a))
+	}
+	return sb.String()
+}
+
+// Output returns human-readable output for an execution result
+func (rr RunResult) Output() string {
+	var sb strings.Builder
+	if rr.Stdout.Len() > 0 {
+		sb.WriteString(fmt.Sprintf("-- stdout --\n%s\n-- /stdout --", rr.Stdout.Bytes()))
+	}
+	if rr.Stderr.Len() > 0 {
+		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n** /stderr **", rr.Stderr.Bytes()))
+	}
+	return sb.String()
 }
