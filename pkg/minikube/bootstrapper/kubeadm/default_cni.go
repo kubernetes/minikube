@@ -22,23 +22,32 @@ package kubeadm
 // The config is being written to /etc/cni/net.d/k8s.conf.
 const defaultCNIConfig = `
 {
-  "cniVersion": "0.3.0",
-  "name": "rkt.kubernetes.io",
-  "type": "bridge",
-  "bridge": "mybridge",
-  "mtu": 1460,
-  "addIf": "true",
-  "isGateway": true,
-  "ipMasq": true,
-  "ipam": {
-    "type": "host-local",
-    "subnet": "10.1.0.0/16",
-    "gateway": "10.1.0.1",
-    "routes": [
-      {
-        "dst": "0.0.0.0/0"
-      }
+    "cniVersion": "0.3.1",
+    "name": "rkt.kubernetes.io",
+    "plugins": [
+        {
+            "type": "bridge",
+            "bridge": "mybridge",
+            "mtu": 1460,
+            "addIf": "true",
+            "isGateway": true,
+            "ipMasq": true,
+            "ipam": {
+                "type": "host-local",
+                "subnet": "10.1.0.0/16",
+                "gateway": "10.1.0.1",
+                "routes": [
+                    {
+                        "dst": "0.0.0.0/0"
+                    }
+                ]
+            }
+        },
+        {
+            "type": "portmap",
+            "capabilities": {"portMappings": true},
+            "externalSetMarkChain": "KUBE-MARK-MASQ"
+        }
     ]
-  }
 }
 `
