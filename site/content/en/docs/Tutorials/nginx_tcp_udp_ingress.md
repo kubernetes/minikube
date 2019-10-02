@@ -18,7 +18,7 @@ is only configured to listen on ports 80 and 443. TCP and UDP services listening
 
 - Latest minikube binary and ISO
 - Telnet command line tool
-- Kubectl command line tool
+- [Kubectl](https://kubernetes.io/docs/tasks/tools/install-kubectl) command line tool
 - A text editor
 
 ## Configuring TCP and UDP services with the nginx ingress controller
@@ -34,9 +34,9 @@ minikube addons enable ingress
 ### Update the TCP and/or UDP services configmaps
 
 Borrowing from the tutorial on [configuring TCP and UDP services with the ingress nginx controller](https://kubernetes.github.io/ingress-nginx/user-guide/exposing-tcp-udp-services/)
-we will need to edit the configmap which is installed by default when enabling the minikube ingress addon 
+we will need to edit the configmap which is installed by default when enabling the minikube ingress addon.
 
-There are 2 configmaps 1 for TCP services and 1 for UDP services. By default they look like this: 
+There are 2 configmaps, 1 for TCP services and 1 for UDP services. By default they look like this: 
 
 ```yaml
 apiVersion: v1
@@ -54,9 +54,9 @@ metadata:
   namespace: ingress-nginx
 ```
 
-Since these configmaps are centralized and may contain configurations it is best if we only patch them rather than completely overwrite them. 
+Since these configmaps are centralized and may contain configurations, it is best if we only patch them rather than completely overwrite them. 
 
-Lets use this redis deployment as an example
+Let's use this redis deployment as an example:
 
 `redis-deployment.yaml`
 ```yaml
@@ -87,9 +87,12 @@ spec:
 ```
 
 Create a file `redis-deployment.yaml` and paste the contents above. Then install the redis deployment with the following command:
+
 ```shell
 kubectl apply -f redis-deployment.yaml
 ```
+
+Next we need to create a service that can route traffic to our pods:
 
 `redis-service.yaml`
 ```yaml
@@ -109,21 +112,23 @@ spec:
       protocol: TCP
 ```
 
-Create a file `redis-service.yaml` and paste the contents above. Then install the redis deployment with the following command:
+Create a file `redis-service.yaml` and paste the contents above. Then install the redis service with the following command:
+
 ```shell
 kubectl apply -f redis-service.yaml
 ```
 
-To add a TCP service to the ingress you can run the following command
+To add a TCP service to the nginx ingress controller you can run the following command:
 
 ```shell
 kubectl patch configmap tcp-services -n kube-system --patch '{"data":{"6379":"default/redis-service:6379"}}'
 ```
 
-Where 
-- 6379 : the port your service should listen to from outside the minikube virtual machine
-- default : the namespace that your service is installed in
-- redis-service : the name of the service
+Where:
+
+- `6379` : the port your service should listen to from outside the minikube virtual machine
+- `default` : the namespace that your service is installed in
+- `redis-service` : the name of the service
 
 We can verify that our resource was patched with the following command: 
 
@@ -157,8 +162,9 @@ The only value you need to validate is that there is a value under the `data` pr
 
 ### Patch the ingress-nginx-controller
 
-There is one final steps that must be done in order to obtain connectivity from the outside cluster.
-We need to patch our nginx controller so that it is listening on port 6379 and can route traffic to your service
+There is one final step that must be done in order to obtain connectivity from the outside cluster.
+We need to patch our nginx controller so that it is listening on port 6379 and can route traffic to your service. To do
+this we need to create a patch file.
 
 `nginx-ingress-controller-patch.yaml`
 ```yaml
@@ -172,35 +178,38 @@ spec:
            hostPort: 6379
 ```
 
-Create a file called `nginx-ingress-controller-patch.yaml` and paste the contents above
+Create a file called `nginx-ingress-controller-patch.yaml` and paste the contents above.
 
 Next apply the changes with the following command:
+
 ```shell
 kubectl patch deployment nginx-ingress-controller --patch "$(cat nginx-ingress-controller-patch.yaml)" -n kube-system
 ```
 
 ### Test your connection
 
-Test that you can reach your service with telnet via the following command
+Test that you can reach your service with telnet via the following command:
 
 ```shell
 telnet $(minikube ip) 6379
 ```
 
-You should see the following output
+You should see the following output:
+
 ```text
 Trying 192.168.99.179...
 Connected to 192.168.99.179.
 Escape character is '^]'
 ```
 
-To exit telnet enter the `Ctrl` key and `]` at the same time. Then type `quit` and press enter
+To exit telnet enter the `Ctrl` key and `]` at the same time. Then type `quit` and press enter.
 
-If you were not able to connect please review your steps above. 
+If you were not able to connect please review your steps above.
 
 ## Review
 
-In the above example we did the following
+In the above example we did the following:
+
 - Created a redis deployment and service in the `default` namespace
 - Patched the `tcp-services` configmap in the `kube-system` namespace
 - Patched the `nginx-ingress-controller` deployment in the `kube-system` namespace
@@ -211,10 +220,14 @@ service that uses UDP and/or TCP
 
 ## Caveats
 
-Each minikube instance can only be configured for exactly 1 service to be listening on any particular port. 
-Multiple services listening on the same port in the same minikube instance is not supported and can not be supported 
-until an update of the ingress spec is released. 
+With the exception of ports 80 and 443, each minikube instance can only be configured for exactly 1 service to be listening 
+on any particular port. Multiple TCP and/or UDP services listening on the same port in the same minikube instance is not supported 
+and can not be supported until an update of the ingress spec is released. 
 Please see [this document](https://docs.google.com/document/d/1BxYbDovMwnEqe8lj8JwHo8YxHAt3oC7ezhlFsG_tyag/edit#) 
-for the latest info on these potential changes. 
+for the latest info on these potential changes.
 
+## Related articles
+
+- [Routing traffic multiple services on ports 80 and 443 in minikube with the Kubernetes Ingress resource](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
+- [Use port forwarding to access applications in a cluster](https://kubernetes.io/docs/tasks/access-application-cluster/port-forward-access-application-cluster/)
 
