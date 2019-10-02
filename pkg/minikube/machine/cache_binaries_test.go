@@ -118,7 +118,19 @@ func TestCacheBinary(t *testing.T) {
 		t.Fatalf("error during creating tmp dir: %v", err)
 	}
 	defer os.RemoveAll(minikubeHome)
-
+	noWritePermDir, err := ioutil.TempDir("/tmp", "")
+	if err != nil {
+		t.Fatalf("error during creating tmp dir: %v", err)
+	}
+	defer os.RemoveAll(noWritePermDir)
+	err = os.Chmod(noWritePermDir, 0000)
+	if err != nil {
+		t.Fatalf("error (%v) during changing permissions of dir %v", err, noWritePermDir)
+	}
+	noPermsDir := "/etc"
+	if runtime.GOOS == "windows" {
+		noPermsDir = "C:\\Windows\\System32"
+	}
 	var tc = []struct {
 		desc, version, osName, archName   string
 		minikubeHome, binary, description string
@@ -134,31 +146,31 @@ func TestCacheBinary(t *testing.T) {
 			minikubeHome: minikubeHome,
 		},
 		{
-			desc:         "minikube home is dev/null",
+			desc:         "minikube home is pointing to dir without perms",
 			version:      "v1.16.0",
 			osName:       runtime.GOOS,
 			archName:     "arm",
 			binary:       "kubectl",
 			err:          true,
-			minikubeHome: "/dev/null",
+			minikubeHome: noPermsDir,
 		},
 		{
-			desc:         "minikube home in etc and arm runtime",
+			desc:         "minikube home in dir without perms and arm runtime",
 			version:      "v1.16.0",
 			osName:       runtime.GOOS,
 			archName:     "arm",
 			binary:       "kubectl",
 			err:          true,
-			minikubeHome: "/etc",
+			minikubeHome: noWritePermDir,
 		},
 		{
-			desc:         "minikube home in etc",
+			desc:         "minikube home in dir without perms",
 			version:      "v1.16.0",
 			osName:       runtime.GOOS,
 			archName:     runtime.GOARCH,
 			binary:       "kubectl",
 			err:          true,
-			minikubeHome: "/etc",
+			minikubeHome: noWritePermDir,
 		},
 		{
 			desc:         "binary foo",
