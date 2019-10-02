@@ -19,19 +19,20 @@ package notify
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/blang/semver"
-	"github.com/spf13/viper"
 	"io/ioutil"
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/tests"
-	"k8s.io/minikube/pkg/version"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path"
 	"testing"
 	"time"
+
+	"github.com/blang/semver"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/tests"
+	"k8s.io/minikube/pkg/version"
 )
 
 func TestMaybePrintUpdateTextFromGithub(t *testing.T) {
