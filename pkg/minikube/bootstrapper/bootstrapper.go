@@ -68,7 +68,7 @@ func GetCachedBinaryList(bootstrapper string) []string {
 func GetCachedImageList(imageRepository string, version string, bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		_, images := images.CachedImages(imageRepository, version)
+		images := images.CachedImages(imageRepository, version)
 		return images
 	default:
 		return []string{}
