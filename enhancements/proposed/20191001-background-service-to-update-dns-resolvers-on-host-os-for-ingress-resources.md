@@ -17,7 +17,7 @@ Please leave the above text in your proposal as instructions to the reader.
 ## Summary
 
 Some capabilities in k8s can only be tested when using a domain name. An example would be if a developer is using a router like 
-istio or traefik that matches inbound requests to a particular domain name. When running a development cluster that has 
+Istio or Traefik that matches inbound requests to a particular domain name. When running a development cluster that has 
 some type of server, they can use [external dns](https://github.com/kubernetes-incubator/external-dns) to automatically 
 configure their DNS to point to the right ip address. However, when they are using minikube they can only resolve host names locally 
 since the cluster ip is only available to their Host OS.
@@ -28,7 +28,7 @@ the cluster.
 
 ## Goals
 
-* Enable ingress host names configured in any minikube cluster to be automatically resolved to the right mininkube ip
+* Enable ingress host names configured in any minikube cluster to be automatically resolved to the right minikube ip
 * After a user installs an ingress in minikube they can access the hostname for the ingress on their host web browser
   or command line with no additional steps
 * This capability can be enabled with a maximum of 2 steps and never repeated even while new minikube instances are 
@@ -36,7 +36,7 @@ the cluster.
 
 ## Non-Goals
 
-* Resolve ingress host names for ingress resources configured on kubernetes clusters that are not running on minikube
+* Resolve ingress host names for ingress resources configured on Kubernetes clusters that are not running on minikube
 * Make the user do an additional step after adding an ingress resource in order to access a host name on their
   host OS web browser
 * Create web browser plugins
@@ -51,7 +51,7 @@ the cluster.
 
 ### Design summary
 
-There are 3 aspects of making the ideal solution work seemlessly for the end user although #1 and #3 are not part 
+There are 3 aspects of making the ideal solution work seamlessly for the end user although #1 and #3 are not part 
 of this proposal
 
 #### 1. A DNS service that runs in the cluster and resolves ingress host names to the minikube cluster ip
@@ -170,5 +170,5 @@ one of their minikube instances
   * Its nearly not really better than manually configuring `/etc/hosts` or `resolver` files. Some might say its worse 
     because at least I know how to update `/etc/hosts`
 * Use a static IP address for each minikube instance so that at least the ip address isn't changing
-  * This doesn't address the issue of hostnames being added, removed, updated over the lifecycle of a project and all 
+  * This doesn't address the issue of host names being added, removed, updated over the lifecycle of a project and all 
     the manual work that has to be done, remembered, troubleshooted, in order to make work on a larger team
