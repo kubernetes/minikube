@@ -4,7 +4,7 @@ linkTitle: "start"
 weight: 1
 date: 2019-08-01
 description: >
-  Starts a local kubernetes cluster
+  Starts a local Kubernetes cluster
 ---
 
 ### Usage
