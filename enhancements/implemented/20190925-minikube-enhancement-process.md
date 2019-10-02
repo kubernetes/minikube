@@ -57,7 +57,7 @@ KEP's are a well-understood, but lengthier process geared toward making changes 
 #### Con's
 
 * Invisible to casual contributors to a project, as these proposals do not show up within the GitHub project page
-* Lengthy template (1870+ words) that prompts for information that is not relevent to minikube
+* Lengthy template (1870+ words) that prompts for information that is not relevant to minikube
 * Time commitment deters casual contribution
 
 ### Google Docs Proposal Template
@@ -70,7 +70,7 @@ Rather than maintaining Markdown documents in the minikube repository, we could 
 
 ### Con's
 
-* Authors may waste unneccessary time styling output
+* Authors may waste unnecessary time styling output
 * Styling may be inconsistent between proposals
 * Invisible to casual contributors to a project, as these proposals do not show up within the GitHub project page
 
