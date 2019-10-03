@@ -9,15 +9,23 @@ env:
 matrix:
   include:
     - language: python
+      name: Code lint - python
+      before_install:
+        - pip install flake8 black
+      script:
+        - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        - black ./hack --check
+
+    - language: python
       name: Check Boilerplate
       env:
         - TESTSUITE=boilerplate
       before_install:
-        - pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        - pip install flake8
       script: make test
 
     - language: go
-      name: Code Lint
+      name: Code Lint - go
       go: 1.12.9
       env:
         - TESTSUITE=lint
