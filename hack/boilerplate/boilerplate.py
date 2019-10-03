@@ -25,7 +25,9 @@ import re
 import sys
 
 parser = argparse.ArgumentParser()
-parser.add_argument("filenames", help="list of files to check, all files if unspecified", nargs='*')
+parser.add_argument(
+    "filenames", help="list of files to check, all files if unspecified", nargs="*"
+)
 
 rootdir = os.path.dirname(__file__) + "/../../"
 rootdir = os.path.abspath(rootdir)
@@ -42,16 +44,17 @@ def get_refs():
     for path in glob.glob(os.path.join(args.boilerplate_dir, "boilerplate.*.txt")):
         extension = os.path.basename(path).split(".")[1]
 
-        ref_file = open(path, 'r')
+        ref_file = open(path, "r")
         ref = ref_file.read().splitlines()
         ref_file.close()
         refs[extension] = ref
 
     return refs
 
+
 def file_passes(filename, refs, regexs):
     try:
-        f = open(filename, 'r')
+        f = open(filename, "r")
     except:
         return False
 
@@ -82,7 +85,7 @@ def file_passes(filename, refs, regexs):
         return False
 
     # trim our file to the same number of lines as the reference file
-    data = data[:len(ref)]
+    data = data[: len(ref)]
 
     p = regexs["year"]
     for d in data:
@@ -92,7 +95,7 @@ def file_passes(filename, refs, regexs):
     # Replace all occurrences of the regex "2018|2017|2016|2015|2014" with "YEAR"
     p = regexs["date"]
     for i, d in enumerate(data):
-        (data[i], found) = p.subn('YEAR', d)
+        (data[i], found) = p.subn("YEAR", d)
         if found != 0:
             break
 
@@ -102,10 +105,22 @@ def file_passes(filename, refs, regexs):
 
     return True
 
+
 def file_extension(filename):
     return os.path.splitext(filename)[1].split(".")[-1].lower()
 
-skipped_dirs = ['Godeps', 'third_party', '_gopath', '_output', '.git', 'cluster/env.sh', "vendor", "test/e2e/generated/bindata.go"]
+
+skipped_dirs = [
+    "Godeps",
+    "third_party",
+    "_gopath",
+    "_output",
+    ".git",
+    "cluster/env.sh",
+    "vendor",
+    "test/e2e/generated/bindata.go",
+]
+
 
 def normalize_files(files):
     newfiles = []
@@ -117,6 +132,7 @@ def normalize_files(files):
         if not os.path.isabs(pathname):
             newfiles[i] = os.path.join(rootdir, pathname)
     return newfiles
+
 
 def get_files(extensions):
     files = []
@@ -145,17 +161,19 @@ def get_files(extensions):
             outfiles.append(pathname)
     return outfiles
 
+
 def get_regexs():
     regexs = {}
     # Search for "YEAR" which exists in the boilerplate, but shouldn't in the real thing
-    regexs["year"] = re.compile( 'YEAR' )
+    regexs["year"] = re.compile("YEAR")
     # dates can be 2010 to 2039
-    regexs["date"] = re.compile( '(20[123]\d)' )
+    regexs["date"] = re.compile("(20[123]\d)")
     # strip // +build \n\n build constraints
     regexs["go_build_constraints"] = re.compile(r"^(// \+build.*\n)+\n", re.MULTILINE)
     # strip #!.* from shell scripts
     regexs["shebang"] = re.compile(r"^(#!.*\n)\n*", re.MULTILINE)
     return regexs
+
 
 def main():
     regexs = get_regexs()
@@ -166,5 +184,6 @@ def main():
         if not file_passes(filename, refs, regexs):
             print(filename, file=sys.stdout)
 
+
 if __name__ == "__main__":
-  sys.exit(main())
+    sys.exit(main())
