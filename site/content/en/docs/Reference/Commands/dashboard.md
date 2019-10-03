@@ -4,7 +4,7 @@ linkTitle: "dashboard"
 weight: 1
 date: 2019-08-01
 description: >
-  Access the kubernetes dashboard running within the minikube cluster
+  Access the Kubernetes dashboard running within the minikube cluster
 ---
 
 ## Usage
