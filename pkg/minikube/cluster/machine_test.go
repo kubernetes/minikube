@@ -53,6 +53,9 @@ func TestListMachines(t *testing.T) {
 	numberOfMachineDirs := len(files)
 
 	fmt.Println("Viper MachineProfile variable: " + viper.GetString(config.MachineProfile))
+	fmt.Println("MINIKUBE_HOME: " + os.Getenv(localpath.MinikubeHome))
+	fmt.Printf("Files: %v", files)
+
 	validMachines, inValidMachines, err := ListMachines()
 
 	if err != nil {
