@@ -23,7 +23,7 @@
         "Initrd": "initrd",
         "Vmlinuz": "bzImage"
     },
-    "DriverName": "hyperkit",
+    "DriverName": "virtualbox",
     "HostOptions": {
         "Driver": "",
         "Memory": 0,

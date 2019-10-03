@@ -17,7 +17,6 @@ limitations under the License.
 package cluster
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -51,10 +50,6 @@ func TestListMachines(t *testing.T) {
 
 	files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
 	numberOfMachineDirs := len(files)
-
-	fmt.Println("Viper MachineProfile variable: " + viper.GetString(config.MachineProfile))
-	fmt.Println("MINIKUBE_HOME: " + os.Getenv(localpath.MinikubeHome))
-	fmt.Printf("Files: %v", files)
 
 	validMachines, inValidMachines, err := ListMachines()
 

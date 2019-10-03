@@ -133,11 +133,6 @@ func (r *driverRegistry) Driver(name string) (DriverDef, error) {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
-	fmt.Println("Drivers: ")
-	for _, d := range r.drivers {
-		fmt.Println(d.Name)
-	}
-
 	if driver, ok := r.drivers[name]; ok {
 		return driver, nil
 	}
