@@ -127,6 +127,8 @@ func TestCacheBinary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error (%v) during changing permissions of dir %v", err, noWritePermDir)
 	}
+
+	// noPermsDir is directory owned by root. Regular user is not able to write to it.
 	noPermsDir := "/etc"
 	if runtime.GOOS == "windows" {
 		noPermsDir = "C:\\Windows\\System32"
