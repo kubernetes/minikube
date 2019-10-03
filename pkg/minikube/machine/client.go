@@ -19,7 +19,6 @@ package machine
 import (
 	"crypto/tls"
 	"encoding/json"
-	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -129,7 +128,6 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 	}
 
 	var def registry.DriverDef
-	fmt.Println("Searching for driver: " + h.DriverName)
 	if def, err = registry.Driver(h.DriverName); err != nil {
 		return nil, err
 	} else if !def.Builtin || def.DriverCreator == nil {

@@ -17,7 +17,6 @@ limitations under the License.
 package cluster
 
 import (
-	"fmt"
 	"io/ioutil"
 	"path/filepath"
 
@@ -68,8 +67,6 @@ func ListMachines(miniHome ...string) (validMachines []*Machine, inValidMachines
 	}
 	for _, n := range pDirs {
 		p, err := LoadMachine(n)
-		fmt.Printf("MachineLoadError: %v", err)
-
 		if err != nil {
 			inValidMachines = append(inValidMachines, p)
 			continue
