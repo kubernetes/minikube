@@ -23,7 +23,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -45,7 +45,7 @@ func TestShouldCheckURL(t *testing.T) {
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
-	lastUpdateCheckFilePath := path.Join(tempDir, "last_update_check")
+	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
 
 	// test that if users disable update notification in config, the URL version does not get checked
 	viper.Set(config.WantUpdateNotification, false)
@@ -206,7 +206,7 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	for _, test := range tc {
 		t.Run(test.description, func(t *testing.T) {
 			viper.Set(config.WantUpdateNotification, test.wantUpdateNotification)
-			lastUpdateCheckFilePath = path.Join(tempDir, "last_update_check")
+			lastUpdateCheckFilePath = filepath.Join(tempDir, "last_update_check")
 			if test.lastUpdateCheckFilePath != "" {
 				lastUpdateCheckFilePath = test.lastUpdateCheckFilePath
 			}
