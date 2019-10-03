@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os/exec"
+	"strings"
 	"time"
 
 	"golang.org/x/sync/syncmap"
@@ -64,7 +65,7 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		}
 	} else {
 		glog.Infof("(FakeCommandRunner) Non-zero exit: %v: (%s)\n%s", rr.Command(), elapsed, rr.Output())
-		return rr, fmt.Errorf("unavailable command: %s", cmd)
+		return rr, fmt.Errorf("unavailable command: %s", strings.Join(cmd.Args, " "))
 	}
 	return rr, nil
 }
