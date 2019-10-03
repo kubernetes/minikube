@@ -164,7 +164,7 @@ func wantsColor(fd uintptr) bool {
 	colorTerm := os.Getenv("COLORTERM")
 	// Example: term-256color
 	if !strings.Contains(term, "color") && !strings.Contains(colorTerm, "truecolor") && !strings.Contains(colorTerm, "24bit") && !strings.Contains(colorTerm, "yes") {
-		glog.Infof("TERM=%s,COLORTERM=%s, which probably does not support color", term,colorTerm)
+		glog.Infof("TERM=%s,COLORTERM=%s, which probably does not support color", term, colorTerm)
 		return false
 	}
 
