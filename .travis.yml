@@ -1,3 +1,4 @@
+---
 os: linux
 language: go
 go:
@@ -8,15 +9,15 @@ env:
 matrix:
   include:
     - language: python
-      name: Check Boilerplate 
+      name: Check Boilerplate
       env:
         - TESTSUITE=boilerplate
-      before_install: 
-          - pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+      before_install:
+        - pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       script: make test
 
     - language: go
-      name: Code Lint 
+      name: Code Lint
       go: 1.12.9
       env:
         - TESTSUITE=lint
@@ -35,10 +36,10 @@ matrix:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 notifications:
-    webhooks: 
-      urls: 
-        - https://www.travisbuddy.com?only=failed,errored
-      on_success: never  # don't comment on successful builds.
-      on_failure: always
-      on_cancel:  always
-      on_error:   always
+  webhooks:
+    urls:
+      - https://www.travisbuddy.com?only=failed,errored
+    on_success: never  # don't comment on successful builds.
+    on_failure: always
+    on_cancel: always
+    on_error: always
