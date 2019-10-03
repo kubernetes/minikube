@@ -11,10 +11,11 @@ matrix:
     - language: python
       name: Code lint - python
       before_install:
-        - pip install flake8 black
+        - pip install flake8 black bandit
       script:
-        - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        - bandit ./hack
         - black ./hack --check
+        - flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
 
     - language: python
       name: Check Boilerplate
