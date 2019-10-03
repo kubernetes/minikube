@@ -17,11 +17,14 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -31,6 +34,8 @@ func TestListMachines(t *testing.T) {
 		numberOfInValidMachines = 3
 		totalNumberOfMachines   = numberOfValidMachines + numberOfInValidMachines
 	)
+
+	viper.Set(config.MachineProfile, "")
 
 	testMinikubeDir := "./testdata/machine"
 	miniDir, err := filepath.Abs(testMinikubeDir)
@@ -47,6 +52,7 @@ func TestListMachines(t *testing.T) {
 	files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
 	numberOfMachineDirs := len(files)
 
+	fmt.Println("Viper MachineProfile variable: " + viper.GetString(config.MachineProfile))
 	validMachines, inValidMachines, err := ListMachines()
 
 	if err != nil {
