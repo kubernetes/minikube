@@ -99,8 +99,8 @@ This can reduce the steps required to enable this capability from 2 to 1. This i
 address
   * So then if I have 4 minikube clusters running for 4 different projects I have to stop, start, stop, start
     minikube tunnel and enter my sudo password every time I do. 
-  * Also I have to update the IP address of the minikube clusters every time I tear down and restart them or when the 
-    internal IP address of a service happens to change. Having a static minikube ip wouldn't help at all here.
+  * I can only resolve 1 cluster's load balancers entries at any given time and must use the internal service name
+    like myservice.default.svc.cluster.local
 * Don't use a host at all and trick the target services and configurations being tested that a host is being used 
 utilizing some type of reverse proxy configuration that runs in the cluster
    * Probably possible although I didn't try it. In this case I still have to then enter a different IP address in my 
