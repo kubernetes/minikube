@@ -31,6 +31,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+// ExecCmd returns a exec.Cmd from a string
+func ExecCmd(c string) *exec.Cmd {
+	return exec.Command("/bin/bash", "-c", c)
+}
+
 // ExecRunner runs commands using the os/exec package.
 //
 // It implements the CommandRunner interface.
