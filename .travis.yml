@@ -34,6 +34,8 @@ matrix:
       script: make test
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+travisBuddy:
+    regex: (\d+ fail|error|Fail|Error|Failed)
 notifications:
     webhooks: 
       urls: 
@@ -42,5 +44,3 @@ notifications:
       on_failure: always
       on_cancel:  always
       on_error:   always
-travisBuddy:
-    regex: "(\d+ fail|error|Fail|Error|Failed)"
