@@ -42,3 +42,5 @@ notifications:
       on_failure: always
       on_cancel:  always
       on_error:   always
+travisBuddy:
+    regex: "(\d+ fail|error|Fail|Error|Failed)"
