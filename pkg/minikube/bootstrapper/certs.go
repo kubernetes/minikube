@@ -141,7 +141,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 
 	// configure CA certificates
 	if err := configureCACerts(cmd, caCerts); err != nil {
-		return errors.Wrapf(err, "error configuring CA certificates during provisioning %v", err)
+		return errors.Wrapf(err, "configuring CA certs")
 	}
 	return nil
 }
