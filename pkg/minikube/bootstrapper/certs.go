@@ -330,9 +330,10 @@ func getSubjectHash(cmd command.Runner, filePath string) (string, error) {
 
 // configureCACerts looks up and installs all uploaded PEM certificates in /usr/share/ca-certificates to system-wide certificate store (/etc/ssl/certs).
 // OpenSSL binary required in minikube ISO
-func configureCACerts(cmd command.Runner, caCerts map[string]string) error {
+func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 	hasSSLBinary := true
-	if err := cmd.Run("which openssl"); err != nil {
+	_, err := cr.RunCmd(command.ExecCmd("which openssl"))
+	if err != nil {
 		hasSSLBinary = false
 	}
 
@@ -343,24 +344,28 @@ func configureCACerts(cmd command.Runner, caCerts map[string]string) error {
 	for _, caCertFile := range caCerts {
 		dstFilename := path.Base(caCertFile)
 		certStorePath := path.Join(SSLCertStoreDir, dstFilename)
-		if err := cmd.Run(fmt.Sprintf("sudo test -f '%s'", certStorePath)); err != nil {
-			if err := cmd.Run(fmt.Sprintf("sudo ln -s '%s' '%s'", caCertFile, certStorePath)); err != nil {
-				return errors.Wrapf(err, "error making symbol link for certificate %s", caCertFile)
+
+		cmd := command.ExecCmd(fmt.Sprintf("sudo test -f '%s'", certStorePath))
+		_, err := cr.RunCmd(cmd)
+		if err != nil {
+			cmd = command.ExecCmd(fmt.Sprintf("sudo ln -s '%s' '%s'", caCertFile, certStorePath))
+			rr, err := cr.RunCmd(cmd)
+			if err != nil {
+				return errors.Wrapf(err, "error making symbol link for certificate %s : %q", caCertFile, rr.Output())
 			}
 		}
 		if hasSSLBinary {
-			subjectHash, err := getSubjectHash(cmd, caCertFile)
+			subjectHash, err := getSubjectHash(cr, caCertFile)
 			if err != nil {
 				return errors.Wrapf(err, "error calculating subject hash for certificate %s", caCertFile)
 			}
 			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
-			if err := cmd.Run(fmt.Sprintf("sudo test -f '%s'", subjectHashLink)); err != nil {
-				if err := cmd.Run(fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, subjectHashLink)); err != nil {
-					return errors.Wrapf(err, "error making subject hash symbol link for certificate %s", caCertFile)
-				}
+			cmd = command.ExecCmd(fmt.Sprintf("sudo test -f '%s'", subjectHashLink))
+			rr, err := cr.RunCmd(cmd)
+			if err != nil {
+				return errors.Wrapf(err, "error making subject hash symbol link for certificate %s, %q", caCertFile, rr.Output())
 			}
 		}
 	}
-
 	return nil
 }
