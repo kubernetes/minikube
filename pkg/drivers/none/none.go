@@ -220,19 +220,22 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 }
 
 // stopKubelet idempotently stops the kubelet
-func stopKubelet(exec command.Runner) error {
+func stopKubelet(cr command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
 	stop := func() error {
-		cmdStop := "sudo systemctl stop kubelet.service"
-		cmdCheck := "sudo systemctl show -p SubState kubelet"
-		err := exec.Run(cmdStop)
+		cmdStop := command.ExecCmd("sudo systemctl stop kubelet.service")
+		rr, err := cr.RunCmd(cmdStop)
 		if err != nil {
-			glog.Errorf("temporary error for %q : %v", cmdStop, err)
+			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
 		}
+
 		var out bytes.Buffer
-		errStatus := exec.CombinedOutputTo(cmdCheck, &out)
-		if errStatus != nil {
-			glog.Errorf("temporary error: for %q : %v", cmdCheck, errStatus)
+		cmdCheck := command.ExecCmd("sudo systemctl show -p SubState kubelet")
+		cmdCheck.Stdout = &out
+		cmdCheck.Stderr = &out
+		rr, err = cr.RunCmd(cmdCheck)
+		if err != nil {
+			glog.Errorf("temporary error: for %q : %v output: %q", cmdCheck, err, rr.Output())
 		}
 		if !strings.Contains(out.String(), "dead") && !strings.Contains(out.String(), "failed") {
 			return fmt.Errorf("unexpected kubelet state: %q", out)

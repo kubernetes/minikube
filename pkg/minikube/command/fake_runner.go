@@ -54,18 +54,29 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 	start := time.Now()
 
-	out, ok := f.cmdMap.Load(cmd.Args)
-	rr.Stderr = bytes.NewBuffer([]byte(out.(string))) // converting fake output string to a buffer
+	out, ok := f.cmdMap.Load(strings.Join(cmd.Args, " "))
+	buf := new(bytes.Buffer) // creating a buffer reader to convert out to rr.stdout
+	outStr := ""
+	if out != nil {
+		outStr = out.(string)
+	}
+	_, err := buf.WriteString(outStr)
+	if err != nil {
+		return rr, errors.Wrap(err, "Writing outStr to FakeCommandRunner's buffer")
+	}
+	rr.Stdout = buf
+	rr.Stderr = buf
 
 	elapsed := time.Since(start)
+
 	if ok {
 		// Reduce log spam
 		if elapsed > (1 * time.Second) {
 			glog.Infof("(FakeCommandRunner) Done: %v: (%s)", rr.Command(), elapsed)
 		}
 	} else {
-		glog.Infof("(FakeCommandRunner) Non-zero exit: %v: (%s)\n%s", rr.Command(), elapsed, rr.Output())
-		return rr, fmt.Errorf("unavailable command: %s", strings.Join(cmd.Args, " "))
+		glog.Infof("(FakeCommandRunner) Non-zero exit: %v: (%s)\n%s", rr.Command(), elapsed, out)
+		return rr, fmt.Errorf("unavailable command: %s", rr.Command())
 	}
 	return rr, nil
 }
