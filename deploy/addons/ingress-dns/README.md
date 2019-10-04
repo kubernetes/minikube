@@ -166,3 +166,10 @@ sudo launchctl load -w /System/Library/LaunchDaemons/com.apple.mDNSResponder.pli
 
 ## Contributors
 - [Josh Woodcock](https://github.com/woodcockjosh)
+
+## Images used in this plugin
+
+| Image | Source | Owner |
+| :---  | :---   | :---  |
+| [nginx-ingress](https://hub.docker.com/r/nginx/nginx-ingress) | [ingress-nginx](https://github.com/kubernetes/ingress-nginx) | Nginx
+| [minikube-ingress-dns](https://hub.docker.com/r/cryptexlabs/minikube-ingress-dns) | [minikube-ingress-dns](https://gitlab.com/cryptexlabs/public/development/minikube-ingress-dns) | Cryptex Labs
