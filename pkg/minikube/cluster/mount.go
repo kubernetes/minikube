@@ -69,6 +69,17 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 	return nil
 }
 
+func MountCifs(r mountRunner, mountCommand string) error {
+	out,err := r.CombinedOutput(mountCommand)
+	if err != nil {
+		//glog.Infof("%s failed: err=%s, output: %q", mountCommand, err, out)
+		glog.Infof("Mounting failed: err=%s, output: %q", err, out)
+	}
+	//glog.Infof("%s output: %q", mountCommand, out)
+	glog.Infof("CIFS Mounting is complete!")
+	return nil
+}
+
 // returns either a raw UID number, or the subshell to resolve it.
 func resolveUID(id string) string {
 	_, err := strconv.ParseInt(id, 10, 64)

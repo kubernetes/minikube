@@ -135,7 +135,7 @@ func (s *SSHRunner) CombinedOutputTo(cmd string, w io.Writer) error {
 // CombinedOutput runs the command on the remote and returns its combined
 // standard output and standard error.
 func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
-	glog.Infoln("Run with output:", cmd)
+	//glog.Infoln("Run with output:", cmd)
 	sess, err := s.c.NewSession()
 	if err != nil {
 		return "", errors.Wrap(err, "NewSession")

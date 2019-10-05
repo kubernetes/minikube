@@ -18,6 +18,21 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/danieljoos/wincred"
+	"github.com/docker/machine/drivers/hyperv"
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+	"golang.org/x/crypto/ssh/terminal"
+	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/machine"
+	pkghyperv "k8s.io/minikube/pkg/minikube/drivers/hyperv"
+	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/third_party/go9p/ufs"
 	"net"
 	"os"
 	"os/signal"
@@ -25,21 +40,13 @@ import (
 	"strings"
 	"sync"
 	"syscall"
-
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/third_party/go9p/ufs"
 )
 
 // nineP is the value of --type used for the 9p filesystem.
 const nineP = "9p"
+
+// cifs is the value of --type used for the CIFS FileSystem
+const cifs = "cifs"
 
 // placeholders for flag values
 var mountIP string
@@ -51,9 +58,10 @@ var gid string
 var mSize int
 var options []string
 var mode uint
+var shareName = "minikube"
 
 // supportedFilesystems is a map of filesystem types to not warn against.
-var supportedFilesystems = map[string]bool{nineP: true}
+var supportedFilesystems = map[string]bool{nineP: true, cifs: true}
 
 // mountCmd represents the mount command
 var mountCmd = &cobra.Command{
@@ -156,6 +164,16 @@ var mountCmd = &cobra.Command{
 		if !supportedFilesystems[cfg.Type] {
 			out.T(out.WarningType, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
 		}
+		// Use CommandRunner, as the native docker ssh service dies when Ctrl-C is received.
+		runner, err := machine.CommandRunner(host)
+		if err != nil {
+			exit.WithError("Failed to get command runner", err)
+		}
+		out.T(out.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
+		err = cluster.Unmount(runner, vmPath)
+		if err != nil {
+			exit.WithCodeT(exit.Interrupted, "Received {{.error}}", out.V{"error": err})
+		}
 
 		var wg sync.WaitGroup
 		if cfg.Type == nineP {
@@ -166,36 +184,70 @@ var mountCmd = &cobra.Command{
 				out.T(out.Stopped, "Userspace file server is shutdown")
 				wg.Done()
 			}()
-		}
 
-		// Use CommandRunner, as the native docker ssh service dies when Ctrl-C is received.
-		runner, err := machine.CommandRunner(host)
-		if err != nil {
-			exit.WithError("Failed to get command runner", err)
-		}
-
-		// Unmount if Ctrl-C or kill request is received.
-		c := make(chan os.Signal, 1)
-		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
-		go func() {
-			for sig := range c {
-				out.T(out.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
-				err := cluster.Unmount(runner, vmPath)
-				if err != nil {
-					out.ErrT(out.FailureType, "Failed unmount: {{.error}}", out.V{"error": err})
+			// Unmount if Ctrl-C or kill request is received.
+			c := make(chan os.Signal, 1)
+			signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+			go func() {
+				for sig := range c {
+					out.T(out.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
+					err := cluster.Unmount(runner, vmPath)
+					if err != nil {
+						out.ErrT(out.FailureType, "Failed unmount: {{.error}}", out.V{"error": err})
+					}
+					exit.WithCodeT(exit.Interrupted, "Received {{.name}} signal", out.V{"name": sig})
 				}
-				exit.WithCodeT(exit.Interrupted, "Received {{.name}} signal", out.V{"name": sig})
-			}
-		}()
+			}()
 
-		err = cluster.Mount(runner, ip.String(), vmPath, cfg)
-		if err != nil {
-			exit.WithError("mount failed", err)
+			err = cluster.Mount(runner, ip.String(), vmPath, cfg)
+			if err != nil {
+				exit.WithError("mount failed", err)
+			}
+			out.T(out.SuccessType, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
+			out.Ln("")
+			out.T(out.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
+			wg.Wait()
+		} else if cfg.Type == cifs {
+			if host.Driver.DriverName() == constants.DriverHyperv {
+				// Use CommandRunner, as the native docker ssh service dies when Ctrl-C is received.
+				//runner, err := machine.CommandRunner(host)
+				//if err != nil {
+				//	exit.WithError("Failed to get command runner", err)
+				//}
+				//out.T(out.Notice, "CIFS Mount will be configured.")
+				//configureCifsOnHost(hostPath)
+				//
+				//hostname, _ := os.Hostname()
+				//user, err := hyperv.GetCurrentWindowsUser()
+				//if err != nil {
+				//	return
+				//}
+				//user = strings.Replace(user,(hostname + "\\"), "",1)
+				//fmt.Printf("Please Type in the password for the user - %s		-- ", user)
+				//password, _ := terminal.ReadPassword(int(os.Stdin.Fd()))
+				////fmt.Printf("Password is : %s", password)
+				//mountCmd := fmt.Sprintf("sudo mkdir -p %s && sudo mount.cifs //%s/%s %s -o username=%s,password=%s,domain=%s",vmPath, hostname, shareName, vmPath, user, password, hostname)
+				//error := cluster.MountCifs(runner, mountCmd)
+				//if error != nil {
+				//	out.ErrT(out.FailureType, "Failed unmount: {{.error}}", out.V{"error": error})
+				//}
+				var shareName = "minikube"
+
+				// Unmount the share if it already
+
+				out.T(out.Notice, "Trying to start the mounting.")
+				if err := pkghyperv.ConfigureHostMount(shareName,hostPath); err == nil {
+					if error := enableCifsShare(shareName,vmPath,runner); error != nil {
+						exit.WithError("Mount failed %v", error)
+					}
+				} else {
+					exit.WithError("Mount failed %v", err)
+				}
+				out.T(out.Notice,"Mounting is complete!")
+			} else {
+				out.T(out.Embarrassed, "CIFS Mounts are currently only supported on {{.driver}} on Windows.", out.V{"driver": constants.DriverHyperv})
+			}
 		}
-		out.T(out.SuccessType, "Successfully mounted {{.sourcePath}} to {{.destinationPath}}", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
-		out.Ln("")
-		out.T(out.Notice, "NOTE: This process must stay alive for the mount to be accessible ...")
-		wg.Wait()
 	},
 }
 
@@ -225,3 +277,61 @@ func getPort() (int, error) {
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
 }
+
+func enableCifsShare(hostShareName string, vmDestinationPath string, runner command.Runner) (error) {
+	// Ensure that the current user is administrator because creating a SMB Share requires Administrator privileges.
+	_ , err := hyperv.IsWindowsAdministrator()
+	if err != nil {
+		return err
+	}
+
+	hostname, _ := os.Hostname()
+	user, err := hyperv.GetCurrentWindowsUser()
+	if err != nil {
+		return err
+	}
+	user = strings.Replace(user,(hostname + "\\"), "",1)
+
+	// Check if the Credential exists in the credential store.
+	var credentialName = "minikube"
+	var password = ""
+	cred, err := wincred.GetGenericCredential(credentialName)
+	if err == nil {
+		out.T(out.Notice,"Credential {{.credential}} was found in the Windows Credential Store. Using that...",out.V{"credential":credentialName})
+		password = string(cred.CredentialBlob)
+	} else {
+		out.T(out.Enabling,"Please Type in the password for the user - [{{.username}}]",out.V{"username":user})
+		inputPassword, _ := terminal.ReadPassword(int(os.Stdin.Fd()))
+
+		cred := wincred.NewGenericCredential(credentialName)
+		cred.CredentialBlob = []byte(inputPassword)
+		wincrederr := cred.Write()
+		if wincrederr != nil {
+			return wincrederr
+		}
+		password = string(inputPassword)
+	}
+	mountCmd := fmt.Sprintf("sudo mkdir -p %s && sudo mount.cifs //%s/%s %s -o username=%s,password=%s,domain=%s",vmDestinationPath, hostname, shareName, vmDestinationPath, user, password, hostname)
+	error := cluster.MountCifs(runner, mountCmd)
+	if error != nil {
+		out.ErrT(out.FailureType, "Failed mounting: {{.error}}", out.V{"error": error})
+		return error
+	}
+	return nil
+}
+
+
+//func configureCifsOnHost(sourcePath string) (bool, error) {
+//	out.T(out.SuccessType, "Inside Cifs Mounting!")
+//	if _, err := hyperv.IsWindowsAdministrator(); err != nil {
+//		out.T(out.SuccessType, "Inside Cifs Mounting! {{.error}}", out.V{"error":err})
+//		return false, err
+//	}
+//
+//	if _, err := EnableCifsShare(sourcePath); err != nil {
+//		out.T(out.SuccessType, "Successfully mounted {{.sourcePath}}", out.V{"sourcePath": sourcePath})
+//	} else {
+//		out.T(out.Embarrassed, "Mounting has failed because of - [{{.err}}]",out.V{"err": err})
+//	}
+//	return true, nil
+//}
