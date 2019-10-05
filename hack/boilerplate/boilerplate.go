@@ -27,7 +27,7 @@ import (
 	"strings"
 )
 
-var skippedDirs = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go`)
+var skippedPaths = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
 
 func main() {
 	rootdir, _ := os.Getwd()
@@ -140,7 +140,7 @@ func getFileList(rootDir string, extensions map[string][]byte, files []string) [
 	if len(files) == 0 {
 		err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 			// println(path)
-			if !info.IsDir() && !skippedDirs.MatchString(filepath.Dir(path)) {
+			if !info.IsDir() && !skippedPaths.MatchString(filepath.Dir(path)) {
 				if extensions[strings.ToLower(getFileExtension(path))] != nil {
 					outFiles = append(outFiles, path)
 				}
