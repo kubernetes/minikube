@@ -7,12 +7,10 @@ env:
     - GOPROXY=https://proxy.golang.org
 matrix:
   include:
-    - language: python
+    - language: go
       name: Check Boilerplate 
       env:
         - TESTSUITE=boilerplate
-      before_install: 
-          - pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       script: make test
 
     - language: go
