@@ -33,9 +33,11 @@ fi
 if [[ "$TESTSUITE" = "boilerplate" ]] || [[ "$TESTSUITE" = "all" ]]
 then
     echo "= boilerplate ==========================================================="
-    readonly PYTHON=$(type -P python || echo docker run --rm -it -v $(pwd):/minikube -w /minikube python python)
     readonly BDIR="./hack/boilerplate"
-    missing="$($PYTHON ${BDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/' || true)"
+    pushd ${BDIR}
+	go build
+	popd
+	missing="$(${BDIR}/boilerplate --rootdir . --boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/' || true)"
     if [[ -n "${missing}" ]]; then
         echo "boilerplate missing: $missing"
         echo "consider running: ${BDIR}/fix.sh"
