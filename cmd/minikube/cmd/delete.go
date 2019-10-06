@@ -17,20 +17,16 @@ limitations under the License.
 package cmd
 
 import (
+	"bufio"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strconv"
-
+	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
-	ps "github.com/mitchellh/go-ps"
+	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
-
-	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"io/ioutil"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
@@ -40,6 +36,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"os"
+	"path/filepath"
+	"strconv"
+	"strings"
+)
+
+const (
+	purge		=		"purge"
+	noPrompt	=		"no-prompt"
 )
 
 // deleteCmd represents the delete command
@@ -49,6 +54,15 @@ var deleteCmd = &cobra.Command{
 	Long: `Deletes a local kubernetes cluster. This command deletes the VM, and removes all
 associated files.`,
 	Run: runDelete,
+}
+
+func init() {
+	deleteCmd.Flags().Bool(purge,false,"Set this flag to delete the '.minikube' folder from your user directory. This will prompt for confirmation.")
+	deleteCmd.Flags().Bool(noPrompt, false,"Set this flag so that there are no prompts.")
+
+	if err := viper.BindPFlags(deleteCmd.Flags()); err != nil {
+		exit.WithError("unable to bind flags", err)
+	}
 }
 
 // runDelete handles the executes the flow of "minikube delete"
@@ -106,6 +120,30 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	if err := cmdcfg.Unset(pkg_config.MachineProfile); err != nil {
 		exit.WithError("unset minikube profile", err)
+	}
+
+	// Delete the .minikube folder if the flags are set
+	if viper.GetBool(purge) {
+		glog.Infof("Purging the '.minikube' directory located at %s", localpath.MiniPath())
+
+		if viper.GetBool(noPrompt) {
+			glog.Infof("Will not prompt for deletion.")
+		} else {
+			out.T(out.Check,"Are you sure you want to delete the directory located at {{.minikubePath}}? This will delete all your configuration data related to minikube. (Y/N)", out.V{"minikubePath":localpath.MiniPath()})
+			userInput := bufio.NewScanner(os.Stdin)
+			userInput.Scan()
+			var choice = userInput.Text()
+			if strings.ToLower(choice) != "y" {
+				out.T(out.Meh,"Not deleting minikube directory located at {{.minikubePath}}",out.V{"minikubePath":localpath.MiniPath()})
+				return
+			}
+		}
+		if err := os.RemoveAll(localpath.MiniPath()); err != nil {
+			exit.WithError("unable to delete minikube config folder", err)
+		}
+		out.T(out.Crushed,"Deleted the {{.minikubePath}} folder successfully!", out.V{"minikubePath":localpath.MiniPath()})
+	} else {
+		out.T(out.Meh,"Not deleting minikube directory located at {{.minikubePath}}",out.V{"minikubePath":localpath.MiniPath()})
 	}
 }
 
