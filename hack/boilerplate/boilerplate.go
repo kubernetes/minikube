@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -27,39 +28,29 @@ import (
 	"strings"
 )
 
-var skippedPaths = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
+var (
+	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
+	filenames      []string
+	rootdir        *string
+	boilerplatedir *string
+)
+
+func init() {
+	cwd, _ := os.Getwd()
+	boilerplatedir = flag.String("boilerplate-dir", cwd, "Boilerplate directory for boilerplate files")
+	cwd = cwd + "/../../"
+	rootdir = flag.String("rootdir", filepath.Dir(cwd), "Root directory to examine")
+	filenames = flag.Args()
+}
 
 func main() {
-	rootdir, _ := os.Getwd()
-	rootdir += "/../../"
-	var boilerplateDir string
-	var filenames []string
-
-	for i := 1; i < len(os.Args); i++ {
-		re := regexp.MustCompile("^--.*")
-		if re.MatchString(os.Args[i]) {
-			if os.Args[i] == "--rootdir" {
-				rootdir = os.Args[i+1]
-				i++
-				continue
-			}
-			if os.Args[i] == "--boilerplate-dir" {
-				boilerplateDir = os.Args[i+1]
-				i++
-				continue
-			}
-		} else {
-			filenames = append(filenames, os.Args[i])
-		}
-
+	flag.Parse()
+	refs := getRefs(*boilerplatedir)
+	if len(refs) == 0 {
+		log.Fatal("no references in ", *boilerplatedir)
 	}
-
-	if len(boilerplateDir) == 0 {
-		boilerplateDir = filepath.Join(rootdir, "hack/boilerplate")
-	}
-
-	refs := getRefs(boilerplateDir)
-	files := getFileList(rootdir, refs, filenames)
+	files := getFileList(*rootdir, refs, filenames)
+	fmt.Println("number of files ", len(files))
 	for _, file := range files {
 		if !filePasses(file, refs[getFileExtension(file)]) {
 			fmt.Println(file)
