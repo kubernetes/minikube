@@ -30,7 +30,6 @@ import (
 
 var (
 	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
-	filenames      []string
 	rootdir        *string
 	boilerplatedir *string
 )
@@ -40,7 +39,6 @@ func init() {
 	boilerplatedir = flag.String("boilerplate-dir", cwd, "Boilerplate directory for boilerplate files")
 	cwd = cwd + "/../../"
 	rootdir = flag.String("rootdir", filepath.Dir(cwd), "Root directory to examine")
-	filenames = flag.Args()
 }
 
 func main() {
@@ -49,8 +47,7 @@ func main() {
 	if len(refs) == 0 {
 		log.Fatal("no references in ", *boilerplatedir)
 	}
-	files := getFileList(*rootdir, refs, filenames)
-	fmt.Println("number of files ", len(files))
+	files := getFileList(*rootdir, refs)
 	for _, file := range files {
 		if !filePasses(file, refs[getFileExtension(file)]) {
 			fmt.Println(file)
@@ -87,16 +84,13 @@ func filePasses(filename string, ref []byte) bool {
 
 	// remove build tags from the top of Go files
 	if extension == "go" {
-		// \r is necessary for windows file endings
-		re = regexp.MustCompile(`(?m)^(// \+build.*\r{0,1}\n)+\r{0,1}\n`)
+		re = regexp.MustCompile(`(?m)^(// \+build.*\n)+\n`)
 		data = re.ReplaceAll(data, nil)
 	}
 
 	// remove shebang from the top of shell files
 	if extension == "sh" {
-		// \r is necessary for windows file endings
-		// re := regexp.MustCompile(`(?m)^(// \+build.*\r{0,1}\n)+\r{0,1}\n`)
-		re = regexp.MustCompile(`(?m)^(#!.*\r{0,1}\n)(\r{0,1}\n)*`)
+		re = regexp.MustCompile(`(?m)^(#!.*\n)\n*`)
 		data = re.ReplaceAll(data, nil)
 	}
 
@@ -126,23 +120,18 @@ func getFileExtension(filename string) string {
 	return strings.ToLower(splitted[len(splitted)-1])
 }
 
-func getFileList(rootDir string, extensions map[string][]byte, files []string) []string {
+func getFileList(rootDir string, extensions map[string][]byte) []string {
 	var outFiles []string
-	if len(files) == 0 {
-		err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-			// println(path)
-			if !info.IsDir() && !skippedPaths.MatchString(filepath.Dir(path)) {
-				if extensions[strings.ToLower(getFileExtension(path))] != nil {
-					outFiles = append(outFiles, path)
-				}
+	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
+		if !info.IsDir() && !skippedPaths.MatchString(filepath.Dir(path)) {
+			if extensions[strings.ToLower(getFileExtension(path))] != nil {
+				outFiles = append(outFiles, path)
 			}
-			return nil
-		})
-		if err != nil {
-			log.Fatal(err)
 		}
-	} else {
-		outFiles = files
+		return nil
+	})
+	if err != nil {
+		log.Fatal(err)
 	}
 	return outFiles
 }
