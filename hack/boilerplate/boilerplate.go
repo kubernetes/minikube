@@ -56,6 +56,10 @@ func main() {
 
 }
 
+/*
+This function is to populate the refs variable with the
+different boilerplate/template for different extension.
+*/
 func getRefs(dir string) map[string][]byte {
 	refs := make(map[string][]byte)
 	files, _ := filepath.Glob(dir + "/*.txt")
@@ -71,6 +75,12 @@ func getRefs(dir string) map[string][]byte {
 	return refs
 }
 
+/*
+Function to check whether the processed file
+is valid.
+Returning false means that the file does not the
+proper boilerplate template
+*/
 func filePasses(filename string, ref []byte) bool {
 	var re *regexp.Regexp
 	data, err := ioutil.ReadFile(filename)
@@ -114,12 +124,17 @@ func filePasses(filename string, ref []byte) bool {
 	return bytes.Equal(data, ref)
 }
 
-// get the file extensin or the filename if the file has no extension
+/**
+Function to get the file extensin or the filename if the file has no extension
+*/
 func getFileExtension(filename string) string {
 	splitted := strings.Split(filepath.Base(filename), ".")
 	return strings.ToLower(splitted[len(splitted)-1])
 }
 
+/**
+Function to get all the files from the directory that heeds to be checked.
+*/
 func getFileList(rootDir string, extensions map[string][]byte) []string {
 	var outFiles []string
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
