@@ -101,7 +101,6 @@ var nondefaultserviceNamespaces = map[string]typed_core.ServiceInterface{
 	"default": nondefaultNamespaceServiceInterface,
 }
 
-
 var nondefaultNamespaceServiceInterface = &MockServiceInterface{
 	ServiceList: &core.ServiceList{
 		Items: []core.Service{
@@ -118,7 +117,6 @@ var nondefaultNamespaceServiceInterface = &MockServiceInterface{
 		},
 	},
 }
-
 
 var defaultNamespaceServiceInterface = &MockServiceInterface{
 	ServiceList: &core.ServiceList{
@@ -865,7 +863,7 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 			api:         defaultAPI,
 			https:       true,
 			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
-			nondefault: false,
+			nondefault:  false,
 		},
 		{
 			description: "correctly return serviceURLs, no https, no url mode",
@@ -873,7 +871,7 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 			service:     "mock-dashboard",
 			api:         defaultAPI,
 			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
-			nondefault: false,
+			nondefault:  false,
 		},
 		{
 			description: "correctly return serviceURLs, no https, url mode",
@@ -882,7 +880,7 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 			api:         defaultAPI,
 			urlMode:     true,
 			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
-			nondefault: false,
+			nondefault:  false,
 		},
 		{
 			description: "correctly return serviceURLs, https, url mode",
@@ -892,7 +890,7 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 			urlMode:     true,
 			https:       true,
 			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
-			nondefault: false,
+			nondefault:  false,
 		},
 		{
 			description: "correctly return empty serviceURLs",
@@ -901,7 +899,7 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 			api:         defaultAPI,
 			expected:    []string{},
 			err:         true,
-			nondefault: false,
+			nondefault:  false,
 		},
 		{
 			description: "correctly return empty serviceURLs",
@@ -910,13 +908,13 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 			api:         defaultAPI,
 			expected:    []string{},
 			err:         true,
-			nondefault: true,
+			nondefault:  true,
 		},
 	}
 	defer revertK8sClient(K8s)
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			if (test.nondefault) {
+			if test.nondefault {
 				K8s = &MockClientGetter{
 					servicesMap:  nondefaultserviceNamespaces,
 					endpointsMap: endpointNamespaces,
