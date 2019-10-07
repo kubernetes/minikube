@@ -47,9 +47,9 @@ func main() {
 	if len(refs) == 0 {
 		log.Fatal("no references in ", *boilerplatedir)
 	}
-	files := getFileList(*rootdir, refs)
+	files := filesToCheck(*rootdir, refs)
 	for _, file := range files {
-		if !filePasses(file, refs[getFileExtension(file)]) {
+		if !filePasses(file, refs[fileExtension(file)]) {
 			fmt.Println(file)
 		}
 	}
@@ -64,12 +64,13 @@ func getRefs(dir string) map[string][]byte {
 	refs := make(map[string][]byte)
 	files, _ := filepath.Glob(dir + "/*.txt")
 	for _, filename := range files {
-		extension := strings.ToLower(strings.Split(filename, ".")[1])
+		re := regexp.MustCompile(`\.txt`)
+		extension := strings.ToLower(fileExtension(re.ReplaceAllString(filename, "")))
 		data, err := ioutil.ReadFile(filename)
 		if err != nil {
 			log.Fatal(err)
 		}
-		re := regexp.MustCompile(`\r`)
+		re = regexp.MustCompile(`\r`)
 		refs[extension] = re.ReplaceAll(data, nil)
 	}
 	return refs
@@ -90,7 +91,7 @@ func filePasses(filename string, ref []byte) bool {
 	re = regexp.MustCompile(`\r`)
 	data = re.ReplaceAll(data, nil)
 
-	extension := getFileExtension(filename)
+	extension := fileExtension(filename)
 
 	// remove build tags from the top of Go files
 	if extension == "go" {
@@ -127,7 +128,7 @@ func filePasses(filename string, ref []byte) bool {
 /**
 Function to get the file extensin or the filename if the file has no extension
 */
-func getFileExtension(filename string) string {
+func fileExtension(filename string) string {
 	splitted := strings.Split(filepath.Base(filename), ".")
 	return strings.ToLower(splitted[len(splitted)-1])
 }
@@ -135,11 +136,16 @@ func getFileExtension(filename string) string {
 /**
 Function to get all the files from the directory that heeds to be checked.
 */
-func getFileList(rootDir string, extensions map[string][]byte) []string {
+func filesToCheck(rootDir string, extensions map[string][]byte) []string {
 	var outFiles []string
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		if !info.IsDir() && !skippedPaths.MatchString(filepath.Dir(path)) {
-			if extensions[strings.ToLower(getFileExtension(path))] != nil {
+		// remove current workdir from the beginnig of the path in case it matches the skipped path
+		cwd, _ := os.Getwd()
+		// replace "\" with "\\" for windows style path
+		re := regexp.MustCompile(`\\`)
+		re = regexp.MustCompile(`^` + re.ReplaceAllString(cwd, `\\`))
+		if !info.IsDir() && !skippedPaths.MatchString(re.ReplaceAllString(filepath.Dir(path), "")) {
+			if extensions[strings.ToLower(fileExtension(path))] != nil {
 				outFiles = append(outFiles, path)
 			}
 		}

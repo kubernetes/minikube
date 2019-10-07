@@ -33,11 +33,10 @@ fi
 if [[ "$TESTSUITE" = "boilerplate" ]] || [[ "$TESTSUITE" = "all" ]]
 then
     echo "= boilerplate ==========================================================="
-    readonly BDIR="./hack/boilerplate"
-    pushd ${BDIR}
-	go build
-	popd
-	missing="$(${BDIR}/boilerplate -rootdir . -boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/' || true)"
+    readonly ROOT_DIR=$(pwd)
+    readonly BDIR="${ROOT_DIR}/hack/boilerplate"
+    cd ${BDIR}
+    missing="$(go run boilerplate.go -rootdir ${ROOT_DIR} -boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/' || true)"
     if [[ -n "${missing}" ]]; then
         echo "boilerplate missing: $missing"
         echo "consider running: ${BDIR}/fix.sh"
