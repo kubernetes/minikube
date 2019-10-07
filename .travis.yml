@@ -1,4 +1,5 @@
 ---
+# linted with yamllint
 os: linux
 language: go
 go:
