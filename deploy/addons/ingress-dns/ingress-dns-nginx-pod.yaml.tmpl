@@ -1,0 +1,229 @@
+# Copyright 2016 The Kubernetes Authors All rights reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: minikube-ingress-dns-nginx-ingress
+  namespace: kube-system
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+    app: minikube-ingress-dns-nginx-ingress-controller
+    app.kubernetes.io/part-of: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRole
+metadata:
+  name: system:minikube-ingress-dns-nginx-ingress
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+    app: minikube-ingress-dns-nginx-ingress-controller
+    app.kubernetes.io/part-of: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - endpoints
+      - nodes
+      - pods
+      - secrets
+    verbs:
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - nodes
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - "extensions"
+      - "networking.k8s.io"
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - "extensions"
+      - "networking.k8s.io"
+    resources:
+      - ingresses/status
+    verbs:
+      - update
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: Role
+metadata:
+  name: system::minikube-ingress-dns-nginx-ingress-role
+  namespace: kube-system
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+    app: minikube-ingress-dns-nginx-ingress-controller
+    app.kubernetes.io/part-of: kube-system
+    addonmanager.kubernetes.io/mode: Reconcile
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+      - pods
+      - secrets
+      - namespaces
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    resourceNames:
+      # Defaults to "<election-id>-<ingress-class>"
+      # Here: "<ingress-controller-leader>-<nginx>"
+      # This has to be adapted if you change either parameter
+      # when launching the nginx-ingress-controller.
+      - ingress-controller-leader-nginx
+    verbs:
+      - get
+      - update
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - create
+  - apiGroups:
+      - ""
+    resources:
+      - endpoints
+    verbs:
+      - get
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: RoleBinding
+metadata:
+  name: system::minikube-ingress-dns-nginx-ingress-role-binding
+  namespace: kube-system
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+    app: minikube-ingress-dns-nginx-ingress-controller
+    app.kubernetes.io/part-of: kube-system
+    addonmanager.kubernetes.io/mode: EnsureExists
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: system::minikube-ingress-dns-nginx-ingress-role
+subjects:
+  - kind: ServiceAccount
+    name: minikube-ingress-dns-nginx-ingress
+    namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: system:minikube-ingress-dns-nginx-ingress
+  labels:
+    kubernetes.io/bootstrapping: rbac-defaults
+    app: minikube-ingress-dns-nginx-ingress-controller
+    app.kubernetes.io/part-of: kube-system
+    addonmanager.kubernetes.io/mode: EnsureExists
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: system:minikube-ingress-dns-nginx-ingress
+subjects:
+  - kind: ServiceAccount
+    name: minikube-ingress-dns-nginx-ingress
+    namespace: kube-system
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: minikube-ingress-dns-nginx-ingress-controller
+  namespace: kube-system
+  labels:
+    app: minikube-ingress-dns-nginx-ingress-controller
+    app.kubernetes.io/part-of: kube-system
+    addonmanager.kubernetes.io/mode: EnsureExists
+spec:
+  serviceAccountName: minikube-ingress-dns-nginx-ingress
+  terminationGracePeriodSeconds: 60
+  hostNetwork: true
+  containers:
+    - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller{{.ExoticArch}}:0.26.1
+      name: nginx-ingress-controller
+      imagePullPolicy: IfNotPresent
+      readinessProbe:
+        httpGet:
+          path: /healthz
+          port: 10254
+          scheme: HTTP
+      livenessProbe:
+        httpGet:
+          path: /healthz
+          port: 10254
+          scheme: HTTP
+        initialDelaySeconds: 10
+        timeoutSeconds: 1
+      env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+      ports:
+        - containerPort: 53
+          hostPort: 53
+        - containerPort: 8008
+        - containerPort: 4333
+      args:
+        - /nginx-ingress-controller
+        - --configmap=$(POD_NAMESPACE)/minikube-ingress-dns-nginx-load-balancer-conf
+        - --tcp-services-configmap=$(POD_NAMESPACE)/minikube-ingress-dns-tcp-services
+        - --udp-services-configmap=$(POD_NAMESPACE)/minikube-ingress-dns-udp-services
+        - --annotations-prefix=nginx.ingress.kubernetes.io
+        - --http-port=8008
+        - --https-port=4333
+        # use minikube IP address in ingress status field
+        - --report-node-internal-ip-address
+      securityContext:
+        capabilities:
+          drop:
+            - ALL
+          add:
+            - NET_BIND_SERVICE
+        # www-data -> 33
+        runAsUser: 33
