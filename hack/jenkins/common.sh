@@ -133,8 +133,15 @@ if type -P virsh; then
   virsh -c qemu:///system list --all || true
 fi
 
+
 if type -P vboxmanage; then
   vboxmanage list vms || true
+  # remove inaccessible stale VMs https://github.com/kubernetes/minikube/issues/4872
+  vboxmanage list vms \	
+    | grep inaccessible \	
+    | cut -d'"' -f3 \	
+    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \	
+    || true
   vboxmanage list vms \
     | egrep -o '{.*?}' \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
