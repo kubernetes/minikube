@@ -171,9 +171,10 @@ func (d *Driver) Remove() error {
 		return errors.Wrap(err, "kill")
 	}
 	glog.Infof("Removing: %s", cleanupPaths)
-	cmd := fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " "))
-	if err := d.exec.Run(cmd); err != nil {
-		glog.Errorf("cleanup incomplete: %v", err)
+	c := command.ExecCmd(fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " ")))
+	rr, err := d.exec.RunCmd(c)
+	if err != nil {
+		glog.Errorf("cleanup incomplete: %v , output: %s", err, rr.Output())
 	}
 	return nil
 }
@@ -253,11 +254,19 @@ func stopKubelet(cr command.Runner) error {
 // restartKubelet restarts the kubelet
 func restartKubelet(exec command.Runner) error {
 	glog.Infof("restarting kubelet.service ...")
-	return exec.Run("sudo systemctl restart kubelet.service")
+	rr, err := exec.RunCmd(command.ExecCmd("sudo systemctl restart kubelet.service"))
+	if err != nil {
+		return errors.Wrapf(err, "restartKubelet with output: %s", rr.Output())
+	}
+	return nil
 }
 
 // checkKubelet returns an error if the kubelet is not running.
-func checkKubelet(exec command.Runner) error {
+func checkKubelet(cr command.Runner) error {
 	glog.Infof("checking for running kubelet ...")
-	return exec.Run("systemctl is-active --quiet service kubelet")
+	rr, err := cr.RunCmd(command.ExecCmd("systemctl is-active --quiet service kubelet"))
+	if err != nil {
+		return errors.Wrapf(err, "checkKubelet output: %s", rr.Output())
+	}
+	return nil
 }
