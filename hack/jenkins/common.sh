@@ -254,7 +254,7 @@ cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
-rmdir "${TEST_HOME}"
+${SUDO_PREFIX} rmdir "${TEST_HOME}" || true
 echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
