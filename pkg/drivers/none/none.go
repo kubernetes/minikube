@@ -235,7 +235,7 @@ func stopKubelet(cr command.Runner) error {
 		cmdCheck.Stderr = &out
 		rr, err = cr.RunCmd(cmdCheck)
 		if err != nil {
-			glog.Errorf("temporary error: for %q : %v output: %q", cmdCheck, err, rr.Output())
+			glog.Errorf("temporary error: for %q : %v output: %q", rr.Command(), err, rr.Output())
 		}
 		if !strings.Contains(out.String(), "dead") && !strings.Contains(out.String(), "failed") {
 			return fmt.Errorf("unexpected kubelet state: %q", out)
