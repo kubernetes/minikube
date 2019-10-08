@@ -93,7 +93,9 @@ var dashboardCmd = &cobra.Command{
 			exit.WithCodeT(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		}
 
-		cluster.EnsureMinikubeRunningOrExit(api, 1)
+		if !cluster.IsMinikubeRunning(api) {
+			os.Exit(1)
+		}
 
 		// Check dashboard status before enabling it
 		dashboardAddon := assets.Addons["dashboard"]

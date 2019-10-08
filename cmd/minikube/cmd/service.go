@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
 	"text/template"
 
 	"github.com/spf13/cobra"
@@ -64,7 +65,9 @@ var serviceCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		cluster.EnsureMinikubeRunningOrExit(api, 1)
+		if !cluster.IsMinikubeRunning(api) {
+			os.Exit(1)
+		}
 		err = service.WaitAndMaybeOpenService(api, namespace, svc,
 			serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
