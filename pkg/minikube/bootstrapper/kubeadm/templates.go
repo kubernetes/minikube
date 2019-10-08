@@ -84,7 +84,7 @@ etcd:
     dataDir: {{.EtcdDataDir}}
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
-  dnsDomain: cluster.local
+  dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
   podSubnet: {{if .PodSubnet}}{{.PodSubnet}}{{else}}""{{end}}
   serviceSubnet: {{.ServiceCIDR}}
 ---
@@ -138,7 +138,7 @@ etcd:
     dataDir: {{.EtcdDataDir}}
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
-  dnsDomain: cluster.local
+  dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
   podSubnet: ""
   serviceSubnet: {{.ServiceCIDR}}
 ---

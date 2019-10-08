@@ -698,6 +698,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, er
 		KubernetesVersion string
 		EtcdDataDir       string
 		NodeName          string
+		DNSDomain         string
 		CRISocket         string
 		ImageRepository   string
 		ExtraArgs         []ComponentExtraArgs
@@ -717,6 +718,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, er
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
+		DNSDomain:         k8s.DNSDomain,
 	}
 
 	if k8s.ServiceCIDR != "" {
