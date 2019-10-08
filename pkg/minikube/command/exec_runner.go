@@ -24,6 +24,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -34,6 +35,12 @@ import (
 // ExecCmd returns a exec.Cmd from a string
 func ExecCmd(c string) *exec.Cmd {
 	return exec.Command("/bin/bash", "-c", c)
+}
+
+// ExecCmd returns a exec.Cmd from a string
+func ExecCmd2(c string) *exec.Cmd {
+	args := strings.Split(c, " ")
+	return exec.Command(args[0], args[1:]...)
 }
 
 // ExecRunner runs commands using the os/exec package.
