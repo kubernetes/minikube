@@ -43,7 +43,7 @@ func init() {
 
 func main() {
 	flag.Parse()
-	refs := getRefs(*boilerplatedir)
+	refs := boilerplateRefs(*boilerplatedir)
 	if len(refs) == 0 {
 		log.Fatal("no references in ", *boilerplatedir)
 	}
@@ -60,7 +60,7 @@ func main() {
 This function is to populate the refs variable with the
 different boilerplate/template for different extension.
 */
-func getRefs(dir string) map[string][]byte {
+func boilerplateRefs(dir string) map[string][]byte {
 	refs := make(map[string][]byte)
 	files, _ := filepath.Glob(dir + "/*.txt")
 	for _, filename := range files {
