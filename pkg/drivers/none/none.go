@@ -171,7 +171,7 @@ func (d *Driver) Remove() error {
 		return errors.Wrap(err, "kill")
 	}
 	glog.Infof("Removing: %s", cleanupPaths)
-	c := command.ExecCmd(fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " ")))
+	c := command.ExecCmd2(fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " ")))
 	rr, err := d.exec.RunCmd(c)
 	if err != nil {
 		glog.Errorf("cleanup incomplete: %v , output: %s", err, rr.Output())
@@ -224,14 +224,14 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 func stopKubelet(cr command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
 	stop := func() error {
-		cmdStop := command.ExecCmd("sudo systemctl stop kubelet.service")
+		cmdStop := command.ExecCmd2("sudo systemctl stop kubelet.service")
 		rr, err := cr.RunCmd(cmdStop)
 		if err != nil {
 			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
 		}
 
 		var out bytes.Buffer
-		cmdCheck := command.ExecCmd("sudo systemctl show -p SubState kubelet")
+		cmdCheck := command.ExecCmd2("sudo systemctl show -p SubState kubelet")
 		cmdCheck.Stdout = &out
 		cmdCheck.Stderr = &out
 		rr, err = cr.RunCmd(cmdCheck)
@@ -254,7 +254,7 @@ func stopKubelet(cr command.Runner) error {
 // restartKubelet restarts the kubelet
 func restartKubelet(exec command.Runner) error {
 	glog.Infof("restarting kubelet.service ...")
-	rr, err := exec.RunCmd(command.ExecCmd("sudo systemctl restart kubelet.service"))
+	rr, err := exec.RunCmd(command.ExecCmd2("sudo systemctl restart kubelet.service"))
 	if err != nil {
 		return errors.Wrapf(err, "restartKubelet with output: %s", rr.Output())
 	}
@@ -264,7 +264,7 @@ func restartKubelet(exec command.Runner) error {
 // checkKubelet returns an error if the kubelet is not running.
 func checkKubelet(cr command.Runner) error {
 	glog.Infof("checking for running kubelet ...")
-	rr, err := cr.RunCmd(command.ExecCmd("systemctl is-active --quiet service kubelet"))
+	rr, err := cr.RunCmd(command.ExecCmd2("systemctl is-active --quiet service kubelet"))
 	if err != nil {
 		return errors.Wrapf(err, "checkKubelet output: %s", rr.Output())
 	}
