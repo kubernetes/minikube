@@ -19,6 +19,7 @@ package none
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -171,9 +172,9 @@ func (d *Driver) Remove() error {
 		return errors.Wrap(err, "kill")
 	}
 	glog.Infof("Removing: %s", cleanupPaths)
-	c := command.ExecCmd2(fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " ")))
-	rr, err := d.exec.RunCmd(c)
-	if err != nil {
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " ")))
+
+	if rr, err := d.exec.RunCmd(c); err != nil {
 		glog.Errorf("cleanup incomplete: %v , output: %s", err, rr.Output())
 	}
 	return nil
@@ -224,18 +225,15 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 func stopKubelet(cr command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
 	stop := func() error {
-		cmdStop := command.ExecCmd2("sudo systemctl stop kubelet.service")
-		rr, err := cr.RunCmd(cmdStop)
-		if err != nil {
+		cmdStop := exec.Command("/bin/bash", "-c", "sudo systemctl stop kubelet.service")
+		if rr, err := cr.RunCmd(cmdStop); err != nil {
 			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
 		}
-
 		var out bytes.Buffer
-		cmdCheck := command.ExecCmd2("sudo systemctl show -p SubState kubelet")
+		cmdCheck := exec.Command("/bin/bash", "-c", "sudo systemctl show -p SubState kubelet")
 		cmdCheck.Stdout = &out
 		cmdCheck.Stderr = &out
-		rr, err = cr.RunCmd(cmdCheck)
-		if err != nil {
+		if rr, err := cr.RunCmd(cmdCheck); err != nil {
 			glog.Errorf("temporary error: for %q : %v output: %q", rr.Command(), err, rr.Output())
 		}
 		if !strings.Contains(out.String(), "dead") && !strings.Contains(out.String(), "failed") {
@@ -252,11 +250,11 @@ func stopKubelet(cr command.Runner) error {
 }
 
 // restartKubelet restarts the kubelet
-func restartKubelet(exec command.Runner) error {
+func restartKubelet(cr command.Runner) error {
 	glog.Infof("restarting kubelet.service ...")
-	rr, err := exec.RunCmd(command.ExecCmd2("sudo systemctl restart kubelet.service"))
-	if err != nil {
-		return errors.Wrapf(err, "restartKubelet with output: %s", rr.Output())
+	c := exec.Command("/bin/bash", "-c", "sudo systemctl restart kubelet.service")
+	if rr, err := cr.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "restartKubelet output: %s", rr.Output())
 	}
 	return nil
 }
@@ -264,8 +262,8 @@ func restartKubelet(exec command.Runner) error {
 // checkKubelet returns an error if the kubelet is not running.
 func checkKubelet(cr command.Runner) error {
 	glog.Infof("checking for running kubelet ...")
-	rr, err := cr.RunCmd(command.ExecCmd2("systemctl is-active --quiet service kubelet"))
-	if err != nil {
+	c := exec.Command("/bin/bash", "-c", "systemctl is-active --quiet service kubelet")
+	if rr, err := cr.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "checkKubelet output: %s", rr.Output())
 	}
 	return nil
