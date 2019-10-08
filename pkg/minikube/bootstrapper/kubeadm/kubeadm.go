@@ -136,7 +136,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 
 // GetKubeletStatus returns the kubelet status
 func (k *Bootstrapper) GetKubeletStatus() (string, error) {
-	cmd := command.ExecCmd2("sudo systemctl is-active kubelet")
+	cmd := command.ExecCmd("sudo systemctl is-active kubelet")
 	rr, err := k.c.RunCmd(cmd)
 	if err != nil {
 		return "", errors.Wrapf(err, "getting kublet status. command: %q output: %q", rr.Command(), rr.Output())
@@ -222,7 +222,7 @@ func etcdDataDir() string {
 // createCompatSymlinks creates compatibility symlinks to transition running services to new directory structures
 func (k *Bootstrapper) createCompatSymlinks() error {
 	legacyEtcd := "/data/minikube"
-	cmd := command.ExecCmd2(fmt.Sprintf("sudo test -d %s", legacyEtcd))
+	cmd := command.ExecCmd(fmt.Sprintf("sudo test -d %s", legacyEtcd))
 	rr, err := k.c.RunCmd(cmd)
 	if err != nil {
 		glog.Infof("%s check failed, skipping compat symlinks: %v %q", legacyEtcd, err, rr.Output())
@@ -231,7 +231,7 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 
 	glog.Infof("Found %s, creating compatibility symlinks ...", legacyEtcd)
 
-	cmd = command.ExecCmd2(fmt.Sprintf("sudo ln -s %s %s", legacyEtcd, etcdDataDir()))
+	cmd = command.ExecCmd(fmt.Sprintf("sudo ln -s %s %s", legacyEtcd, etcdDataDir()))
 	rr, err = k.c.RunCmd(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "create symlink failed: %s\n%q\n", rr.Command(), rr.Output())
@@ -278,7 +278,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	c := fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
 		invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath, extraFlags, strings.Join(ignore, ","))
-	rr, err := k.c.RunCmd(command.ExecCmd2(c))
+	rr, err := k.c.RunCmd(command.ExecCmd(c))
 	if err != nil {
 		return errors.Wrapf(err, "init failed. cmd: %q\noutput:%q\n", rr.Command(), rr.Output())
 	}
@@ -305,7 +305,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 // adjustResourceLimits makes fine adjustments to pod resources that aren't possible via kubeadm config.
 func (k *Bootstrapper) adjustResourceLimits() error {
-	rr, err := k.c.RunCmd(command.ExecCmd2("cat /proc/$(pgrep kube-apiserver)/oom_adj"))
+	rr, err := k.c.RunCmd(command.ExecCmd("cat /proc/$(pgrep kube-apiserver)/oom_adj"))
 	if err != nil {
 		return errors.Wrap(err, "oom_adj check. command: %q output: %q")
 	}
@@ -316,7 +316,7 @@ func (k *Bootstrapper) adjustResourceLimits() error {
 	}
 	glog.Infof("adjusting apiserver oom_adj to -10")
 
-	cmd := command.ExecCmd2("echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj")
+	cmd := command.ExecCmd("echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj")
 	// Prevent the apiserver from OOM'ing before other pods, as it is our gateway into the cluster.
 	// It'd be preferable to do this via Kubernetes, but kubeadm doesn't have a way to set pod QoS.
 	rr, err = k.c.RunCmd(cmd)
@@ -441,7 +441,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 
 	// Run commands one at a time so that it is easier to root cause failures.
 	for _, c := range cmds {
-		cmd := command.ExecCmd2(c)
+		cmd := command.ExecCmd(c)
 		rr, err := k.c.RunCmd(cmd)
 		if err != nil {
 			return errors.Wrapf(err, "running cmd: %s , output: %s", rr.Command(), rr.Output())
@@ -453,7 +453,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	}
 	// restart the proxy and coredns
 
-	cmd := command.ExecCmd2(fmt.Sprintf("%s phase addon all --config %s", baseCmd, yamlConfigPath))
+	cmd := command.ExecCmd(fmt.Sprintf("%s phase addon all --config %s", baseCmd, yamlConfigPath))
 	rr, err := k.c.RunCmd(cmd)
 	if err != nil {
 		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q output:%q", rr.Command(), rr.Output()))
@@ -476,7 +476,7 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 	// To give a better error message, first check for process existence via ssh
 	// Needs minutes in case the image isn't cached (such as with v1.10.x)
 	err := wait.PollImmediate(time.Millisecond*300, time.Minute*3, func() (bool, error) {
-		cmd := command.ExecCmd2("sudo pgrep kube-apiserver")
+		cmd := command.ExecCmd("sudo pgrep kube-apiserver")
 		rr, ierr := k.c.RunCmd(cmd)
 		if ierr != nil {
 			glog.Warningf("pgrep apiserver: %v cmd: %s output: %s", ierr, rr.Command(), rr.Output())
@@ -521,7 +521,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 		c = fmt.Sprintf("%s reset", invokeKubeadm(k8s.KubernetesVersion))
 	}
 
-	rr, err := k.c.RunCmd(command.ExecCmd2(c))
+	rr, err := k.c.RunCmd(command.ExecCmd(c))
 	if err != nil {
 		return errors.Wrapf(err, "kubeadm reset: cmd: %q\noutput:%q\n", rr.Command(), rr.Output())
 	}
@@ -539,7 +539,7 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 		return fmt.Errorf("pull command is not supported by kubeadm v%s", version)
 	}
 
-	cmd := command.ExecCmd2(fmt.Sprintf("%s config images pull --config %s", invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath))
+	cmd := command.ExecCmd(fmt.Sprintf("%s config images pull --config %s", invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath))
 	rr, err := k.c.RunCmd(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "running cmd: %q output: %q", rr.Command(), rr.Output())
@@ -637,7 +637,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	glog.Infof("kubelet %s config:\n%s", cfg.KubernetesVersion, kubeletCfg)
 
 	// stop kubelet to avoid "Text File Busy" error
-	rr, err := k.c.RunCmd(command.ExecCmd2("pgrep kubelet && sudo systemctl stop kubelet"))
+	rr, err := k.c.RunCmd(command.ExecCmd("pgrep kubelet && sudo systemctl stop kubelet"))
 	if err != nil {
 		glog.Warningf("unable to stop kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
 	}
@@ -654,7 +654,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		}
 	}
 
-	rr, err = k.c.RunCmd(command.ExecCmd2("sudo systemctl daemon-reload && sudo systemctl start kubelet"))
+	rr, err = k.c.RunCmd(command.ExecCmd("sudo systemctl daemon-reload && sudo systemctl start kubelet"))
 	if err != nil {
 		return errors.Wrapf(err, "starting kubelet command: %q output: %q", rr.Command(), rr.Output())
 	}

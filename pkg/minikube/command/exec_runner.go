@@ -34,12 +34,7 @@ import (
 
 // ExecCmd returns a exec.Cmd from a string
 func ExecCmd(c string) *exec.Cmd {
-	return exec.Command("/bin/bash", "-c", c)
-}
-
-// ExecCmd returns a exec.Cmd from a string
-func ExecCmd2(c string) *exec.Cmd {
-	args := strings.Split(c, " ")
+	args := strings.Split(c, " ") // maybe alternatively? ("/bin/bash", "-c", c)
 	return exec.Command(args[0], args[1:]...)
 }
 
