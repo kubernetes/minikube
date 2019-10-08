@@ -51,13 +51,13 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.15
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.18.0
+GOLINT_VERSION ?= v1.20.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
-GOLINT_GOGC ?= 8
+GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
-GOLINT_OPTIONS = --deadline 4m \
+GOLINT_OPTIONS = --timeout 4m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
 	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain'
