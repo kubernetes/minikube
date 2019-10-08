@@ -37,7 +37,7 @@ var (
 func init() {
 	cwd, _ := os.Getwd()
 	boilerplatedir = flag.String("boilerplate-dir", cwd, "Boilerplate directory for boilerplate files")
-	cwd = cwd + "/../../"
+	cwd += "/../../"
 	rootdir = flag.String("rootdir", filepath.Dir(cwd), "Root directory to examine")
 }
 
@@ -139,7 +139,7 @@ Function to get all the files from the directory that heeds to be checked.
 func filesToCheck(rootDir string, extensions map[string][]byte) []string {
 	var outFiles []string
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
-		// remove current workdir from the beginnig of the path in case it matches the skipped path
+		// remove current workdir from the beginig of the path in case it matches the skipped path
 		cwd, _ := os.Getwd()
 		// replace "\" with "\\" for windows style path
 		re := regexp.MustCompile(`\\`)
