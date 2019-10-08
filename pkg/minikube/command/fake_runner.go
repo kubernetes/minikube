@@ -49,7 +49,7 @@ func NewFakeCommandRunner() *FakeCommandRunner {
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
 func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
-	rr := &RunResult{Args: cmd.Args} // to get rid of /bin/bash -c part
+	rr := &RunResult{Args: cmd.Args}
 	glog.Infof("(FakeCommandRunner) Run:  %v", rr.Command())
 
 	start := time.Now()
