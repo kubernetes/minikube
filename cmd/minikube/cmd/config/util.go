@@ -111,6 +111,18 @@ func EnableOrDisableAddon(name string, val string) error {
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
+	addon := assets.Addons[name]
+
+	// check addon status before enabling/disabling it
+	alreadySet, err := isAddonAlreadySet(addon, enable)
+	if err != nil {
+		out.ErrT(out.Conflict, "{{.error}}", out.V{"error": err})
+		return err
+	}
+	//if addon is already enabled or disabled, do nothing
+	if alreadySet {
+		return nil
+	}
 
 	// TODO(r2d4): config package should not reference API, pull this out
 	api, err := machine.NewAPIClient()
@@ -118,13 +130,18 @@ func EnableOrDisableAddon(name string, val string) error {
 		return errors.Wrap(err, "machine client")
 	}
 	defer api.Close()
-	cluster.EnsureMinikubeRunningOrExit(api, 0)
 
-	addon := assets.Addons[name]
+	//if minikube is not running, we return and simply update the value in the addon
+	//config and rewrite the file
+	if !cluster.IsMinikubeRunning(api) {
+		return nil
+	}
+
 	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "getting host")
 	}
+
 	cmd, err := machine.CommandRunner(host)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
@@ -139,30 +156,24 @@ func EnableOrDisableAddon(name string, val string) error {
 	return enableOrDisableAddonInternal(addon, cmd, data, enable)
 }
 
-func isAddonAlreadySet(addon *assets.Addon, enable bool) error {
-
+func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
 	addonStatus, err := addon.IsEnabled()
 
 	if err != nil {
-		return errors.Wrap(err, "get the addon status")
+		return false, errors.Wrap(err, "get the addon status")
 	}
 
 	if addonStatus && enable {
-		return fmt.Errorf("addon %s was already enabled", addon.Name())
+		return true, nil
 	} else if !addonStatus && !enable {
-		return fmt.Errorf("addon %s was already disabled", addon.Name())
+		return true, nil
 	}
 
-	return nil
+	return false, nil
 }
 
 func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
 	var err error
-	// check addon status before enabling/disabling it
-	if err := isAddonAlreadySet(addon, enable); err != nil {
-		out.ErrT(out.Conflict, "{{.error}}", out.V{"error": err})
-		os.Exit(0)
-	}
 
 	if enable {
 		for _, addon := range addon.Assets {
