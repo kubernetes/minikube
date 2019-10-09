@@ -246,7 +246,7 @@ func (e ErrValidateProfile) Error() string {
 // ValidateProfile checks if the profile user is trying to switch exists, else throws error
 func ValidateProfile(profile string) (*ErrValidateProfile, bool) {
 
-	validProfiles, invalidProfiles, err := pkgConfig.ListProfiles()
+	validProfiles, invalidProfiles, err := config.ListProfiles()
 	if err != nil {
 		out.FailureT(err.Error())
 	}
