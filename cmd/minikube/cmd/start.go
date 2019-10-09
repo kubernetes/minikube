@@ -923,10 +923,10 @@ func validateNetwork(h *host.Host) string {
 		return ip
 	}
 
-	sshAddr := fmt.Sprintf("%s:22", ip)
+	sshAddr := fmt.Sprintf("%s:22000", ip)
 	conn, err := net.Dial("tcp", sshAddr)
 	if err != nil {
-		exit.WithCodeT(exit.IO, "Unable to contact VM at {{.address}}: {{.error}}", out.V{"address": sshAddr, "error": err})
+		exit.WithCodeT(exit.IO, "Unable to contact {{.hypervisor}} \"{{.name}}\" VM: {{.error}}\n\nIf you have a VPN or firewall enabled, try turning it off or configuring it so that it does not capture packets sent to {{.ip}}.\n\nAlso, check the {{.hypervisor}} network preferences and/or reboot your machine", out.V{"name": cfg.GetMachineName(), "error": err, "hypervisor": h.Driver.DriverName()})
 	}
 	defer conn.Close()
 	return ip
