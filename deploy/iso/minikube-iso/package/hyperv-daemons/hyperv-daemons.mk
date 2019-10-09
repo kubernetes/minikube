@@ -37,23 +37,23 @@ endef
 
 define HYPERV_DAEMONS_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/hyperv-daemons/70-hv_fcopy.rules \
+		$(HYPERV_DAEMONS_PKGDIR)/70-hv_fcopy.rules \
 		$(TARGET_DIR)/etc/udev/rules.d/70-hv_fcopy.rules
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/hyperv-daemons/70-hv_kvp.rules \
+		$(HYPERV_DAEMONS_PKGDIR)/70-hv_kvp.rules \
 		$(TARGET_DIR)/etc/udev/rules.d/70-hv_kvp.rules
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/hyperv-daemons/70-hv_vss.rules \
+		$(HYPERV_DAEMONS_PKGDIR)/70-hv_vss.rules \
 		$(TARGET_DIR)/etc/udev/rules.d/70-hv_vss.rules
 
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/hyperv-daemons/hv_fcopy_daemon.service \
+		$(HYPERV_DAEMONS_PKGDIR)/hv_fcopy_daemon.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/hv_fcopy_daemon.service
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/hyperv-daemons/hv_kvp_daemon.service \
+		$(HYPERV_DAEMONS_PKGDIR)/hv_kvp_daemon.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/hv_kvp_daemon.service
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/hyperv-daemons/hv_vss_daemon.service \
+		$(HYPERV_DAEMONS_PKGDIR)/hv_vss_daemon.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/hv_vss_daemon.service
 
 	ln -fs /usr/lib/systemd/system/hv_fcopy_daemon.service \
