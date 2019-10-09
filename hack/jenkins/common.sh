@@ -91,28 +91,34 @@ if [[ "${procs}" != "" ]]; then
   kill -9 ${procs} || true
 fi
 
+# Quickly notice misconfigured test roots
+mkdir -p "${TEST_ROOT}"
+
 # Cleanup stale test outputs.
 echo ""
 echo ">> Cleaning up after previous test runs ..."
-
-for stale_dir in ${TEST_ROOT}/*; do
-  echo "* Cleaning stale test root: ${stale_dir}"
-
-  for tunnel in $(find ${stale_dir} -name tunnels.json -type f); do
+for entry in $(ls ${TEST_ROOT}); do
+  echo "* Cleaning stale test path: ${entry}"
+  for tunnel in $(find ${entry} -name tunnels.json -type f); do
     env MINIKUBE_HOME="$(dirname ${tunnel})" ${MINIKUBE_BIN} tunnel --cleanup || true
   done
 
-  for home in $(find ${stale_dir} -name .minikube -type d); do
-   env MINIKUBE_HOME="$(dirname ${home})" ${MINIKUBE_BIN} delete || true
-   sudo rm -Rf "${home}"
+  for home in $(find ${entry} -name .minikube -type d); do
+    env MINIKUBE_HOME="$(dirname ${home})" ${MINIKUBE_BIN} delete || true
+    sudo rm -Rf "${home}"
   done
 
-  for kconfig in $(find ${stale_dir} -name kubeconfig -type f); do
+  for kconfig in $(find ${entry} -name kubeconfig -type f); do
     sudo rm -f "${kconfig}"
   done
 
-  rm -f "${stale_dir}/*" || true
-  rmdir "${stale_dir}" || ls "${stale_dir}"
+  # Be very specific to avoid accidentally deleting other items, like wildcards or devices
+  if [[ -d "${entry}" ]]; then
+    rm -Rf "${entry}" || true
+  elif [[ -f "${entry}" ]]; then
+    rm -f "${entry}" || true
+  fi
+
 done
 
 # sometimes tests left over zombie procs that won't exit
