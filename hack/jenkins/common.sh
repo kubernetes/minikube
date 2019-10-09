@@ -145,6 +145,12 @@ if type -P vboxmanage; then
     vboxmanage startvm $guid --type emergencystop || true
     vboxmanage unregistervm $guid || true
   done
+
+  vboxmanage list hostonlyifs \
+    | grep "^Name:" \
+    | awk '{ print $2 }' \
+    | xargs -n1 vboxmanage hostonlyif remove || true
+
   echo ">> VirtualBox VM list after clean up (should be empty):"
   vboxmanage list vms || true
 fi
