@@ -912,7 +912,17 @@ func validateNetwork(h *host.Host) string {
 		}
 	}
 
-	// Here is where we should be checking connectivity to/from the VM
+	// none driver should not require ssh or any other open ports
+	if h.Driver.DriverName() == constants.DriverNone {
+		return ip
+	}
+
+	sshAddr := fmt.Sprintf("%s:22", ip)
+	conn, err := net.Dial("tcp", sshAddr)
+	if err != nil {
+		exit.WithCodeT(exit.IO, "Unable to contact VM at {{.address}}: {{.error}}", out.V{"address": sshAddr, "error": err})
+	}
+	defer conn.Close()
 	return ip
 }
 
