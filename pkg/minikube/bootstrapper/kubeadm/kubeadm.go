@@ -649,11 +649,11 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		}
 	}
 
-	c, err := shellquote.Split("sudo systemctl daemon-reload && sudo systemctl start kubelet")
+	c, err := shellquote.Split("-c sudo systemctl daemon-reload && sudo systemctl start kubelet")
 	if err != nil {
 		return errors.Wrapf(err, "shellquote cmd")
 	}
-	if rr, err := k.c.RunCmd(exec.Command("/bin/bash -c", c...)); err != nil {
+	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", c...)); err != nil {
 		return errors.Wrapf(err, "starting kubelet command: %q output: %q", rr.Command(), rr.Output())
 	}
 	return nil
