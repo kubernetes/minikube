@@ -26,6 +26,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
@@ -172,8 +173,7 @@ func (d *Driver) Remove() error {
 		return errors.Wrap(err, "kill")
 	}
 	glog.Infof("Removing: %s", cleanupPaths)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo rm -rf %s", strings.Join(cleanupPaths, " ")))
-
+	c := exec.Command("sudo", "rm", "-rf", shellquote.Join(cleanupPaths...))
 	if rr, err := d.exec.RunCmd(c); err != nil {
 		glog.Errorf("cleanup incomplete: %v , output: %s", err, rr.Output())
 	}
@@ -225,12 +225,12 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 func stopKubelet(cr command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
 	stop := func() error {
-		cmdStop := exec.Command("/bin/bash", "-c", "sudo systemctl stop kubelet.service")
+		cmdStop := exec.Command("sudo", "systemctl", "stop", "kubelet.service")
 		if rr, err := cr.RunCmd(cmdStop); err != nil {
 			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
 		}
 		var out bytes.Buffer
-		cmdCheck := exec.Command("/bin/bash", "-c", "sudo systemctl show -p SubState kubelet")
+		cmdCheck := exec.Command("sudo", "systemctl", "show", "-p", "SubState", "kubelet")
 		cmdCheck.Stdout = &out
 		cmdCheck.Stderr = &out
 		if rr, err := cr.RunCmd(cmdCheck); err != nil {
@@ -252,7 +252,7 @@ func stopKubelet(cr command.Runner) error {
 // restartKubelet restarts the kubelet
 func restartKubelet(cr command.Runner) error {
 	glog.Infof("restarting kubelet.service ...")
-	c := exec.Command("/bin/bash", "-c", "sudo systemctl restart kubelet.service")
+	c := exec.Command("sudo", "systemctl", "restart", "kubelet.service")
 	if rr, err := cr.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "restartKubelet output: %s", rr.Output())
 	}
@@ -262,7 +262,7 @@ func restartKubelet(cr command.Runner) error {
 // checkKubelet returns an error if the kubelet is not running.
 func checkKubelet(cr command.Runner) error {
 	glog.Infof("checking for running kubelet ...")
-	c := exec.Command("/bin/bash", "-c", "systemctl is-active --quiet service kubelet")
+	c := exec.Command("systemctl", "is-active", "--quiet", "service", "kubelet")
 	if rr, err := cr.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "checkKubelet output: %s", rr.Output())
 	}

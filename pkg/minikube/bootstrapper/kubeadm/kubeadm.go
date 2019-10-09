@@ -447,7 +447,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// restart the proxy and coredns
-	if rr, err := k.c.RunCmd(exec.Command(fmt.Sprintf("%s phase addon all --config %s", baseCmd, yamlConfigPath))); err != nil {
+	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, yamlConfigPath))); err != nil {
 		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q output:%q", rr.Command(), rr.Output()))
 	}
 
