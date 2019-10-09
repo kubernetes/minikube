@@ -133,15 +133,8 @@ if type -P virsh; then
   virsh -c qemu:///system list --all || true
 fi
 
-
 if type -P vboxmanage; then
   vboxmanage list vms || true
-  # remove inaccessible stale VMs https://github.com/kubernetes/minikube/issues/4872
-  vboxmanage list vms \	
-    | grep inaccessible \	
-    | cut -d'"' -f3 \	
-    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \	
-    || true
   vboxmanage list vms \
     | egrep -o '{.*?}' \
     | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
@@ -254,7 +247,7 @@ cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
-${SUDO_PREFIX} rmdir "${TEST_HOME}" || true
+rmdir "${TEST_HOME}"
 echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
