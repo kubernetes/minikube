@@ -22,7 +22,7 @@ type Clnt struct {
 	Debuglevel int    // =0 don't print anything, >0 print Fcalls, >1 print raw packets
 	Msize      uint32 // Maximum size of the 9P messages
 	Dotu       bool   // If true, 9P2000.u protocol is spoken
-	Root       *Fid   // Fid that points to the rood directory
+	Root       *Fid   // Fid that points to the root directory
 	Id         string // Used when printing debug messages
 	Log        *Logger
 

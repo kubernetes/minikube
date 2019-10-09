@@ -4,15 +4,15 @@ linkTitle: "status"
 weight: 1
 date: 2019-08-01
 description: >
-  Gets the status of a local kubernetes cluster
+  Gets the status of a local Kubernetes cluster
 ---
 
 
 ### Overview
 
-Gets the status of a local kubernetes cluster.
-	Exit status contains the status of minikube's VM, cluster and kubernetes encoded on it's bits in this order from right to left.
-	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for kubernetes NOK)
+Gets the status of a local Kubernetes cluster.
+	Exit status contains the status of minikube's VM, cluster and Kubernetes encoded on it's bits in this order from right to left.
+	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for Kubernetes NOK)
 
 ### Usage
 

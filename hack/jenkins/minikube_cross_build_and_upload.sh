@@ -63,4 +63,4 @@ cp -r test/integration/testdata out/
 # Don't upload the buildroot artifacts if they exist
 rm -r out/buildroot || true
 
-gsutil -m cp -r out/* "gs://${bucket}/${ghprbPullId}/"
+gsutil -m cp -r out/ "gs://${bucket}/${ghprbPullId}/"
