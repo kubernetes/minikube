@@ -28,10 +28,6 @@ var updateCheckCmd = &cobra.Command{
 	Use:   "update-check",
 	Short: "Print current and latest version number",
 	Long:  `Print current and latest version number`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Explicitly disable update checking for the version command
-		enableUpdateNotification = false
-	},
 	Run: func(command *cobra.Command, args []string) {
 		url := notify.GithubMinikubeReleasesURL
 		r, err := notify.GetAllVersionsFromURL(url)
