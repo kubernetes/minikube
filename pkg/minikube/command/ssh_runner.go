@@ -125,11 +125,6 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	}()
 
 	elapsed := time.Since(start)
-	fmt.Println("------------------------------MEDYAAAAAAAA------------------------------")
-	fmt.Printf("raw args:+%v", cmd.Args)
-	fmt.Printf("shellquote:{{{%s}}}", shellquote.Join(cmd.Args...))
-	fmt.Println("------------------------------END MEDYAAAAAAAA------------------------------")
-
 	err = teeSSH(sess, shellquote.Join(cmd.Args...), &outb, &errb)
 	if err == nil {
 		// Reduce log spam

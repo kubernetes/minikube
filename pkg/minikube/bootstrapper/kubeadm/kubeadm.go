@@ -35,6 +35,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/apimachinery/pkg/labels"
@@ -625,10 +626,16 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 
 	glog.Infof("kubelet %s config:\n%s", cfg.KubernetesVersion, kubeletCfg)
 
+	stopCmd, err := shellquote.Split("pgrep kubelet && sudo systemctl stop kubelet")
+	if err != nil {
+		return errors.Wrapf(err, "shellquote split")
+	}
+
 	// stop kubelet to avoid "Text File Busy" error
-	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")); err != nil {
+	if rr, err := k.c.RunCmd(exec.Command("/bin/bash -c", stopCmd...)); err != nil {
 		glog.Warningf("unable to stop kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
 	}
+
 	if err := transferBinaries(cfg, k.c); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
@@ -642,7 +649,11 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		}
 	}
 
-	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl start kubelet")); err != nil {
+	c, err := shellquote.Split("sudo systemctl daemon-reload && sudo systemctl start kubelet")
+	if err != nil {
+		return errors.Wrapf(err, "shellquote cmd")
+	}
+	if rr, err := k.c.RunCmd(exec.Command("/bin/bash -c", c...)); err != nil {
 		return errors.Wrapf(err, "starting kubelet command: %q output: %q", rr.Command(), rr.Output())
 	}
 	return nil
