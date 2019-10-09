@@ -23,11 +23,11 @@ import (
 	"io"
 	"os/exec"
 	"path"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
@@ -125,7 +125,12 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	}()
 
 	elapsed := time.Since(start)
-	err = teeSSH(sess, strings.Join(cmd.Args, " "), &outb, &errb)
+	fmt.Println("------------------------------MEDYAAAAAAAA------------------------------")
+	fmt.Printf("raw args:+%v", cmd.Args)
+	fmt.Printf("shellquote:{{{%s}}}", shellquote.Join(cmd.Args...))
+	fmt.Println("------------------------------END MEDYAAAAAAAA------------------------------")
+
+	err = teeSSH(sess, shellquote.Join(cmd.Args...), &outb, &errb)
 	if err == nil {
 		// Reduce log spam
 		if elapsed > (1 * time.Second) {
