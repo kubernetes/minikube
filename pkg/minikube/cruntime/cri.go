@@ -21,11 +21,14 @@ import (
 	"encoding/base64"
 	"fmt"
 	"html/template"
+	"os/exec"
 	"path"
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/command"
 )
 
 const (
@@ -330,19 +333,21 @@ plugin_dirs = [
 
 // listCRIContainers returns a list of containers using crictl
 func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
-	var content string
 	var err error
+	var rr *command.RunResult
 	state := "Running"
 	if filter != "" {
-		content, err = cr.CombinedOutput(fmt.Sprintf(`sudo crictl ps -a --name=%s --state=%s --quiet`, filter, state))
+		c := exec.Command("/bin/bash/", "-c", fmt.Sprintf(`sudo crictl ps -a --name=%s --state=%s --quiet`, filter, state))
+		rr, err = cr.RunCmd(c)
 	} else {
-		content, err = cr.CombinedOutput(fmt.Sprintf(`sudo crictl ps -a --state=%s --quiet`, state))
+		c := exec.Command("/bin/bash/", "-c", fmt.Sprintf(`sudo crictl ps -a --state=%s --quiet`, state))
+		rr, err = cr.RunCmd(c)
 	}
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, rr.Output())
 	}
 	var ids []string
-	for _, line := range strings.Split(content, "\n") {
+	for _, line := range strings.Split(rr.Stderr.String(), "\n") {
 		if line != "" {
 			ids = append(ids, line)
 		}
@@ -356,7 +361,12 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 		return nil
 	}
 	glog.Infof("Killing containers: %s", ids)
-	return cr.Run(fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
+	c := exec.Command(fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
+	rr, err := cr.RunCmd(c)
+	if err != nil {
+		return errors.Wrapf(err, "kill cri containers. output %s", rr.Output())
+	}
+	return nil
 }
 
 // stopCRIContainers stops containers using crictl
@@ -365,7 +375,13 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 		return nil
 	}
 	glog.Infof("Stopping containers: %s", ids)
-	return cr.Run(fmt.Sprintf("sudo crictl stop %s", strings.Join(ids, " ")))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
+	rr, err := cr.RunCmd(c)
+	if err != nil {
+		return errors.Wrapf(err, "stop cri containers. output %s", rr.Output())
+	}
+	return nil
+
 }
 
 // populateCRIConfig sets up /etc/crictl.yaml
@@ -383,7 +399,13 @@ image-endpoint: unix://{{.Socket}}
 	if err := t.Execute(&b, opts); err != nil {
 		return err
 	}
-	return cr.Run(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(cPath), b.String(), cPath))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(cPath), b.String(), cPath))
+	if rr, err := cr.RunCmd(c); err != nil {
+		if err != nil {
+			return errors.Wrapf(err, "populateCRIConfig %s", rr.Output())
+		}
+	}
+	return nil
 }
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
@@ -399,7 +421,14 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, k8sVersion str
 	if err := t.Execute(&b, opts); err != nil {
 		return err
 	}
-	return cr.Run(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
+
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
+	if rr, err := cr.RunCmd(c); err != nil {
+		if err != nil {
+			return errors.Wrapf(err, "generateCRIOConfig. %s", rr.Output())
+		}
+	}
+	return nil
 }
 
 // criContainerLogCmd returns the command to retrieve the log for a container based on ID

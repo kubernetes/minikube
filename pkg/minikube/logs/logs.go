@@ -22,11 +22,13 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -56,13 +58,21 @@ var importantPods = []string{
 const lookBackwardsCount = 200
 
 // Follow follows logs from multiple files in tail(1) format
-func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner) error {
+func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner) error {
 	cs := []string{}
 	for _, v := range logCommands(r, bs, 0, true) {
 		cs = append(cs, v+" &")
 	}
 	cs = append(cs, "wait")
-	return runner.CombinedOutputTo(strings.Join(cs, " "), os.Stdout)
+
+	cmd := exec.Command("/bin/bash", "-c", strings.Join(cs, " "))
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stdout
+	rr, err := cr.RunCmd(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "log follow with output %q", rr.Output())
+	}
+	return nil
 }
 
 // IsProblem returns whether this line matches a known problem
@@ -71,15 +81,18 @@ func IsProblem(line string) bool {
 }
 
 // FindProblems finds possible root causes among the logs
-func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner) map[string][]string {
+func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner) map[string][]string {
 	pMap := map[string][]string{}
 	cmds := logCommands(r, bs, lookBackwardsCount, false)
 	for name, cmd := range cmds {
 		glog.Infof("Gathering logs for %s ...", name)
 		var b bytes.Buffer
-		err := runner.CombinedOutputTo(cmds[name], &b)
-		if err != nil {
-			glog.Warningf("failed %s: %s: %v", name, cmd, err)
+		c := exec.Command("/bin/bash", "-c", cmds[name])
+		c.Stderr = &b
+		c.Stdout = &b
+
+		if rr, err := cr.RunCmd(c); err != nil {
+			glog.Warningf("failed %s: command: %s %v output: %s", name, rr.Command(), err, rr.Output())
 			continue
 		}
 		scanner := bufio.NewScanner(&b)
@@ -130,9 +143,12 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 		out.T(out.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
 
-		err := runner.CombinedOutputTo(cmds[name], &b)
-		if err != nil {
-			glog.Errorf("failed: %v", err)
+		c := exec.Command(cmds[name])
+		c.Stdin = &b
+		c.Stdout = &b
+		s
+		if rr, err := runner.RunCmd(c); err != nil {
+			glog.Errorf("command %s failed with error: %v output: %q", rr.Command(), err, rr.Output())
 			failed = append(failed, name)
 			continue
 		}

@@ -20,11 +20,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"os/exec"
 	"path"
 	"strings"
 	"text/template"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -152,13 +154,18 @@ func (r *Containerd) DefaultCNI() bool {
 
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
-	err := r.Runner.Run("systemctl is-active --quiet service containerd")
+	c := exec.Command("/bin/bash", "-c", "systemctl", "is-active", "--quiet", "service", "containerd")
+	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Containerd) Available() error {
-	return r.Runner.Run("command -v containerd")
+	c := exec.Command("/bin/bash", "-c", "command", "-v", "containerd")
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "check containerd availabilty. output: %s", rr.Output())
+	}
+	return nil
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
@@ -174,7 +181,11 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersi
 	if err := t.Execute(&b, opts); err != nil {
 		return err
 	}
-	return cr.Run(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
+	if rr, err := cr.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "generate containerd cfg. ouptut: %s", rr.Output())
+	}
+	return nil
 }
 
 // Enable idempotently enables containerd on a host
@@ -194,18 +205,30 @@ func (r *Containerd) Enable(disOthers bool) error {
 		return err
 	}
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
-	return r.Runner.Run("sudo systemctl restart containerd")
+	c := exec.Command("/bin/bash", "-c", "sudo", "systemctl", "restart", "containerd")
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "enable containrd. output: %q", rr.Output())
+	}
+	return nil
 }
 
 // Disable idempotently disables containerd on a host
 func (r *Containerd) Disable() error {
-	return r.Runner.Run("sudo systemctl stop containerd")
+	c := exec.Command("/bin/bash", "-c", "sudo", "systemctl", "stop", "containerd")
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "disable containrd. output: %q", rr.Output())
+	}
+	return nil
 }
 
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	return r.Runner.Run(fmt.Sprintf("sudo ctr -n=k8s.io images import %s", path))
+	c := exec.Command("/bin/bash", "-c", "ctr", "-n=k8s.io", "images", "import", path)
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "disable containrd. output: %q", rr.Output())
+	}
+	return nil
 }
 
 // KubeletOptions returns kubelet options for a containerd

@@ -19,12 +19,14 @@ package cluster
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/command"
 )
 
 // MountConfig defines the options available to the Mount command
@@ -49,7 +51,7 @@ type MountConfig struct {
 
 // mountRunner is the subset of CommandRunner used for mounting
 type mountRunner interface {
-	CombinedOutput(string) (string, error)
+	RunCmd(*exec.Cmd) (*command.RunResult, error)
 }
 
 // Mount runs the mount command from the 9p client on the VM to the 9p server on the host
@@ -58,14 +60,19 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 		return errors.Wrap(err, "umount")
 	}
 
-	cmd := fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target, mntCmd(source, target, c))
-	glog.Infof("Will run: %s", cmd)
-	out, err := r.CombinedOutput(cmd)
+	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target)))
 	if err != nil {
-		glog.Infof("%s failed: err=%s, output: %q", cmd, err, out)
-		return errors.Wrap(err, out)
+		glog.Infof("Failed to create folder pre-mount: err=%v, output: %q", err, rr.Output())
+		return errors.Wrap(err, "create folder pre-mount")
 	}
-	glog.Infof("%s output: %q", cmd, out)
+
+	rr, err := r.RunCmd(mntCmd(source, target, c))
+	if err != nil {
+		glog.Infof("Failed to create folder before mount: err=%s, output: %q", err, rr.Output())
+		return errors.Wrap(err, rr.Output())
+	}
+
+	glog.Infof("%s output: %q", rr.Command(), rr.Output())
 	return nil
 }
 
@@ -97,7 +104,7 @@ func resolveGID(id string) string {
 }
 
 // mntCmd returns a mount command based on a config.
-func mntCmd(source string, target string, c *MountConfig) string {
+func mntCmd(source string, target string, c *MountConfig) *exec.Cmd {
 	options := map[string]string{
 		"dfltgid": resolveGID(c.GID),
 		"dfltuid": resolveUID(c.UID),
@@ -128,23 +135,18 @@ func mntCmd(source string, target string, c *MountConfig) string {
 		opts = append(opts, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(opts)
-	return fmt.Sprintf("sudo mount -t %s -o %s %s %s", c.Type, strings.Join(opts, ","), source, target)
-}
-
-// umountCmd returns a command for unmounting
-func umountCmd(target string) string {
-	// grep because findmnt will also display the parent!
-	return fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target)
+	return exec.Command("/bin/bash", "-c", "sudo", "mount", "-t", c.Type, "-o", strings.Join(opts, ","), source, target)
 }
 
 // Unmount unmounts a path
 func Unmount(r mountRunner, target string) error {
-	cmd := umountCmd(target)
-	glog.Infof("Will run: %s", cmd)
-	out, err := r.CombinedOutput(cmd)
-	glog.Infof("unmount force err=%v, out=%s", err, out)
+	// grep because findmnt will also display the parent!
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target))
+	rr, err := r.RunCmd(c)
 	if err != nil {
-		return errors.Wrap(err, out)
+		glog.Infof("unmount force err=%v, out=%s", err, rr.Output())
+		return errors.Wrap(err, rr.Output())
 	}
+	glog.Infof("unmount for %s ran successfully", target)
 	return nil
 }
