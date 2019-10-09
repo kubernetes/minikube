@@ -134,14 +134,11 @@ if type -P virsh; then
 fi
 
 if type -P vboxmanage; then
-  vboxmanage list vms \
-    | egrep -o '{.*?}' \
-    | xargs -I{} vboxmanage startvm {} --type emergencystop || true
-
-  vboxmanage list vms \
-    | egrep -o '{.*?}' \
-    | xargs -I{} vboxmanage unregistervm {} || true
-
+  for guid in $(vboxmanage list vms | egrep -Eo '\{[-a-Z0-9]+\}'); do
+    echo "- Removing stale VirtualBox VM: $guid"
+    vboxmanage startvm $guid --type emergencystop || true
+    vboxmanage unregistervm $guid || true
+  done
   echo ">> VirtualBox VM list after clean up (should be empty):"
   vboxmanage list vms || true
 fi
