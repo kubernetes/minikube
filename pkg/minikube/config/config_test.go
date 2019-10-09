@@ -18,6 +18,8 @@ package config
 
 import (
 	"bytes"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"testing"
 
@@ -46,7 +48,7 @@ var configTestCases = []configTestCase{
     "log_dir": "/etc/hosts",
     "show-libmachine-logs": true,
     "v": 5,
-    "vm-driver": "kvm"
+    "vm-driver": "kvm2"
 }`,
 		config: map[string]interface{}{
 			"vm-driver":                 constants.DriverKvm2,
@@ -102,11 +104,11 @@ func Test_get(t *testing.T) {
 	}
 }
 
-func Test_readConfig(t *testing.T) {
+func TestReadConfig(t *testing.T) {
 	// non existing file
-	mkConfig, err := readConfig("non_existing_file")
+	mkConfig, err := ReadConfig("non_existing_file")
 	if err != nil {
-		t.Fatalf("Error not exepected but got %v", err)
+		t.Fatalf("Error not expected but got %v", err)
 	}
 
 	if len(mkConfig) != 0 {
@@ -114,7 +116,7 @@ func Test_readConfig(t *testing.T) {
 	}
 
 	// invalid config file
-	mkConfig, err = readConfig("./testdata/.minikube/config/invalid_config.json")
+	mkConfig, err = ReadConfig("./testdata/.minikube/config/invalid_config.json")
 	if err == nil {
 		t.Fatalf("Error expected but got none")
 	}
@@ -124,7 +126,7 @@ func Test_readConfig(t *testing.T) {
 	}
 
 	// valid config file
-	mkConfig, err = readConfig("./testdata/.minikube/config/valid_config.json")
+	mkConfig, err = ReadConfig("./testdata/.minikube/config/valid_config.json")
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}
@@ -139,5 +141,49 @@ func Test_readConfig(t *testing.T) {
 
 	if reflect.DeepEqual(expectedConfig, mkConfig) || err != nil {
 		t.Errorf("Did not read config correctly,\n\n wanted %+v, \n\n got %+v", expectedConfig, mkConfig)
+	}
+}
+
+func TestWriteConfig(t *testing.T) {
+	configFile, err := ioutil.TempFile("/tmp", "configTest")
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+
+	cfg := map[string]interface{}{
+		"vm-driver":            constants.DriverKvm2,
+		"cpus":                 4,
+		"disk-size":            "20g",
+		"show-libmachine-logs": true,
+		"log_dir":              "/etc/hosts",
+	}
+
+	err = WriteConfig(configFile.Name(), cfg)
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+	defer os.Remove(configFile.Name())
+
+	mkConfig, err := ReadConfig(configFile.Name())
+	if err != nil {
+		t.Fatalf("Error not expected but got %v", err)
+	}
+
+	if reflect.DeepEqual(cfg, mkConfig) || err != nil {
+		t.Errorf("Did not read config correctly,\n\n wanted %+v, \n\n got %+v", cfg, mkConfig)
+	}
+}
+
+func Test_encode(t *testing.T) {
+	var b bytes.Buffer
+	for _, tt := range configTestCases {
+		err := encode(&b, tt.config)
+		if err != nil {
+			t.Errorf("Error encoding: %v", err)
+		}
+		if b.String() != tt.data {
+			t.Errorf("Did not write config correctly, \n\n expected:\n %+v \n\n actual:\n %+v", tt.data, b.String())
+		}
+		b.Reset()
 	}
 }

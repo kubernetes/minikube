@@ -20,6 +20,8 @@ import (
 	"github.com/spf13/cobra"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var configSetCmd = &cobra.Command{
@@ -28,8 +30,11 @@ var configSetCmd = &cobra.Command{
 	Long: `Sets the PROPERTY_NAME config value to PROPERTY_VALUE
 	These values can be overwritten by flags or environment variables at runtime.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) != 2 {
-			exit.UsageT("usage: minikube config set PROPERTY_NAME PROPERTY_VALUE")
+		if len(args) < 2 {
+			exit.UsageT("not enough arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
+		}
+		if len(args) > 2 {
+			exit.UsageT("toom any arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
 		}
 		err := Set(args[0], args[1])
 		if err != nil {
@@ -55,7 +60,7 @@ func Set(name string, value string) error {
 	}
 
 	// Set the value
-	config, err := pkgConfig.ReadConfig()
+	config, err := pkgConfig.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return err
 	}
@@ -71,5 +76,5 @@ func Set(name string, value string) error {
 	}
 
 	// Write the value
-	return WriteConfig(config)
+	return pkgConfig.WriteConfig(localpath.ConfigFile, config)
 }

@@ -21,11 +21,14 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"regexp"
 	"strconv"
 
 	// initflag must be imported before any other minikube pkg.
 	// Fix for https://github.com/kubernetes/minikube/issues/4866
 	_ "k8s.io/minikube/pkg/initflag"
+
+	mlog "github.com/docker/machine/libmachine/log"
 
 	"github.com/golang/glog"
 	"github.com/pkg/profile"
@@ -33,14 +36,18 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/translate"
 	_ "k8s.io/minikube/pkg/provision"
 )
 
 const minikubeEnableProfile = "MINIKUBE_ENABLE_PROFILING"
 
+var (
+	machineLogErrorRe   = regexp.MustCompile(`(?i) (failed|error|fatal)`)
+	machineLogWarningRe = regexp.MustCompile(`(?i)warning`)
+)
+
 func main() {
-	captureStdLogMessages()
+	bridgeLogMessages()
 	defer glog.Flush()
 
 	if os.Getenv(minikubeEnableProfile) == "1" {
@@ -51,20 +58,21 @@ func main() {
 	}
 	out.SetOutFile(os.Stdout)
 	out.SetErrFile(os.Stderr)
-	translate.DetermineLocale()
 	cmd.Execute()
 }
 
-// captureStdLogMessages arranges for messages written to the Go "log" package's to appear in glog
-func captureStdLogMessages() {
+// bridgeLogMessages bridges non-glog logs into glog
+func bridgeLogMessages() {
 	log.SetFlags(log.Lshortfile)
-	log.SetOutput(logBridge{})
+	log.SetOutput(stdLogBridge{})
+	mlog.SetErrWriter(machineLogBridge{})
+	mlog.SetOutWriter(machineLogBridge{})
 }
 
-type logBridge struct{}
+type stdLogBridge struct{}
 
 // Write parses the standard logging line and passes its components to glog
-func (lb logBridge) Write(b []byte) (n int, err error) {
+func (lb stdLogBridge) Write(b []byte) (n int, err error) {
 	// Split "d.go:23: message" into "d.go", "23", and "message".
 	parts := bytes.SplitN(b, []byte{':'}, 3)
 	if len(parts) != 3 || len(parts[0]) < 1 || len(parts[2]) < 1 {
@@ -80,5 +88,20 @@ func (lb logBridge) Write(b []byte) (n int, err error) {
 		line = 0
 	}
 	glog.Infof("stdlog: %s:%d %s", file, line, text)
+	return len(b), nil
+}
+
+// libmachine log bridge
+type machineLogBridge struct{}
+
+// Write passes machine driver logs to glog
+func (lb machineLogBridge) Write(b []byte) (n int, err error) {
+	if machineLogErrorRe.Match(b) {
+		glog.Errorf("libmachine: %s", b)
+	} else if machineLogWarningRe.Match(b) {
+		glog.Warningf("libmachine: %s", b)
+	} else {
+		glog.Infof("libmachine: %s", b)
+	}
 	return len(b), nil
 }

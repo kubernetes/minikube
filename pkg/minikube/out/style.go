@@ -78,8 +78,9 @@ var styles = map[StyleEnum]style{
 	Documentation: {Prefix: "📘  "},
 	Issues:        {Prefix: "⁉️   "},
 	Issue:         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
-	Check:         {Prefix: "✔️  "},
+	Check:         {Prefix: "✅  "},
 	Celebration:   {Prefix: "🎉  "},
+	Workaround:    {Prefix: "👉  ", LowPrefix: lowIndent},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},
@@ -87,7 +88,7 @@ var styles = map[StyleEnum]style{
 	Caching:          {Prefix: "🤹  "},
 	StartingVM:       {Prefix: "🔥  "},
 	StartingNone:     {Prefix: "🤹  "},
-	Provisioner:      {Prefix: "ℹ️  "},
+	Provisioner:      {Prefix: "ℹ️   "},
 	Resetting:        {Prefix: "🔄  "},
 	DeletingHost:     {Prefix: "🔥  "},
 	Copying:          {Prefix: "✨  "},
@@ -156,19 +157,19 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 
 func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...V) string {
 	if a == nil {
-		a = []V{V{}}
+		a = []V{{}}
 	}
 	format = applyStyle(style, useColor, format)
 
 	var buf bytes.Buffer
 	t, err := template.New(format).Parse(format)
 	if err != nil {
-		glog.Infof("Initializing template failed. Returning raw string.")
+		glog.Errorf("unable to parse %q: %v - returning raw string.", format, err)
 		return format
 	}
 	err = t.Execute(&buf, a[0])
 	if err != nil {
-		glog.Infof("Executing template failed. Returning raw string.")
+		glog.Errorf("unable to execute %s: %v - returning raw string.", format, err)
 		return format
 	}
 	outStyled := buf.String()

@@ -34,9 +34,9 @@ import (
 )
 
 // rootCauseRe is a regular expression that matches known failure root causes
-var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted|tls: bad certificate`)
+var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted|tls: bad certificate|kubelet.*no API client|kubelet.*No api server|STDIN.*127.0.0.1:8080|failed to create listener|address already in use|unable to evict any pods|eviction manager: unexpected error`)
 
-// ignoreRe is a regular expression that matches spurious errors to not surface
+// ignoreCauseRe is a regular expression that matches spurious errors to not surface
 var ignoreCauseRe = regexp.MustCompile("error: no objects passed to apply")
 
 // importantPods are a list of pods to retrieve logs for, in addition to the bootstrapper logs.
@@ -48,6 +48,7 @@ var importantPods = []string{
 	"kube-addon-manager",
 	"kubernetes-dashboard",
 	"storage-provisioner",
+	"kube-controller-manager",
 }
 
 // lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
@@ -113,16 +114,14 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 // Output displays logs from multiple sources in tail(1) format
 func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner, lines int) error {
 	cmds := logCommands(r, bs, lines, false)
-
-	// These are not technically logs, but are useful to have in bug reports.
-	cmds["kernel"] = "uptime && uname -a"
+	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 
 	names := []string{}
 	for k := range cmds {
 		names = append(names, k)
 	}
-	sort.Strings(names)
 
+	sort.Strings(names)
 	failed := []string{}
 	for i, name := range names {
 		if i > 0 {
@@ -130,6 +129,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 		}
 		out.T(out.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
+
 		err := runner.CombinedOutputTo(cmds[name], &b)
 		if err != nil {
 			glog.Errorf("failed: %v", err)
@@ -141,6 +141,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 			out.T(out.Empty, scanner.Text())
 		}
 	}
+
 	if len(failed) > 0 {
 		return fmt.Errorf("unable to fetch logs for: %s", strings.Join(failed, ", "))
 	}
@@ -161,7 +162,14 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 			glog.Warningf("No container was found matching %q", pod)
 			continue
 		}
-		cmds[pod] = r.ContainerLogCmd(ids[0], length, follow)
+		for _, i := range ids {
+			key := fmt.Sprintf("%s [%s]", pod, i)
+			cmds[key] = r.ContainerLogCmd(i, length, follow)
+		}
 	}
+	cmds[r.Name()] = r.SystemLogCmd(length)
+	// Works across container runtimes with good formatting
+	// Fallback to 'docker ps' if it fails (none driver)
+	cmds["container status"] = "sudo crictl ps -a || sudo docker ps -a"
 	return cmds
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
 	"k8s.io/minikube/pkg/minikube/constants"
 	_ "k8s.io/minikube/pkg/minikube/drivers/virtualbox"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const vboxConfig = `
@@ -117,8 +118,8 @@ func makeTempDir() string {
 		log.Fatal(err)
 	}
 	tempDir = filepath.Join(tempDir, ".minikube")
-	os.Setenv(constants.MinikubeHome, tempDir)
-	return constants.GetMinipath()
+	os.Setenv(localpath.MinikubeHome, tempDir)
+	return localpath.MiniPath()
 }
 
 func TestRunNotDriver(t *testing.T) {

@@ -1,5 +1,5 @@
 ## storage-provisioner-gluster addon
-[Gluster](https://gluster.org/), a scalable network filesystem that provides dynamic provisioning of PersistenVolumeClaims.
+[Gluster](https://gluster.org/), a scalable network filesystem that provides dynamic provisioning of PersistentVolumeClaims.
 
 ### Starting Minikube
 This addon works within Minikube, without any additional configuration.

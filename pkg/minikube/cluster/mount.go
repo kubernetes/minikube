@@ -61,10 +61,11 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 	cmd := fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target, mntCmd(source, target, c))
 	glog.Infof("Will run: %s", cmd)
 	out, err := r.CombinedOutput(cmd)
-	glog.Infof("mount err=%s, out=%s", err, out)
 	if err != nil {
+		glog.Infof("%s failed: err=%s, output: %q", cmd, err, out)
 		return errors.Wrap(err, out)
 	}
+	glog.Infof("%s output: %q", cmd, out)
 	return nil
 }
 
@@ -131,32 +132,16 @@ func mntCmd(source string, target string, c *MountConfig) string {
 }
 
 // umountCmd returns a command for unmounting
-func umountCmd(target string, force bool) string {
-	// Call fuser before unmount, for killing the processes using the mount point. Notes: don't use 'lsof' to avoid the innocents
-	flag1 := fmt.Sprintf("sudo fuser -km %s;", target)
-	flag2 := ""
-	if force {
-		flag1 = ""
-		flag2 = "-f "
-	}
+func umountCmd(target string) string {
 	// grep because findmnt will also display the parent!
-	return fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && { %s sudo umount %s%s; } || echo ", target, target, flag1, flag2, target)
+	return fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target)
 }
 
 // Unmount unmounts a path
 func Unmount(r mountRunner, target string) error {
-	cmd := umountCmd(target, false)
+	cmd := umountCmd(target)
 	glog.Infof("Will run: %s", cmd)
 	out, err := r.CombinedOutput(cmd)
-	if err == nil {
-		return nil
-	}
-	glog.Warningf("initial unmount error: %v, out: %s", err, out)
-
-	// Try again, using force if needed.
-	cmd = umountCmd(target, true)
-	glog.Infof("Will run: %s", cmd)
-	out, err = r.CombinedOutput(cmd)
 	glog.Infof("unmount force err=%v, out=%s", err, out)
 	if err != nil {
 		return errors.Wrap(err, out)

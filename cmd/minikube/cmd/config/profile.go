@@ -24,8 +24,8 @@ import (
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/out"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // ProfileCmd represents the profile command
@@ -54,6 +54,15 @@ var ProfileCmd = &cobra.Command{
 				out.FailureT(errProfile.Msg)
 			}
 		}
+
+		if !pkgConfig.ProfileExists(profile) {
+			err := pkgConfig.CreateEmptyProfile(profile)
+			if err != nil {
+				exit.WithError("Creating a new profile failed", err)
+			}
+			out.SuccessT("Created a new profile : {{.profile_name}}", out.V{"profile_name": profile})
+		}
+
 		err := Set(pkgConfig.MachineProfile, profile)
 		if err != nil {
 			exit.WithError("Setting profile failed", err)
@@ -65,10 +74,10 @@ var ProfileCmd = &cobra.Command{
 		}
 		if err == nil {
 			if cc.MachineConfig.KeepContext {
-				out.SuccessT("Skipped switching kubectl context for {{.profile_name}} , because --keep-context", out.V{"profile_name": profile})
+				out.SuccessT("Skipped switching kubectl context for {{.profile_name}} because --keep-context was set.", out.V{"profile_name": profile})
 				out.SuccessT("To connect to this cluster, use: kubectl --context={{.profile_name}}", out.V{"profile_name": profile})
 			} else {
-				err := pkgutil.SetCurrentContext(constants.KubeconfigPath, profile)
+				err := kubeconfig.SetCurrentContext(profile, constants.KubeconfigPath)
 				if err != nil {
 					out.ErrT(out.Sad, `Error while setting kubectl current context :  {{.error}}`, out.V{"error": err})
 				}

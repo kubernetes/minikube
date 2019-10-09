@@ -43,6 +43,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/sshutil"
@@ -58,8 +59,8 @@ func NewRPCClient(storePath, certsDir string) libmachine.API {
 
 // NewAPIClient gets a new client.
 func NewAPIClient() (libmachine.API, error) {
-	storePath := constants.GetMinipath()
-	certsDir := constants.MakeMiniPath("certs")
+	storePath := localpath.MiniPath()
+	certsDir := localpath.MakeMiniPath("certs")
 
 	return &LocalClient{
 		certsDir:     certsDir,
@@ -123,7 +124,7 @@ func (api *LocalClient) NewHost(driverName string, rawDriver []byte) (*host.Host
 func (api *LocalClient) Load(name string) (*host.Host, error) {
 	h, err := api.Filestore.Load(name)
 	if err != nil {
-		return nil, errors.Wrap(err, "filestore")
+		return nil, errors.Wrapf(err, "filestore %q", name)
 	}
 
 	var def registry.DriverDef

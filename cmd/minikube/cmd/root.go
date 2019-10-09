@@ -19,12 +19,11 @@ package cmd
 import (
 	goflag "flag"
 	"fmt"
-	"io/ioutil"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/log"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -37,24 +36,21 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/notify"
+	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 var dirs = [...]string{
-	constants.GetMinipath(),
-	constants.MakeMiniPath("certs"),
-	constants.MakeMiniPath("machines"),
-	constants.MakeMiniPath("cache"),
-	constants.MakeMiniPath("cache", "iso"),
-	constants.MakeMiniPath("config"),
-	constants.MakeMiniPath("addons"),
-	constants.MakeMiniPath("files"),
-	constants.MakeMiniPath("logs"),
+	localpath.MiniPath(),
+	localpath.MakeMiniPath("certs"),
+	localpath.MakeMiniPath("machines"),
+	localpath.MakeMiniPath("cache"),
+	localpath.MakeMiniPath("cache", "iso"),
+	localpath.MakeMiniPath("config"),
+	localpath.MakeMiniPath("addons"),
+	localpath.MakeMiniPath("files"),
+	localpath.MakeMiniPath("logs"),
 }
-
-var (
-	enableUpdateNotification = true
-)
 
 var viperWhiteList = []string{
 	"v",
@@ -74,26 +70,11 @@ var RootCmd = &cobra.Command{
 			}
 		}
 
-		// Log level 3 or greater enables libmachine logs
-		if !glog.V(3) {
-			log.SetOutWriter(ioutil.Discard)
-			log.SetErrWriter(ioutil.Discard)
-		}
-
-		// Log level 7 or greater enables debug level logs
-		if glog.V(7) {
-			log.SetDebug(true)
-		}
-
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {
-			if err := logDir.Value.Set(constants.MakeMiniPath("logs")); err != nil {
+			if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
 				exit.WithError("logdir set failed", err)
 			}
-		}
-
-		if enableUpdateNotification {
-			notify.MaybePrintUpdateTextFromGithub()
 		}
 	},
 }
@@ -101,10 +82,61 @@ var RootCmd = &cobra.Command{
 // Execute adds all child commands to the root command sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+	for _, c := range RootCmd.Commands() {
+		c.Short = translate.T(c.Short)
+		c.Long = translate.T(c.Long)
+		c.Flags().VisitAll(func(flag *pflag.Flag) {
+			flag.Usage = translate.T(flag.Usage)
+		})
+
+		c.SetUsageTemplate(usageTemplate())
+	}
+	RootCmd.Short = translate.T(RootCmd.Short)
+	RootCmd.Long = translate.T(RootCmd.Long)
+	RootCmd.Flags().VisitAll(func(flag *pflag.Flag) {
+		flag.Usage = translate.T(flag.Usage)
+	})
+
+	if runtime.GOOS != "windows" {
+		// add minikube binaries to the path
+		targetDir := localpath.MakeMiniPath("bin")
+		addToPath(targetDir)
+	}
+
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
 		os.Exit(exit.BadUsage)
 	}
+}
+
+// usageTemplate just calls translate.T on the default usage template
+// explicitly using the raw string instead of calling c.UsageTemplate()
+// so the extractor can find this monstrosity of a string
+func usageTemplate() string {
+	return fmt.Sprintf(`%s:{{if .Runnable}}
+  {{.UseLine}}{{end}}{{if .HasAvailableSubCommands}}
+  {{.CommandPath}} [command]{{end}}{{if gt (len .Aliases) 0}}
+
+%s:
+  {{.NameAndAliases}}{{end}}{{if .HasExample}}
+
+%s:
+{{.Example}}{{end}}{{if .HasAvailableSubCommands}}
+
+%s:{{range .Commands}}{{if (or .IsAvailableCommand (eq .Name "help"))}}
+  {{rpad .Name .NamePadding }} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableLocalFlags}}
+
+%s:
+{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasAvailableInheritedFlags}}
+
+%s:
+{{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}{{end}}{{if .HasHelpSubCommands}}
+
+%s:{{range .Commands}}{{if .IsAdditionalHelpTopicCommand}}
+  {{rpad .CommandPath .CommandPathPadding}} {{.Short}}{{end}}{{end}}{{end}}{{if .HasAvailableSubCommands}}
+
+%s{{end}}
+`, translate.T("Usage"), translate.T("Aliases"), translate.T("Examples"), translate.T("Available Commands"), translate.T("Flags"), translate.T("Global Flags"), translate.T("Additional help topics"), translate.T(`Use "{{.CommandPath}} [command] --help" for more information about a command.`))
 }
 
 // Handle config values for flags used in external packages (e.g. glog)
@@ -127,12 +159,13 @@ func setFlagsUsingViper() {
 }
 
 func init() {
+	translate.DetermineLocale()
 	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
-	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", constants.DefaultClusterBootstrapper, "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
+	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
 
 	groups := templates.CommandGroups{
 		{
-			Message: "Basic Commands:",
+			Message: translate.T("Basic Commands:"),
 			Commands: []*cobra.Command{
 				startCmd,
 				statusCmd,
@@ -142,14 +175,14 @@ func init() {
 			},
 		},
 		{
-			Message: "Images Commands:",
+			Message: translate.T("Images Commands:"),
 			Commands: []*cobra.Command{
 				dockerEnvCmd,
 				cacheCmd,
 			},
 		},
 		{
-			Message: "Configuration and Management Commands:",
+			Message: translate.T("Configuration and Management Commands:"),
 			Commands: []*cobra.Command{
 				configCmd.AddonsCmd,
 				configCmd.ConfigCmd,
@@ -158,14 +191,14 @@ func init() {
 			},
 		},
 		{
-			Message: "Networking and Connectivity Commands:",
+			Message: translate.T("Networking and Connectivity Commands:"),
 			Commands: []*cobra.Command{
 				serviceCmd,
 				tunnelCmd,
 			},
 		},
 		{
-			Message: "Advanced Commands:",
+			Message: translate.T("Advanced Commands:"),
 			Commands: []*cobra.Command{
 				mountCmd,
 				sshCmd,
@@ -173,7 +206,7 @@ func init() {
 			},
 		},
 		{
-			Message: "Troubleshooting Commands:",
+			Message: translate.T("Troubleshooting Commands:"),
 			Commands: []*cobra.Command{
 				sshKeyCmd,
 				ipCmd,
@@ -185,7 +218,7 @@ func init() {
 	}
 	groups.Add(RootCmd)
 
-	// any not grouped command will show in Other Commands group.
+	// Ungrouped commands will show up in the "Other Commands" section
 	RootCmd.AddCommand(completionCmd)
 	templates.ActsAsRootCommand(RootCmd, []string{"options"}, groups...)
 
@@ -193,14 +226,13 @@ func init() {
 	if err := viper.BindPFlags(RootCmd.PersistentFlags()); err != nil {
 		exit.WithError("Unable to bind flags", err)
 	}
-
 	cobra.OnInitialize(initConfig)
 
 }
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	configPath := constants.ConfigFile
+	configPath := localpath.ConfigFile
 	viper.SetConfigFile(configPath)
 	viper.SetConfigType("json")
 	err := viper.ReadInConfig()
@@ -211,7 +243,7 @@ func initConfig() {
 }
 
 func setupViper() {
-	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	viper.SetEnvPrefix(minikubeEnvPrefix)
 	// Replaces '-' in flags with '_' in env variables
 	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -243,4 +275,10 @@ func getClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 	}
 
 	return b, nil
+}
+
+func addToPath(dir string) {
+	new := fmt.Sprintf("%s:%s", dir, os.Getenv("PATH"))
+	glog.Infof("Updating PATH: %s", dir)
+	os.Setenv("PATH", new)
 }

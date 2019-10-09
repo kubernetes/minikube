@@ -30,7 +30,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // GenerateCACert generates a CA certificate and RSA key for a common name
@@ -64,6 +66,7 @@ func GenerateCACert(certPath, keyPath string, name string) error {
 
 // GenerateSignedCert generates a signed certificate and key
 func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS []string, signerCertPath, signerKeyPath string) error {
+	glog.Infof("Generating cert %s with IP's: %s", certPath, ips)
 	signerCertBytes, err := ioutil.ReadFile(signerCertPath)
 	if err != nil {
 		return errors.Wrap(err, "Error reading file: signerCertPath")
@@ -86,7 +89,7 @@ func GenerateSignedCert(certPath, keyPath, cn string, ips []net.IP, alternateDNS
 	}
 	signerKey, err := x509.ParsePKCS1PrivateKey(decodedSignerKey.Bytes)
 	if err != nil {
-		return errors.Wrap(err, "Error parsing prive key: decodedSignerKey.Bytes")
+		return errors.Wrap(err, "Error parsing private key: decodedSignerKey.Bytes")
 	}
 
 	template := x509.Certificate{
@@ -151,14 +154,16 @@ func writeCertsAndKeys(template *x509.Certificate, certPath string, signeeKey *r
 	if err := os.MkdirAll(filepath.Dir(certPath), os.FileMode(0755)); err != nil {
 		return errors.Wrap(err, "Error creating certificate directory")
 	}
-	if err := ioutil.WriteFile(certPath, certBuffer.Bytes(), os.FileMode(0644)); err != nil {
+	glog.Infof("Writing cert to %s ...", certPath)
+	if err := lock.WriteFile(certPath, certBuffer.Bytes(), os.FileMode(0644)); err != nil {
 		return errors.Wrap(err, "Error writing certificate to cert path")
 	}
 
 	if err := os.MkdirAll(filepath.Dir(keyPath), os.FileMode(0755)); err != nil {
 		return errors.Wrap(err, "Error creating key directory")
 	}
-	if err := ioutil.WriteFile(keyPath, keyBuffer.Bytes(), os.FileMode(0600)); err != nil {
+	glog.Infof("Writing key to %s ...", keyPath)
+	if err := lock.WriteFile(keyPath, keyBuffer.Bytes(), os.FileMode(0600)); err != nil {
 		return errors.Wrap(err, "Error writing key file")
 	}
 

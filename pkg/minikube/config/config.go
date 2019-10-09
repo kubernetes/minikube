@@ -21,12 +21,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
-
 	"io/ioutil"
+	"os"
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const (
@@ -60,7 +60,7 @@ type MinikubeConfig map[string]interface{}
 
 // Get gets a named value from config
 func Get(name string) (string, error) {
-	m, err := ReadConfig()
+	m, err := ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return "", err
 	}
@@ -74,24 +74,34 @@ func get(name string, config MinikubeConfig) (string, error) {
 	return "", ErrKeyNotFound
 }
 
-// ReadConfig reads in the JSON minikube config
-func ReadConfig() (MinikubeConfig, error) {
-	return readConfig(constants.ConfigFile)
+// WriteConfig writes a minikube config to the JSON file
+func WriteConfig(configFile string, m MinikubeConfig) error {
+	f, err := os.Create(configFile)
+	if err != nil {
+		return fmt.Errorf("create %s: %s", configFile, err)
+	}
+	defer f.Close()
+	err = encode(f, m)
+	if err != nil {
+		return fmt.Errorf("encode %s: %s", configFile, err)
+	}
+	return nil
 }
 
-func readConfig(configFile string) (MinikubeConfig, error) {
+// ReadConfig reads in the JSON minikube config
+func ReadConfig(configFile string) (MinikubeConfig, error) {
 	f, err := os.Open(configFile)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return make(map[string]interface{}), nil
 		}
-		return nil, fmt.Errorf("open %s: %v", constants.ConfigFile, err)
+		return nil, fmt.Errorf("open %s: %v", localpath.ConfigFile, err)
 	}
 	defer f.Close()
 
 	m, err := decode(f)
 	if err != nil {
-		return nil, fmt.Errorf("decode %s: %v", constants.ConfigFile, err)
+		return nil, fmt.Errorf("decode %s: %v", localpath.ConfigFile, err)
 	}
 
 	return m, nil
@@ -101,6 +111,17 @@ func decode(r io.Reader) (MinikubeConfig, error) {
 	var data MinikubeConfig
 	err := json.NewDecoder(r).Decode(&data)
 	return data, err
+}
+
+func encode(w io.Writer, m MinikubeConfig) error {
+	b, err := json.MarshalIndent(m, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	_, err = w.Write(b)
+
+	return err
 }
 
 // GetMachineName gets the machine name for the VM
@@ -127,10 +148,10 @@ type simpleConfigLoader struct{}
 // DefaultLoader is the default config loader
 var DefaultLoader Loader = &simpleConfigLoader{}
 
-func (c *simpleConfigLoader) LoadConfigFromFile(profile string, miniHome ...string) (*Config, error) {
+func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*Config, error) {
 	var cc Config
-
-	path := constants.GetProfileFile(profile, miniHome...)
+	// Move to profile package
+	path := profileFilePath(profileName, miniHome...)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err

@@ -45,7 +45,7 @@ var profileListCmd = &cobra.Command{
 		validProfiles, invalidProfiles, err := config.ListProfiles()
 
 		if len(validProfiles) == 0 || err != nil {
-			exit.UsageT("No minikube profile was found. you could create one using: `minikube start`")
+			exit.UsageT("No minikube profile was found. You can create one using `minikube start`.")
 		}
 		for _, p := range validProfiles {
 			validData = append(validData, []string{p.Name, p.Config.MachineConfig.VMDriver, p.Config.KubernetesConfig.NodeIP, strconv.Itoa(p.Config.KubernetesConfig.NodePort), p.Config.KubernetesConfig.KubernetesVersion})
