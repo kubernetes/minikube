@@ -134,11 +134,13 @@ if type -P virsh; then
 fi
 
 if type -P vboxmanage; then
-  vboxmanage list vms || true
   vboxmanage list vms \
     | egrep -o '{.*?}' \
-    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
-    || true
+    | xargs -I{} vboxmanage startvm {} --type emergencystop || true
+
+  vboxmanage list vms \
+    | egrep -o '{.*?}' \
+    | xargs -I{} vboxmanage unregistervm {} || true
 
   echo ">> VirtualBox VM list after clean up (should be empty):"
   vboxmanage list vms || true
