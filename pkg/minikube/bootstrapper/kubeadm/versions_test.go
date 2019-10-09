@@ -46,7 +46,7 @@ func TestVersionIsBetween(t *testing.T) {
 			expected:    false,
 		},
 		{
-			description: "greather than max version",
+			description: "greater than max version",
 			ver:         semver.MustParse("2.8.0"),
 			gte:         semver.MustParse("1.7.0"),
 			lte:         semver.MustParse("1.9.0"),
@@ -94,7 +94,7 @@ func TestVersionIsBetween(t *testing.T) {
 }
 
 func TestParseKubernetesVersion(t *testing.T) {
-	version, err := ParseKubernetesVersion("v1.8.0-alpha.5")
+	version, err := parseKubernetesVersion("v1.8.0-alpha.5")
 	if err != nil {
 		t.Fatalf("Error parsing version: %v", err)
 	}

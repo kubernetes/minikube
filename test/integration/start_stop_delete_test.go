@@ -19,40 +19,38 @@ limitations under the License.
 package integration
 
 import (
+	"context"
 	"fmt"
-	"net"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/test/integration/util"
 )
 
 func TestStartStop(t *testing.T) {
-	p := profileName(t) // gets profile name used for minikube and kube context
-	if shouldRunInParallel(t) {
-		t.Parallel()
-	}
+	MaybeParallel(t)
 
 	t.Run("group", func(t *testing.T) {
-		if shouldRunInParallel(t) {
-			t.Parallel()
-		}
 		tests := []struct {
 			name string
 			args []string
 		}{
-			{"oldest", []string{ // nocache_oldest
+			{"docker", []string{
 				"--cache-images=false",
 				fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
 				// default is the network created by libvirt, if we change the name minikube won't boot
 				// because the given network doesn't exist
 				"--kvm-network=default",
 				"--kvm-qemu-uri=qemu:///system",
+				"--disable-driver-mounts",
+				"--keep-context=false",
+				"--container-runtime=docker",
 			}},
-			{"cni", []string{ // feature_gates_newest_cni
+			{"cni", []string{
 				"--feature-gates",
 				"ServerSideApply=true",
 				"--network-plugin=cni",
@@ -60,66 +58,87 @@ func TestStartStop(t *testing.T) {
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
 				fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
 			}},
-			{"containerd", []string{ // containerd_and_non_default_apiserver_port
+			{"containerd", []string{
 				"--container-runtime=containerd",
-				"--docker-opt containerd=/var/run/containerd/containerd.sock",
+				"--docker-opt",
+				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
 			}},
-			{"crio", []string{ // crio_ignore_preflights
+			{"crio", []string{
 				"--container-runtime=crio",
-				"--extra-config",
-				"kubeadm.ignore-preflight-errors=SystemVerification",
+				"--disable-driver-mounts",
+				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
 		}
 
 		for _, tc := range tests {
-			n := tc.name // because similar to https://golang.org/doc/faq#closures_and_goroutines
+			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
-				if shouldRunInParallel(t) {
-					t.Parallel()
-				}
+				MaybeSlowParallel(t)
 
-				pn := p + n // TestStartStopoldest
-				mk := NewMinikubeRunner(t, pn, "--wait=false")
-				// TODO : redundant first clause ? never happens?
-				if !strings.Contains(pn, "docker") && isTestNoneDriver(t) {
+				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
 
-				mk.RunCommand("config set WantReportErrorPrompt false", true)
-				stdout, stderr, err := mk.Start(tc.args...)
+				profile := UniqueProfileName(tc.name)
+				ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
+				defer CleanupWithLogs(t, profile, cancel)
+
+				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=3"}, tc.args...)
+				startArgs = append(startArgs, StartArgs()...)
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
-					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", pn, err, stdout, stderr)
+					// Fatal so that we may collect logs before stop/delete steps
+					t.Fatalf("%s failed: %v", rr.Args, err)
 				}
 
-				mk.CheckStatus(state.Running.String())
+				// SADNESS: 0/1 nodes are available: 1 node(s) had taints that the pod didn't tolerate.
+				if strings.Contains(tc.name, "cni") {
+					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+				} else {
+					// schedule a pod to assert persistence
+					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
+					if err != nil {
+						t.Fatalf("%s failed: %v", rr.Args, err)
+					}
 
-				ip, stderr := mk.RunCommand("ip", true)
-				ip = strings.TrimRight(ip, "\n")
-				if net.ParseIP(ip) == nil {
-					t.Fatalf("IP command returned an invalid address: %s \n %s", ip, stderr)
+					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+						t.Fatalf("wait: %v", err)
+					}
 				}
 
-				stop := func() error {
-					stdout, stderr, err = mk.RunCommandRetriable("stop")
-					return mk.CheckStatusNoFail(state.Stopped.String())
-				}
-
-				err = util.RetryX(stop, 10*time.Second, 2*time.Minute)
-				mk.CheckStatus(state.Stopped.String())
-
-				// TODO medyagh:
-				// https://github.com/kubernetes/minikube/issues/4854
-
-				stdout, stderr, err = mk.Start(tc.args...)
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
 				if err != nil {
-					t.Fatalf("failed to start minikube (for profile %s) failed : %v\nstdout: %s\nstderr: %s", t.Name(), err, stdout, stderr)
+					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 
-				mk.CheckStatus(state.Running.String())
+				got := Status(ctx, t, Target(), profile)
+				if got != state.Stopped.String() {
+					t.Errorf("status = %q; want = %q", got, state.Stopped)
+				}
 
-				mk.RunCommand("delete", true)
-				mk.CheckStatus(state.None.String())
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+				if err != nil {
+					// Explicit fatal so that failures don't move directly to deletion
+					t.Fatalf("%s failed: %v", rr.Args, err)
+				}
+
+				if strings.Contains(tc.name, "cni") {
+					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+					t.Fatalf("wait: %v", err)
+				}
+
+				got = Status(ctx, t, Target(), profile)
+				if got != state.Running.String() {
+					t.Errorf("status = %q; want = %q", got, state.Running)
+				}
+
+				// Normally handled by cleanuprofile, but not fatal there
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
+				if err != nil {
+					t.Errorf("%s failed: %v", rr.Args, err)
+				}
 			})
 		}
 	})

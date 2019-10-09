@@ -17,16 +17,12 @@ limitations under the License.
 package config
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"os"
 	"strings"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // Bootstrapper is the name for bootstrapper
@@ -50,6 +46,12 @@ var settings = []Setting{
 		name:        "vm-driver",
 		set:         SetString,
 		validations: []setFn{IsValidDriver},
+		callbacks:   []setFn{RequiresRestartMsg},
+	},
+	{
+		name:        "container-runtime",
+		set:         SetString,
+		validations: []setFn{IsContainerdRuntime},
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
@@ -176,6 +178,12 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "insecure-registry",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
 		name:        "registry",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
@@ -241,6 +249,18 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
+		name:        "helm-tiller",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:        "ingress-dns",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
 		name: "hyperv-virtual-switch",
 		set:  SetString,
 	},
@@ -255,6 +275,10 @@ var settings = []Setting{
 	},
 	{
 		name: "embed-certs",
+		set:  SetBool,
+	},
+	{
+		name: "native-ssh",
 		set:  SetBool,
 	},
 }
@@ -282,7 +306,7 @@ func configurableFields() string {
 
 // ListConfigMap list entries from config file
 func ListConfigMap(name string) ([]string, error) {
-	configFile, err := config.ReadConfig()
+	configFile, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return nil, err
 	}
@@ -302,7 +326,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	configFile, err := config.ReadConfig()
+	cfg, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return err
 	}
@@ -310,16 +334,16 @@ func AddToConfigMap(name string, images []string) error {
 	for _, image := range images {
 		newImages[image] = nil
 	}
-	if values, ok := configFile[name].(map[string]interface{}); ok {
+	if values, ok := cfg[name].(map[string]interface{}); ok {
 		for key := range values {
 			newImages[key] = nil
 		}
 	}
-	if err = s.setMap(configFile, name, newImages); err != nil {
+	if err = s.setMap(cfg, name, newImages); err != nil {
 		return err
 	}
 	// Write the values
-	return WriteConfig(configFile)
+	return config.WriteConfig(localpath.ConfigFile, cfg)
 }
 
 // DeleteFromConfigMap deletes entries from a map in the config file
@@ -329,45 +353,20 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	configFile, err := config.ReadConfig()
+	cfg, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return err
 	}
-	values, ok := configFile[name]
+	values, ok := cfg[name]
 	if !ok {
 		return nil
 	}
 	for _, image := range images {
 		delete(values.(map[string]interface{}), image)
 	}
-	if err = s.setMap(configFile, name, values.(map[string]interface{})); err != nil {
+	if err = s.setMap(cfg, name, values.(map[string]interface{})); err != nil {
 		return err
 	}
 	// Write the values
-	return WriteConfig(configFile)
-}
-
-// WriteConfig writes a minikube config to the JSON file
-func WriteConfig(m config.MinikubeConfig) error {
-	f, err := os.Create(constants.ConfigFile)
-	if err != nil {
-		return fmt.Errorf("create %s: %s", constants.ConfigFile, err)
-	}
-	defer f.Close()
-	err = encode(f, m)
-	if err != nil {
-		return fmt.Errorf("encode %s: %s", constants.ConfigFile, err)
-	}
-	return nil
-}
-
-func encode(w io.Writer, m config.MinikubeConfig) error {
-	b, err := json.MarshalIndent(m, "", "    ")
-	if err != nil {
-		return err
-	}
-
-	_, err = w.Write(b)
-
-	return err
+	return config.WriteConfig(localpath.ConfigFile, cfg)
 }

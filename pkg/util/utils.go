@@ -29,7 +29,6 @@ import (
 	"time"
 
 	units "github.com/docker/go-units"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -44,13 +43,6 @@ const OutPrefix = "> "
 const (
 	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-amd64%s"
 )
-
-// RetriableError is an error that can be tried again
-type RetriableError struct {
-	Err error
-}
-
-func (r RetriableError) Error() string { return "Temporary Error: " + r.Err.Error() }
 
 // CalculateSizeInMB returns the number of MB in the human readable string
 func CalculateSizeInMB(humanReadableSize string) int {
@@ -106,33 +98,6 @@ func CanReadFile(path string) bool {
 	return true
 }
 
-// Retry retries a number of attempts
-func Retry(attempts int, callback func() error) (err error) {
-	return RetryAfter(attempts, callback, 0)
-}
-
-// RetryAfter retries a number of attempts, after a delay
-func RetryAfter(attempts int, callback func() error, d time.Duration) (err error) {
-	m := MultiError{}
-	for i := 0; i < attempts; i++ {
-		if i > 0 {
-			glog.V(1).Infof("retry loop %d", i)
-		}
-		err = callback()
-		if err == nil {
-			return nil
-		}
-		m.Collect(err)
-		if _, ok := err.(*RetriableError); !ok {
-			glog.Infof("non-retriable error: %v", err)
-			return m.ToError()
-		}
-		glog.V(2).Infof("error: %v - sleeping %s", err, d)
-		time.Sleep(d)
-	}
-	return m.ToError()
-}
-
 // GetBinaryDownloadURL returns a suitable URL for the platform
 func GetBinaryDownloadURL(version, platform string) string {
 	switch platform {
@@ -141,31 +106,6 @@ func GetBinaryDownloadURL(version, platform string) string {
 	default:
 		return fmt.Sprintf(downloadURL, version, platform, "")
 	}
-}
-
-// MultiError holds multiple errors
-type MultiError struct {
-	Errors []error
-}
-
-// Collect adds the error
-func (m *MultiError) Collect(err error) {
-	if err != nil {
-		m.Errors = append(m.Errors, err)
-	}
-}
-
-// ToError converts all errors into one
-func (m MultiError) ToError() error {
-	if len(m.Errors) == 0 {
-		return nil
-	}
-
-	errStrings := []string{}
-	for _, err := range m.Errors {
-		errStrings = append(errStrings, err.Error())
-	}
-	return errors.New(strings.Join(errStrings, "\n"))
 }
 
 // IsDirectory checks if path is a directory
@@ -259,15 +199,4 @@ func ConcatStrings(src []string, prefix string, postfix string) []string {
 		buf.Reset()
 	}
 	return ret
-}
-
-// ContainsString checks if a given slice of strings contains the provided string.
-// If a modifier func is provided, it is called with the slice item before the comparation.
-func ContainsString(slice []string, s string) bool {
-	for _, item := range slice {
-		if item == s {
-			return true
-		}
-	}
-	return false
 }

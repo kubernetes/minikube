@@ -25,14 +25,13 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/cmd/util"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 var statusFormat string
@@ -49,6 +48,11 @@ const (
 	minikubeNotRunningStatusFlag = 1 << 0
 	clusterNotRunningStatusFlag  = 1 << 1
 	k8sNotRunningStatusFlag      = 1 << 2
+	defaultStatusFormat          = `host: {{.Host}}
+kubelet: {{.Kubelet}}
+apiserver: {{.APIServer}}
+kubectl: {{.Kubeconfig}}
+`
 )
 
 // statusCmd represents the status command
@@ -93,10 +97,10 @@ var statusCmd = &cobra.Command{
 				glog.Errorln("Error host driver ip status:", err)
 			}
 
-			apiserverPort, err := pkgutil.GetPortFromKubeConfig(util.GetKubeConfigPath(), config.GetMachineName())
+			apiserverPort, err := kubeconfig.Port(config.GetMachineName())
 			if err != nil {
 				// Fallback to presuming default apiserver port
-				apiserverPort = pkgutil.APIServerPort
+				apiserverPort = constants.APIServerPort
 			}
 
 			apiserverSt, err = clusterBootstrapper.GetAPIServerStatus(ip, apiserverPort)
@@ -106,7 +110,7 @@ var statusCmd = &cobra.Command{
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ks, err := pkgutil.GetKubeConfigStatus(ip, util.GetKubeConfigPath(), config.GetMachineName())
+			ks, err := kubeconfig.IsClusterInConfig(ip, config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
 			}
@@ -141,7 +145,7 @@ var statusCmd = &cobra.Command{
 }
 
 func init() {
-	statusCmd.Flags().StringVar(&statusFormat, "format", constants.DefaultStatusFormat,
+	statusCmd.Flags().StringVar(&statusFormat, "format", defaultStatusFormat,
 		`Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
 }

@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.15.0
-CRIO_BIN_COMMIT = 485227d727401fa0472a449b5df3b0537e314ebb
+CRIO_BIN_VERSION = v1.15.2
+CRIO_BIN_COMMIT = b7316701c17ebc7901d10a716f15e66008c52525
 CRIO_BIN_SITE = https://github.com/cri-o/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = host-go libgpgme
@@ -25,8 +25,8 @@ endef
 define CRIO_BIN_CONFIGURE_CMDS
 	mkdir -p $(CRIO_BIN_GOPATH)/src/github.com/cri-o
 	ln -sf $(@D) $(CRIO_BIN_GOPATH)/src/github.com/cri-o/cri-o
-	# Generate conmon/config.h with a simplified bin/crio-config
-	$(CRIO_BIN_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) BUILDTAGS="containers_image_ostree_stub exclude_graphdriver_btrfs exclude_graphdriver_devicemapper containers_image_openpgp" conmon/config.h
+	# Copy pre-generated conmon/config.h - see <https://github.com/cri-o/cri-o/issues/2575>
+	cp $(CRIO_BIN_PKGDIR)/conmon-config.h $(@D)/conmon/config.h
 endef
 
 define CRIO_BIN_BUILD_CMDS
@@ -48,13 +48,13 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 		$(@D)/bin/pause \
 		$(TARGET_DIR)/usr/libexec/crio/pause
 	$(INSTALL) -Dm644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/crio-bin/crio.conf \
+		$(CRIO_BIN_PKGDIR)/crio.conf \
 		$(TARGET_DIR)/etc/crio/crio.conf
 	$(INSTALL) -Dm644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/crio-bin/policy.json \
+		$(CRIO_BIN_PKGDIR)/policy.json \
 		$(TARGET_DIR)/etc/containers/policy.json
 	$(INSTALL) -Dm644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/crio-bin/registries.conf \
+		$(CRIO_BIN_PKGDIR)/registries.conf \
 		$(TARGET_DIR)/etc/containers/registries.conf
 
 	mkdir -p $(TARGET_DIR)/etc/sysconfig
@@ -64,7 +64,7 @@ endef
 define CRIO_BIN_INSTALL_INIT_SYSTEMD
 	$(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) install.systemd DESTDIR=$(TARGET_DIR) PREFIX=$(TARGET_DIR)/usr
 	$(INSTALL) -Dm644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/crio-bin/crio.service \
+		$(CRIO_BIN_PKGDIR)/crio.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/crio.service
 	$(call link-service,crio.service)
 	$(call link-service,crio-shutdown.service)

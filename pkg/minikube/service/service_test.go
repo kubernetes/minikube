@@ -17,6 +17,10 @@ limitations under the License.
 package service
 
 import (
+	"bytes"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
@@ -33,6 +37,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
+	testing_fake "k8s.io/client-go/testing"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
@@ -40,23 +45,52 @@ import (
 type MockClientGetter struct {
 	servicesMap  map[string]typed_core.ServiceInterface
 	endpointsMap map[string]typed_core.EndpointsInterface
+	secretsMap   map[string]typed_core.SecretInterface
+	Fake         fake.FakeCoreV1
 }
 
+// Force GetCoreClient to fail
+var getCoreClientFail bool
+
 func (m *MockClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
+	if getCoreClientFail {
+		return nil, fmt.Errorf("test Error - Mocked Get")
+	}
 	return &MockCoreClient{
 		servicesMap:  m.servicesMap,
 		endpointsMap: m.endpointsMap,
-	}, nil
+		secretsMap:   m.secretsMap}, nil
 }
 
 func (m *MockClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
 	return nil, nil
 }
 
+func (m *MockCoreClient) Secrets(ns string) typed_core.SecretInterface {
+	return &fake.FakeSecrets{Fake: &fake.FakeCoreV1{Fake: &testing_fake.Fake{}}}
+}
+
+func (m *MockCoreClient) Services(namespace string) typed_core.ServiceInterface {
+	return m.servicesMap[namespace]
+}
+
 type MockCoreClient struct {
 	fake.FakeCoreV1
 	servicesMap  map[string]typed_core.ServiceInterface
 	endpointsMap map[string]typed_core.EndpointsInterface
+	secretsMap   map[string]typed_core.SecretInterface
+}
+
+var secretsNamespaces = map[string]typed_core.SecretInterface{
+	"default": defaultNamespaceSecretsInterface,
+}
+
+var defaultNamespaceSecretsInterface = &MockSecretInterface{
+	SecretsList: &core.SecretList{
+		Items: []core.Secret{
+			{},
+		},
+	},
 }
 
 var serviceNamespaces = map[string]typed_core.ServiceInterface{
@@ -70,6 +104,7 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 				ObjectMeta: meta.ObjectMeta{
 					Name:      "mock-dashboard",
 					Namespace: "default",
+					Labels:    map[string]string{"mock": "mock"},
 				},
 				Spec: core.ServiceSpec{
 					Ports: []core.ServicePort{
@@ -92,6 +127,7 @@ var defaultNamespaceServiceInterface = &MockServiceInterface{
 				ObjectMeta: meta.ObjectMeta{
 					Name:      "mock-dashboard-no-ports",
 					Namespace: "default",
+					Labels:    map[string]string{"mock": "mock"},
 				},
 				Spec: core.ServiceSpec{
 					Ports: []core.ServicePort{},
@@ -109,10 +145,6 @@ var defaultNamespaceEndpointInterface = &MockEndpointsInterface{}
 
 func (m *MockCoreClient) Endpoints(namespace string) typed_core.EndpointsInterface {
 	return m.endpointsMap[namespace]
-}
-
-func (m *MockCoreClient) Services(namespace string) typed_core.ServiceInterface {
-	return m.servicesMap[namespace]
 }
 
 type MockEndpointsInterface struct {
@@ -174,6 +206,11 @@ func (e MockEndpointsInterface) Get(name string, _ meta.GetOptions) (*core.Endpo
 type MockServiceInterface struct {
 	fake.FakeServices
 	ServiceList *core.ServiceList
+}
+
+type MockSecretInterface struct {
+	fake.FakeSecrets
+	SecretsList *core.SecretList
 }
 
 func (s MockServiceInterface) List(opts meta.ListOptions) (*core.ServiceList, error) {
@@ -280,15 +317,15 @@ func TestPrintURLsForService(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			urls, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
+			svcURL, err := printURLsForService(client, "127.0.0.1", test.serviceName, test.namespace, test.tmpl)
 			if err != nil && !test.err {
 				t.Errorf("Error: %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Expected error but got none")
 			}
-			if !reflect.DeepEqual(urls, test.expectedOutput) {
-				t.Errorf("\nExpected %v \nActual: %v \n\n", test.expectedOutput, urls)
+			if !reflect.DeepEqual(svcURL.URLs, test.expectedOutput) {
+				t.Errorf("\nExpected %v \nActual: %v \n\n", test.expectedOutput, svcURL.URLs)
 			}
 		})
 	}
@@ -384,16 +421,18 @@ func TestGetServiceURLs(t *testing.T) {
 			description: "correctly return serviceURLs",
 			namespace:   "default",
 			api:         defaultAPI,
-			expected: []URL{
+			expected: []SvcURL{
 				{
 					Namespace: "default",
 					Name:      "mock-dashboard",
 					URLs:      []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
+					PortNames: []string{"port1", "port2"},
 				},
 				{
 					Namespace: "default",
 					Name:      "mock-dashboard-no-ports",
 					URLs:      []string{},
+					PortNames: []string{},
 				},
 			},
 		},
@@ -477,15 +516,15 @@ func TestGetServiceURLsForService(t *testing.T) {
 				servicesMap:  serviceNamespaces,
 				endpointsMap: endpointNamespaces,
 			}
-			urls, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
+			svcURL, err := GetServiceURLsForService(test.api, test.namespace, test.service, defaultTemplate)
 			if err != nil && !test.err {
 				t.Errorf("Error GetServiceURLsForService %v", err)
 			}
 			if err == nil && test.err {
 				t.Errorf("Test should have failed, but didn't")
 			}
-			if !reflect.DeepEqual(urls, test.expected) {
-				t.Errorf("URLs did not match, expected %+v \n\n got %+v", test.expected, urls)
+			if !reflect.DeepEqual(svcURL.URLs, test.expected) {
+				t.Errorf("URLs did not match, expected %+v \n\n got %+v", test.expected, svcURL.URLs)
 			}
 		})
 	}
@@ -493,4 +532,364 @@ func TestGetServiceURLsForService(t *testing.T) {
 
 func revertK8sClient(k K8sClient) {
 	K8s = k
+	getCoreClientFail = false
+}
+
+func TestGetCoreClient(t *testing.T) {
+	originalEnv := os.Getenv("KUBECONFIG")
+	defer func() {
+		err := os.Setenv("KUBECONFIG", originalEnv)
+		if err != nil {
+			t.Fatalf("Error reverting env KUBECONFIG to its original value. Got err (%s)", err)
+		}
+	}()
+
+	mockK8sConfig := `apiVersion: v1
+clusters:
+- cluster:
+    server: https://192.168.99.102:8443
+  name: minikube
+contexts:
+- context:
+    cluster: minikube
+    user: minikube
+  name: minikube
+current-context: minikube
+kind: Config
+preferences: {}
+users:
+- name: minikube
+`
+	var tests = []struct {
+		description    string
+		kubeconfigPath string
+		config         string
+		err            bool
+	}{
+		{
+			description:    "ok",
+			kubeconfigPath: "/tmp/kube_config",
+			config:         mockK8sConfig,
+			err:            false,
+		},
+		{
+			description:    "empty config",
+			kubeconfigPath: "/tmp/kube_config",
+			config:         "",
+			err:            true,
+		},
+		{
+			description:    "broken config",
+			kubeconfigPath: "/tmp/kube_config",
+			config:         "this**is&&not: yaml::valid: file",
+			err:            true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			mockK8sConfigByte := []byte(test.config)
+			mockK8sConfigPath := test.kubeconfigPath
+			err := ioutil.WriteFile(mockK8sConfigPath, mockK8sConfigByte, 0644)
+			defer os.Remove(mockK8sConfigPath)
+			if err != nil {
+				t.Fatalf("Unexpected error when writing to file %v. Error: %v", test.kubeconfigPath, err)
+			}
+			os.Setenv("KUBECONFIG", mockK8sConfigPath)
+
+			k8s := K8sClientGetter{}
+			_, err = k8s.GetCoreClient()
+			if err != nil && !test.err {
+				t.Fatalf("GetCoreClient returned unexpected error: %v", err)
+			}
+			if err == nil && test.err {
+				t.Fatal("GetCoreClient expected to return error but got nil")
+			}
+		})
+	}
+}
+
+func TestPrintServiceList(t *testing.T) {
+	var buf bytes.Buffer
+	out := &buf
+	input := [][]string{{"foo", "bar", "baz", "nah"}}
+	PrintServiceList(out, input)
+	expected := `|-----------|------|-------------|-----|
+| NAMESPACE | NAME | TARGET PORT | URL |
+|-----------|------|-------------|-----|
+| foo       | bar  | baz         | nah |
+|-----------|------|-------------|-----|
+`
+	got := out.String()
+	if got != expected {
+		t.Fatalf("PrintServiceList(%v) expected to return %v but got \n%v", input, expected, got)
+	}
+}
+
+func TestGetServiceListByLabel(t *testing.T) {
+	var tests = []struct {
+		description, ns, name, label string
+		items                        int
+		failedGetClient, err         bool
+	}{
+		{
+			description: "ok",
+			name:        "mock-dashboard",
+			ns:          "default",
+			items:       2,
+		},
+		{
+			description:     "failed get client",
+			name:            "mock-dashboard",
+			ns:              "default",
+			failedGetClient: true,
+			err:             true,
+		},
+		{
+			description: "no matches",
+			name:        "mock-dashboard-no-ports",
+			ns:          "default",
+			label:       "foo",
+			items:       0,
+		},
+	}
+
+	defer revertK8sClient(K8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
+				secretsMap:   secretsNamespaces,
+			}
+			getCoreClientFail = test.failedGetClient
+			svcs, err := GetServiceListByLabel(test.ns, test.name, test.label)
+			if err != nil && !test.err {
+				t.Fatalf("Test %v got unexpected error: %v", test.description, err)
+			}
+			if err == nil && test.err {
+				t.Fatalf("Test %v expected error but got nil", test.description)
+			}
+			if err == nil {
+				if len(svcs.Items) != test.items {
+					t.Fatalf("GetServiceListByLabel for test: %v data should return %d elements, but got: %d", test.description, test.items, len(svcs.Items))
+				}
+			}
+		})
+	}
+}
+
+func TestCheckService(t *testing.T) {
+	var tests = []struct {
+		description, ns, name string
+		failedGetClient, err  bool
+	}{
+		{
+			description: "ok",
+			name:        "mock-dashboard",
+			ns:          "default",
+		},
+		{
+			description:     "failed get client",
+			name:            "mock-dashboard",
+			ns:              "default",
+			failedGetClient: true,
+			err:             true,
+		},
+		{
+			description: "svc no ports",
+			name:        "mock-dashboard-no-ports",
+			ns:          "default",
+			err:         true,
+		},
+	}
+
+	defer revertK8sClient(K8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
+				secretsMap:   secretsNamespaces,
+			}
+			getCoreClientFail = test.failedGetClient
+			err := CheckService(test.ns, test.name)
+			if err == nil && test.err {
+				t.Fatalf("Test %v expected error but got nil", test.description)
+			}
+			if err != nil && !test.err {
+				t.Fatalf("Test %v got unexpected error: %v", test.description, err)
+			}
+		})
+	}
+}
+
+func TestDeleteSecret(t *testing.T) {
+	var tests = []struct {
+		description, ns, name string
+		failedGetClient, err  bool
+	}{
+		{
+			description: "ok",
+			name:        "foo",
+			ns:          "foo",
+		},
+		{
+			description:     "failed get client",
+			name:            "foo",
+			ns:              "foo",
+			failedGetClient: true,
+			err:             true,
+		},
+	}
+
+	defer revertK8sClient(K8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
+				secretsMap:   secretsNamespaces,
+			}
+			getCoreClientFail = test.failedGetClient
+			err := DeleteSecret(test.ns, test.name)
+			if err == nil && test.err {
+				t.Fatalf("Test %v expected error but got nil", test.description)
+			}
+			if err != nil && !test.err {
+				t.Fatalf("Test %v got unexpected error: %v", test.description, err)
+			}
+		})
+	}
+}
+
+func TestCreateSecret(t *testing.T) {
+	var tests = []struct {
+		description, ns, name string
+		failedGetClient, err  bool
+	}{
+		{
+			description: "ok",
+			name:        "foo",
+			ns:          "foo",
+		},
+		{
+			description:     "failed get client",
+			name:            "foo",
+			ns:              "foo",
+			failedGetClient: true,
+			err:             true,
+		},
+	}
+
+	defer revertK8sClient(K8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
+				secretsMap:   secretsNamespaces,
+			}
+			getCoreClientFail = test.failedGetClient
+			err := CreateSecret(test.ns, test.name, map[string]string{"ns": "secret"}, map[string]string{"ns": "baz"})
+			if err == nil && test.err {
+				t.Fatalf("Test %v expected error but got nil", test.description)
+			}
+			if err != nil && !test.err {
+				t.Fatalf("Test %v got unexpected error: %v", test.description, err)
+			}
+		})
+	}
+}
+
+func TestWaitAndMaybeOpenService(t *testing.T) {
+	defaultAPI := &tests.MockAPI{
+		FakeStore: tests.FakeStore{
+			Hosts: map[string]*host.Host{
+				config.GetMachineName(): {
+					Name:   config.GetMachineName(),
+					Driver: &tests.MockDriver{},
+				},
+			},
+		},
+	}
+	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
+
+	var tests = []struct {
+		description string
+		api         libmachine.API
+		namespace   string
+		service     string
+		expected    []string
+		urlMode     bool
+		https       bool
+		err         bool
+	}{
+		/*	{
+			description: "no host",
+			api: &tests.mockapi{
+				fakestore: tests.fakestore{
+					hosts: make(map[string]*host.host),
+				},
+			},
+			err: true,
+		}, */
+		{
+			description: "correctly return serviceURLs, https, no url mode",
+			namespace:   "default",
+			service:     "mock-dashboard",
+			api:         defaultAPI,
+			https:       true,
+			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
+		},
+		{
+			description: "correctly return serviceURLs, no https, no url mode",
+			namespace:   "default",
+			service:     "mock-dashboard",
+			api:         defaultAPI,
+			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
+		},
+		{
+			description: "correctly return serviceURLs, no https, url mode",
+			namespace:   "default",
+			service:     "mock-dashboard",
+			api:         defaultAPI,
+			urlMode:     true,
+			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
+		},
+		{
+			description: "correctly return serviceURLs, https, url mode",
+			namespace:   "default",
+			service:     "mock-dashboard",
+			api:         defaultAPI,
+			urlMode:     true,
+			https:       true,
+			expected:    []string{"http://127.0.0.1:1111", "http://127.0.0.1:2222"},
+		},
+		{
+			description: "correctly return empty serviceURLs",
+			namespace:   "default",
+			service:     "mock-dashboard-no-ports",
+			api:         defaultAPI,
+			expected:    []string{},
+			err:         true,
+		},
+	}
+	defer revertK8sClient(K8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
+			}
+			err := WaitAndMaybeOpenService(test.api, test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
+			if test.err && err == nil {
+				t.Fatalf("WaitAndMaybeOpenService expected to fail for test: %v", test)
+			}
+			if !test.err && err != nil {
+				t.Fatalf("WaitAndMaybeOpenService not expected to fail but got err: %v", err)
+			}
+
+		})
+	}
 }

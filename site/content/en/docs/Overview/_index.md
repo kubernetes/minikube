@@ -3,36 +3,49 @@ title: "Overview"
 linkTitle: "Overview"
 weight: 1
 description: >
-  Here's where your user finds out if your project is for them.
+  What is it?
 ---
 
-{{% pageinfo %}}
-This is a placeholder page that shows you how to use this template site.
-{{% /pageinfo %}}
+minikube implements a local Kubernetes cluster on macOS, Linux, and Windows.
 
+minikube's [primary goals](https://minikube.sigs.k8s.io/docs/concepts/principles/) are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit.
 
-The Overview is where your users find out about your project. Depending on the size of your docset, you can have a separate overview page (like this one) or put your overview contents in the Documentation landing page (like in the Docsy User Guide). 
+minikube runs the latest stable release of Kubernetes, with support for standard Kubernetes features like:
 
-Try answering these questions for your user in this page:
+* [LoadBalancer](https://minikube.sigs.k8s.io/docs/tasks/loadbalancer/) - using `minikube tunnel`
+* Multi-cluster - using `minikube start -p <name>`
+* NodePorts - using `minikube service`
+* [Persistent Volumes](https://minikube.sigs.k8s.io/docs/reference/persistent_volumes/)
+* Ingress
+* RBAC
+* [Dashboard](https://minikube.sigs.k8s.io/docs/tasks/dashboard/) - `minikube dashboard`
+* [Container runtimes](https://minikube.sigs.k8s.io/docs/reference/runtimes/) - `start --container-runtime`
+* [Configure apiserver and kubelet options](https://minikube.sigs.k8s.io/docs/reference/configuration/kubernetes/) via command-line flags
 
-## What is it?
+As well as developer-friendly features:
 
-Introduce your project, including what it does or lets you do, why you would use it, and its primary goal (and how it achieves it). This should be similar to your README description, though you can go into a little more detail here if you want.
+* [Addons](https://minikube.sigs.k8s.io/docs/tasks/addons/) - a marketplace for developers to share configurations for running services on minikube
+* [GPU support](https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/) - for machine learning
+* [Filesystem mounts](https://minikube.sigs.k8s.io/docs/tasks/mount/)
+* Automatic failure analysis
 
 ## Why do I want it?
 
-Help your user know if your project will help them. Useful information can include: 
+If you would like to develop Kubernetes applications:
 
-* **What is it good for?**: What types of problems does your project solve? What are the benefits of using it?
+* locally
+* offline
+* using the latest version of Kubernetes
 
-* **What is it not good for?**: For example, point out situations that might intuitively seem suited for your project, but aren't for some reason. Also mention known limitations, scaling issues, or anything else that might let your users know if the project is not for them.
+Then minikube is for you.
 
-* **What is it *not yet* good for?**: Highlight any useful features that are coming soon.
+* **What is it good for?** Developing local Kubernetes applications
+* **What is it not good for?** Production Kubernetes deployments
+* **What is it *not yet* good for?** Environments which do not allow VM's
 
 ## Where should I go next?
 
-Give your users next steps from the Overview. For example:
+* [Getting Started](/docs/start/): Get started with minikube
+* [Examples](/docs/examples/): Check out some minikube examples!
 
-* [Getting Started](/getting-started/): Get started with $project
-* [Examples](/examples/): Check out some example code!
-
+📣😀 **Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A)** so that we can learn how & why you use minikube, and what improvements we should make. Thank you! 💃🏽🎉

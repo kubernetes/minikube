@@ -86,7 +86,7 @@ data:
 
 ---
 kind: Deployment
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1
 metadata:
   namespace: storage-gluster
   name: heketi
@@ -100,6 +100,11 @@ metadata:
     description: Defines how to deploy Heketi
 spec:
   replicas: 1
+  selector:
+    matchLabels:
+        glusterfs: heketi-pod
+        heketi: pod
+        k8s-app: storage-provisioner-gluster
   template:
     metadata:
       namespace: storage-gluster
