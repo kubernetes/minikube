@@ -119,14 +119,13 @@ const (
 )
 
 var (
-	registryMirror           []string
-	dockerEnv                []string
-	dockerOpt                []string
-	insecureRegistry         []string
-	apiServerNames           []string
-	apiServerIPs             []net.IP
-	extraOptions             cfg.ExtraOptionSlice
-	enableUpdateNotification = true
+	registryMirror   []string
+	dockerEnv        []string
+	dockerOpt        []string
+	insecureRegistry []string
+	apiServerNames   []string
+	apiServerIPs     []net.IP
+	extraOptions     cfg.ExtraOptionSlice
 )
 
 func init() {
@@ -291,7 +290,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateFlags(driver)
 	validateUser(driver)
 
-	_ = getMinikubeVersion(driver)
+	v, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+	}
+
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driver)
 	if err != nil {
@@ -920,17 +925,6 @@ func validateNetwork(h *host.Host) string {
 
 	// Here is where we should be checking connectivity to/from the VM
 	return ip
-}
-
-// getMinikubeVersion ensures that the driver binary is up to date
-func getMinikubeVersion(driver string) string {
-	v, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
-		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
-	}
-	return v.String()
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable
