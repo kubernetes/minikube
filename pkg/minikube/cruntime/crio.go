@@ -18,9 +18,11 @@ package cruntime
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -70,12 +72,18 @@ func (r *CRIO) DefaultCNI() bool {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *CRIO) Available() error {
-	return r.Runner.Run("command -v crio")
+	c := exec.Command("/bin/bash", "-c", "command", "-v", "crio")
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "check crio available. output: %s", rr.Output())
+	}
+	return nil
+
 }
 
 // Active returns if CRIO is active on the host
 func (r *CRIO) Active() bool {
-	err := r.Runner.Run("systemctl is-active --quiet service crio")
+	c := exec.Command("/bin/bash", "-c", "systemctl is-active --quiet service crio")
+	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
 
@@ -95,18 +103,31 @@ func (r *CRIO) Enable(disOthers bool) error {
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
 	}
-	return r.Runner.Run("sudo systemctl restart crio")
+
+	c := exec.Command("/bin/bash", "-c", "sudo systemctl restart crio")
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "enable crio. output: %s", rr.Output())
+	}
+	return nil
 }
 
 // Disable idempotently disables CRIO on a host
 func (r *CRIO) Disable() error {
-	return r.Runner.Run("sudo systemctl stop crio")
+	c := exec.Command("/bin/bash", "-c", "sudo systemctl stop crio")
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "disable crio. output: %s", rr.Output())
+	}
+	return nil
 }
 
 // LoadImage loads an image into this runtime
 func (r *CRIO) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	return r.Runner.Run(fmt.Sprintf("sudo podman load -i %s", path))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo podman load -i %s", path))
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "LoadImage crio. output: %s", rr.Output())
+	}
+	return nil
 }
 
 // KubeletOptions returns kubelet options for a runtime.
