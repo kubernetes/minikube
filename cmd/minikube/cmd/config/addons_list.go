@@ -23,9 +23,10 @@ import (
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
+
+const defaultAddonListFormat = "- {{.AddonName}}: {{.AddonStatus}}\n"
 
 var addonListFormat string
 
@@ -51,7 +52,7 @@ var addonsListCmd = &cobra.Command{
 }
 
 func init() {
-	AddonsCmd.Flags().StringVar(&addonListFormat, "format", constants.DefaultAddonListFormat,
+	AddonsCmd.Flags().StringVar(&addonListFormat, "format", defaultAddonListFormat,
 		`Go template format string for the addon list output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/config#AddonListTemplate`)
 	AddonsCmd.AddCommand(addonsListCmd)

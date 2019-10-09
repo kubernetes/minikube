@@ -82,7 +82,7 @@ func Port(clusterName string, configPath ...string) (int, error) {
 	return port, err
 }
 
-// PathFromEnv() gets the path to the first kubeconfig
+// PathFromEnv gets the path to the first kubeconfig
 func PathFromEnv() string {
 	kubeConfigEnv := os.Getenv(constants.KubeconfigEnvVar)
 	if kubeConfigEnv == "" {

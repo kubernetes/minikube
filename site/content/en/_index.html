@@ -8,6 +8,18 @@ resources:
   title: "start"
 ---
 
+<style>
+	.imagesizing {
+		width:auto;
+		text-align:center;
+		padding:10px;
+	}
+	img {
+		max-width:100%;
+		height:auto;
+	}
+</style>
+
 <!-- Welcome to minikube -->
 <section class="row td-box td-box--white position-relative td-box--gradient td-box--height-auto">
 	<div class="container td-arrow-down">
@@ -37,10 +49,10 @@ resources:
 <h2>Instantly productive.</h2>
 
 A single command away from reproducing your production environment, from the comfort of localhost.
-
-{{< imgproc "start" Fit "730x239" >}}{{< /imgproc >}}
-
-<h3>Highlights</h3>
+	<div class = "imagesizing">
+		<img src="start.png"/>
+	</div>
+	<h3>Highlights</h3>
 <ul class="fa-ul">
 <li><i class="fas fa-check"></i> Always supports the latest Kubernetes release (as well as previous versions)</li>
 <li><i class="fas fa-check"></i> Cross-platform (Linux, macOS, Windows)</li>

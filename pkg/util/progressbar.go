@@ -29,6 +29,7 @@ import (
 	"github.com/hashicorp/go-getter"
 )
 
+// DefaultProgressBar is the default cheggaaa progress bar
 var DefaultProgressBar getter.ProgressTracker = &progressBar{}
 
 type progressBar struct {
