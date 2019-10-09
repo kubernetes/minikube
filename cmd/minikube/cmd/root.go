@@ -77,7 +77,6 @@ var RootCmd = &cobra.Command{
 				exit.WithError("logdir set failed", err)
 			}
 		}
-		notify.MaybePrintUpdateTextFromGithub()
 	},
 }
 
