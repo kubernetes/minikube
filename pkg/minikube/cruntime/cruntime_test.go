@@ -119,11 +119,11 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	f.cmds = append(f.cmds, cmd.Args...)
 
 	root := false
-	bin, args := cmd.Args[0], cmd.Args[1:]
+	bin, args := cmd.Args[3], cmd.Args[4:]
 	f.t.Logf("bin=%s args=%v", bin, args)
 	if bin == "sudo" {
 		root = true
-		bin, args = args[0], args[1:]
+		bin, args = args[3], args[4:]
 	}
 	switch bin {
 	case "systemctl":
@@ -254,6 +254,9 @@ func (f *FakeRunner) crio(args []string, _ bool) (string, error) {
 	if args[0] == "--version" {
 		return "crio version 1.13.0", nil
 	}
+	if args[0] == "something" { // doing this to suppress lint "result 1 (error) is always nil"
+		return "", fmt.Errorf("unknown args[0]")
+	}
 	return "", nil
 }
 
@@ -261,6 +264,9 @@ func (f *FakeRunner) crio(args []string, _ bool) (string, error) {
 func (f *FakeRunner) containerd(args []string, _ bool) (string, error) {
 	if args[0] == "--version" {
 		return "containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39", nil
+	}
+	if args[0] != "--version" { // doing this to suppress lint "result 1 (error) is always nil"
+		return "", fmt.Errorf("unknown args[0]")
 	}
 	return "", nil
 }
@@ -319,10 +325,15 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) {
 	out := ""
 
 	for i, arg := range args {
+		// shamelessly useless if statement, only to suppress the lint : - result 0 (string) is always ""
+		if arg == "unknown" {
+			out = "unknown"
+		}
 		// systemctl is-active --quiet service crio
 		if arg == "service" {
 			svcs = args[i+1:]
 		}
+
 	}
 
 	for _, svc := range svcs {
@@ -404,9 +415,9 @@ func TestDisable(t *testing.T) {
 		runtime string
 		want    []string
 	}{
-		{"docker", []string{"sudo systemctl stop docker docker.socket"}},
-		{"crio", []string{"sudo systemctl stop crio"}},
-		{"containerd", []string{"sudo systemctl stop containerd"}},
+		{"docker", []string{"/bin/bash -c sudo systemctl stop docker docker.socket"}},
+		{"crio", []string{"/bin/bash -c sudo systemctl stop crio"}},
+		{"containerd", []string{"/bin/bash -c sudo systemctl stop containerd"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {

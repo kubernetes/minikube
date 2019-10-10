@@ -37,7 +37,7 @@ matrix:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 travisBuddy:
-    regex: (\d+ Error)
+    regex: (FAIL:|\.go:\d+:|^panic:|failed$)
     regexOptions: "g"
 notifications:
   webhooks:
