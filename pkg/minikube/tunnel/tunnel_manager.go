@@ -122,8 +122,8 @@ func (mgr *Manager) run(ctx context.Context, t controller, ready, check, done ch
 	}
 }
 
-func (mgr *Manager) cleanup(t controller) *Status {
-	return t.cleanup()
+func (mgr *Manager) cleanup(t controller) {
+	t.cleanup()
 }
 
 // CleanupNotRunningTunnels cleans up tunnels that are not running
