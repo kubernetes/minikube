@@ -53,12 +53,17 @@ var importantPods = []string{
 	"kube-controller-manager",
 }
 
+// logRunner is the subset of CommandRunner used for logging
+type logRunner interface {
+	RunCmd(*exec.Cmd) (*command.RunResult, error)
+}
+
 // lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
 // include usage messages from a failed binary, but small enough to not include irrelevant problems.
 const lookBackwardsCount = 200
 
 // Follow follows logs from multiple files in tail(1) format
-func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner) error {
+func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr logRunner) error {
 	cs := []string{}
 	for _, v := range logCommands(r, bs, 0, true) {
 		cs = append(cs, v+" &")
@@ -81,10 +86,10 @@ func IsProblem(line string) bool {
 }
 
 // FindProblems finds possible root causes among the logs
-func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner) map[string][]string {
+func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr logRunner) map[string][]string {
 	pMap := map[string][]string{}
 	cmds := logCommands(r, bs, lookBackwardsCount, false)
-	for name, cmd := range cmds {
+	for name := range cmds {
 		glog.Infof("Gathering logs for %s ...", name)
 		var b bytes.Buffer
 		c := exec.Command("/bin/bash", "-c", cmds[name])
@@ -146,7 +151,6 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 		c := exec.Command(cmds[name])
 		c.Stdin = &b
 		c.Stdout = &b
-		s
 		if rr, err := runner.RunCmd(c); err != nil {
 			glog.Errorf("command %s failed with error: %v output: %q", rr.Command(), err, rr.Output())
 			failed = append(failed, name)

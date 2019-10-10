@@ -46,14 +46,15 @@ func (r *CRIO) Style() out.StyleEnum {
 
 // Version retrieves the current version of this runtime
 func (r *CRIO) Version() (string, error) {
-	ver, err := r.Runner.CombinedOutput("crio --version")
+	c := exec.Command("/bin/bash", "-c", "crio --version")
+	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "crio version. output: %s", rr.Output())
 	}
 
 	// crio version 1.13.0
 	// commit: ""
-	line := strings.Split(ver, "\n")[0]
+	line := strings.Split(rr.Stdout.String(), "\n")[0]
 	return strings.Replace(line, "crio version ", "", 1), nil
 }
 

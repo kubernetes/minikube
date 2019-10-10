@@ -59,14 +59,12 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 	if err := Unmount(r, target); err != nil {
 		return errors.Wrap(err, "umount")
 	}
-
-	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target)))
+	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target, mntCmd(source, target, c))))
 	if err != nil {
 		glog.Infof("Failed to create folder pre-mount: err=%v, output: %q", err, rr.Output())
 		return errors.Wrap(err, "create folder pre-mount")
 	}
-
-	rr, err := r.RunCmd(mntCmd(source, target, c))
+	rr, err = r.RunCmd(mntCmd(source, target, c))
 	if err != nil {
 		glog.Infof("Failed to create folder before mount: err=%s, output: %q", err, rr.Output())
 		return errors.Wrap(err, rr.Output())

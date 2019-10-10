@@ -164,17 +164,6 @@ func (s *SSHRunner) Run(cmd string) error {
 	return nil
 }
 
-// CombinedOutputTo runs the command and stores both command
-// output and error to out.
-func (s *SSHRunner) CombinedOutputTo(cmd string, w io.Writer) error {
-	out, err := s.CombinedOutput(cmd)
-	if err != nil {
-		return err
-	}
-	_, err = w.Write([]byte(out))
-	return err
-}
-
 // CombinedOutput runs the command on the remote and returns its combined
 // standard output and standard error.
 func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {

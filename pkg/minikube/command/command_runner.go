@@ -39,9 +39,6 @@ type Runner interface {
 	// if succesfull will cause a clean up to get rid of older methods.
 	RunCmd(cmd *exec.Cmd) (*RunResult, error)
 
-	// Run starts the specified command and waits for it to complete.
-	Run(cmd string) error
-
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
 

@@ -401,9 +401,7 @@ image-endpoint: unix://{{.Socket}}
 	}
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(cPath), b.String(), cPath))
 	if rr, err := cr.RunCmd(c); err != nil {
-		if err != nil {
-			return errors.Wrapf(err, "populateCRIConfig %s", rr.Output())
-		}
+		return errors.Wrapf(err, "populateCRIConfig %s", rr.Output())
 	}
 	return nil
 }
@@ -424,9 +422,7 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, k8sVersion str
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
 	if rr, err := cr.RunCmd(c); err != nil {
-		if err != nil {
-			return errors.Wrapf(err, "generateCRIOConfig. %s", rr.Output())
-		}
+		return errors.Wrapf(err, "generateCRIOConfig. %s", rr.Output())
 	}
 	return nil
 }
