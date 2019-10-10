@@ -920,10 +920,10 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 
 	// none driver does not need ssh access
 	if h.Driver.DriverName() != constants.DriverNone {
-		sshAddr := fmt.Sprintf("%s:22000", ip)
+		sshAddr := fmt.Sprintf("%s:22", ip)
 		conn, err := net.Dial("tcp", sshAddr)
 		if err != nil {
-			exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM at {{.address}}: {{.error}}
+			exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
 
 This is likely due to one of two reasons:
 
@@ -933,7 +933,7 @@ This is likely due to one of two reasons:
 Suggested workarounds:
 
 - Disable your local VPN or firewall software
-- Configure your local VPN or firewall to allow access to {{ip}}
+- Configure your local VPN or firewall to allow access to {{.ip}}
 - Restart or reinstall {{.hypervisor}}
 - Use an alternative --vm-driver`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
 		}
@@ -941,15 +941,22 @@ Suggested workarounds:
 	}
 
 	if err := r.Run("nslookup kubernetes.io"); err != nil {
-		out.WarningT("VM is unable to resolve kubernetes.io: {[.error}}", out.V{"error": err})
+		out.WarningT("VM is unable to resolve DNS hosts: {[.error}}", out.V{"error": err})
 	}
 
+	// Try both UDP and ICMP to assert basic external connectivity
 	if err := r.Run("nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8"); err != nil {
-		out.WarningT("VM does not have UDP or ICMP access to the internet: {{.error}}", out.V{"error": err})
+		out.WarningT("VM is unable to directly connect to the internet: {{.error}}", out.V{"error": err})
 	}
 
-	if err := r.Run("env HTTPS_PROXY=%s curl https://k8s.gcr.io/"); err != nil {
-		out.WarningT("VM is unable to connect to https://k8s.gcr.io/: {{.error}}", out.V{"error": err})
+	// Try an HTTPS connection to the
+	proxy := os.Getenv("HTTPS_PROXY")
+	opts := "-sS"
+	if proxy != "" {
+		opts = fmt.Sprintf("-x %s %s", proxy, opts)
+	}
+	if err := r.Run(fmt.Sprintf("curl %s https://k8s.gcr.io/", opts)); err != nil {
+		out.WarningT("VM is unable to connect to the Kubernetes container registry: {{.error}}", out.V{"error": err})
 	}
 	return ip
 }
