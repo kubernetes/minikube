@@ -361,7 +361,7 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 		return nil
 	}
 	glog.Infof("Killing containers: %s", ids)
-	c := exec.Command(fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
 	rr, err := cr.RunCmd(c)
 	if err != nil {
 		return errors.Wrapf(err, "kill cri containers. output %s", rr.Output())

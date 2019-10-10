@@ -361,9 +361,9 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 			}
 			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
 
-			_, err = cr.RunCmd(exec.Command("/bin/bash", "-c", "sudo", "test", "-f", subjectHashLink))
+			_, err = cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo test -f %s", subjectHashLink)))
 			if err != nil {
-				if rr, err := cr.RunCmd(exec.Command("/bin/bash", "-c", "sudo", "ln", "-s", certStorePath, subjectHashLink)); err != nil {
+				if rr, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ln -s `%s` `%s`", certStorePath, subjectHashLink))); err != nil {
 					return errors.Wrapf(err, "error making subject hash symbol %s link for certificate %s. output: %q", subjectHash, caCertFile, rr.Output())
 				}
 			}
