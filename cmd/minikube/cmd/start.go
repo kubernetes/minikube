@@ -952,7 +952,7 @@ Suggested workarounds:
 	// Try an HTTPS connection to the
 	proxy := os.Getenv("HTTPS_PROXY")
 	opts := "-sS"
-	if proxy != "" {
+	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
 		opts = fmt.Sprintf("-x %s %s", proxy, opts)
 	}
 	if err := r.Run(fmt.Sprintf("curl %s https://k8s.gcr.io/", opts)); err != nil {
