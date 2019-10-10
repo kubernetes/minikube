@@ -59,7 +59,7 @@ GOLINT_GOGC ?= 8
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = --deadline 4m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable goimports,gocritic,golint,gocyclo,interfacer,misspell,nakedret,stylecheck,unconvert,unparam \
+	  --enable goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain'
 
 
