@@ -119,14 +119,13 @@ const (
 )
 
 var (
-	registryMirror           []string
-	dockerEnv                []string
-	dockerOpt                []string
-	insecureRegistry         []string
-	apiServerNames           []string
-	apiServerIPs             []net.IP
-	extraOptions             cfg.ExtraOptionSlice
-	enableUpdateNotification = true
+	registryMirror   []string
+	dockerEnv        []string
+	dockerOpt        []string
+	insecureRegistry []string
+	apiServerNames   []string
+	apiServerIPs     []net.IP
+	extraOptions     cfg.ExtraOptionSlice
 )
 
 func init() {
