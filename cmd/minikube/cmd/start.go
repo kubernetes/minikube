@@ -435,8 +435,12 @@ func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, ma
 		exit.WithError("Failed to get machine client", err)
 	}
 	host, preExists = startHost(m, config.MachineConfig)
+	runner, err = machine.CommandRunner(host)
+	if err != nil {
+		exit.WithError("Failed to get command runner", err)
+	}
 
-	ip := validateNetwork(host)
+	ip := validateNetwork(host, runner)
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
@@ -446,10 +450,6 @@ func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, ma
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
 		exit.WithError("Failed to save config", err)
-	}
-	runner, err = machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
 	}
 
 	return runner, preExists, m, host
@@ -894,7 +894,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host) string {
+func validateNetwork(h *host.Host, r command.Runner) string {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
@@ -918,17 +918,39 @@ func validateNetwork(h *host.Host) string {
 		}
 	}
 
-	// none driver should not require ssh or any other open ports
-	if h.Driver.DriverName() == constants.DriverNone {
-		return ip
+	// none driver does not need ssh access
+	if h.Driver.DriverName() != constants.DriverNone {
+		sshAddr := fmt.Sprintf("%s:22000", ip)
+		conn, err := net.Dial("tcp", sshAddr)
+		if err != nil {
+			exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM at {{.address}}: {{.error}}
+
+This is likely due to one of two reasons:
+
+- VPN or firewall interference
+- {{.hypervisor}} network configuration issue
+
+Suggested workarounds:
+
+- Disable your local VPN or firewall software
+- Configure your local VPN or firewall to allow access to {{ip}}
+- Restart or reinstall {{.hypervisor}}
+- Use an alternative --vm-driver`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
+		}
+		defer conn.Close()
 	}
 
-	sshAddr := fmt.Sprintf("%s:22000", ip)
-	conn, err := net.Dial("tcp", sshAddr)
-	if err != nil {
-		exit.WithCodeT(exit.IO, "Unable to contact {{.hypervisor}} \"{{.name}}\" VM: {{.error}}\n\nIf you have a VPN or firewall enabled, try turning it off or configuring it so that it does not capture packets sent to {{.ip}}.\n\nAlso, check the {{.hypervisor}} network preferences and/or reboot your machine", out.V{"name": cfg.GetMachineName(), "error": err, "hypervisor": h.Driver.DriverName()})
+	if err := r.Run("nslookup kubernetes.io"); err != nil {
+		out.WarningT("VM is unable to resolve kubernetes.io: {[.error}}", out.V{"error": err})
 	}
-	defer conn.Close()
+
+	if err := r.Run("nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8"); err != nil {
+		out.WarningT("VM does not have UDP or ICMP access to the internet: {{.error}}", out.V{"error": err})
+	}
+
+	if err := r.Run("env HTTPS_PROXY=%s curl https://k8s.gcr.io/"); err != nil {
+		out.WarningT("VM is unable to connect to https://k8s.gcr.io/: {{.error}}", out.V{"error": err})
+	}
 	return ip
 }
 
