@@ -235,6 +235,67 @@ func recentReleases() ([]string, error) {
 	return versions, nil
 }
 
+/**
+Need a separate test function to test the DNS server IP
+as v1.11 yaml file is very different compared to v1.12+.
+This test case has only 1 thing to test and that is the
+nnetworking/dnsDomain value
+*/
+func TestGenerateConfigDNS(t *testing.T) {
+	versions := []string{"v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
+	tests := []struct {
+		name      string
+		runtime   string
+		shouldErr bool
+		cfg       config.KubernetesConfig
+	}{
+		{"dns", "docker", false, config.KubernetesConfig{DNSDomain: "1.1.1.1"}},
+	}
+	for _, version := range versions {
+		for _, tc := range tests {
+			runtime, err := cruntime.New(cruntime.Config{Type: tc.runtime})
+			if err != nil {
+				t.Fatalf("runtime: %v", err)
+			}
+			tname := tc.name + "_" + version
+			t.Run(tname, func(t *testing.T) {
+				cfg := tc.cfg
+				cfg.NodeIP = "1.1.1.1"
+				cfg.NodeName = "mk"
+				cfg.KubernetesVersion = version + ".0"
+
+				got, err := generateConfig(cfg, runtime)
+				if err != nil && !tc.shouldErr {
+					t.Fatalf("got unexpected error generating config: %v", err)
+				}
+				if err == nil && tc.shouldErr {
+					t.Fatalf("expected error but got none, config: %s", got)
+				}
+				if tc.shouldErr {
+					return
+				}
+				expected, err := ioutil.ReadFile(fmt.Sprintf("testdata/%s/%s.yaml", version, tc.name))
+				if err != nil {
+					t.Fatalf("unable to read testdata: %v", err)
+				}
+				diff, err := difflib.GetUnifiedDiffString(difflib.UnifiedDiff{
+					A:        difflib.SplitLines(string(expected)),
+					B:        difflib.SplitLines(string(got)),
+					FromFile: "Expected",
+					ToFile:   "Got",
+					Context:  1,
+				})
+				if err != nil {
+					t.Fatalf("diff error: %v", err)
+				}
+				if diff != "" {
+					t.Errorf("unexpected diff:\n%s\n===== [RAW OUTPUT] =====\n%s", diff, got)
+				}
+			})
+		}
+	}
+}
+
 func TestGenerateConfig(t *testing.T) {
 	extraOpts := getExtraOpts()
 	extraOptsPodCidr := getExtraOptsPodCidr()
