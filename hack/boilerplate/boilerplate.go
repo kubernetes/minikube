@@ -30,16 +30,9 @@ import (
 
 var (
 	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
-	rootdir        *string
-	boilerplatedir *string
+	boilerplatedir = flag.String("boilerplate-dir", ".", "Boilerplate directory for boilerplate files")
+	rootdir = flag.String("rootdir", "../../", "Root directory to examine")
 )
-
-func init() {
-	cwd, _ := os.Getwd()
-	boilerplatedir = flag.String("boilerplate-dir", cwd, "Boilerplate directory for boilerplate files")
-	cwd += "/../../"
-	rootdir = flag.String("rootdir", filepath.Dir(cwd), "Root directory to examine")
-}
 
 func main() {
 	flag.Parse()
