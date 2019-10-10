@@ -31,12 +31,12 @@ import (
 var (
 	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
 	boilerplatedir = flag.String("boilerplate-dir", ".", "Boilerplate directory for boilerplate files")
-	rootdir = flag.String("rootdir", "../../", "Root directory to examine")
+	rootdir        = flag.String("rootdir", "../../", "Root directory to examine")
 )
 
 func main() {
 	flag.Parse()
-	refs := boilerplateRefs(*boilerplatedir)
+	refs := extensionToBoilerplate(*boilerplatedir)
 	if len(refs) == 0 {
 		log.Fatal("no references in ", *boilerplatedir)
 	}
@@ -49,11 +49,8 @@ func main() {
 
 }
 
-/*
-This function is to populate the refs variable with the
-different boilerplate/template for different extension.
-*/
-func boilerplateRefs(dir string) map[string][]byte {
+// extensionToBoilerplate returns a map of file extension to required boilerplate text
+func extensionToBoilerplate(dir string) map[string][]byte {
 	refs := make(map[string][]byte)
 	files, _ := filepath.Glob(dir + "/*.txt")
 	for _, filename := range files {
@@ -69,13 +66,8 @@ func boilerplateRefs(dir string) map[string][]byte {
 	return refs
 }
 
-/*
-Function to check whether the processed file
-is valid.
-Returning false means that the file does not the
-proper boilerplate template
-*/
-func filePasses(filename string, ref []byte) bool {
+// filePasses checks whether the processed file is valid. Returning false means that the file does not the proper boilerplate template.
+func filePasses(filename string, expectedBoilerplate []byte) bool {
 	var re *regexp.Regexp
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
@@ -99,11 +91,11 @@ func filePasses(filename string, ref []byte) bool {
 	}
 
 	// if our test file is smaller than the reference it surely fails!
-	if len(data) < len(ref) {
+	if len(data) < len(expectedBoilerplate) {
 		return false
 	}
 
-	data = data[:len(ref)]
+	data = data[:len(expectedBoilerplate)]
 
 	// Search for "Copyright YEAR" which exists in the boilerplate, but shouldn't in the real thing
 	re = regexp.MustCompile(`Copyright YEAR`)
@@ -115,7 +107,7 @@ func filePasses(filename string, ref []byte) bool {
 	re = regexp.MustCompile(`Copyright \d{4}`)
 	data = re.ReplaceAll(data, []byte(`Copyright YEAR`))
 
-	return bytes.Equal(data, ref)
+	return bytes.Equal(data, expectedBoilerplate)
 }
 
 /**
@@ -126,9 +118,7 @@ func fileExtension(filename string) string {
 	return strings.ToLower(splitted[len(splitted)-1])
 }
 
-/**
-Function to get all the files from the directory that heeds to be checked.
-*/
+// filesToCheck returns the list of the filers that will be checked for the boilerplate.
 func filesToCheck(rootDir string, extensions map[string][]byte) []string {
 	var outFiles []string
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
