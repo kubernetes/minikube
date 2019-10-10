@@ -36,21 +36,35 @@ var (
 
 func main() {
 	flag.Parse()
-	refs := extensionToBoilerplate(*boilerplatedir)
+	refs, err := extensionToBoilerplate(*boilerplatedir)
+	if err != nil {
+		log.Fatal(err)
+	}
 	if len(refs) == 0 {
 		log.Fatal("no references in ", *boilerplatedir)
 	}
-	files := filesToCheck(*rootdir, refs)
+	files, err := filesToCheck(*rootdir, refs)
+	if err != nil {
+		log.Fatal(err)
+	}
 	for _, file := range files {
-		if !filePasses(file, refs[fileExtension(file)]) {
-			fmt.Println(file)
+		pass, err := filePasses(file, refs[fileExtension(file)])
+		if err != nil {
+			log.Println(err)
+		}
+		if !pass {
+			path, err := filepath.Abs(file)
+			if err != nil {
+				log.Println(err)
+			}
+			fmt.Println(path)
 		}
 	}
 
 }
 
 // extensionToBoilerplate returns a map of file extension to required boilerplate text
-func extensionToBoilerplate(dir string) map[string][]byte {
+func extensionToBoilerplate(dir string) (map[string][]byte, error) {
 	refs := make(map[string][]byte)
 	files, _ := filepath.Glob(dir + "/*.txt")
 	for _, filename := range files {
@@ -58,20 +72,20 @@ func extensionToBoilerplate(dir string) map[string][]byte {
 		extension := strings.ToLower(fileExtension(re.ReplaceAllString(filename, "")))
 		data, err := ioutil.ReadFile(filename)
 		if err != nil {
-			log.Fatal(err)
+			return nil, err
 		}
 		re = regexp.MustCompile(`\r`)
 		refs[extension] = re.ReplaceAll(data, nil)
 	}
-	return refs
+	return refs, nil
 }
 
 // filePasses checks whether the processed file is valid. Returning false means that the file does not the proper boilerplate template.
-func filePasses(filename string, expectedBoilerplate []byte) bool {
+func filePasses(filename string, expectedBoilerplate []byte) (bool, error) {
 	var re *regexp.Regexp
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
-		log.Fatal(err)
+		return false, err
 	}
 	re = regexp.MustCompile(`\r`)
 	data = re.ReplaceAll(data, nil)
@@ -92,7 +106,7 @@ func filePasses(filename string, expectedBoilerplate []byte) bool {
 
 	// if our test file is smaller than the reference it surely fails!
 	if len(data) < len(expectedBoilerplate) {
-		return false
+		return false, nil
 	}
 
 	data = data[:len(expectedBoilerplate)]
@@ -100,14 +114,14 @@ func filePasses(filename string, expectedBoilerplate []byte) bool {
 	// Search for "Copyright YEAR" which exists in the boilerplate, but shouldn't in the real thing
 	re = regexp.MustCompile(`Copyright YEAR`)
 	if re.Match(data) {
-		return false
+		return false, nil
 	}
 
 	// Replace all occurrences of the regex "Copyright \d{4}" with "Copyright YEAR"
 	re = regexp.MustCompile(`Copyright \d{4}`)
 	data = re.ReplaceAll(data, []byte(`Copyright YEAR`))
 
-	return bytes.Equal(data, expectedBoilerplate)
+	return bytes.Equal(data, expectedBoilerplate), nil
 }
 
 /**
@@ -119,7 +133,7 @@ func fileExtension(filename string) string {
 }
 
 // filesToCheck returns the list of the filers that will be checked for the boilerplate.
-func filesToCheck(rootDir string, extensions map[string][]byte) []string {
+func filesToCheck(rootDir string, extensions map[string][]byte) ([]string, error) {
 	var outFiles []string
 	err := filepath.Walk(rootDir, func(path string, info os.FileInfo, err error) error {
 		// remove current workdir from the beginig of the path in case it matches the skipped path
@@ -135,7 +149,7 @@ func filesToCheck(rootDir string, extensions map[string][]byte) []string {
 		return nil
 	})
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return outFiles
+	return outFiles, nil
 }
