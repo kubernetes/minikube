@@ -38,7 +38,7 @@ define DOCKER_BIN_INSTALL_INIT_SYSTEMD
 		$(TARGET_DIR)/usr/lib/systemd/system/docker.socket
 
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/docker-bin/forward.conf \
+		$(DOCKER_BIN_PKGDIR)/forward.conf \
 		$(TARGET_DIR)/etc/sysctl.d/forward.conf
 endef
 
