@@ -64,7 +64,7 @@ func main() {
 
 }
 
-// extensionToBoilerplate returns a map of file extension to required boilerplate text
+// extensionToBoilerplate returns a map of file extension to required boilerplate text.
 func extensionToBoilerplate(dir string) (map[string][]byte, error) {
 	refs := make(map[string][]byte)
 	files, _ := filepath.Glob(dir + "/*.txt")
