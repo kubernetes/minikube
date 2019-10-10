@@ -126,17 +126,17 @@ func (r *Containerd) Style() out.StyleEnum {
 
 // Version retrieves the current version of this runtime
 func (r *Containerd) Version() (string, error) {
-	ver, err := r.Runner.CombinedOutput("containerd --version")
+	c := exec.Command("/bin/bash", "-c", "containerd --version")
+	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "containerd check version. output: %s", rr.Output())
 	}
-
 	// containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39
-	words := strings.Split(ver, " ")
+	words := strings.Split(rr.Stdout.String(), " ")
 	if len(words) >= 4 && words[0] == "containerd" {
 		return strings.Replace(words[2], "v", "", 1), nil
 	}
-	return "", fmt.Errorf("unknown version: %q", ver)
+	return "", fmt.Errorf("unknown version: %q", rr.Stdout.String())
 }
 
 // SocketPath returns the path to the socket file for containerd
@@ -163,7 +163,7 @@ func (r *Containerd) Active() bool {
 func (r *Containerd) Available() error {
 	c := exec.Command("/bin/bash", "-c", "command", "-v", "containerd")
 	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "check containerd availabilty. output: %s", rr.Output())
+		return errors.Wrapf(err, "check containerd availability. output: %s", rr.Output())
 	}
 	return nil
 }

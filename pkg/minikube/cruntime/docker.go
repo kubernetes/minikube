@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -47,12 +48,12 @@ func (r *Docker) Style() out.StyleEnum {
 // Version retrieves the current version of this runtime
 func (r *Docker) Version() (string, error) {
 	// Note: the server daemon has to be running, for this call to return successfully
-	ver, err := r.Runner.CombinedOutput("docker version --format '{{.Server.Version}}'")
+	c := exec.Command("/bin/bash", "-c", "docker version --format '{{.Server.Version}}'")
+	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return "", err
 	}
-
-	return strings.Split(ver, "\n")[0], nil
+	return strings.Split(rr.Stdout.String(), "\n")[0], nil
 }
 
 // SocketPath returns the path to the socket file for Docker
@@ -73,7 +74,8 @@ func (r *Docker) Available() error {
 
 // Active returns if docker is active on the host
 func (r *Docker) Active() bool {
-	err := r.Runner.Run("systemctl is-active --quiet service docker")
+	c := exec.Command("/bin/bash", "-c", "systemctl is-active --quiet service docker")
+	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
 
@@ -84,18 +86,31 @@ func (r *Docker) Enable(disOthers bool) error {
 			glog.Warningf("disableOthers: %v", err)
 		}
 	}
-	return r.Runner.Run("sudo systemctl start docker")
+	c := exec.Command("/bin/bash", "-c", "sudo systemctl start docker")
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "enable docker. output: %q", rr.Output())
+	}
+	return nil
 }
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
-	return r.Runner.Run("sudo systemctl stop docker docker.socket")
+	c := exec.Command("/bin/bash", "-c", "sudo systemctl stop docker docker.socket")
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "disable docker. output: %q", rr.Output())
+	}
+	return nil
 }
 
 // LoadImage loads an image into this runtime
 func (r *Docker) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	return r.Runner.Run(fmt.Sprintf("docker load -i %s", path))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker load -i %s", path))
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "loadimage docker. output: %q", rr.Output())
+	}
+	return nil
+
 }
 
 // KubeletOptions returns kubelet options for a runtime.
@@ -108,12 +123,14 @@ func (r *Docker) KubeletOptions() map[string]string {
 // ListContainers returns a list of containers
 func (r *Docker) ListContainers(filter string) ([]string, error) {
 	filter = KubernetesContainerPrefix + filter
-	content, err := r.Runner.CombinedOutput(fmt.Sprintf(`docker ps -a --filter="name=%s" --format="{{.ID}}"`, filter))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf(`docker ps -a --filter="name=%s" --format="{{.ID}}"`, filter))
+	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrapf(err, "docker ListContainers. output: %q", rr.Output())
 	}
+
 	var ids []string
-	for _, line := range strings.Split(content, "\n") {
+	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
 		if line != "" {
 			ids = append(ids, line)
 		}
@@ -127,7 +144,11 @@ func (r *Docker) KillContainers(ids []string) error {
 		return nil
 	}
 	glog.Infof("Killing containers: %s", ids)
-	return r.Runner.Run(fmt.Sprintf("docker rm -f %s", strings.Join(ids, " ")))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker rm -f %s", strings.Join(ids, " ")))
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "Killing containers docker. output: %q", rr.Output())
+	}
+	return nil
 }
 
 // StopContainers stops a running container based on ID
@@ -136,7 +157,11 @@ func (r *Docker) StopContainers(ids []string) error {
 		return nil
 	}
 	glog.Infof("Stopping containers: %s", ids)
-	return r.Runner.Run(fmt.Sprintf("docker stop %s", strings.Join(ids, " ")))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker stop %s", strings.Join(ids, " ")))
+	if rr, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "stopping containers docker. output: %q", rr.Output())
+	}
+	return nil
 }
 
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID

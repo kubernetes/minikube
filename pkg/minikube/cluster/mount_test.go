@@ -18,26 +18,28 @@ package cluster
 
 import (
 	"os"
+	"os/exec"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/minikube/command"
 )
 
 type mockMountRunner struct {
-	cmds []string
+	cmds []*exec.Cmd
 	T    *testing.T
 }
 
 func newMockMountRunner(t *testing.T) *mockMountRunner {
 	return &mockMountRunner{
 		T:    t,
-		cmds: []string{},
+		cmds: []*exec.Cmd{},
 	}
 }
 
-func (m *mockMountRunner) CombinedOutput(cmd string) (string, error) {
+func (m *mockMountRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	m.cmds = append(m.cmds, cmd)
-	return "", nil
+	return &command.RunResult{}, nil
 }
 
 func TestMount(t *testing.T) {

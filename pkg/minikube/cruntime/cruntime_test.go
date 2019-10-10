@@ -17,12 +17,16 @@ limitations under the License.
 package cruntime
 
 import (
+	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/command"
 )
 
 func TestName(t *testing.T) {
@@ -111,12 +115,11 @@ func NewFakeRunner(t *testing.T) *FakeRunner {
 }
 
 // Run a fake command!
-func (f *FakeRunner) CombinedOutput(cmd string) (string, error) {
-	f.cmds = append(f.cmds, cmd)
+func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
+	f.cmds = append(f.cmds, cmd.Args...)
 
 	root := false
-	args := strings.Split(cmd, " ")
-	bin, args := args[0], args[1:]
+	bin, args := cmd.Args[0], cmd.Args[1:]
 	f.t.Logf("bin=%s args=%v", bin, args)
 	if bin == "sudo" {
 		root = true
@@ -124,24 +127,81 @@ func (f *FakeRunner) CombinedOutput(cmd string) (string, error) {
 	}
 	switch bin {
 	case "systemctl":
-		return f.systemctl(args, root)
+		s, err := f.systemctl(args, root)
+		rr := &command.RunResult{}
+		if err != nil {
+			return rr, err
+		}
+		buf := new(bytes.Buffer)
+		_, err = buf.WriteString(s)
+		if err != nil {
+			return rr, errors.Wrap(err, "Writing outStr to FakeRunner's buffer")
+		}
+		rr.Stdout = buf
+		rr.Stderr = buf
+		return rr, err
 	case "docker":
-		return f.docker(args, root)
-	case "crictl":
-		return f.crictl(args, root)
-	case "crio":
-		return f.crio(args, root)
-	case "containerd":
-		return f.containerd(args, root)
-	default:
-		return "", nil
-	}
-}
+		s, err := f.docker(args, root)
+		rr := &command.RunResult{}
+		if err != nil {
+			return rr, err
+		}
+		buf := new(bytes.Buffer)
+		_, err = buf.WriteString(s)
+		if err != nil {
+			return rr, errors.Wrap(err, "Writing  FakeRunner's buffer")
+		}
+		rr.Stdout = buf
+		rr.Stderr = buf
+		return rr, err
 
-// Run a fake command!
-func (f *FakeRunner) Run(cmd string) error {
-	_, err := f.CombinedOutput(cmd)
-	return err
+	case "crictl":
+		s, err := f.crictl(args, root)
+		rr := &command.RunResult{}
+		if err != nil {
+			return rr, err
+		}
+		buf := new(bytes.Buffer)
+		_, err = buf.WriteString(s)
+		if err != nil {
+			return rr, errors.Wrap(err, "Writing to FakeRunner's buffer")
+		}
+		rr.Stdout = buf
+		rr.Stderr = buf
+		return rr, err
+	case "crio":
+		s, err := f.crio(args, root)
+		rr := &command.RunResult{}
+		if err != nil {
+			return rr, err
+		}
+		buf := new(bytes.Buffer)
+		_, err = buf.WriteString(s)
+		if err != nil {
+			return rr, errors.Wrap(err, "Writing to FakeRunner's buffer")
+		}
+		rr.Stdout = buf
+		rr.Stderr = buf
+		return rr, err
+	case "containerd":
+		s, err := f.containerd(args, root)
+		rr := &command.RunResult{}
+		if err != nil {
+			return rr, err
+		}
+
+		buf := new(bytes.Buffer)
+		_, err = buf.WriteString(s)
+		if err != nil {
+			return rr, errors.Wrap(err, "Writing to FakeRunner's buffer")
+		}
+		rr.Stdout = buf
+		rr.Stderr = buf
+		return rr, err
+	default:
+		rr := &command.RunResult{}
+		return rr, nil
+	}
 }
 
 // docker is a fake implementation of docker

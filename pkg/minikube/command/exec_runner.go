@@ -61,43 +61,6 @@ func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	return rr, err
 }
 
-// Run starts the specified command in a bash shell and waits for it to complete.
-func (*ExecRunner) Run(cmd string) error {
-	glog.Infoln("Run:", cmd)
-	c := exec.Command("/bin/bash", "-c", cmd)
-	if err := c.Run(); err != nil {
-		return errors.Wrapf(err, "running command: %s", cmd)
-	}
-	return nil
-}
-
-// CombinedOutputTo runs the command and stores both command
-// output and error to out.
-func (*ExecRunner) CombinedOutputTo(cmd string, out io.Writer) error {
-	glog.Infoln("Run with output:", cmd)
-	c := exec.Command("/bin/bash", "-c", cmd)
-	c.Stdout = out
-	c.Stderr = out
-	err := c.Run()
-	if err != nil {
-		return errors.Wrapf(err, "running command: %s\n.", cmd)
-	}
-
-	return nil
-}
-
-// CombinedOutput runs the command  in a bash shell and returns its
-// combined standard output and standard error.
-func (e *ExecRunner) CombinedOutput(cmd string) (string, error) {
-	var b bytes.Buffer
-	err := e.CombinedOutputTo(cmd, &b)
-	if err != nil {
-		return "", errors.Wrapf(err, "running command: %s\n output: %s", cmd, b.Bytes())
-	}
-	return b.String(), nil
-
-}
-
 // Copy copies a file and its permissions
 func (*ExecRunner) Copy(f assets.CopyableFile) error {
 	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {

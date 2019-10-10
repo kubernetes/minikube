@@ -81,36 +81,6 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	return rr, nil
 }
 
-// Run returns nil if output has been set for the given command text.
-func (f *FakeCommandRunner) Run(cmd string) error {
-	_, err := f.CombinedOutput(cmd)
-	return err
-}
-
-// CombinedOutputTo runs the command and stores both command
-// output and error to out.
-func (f *FakeCommandRunner) CombinedOutputTo(cmd string, out io.Writer) error {
-	value, ok := f.cmdMap.Load(cmd)
-	if !ok {
-		return fmt.Errorf("unavailable command: %s", cmd)
-	}
-	_, err := fmt.Fprint(out, value)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// CombinedOutput returns the set output for a given command text.
-func (f *FakeCommandRunner) CombinedOutput(cmd string) (string, error) {
-	out, ok := f.cmdMap.Load(cmd)
-	if !ok {
-		return "", fmt.Errorf("unavailable command: %s", cmd)
-	}
-	return out.(string), nil
-}
-
 // Copy adds the filename, file contents key value pair to the stored map.
 func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	var b bytes.Buffer
