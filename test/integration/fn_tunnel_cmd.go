@@ -43,7 +43,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 
 	if runtime.GOOS != "windows" {
 		// Otherwise minikube fails waiting for a password.
-		if err := exec.Command("sudo", "-n", "route").Run(); err != nil {
+		if err := exec.Command("/bin/bash", "-c", "sudo -n route").Run(); err != nil {
 			t.Skipf("password required to execute 'route', skipping testTunnel: %v", err)
 		}
 	}

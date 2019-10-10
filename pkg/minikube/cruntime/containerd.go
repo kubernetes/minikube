@@ -154,14 +154,14 @@ func (r *Containerd) DefaultCNI() bool {
 
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
-	c := exec.Command("/bin/bash", "-c", "systemctl", "is-active", "--quiet", "service", "containerd")
+	c := exec.Command("/bin/bash", "-c", "systemctl is-active --quiet service containerd")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Containerd) Available() error {
-	c := exec.Command("/bin/bash", "-c", "command", "-v", "containerd")
+	c := exec.Command("/bin/bash", "-c", "command -v containerd")
 	if rr, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "check containerd availability. output: %s", rr.Output())
 	}
@@ -205,7 +205,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 		return err
 	}
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
-	c := exec.Command("/bin/bash", "-c", "sudo", "systemctl", "restart", "containerd")
+	c := exec.Command("/bin/bash", "-c", "sudo systemctl restart containerd")
 	if rr, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "enable containrd. output: %q", rr.Output())
 	}
@@ -214,7 +214,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 
 // Disable idempotently disables containerd on a host
 func (r *Containerd) Disable() error {
-	c := exec.Command("/bin/bash", "-c", "sudo", "systemctl", "stop", "containerd")
+	c := exec.Command("/bin/bash", "-c", "sudo systemctl stop containerd")
 	if rr, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "disable containrd. output: %q", rr.Output())
 	}
@@ -224,7 +224,7 @@ func (r *Containerd) Disable() error {
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	c := exec.Command("/bin/bash", "-c", "ctr", "-n=k8s.io", "images", "import", path)
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("ctr -n=k8s.io images import %s", path))
 	if rr, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "disable containrd. output: %q", rr.Output())
 	}
