@@ -28,7 +28,7 @@ endef
 
 define VBOX_GUEST_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/vbox-guest/vboxservice.service \
+		$(VBOX_GUEST_PKGDIR)/vboxservice.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/vboxservice.service
 
 	ln -fs /usr/lib/systemd/system/vboxservice.service \
