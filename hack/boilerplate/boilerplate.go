@@ -32,6 +32,7 @@ var (
 	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
 	boilerplatedir = flag.String("boilerplate-dir", ".", "Boilerplate directory for boilerplate files")
 	rootdir        = flag.String("rootdir", "../../", "Root directory to examine")
+	verbose        = flag.Bool("v", false, "Verbose")
 )
 
 func main() {
@@ -76,6 +77,17 @@ func extensionToBoilerplate(dir string) (map[string][]byte, error) {
 		}
 		re = regexp.MustCompile(`\r`)
 		refs[extension] = re.ReplaceAll(data, nil)
+	}
+	if *verbose {
+		dir, err := filepath.Abs(dir)
+		if err != nil {
+			return refs, err
+		}
+		fmt.Printf("Found %v boilerplates in %v for the following extensions:", len(refs), dir)
+		for ext, _ := range refs {
+			fmt.Printf(" %v", ext)
+		}
+		fmt.Println()
 	}
 	return refs, nil
 }
@@ -150,6 +162,13 @@ func filesToCheck(rootDir string, extensions map[string][]byte) ([]string, error
 	})
 	if err != nil {
 		return nil, err
+	}
+	if *verbose {
+		rootDir, err = filepath.Abs(rootDir)
+		if err != nil {
+			return outFiles, err
+		}
+		fmt.Printf("Found %v files to check in %v\n\n", len(outFiles), rootDir)
 	}
 	return outFiles, nil
 }
