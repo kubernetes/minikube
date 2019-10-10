@@ -49,7 +49,7 @@ func main() {
 		log.Fatal(err)
 	}
 	for _, file := range files {
-		pass, err := filePasses(file, refs[fileExtension(file)])
+		pass, err := filePasses(file, refs[filepath.Ext(file)])
 		if err != nil {
 			log.Println(err)
 		}
@@ -70,7 +70,7 @@ func extensionToBoilerplate(dir string) (map[string][]byte, error) {
 	files, _ := filepath.Glob(dir + "/*.txt")
 	for _, filename := range files {
 		re := regexp.MustCompile(`\.txt`)
-		extension := strings.ToLower(fileExtension(re.ReplaceAllString(filename, "")))
+		extension := strings.ToLower(filepath.Ext(re.ReplaceAllString(filename, "")))
 		data, err := ioutil.ReadFile(filename)
 		if err != nil {
 			return nil, err
@@ -84,7 +84,7 @@ func extensionToBoilerplate(dir string) (map[string][]byte, error) {
 			return refs, err
 		}
 		fmt.Printf("Found %v boilerplates in %v for the following extensions:", len(refs), dir)
-		for ext, _ := range refs {
+		for ext := range refs {
 			fmt.Printf(" %v", ext)
 		}
 		fmt.Println()
@@ -102,16 +102,16 @@ func filePasses(filename string, expectedBoilerplate []byte) (bool, error) {
 	re = regexp.MustCompile(`\r`)
 	data = re.ReplaceAll(data, nil)
 
-	extension := fileExtension(filename)
+	extension := filepath.Ext(filename)
 
 	// remove build tags from the top of Go files
-	if extension == "go" {
+	if extension == ".go" {
 		re = regexp.MustCompile(`(?m)^(// \+build.*\n)+\n`)
 		data = re.ReplaceAll(data, nil)
 	}
 
 	// remove shebang from the top of shell files
-	if extension == "sh" {
+	if extension == ".sh" {
 		re = regexp.MustCompile(`(?m)^(#!.*\n)\n*`)
 		data = re.ReplaceAll(data, nil)
 	}
@@ -136,14 +136,6 @@ func filePasses(filename string, expectedBoilerplate []byte) (bool, error) {
 	return bytes.Equal(data, expectedBoilerplate), nil
 }
 
-/**
-Function to get the file extensin or the filename if the file has no extension
-*/
-func fileExtension(filename string) string {
-	splitted := strings.Split(filepath.Base(filename), ".")
-	return strings.ToLower(splitted[len(splitted)-1])
-}
-
 // filesToCheck returns the list of the filers that will be checked for the boilerplate.
 func filesToCheck(rootDir string, extensions map[string][]byte) ([]string, error) {
 	var outFiles []string
@@ -154,7 +146,7 @@ func filesToCheck(rootDir string, extensions map[string][]byte) ([]string, error
 		re := regexp.MustCompile(`\\`)
 		re = regexp.MustCompile(`^` + re.ReplaceAllString(cwd, `\\`))
 		if !info.IsDir() && !skippedPaths.MatchString(re.ReplaceAllString(filepath.Dir(path), "")) {
-			if extensions[strings.ToLower(fileExtension(path))] != nil {
+			if extensions[strings.ToLower(filepath.Ext(path))] != nil {
 				outFiles = append(outFiles, path)
 			}
 		}
