@@ -36,7 +36,7 @@ func TestListMachines(t *testing.T) {
 
 	viper.Set(config.MachineProfile, "")
 
-	testMinikubeDir := "./testdata/machine/.minikube"
+	testMinikubeDir := "./testdata/list-machines/.minikube"
 	miniDir, err := filepath.Abs(testMinikubeDir)
 
 	if err != nil {
