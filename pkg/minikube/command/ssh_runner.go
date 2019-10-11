@@ -125,7 +125,7 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	}()
 
 	elapsed := time.Since(start)
-	err = teeSSH(sess, shellquote.Join(cmd.Args...), &outb, &errb)
+	err = teeSSH(sess, cmdToStr(cmd), &outb, &errb)
 	if err == nil {
 		// Reduce log spam
 		if elapsed > (1 * time.Second) {
@@ -140,47 +140,10 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	return rr, err
 }
 
-// Run starts a command on the remote and waits for it to return.
-func (s *SSHRunner) Run(cmd string) error {
-	glog.Infof("SSH: %s", cmd)
-	sess, err := s.c.NewSession()
-	if err != nil {
-		return errors.Wrap(err, "NewSession")
-	}
-
-	defer func() {
-		if err := sess.Close(); err != nil {
-			if err != io.EOF {
-				glog.Errorf("session close: %v", err)
-			}
-		}
-	}()
-	var outB bytes.Buffer
-	var errB bytes.Buffer
-	err = teeSSH(sess, cmd, &outB, &errB)
-	if err != nil {
-		return errors.Wrapf(err, "command failed: %s\nstdout: %s\nstderr: %s", cmd, outB.String(), errB.String())
-	}
-	return nil
-}
-
-// CombinedOutput runs the command on the remote and returns its combined
-// standard output and standard error.
-func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
-	glog.Infoln("Run with output:", cmd)
-	sess, err := s.c.NewSession()
-	if err != nil {
-		return "", errors.Wrap(err, "NewSession")
-	}
-	defer sess.Close()
-
-	var combined singleWriter
-	err = teeSSH(sess, cmd, &combined, &combined)
-	out := combined.b.String()
-	if err != nil {
-		return out, err
-	}
-	return out, nil
+// converts a exec.Cmd to string to be used by ssh runner
+func cmdToStr(cmd *exec.Cmd) string {
+	//strings.Join(cmd.Args, " ")
+	return shellquote.Join(cmd.Args...)
 }
 
 // Copy copies a file to the remote over SSH.

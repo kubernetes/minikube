@@ -19,6 +19,7 @@ package command
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
 	"sync"
 	"testing"
@@ -60,4 +61,35 @@ func TestTeePrefix(t *testing.T) {
 	if gotLog != wantLog {
 		t.Errorf("log=%q, want: %q", gotLog, wantLog)
 	}
+}
+
+func TestCmdToStr(t *testing.T) {
+	tests := []struct {
+		name     string
+		cmd      *exec.Cmd
+		expected string
+	}{
+		{
+			name:     "simple ls no bin/bash",
+			cmd:      exec.Command("ls", "-la"),
+			expected: "ls -la",
+		},
+		{
+			name:     "with /bin/bash and with &",
+			cmd:      exec.Command("/bin/bash", "-c", "ls -lah && pwd"),
+			expected: "/bin/bash -c 'ls -lah && pwd'",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			got := cmdToStr((tc.cmd))
+			if got != tc.expected {
+				t.Errorf("Expected %s but got %s ", tc.expected, got)
+			}
+
+		})
+	}
+
 }
