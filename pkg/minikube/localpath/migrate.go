@@ -25,6 +25,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/otiai10/copy"
 	"k8s.io/client-go/util/homedir"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 )
 
 // migrateLegacyPaths converts legacy (pre-v1.5.0) paths to modern race-free paths
@@ -43,8 +44,14 @@ func migrateLegacyPaths(oldHome string) (map[string]string, error) {
 		if src == dst {
 			return summary, fmt.Errorf("src == dst: %s", src)
 		}
+		_, err := os.Stat(src)
+		if os.IsNotExist(err) {
+			glog.Warningf("%s does not exist", src)
+			continue
+		}
+
 		glog.Infof("copying %s -> %s", src, dst)
-		err := copy.Copy(src, dst)
+		err = copy.Copy(src, dst)
 		if err != nil {
 			return summary, err
 		}
@@ -62,10 +69,11 @@ func migrateLegacyPaths(oldHome string) (map[string]string, error) {
 		return summary, err
 	}
 
-	// TODO: rewrite kubeconfig!
-	return summary, nil
+	if err := kubeconfig.EmbedMinikubeCerts(); err != nil {
+		return summary, err
+	}
 
-	//	return summary, os.RemoveAll(oldHome)
+	return summary, os.RemoveAll(oldHome)
 }
 
 // legacyHome calculates the default root directory exactly like old versions of minikube

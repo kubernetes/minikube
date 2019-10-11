@@ -51,10 +51,6 @@ type Settings struct {
 	// kubeConfigFile is the path where the kube config is stored
 	// Only access this with atomic ops
 	kubeConfigFile atomic.Value
-
-	// Should the certificate files be embedded instead of referenced by path.
-	// This is the default locally, but not remotely.
-	EmbedCerts bool
 }
 
 // SetPath sets the setting for kubeconfig filepath
@@ -73,13 +69,9 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	clusterName := cfg.ClusterName
 	cluster := api.NewCluster()
 	cluster.Server = cfg.ClusterServerAddress
-	if cfg.EmbedCerts {
-		cluster.CertificateAuthorityData, err = ioutil.ReadFile(cfg.CertificateAuthority)
-		if err != nil {
-			return errors.Wrapf(err, "reading CertificateAuthority %s", cfg.CertificateAuthority)
-		}
-	} else {
-		cluster.CertificateAuthority = cfg.CertificateAuthority
+	cluster.CertificateAuthorityData, err = ioutil.ReadFile(cfg.CertificateAuthority)
+	if err != nil {
+		return errors.Wrapf(err, "reading CertificateAuthority %s", cfg.CertificateAuthority)
 	}
 	apiCfg.Clusters[clusterName] = cluster
 

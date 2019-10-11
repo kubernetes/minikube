@@ -71,7 +71,7 @@ func Profile(name string) string {
 
 // Profile return the location of the profiles directory
 func Profiles() string {
-	return filepath.Join(dataDir(), "profiles")
+	return filepath.Join(configDir(), "profiles")
 }
 
 // ProfileConfig return the location of a profile configuration file
@@ -81,7 +81,7 @@ func ProfileConfig(name string) string {
 
 // MachineCerts returns the location of the machine certificates directory
 func MachineCerts(name string) string {
-	return filepath.Join(Machine(name), "certs")
+	return filepath.Join(Store(name), "certs")
 }
 
 // KubernetesCerts returns the location of the Kubernetes certificates directory

@@ -69,7 +69,7 @@ func SetupCerts(profile string, cmd command.Runner, k8s config.KubernetesConfig)
 
 	certs, err := generateCerts(profile, k8s)
 	if err != nil {
-		return errors.Wrap(err, "Error generating certs")
+		return errors.Wrap(err, "generate certs")
 	}
 	copyableFiles := []assets.CopyableFile{}
 	for _, cert := range certs {
@@ -85,22 +85,24 @@ func SetupCerts(profile string, cmd command.Runner, k8s config.KubernetesConfig)
 	}
 	caCerts, err := collectCACerts(profile)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "collect ca certs")
 	}
 	for src, dst := range caCerts {
 		certFile, err := assets.NewFileAsset(src, path.Dir(dst), path.Base(dst), "0644")
 		if err != nil {
-			return err
+			return errors.Wrapf(err, "ca file asset")
 		}
 
 		copyableFiles = append(copyableFiles, certFile)
 	}
+
 	kcs := &kubeconfig.Settings{
 		ClusterName:          k8s.NodeName,
 		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
-		ClientCertificate:    path.Join(vmpath.GuestCertsDir, "apiserver.crt"),
-		ClientKey:            path.Join(vmpath.GuestCertsDir, "apiserver.key"),
-		CertificateAuthority: path.Join(vmpath.GuestCertsDir, "ca.crt"),
+		// Use local paths so that they can be embedded, even if this kubeconfig is meant for inside the VM
+		ClientCertificate:    path.Join(localpath.KubernetesCerts(profile), "apiserver.crt"),
+		ClientKey:            path.Join(localpath.KubernetesCerts(profile), "apiserver.key"),
+		CertificateAuthority: path.Join(localpath.KubernetesCerts(profile), "ca.crt"),
 		KeepContext:          false,
 	}
 
@@ -209,6 +211,7 @@ func generateCerts(profile string, k8s config.KubernetesConfig) ([]string, error
 	generated := []string{}
 	for _, ca := range caCertSpecs {
 		if !(util.CanReadFile(ca.certPath) && util.CanReadFile(ca.keyPath)) {
+			glog.Infof("generating cert: %s key: %s", ca.certPath, ca.keyPath)
 			if err := util.GenerateCACert(ca.certPath, ca.keyPath, ca.subject); err != nil {
 				return generated, errors.Wrap(err, "Error generating CA certificate")
 			}
@@ -249,10 +252,10 @@ func isValidPEMCertificate(filePath string) (bool, error) {
 	return false, nil
 }
 
-// collectStoreCerts copies .crt and .pem certificates from the libmachine store
+// collectStoreCerts returns a list of certificate files and their intended remote destination
 func collectCACerts(profile string) (map[string]string, error) {
 	certFiles := map[string]string{}
-	certsDir := localpath.MachineCerts(profile)
+	certsDir := localpath.KubernetesCerts(profile)
 	err := filepath.Walk(certsDir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -275,7 +278,7 @@ func collectCACerts(profile string) (map[string]string, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "provisioning: traversal certificates dir %s", certsDir)
+		return nil, errors.Wrapf(err, "walk failed for %s", certsDir)
 	}
 
 	for _, excluded := range []string{"ca.pem", "cert.pem"} {

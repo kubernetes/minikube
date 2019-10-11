@@ -333,14 +333,17 @@ func runStart(cmd *cobra.Command, args []string) {
 	showVersionInfo(k8sVersion, cr)
 	waitCacheImages(&cacheGroup)
 
-	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-	kubeconfig, err := setupKubeconfig(host, &config)
+	// setup the bootstrapper
+	bs := setupBootstrapper(machineAPI, config.KubernetesConfig)
+
+	// generate certificates and setup kubeconfig
+	if err := bs.SetupCerts(config.KubernetesConfig); err != nil {
+		exit.WithError("Failed to setup certs", err)
+	}
+	kc, err := setupKubeconfig(host, &config)
 	if err != nil {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
-
-	// setup kubeadm (must come after setupKubeconfig)
-	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
 
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
@@ -367,7 +370,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			exit.WithError("Wait failed", err)
 		}
 	}
-	showKubectlConnectInfo(kubeconfig)
+	showKubectlConnectInfo(kc)
 }
 
 func displayVersion(version string) {
@@ -999,8 +1002,8 @@ func getKubernetesVersion(old *cfg.Config) (string, bool) {
 	return nv, isUpgrade
 }
 
-// setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Bootstrapper {
+// setupBootstrapper adds any requested files into the VM before Kubernetes is started
+func setupBootstrapper(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Bootstrapper {
 	bs, err := getClusterBootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
@@ -1011,9 +1014,6 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 	// Loads cached images, generates config files, download binaries
 	if err := bs.UpdateCluster(kc); err != nil {
 		exit.WithError("Failed to update cluster", err)
-	}
-	if err := bs.SetupCerts(kc); err != nil {
-		exit.WithError("Failed to setup certs", err)
 	}
 	return bs
 }

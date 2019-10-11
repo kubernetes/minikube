@@ -59,9 +59,7 @@ var RootCmd = &cobra.Command{
 		}
 		glog.Infof("populate result: %v", result)
 		for src, dst := range result {
-			if dst == "" {
-				out.T(out.Arrow, "Created {{.src}}", out.V{"src": src})
-			} else {
+			if dst != "" {
 				out.T(out.Arrow, "Migrated {{.src}} to {{.dst}}", out.V{"src": src, "dst": dst})
 			}
 		}

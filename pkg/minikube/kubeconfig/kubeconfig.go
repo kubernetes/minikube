@@ -24,6 +24,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -31,7 +32,6 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -178,23 +178,10 @@ func writeToFile(config runtime.Object, configPath ...string) error {
 		return errors.Errorf("could not write to '%s': failed to encode config: %v", fPath, err)
 	}
 
-	// create parent dir if doesn't exist
-	dir := filepath.Dir(fPath)
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		if err = os.MkdirAll(dir, 0755); err != nil {
-			return errors.Wrapf(err, "Error creating directory: %s", dir)
-		}
-	}
-
 	// write with restricted permissions
 	if err := lock.WriteFile(fPath, data, 0600); err != nil {
 		return errors.Wrapf(err, "Error writing file %s", fPath)
 	}
-
-	if err := localpath.ChownToSudoUser(dir); err != nil {
-		return errors.Wrapf(err, "Error recursively changing ownership for dir: %s", dir)
-	}
-
 	return nil
 }
 
@@ -247,4 +234,27 @@ func decode(data []byte) (*api.Config, error) {
 	}
 
 	return kcfg.(*api.Config), nil
+}
+
+// EmbedMinikubeCerts updates all minikube contexts to use embedded certificatse
+func EmbedMinikubeCerts() error {
+	path := PathFromEnv()
+	kcfg, err := readOrNew(path)
+	if err != nil {
+		return err
+	}
+
+	for name, c := range kcfg.Clusters {
+		if !strings.Contains(c.CertificateAuthority, "minikube") {
+			continue
+		}
+		glog.Infof("embedding certs for %q", name)
+		data, err := ioutil.ReadFile(c.CertificateAuthority)
+		if err != nil {
+			return err
+		}
+		c.CertificateAuthorityData = data
+		c.CertificateAuthority = ""
+	}
+	return writeToFile(kcfg, path)
 }
