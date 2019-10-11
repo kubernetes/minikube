@@ -43,9 +43,10 @@ func init() {
 
 // createNoneHost creates a none Driver from a MachineConfig
 func createNoneHost(config cfg.MachineConfig) interface{} {
+	name := cfg.GetMachineName()
 	return none.NewDriver(none.Config{
-		MachineName:      cfg.GetMachineName(),
-		StorePath:        localpath.MiniPath(),
+		MachineName:      name,
+		StorePath:        localpath.Store(name),
 		ContainerRuntime: config.ContainerRuntime,
 	})
 }

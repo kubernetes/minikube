@@ -40,8 +40,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -57,7 +57,7 @@ var loadImageLock sync.Mutex
 func CacheImagesForBootstrapper(imageRepository string, version string, clusterBootstrapper string) error {
 	images := bootstrapper.GetCachedImageList(imageRepository, version, clusterBootstrapper)
 
-	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
+	if err := CacheImages(images, localpath.ContainerImages()); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
 	}
 
@@ -123,7 +123,7 @@ func LoadImages(cmd command.Runner, images []string, cacheDir string) error {
 
 // CacheAndLoadImages caches and loads images
 func CacheAndLoadImages(images []string) error {
-	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
+	if err := CacheImages(images, localpath.ContainerImages()); err != nil {
 		return err
 	}
 	api, err := NewAPIClient()
@@ -140,7 +140,7 @@ func CacheAndLoadImages(images []string) error {
 	if err != nil {
 		return err
 	}
-	return LoadImages(runner, images, constants.ImageCacheDir)
+	return LoadImages(runner, images, localpath.ContainerImages())
 }
 
 // # ParseReference cannot have a : in the directory path
@@ -241,7 +241,7 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 // DeleteFromImageCacheDir deletes images from the cache
 func DeleteFromImageCacheDir(images []string) error {
 	for _, image := range images {
-		path := filepath.Join(constants.ImageCacheDir, image)
+		path := filepath.Join(localpath.ContainerImages(), image)
 		path = sanitizeCacheDir(path)
 		glog.Infoln("Deleting image in cache at ", path)
 		if err := os.Remove(path); err != nil {
@@ -252,7 +252,7 @@ func DeleteFromImageCacheDir(images []string) error {
 }
 
 func cleanImageCacheDir() error {
-	err := filepath.Walk(constants.ImageCacheDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(localpath.ContainerImages(), func(path string, info os.FileInfo, err error) error {
 		// If error is not nil, it's because the path was already deleted and doesn't exist
 		// Move on to next path
 		if err != nil {

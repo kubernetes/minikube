@@ -35,7 +35,7 @@ func TestGetISOFileURI(t *testing.T) {
 
 	tests := map[string]string{
 		"file:///test/path/minikube-test.iso":                           "file:///test/path/minikube-test.iso",
-		"https://storage.googleapis.com/minikube/iso/minikube-test.iso": "file://" + filepath.ToSlash(filepath.Join(localpath.MiniPath(), "cache", "iso", "minikube-test.iso")),
+		"https://storage.googleapis.com/minikube/iso/minikube-test.iso": "file://" + filepath.ToSlash(filepath.Join(localpath.DiskImages(), "minikube-test.iso")),
 	}
 
 	for input, expected := range tests {
@@ -49,10 +49,10 @@ func TestGetISOFileURI(t *testing.T) {
 var testISOString = "hello"
 
 func TestCacheMinikubeISOFromURL(t *testing.T) {
-	tempDir := tests.MakeTempDir()
+	tempDir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tempDir)
 	dler := DefaultDownloader{}
-	isoPath := filepath.Join(localpath.MiniPath(), "cache", "iso", "minikube-test.iso")
+	isoPath := filepath.Join(localpath.DiskImages(), "minikube-test.iso")
 
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if _, err := io.WriteString(w, testISOString); err != nil {
@@ -93,7 +93,7 @@ func TestShouldCacheMinikubeISO(t *testing.T) {
 }
 
 func TestIsMinikubeISOCached(t *testing.T) {
-	tempDir := tests.MakeTempDir()
+	tempDir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tempDir)
 
 	dler := DefaultDownloader{}
@@ -105,7 +105,8 @@ func TestIsMinikubeISOCached(t *testing.T) {
 		t.Fatalf("Expected IsMinikubeISOCached with input %s to return %t but instead got: %t", testFileURI, expected, out)
 	}
 
-	if err := ioutil.WriteFile(filepath.Join(localpath.MiniPath(), "cache", "iso", "minikube-test.iso"), []byte(testISOString), os.FileMode(int(0644))); err != nil {
+	path := filepath.Join(localpath.DiskImages(), "minikube-test.iso")
+	if err := ioutil.WriteFile(path, []byte(testISOString), os.FileMode(int(0644))); err != nil {
 		t.Fatalf("WriteFile: %v", err)
 	}
 

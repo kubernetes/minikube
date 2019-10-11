@@ -379,10 +379,10 @@ var Addons = map[string]*Addon{
 // AddMinikubeDirAssets adds all addons and files to the list
 // of files to be copied to the vm.
 func AddMinikubeDirAssets(assets *[]CopyableFile) error {
-	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("addons"), vmpath.GuestAddonsDir, assets); err != nil {
+	if err := addMinikubeDirToAssets(localpath.Addons(), vmpath.GuestAddonsDir, assets); err != nil {
 		return errors.Wrap(err, "adding addons folder to assets")
 	}
-	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("files"), "", assets); err != nil {
+	if err := addMinikubeDirToAssets(localpath.FileSync(), "", assets); err != nil {
 		return errors.Wrap(err, "adding files rootfs to assets")
 	}
 

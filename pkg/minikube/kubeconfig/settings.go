@@ -48,12 +48,13 @@ type Settings struct {
 	// Should the current context be kept when setting up this one
 	KeepContext bool
 
-	// Should the certificate files be embedded instead of referenced by path
-	EmbedCerts bool
-
 	// kubeConfigFile is the path where the kube config is stored
 	// Only access this with atomic ops
 	kubeConfigFile atomic.Value
+
+	// Should the certificate files be embedded instead of referenced by path.
+	// This is the default locally, but not remotely.
+	EmbedCerts bool
 }
 
 // SetPath sets the setting for kubeconfig filepath
@@ -85,18 +86,13 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 	// user
 	userName := cfg.ClusterName
 	user := api.NewAuthInfo()
-	if cfg.EmbedCerts {
-		user.ClientCertificateData, err = ioutil.ReadFile(cfg.ClientCertificate)
-		if err != nil {
-			return errors.Wrapf(err, "reading ClientCertificate %s", cfg.ClientCertificate)
-		}
-		user.ClientKeyData, err = ioutil.ReadFile(cfg.ClientKey)
-		if err != nil {
-			return errors.Wrapf(err, "reading ClientKey %s", cfg.ClientKey)
-		}
-	} else {
-		user.ClientCertificate = cfg.ClientCertificate
-		user.ClientKey = cfg.ClientKey
+	user.ClientCertificateData, err = ioutil.ReadFile(cfg.ClientCertificate)
+	if err != nil {
+		return errors.Wrapf(err, "reading ClientCertificate %s", cfg.ClientCertificate)
+	}
+	user.ClientKeyData, err = ioutil.ReadFile(cfg.ClientKey)
+	if err != nil {
+		return errors.Wrapf(err, "reading ClientKey %s", cfg.ClientKey)
 	}
 	apiCfg.AuthInfos[userName] = user
 

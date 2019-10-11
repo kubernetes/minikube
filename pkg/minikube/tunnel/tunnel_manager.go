@@ -17,7 +17,6 @@ limitations under the License.
 package tunnel
 
 import (
-	"path/filepath"
 	"time"
 
 	"context"
@@ -42,17 +41,12 @@ type Manager struct {
 // stateCheckInterval defines how frequently the cluster and route states are checked
 const stateCheckInterval = 5 * time.Second
 
-// RegistryPath returns the path to the runnel registry file
-func RegistryPath() string {
-	return filepath.Join(localpath.MiniPath(), "tunnels.json")
-}
-
 // NewManager creates a new Manager
 func NewManager() *Manager {
 	return &Manager{
 		delay: stateCheckInterval,
 		registry: &persistentRegistry{
-			path: RegistryPath(),
+			path: localpath.TunnelRegistry(),
 		},
 		router: &osRouter{},
 	}

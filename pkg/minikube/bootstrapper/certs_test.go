@@ -32,7 +32,7 @@ import (
 )
 
 func TestSetupCerts(t *testing.T) {
-	tempDir := tests.MakeTempDir()
+	tempDir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tempDir)
 
 	k8s := config.KubernetesConfig{
@@ -58,10 +58,10 @@ func TestSetupCerts(t *testing.T) {
 	}
 	certFilenames := map[string]string{"ca.crt": "minikubeCA.pem", "mycert.pem": "mycert.pem"}
 	for _, dst := range certFilenames {
-		certFile := path.Join(CACertificatesDir, dst)
-		certStorePath := path.Join(SSLCertStoreDir, dst)
+		certFile := path.Join(guestCACertsDir, dst)
+		certStorePath := path.Join(guestSSLCertsDir, dst)
 		certNameHash := "abcdef"
-		remoteCertHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", certNameHash))
+		remoteCertHashLink := path.Join(guestSSLCertsDir, fmt.Sprintf("%s.0", certNameHash))
 		cmdMap[fmt.Sprintf("sudo ln -s '%s' '%s'", certFile, certStorePath)] = "1"
 		cmdMap[fmt.Sprintf("openssl x509 -hash -noout -in '%s'", certFile)] = certNameHash
 		cmdMap[fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, remoteCertHashLink)] = "1"

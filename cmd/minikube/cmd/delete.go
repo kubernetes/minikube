@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"strconv"
 
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -119,20 +118,21 @@ func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsN
 	}
 }
 
-func deleteProfileDirectory(profile string) {
-	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
-	if _, err := os.Stat(machineDir); err == nil {
-		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
-		err := os.RemoveAll(machineDir)
+func deleteProfileDirectory(name string) {
+	profileDir := localpath.Profile(name)
+	if _, err := os.Stat(profileDir); err == nil {
+		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": profileDir})
+		err := os.RemoveAll(profileDir)
 		if err != nil {
-			exit.WithError("Unable to remove machine directory: %v", err)
+			exit.WithError("Unable to remove profile directory: %v", err)
 		}
 	}
 }
 
 // killMountProcess kills the mount process, if it is running
 func killMountProcess() error {
-	pidPath := filepath.Join(localpath.MiniPath(), constants.MountProcessFileName)
+	profile := viper.GetString(pkg_config.MachineProfile)
+	pidPath := localpath.MountPid(profile)
 	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
 		return nil
 	}

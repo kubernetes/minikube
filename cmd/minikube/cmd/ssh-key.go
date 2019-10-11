@@ -17,8 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"path/filepath"
-
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -31,6 +29,6 @@ var sshKeyCmd = &cobra.Command{
 	Short: "Retrieve the ssh identity key path of the specified cluster",
 	Long:  "Retrieve the ssh identity key path of the specified cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
-		out.Ln(filepath.Join(localpath.MiniPath(), "machines", config.GetMachineName(), "id_rsa"))
+		out.Ln(localpath.SSHKey(config.GetMachineName()))
 	},
 }

@@ -33,7 +33,7 @@ func setupTestDir() (string, error) {
 		return "", err
 	}
 
-	os.Setenv(localpath.MinikubeHome, path)
+	os.Setenv(localpath.OverrideVar, path)
 	return path, err
 }
 

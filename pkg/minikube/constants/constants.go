@@ -18,11 +18,8 @@ package constants
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
@@ -62,9 +59,6 @@ const DriverHyperv = "hyperv"
 // DriverParallels is the parallels driver option name
 const DriverParallels = "parallels"
 
-// DefaultMinipath is the default Minikube path (under the home directory)
-var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
-
 // KubeconfigPath is the path to the Kubernetes client config
 var KubeconfigPath = clientcmd.RecommendedHomeFile
 
@@ -76,9 +70,6 @@ const DefaultMachineName = "minikube"
 
 // DefaultNodeName is the default name for the kubeadm node within the VM
 const DefaultNodeName = "minikube"
-
-// MountProcessFileName is the filename of the mount process
-var MountProcessFileName = ".mount-process"
 
 const (
 	// SHASuffix is the suffix of a SHA-256 checksum file
@@ -113,9 +104,6 @@ var ImageRepositories = map[string][]string{
 
 // KubeadmBinaries are Kubernetes release binaries required for kubeadm
 var KubeadmBinaries = []string{"kubelet", "kubeadm"}
-
-// ImageCacheDir is the path to the image cache directory
-var ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 
 const (
 	// GvisorFilesPath is the path to the gvisor files saved by go-bindata

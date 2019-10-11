@@ -39,30 +39,25 @@ func (p *Profile) isValid() bool {
 }
 
 // ProfileExists returns true if there is a profile config (regardless of being valid)
-func ProfileExists(name string, miniHome ...string) bool {
-	miniPath := localpath.MiniPath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-
-	p := profileFilePath(name, miniPath)
+func ProfileExists(name string) bool {
+	p := localpath.ProfileConfig(name)
 	_, err := os.Stat(p)
 	return err == nil
 }
 
-// CreateEmptyProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func CreateEmptyProfile(name string, miniHome ...string) error {
+// CreateEmptyProfile creates an empty profile
+func CreateEmptyProfile(name string) error {
 	cfg := &Config{}
-	return CreateProfile(name, cfg, miniHome...)
+	return CreateProfile(name, cfg)
 }
 
-// CreateProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func CreateProfile(name string, cfg *Config, miniHome ...string) error {
+// CreateProfile creates an profile out of the cfg
+func CreateProfile(name string, cfg *Config) error {
 	data, err := json.MarshalIndent(cfg, "", "    ")
 	if err != nil {
 		return err
 	}
-	path := profileFilePath(name, miniHome...)
+	path := localpath.ProfileConfig(name)
 	glog.Infof("Saving config to %s ...", path)
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
@@ -101,24 +96,20 @@ func CreateProfile(name string, cfg *Config, miniHome ...string) error {
 }
 
 // DeleteProfile deletes a profile and removes the profile dir
-func DeleteProfile(profile string, miniHome ...string) error {
-	miniPath := localpath.MiniPath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return os.RemoveAll(profileFolderPath(profile, miniPath))
+func DeleteProfile(profile string) error {
+	return os.RemoveAll(localpath.Profile(profile))
 }
 
 // ListProfiles returns all valid and invalid (if any) minikube profiles
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggested to be deleted
-func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
-	pDirs, err := profileDirs(miniHome...)
+func ListProfiles() (validPs []*Profile, inValidPs []*Profile, err error) {
+	pDirs, err := profileDirs()
 	if err != nil {
 		return nil, nil, err
 	}
 	for _, n := range pDirs {
-		p, err := loadProfile(n, miniHome...)
+		p, err := loadProfile(n)
 		if err != nil {
 			inValidPs = append(inValidPs, p)
 			continue
@@ -133,8 +124,8 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 }
 
 // loadProfile loads type Profile based on its name
-func loadProfile(name string, miniHome ...string) (*Profile, error) {
-	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
+func loadProfile(name string) (*Profile, error) {
+	cfg, err := DefaultLoader.LoadConfigFromFile(name)
 	p := &Profile{
 		Name:   name,
 		Config: cfg,
@@ -143,36 +134,12 @@ func loadProfile(name string, miniHome ...string) (*Profile, error) {
 }
 
 // profileDirs gets all the folders in the user's profiles folder regardless of valid or invalid config
-func profileDirs(miniHome ...string) (dirs []string, err error) {
-	miniPath := localpath.MiniPath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	pRootDir := filepath.Join(miniPath, "profiles")
-	items, err := ioutil.ReadDir(pRootDir)
+func profileDirs() (dirs []string, err error) {
+	items, err := ioutil.ReadDir(localpath.Profiles())
 	for _, f := range items {
 		if f.IsDir() {
 			dirs = append(dirs, f.Name())
 		}
 	}
 	return dirs, err
-}
-
-// profileFilePath returns the Minikube profile config file
-func profileFilePath(profile string, miniHome ...string) string {
-	miniPath := localpath.MiniPath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-
-	return filepath.Join(miniPath, "profiles", profile, "config.json")
-}
-
-// profileFolderPath returns path of profile folder
-func profileFolderPath(profile string, miniHome ...string) string {
-	miniPath := localpath.MiniPath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "profiles", profile)
 }

@@ -37,20 +37,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/translate"
 )
-
-var dirs = [...]string{
-	localpath.MiniPath(),
-	localpath.MakeMiniPath("certs"),
-	localpath.MakeMiniPath("machines"),
-	localpath.MakeMiniPath("cache"),
-	localpath.MakeMiniPath("cache", "iso"),
-	localpath.MakeMiniPath("config"),
-	localpath.MakeMiniPath("addons"),
-	localpath.MakeMiniPath("files"),
-	localpath.MakeMiniPath("logs"),
-}
 
 var viperWhiteList = []string{
 	"v",
@@ -64,15 +53,22 @@ var RootCmd = &cobra.Command{
 	Short: "Minikube is a tool for managing local Kubernetes clusters.",
 	Long:  `Minikube is a CLI tool that provisions and manages single-node Kubernetes clusters optimized for development workflows.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		for _, path := range dirs {
-			if err := os.MkdirAll(path, 0777); err != nil {
-				exit.WithError("Error creating minikube directory", err)
+		result, err := localpath.CreateDirs()
+		if err != nil {
+			glog.Errorf("populate failed: %v", err)
+		}
+		glog.Infof("populate result: %v", result)
+		for src, dst := range result {
+			if dst == "" {
+				out.T(out.Arrow, "Created {{.src}}", out.V{"src": src})
+			} else {
+				out.T(out.Arrow, "Migrated {{.src}} to {{.dst}}", out.V{"src": src, "dst": dst})
 			}
 		}
 
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {
-			if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
+			if err := logDir.Value.Set(localpath.Logs()); err != nil {
 				exit.WithError("logdir set failed", err)
 			}
 		}
@@ -98,9 +94,7 @@ func Execute() {
 	})
 
 	if runtime.GOOS != "windows" {
-		// add minikube binaries to the path
-		targetDir := localpath.MakeMiniPath("bin")
-		addToPath(targetDir)
+		addToPath(localpath.Drivers())
 	}
 
 	if err := RootCmd.Execute(); err != nil {
@@ -232,7 +226,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	configPath := localpath.ConfigFile
+	configPath := localpath.GlobalConfig()
 	viper.SetConfigFile(configPath)
 	viper.SetConfigType("json")
 	err := viper.ReadInConfig()

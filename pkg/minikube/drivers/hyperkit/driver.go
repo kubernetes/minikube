@@ -46,10 +46,11 @@ func createHyperkitHost(config cfg.MachineConfig) interface{} {
 		uuID = uuid.NewUUID().String()
 	}
 
+	name := cfg.GetMachineName()
 	return &hyperkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: cfg.GetMachineName(),
-			StorePath:   localpath.MiniPath(),
+			MachineName: name,
+			StorePath:   localpath.Store(name),
 			SSHUser:     "docker",
 		},
 		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),

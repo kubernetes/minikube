@@ -26,8 +26,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-// MakeTempDir creates the temp dir and returns the path
-func MakeTempDir() string {
+// TempMinikubeDir creates the temp dir, sets the environmental override, and returns the path
+func TempMinikubeDir() string {
 	tempDir, err := ioutil.TempDir("", "minipath")
 	if err != nil {
 		log.Fatal(err)
@@ -41,8 +41,8 @@ func MakeTempDir() string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	os.Setenv(localpath.MinikubeHome, tempDir)
-	return localpath.MiniPath()
+	os.Setenv(localpath.OverrideVar, tempDir)
+	return tempDir
 }
 
 // FakeFile satisfies fdWriter

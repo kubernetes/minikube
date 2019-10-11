@@ -60,7 +60,7 @@ type MinikubeConfig map[string]interface{}
 
 // Get gets a named value from config
 func Get(name string) (string, error) {
-	m, err := ReadConfig(localpath.ConfigFile)
+	m, err := ReadConfig(localpath.GlobalConfig())
 	if err != nil {
 		return "", err
 	}
@@ -95,13 +95,13 @@ func ReadConfig(configFile string) (MinikubeConfig, error) {
 		if os.IsNotExist(err) {
 			return make(map[string]interface{}), nil
 		}
-		return nil, fmt.Errorf("open %s: %v", localpath.ConfigFile, err)
+		return nil, fmt.Errorf("open %s: %v", localpath.GlobalConfig(), err)
 	}
 	defer f.Close()
 
 	m, err := decode(f)
 	if err != nil {
-		return nil, fmt.Errorf("decode %s: %v", localpath.ConfigFile, err)
+		return nil, fmt.Errorf("decode %s: %v", localpath.GlobalConfig(), err)
 	}
 
 	return m, nil
@@ -140,7 +140,7 @@ func Load() (*Config, error) {
 
 // Loader loads the kubernetes and machine config based on the machine profile name
 type Loader interface {
-	LoadConfigFromFile(profile string, miniHome ...string) (*Config, error)
+	LoadConfigFromFile(profile string) (*Config, error)
 }
 
 type simpleConfigLoader struct{}
@@ -148,10 +148,9 @@ type simpleConfigLoader struct{}
 // DefaultLoader is the default config loader
 var DefaultLoader Loader = &simpleConfigLoader{}
 
-func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*Config, error) {
+func (c *simpleConfigLoader) LoadConfigFromFile(name string) (*Config, error) {
 	var cc Config
-	// Move to profile package
-	path := profileFilePath(profileName, miniHome...)
+	path := localpath.ProfileConfig(name)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err

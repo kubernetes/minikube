@@ -50,7 +50,7 @@ var validLeases = []byte(`{
 }`)
 
 func Test_getIpAddressFromFile(t *testing.T) {
-	tmpdir := tests.MakeTempDir()
+	tmpdir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tmpdir)
 
 	dhcpFile := filepath.Join(tmpdir, "dhcp")

@@ -336,7 +336,7 @@ func TestGetHostStatus(t *testing.T) {
 
 func TestGetHostDockerEnv(t *testing.T) {
 	RegisterMockDriver(t)
-	tempDir := tests.MakeTempDir()
+	tempDir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tempDir)
 
 	api := tests.NewMockAPI(t)
@@ -370,7 +370,7 @@ func TestGetHostDockerEnv(t *testing.T) {
 }
 
 func TestGetHostDockerEnvIPv6(t *testing.T) {
-	tempDir := tests.MakeTempDir()
+	tempDir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tempDir)
 
 	api := tests.NewMockAPI(t)

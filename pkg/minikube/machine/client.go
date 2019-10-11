@@ -41,6 +41,7 @@ import (
 	"github.com/docker/machine/libmachine/version"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -59,8 +60,9 @@ func NewRPCClient(storePath, certsDir string) libmachine.API {
 
 // NewAPIClient gets a new client.
 func NewAPIClient() (libmachine.API, error) {
-	storePath := localpath.MiniPath()
-	certsDir := localpath.MakeMiniPath("certs")
+	name := config.GetMachineName()
+	storePath := localpath.Store(name)
+	certsDir := localpath.MachineCerts(name)
 
 	return &LocalClient{
 		certsDir:     certsDir,

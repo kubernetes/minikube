@@ -20,7 +20,6 @@ import (
 	"github.com/spf13/cobra"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -71,7 +70,7 @@ var deleteCacheCmd = &cobra.Command{
 }
 
 func imagesInConfigFile() ([]string, error) {
-	configFile, err := config.ReadConfig(localpath.ConfigFile)
+	configFile, err := config.ReadConfig(localpath.GlobalConfig())
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +93,7 @@ func CacheImagesInConfigFile() error {
 	if len(images) == 0 {
 		return nil
 	}
-	return machine.CacheImages(images, constants.ImageCacheDir)
+	return machine.CacheImages(images, localpath.ContainerImages())
 }
 
 // loadCachedImagesInConfigFile loads the images currently in the config file (minikube start)

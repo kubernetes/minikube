@@ -306,7 +306,7 @@ func configurableFields() string {
 
 // ListConfigMap list entries from config file
 func ListConfigMap(name string) ([]string, error) {
-	configFile, err := config.ReadConfig(localpath.ConfigFile)
+	configFile, err := config.ReadConfig(localpath.GlobalConfig())
 	if err != nil {
 		return nil, err
 	}
@@ -326,7 +326,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig(localpath.ConfigFile)
+	cfg, err := config.ReadConfig(localpath.GlobalConfig())
 	if err != nil {
 		return err
 	}
@@ -343,7 +343,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(localpath.ConfigFile, cfg)
+	return config.WriteConfig(localpath.GlobalConfig(), cfg)
 }
 
 // DeleteFromConfigMap deletes entries from a map in the config file
@@ -353,7 +353,7 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig(localpath.ConfigFile)
+	cfg, err := config.ReadConfig(localpath.GlobalConfig())
 	if err != nil {
 		return err
 	}
@@ -368,5 +368,5 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(localpath.ConfigFile, cfg)
+	return config.WriteConfig(localpath.GlobalConfig(), cfg)
 }

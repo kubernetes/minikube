@@ -160,7 +160,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso.")
 	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
-	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
+	startCmd.Flags().Bool(embedCerts, true, "if false, keep certs from being embedded in kubeconfig [DEPRECATED]")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
@@ -407,14 +407,14 @@ func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) 
 		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
 	}
 
+	name := cfg.GetMachineName()
 	kcs := &kubeconfig.Settings{
-		ClusterName:          cfg.GetMachineName(),
+		ClusterName:          name,
 		ClusterServerAddress: addr,
-		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
-		ClientKey:            localpath.MakeMiniPath("client.key"),
-		CertificateAuthority: localpath.MakeMiniPath("ca.crt"),
+		ClientCertificate:    filepath.Join(localpath.KubernetesCerts(name), "client.crt"),
+		ClientKey:            filepath.Join(localpath.KubernetesCerts(name), "client.key"),
+		CertificateAuthority: filepath.Join(localpath.KubernetesCerts(name), "ca.crt"),
 		KeepContext:          viper.GetBool(keepContext),
-		EmbedCerts:           viper.GetBool(embedCerts),
 	}
 
 	kcs.SetPath(kubeconfig.PathFromEnv())
@@ -772,7 +772,6 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
 			KeepContext:         viper.GetBool(keepContext),
-			EmbedCerts:          viper.GetBool(embedCerts),
 			MinikubeISO:         viper.GetString(isoURL),
 			Memory:              pkgutil.CalculateSizeInMB(viper.GetString(memory)),
 			CPUs:                viper.GetInt(cpus),
@@ -873,10 +872,8 @@ func prepareNone() {
 		out.T(out.Empty, "")
 
 		out.T(out.Tip, "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
-	}
-
-	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(localpath.MiniPath()); err != nil {
-		exit.WithCodeT(exit.Permissions, "Failed to change permissions for {{.minikube_dir_path}}: {{.error}}", out.V{"minikube_dir_path": localpath.MiniPath(), "error": err})
+	} else {
+		localpath.ChownLocalDataToSudoUser()
 	}
 }
 
@@ -939,7 +936,7 @@ func getMinikubeVersion(driver string) string {
 	v, err := version.GetSemverVersion()
 	if err != nil {
 		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
+	} else if err := drivers.InstallOrUpdate(driver, localpath.Drivers(), v, viper.GetBool(interactive)); err != nil {
 		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
 	}
 	return v.String()
@@ -1088,7 +1085,7 @@ func configureMounts() {
 	if err := mountCmd.Start(); err != nil {
 		exit.WithError("Error starting mount", err)
 	}
-	if err := lock.WriteFile(filepath.Join(localpath.MiniPath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
+	if err := lock.WriteFile(localpath.MountPid(viper.GetString(cfg.MachineProfile)), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
 		exit.WithError("Error writing mount pid", err)
 	}
 }

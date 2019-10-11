@@ -38,7 +38,6 @@ type Config struct {
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
 	KeepContext         bool // used by start and profile command to or not to switch kubectl's current context
-	EmbedCerts          bool // used by kubeconfig.Setup
 	MinikubeISO         string
 	Memory              int
 	CPUs                int

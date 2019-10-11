@@ -39,8 +39,8 @@ func init() {
 }
 
 func createHypervHost(config cfg.MachineConfig) interface{} {
-	d := hyperv.NewDriver(cfg.GetMachineName(), localpath.MiniPath())
-
+	name := cfg.GetMachineName()
+	d := hyperv.NewDriver(name, localpath.Store(name))
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.VSwitch = config.HypervVirtualSwitch
 	d.MemSize = config.Memory

@@ -455,8 +455,9 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "new host")
 	}
 
-	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
-	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
+	name := cfg.GetMachineName()
+	h.HostOptions.AuthOptions.CertDir = localpath.MachineCerts(name)
+	h.HostOptions.AuthOptions.StorePath = localpath.Store(name)
 	h.HostOptions.EngineOptions = engineOptions(config)
 
 	if err := api.Create(h); err != nil {
@@ -484,7 +485,8 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
 func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	host, err := CheckIfHostExistsAndLoad(api, cfg.GetMachineName())
+	name := cfg.GetMachineName()
+	host, err := CheckIfHostExistsAndLoad(api, name)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -499,7 +501,7 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 	envMap := map[string]string{
 		"DOCKER_TLS_VERIFY": "1",
 		"DOCKER_HOST":       tcpPrefix + net.JoinHostPort(ip, port),
-		"DOCKER_CERT_PATH":  localpath.MakeMiniPath("certs"),
+		"DOCKER_CERT_PATH":  localpath.MachineCerts(name),
 	}
 	return envMap, nil
 }

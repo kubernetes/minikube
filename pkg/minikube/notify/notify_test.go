@@ -23,13 +23,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
-	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/blang/semver"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/version"
@@ -42,20 +42,20 @@ func TestMaybePrintUpdateTextFromGithub(t *testing.T) {
 }
 
 func TestShouldCheckURL(t *testing.T) {
-	tempDir := tests.MakeTempDir()
+	tempDir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tempDir)
 
-	lastUpdateCheckFilePath := filepath.Join(tempDir, "last_update_check")
+	path := localpath.UpdateCheck()
 
 	// test that if users disable update notification in config, the URL version does not get checked
 	viper.Set(config.WantUpdateNotification, false)
-	if shouldCheckURLVersion(lastUpdateCheckFilePath) {
+	if shouldCheckURLVersion(path) {
 		t.Fatalf("shouldCheckURLVersion returned true even though config had WantUpdateNotification: false")
 	}
 
 	// test that if users want update notification, the URL version does get checked
 	viper.Set(config.WantUpdateNotification, true)
-	if !shouldCheckURLVersion(lastUpdateCheckFilePath) {
+	if !shouldCheckURLVersion(path) {
 		t.Fatalf("shouldCheckURLVersion returned false even though there was no last_update_check file")
 	}
 
@@ -63,18 +63,18 @@ func TestShouldCheckURL(t *testing.T) {
 	viper.Set(config.ReminderWaitPeriodInHours, 24)
 
 	//time.Time{} returns time -> January 1, year 1, 00:00:00.000000000 UTC.
-	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Time{}); err != nil {
+	if err := writeTimeToFile(path, time.Time{}); err != nil {
 		t.Errorf("write failed: %v", err)
 	}
-	if !shouldCheckURLVersion(lastUpdateCheckFilePath) {
+	if !shouldCheckURLVersion(path) {
 		t.Fatalf("shouldCheckURLVersion returned false even though longer than 24 hours since last update")
 	}
 
 	// test that update notifications do not get triggered if it has been less than 24 hours
-	if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
+	if err := writeTimeToFile(path, time.Now().UTC()); err != nil {
 		t.Errorf("write failed: %v", err)
 	}
-	if shouldCheckURLVersion(lastUpdateCheckFilePath) {
+	if shouldCheckURLVersion(path) {
 		t.Fatalf("shouldCheckURLVersion returned true even though less than 24 hours since last update")
 	}
 
@@ -151,19 +151,19 @@ func TestGetLatestVersionFromURLMalformed(t *testing.T) {
 }
 
 func TestMaybePrintUpdateText(t *testing.T) {
-	tempDir := tests.MakeTempDir()
+	tempDir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tempDir)
 	outputBuffer := tests.NewFakeFile()
 	out.SetErrFile(outputBuffer)
 
 	var tc = []struct {
-		len                     int
-		wantUpdateNotification  bool
-		latestVersionFromURL    string
-		description             string
-		status                  bool
-		url                     string
-		lastUpdateCheckFilePath string
+		len                    int
+		wantUpdateNotification bool
+		latestVersionFromURL   string
+		description            string
+		status                 bool
+		url                    string
+		path                   string
 	}{
 		{
 			len:                    1,
@@ -193,12 +193,12 @@ func TestMaybePrintUpdateText(t *testing.T) {
 			status:                 true,
 		},
 		{
-			len:                     1,
-			latestVersionFromURL:    "10.0.0-dev",
-			wantUpdateNotification:  true,
-			description:             "bad lastUpdateCheckFilePath",
-			lastUpdateCheckFilePath: "/etc/passwd",
-			status:                  true,
+			len:                    1,
+			latestVersionFromURL:   "10.0.0-dev",
+			wantUpdateNotification: true,
+			description:            "bad path",
+			path:                   "/etc/passwd",
+			status:                 true,
 		},
 	}
 
@@ -206,9 +206,9 @@ func TestMaybePrintUpdateText(t *testing.T) {
 	for _, test := range tc {
 		t.Run(test.description, func(t *testing.T) {
 			viper.Set(config.WantUpdateNotification, test.wantUpdateNotification)
-			lastUpdateCheckFilePath = filepath.Join(tempDir, "last_update_check")
-			if test.lastUpdateCheckFilePath != "" {
-				lastUpdateCheckFilePath = test.lastUpdateCheckFilePath
+			path := localpath.UpdateCheck()
+			if test.path != "" {
+				path = test.path
 			}
 			latestVersionFromURL := test.latestVersionFromURL
 			handler := &URLHandlerCorrect{

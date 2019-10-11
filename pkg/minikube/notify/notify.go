@@ -37,13 +37,12 @@ import (
 )
 
 var (
-	timeLayout              = time.RFC1123
-	lastUpdateCheckFilePath = localpath.MakeMiniPath("last_update_check")
+	timeLayout = time.RFC1123
 )
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github
 func MaybePrintUpdateTextFromGithub() bool {
-	return MaybePrintUpdateText(GithubMinikubeReleasesURL, lastUpdateCheckFilePath)
+	return MaybePrintUpdateText(GithubMinikubeReleasesURL, localpath.UpdateCheck())
 }
 
 // MaybePrintUpdateText prints update text, returns a bool if life is good.
@@ -62,7 +61,7 @@ func MaybePrintUpdateText(url string, lastUpdatePath string) bool {
 		return true
 	}
 	if localVersion.Compare(latestVersion) < 0 {
-		if err := writeTimeToFile(lastUpdateCheckFilePath, time.Now().UTC()); err != nil {
+		if err := writeTimeToFile(lastUpdatePath, time.Now().UTC()); err != nil {
 			glog.Errorf("write time failed: %v", err)
 		}
 		url := "https://github.com/kubernetes/minikube/releases/tag/v" + latestVersion.String()

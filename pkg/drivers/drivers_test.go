@@ -26,7 +26,7 @@ import (
 )
 
 func Test_createDiskImage(t *testing.T) {
-	tmpdir := tests.MakeTempDir()
+	tmpdir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tmpdir)
 
 	sshPath := filepath.Join(tmpdir, "ssh")

@@ -112,18 +112,8 @@ func TestLocalClientNewHost(t *testing.T) {
 	}
 }
 
-func makeTempDir() string {
-	tempDir, err := ioutil.TempDir("", "minipath")
-	if err != nil {
-		log.Fatal(err)
-	}
-	tempDir = filepath.Join(tempDir, ".minikube")
-	os.Setenv(localpath.MinikubeHome, tempDir)
-	return localpath.MiniPath()
-}
-
 func TestRunNotDriver(t *testing.T) {
-	tempDir := makeTempDir()
+	tempDir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tempDir)
 	StartDriver()
 	if !localbinary.CurrentBinaryIsDockerMachine {
@@ -134,7 +124,7 @@ func TestRunNotDriver(t *testing.T) {
 func TestRunDriver(t *testing.T) {
 	// This test is a bit complicated. It verifies that when the root command is
 	// called with the proper environment variables, we setup the libmachine driver.
-	tempDir := makeTempDir()
+	tempDir := tests.TempMinikubeDir()
 	defer os.RemoveAll(tempDir)
 
 	os.Setenv(localbinary.PluginEnvKey, localbinary.PluginEnvVal)

@@ -48,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -535,7 +536,7 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 
 // SetupCerts sets up certificates within the cluster.
 func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
-	return bootstrapper.SetupCerts(k.c, k8s)
+	return bootstrapper.SetupCerts(config.GetMachineName(), k.c, k8s)
 }
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
@@ -597,7 +598,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 	images := images.CachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
 	if cfg.ShouldLoadCachedImages {
-		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
+		if err := machine.LoadImages(k.c, images, localpath.ContainerImages()); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}

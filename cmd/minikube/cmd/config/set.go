@@ -60,7 +60,7 @@ func Set(name string, value string) error {
 	}
 
 	// Set the value
-	config, err := pkgConfig.ReadConfig(localpath.ConfigFile)
+	config, err := pkgConfig.ReadConfig(localpath.GlobalConfig())
 	if err != nil {
 		return err
 	}
@@ -76,5 +76,5 @@ func Set(name string, value string) error {
 	}
 
 	// Write the value
-	return pkgConfig.WriteConfig(localpath.ConfigFile, config)
+	return pkgConfig.WriteConfig(localpath.GlobalConfig(), config)
 }

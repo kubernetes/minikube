@@ -45,27 +45,14 @@ import (
 )
 
 const (
-	// CACertificatesDir contains CA certificates
-	CACertificatesDir = "/usr/share/ca-certificates"
-	// SSLCertStoreDir contains SSL certificates
-	SSLCertStoreDir = "/etc/ssl/certs"
-)
-
-var (
-	certs = []string{
-		"ca.crt", "ca.key", "apiserver.crt", "apiserver.key", "proxy-client-ca.crt",
-		"proxy-client-ca.key", "proxy-client.crt", "proxy-client.key",
-	}
+	// guestCACertsDir contains CA certificates
+	guestCACertsDir = "/usr/share/ca-certificates"
+	// guestSSLCertsDir contains SSL certificates
+	guestSSLCertsDir = "/etc/ssl/certs"
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
-	// WARNING: This function was not designed for multiple profiles, so it is VERY racey:
-	//
-	// It updates a shared certificate file and uploads it to the apiserver before launch.
-	//
-	// If another process updates the shared certificate, it's invalid.
-	// TODO: Instead of racey manipulation of a shared certificate, use per-profile certs
+func SetupCerts(profile string, cmd command.Runner, k8s config.KubernetesConfig) error {
 	spec := mutex.Spec{
 		Name:  "setupCerts",
 		Clock: clock.WallClock,
@@ -78,27 +65,25 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	}
 	defer releaser.Release()
 
-	localPath := localpath.MiniPath()
-	glog.Infof("Setting up %s for IP: %s\n", localPath, k8s.NodeIP)
+	glog.Infof("Setting up %s for IP: %s\n", profile, k8s.NodeIP)
 
-	if err := generateCerts(k8s); err != nil {
+	certs, err := generateCerts(profile, k8s)
+	if err != nil {
 		return errors.Wrap(err, "Error generating certs")
 	}
 	copyableFiles := []assets.CopyableFile{}
 	for _, cert := range certs {
-		p := filepath.Join(localPath, cert)
 		perms := "0644"
 		if strings.HasSuffix(cert, ".key") {
 			perms = "0600"
 		}
-		certFile, err := assets.NewFileAsset(p, vmpath.GuestCertsDir, cert, perms)
+		certFile, err := assets.NewFileAsset(cert, vmpath.GuestCertsDir, filepath.Base(cert), perms)
 		if err != nil {
 			return err
 		}
 		copyableFiles = append(copyableFiles, certFile)
 	}
-
-	caCerts, err := collectCACerts()
+	caCerts, err := collectCACerts(profile)
 	if err != nil {
 		return err
 	}
@@ -110,7 +95,6 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 
 		copyableFiles = append(copyableFiles, certFile)
 	}
-
 	kcs := &kubeconfig.Settings{
 		ClusterName:          k8s.NodeName,
 		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
@@ -146,13 +130,13 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	return nil
 }
 
-func generateCerts(k8s config.KubernetesConfig) error {
+func generateCerts(profile string, k8s config.KubernetesConfig) ([]string, error) {
 	serviceIP, err := util.GetServiceClusterIP(k8s.ServiceCIDR)
 	if err != nil {
-		return errors.Wrap(err, "getting service cluster ip")
+		return nil, errors.Wrap(err, "getting service cluster ip")
 	}
 
-	localPath := localpath.MiniPath()
+	localPath := localpath.KubernetesCerts(profile)
 	caCertPath := filepath.Join(localPath, "ca.crt")
 	caKeyPath := filepath.Join(localPath, "ca.key")
 
@@ -222,28 +206,24 @@ func generateCerts(k8s config.KubernetesConfig) error {
 		},
 	}
 
-	for _, caCertSpec := range caCertSpecs {
-		if !(util.CanReadFile(caCertSpec.certPath) &&
-			util.CanReadFile(caCertSpec.keyPath)) {
-			if err := util.GenerateCACert(
-				caCertSpec.certPath, caCertSpec.keyPath, caCertSpec.subject,
-			); err != nil {
-				return errors.Wrap(err, "Error generating CA certificate")
+	generated := []string{}
+	for _, ca := range caCertSpecs {
+		if !(util.CanReadFile(ca.certPath) && util.CanReadFile(ca.keyPath)) {
+			if err := util.GenerateCACert(ca.certPath, ca.keyPath, ca.subject); err != nil {
+				return generated, errors.Wrap(err, "Error generating CA certificate")
 			}
+			generated = append(generated, ca.certPath, ca.keyPath)
 		}
 	}
 
-	for _, signedCertSpec := range signedCertSpecs {
-		if err := util.GenerateSignedCert(
-			signedCertSpec.certPath, signedCertSpec.keyPath, signedCertSpec.subject,
-			signedCertSpec.ips, signedCertSpec.alternateNames,
-			signedCertSpec.caCertPath, signedCertSpec.caKeyPath,
-		); err != nil {
-			return errors.Wrap(err, "Error generating signed apiserver serving cert")
+	for _, sc := range signedCertSpecs {
+		if err := util.GenerateSignedCert(sc.certPath, sc.keyPath, sc.subject, sc.ips, sc.alternateNames, sc.caCertPath, sc.caKeyPath); err != nil {
+			return generated, errors.Wrap(err, "Error generating signed apiserver serving cert")
 		}
+		generated = append(generated, sc.certPath, sc.keyPath)
 	}
 
-	return nil
+	return generated, nil
 }
 
 // isValidPEMCertificate checks whether the input file is a valid PEM certificate (with at least one CERTIFICATE block)
@@ -269,13 +249,10 @@ func isValidPEMCertificate(filePath string) (bool, error) {
 	return false, nil
 }
 
-// collectCACerts looks up all PEM certificates with .crt or .pem extension in ~/.minikube/certs to copy to the host.
-// minikube root CA is also included but libmachine certificates (ca.pem/cert.pem) are excluded.
-func collectCACerts() (map[string]string, error) {
-	localPath := localpath.MiniPath()
+// collectStoreCerts copies .crt and .pem certificates from the libmachine store
+func collectCACerts(profile string) (map[string]string, error) {
 	certFiles := map[string]string{}
-
-	certsDir := filepath.Join(localPath, "certs")
+	certsDir := localpath.MachineCerts(profile)
 	err := filepath.Walk(certsDir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -291,7 +268,7 @@ func collectCACerts() (map[string]string, error) {
 				if validPem {
 					filename := filepath.Base(hostpath)
 					dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
-					certFiles[hostpath] = path.Join(CACertificatesDir, dst)
+					certFiles[hostpath] = path.Join(guestCACertsDir, dst)
 				}
 			}
 		}
@@ -306,7 +283,7 @@ func collectCACerts() (map[string]string, error) {
 	}
 
 	// populates minikube CA
-	certFiles[filepath.Join(localPath, "ca.crt")] = path.Join(CACertificatesDir, "minikubeCA.pem")
+	certFiles[filepath.Join(certsDir, "ca.crt")] = path.Join(guestCACertsDir, "minikubeCA.pem")
 
 	filtered := map[string]string{}
 	for k, v := range certFiles {
@@ -342,7 +319,7 @@ func configureCACerts(cmd command.Runner, caCerts map[string]string) error {
 
 	for _, caCertFile := range caCerts {
 		dstFilename := path.Base(caCertFile)
-		certStorePath := path.Join(SSLCertStoreDir, dstFilename)
+		certStorePath := path.Join(guestSSLCertsDir, dstFilename)
 		if err := cmd.Run(fmt.Sprintf("sudo test -f '%s'", certStorePath)); err != nil {
 			if err := cmd.Run(fmt.Sprintf("sudo ln -s '%s' '%s'", caCertFile, certStorePath)); err != nil {
 				return errors.Wrapf(err, "error making symbol link for certificate %s", caCertFile)
@@ -353,7 +330,7 @@ func configureCACerts(cmd command.Runner, caCerts map[string]string) error {
 			if err != nil {
 				return errors.Wrapf(err, "error calculating subject hash for certificate %s", caCertFile)
 			}
-			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
+			subjectHashLink := path.Join(guestSSLCertsDir, fmt.Sprintf("%s.0", subjectHash))
 			if err := cmd.Run(fmt.Sprintf("sudo test -f '%s'", subjectHashLink)); err != nil {
 				if err := cmd.Run(fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, subjectHashLink)); err != nil {
 					return errors.Wrapf(err, "error making subject hash symbol link for certificate %s", caCertFile)

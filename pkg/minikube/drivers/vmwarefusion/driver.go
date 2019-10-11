@@ -43,7 +43,8 @@ func init() {
 }
 
 func createVMwareFusionHost(config cfg.MachineConfig) interface{} {
-	d := vmwarefusion.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*vmwarefusion.Driver)
+	name := cfg.GetMachineName()
+	d := vmwarefusion.NewDriver(name, localpath.Store(name)).(*vmwarefusion.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
