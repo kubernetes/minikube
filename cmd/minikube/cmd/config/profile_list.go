@@ -43,9 +43,9 @@ var profileListCmd = &cobra.Command{
 
 		switch strings.ToLower(output) {
 		case "json":
-			PrintProfilesJSON()
+			printProfilesJSON()
 		case "table":
-			PrintProfilesTable()
+			printProfilesTable()
 		default:
 			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'table', 'json'", output))
 		}
@@ -53,7 +53,7 @@ var profileListCmd = &cobra.Command{
 	},
 }
 
-func PrintProfilesTable() {
+var printProfilesTable = func() {
 
 	var validData [][]string
 
@@ -92,7 +92,7 @@ func PrintProfilesTable() {
 
 }
 
-func PrintProfilesJSON() {
+var printProfilesJSON = func() {
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 
 	var valid []*config.Profile
