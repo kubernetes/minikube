@@ -73,7 +73,7 @@ func (r *CRIO) DefaultCNI() bool {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *CRIO) Available() error {
-	c := exec.Command("/bin/bash", "-c", "command", "-v", "crio")
+	c := exec.Command("/bin/bash", "-c", "command -v crio")
 	if rr, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "check crio available. output: %s", rr.Output())
 	}
@@ -105,8 +105,7 @@ func (r *CRIO) Enable(disOthers bool) error {
 		return err
 	}
 
-	c := exec.Command("/bin/bash", "-c", "sudo systemctl restart crio")
-	if rr, err := r.Runner.RunCmd(c); err != nil {
+	if rr, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl restart crio")); err != nil {
 		return errors.Wrapf(err, "enable crio. output: %s", rr.Output())
 	}
 	return nil
@@ -114,8 +113,7 @@ func (r *CRIO) Enable(disOthers bool) error {
 
 // Disable idempotently disables CRIO on a host
 func (r *CRIO) Disable() error {
-	c := exec.Command("/bin/bash", "-c", "sudo systemctl stop crio")
-	if rr, err := r.Runner.RunCmd(c); err != nil {
+	if rr, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl stop crio")); err != nil {
 		return errors.Wrapf(err, "disable crio. output: %s", rr.Output())
 	}
 	return nil

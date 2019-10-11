@@ -117,9 +117,8 @@ func NewFakeRunner(t *testing.T) *FakeRunner {
 // Run a fake command!
 func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	f.cmds = append(f.cmds, cmd.Args...)
-
 	root := false
-	bin, args := cmd.Args[3], cmd.Args[4:]
+	bin, args := cmd.Args[2], cmd.Args[3:]
 	f.t.Logf("bin=%s args=%v", bin, args)
 	if bin == "sudo" {
 		root = true
@@ -385,8 +384,7 @@ func TestVersion(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
-			runner := NewFakeRunner(t)
-			r, err := New(Config{Type: tc.runtime, Runner: runner})
+			r, err := New(Config{Type: tc.runtime, Runner: NewFakeRunner(t)})
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}

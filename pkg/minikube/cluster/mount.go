@@ -133,15 +133,14 @@ func mntCmd(source string, target string, c *MountConfig) *exec.Cmd {
 		opts = append(opts, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(opts)
-	return exec.Command("/bin/bash", "-c", "sudo", "mount", "-t", c.Type, "-o", strings.Join(opts, ","), source, target)
+	return exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mount -t %s -o %s %s %s", c.Type, strings.Join(opts, ","), source, target))
 }
 
 // Unmount unmounts a path
 func Unmount(r mountRunner, target string) error {
 	// grep because findmnt will also display the parent!
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target))
-	rr, err := r.RunCmd(c)
-	if err != nil {
+	if rr, err := r.RunCmd(c); err != nil {
 		glog.Infof("unmount force err=%v, out=%s", err, rr.Output())
 		return errors.Wrap(err, rr.Output())
 	}
