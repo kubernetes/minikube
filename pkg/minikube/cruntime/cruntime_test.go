@@ -23,8 +23,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/glog"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
 )
@@ -116,13 +118,17 @@ func NewFakeRunner(t *testing.T) *FakeRunner {
 
 // Run a fake command!
 func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
-	f.cmds = append(f.cmds, cmd.Args...)
+	xargs, err := shellquote.Split(cmd.Args[2])
+	if err != nil {
+		glog.Infof("FakeRunner shellquote.Split error %v", err)
+	}
+	f.cmds = append(f.cmds, xargs...)
 	root := false
-	bin, args := cmd.Args[2], cmd.Args[3:]
+	bin, args := xargs[0], xargs[1:]
 	f.t.Logf("bin=%s args=%v", bin, args)
 	if bin == "sudo" {
 		root = true
-		bin, args = args[3], args[4:]
+		bin, args = xargs[1], xargs[2:]
 	}
 	switch bin {
 	case "systemctl":
@@ -148,7 +154,7 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		buf := new(bytes.Buffer)
 		_, err = buf.WriteString(s)
 		if err != nil {
-			return rr, errors.Wrap(err, "Writing  FakeRunner's buffer")
+			return rr, errors.Wrap(err, "Writing FakeRunner's buffer")
 		}
 		rr.Stdout = buf
 		rr.Stderr = buf
@@ -209,8 +215,8 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 	case "ps":
 		// ps -a --filter="name=apiserver" --format="{{.ID}}"
 		if args[1] == "-a" && strings.HasPrefix(args[2], "--filter") {
-			filter := strings.Split(args[2], `"`)[1]
-			fname := strings.Split(filter, "=")[1]
+			filter := strings.Split(args[2], `"`)[0]
+			fname := strings.Split(filter, "=")[2]
 			ids := []string{}
 			f.t.Logf("fake docker: Looking for containers matching %q", fname)
 			for id, cname := range f.containers {
@@ -240,10 +246,10 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 
 		}
 	case "version":
-		if args[1] == "--format" && args[2] == "'{{.Server.Version}}'" {
+
+		if args[1] == "--format" && args[2] == "{{.Server.Version}}" {
 			return "18.06.2-ce", nil
 		}
-
 	}
 	return "", nil
 }
@@ -413,9 +419,9 @@ func TestDisable(t *testing.T) {
 		runtime string
 		want    []string
 	}{
-		{"docker", []string{"/bin/bash -c sudo systemctl stop docker docker.socket"}},
-		{"crio", []string{"/bin/bash -c sudo systemctl stop crio"}},
-		{"containerd", []string{"/bin/bash -c sudo systemctl stop containerd"}},
+		{"docker", []string{"sudo", "systemctl", "stop", "docker", "docker.socket"}},
+		{"crio", []string{"sudo", "systemctl", "stop", "crio"}},
+		{"containerd", []string{"sudo", "systemctl", "stop", "containerd"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {

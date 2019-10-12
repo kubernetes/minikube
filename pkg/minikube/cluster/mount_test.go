@@ -17,8 +17,10 @@ limitations under the License.
 package cluster
 
 import (
+	"bytes"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -26,20 +28,21 @@ import (
 )
 
 type mockMountRunner struct {
-	cmds []*exec.Cmd
+	cmds []string
 	T    *testing.T
 }
 
 func newMockMountRunner(t *testing.T) *mockMountRunner {
 	return &mockMountRunner{
 		T:    t,
-		cmds: []*exec.Cmd{},
+		cmds: []string{},
 	}
 }
 
 func (m *mockMountRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
-	m.cmds = append(m.cmds, cmd)
-	return &command.RunResult{}, nil
+	m.cmds = append(m.cmds, strings.Join(cmd.Args, " "))
+	buf := new(bytes.Buffer)
+	return &command.RunResult{Stdout: buf, Stderr: buf}, nil
 }
 
 func TestMount(t *testing.T) {
@@ -56,8 +59,8 @@ func TestMount(t *testing.T) {
 			target: "target",
 			cfg:    &MountConfig{Type: "9p", Mode: os.FileMode(0700)},
 			want: []string{
-				"[ \"x$(findmnt -T target | grep target)\" != \"x\" ] && sudo umount -f target || echo ",
-				"sudo mkdir -m 700 -p target && sudo mount -t 9p -o dfltgid=0,dfltuid=0 src target",
+				"/bin/bash -c [ \"x$(findmnt -T target | grep target)\" != \"x\" ] && /bin/bash -c sudo umount -f target || echo ",
+				"/bin/bash -c sudo mkdir -m 700 -p target && /bin/bash -c sudo mount -t 9p -o dfltgid=0,dfltuid=0 src target /bin/bash -c sudo mount -t 9p -o dfltgid=0,dfltuid=0 src target",
 			},
 		},
 		{
@@ -66,8 +69,8 @@ func TestMount(t *testing.T) {
 			target: "target",
 			cfg:    &MountConfig{Type: "9p", Mode: os.FileMode(0700), UID: "docker", GID: "docker"},
 			want: []string{
-				"[ \"x$(findmnt -T target | grep target)\" != \"x\" ] && sudo umount -f target || echo ",
-				"sudo mkdir -m 700 -p target && sudo mount -t 9p -o dfltgid=$(grep ^docker: /etc/group | cut -d: -f3),dfltuid=$(id -u docker) src target",
+				"/bin/bash -c [ \"x$(findmnt -T target | grep target)\" != \"x\" ] && /bin/bash -c sudo umount -f target || echo ",
+				"/bin/bash -c sudo mkdir -m 700 -p target && /bin/bash -c sudo mount -t 9p -o dfltgid=$(grep ^docker: /etc/group | cut -d: -f3),dfltuid=$(id -u docker) src target",
 			},
 		},
 		{
@@ -79,7 +82,7 @@ func TestMount(t *testing.T) {
 				"cache":    "fscache",
 			}},
 			want: []string{
-				"[ \"x$(findmnt -T /target | grep /target)\" != \"x\" ] && sudo umount -f /target || echo ",
+				"[ \"x$(findmnt -T /target | grep /target)\" != \"x\" ] && /bin/bash -c sudo umount -f /target || echo ",
 				"sudo mkdir -m 777 -p /target && sudo mount -t 9p -o cache=fscache,dfltgid=72,dfltuid=82,noextend,version=9p2000.u 10.0.0.1 /target",
 			},
 		},
@@ -91,8 +94,8 @@ func TestMount(t *testing.T) {
 				"version": "9p2000.L",
 			}},
 			want: []string{
-				"[ \"x$(findmnt -T tgt | grep tgt)\" != \"x\" ] && sudo umount -f tgt || echo ",
-				"sudo mkdir -m 700 -p tgt && sudo mount -t 9p -o dfltgid=0,dfltuid=0,version=9p2000.L src tgt",
+				"/bin/bash -c [ \"x$(findmnt -T tgt | grep tgt)\" != \"x\" ] && /bin/bash -c sudo umount -f tgt || echo ",
+				"/bin/bash -c sudo mkdir -m 700 -p tgt && sudo mount -t 9p -o dfltgid=0,dfltuid=0,version=9p2000.L src tgt",
 			},
 		},
 	}
@@ -103,7 +106,9 @@ func TestMount(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Mount(%s, %s, %+v): %v", tc.source, tc.target, tc.cfg, err)
 			}
-			if diff := cmp.Diff(r.cmds, tc.want); diff != "" {
+			got := strings.Join(r.cmds, " ")
+			want := strings.Join(tc.want, " ")
+			if diff := cmp.Diff(got, want); diff != "" {
 				t.Errorf("command diff (-want +got): %s", diff)
 			}
 		})
@@ -117,7 +122,7 @@ func TestUnmount(t *testing.T) {
 		t.Fatalf("Unmount(/mnt): %v", err)
 	}
 
-	want := []string{"[ \"x$(findmnt -T /mnt | grep /mnt)\" != \"x\" ] && sudo umount -f /mnt || echo "}
+	want := []string{"[ \"x$(findmnt -T /mnt | grep /mnt)\" != \"x\" ] && /bin/bash -c sudo umount -f /mnt || echo "}
 	if diff := cmp.Diff(r.cmds, want); diff != "" {
 		t.Errorf("command diff (-want +got): %s", diff)
 	}

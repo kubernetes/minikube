@@ -106,9 +106,9 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
 	glog.Infof("(SSHRunner) Run:  %v", rr.Command())
 
-	var outb, errb bytes.Buffer
-	cmd.Stdout, rr.Stdout = &outb, &outb
-	cmd.Stderr, rr.Stderr = &errb, &errb
+	var outb, errb singleWriter
+	rr.Stdout = &outb.b
+	rr.Stderr = &errb.b
 	start := time.Now()
 
 	sess, err := s.c.NewSession()

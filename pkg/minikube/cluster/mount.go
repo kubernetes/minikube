@@ -70,7 +70,7 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 		return errors.Wrap(err, rr.Output())
 	}
 
-	glog.Infof("%s output: %q", rr.Command(), rr.Output())
+	glog.Infof("output: %q", rr.Output())
 	return nil
 }
 
