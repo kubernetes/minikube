@@ -235,6 +235,9 @@ fi
 
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
+echo ">> The version and commit id of minikube binary in this test"
+echo out/minikube-${OS_ARCH} version
+
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -test.timeout=60m \
