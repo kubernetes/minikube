@@ -42,7 +42,7 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1", "--addons=ingress", "--addons=registry"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -72,11 +72,6 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "enable", "ingress"))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
-	}
-
 	client, err := kapi.Client(profile)
 	if err != nil {
 		t.Fatalf("kubernetes client: %v", client)
@@ -89,7 +84,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("wait: %v", err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml")))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml")))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -131,11 +126,6 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "enable", "registry"))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
-	}
-
 	client, err := kapi.Client(profile)
 	if err != nil {
 		t.Fatalf("kubernetes client: %v", client)
@@ -155,7 +145,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Test from inside the cluster (no curl available on busybox)
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "po", "-l", "run=registry-test", "--now"))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "po", "-l", "run=registry-test", "--now"))
 	if err != nil {
 		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Args, err)
 	}
