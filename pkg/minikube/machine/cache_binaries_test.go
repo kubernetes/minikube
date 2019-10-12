@@ -128,11 +128,6 @@ func TestCacheBinary(t *testing.T) {
 		t.Fatalf("error (%v) during changing permissions of dir %v", err, noWritePermDir)
 	}
 
-	// noPermsDir is directory owned by root. Regular user is not able to write to it.
-	noPermsDir := "/etc"
-	if runtime.GOOS == "windows" {
-		noPermsDir = "C:\\Windows\\System32"
-	}
 	var tc = []struct {
 		desc, version, osName, archName   string
 		minikubeHome, binary, description string
@@ -146,15 +141,6 @@ func TestCacheBinary(t *testing.T) {
 			binary:       "kubeadm",
 			err:          false,
 			minikubeHome: minikubeHome,
-		},
-		{
-			desc:         "minikube home is pointing to dir without perms",
-			version:      "v1.16.0",
-			osName:       runtime.GOOS,
-			archName:     "arm",
-			binary:       "kubectl",
-			err:          true,
-			minikubeHome: noPermsDir,
 		},
 		{
 			desc:         "minikube home in dir without perms and arm runtime",
