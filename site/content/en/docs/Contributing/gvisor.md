@@ -1,6 +1,6 @@
 ---
-linkTitle: "gvisor"
-title: "Releasing a gvisor image"
+linkTitle: "gVisor"
+title: "Releasing a gVisor image"
 date: 2019-09-25
 weight: 10
 ---
@@ -13,7 +13,7 @@ weight: 10
 
 ## Background
 
-gvisor support within minikube requires a special Docker image to be generated. After merging changes to `cmd/gvisor` or `pkg/gvisor`, this image will need to be updated.
+gVisor support within minikube requires a special Docker image to be generated. After merging changes to `cmd/gvisor` or `pkg/gvisor`, this image will need to be updated.
 
 The image is located at `gcr.io/k8s-minikube/gvisor-addon`
 
@@ -28,6 +28,6 @@ The image is located at `gcr.io/k8s-minikube/gvisor-addon`
 - Updates the containerd configuration
 - Restarts containerd and rpc-statd
 
-## Updating the gvisor image
+## Updating the gVisor image
 
 `make push-gvisor-addon-image`

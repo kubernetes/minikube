@@ -17,17 +17,99 @@ limitations under the License.
 package cruntime
 
 import (
+	"bytes"
+	"encoding/base64"
 	"fmt"
+	"path"
 	"strings"
+	"text/template"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/out"
+)
+
+const (
+	// ContainerdConfFile is the path to the containerd configuration
+	containerdConfigFile     = "/etc/containerd/config.toml"
+	containerdConfigTemplate = `root = "/var/lib/containerd"
+state = "/run/containerd"
+oom_score = 0
+
+[grpc]
+  address = "/run/containerd/containerd.sock"
+  uid = 0
+  gid = 0
+  max_recv_message_size = 16777216
+  max_send_message_size = 16777216
+
+[debug]
+  address = ""
+  uid = 0
+  gid = 0
+  level = ""
+
+[metrics]
+  address = ""
+  grpc_histogram = false
+
+[cgroup]
+  path = ""
+
+[plugins]
+  [plugins.cgroups]
+    no_prometheus = false
+  [plugins.cri]
+    stream_server_address = ""
+    stream_server_port = "10010"
+    enable_selinux = false
+    sandbox_image = "{{ .PodInfraContainerImage }}"
+    stats_collect_period = 10
+    systemd_cgroup = false
+    enable_tls_streaming = false
+    max_container_log_line_size = 16384
+    [plugins.cri.containerd]
+      snapshotter = "overlayfs"
+      no_pivot = true
+      [plugins.cri.containerd.default_runtime]
+        runtime_type = "io.containerd.runtime.v1.linux"
+        runtime_engine = ""
+        runtime_root = ""
+      [plugins.cri.containerd.untrusted_workload_runtime]
+        runtime_type = ""
+        runtime_engine = ""
+        runtime_root = ""
+    [plugins.cri.cni]
+      bin_dir = "/opt/cni/bin"
+      conf_dir = "/etc/cni/net.d"
+      conf_template = ""
+    [plugins.cri.registry]
+      [plugins.cri.registry.mirrors]
+        [plugins.cri.registry.mirrors."docker.io"]
+          endpoint = ["https://registry-1.docker.io"]
+  [plugins.diff-service]
+    default = ["walking"]
+  [plugins.linux]
+    shim = "containerd-shim"
+    runtime = "runc"
+    runtime_root = ""
+    no_shim = false
+    shim_debug = false
+  [plugins.scheduler]
+    pause_threshold = 0.02
+    deletion_threshold = 0
+    mutation_threshold = 100
+    schedule_delay = "0s"
+    startup_delay = "100ms"
+`
 )
 
 // Containerd contains containerd runtime state
 type Containerd struct {
-	Socket string
-	Runner CommandRunner
+	Socket            string
+	Runner            CommandRunner
+	ImageRepository   string
+	KubernetesVersion string
 }
 
 // Name is a human readable name for containerd
@@ -79,6 +161,22 @@ func (r *Containerd) Available() error {
 	return r.Runner.Run("command -v containerd")
 }
 
+// generateContainerdConfig sets up /etc/containerd/config.toml
+func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
+	cPath := containerdConfigFile
+	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
+	if err != nil {
+		return err
+	}
+	pauseImage := images.PauseImage(imageRepository, k8sVersion)
+	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: pauseImage}
+	var b bytes.Buffer
+	if err := t.Execute(&b, opts); err != nil {
+		return err
+	}
+	return cr.Run(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
+}
+
 // Enable idempotently enables containerd on a host
 func (r *Containerd) Enable(disOthers bool) error {
 	if disOthers {
@@ -87,6 +185,9 @@ func (r *Containerd) Enable(disOthers bool) error {
 		}
 	}
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
+		return err
+	}
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {

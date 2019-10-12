@@ -99,6 +99,7 @@ const (
 	imageMirrorCountry    = "image-mirror-country"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
+	addons                = "addons"
 	cacheImages           = "cache-images"
 	uuid                  = "uuid"
 	vpnkitSock            = "hyperkit-vpnkit-sock"
@@ -119,14 +120,14 @@ const (
 )
 
 var (
-	registryMirror           []string
-	dockerEnv                []string
-	dockerOpt                []string
-	insecureRegistry         []string
-	apiServerNames           []string
-	apiServerIPs             []net.IP
-	extraOptions             cfg.ExtraOptionSlice
-	enableUpdateNotification = true
+	registryMirror   []string
+	dockerEnv        []string
+	dockerOpt        []string
+	insecureRegistry []string
+	apiServerNames   []string
+	addonList        []string
+	apiServerIPs     []net.IP
+	extraOptions     cfg.ExtraOptionSlice
 )
 
 func init() {
@@ -162,6 +163,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().StringArrayVar(&addonList, addons, nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
@@ -326,7 +328,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	mRunner, preExists, machineAPI, host := startMachine(&config)
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, driver)
+	cr := configureRuntimes(mRunner, driver, config.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
 	waitCacheImages(&cacheGroup)
 
@@ -342,6 +344,15 @@ func runStart(cmd *cobra.Command, args []string) {
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
 	configureMounts()
+
+	// enable addons with start command
+	for _, a := range addonList {
+		err = cmdcfg.Set(a, "true")
+		if err != nil {
+			exit.WithError("addon enable failed", err)
+		}
+	}
+
 	if err = loadCachedImagesInConfigFile(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}
@@ -556,9 +567,8 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	}
 
 	checkRepository := func(repo string) error {
-		podInfraContainerImage, _ := images.CachedImages(repo, k8sVersion)
-
-		ref, err := name.ParseReference(podInfraContainerImage, name.WeakValidation)
+		pauseImage := images.PauseImage(repo, k8sVersion)
+		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
 		if err != nil {
 			return err
 		}
@@ -1011,8 +1021,8 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 }
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, driver string) cruntime.Manager {
-	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
+func configureRuntimes(runner cruntime.CommandRunner, driver string, k8s cfg.KubernetesConfig) cruntime.Manager {
+	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner, ImageRepository: k8s.ImageRepository, KubernetesVersion: k8s.KubernetesVersion}
 	cr, err := cruntime.New(config)
 	if err != nil {
 		exit.WithError("Failed runtime", err)
