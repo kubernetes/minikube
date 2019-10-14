@@ -19,6 +19,9 @@ package localpath
 import (
 	"os"
 	"path/filepath"
+
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
 )
 
 const (
@@ -32,10 +35,11 @@ const (
 // CreateDirs creates directories, possibly migrating from an old disk layout
 func CreateDirs() (map[string]string, error) {
 	result := map[string]string{}
-	for _, d := range []string{cacheDir(), configDir(), dataDir()} {
-		if _, err := os.Stat(d); err == nil {
+	for _, d := range []string{cacheDir(), configDir(), Addons(), FileSync()} {
+		if _, err := os.Stat(d); err != nil {
+			glog.Infof("mkdir: %s", d)
 			if err := os.MkdirAll(d, 0700); err != nil {
-				return result, err
+				return result, errors.Wrap(err, "mkdir")
 			}
 			result[d] = ""
 		}
@@ -45,7 +49,7 @@ func CreateDirs() (map[string]string, error) {
 	if oldHome != "" {
 		me, err := migrateLegacyPaths(oldHome)
 		if err != nil {
-			return result, err
+			return result, errors.Wrap(err, "migrate")
 		}
 		for k, v := range me {
 			result[k] = v
@@ -131,7 +135,7 @@ func Binaries() string {
 
 // Drivers returns the location of the drivers directory
 func Drivers() string {
-	return filepath.Join(dataDir(), "bin")
+	return filepath.Join(dataDir(), "drivers")
 }
 
 // Logs returns the location of the logs directory

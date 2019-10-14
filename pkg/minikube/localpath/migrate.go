@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/otiai10/copy"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 )
@@ -38,7 +39,7 @@ func migrateLegacyPaths(oldHome string) (map[string]string, error) {
 
 	plans, err := migrationPlan(oldHome)
 	if err != nil {
-		return summary, err
+		return summary, errors.Wrap(err, "plan")
 	}
 	for src, dst := range plans {
 		if src == dst {
@@ -53,7 +54,7 @@ func migrateLegacyPaths(oldHome string) (map[string]string, error) {
 		glog.Infof("copying %s -> %s", src, dst)
 		err = copy.Copy(src, dst)
 		if err != nil {
-			return summary, err
+			return summary, errors.Wrap(err, "copy")
 		}
 	}
 
@@ -66,11 +67,23 @@ func migrateLegacyPaths(oldHome string) (map[string]string, error) {
 
 	// At this point, we should be confident that every file has been copied. Do a sanity check, though.
 	if err := validateCopies(oldHome, []string{cacheDir(), configDir(), dataDir()}); err != nil {
-		return summary, err
+		return summary, errors.Wrap(err, "validate")
 	}
 
 	if err := kubeconfig.EmbedMinikubeCerts(); err != nil {
-		return summary, err
+		return summary, errors.Wrap(err, "embed certs")
+	}
+
+	ms, err := legacyMachineList(oldHome)
+	if err != nil {
+		return summary, errors.Wrap(err, "machine list")
+	}
+
+	// Move each machine and set of certificates into its own store
+	for _, m := range ms {
+		if err := updateMachineConfig(filepath.Join(Machine(m), "config.json")); err != nil {
+			return summary, errors.Wrap(err, "update machine paths")
+		}
 	}
 
 	return summary, os.RemoveAll(oldHome)
@@ -103,7 +116,7 @@ func migrationPlan(root string) (map[string]string, error) {
 
 	ms, err := legacyMachineList(root)
 	if err != nil {
-		return toCopy, err
+		return toCopy, errors.Wrap(err, "machine list")
 	}
 
 	// Move each machine and set of certificates into its own store
@@ -115,12 +128,12 @@ func migrationPlan(root string) (map[string]string, error) {
 	// Copy common machine files into each store to make them race-proof
 	mf, err := filepath.Glob(filepath.Join(root, "machines/*.*"))
 	if err != nil {
-		return toCopy, err
+		return toCopy, errors.Wrap(err, "glob")
 	}
 	for _, f := range mf {
 		rp, err := filepath.Rel(root, f)
 		if err != nil {
-			return toCopy, err
+			return toCopy, errors.Wrap(err, "rel")
 		}
 		for _, m := range ms {
 			toCopy[f] = filepath.Join(Store(m), rp)
@@ -135,7 +148,7 @@ func migrationPlan(root string) (map[string]string, error) {
 	for _, f := range of {
 		rp, err := filepath.Rel(root, f)
 		if err != nil {
-			return toCopy, err
+			return toCopy, errors.Wrap(err, "rel")
 		}
 
 		if toCopy[f] != "" {
@@ -163,7 +176,7 @@ func legacyMachineList(root string) ([]string, error) {
 
 	m, err := ioutil.ReadDir(lp)
 	if err != nil {
-		return result, err
+		return result, errors.Wrap(err, "readdir")
 	}
 	for _, fi := range m {
 		if fi.IsDir() {
@@ -184,8 +197,10 @@ func validateCopies(src string, dests []string) error {
 	found := map[string][]foundFile{}
 	for _, d := range dests {
 		err := filepath.Walk(d, func(path string, info os.FileInfo, err error) error {
+			// If we can't read a path, consider it missing
 			if err != nil {
-				return err
+				glog.Warningf("validate %s: %v", path, err)
+				return nil
 			}
 
 			f := foundFile{Path: path, Info: info}
@@ -199,7 +214,7 @@ func validateCopies(src string, dests []string) error {
 			return nil
 		})
 		if err != nil {
-			return err
+			return errors.Wrap(err, "dest walk")
 		}
 	}
 

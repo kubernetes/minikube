@@ -522,6 +522,7 @@ func selectDriver(oldConfig *cfg.Config) string {
 		return driver
 	}
 
+	glog.Infof("machine drivers claims that there is a host for %s", cfg.GetMachineName())
 	h, err := api.Load(cfg.GetMachineName())
 	if err != nil {
 		glog.Infof("selectDriver api.Load: %v", err)
