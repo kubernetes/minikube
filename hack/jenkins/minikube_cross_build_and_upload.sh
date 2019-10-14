@@ -40,7 +40,8 @@ declare -rx TAG="${ghprbActualCommit}"
 docker kill $(docker ps -q) || true
 docker rm $(docker ps -aq) || true
 make -j 16 all && failed=$? || failed=$?
-"out/minikube-${OS_ARCH}" version
+
+"out/minikube-$(go env GOOS)-$(go env GOARCH)" version
 
 gsutil cp "gs://${bucket}/logs/index.html" \
   "gs://${bucket}/logs/${ghprbPullId}/index.html"
