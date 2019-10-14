@@ -119,7 +119,7 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	name = "minikube-users mailing list"
 	url = "https://groups.google.com/forum/#!forum/minikube-users"
 	icon = "fas fa-mail-bulk"
-	desc = "Interact with the Mini-Kube Users here"
+	desc = "Interact with the minikube Users here"
 
 # Developer relevant links. These will show up on right side of footer and in the community page if you have one.
 [[params.links.developer]]
@@ -131,4 +131,4 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	name = "minikube-dev mailing list"
 	url = "https://groups.google.com/forum/#!forum/minikube-dev"
 	icon = "fas fa-mail-bulk"
-	desc = "Contact the Mini-Kube Dev's here"
+	desc = "Contact the minikube Dev's here"
