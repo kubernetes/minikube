@@ -63,4 +63,9 @@ cp -r test/integration/testdata out/
 # Don't upload the buildroot artifacts if they exist
 rm -r out/buildroot || true
 
-gsutil -m cp -r out/ "gs://${bucket}/${ghprbPullId}/"
+# At this point, the out directory contains the jenkins scripts (populated by jenkins),
+# testdata, and our build output. Push the changes to GCS so that worker nodes can re-use them.
+
+# -d: delete remote files that don't exist (removed test files, for instance)
+# -J: gzip compression
+gsutil -m rsync -dJ out "gs://${bucket}/${ghprbPullId}"
