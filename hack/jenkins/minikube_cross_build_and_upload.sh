@@ -40,6 +40,7 @@ declare -rx TAG="${ghprbActualCommit}"
 docker kill $(docker ps -q) || true
 docker rm $(docker ps -aq) || true
 make -j 16 all && failed=$? || failed=$?
+"out/minikube-${OS_ARCH}" version
 
 gsutil cp "gs://${bucket}/logs/index.html" \
   "gs://${bucket}/logs/${ghprbPullId}/index.html"
@@ -58,6 +59,7 @@ if [[ "${rebuild}" -eq 1 ]]; then
   make release-iso
 fi
 
+
 cp -r test/integration/testdata out/
 
 # Don't upload the buildroot artifacts if they exist
@@ -68,4 +70,5 @@ rm -r out/buildroot || true
 
 # -d: delete remote files that don't exist (removed test files, for instance)
 # -J: gzip compression
-gsutil -m rsync -dJ out "gs://${bucket}/${ghprbPullId}"
+# -R: recursive. strangely, this is not the default for sync.
+gsutil -m rsync -dJR out "gs://${bucket}/${ghprbPullId}"
