@@ -64,7 +64,8 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 		glog.Infof("Failed to create folder pre-mount: err=%v, output: %q", err, rr.Output())
 		return errors.Wrap(err, "create folder pre-mount")
 	}
-	rr, err = r.RunCmd(mntCmd(source, target, c))
+
+	rr, err = r.RunCmd(exec.Command("/bin/bash", "-c", mntCmd(source, target, c)))
 	if err != nil {
 		glog.Infof("Failed to create folder before mount: err=%s, output: %q", err, rr.Output())
 		return errors.Wrap(err, rr.Output())
@@ -102,7 +103,7 @@ func resolveGID(id string) string {
 }
 
 // mntCmd returns a mount command based on a config.
-func mntCmd(source string, target string, c *MountConfig) *exec.Cmd {
+func mntCmd(source string, target string, c *MountConfig) string {
 	options := map[string]string{
 		"dfltgid": resolveGID(c.GID),
 		"dfltuid": resolveUID(c.UID),
@@ -133,7 +134,7 @@ func mntCmd(source string, target string, c *MountConfig) *exec.Cmd {
 		opts = append(opts, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(opts)
-	return exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mount -t %s -o %s %s %s", c.Type, strings.Join(opts, ","), source, target))
+	return fmt.Sprintf("sudo mount -t %s -o %s %s %s", c.Type, strings.Join(opts, ","), source, target)
 }
 
 // Unmount unmounts a path
