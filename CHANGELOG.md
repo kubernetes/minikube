@@ -9,8 +9,6 @@
 * Update default Kubernetes version to 1.16.1 [#5593](https://github.com/kubernetes/minikube/pull/5593)
 * Initial translations for fr, es, de, ja, and zh-CN [#5466](https://github.com/kubernetes/minikube/pull/5466)
 * Add libmachine debug logs back [#5574](https://github.com/kubernetes/minikube/pull/5574)
-* Add TCP/UDP ingress tutorial [#5517](https://github.com/kubernetes/minikube/pull/5517)
-* Bump golangci-lint to v1.20.0 [#5572](https://github.com/kubernetes/minikube/pull/5572)
 * Warn when a user tries to set a profile name that is unlikely to be valid [#4999](https://github.com/kubernetes/minikube/pull/4999)
 * Add option to  configure  dnsDomain in kubeAdm [#5566](https://github.com/kubernetes/minikube/pull/5566)
 * Adjusted Terminal Style Detection [#5508](https://github.com/kubernetes/minikube/pull/5508)
