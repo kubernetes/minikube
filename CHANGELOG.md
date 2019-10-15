@@ -41,7 +41,6 @@ Huge thank you for this release towards our contributors:
 - Samuel Almeida
 - Sharif Elgamal
 - Thomas Strömberg
-- Y.Horie
 - Zhongcheng Lao
 - Zoltán Reegn
 - bhanu011
