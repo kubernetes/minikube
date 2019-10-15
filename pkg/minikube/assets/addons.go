@@ -350,27 +350,9 @@ var Addons = map[string]*Addon{
 	}, false, "helm-tiller"),
 	"ingress-dns": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/ingress-dns/ingress-dns-configmap.yaml",
+			"deploy/addons/ingress-dns/ingress-dns-pod.yaml",
 			vmpath.GuestAddonsDir,
-			"ingress-dns-configmap.yaml",
-			"0640",
-			false),
-		MustBinAsset(
-			"deploy/addons/ingress-dns/ingress-dns-dns-server-pod.yaml",
-			vmpath.GuestAddonsDir,
-			"ingress-dns-dns-server-pod.yaml",
-			"0640",
-			false),
-		MustBinAsset(
-			"deploy/addons/ingress-dns/ingress-dns-nginx-pod.yaml.tmpl",
-			vmpath.GuestAddonsDir,
-			"ingress-dns-nginx-pod.yaml",
-			"0640",
-			true),
-		MustBinAsset(
-			"deploy/addons/ingress-dns/ingress-dns-svc.yaml",
-			vmpath.GuestAddonsDir,
-			"ingress-dns-svc.yaml",
+			"ingress-dns-pod.yaml",
 			"0640",
 			false),
 	}, false, "ingress-dns"),
