@@ -147,8 +147,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 		}
 		out.T(out.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
-
-		c := exec.Command(cmds[name])
+		c := exec.Command("/bin/bash", "-c", cmds[name])
 		c.Stdin = &b
 		c.Stdout = &b
 		if rr, err := runner.RunCmd(c); err != nil {
