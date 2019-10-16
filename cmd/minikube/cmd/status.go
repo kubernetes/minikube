@@ -40,18 +40,20 @@ import (
 var statusFormat string
 var output string
 
-type KubeconfigStatus struct {
-	Correct bool
-	IP      string
+var KubeconfigStatus = struct {
+	Configured    string
+	Misconfigured string
+}{
+	Configured:    `Configured`,
+	Misconfigured: `Misconfigured`,
 }
 
 // Status represents the status
 type Status struct {
-	Host             string
-	Kubelet          string
-	APIServer        string
-	Kubeconfig       string
-	KubeconfigStatus KubeconfigStatus
+	Host       string
+	Kubelet    string
+	APIServer  string
+	Kubeconfig string
 }
 
 const (
@@ -61,7 +63,7 @@ const (
 	defaultStatusFormat          = `host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
-kubectl: {{.Kubeconfig}}
+kubeconfig: {{.Kubeconfig}}
 `
 )
 
@@ -93,8 +95,6 @@ var statusCmd = &cobra.Command{
 		kubeletSt := state.None.String()
 		kubeconfigSt := state.None.String()
 		apiserverSt := state.None.String()
-		var ks bool
-		var ipString = ""
 
 		if hostSt == state.Running.String() {
 			clusterBootstrapper, err := getClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
@@ -127,16 +127,14 @@ var statusCmd = &cobra.Command{
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ks, err = kubeconfig.IsClusterInConfig(ip, config.GetMachineName())
+			ks, err := kubeconfig.IsClusterInConfig(ip, config.GetMachineName())
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
 			}
 			if ks {
-				kubeconfigSt = "Correctly Configured: pointing to minikube-vm at " + ip.String()
-				ipString = ip.String()
+				kubeconfigSt = KubeconfigStatus.Configured
 			} else {
-				kubeconfigSt = "Misconfigured: pointing to stale minikube-vm." +
-					"\nTo fix the kubectl context, run minikube update-context"
+				kubeconfigSt = KubeconfigStatus.Misconfigured
 				returnCode |= k8sNotRunningStatusFlag
 			}
 		} else {
@@ -148,10 +146,6 @@ var statusCmd = &cobra.Command{
 			Kubelet:    kubeletSt,
 			APIServer:  apiserverSt,
 			Kubeconfig: kubeconfigSt,
-			KubeconfigStatus: KubeconfigStatus{
-				Correct: ks,
-				IP:      ipString,
-			},
 		}
 
 		switch strings.ToLower(output) {
@@ -184,25 +178,14 @@ var printStatusText = func(status Status) {
 	if err != nil {
 		exit.WithError("Error executing status template", err)
 	}
+	if status.Kubeconfig == KubeconfigStatus.Misconfigured {
+		out.WarningT("Warning: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`")
+	}
 }
 
 var printStatusJSON = func(status Status) {
 
-	var kubeConfigStatus interface{}
-	if status.Kubeconfig != state.None.String() {
-		kubeConfigStatus = status.KubeconfigStatus
-	} else {
-		kubeConfigStatus = nil
-	}
-
-	var outputObject = map[string]interface{}{
-		"Host":       status.Host,
-		"Kubelet":    status.Kubelet,
-		"APIServer":  status.APIServer,
-		"Kubeconfig": kubeConfigStatus,
-	}
-
-	jsonString, err := json.Marshal(outputObject)
+	jsonString, err := json.Marshal(status)
 	if err != nil {
 		exit.WithError("Error converting status to json", err)
 	}
