@@ -37,16 +37,6 @@ metadata:
 rules:
   - apiGroups:
       - ""
-    resources:
-      - configmaps
-    verbs:
-      - get
-      - patch
-    resourceNames:
-      - tcp-services
-      - udp-services
-  - apiGroups:
-      - ""
       - "extensions"
       - "networking.k8s.io"
     resources:
@@ -65,11 +55,11 @@ metadata:
     app: minikube-ingress-dns
     kubernetes.io/bootstrapping: rbac-defaults
     app.kubernetes.io/part-of: kube-system
-    addonmanager.kubernetes.io/mode: EnsureExists
+    addonmanager.kubernetes.io/mode: Reconcile
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: cluster-admin
+  name: minikube-ingress-dns
 subjects:
   - kind: ServiceAccount
     name: minikube-ingress-dns
@@ -83,20 +73,21 @@ metadata:
   labels:
     app: minikube-ingress-dns
     app.kubernetes.io/part-of: kube-system
-    addonmanager.kubernetes.io/mode: EnsureExists
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   serviceAccountName: minikube-ingress-dns
+  hostNetwork: true
   containers:
     - name: minikube-ingress-dns
-      image: "cryptexlabs/minikube-ingress-dns:0.1.1"
+      image: "cryptexlabs/minikube-ingress-dns:0.2.0"
       imagePullPolicy: IfNotPresent
       ports:
-        - containerPort: 5353
-          hostPort: 5353
-          protocol: TCP
-        - containerPort: 5353
-          hostPort: 5353
+        - containerPort: 53
           protocol: UDP
       env:
         - name: DNS_PORT
-          value: "5353"
+          value: "53"
+        - name: POD_IP
+          valueFrom:
+            fieldRef:
+              fieldPath: status.podIP
