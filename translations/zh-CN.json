@@ -505,6 +505,8 @@
 	"usage: minikube addons list": "",
 	"usage: minikube addons open ADDON_NAME": "",
 	"usage: minikube config unset PROPERTY_NAME": "",
+	"usage: minikube delete": "",
+	"usage: minikube delete --all": "",
 	"usage: minikube profile [MINIKUBE_PROFILE_NAME]": "",
 	"zsh completion failed": "",
 	"{{.addonName}} was successfully enabled": "",

@@ -232,3 +232,42 @@ func EnableOrDisableStorageClasses(name, val string) error {
 
 	return EnableOrDisableAddon(name, val)
 }
+
+// ErrValidateProfile Error to validate profile
+type ErrValidateProfile struct {
+	Name string
+	Msg  string
+}
+
+func (e ErrValidateProfile) Error() string {
+	return e.Msg
+}
+
+// ValidateProfile checks if the profile user is trying to switch exists, else throws error
+func ValidateProfile(profile string) (*ErrValidateProfile, bool) {
+
+	validProfiles, invalidProfiles, err := config.ListProfiles()
+	if err != nil {
+		out.FailureT(err.Error())
+	}
+
+	// handling invalid profiles
+	for _, invalidProf := range invalidProfiles {
+		if profile == invalidProf.Name {
+			return &ErrValidateProfile{Name: profile, Msg: fmt.Sprintf("%q is an invalid profile", profile)}, false
+		}
+	}
+
+	profileFound := false
+	// valid profiles if found, setting profileFound to trueexpectedMsg
+	for _, prof := range validProfiles {
+		if prof.Name == profile {
+			profileFound = true
+			break
+		}
+	}
+	if !profileFound {
+		return &ErrValidateProfile{Name: profile, Msg: fmt.Sprintf("profile %q not found", profile)}, false
+	}
+	return nil, true
+}
