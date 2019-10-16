@@ -764,7 +764,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 		repository = autoSelectedRepository
 	}
 
-	if repository != "" {
+	if cmd.Flags().Changed(imageRepository) {
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
@@ -966,8 +966,13 @@ Suggested workarounds:
 	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
 		opts = fmt.Sprintf("-x %s %s", proxy, opts)
 	}
-	if err := r.Run(fmt.Sprintf("curl %s https://k8s.gcr.io/", opts)); err != nil {
-		out.WarningT("VM is unable to connect to the Kubernetes container registry: {{.error}}", out.V{"error": err})
+
+	repo := viper.GetString(imageRepository)
+	if repo == "" {
+		repo = images.DefaultImageRepo
+	}
+	if err := r.Run(fmt.Sprintf("curl %s https://%s/", opts, repo)); err != nil {
+		out.WarningT("VM is unable to connect to the selected image repository: {{.error}}", out.V{"error": err})
 	}
 	return ip
 }
