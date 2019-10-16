@@ -57,7 +57,7 @@ var _ controller.Provisioner = &hostPathProvisioner{}
 // Provision creates a storage asset and returns a PV object representing it.
 func (p *hostPathProvisioner) Provision(options controller.ProvisionOptions) (*core.PersistentVolume, error) {
 	glog.Infof("Provisioning volume %v", options)
-	path := path.Join(p.pvDir, options.PVName)
+	path := path.Join(p.pvDir, options.PVC.Name)
 	if err := os.MkdirAll(path, 0777); err != nil {
 		return nil, err
 	}
@@ -103,8 +103,7 @@ func (p *hostPathProvisioner) Delete(volume *core.PersistentVolume) error {
 		return &controller.IgnoredError{Reason: "identity annotation on PV does not match ours"}
 	}
 
-	path := path.Join(p.pvDir, volume.Name)
-	if err := os.RemoveAll(path); err != nil {
+	if err := os.RemoveAll(volume.Spec.PersistentVolumeSource.HostPath.Path); err != nil {
 		return errors.Wrap(err, "removing hostpath PV")
 	}
 

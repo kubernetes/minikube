@@ -125,9 +125,9 @@ if [ -n "$BOOT2DOCKER_DATA" ]; then
     mkdir /tmp/hostpath_pv
     mount --bind /mnt/$PARTNAME/hostpath_pv /tmp/hostpath_pv
 
-    mkdir -p /mnt/$PARTNAME/pvc
-    mkdir /pvc
-    mount --bind /mnt/$PARTNAME/pvc /pvc
+    mkdir -p /mnt/$PARTNAME/hostpath-provisioner
+    mkdir /tmp/hostpath-provisioner
+    mount --bind /mnt/$PARTNAME/hostpath-provisioner /tmp/hostpath-provisioner
 
     if [ -e "/userdata.tar" ]; then
         mv /userdata.tar /var/lib/boot2docker/

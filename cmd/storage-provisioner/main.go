@@ -17,17 +17,12 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/storage"
 )
-
-const defaultPvDir = "/pvc"
-
-const pvDirParam = "pv-dir"
 
 func main() {
 	// Glog requires that /tmp exists.
@@ -36,11 +31,9 @@ func main() {
 		os.Exit(1)
 	}
 
-	var pvDir = flag.String(pvDirParam, defaultPvDir, "Directory for dynamically provisioned persistent volumes")
+	var pvDir = "/tmp/hostpath-provisioner"
 
-	flag.Parse()
-
-	if err := storage.StartStorageProvisioner(*pvDir); err != nil {
+	if err := storage.StartStorageProvisioner(pvDir); err != nil {
 		glog.Exit(err)
 	}
 
