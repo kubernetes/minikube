@@ -149,14 +149,15 @@ func fixMachinePermissions(path string) error {
 }
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
-func InstallOrUpdate(driver string, directory string, v semver.Version, interactive bool) error {
+func InstallOrUpdate(driver string, directory string, v semver.Version, interactive bool, autoUpdate bool) error {
 	if driver != constants.DriverKvm2 && driver != constants.DriverHyperkit {
 		return nil
 	}
 
 	executable := fmt.Sprintf("docker-machine-driver-%s", driver)
+	exists := driverExists(executable)
 	path, err := validateDriver(executable, v)
-	if err != nil {
+	if !exists || (err != nil && autoUpdate) {
 		glog.Warningf("%s: %v", executable, err)
 		path = filepath.Join(directory, executable)
 		derr := download(executable, path, v)
@@ -238,6 +239,11 @@ func validateDriver(driver string, v semver.Version) (string, error) {
 		return path, fmt.Errorf("%s is version %s, want %s", driver, vmDriverVersion, v)
 	}
 	return path, nil
+}
+
+func driverExists(driver string) bool {
+	_, err := exec.LookPath(driver)
+	return err == nil
 }
 
 func driverWithChecksumURL(driver string, v semver.Version) string {

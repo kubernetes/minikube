@@ -117,6 +117,7 @@ const (
 	minimumMemorySize     = "1024mb"
 	minimumCPUS           = 2
 	minimumDiskSize       = "2000mb"
+	autoUpdate            = "auto-update-drivers"
 )
 
 var (
@@ -170,6 +171,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
+	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -293,7 +295,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateFlags(driver)
 	validateUser(driver)
 
-	_ = getMinikubeVersion(driver)
+	v, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+	}
+
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driver)
 	if err != nil {
@@ -931,17 +939,6 @@ func validateNetwork(h *host.Host) string {
 
 	// Here is where we should be checking connectivity to/from the VM
 	return ip
-}
-
-// getMinikubeVersion ensures that the driver binary is up to date
-func getMinikubeVersion(driver string) string {
-	v, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
-		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
-	}
-	return v.String()
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable
