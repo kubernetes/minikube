@@ -177,7 +177,7 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string,
 // LogCommands returns a map of log type to a command which will display that log.
 func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string {
 	var kubelet strings.Builder
-	kubelet.WriteString("journalctl -u kubelet")
+	kubelet.WriteString("sudo journalctl -u kubelet")
 	if o.Lines > 0 {
 		kubelet.WriteString(fmt.Sprintf(" -n %d", o.Lines))
 	}
