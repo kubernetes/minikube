@@ -99,6 +99,7 @@ const (
 	imageMirrorCountry    = "image-mirror-country"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
+	addons                = "addons"
 	cacheImages           = "cache-images"
 	uuid                  = "uuid"
 	vpnkitSock            = "hyperkit-vpnkit-sock"
@@ -119,14 +120,14 @@ const (
 )
 
 var (
-	registryMirror           []string
-	dockerEnv                []string
-	dockerOpt                []string
-	insecureRegistry         []string
-	apiServerNames           []string
-	apiServerIPs             []net.IP
-	extraOptions             cfg.ExtraOptionSlice
-	enableUpdateNotification = true
+	registryMirror   []string
+	dockerEnv        []string
+	dockerOpt        []string
+	insecureRegistry []string
+	apiServerNames   []string
+	addonList        []string
+	apiServerIPs     []net.IP
+	extraOptions     cfg.ExtraOptionSlice
 )
 
 func init() {
@@ -162,6 +163,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().StringArrayVar(&addonList, addons, nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
@@ -342,6 +344,15 @@ func runStart(cmd *cobra.Command, args []string) {
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
 	configureMounts()
+
+	// enable addons with start command
+	for _, a := range addonList {
+		err = cmdcfg.Set(a, "true")
+		if err != nil {
+			exit.WithError("addon enable failed", err)
+		}
+	}
+
 	if err = loadCachedImagesInConfigFile(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}

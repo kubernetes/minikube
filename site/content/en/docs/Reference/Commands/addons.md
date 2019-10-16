@@ -39,6 +39,12 @@ Enables the addon w/ADDON_NAME within minikube (example: minikube addons enable 
 minikube addons enable ADDON_NAME [flags]
 ```
 
+or
+
+```
+minikube start --addons ADDON_NAME [flags]
+```
+
 ## minikube addons list
 
 Lists all available minikube addons as well as their current statuses (enabled/disabled)
