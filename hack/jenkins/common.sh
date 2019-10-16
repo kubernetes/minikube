@@ -109,6 +109,8 @@ for entry in $(ls ${TEST_ROOT}); do
     sudo rm -Rf "${home}"
   done
 
+  ${MINIKUBE_BIN} delete --all || true
+
   for kconfig in $(find ${entry} -name kubeconfig -type f); do
     sudo rm -f "${kconfig}"
   done
