@@ -35,11 +35,11 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/ssh"
-	"github.com/pkg/errors"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
@@ -132,7 +132,6 @@ var (
 	apiServerIPs     []net.IP
 	extraOptions     cfg.ExtraOptionSlice
 )
-
 
 func init() {
 	initMinikubeFlags()
@@ -517,7 +516,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string) error {
 	}
 
 	cluster := semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix))
-	minorSkew := int(math.Abs(float64(int(client.Minor)-int(cluster.Minor))))
+	minorSkew := int(math.Abs(float64(int(client.Minor) - int(cluster.Minor))))
 	glog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
 
 	if client.Major != cluster.Major || minorSkew > 1 {
