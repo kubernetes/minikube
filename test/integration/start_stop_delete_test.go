@@ -139,11 +139,6 @@ func TestStartStop(t *testing.T) {
 				if err != nil {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
-
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
-				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
-				}
 			})
 		}
 	})
