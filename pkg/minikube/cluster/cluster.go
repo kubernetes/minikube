@@ -604,12 +604,13 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 
 // EnsureMinikubeRunningOrExit checks that minikube has a status available and that
 // the status is `Running`, otherwise it will exit
-func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
+func IsMinikubeRunning(api libmachine.API) bool {
 	s, err := GetHostStatus(api)
 	if err != nil {
-		exit.WithError("Error getting machine status", err)
+		return false
 	}
 	if s != state.Running.String() {
-		exit.WithCodeT(exit.Unavailable, "minikube is not running, so the service cannot be accessed")
+		return false
 	}
+	return true
 }
