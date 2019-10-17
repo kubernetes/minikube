@@ -37,9 +37,19 @@ echo "job:       ${JOB_NAME}"
 echo "test home: ${TEST_HOME}"
 echo "sudo:      ${SUDO_PREFIX}"
 echo "kernel:    $(uname -v)"
+echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
+
+readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]" | cut -d" " -f3)
+if [[ "${LOAD}" -gt 2 ]]; then
+  echo ""
+  echo "******************************* LOAD WARNING **************************"
+  echo "Load average is very high (${LOAD}), which may cause failures"
+  echo "******************************* LOAD WARNING **************************"
+  echo ""
+fi
 
 case "${VM_DRIVER}" in
   kvm2)
@@ -100,16 +110,14 @@ echo ""
 echo ">> Cleaning up after previous test runs ..."
 for entry in $(ls ${TEST_ROOT}); do
   echo "* Cleaning stale test path: ${entry}"
-  for tunnel in $(find ${entry} -name tunnels.json -type f); do
+  for tunnel in $(find ${TEST_ROOT}/${entry} -name tunnels.json -type f); do
     env MINIKUBE_HOME="$(dirname ${tunnel})" ${MINIKUBE_BIN} tunnel --cleanup || true
   done
 
-  for home in $(find ${entry} -name .minikube -type d); do
-    env MINIKUBE_HOME="$(dirname ${home})" ${MINIKUBE_BIN} delete || true
+  for home in $(find ${TEST_ROOT}/${entry} -name .minikube -type d); do
+    env MINIKUBE_HOME="$(dirname ${home})" ${MINIKUBE_BIN} delete --all || true
     sudo rm -Rf "${home}"
   done
-
-  ${MINIKUBE_BIN} delete --all || true
 
   for kconfig in $(find ${entry} -name kubeconfig -type f); do
     sudo rm -f "${kconfig}"
@@ -143,19 +151,21 @@ if type -P virsh; then
 fi
 
 if type -P vboxmanage; then
-  for guid in $(vboxmanage list vms | egrep -Eo '\{[-a-Z0-9]+\}'); do
+  for guid in $(vboxmanage list vms | grep -Eo '\{[-a-Z0-9]+\}'); do
     echo "- Removing stale VirtualBox VM: $guid"
-    vboxmanage startvm $guid --type emergencystop || true
-    vboxmanage unregistervm $guid || true
+    vboxmanage startvm "${guid}" --type emergencystop || true
+    vboxmanage unregistervm "${guid}" || true
   done
 
-  vboxmanage list hostonlyifs \
-    | grep "^Name:" \
-    | awk '{ print $2 }' \
-    | xargs -n1 vboxmanage hostonlyif remove || true
+  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ printf $2 }')
+  for if in $ifaces; do
+    vboxmanage hostonlyif remove "${if}" || true
+  done
 
   echo ">> VirtualBox VM list after clean up (should be empty):"
   vboxmanage list vms || true
+  echo ">> VirtualBox interface list after clean up (should be empty):"
+  vboxmanage list hostonlyifs || true
 fi
 
 
