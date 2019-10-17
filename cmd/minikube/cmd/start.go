@@ -35,6 +35,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/ssh"
+	"github.com/pkg/errors"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -132,16 +133,6 @@ var (
 	extraOptions     cfg.ExtraOptionSlice
 )
 
-type kubectlversion struct {
-	CVersion VersionInfo `json:"clientVersion"`
-	SVersion VersionInfo `json:"serverVersion"`
-}
-
-type VersionInfo struct {
-	Major      string `json:"major"`
-	Minor      string `json:"minor"`
-	GitVersion string `json:"gitVersion"`
-}
 
 func init() {
 	initMinikubeFlags()
@@ -379,7 +370,9 @@ func runStart(cmd *cobra.Command, args []string) {
 			exit.WithError("Wait failed", err)
 		}
 	}
-	showKubectlConnectInfo(kubeconfig)
+	if err := showKubectlInfo(kubeconfig, k8sVersion); err != nil {
+		glog.Errorf("kubectl info: %v", err)
+	}
 }
 
 func displayVersion(version string) {
@@ -490,16 +483,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-/**
-Function to check for kubectl. The checking is to compare
-the version reported by both the client and server. Checking
-is based on what is outlined in Kubernetes document
-https://kubernetes.io/docs/setup/release/version-skew-policy/#kubectl
-*/
-func showKubectlConnectInfo(kcs *kubeconfig.Settings) {
-	var output []byte
-	clientVersion := kubectlversion{}
-
+func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string) error {
 	if kcs.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
 	} else {
@@ -507,33 +491,40 @@ func showKubectlConnectInfo(kcs *kubeconfig.Settings) {
 	}
 
 	path, err := exec.LookPath("kubectl")
-	// ...not found just print and return
 	if err != nil {
 		out.T(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
-		return
+		return nil
 	}
 
-	output, err = exec.Command(path, "version", "--output=json").Output()
+	j, err := exec.Command(path, "version", "--client", "--output=json").Output()
 	if err != nil {
-		return
+		return errors.Wrap(err, "exec")
 	}
-	glog.Infof("Received output from kubectl %s", output)
 
-	// unmarshal the json
-	output = []byte("Nanik")
-	clientjsonErr := json.Unmarshal(output, &clientVersion)
-	if clientjsonErr != nil {
-		glog.Infof("There was an error processing kubectl json output.")
-		return
+	cv := struct {
+		ClientVersion struct {
+			GitVersion string `json:"gitVersion"`
+		} `json:"clientVersion"`
+	}{}
+	err = json.Unmarshal(j, &cv)
+	if err != nil {
+		return errors.Wrap(err, "unmarshal")
 	}
-	// obtain the minor version for both client & server
-	serverMinor, _ := strconv.Atoi(clientVersion.SVersion.Minor)
-	clientMinor, _ := strconv.Atoi(clientVersion.CVersion.Minor)
 
-	if math.Abs(float64(clientMinor-serverMinor)) > 1 {
-		out.T(out.Tip, "{{.path}} is version {{.clientMinor}}, and is incompatible with your specified Kubernetes version. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
-			out.V{"path": path, "clientMinor": clientMinor})
+	client, err := semver.Make(strings.TrimPrefix(cv.ClientVersion.GitVersion, version.VersionPrefix))
+	if err != nil {
+		return errors.Wrap(err, "client semver")
 	}
+
+	cluster := semver.MustParse(k8sVersion)
+	minorSkew := math.Abs(float64(client.Minor-cluster.Minor))
+	glog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
+
+	if client.Major != cluster.Major || minorSkew > 1 {
+		out.WarningT("{{.path}} is version {{.client}}, and is incompatible with your specified Kubernetes version. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
+			out.V{"path": path, "client": client})
+	}
+	return nil
 }
 
 func selectDriver(oldConfig *cfg.Config) string {
