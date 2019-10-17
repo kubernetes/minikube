@@ -183,11 +183,11 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Custom format
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "status", "-f", "host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubectl:{{.Kubeconfig}}"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "status", "-f", "host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubeconfig:{{.Kubeconfig}}"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	match, _ := regexp.MatchString(`host:([A-z]+),kublet:([A-z]+),apiserver:([A-z]+),kubectl:([A-z]|[\s]|:|-|[0-9]|.)+`, rr.Stdout.String())
+	match, _ := regexp.MatchString(`host:([A-z]+),kublet:([A-z]+),apiserver:([A-z]+),kubeconfig:([A-z]+)`, rr.Stdout.String())
 	if !match {
 		t.Errorf("%s failed: %v. Output for custom format did not match", rr.Args, err)
 	}
