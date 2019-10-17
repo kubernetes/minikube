@@ -109,27 +109,29 @@ mkdir -p "${TEST_ROOT}"
 echo ""
 echo ">> Cleaning up after previous test runs ..."
 for entry in $(ls ${TEST_ROOT}); do
-  echo "* Cleaning stale test path: ${entry}"
-  for tunnel in $(find ${TEST_ROOT}/${entry} -name tunnels.json -type f); do
+  test_path="${TEST_ROOT}/${entry}"
+  ls -lad "${test_path}" || continue
+
+  echo "* Cleaning stale test path: ${test_path}"
+  for tunnel in $(find ${test_path} -name tunnels.json -type f); do
     env MINIKUBE_HOME="$(dirname ${tunnel})" ${MINIKUBE_BIN} tunnel --cleanup || true
   done
 
-  for home in $(find ${TEST_ROOT}/${entry} -name .minikube -type d); do
+  for home in $(find ${test_path} -name .minikube -type d); do
     env MINIKUBE_HOME="$(dirname ${home})" ${MINIKUBE_BIN} delete --all || true
     sudo rm -Rf "${home}"
   done
 
-  for kconfig in $(find ${entry} -name kubeconfig -type f); do
+  for kconfig in $(find ${test_path} -name kubeconfig -type f); do
     sudo rm -f "${kconfig}"
   done
 
   # Be very specific to avoid accidentally deleting other items, like wildcards or devices
-  if [[ -d "${entry}" ]]; then
-    rm -Rf "${entry}" || true
-  elif [[ -f "${entry}" ]]; then
-    rm -f "${entry}" || true
+  if [[ -d "${test_path}" ]]; then
+    rm -Rf "${test_path}" || true
+  elif [[ -f "${test_path}" ]]; then
+    rm -f "${test_path}" || true
   fi
-
 done
 
 # sometimes tests left over zombie procs that won't exit
