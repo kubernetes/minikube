@@ -61,6 +61,6 @@ func createHyperkitHost(config cfg.MachineConfig) interface{} {
 		UUID:           uuID,
 		VpnKitSock:     config.HyperkitVpnKitSock,
 		VSockPorts:     config.HyperkitVSockPorts,
-		Cmdline:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=" + cfg.GetMachineName(),
+		Cmdline:        "loglevel=3 console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes random.trust_cpu=on hw_rng_model=virtio base host=" + cfg.GetMachineName(),
 	}
 }
