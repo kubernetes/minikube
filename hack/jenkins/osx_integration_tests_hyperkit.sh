@@ -33,5 +33,8 @@ EXTRA_ARGS="--bootstrapper=kubeadm"
 EXTRA_START_ARGS=""
 PARALLEL_COUNT=3
 
+install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh
+crontab < cron/Darwin.crontab
+
 # Download files and set permissions
 source common.sh
