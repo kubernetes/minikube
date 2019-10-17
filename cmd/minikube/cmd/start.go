@@ -17,7 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"os"
@@ -129,6 +131,17 @@ var (
 	apiServerIPs     []net.IP
 	extraOptions     cfg.ExtraOptionSlice
 )
+
+type kubectlversion struct {
+	CVersion VersionInfo `json:"clientVersion"`
+	SVersion VersionInfo `json:"serverVersion"`
+}
+
+type VersionInfo struct {
+	Major      string `json:"major"`
+	Minor      string `json:"minor"`
+	GitVersion string `json:"gitVersion"`
+}
 
 func init() {
 	initMinikubeFlags()
@@ -477,15 +490,49 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
+/**
+Function to check for kubectl. The checking is to compare
+the version reported by both the client and server. Checking
+is based on what is outlined in Kubernetes document
+https://kubernetes.io/docs/setup/release/version-skew-policy/#kubectl
+*/
 func showKubectlConnectInfo(kcs *kubeconfig.Settings) {
+	var output []byte
+	clientVersion := kubectlversion{}
+
 	if kcs.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
 	} else {
 		out.T(out.Ready, `Done! kubectl is now configured to use "{{.name}}"`, out.V{"name": cfg.GetMachineName()})
 	}
-	_, err := exec.LookPath("kubectl")
+
+	path, err := exec.LookPath("kubectl")
+	// ...not found just print and return
 	if err != nil {
 		out.T(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		return
+	}
+
+	output, err = exec.Command(path, "version", "--output=json").Output()
+	if err != nil {
+		return
+	}
+	glog.Infof("Received output from kubectl %s", output)
+
+	// unmarshal the json
+	output = []byte("Nanik")
+	clientjsonErr := json.Unmarshal(output, &clientVersion)
+	if clientjsonErr != nil {
+		glog.Infof("There was an error processing kubectl json output.")
+		return
+	}
+	// obtain the minor version for both client & server
+	serverMinor, _ := strconv.Atoi(clientVersion.SVersion.Minor)
+	clientMinor, _ := strconv.Atoi(clientVersion.CVersion.Minor)
+
+	if math.Abs(float64(clientMinor-serverMinor)) > 1 {
+		out.T(out.Tip, "{{.path}} is version {{.clientMinor}}, and is incompatible with your specified Kubernetes version. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
+			out.V{"path": path, "clientMinor": clientMinor})
 	}
 }
 
