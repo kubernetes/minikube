@@ -516,13 +516,13 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string) error {
 		return errors.Wrap(err, "client semver")
 	}
 
-	cluster := semver.MustParse(k8sVersion)
-	minorSkew := math.Abs(float64(client.Minor-cluster.Minor))
+	cluster := semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix))
+	minorSkew := int(math.Abs(float64(int(client.Minor)-int(cluster.Minor))))
 	glog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
 
 	if client.Major != cluster.Major || minorSkew > 1 {
-		out.WarningT("{{.path}} is version {{.client}}, and is incompatible with your specified Kubernetes version. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
-			out.V{"path": path, "client": client})
+		out.WarningT("{{.path}} is version {{.client_version}}, and is incompatible with Kubernetes {{.cluster_version}}. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
+			out.V{"path": path, "client_version": client, "cluster_version": cluster})
 	}
 	return nil
 }
