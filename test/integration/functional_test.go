@@ -90,6 +90,7 @@ func TestFunctional(t *testing.T) {
 			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
 			{"TunnelCmd", validateTunnelCmd},
 			{"SSHCmd", validateSSHCmd},
+			{"UpdateContextCmd", validateUpdateContextCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -328,6 +329,19 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("%v = %q, want = %q", rr.Args, rr.Stdout.String(), want)
 	}
 }
+
+
+// validateUpdateContextCmd asserts basic "update-context" command functionality
+func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	if rr.Stderr.String() != "" {
+		t.Errorf("%v stderr = %q, want empty", rr.Args, rr.Stderr.String())
+	}
+}
+
 
 // startHTTPProxy runs a local http proxy and sets the env vars for it.
 func startHTTPProxy(t *testing.T) (*http.Server, error) {
