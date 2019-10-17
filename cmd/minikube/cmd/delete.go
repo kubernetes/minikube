@@ -177,7 +177,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	if err = cluster.DeleteHost(api); err != nil {
 		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": profile})
+			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": profile.Name})
 		default:
 			out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
 			out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
