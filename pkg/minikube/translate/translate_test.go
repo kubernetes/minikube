@@ -51,3 +51,53 @@ func TestSetPreferredLanguage(t *testing.T) {
 	}
 
 }
+
+func TestT(t *testing.T) {
+	var tests = []struct {
+		description, input, expected string
+		langDef, langPref            language.Tag
+		translations                 map[string]interface{}
+	}{
+		{
+			description: "empty string not default language",
+			input:       "",
+			expected:    "",
+			langPref:    language.English,
+			langDef:     language.Lithuanian,
+		},
+		{
+			description: "empty string and default language",
+			input:       "",
+			expected:    "",
+			langPref:    language.English,
+			langDef:     language.English,
+		},
+		{
+			description:  "existing translation",
+			input:        "cat",
+			expected:     "kot",
+			langPref:     language.Lithuanian,
+			langDef:      language.English,
+			translations: map[string]interface{}{"cat": "kot"},
+		},
+		{
+			description:  "not existing translation",
+			input:        "cat",
+			expected:     "cat",
+			langPref:     language.Lithuanian,
+			langDef:      language.English,
+			translations: map[string]interface{}{"dog": "pies"},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			defaultLanguage = test.langDef
+			preferredLanguage = test.langPref
+			Translations = test.translations
+			got := T(test.input)
+			if test.expected != got {
+				t.Errorf("T(%v) shoud return %v, but got: %v", test.input, test.expected, got)
+			}
+		})
+	}
+}

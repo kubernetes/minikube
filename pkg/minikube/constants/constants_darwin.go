@@ -18,6 +18,7 @@ limitations under the License.
 
 package constants
 
+// DefaultMountDir is the default mounting directory for Darwin
 var DefaultMountDir = "/Users"
 
 // SupportedVMDrivers is a list of supported drivers on Darwin.

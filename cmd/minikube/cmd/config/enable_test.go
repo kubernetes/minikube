@@ -16,10 +16,24 @@ limitations under the License.
 
 package config
 
-import "testing"
+import (
+	"testing"
+
+	"gotest.tools/assert"
+	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/localpath"
+)
 
 func TestEnableUnknownAddon(t *testing.T) {
 	if err := Set("InvalidAddon", "false"); err == nil {
 		t.Fatalf("Enable did not return error for unknown addon")
 	}
+}
+
+func TestEnableAddon(t *testing.T) {
+	if err := Set("ingress", "true"); err != nil {
+		t.Fatalf("Enable returned unexpected error: " + err.Error())
+	}
+	config, _ := pkgConfig.ReadConfig(localpath.ConfigFile)
+	assert.Equal(t, config["ingress"], true)
 }
