@@ -18,6 +18,12 @@ associated files.
 minikube delete [flags]
 ```
 
+## Options
+
+```
+      --all                              Delete all profiles and clusters
+```
+
 ### Options inherited from parent commands
 
 ```

@@ -39,3 +39,7 @@ Stop your local cluster:
 Delete your local cluster:
 
 `minikube delete`
+
+Delete all local clusters and profiles
+
+`minikube delete --all`
