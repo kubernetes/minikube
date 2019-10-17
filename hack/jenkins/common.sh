@@ -159,7 +159,7 @@ if type -P virsh; then
 fi
 
 if type -P vboxmanage; then
-  for guid in $(vboxmanage list vms | grep -Eo '\{[-a-Z0-9]+\}'); do
+  for guid in $(vboxmanage list vms | grep -Eo '\{[a-zA-Z0-9-]+\}'); do
     echo "- Removing stale VirtualBox VM: $guid"
     vboxmanage startvm "${guid}" --type emergencystop || true
     vboxmanage unregistervm "${guid}" || true
