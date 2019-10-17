@@ -50,5 +50,7 @@ systemctl is-active --quiet kubelet \
   && echo "stopping kubelet" \
   && sudo systemctl stop kubelet
 
+install cron/cleanup-and-reboot.linux /etc/cron.hourly/cleanup-and-reboot
+
 # Download files and set permissions
 source ./common.sh

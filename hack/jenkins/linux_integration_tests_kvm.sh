@@ -30,5 +30,7 @@ VM_DRIVER="kvm2"
 JOB_NAME="KVM_Linux"
 PARALLEL_COUNT=4
 
+install cron/cleanup-and-reboot.linux /etc/cron.hourly/cleanup-and-reboot
+
 # Download files and set permissions
 source ./common.sh
