@@ -28,6 +28,10 @@ define DOCKER_BIN_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/bin/dockerd
 
 	$(INSTALL) -D -m 0755 \
+		$(@D)/docker-init \
+		$(TARGET_DIR)/bin/docker-init
+
+	$(INSTALL) -D -m 0755 \
 		$(@D)/docker-proxy \
 		$(TARGET_DIR)/bin/docker-proxy
 endef
