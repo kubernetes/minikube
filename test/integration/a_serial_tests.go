@@ -16,7 +16,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// a_download_only_test.go filename starts with a, for the purpose that it runs before all parallel tests and downloads the images and caches them.
 package integration
 
 import (
@@ -34,10 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-// Note this test runs before all because filename is alphabetically first
-// is used to cache images and binaries used by other parallel tests to avoid redownloading.
-// TestDownloadOnly tests the --download-only option
-func TestDownloadOnly(t *testing.T) {
+func TestDownloadAndDeleteAll(t *testing.T) {
 	profile := UniqueProfileName("download")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer Cleanup(t, profile, cancel)
@@ -79,5 +75,13 @@ func TestDownloadOnly(t *testing.T) {
 				}
 			})
 		}
+		// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
+		t.Run("DeleteAll", func(t *testing.T) {
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
+			if err != nil {
+				t.Errorf("%s failed: %v", rr.Args, err)
+			}
+		})
 	})
+
 }
