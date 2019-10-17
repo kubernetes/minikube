@@ -45,9 +45,15 @@ echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]" | cut -d" " -f3)
 if [[ "${LOAD}" -gt 2 ]]; then
   echo ""
-  echo "******************************* LOAD WARNING **************************"
-  echo "Load average is very high (${LOAD}), which may cause failures"
-  echo "******************************* LOAD WARNING **************************"
+  echo "********************** LOAD WARNING ********************************"
+  echo "Load average is very high (${LOAD}), which may cause failures. Top:"
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Two samples, macOS does not calculate CPU usage on the first one
+    top -l 2 -o cpu -n 5 | tail -n 15
+  else
+    top -b -n1 | head -n 15
+  fi
+  echo "********************** LOAD WARNING ********************************"
   echo ""
 fi
 
