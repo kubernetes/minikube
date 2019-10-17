@@ -33,7 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-// This test runs before others due to filename order.
 func TestDownloadAndDeleteAll(t *testing.T) {
 	profile := UniqueProfileName("download")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
@@ -76,8 +75,8 @@ func TestDownloadAndDeleteAll(t *testing.T) {
 				}
 			})
 		}
+		// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
 		t.Run("DeleteAll", func(t *testing.T) {
-			// This is a weird place to test profile deletion, but this test is serial, and we have an unneccesary profile to delete!
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
 			if err != nil {
 				t.Errorf("%s failed: %v", rr.Args, err)
