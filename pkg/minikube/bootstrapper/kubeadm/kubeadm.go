@@ -65,6 +65,11 @@ const (
 	kubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
 )
 
+const (
+	// Container runtimes
+	remoteContainerRuntime = "remote"
+)
+
 // KubeadmExtraArgsWhitelist is a whitelist of supported kubeadm params that can be supplied to kubeadm through
 // minikube's ExtraArgs parameter. The list is split into two parts - params that can be supplied as flags on the
 // command line and params that have to be inserted into the kubeadm config file. This is because of a kubeadm
@@ -172,7 +177,7 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string,
 // LogCommands returns a map of log type to a command which will display that log.
 func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string {
 	var kubelet strings.Builder
-	kubelet.WriteString("journalctl -u kubelet")
+	kubelet.WriteString("sudo journalctl -u kubelet")
 	if o.Lines > 0 {
 		kubelet.WriteString(fmt.Sprintf(" -n %d", o.Lines))
 	}
@@ -556,9 +561,9 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 		extraOpts["node-ip"] = k8s.NodeIP
 	}
 
-	podInfraContainerImage, _ := images.CachedImages(k8s.ImageRepository, k8s.KubernetesVersion)
-	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && podInfraContainerImage != "" {
-		extraOpts["pod-infra-container-image"] = podInfraContainerImage
+	pauseImage := images.PauseImage(k8s.ImageRepository, k8s.KubernetesVersion)
+	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
+		extraOpts["pod-infra-container-image"] = pauseImage
 	}
 
 	// parses a map of the feature gates for kubelet
@@ -590,7 +595,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 
 // UpdateCluster updates the cluster
 func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
-	_, images := images.CachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
+	images := images.CachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
 	if cfg.ShouldLoadCachedImages {
 		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
@@ -693,6 +698,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, er
 		KubernetesVersion string
 		EtcdDataDir       string
 		NodeName          string
+		DNSDomain         string
 		CRISocket         string
 		ImageRepository   string
 		ExtraArgs         []ComponentExtraArgs
@@ -712,6 +718,7 @@ func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, er
 		ExtraArgs:         extraComponentConfig,
 		FeatureArgs:       kubeadmFeatureArgs,
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
+		DNSDomain:         k8s.DNSDomain,
 	}
 
 	if k8s.ServiceCIDR != "" {
@@ -749,8 +756,8 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 func configFiles(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte) []assets.CopyableFile {
 	fs := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget(kubeadm, yamlConfigPath, "0640"),
-		assets.NewMemoryAssetTarget(kubelet, kubeletSystemdConfFile, "0640"),
-		assets.NewMemoryAssetTarget(kubeletSvc, kubeletServiceFile, "0640"),
+		assets.NewMemoryAssetTarget(kubelet, kubeletSystemdConfFile, "0644"),
+		assets.NewMemoryAssetTarget(kubeletSvc, kubeletServiceFile, "0644"),
 	}
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin

@@ -37,9 +37,25 @@ echo "job:       ${JOB_NAME}"
 echo "test home: ${TEST_HOME}"
 echo "sudo:      ${SUDO_PREFIX}"
 echo "kernel:    $(uname -v)"
+echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
+
+readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]" | cut -d" " -f3)
+if [[ "${LOAD}" -gt 2 ]]; then
+  echo ""
+  echo "********************** LOAD WARNING ********************************"
+  echo "Load average is very high (${LOAD}), which may cause failures. Top:"
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Two samples, macOS does not calculate CPU usage on the first one
+    top -l 2 -o cpu -n 5 | tail -n 15
+  else
+    top -b -n1 | head -n 15
+  fi
+  echo "********************** LOAD WARNING ********************************"
+  echo ""
+fi
 
 case "${VM_DRIVER}" in
   kvm2)
@@ -82,6 +98,7 @@ gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
+"${MINIKUBE_BIN}" version
 
 procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
 if [[ "${procs}" != "" ]]; then
@@ -91,28 +108,36 @@ if [[ "${procs}" != "" ]]; then
   kill -9 ${procs} || true
 fi
 
+# Quickly notice misconfigured test roots
+mkdir -p "${TEST_ROOT}"
+
 # Cleanup stale test outputs.
 echo ""
 echo ">> Cleaning up after previous test runs ..."
+for entry in $(ls ${TEST_ROOT}); do
+  test_path="${TEST_ROOT}/${entry}"
+  ls -lad "${test_path}" || continue
 
-for stale_dir in ${TEST_ROOT}/*; do
-  echo "* Cleaning stale test root: ${stale_dir}"
-
-  for tunnel in $(find ${stale_dir} -name tunnels.json -type f); do
+  echo "* Cleaning stale test path: ${test_path}"
+  for tunnel in $(find ${test_path} -name tunnels.json -type f); do
     env MINIKUBE_HOME="$(dirname ${tunnel})" ${MINIKUBE_BIN} tunnel --cleanup || true
   done
 
-  for home in $(find ${stale_dir} -name .minikube -type d); do
-   env MINIKUBE_HOME="$(dirname ${home})" ${MINIKUBE_BIN} delete || true
-   sudo rm -Rf "${home}"
+  for home in $(find ${test_path} -name .minikube -type d); do
+    env MINIKUBE_HOME="$(dirname ${home})" ${MINIKUBE_BIN} delete --all || true
+    sudo rm -Rf "${home}"
   done
 
-  for kconfig in $(find ${stale_dir} -name kubeconfig -type f); do
+  for kconfig in $(find ${test_path} -name kubeconfig -type f); do
     sudo rm -f "${kconfig}"
   done
 
-  rm -f "${stale_dir}/*" || true
-  rmdir "${stale_dir}" || ls "${stale_dir}"
+  # Be very specific to avoid accidentally deleting other items, like wildcards or devices
+  if [[ -d "${test_path}" ]]; then
+    rm -Rf "${test_path}" || true
+  elif [[ -f "${test_path}" ]]; then
+    rm -f "${test_path}" || true
+  fi
 done
 
 # sometimes tests left over zombie procs that won't exit
@@ -134,14 +159,21 @@ if type -P virsh; then
 fi
 
 if type -P vboxmanage; then
-  vboxmanage list vms || true
-  vboxmanage list vms \
-    | egrep -o '{.*?}' \
-    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
-    || true
+  for guid in $(vboxmanage list vms | grep -Eo '\{[a-zA-Z0-9-]+\}'); do
+    echo "- Removing stale VirtualBox VM: $guid"
+    vboxmanage startvm "${guid}" --type emergencystop || true
+    vboxmanage unregistervm "${guid}" || true
+  done
+
+  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ printf $2 }')
+  for if in $ifaces; do
+    vboxmanage hostonlyif remove "${if}" || true
+  done
 
   echo ">> VirtualBox VM list after clean up (should be empty):"
   vboxmanage list vms || true
+  echo ">> VirtualBox interface list after clean up (should be empty):"
+  vboxmanage list hostonlyifs || true
 fi
 
 

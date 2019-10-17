@@ -348,6 +348,14 @@ var Addons = map[string]*Addon{
 			"0640",
 			true),
 	}, false, "helm-tiller"),
+	"ingress-dns": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/ingress-dns/ingress-dns-pod.yaml",
+			vmpath.GuestAddonsDir,
+			"ingress-dns-pod.yaml",
+			"0640",
+			false),
+	}, false, "ingress-dns"),
 }
 
 // AddMinikubeDirAssets adds all addons and files to the list

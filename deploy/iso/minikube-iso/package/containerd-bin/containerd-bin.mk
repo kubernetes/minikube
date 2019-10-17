@@ -11,6 +11,7 @@ CONTAINERD_BIN_DEPENDENCIES = host-go libgpgme
 CONTAINERD_BIN_GOPATH = $(@D)/_output
 CONTAINERD_BIN_ENV = \
 	CGO_ENABLED=1 \
+	GO111MODULE=off \
 	GOPATH="$(CONTAINERD_BIN_GOPATH)" \
 	GOBIN="$(CONTAINERD_BIN_GOPATH)/bin" \
 	PATH=$(CONTAINERD_BIN_GOPATH)/bin:$(BR_PATH)
@@ -42,13 +43,13 @@ define CONTAINERD_BIN_INSTALL_TARGET_CMDS
 		$(@D)/bin/ctr \
 		$(TARGET_DIR)/usr/bin
 	$(INSTALL) -Dm644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/containerd-bin/config.toml \
+		$(CONTAINERD_BIN_PKGDIR)/config.toml \
 		$(TARGET_DIR)/etc/containerd/config.toml
 endef
 
 define CONTAINERD_BIN_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -Dm755 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/containerd-bin/containerd.service \
+		$(CONTAINERD_BIN_PKGDIR)/containerd.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/containerd.service
 	$(call link-service,containerd.service)
 	$(call link-service,containerd-shutdown.service)
