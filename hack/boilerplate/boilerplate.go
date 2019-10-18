@@ -29,10 +29,16 @@ import (
 )
 
 var (
-	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
 	boilerplatedir = flag.String("boilerplate-dir", ".", "Boilerplate directory for boilerplate files")
 	rootdir        = flag.String("rootdir", "../../", "Root directory to examine")
 	verbose        = flag.Bool("v", false, "Verbose")
+	skippedPaths   = regexp.MustCompile(`Godeps|third_party|_gopath|_output|\.git|cluster/env.sh|vendor|test/e2e/generated/bindata.go|site/themes/docsy`)
+	windowdNewLine = regexp.MustCompile(`\r`)
+	txtExtension   = regexp.MustCompile(`\.txt`)
+	goBuildTag     = regexp.MustCompile(`(?m)^(// \+build.*\n)+\n`)
+	shebang        = regexp.MustCompile(`(?m)^(#!.*\n)\n*`)
+	copyright      = regexp.MustCompile(`Copyright YEAR`)
+	copyrightReal  = regexp.MustCompile(`Copyright \d{4}`)
 )
 
 func main() {
@@ -69,14 +75,12 @@ func extensionToBoilerplate(dir string) (map[string][]byte, error) {
 	refs := make(map[string][]byte)
 	files, _ := filepath.Glob(dir + "/*.txt")
 	for _, filename := range files {
-		re := regexp.MustCompile(`\.txt`)
-		extension := strings.ToLower(filepath.Ext(re.ReplaceAllString(filename, "")))
+		extension := strings.ToLower(filepath.Ext(txtExtension.ReplaceAllString(filename, "")))
 		data, err := ioutil.ReadFile(filename)
 		if err != nil {
 			return nil, err
 		}
-		re = regexp.MustCompile(`\r`)
-		refs[extension] = re.ReplaceAll(data, nil)
+		refs[extension] = windowdNewLine.ReplaceAll(data, nil)
 	}
 	if *verbose {
 		dir, err := filepath.Abs(dir)
@@ -94,26 +98,22 @@ func extensionToBoilerplate(dir string) (map[string][]byte, error) {
 
 // filePasses checks whether the processed file is valid. Returning false means that the file does not the proper boilerplate template.
 func filePasses(filename string, expectedBoilerplate []byte) (bool, error) {
-	var re *regexp.Regexp
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return false, err
 	}
-	re = regexp.MustCompile(`\r`)
-	data = re.ReplaceAll(data, nil)
+	data = windowdNewLine.ReplaceAll(data, nil)
 
 	extension := filepath.Ext(filename)
 
 	// remove build tags from the top of Go files
 	if extension == ".go" {
-		re = regexp.MustCompile(`(?m)^(// \+build.*\n)+\n`)
-		data = re.ReplaceAll(data, nil)
+		data = goBuildTag.ReplaceAll(data, nil)
 	}
 
 	// remove shebang from the top of shell files
 	if extension == ".sh" {
-		re = regexp.MustCompile(`(?m)^(#!.*\n)\n*`)
-		data = re.ReplaceAll(data, nil)
+		data = shebang.ReplaceAll(data, nil)
 	}
 
 	// if our test file is smaller than the reference it surely fails!
@@ -124,14 +124,12 @@ func filePasses(filename string, expectedBoilerplate []byte) (bool, error) {
 	data = data[:len(expectedBoilerplate)]
 
 	// Search for "Copyright YEAR" which exists in the boilerplate, but shouldn't in the real thing
-	re = regexp.MustCompile(`Copyright YEAR`)
-	if re.Match(data) {
+	if copyright.Match(data) {
 		return false, nil
 	}
 
 	// Replace all occurrences of the regex "Copyright \d{4}" with "Copyright YEAR"
-	re = regexp.MustCompile(`Copyright \d{4}`)
-	data = re.ReplaceAll(data, []byte(`Copyright YEAR`))
+	data = copyrightReal.ReplaceAll(data, []byte(`Copyright YEAR`))
 
 	return bytes.Equal(data, expectedBoilerplate), nil
 }
