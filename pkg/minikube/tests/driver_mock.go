@@ -48,14 +48,14 @@ func (d *MockDriver) Logf(format string, args ...interface{}) {
 
 // Create creates a MockDriver instance
 func (d *MockDriver) Create() error {
-	d.Logf("Mockd.Create")
+	d.Logf("MockDriver.Create")
 	d.CurrentState = state.Running
 	return nil
 }
 
 // GetIP returns the IP address
 func (d *MockDriver) GetIP() (string, error) {
-	d.Logf("Mockd.GetIP")
+	d.Logf("MockDriver.GetIP")
 	if d.IP != "" {
 		return d.IP, nil
 	}
@@ -90,7 +90,7 @@ func (d *MockDriver) GetSSHKeyPath() string {
 
 // GetState returns the state of the driver
 func (d *MockDriver) GetState() (state.State, error) {
-	d.Logf("Mockd.GetState: %v", d.CurrentState)
+	d.Logf("MockDriver.GetState: %v", d.CurrentState)
 	return d.CurrentState, nil
 }
 
@@ -101,14 +101,14 @@ func (d *MockDriver) GetURL() (string, error) {
 
 // Kill kills the machine
 func (d *MockDriver) Kill() error {
-	d.Logf("Mockd.Kill")
+	d.Logf("MockDriver.Kill")
 	d.CurrentState = state.Stopped
 	return nil
 }
 
 // Remove removes the machine
 func (d *MockDriver) Remove() error {
-	d.Logf("Mockd.Remove")
+	d.Logf("MockDriver.Remove")
 	if d.RemoveError {
 		return errors.New("error deleting machine")
 	}
@@ -117,7 +117,7 @@ func (d *MockDriver) Remove() error {
 
 // Restart restarts the machine
 func (d *MockDriver) Restart() error {
-	d.Logf("Mockd.Restart")
+	d.Logf("MockDriver.Restart")
 	d.CurrentState = state.Running
 	return nil
 }
@@ -129,20 +129,20 @@ func (d *MockDriver) SetConfigFromFlags(opts drivers.DriverOptions) error {
 
 // Start starts the machine
 func (d *MockDriver) Start() error {
-	d.Logf("Mockd.Start")
+	d.Logf("MockDriver.Start")
 	d.CurrentState = state.Running
 	return nil
 }
 
 // Stop stops the machine
 func (d *MockDriver) Stop() error {
-	d.Logf("Mockd.Stop")
+	d.Logf("MockDriver.Stop")
 	d.CurrentState = state.Stopped
 	return nil
 }
 
 // DriverName returns the name of the driver
 func (d *MockDriver) DriverName() string {
-	d.Logf("Mockd.Name")
+	d.Logf("MockDriver.Name")
 	return "mock"
 }
