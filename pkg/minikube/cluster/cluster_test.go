@@ -22,6 +22,9 @@ import (
 	"testing"
 	"time"
 
+	// Register drivers
+	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/provision"
