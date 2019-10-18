@@ -72,7 +72,7 @@ func TestDeleteProfileWithValidConfig(t *testing.T) {
 	}
 
 	if files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines")); len(files) != (numberOfMachineDirs - 1) {
-		t.Fatal("Did not delete exactly one profile")
+		t.Fatal("Did not delete exactly one machine")
 	}
 
 	viper.Set(config.MachineProfile, "")
@@ -444,18 +444,14 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
 	}
 
-	files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "profiles"))
-	numberOfProfileDirs := len(files)
+	pFiles, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "profiles"))
+	mFiles, _ = ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
 
-	files, _ = ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
-	numberOfMachineDirs := len(files)
-
-	if numberOfTotalProfileDirs != numberOfProfileDirs {
-		t.Error("invalid testdata")
+	if numberOfTotalProfileDirs != len(pFiles) {
+		t.Error("got %d test profiles, expected %d: %s", numberOfTotalProfileDirs, len(pFiles), pFiles)
 	}
-
 	if numberOfTotalMachineDirs != numberOfMachineDirs {
-		t.Error("invalid testdata")
+		t.Error("got %d test machines, expected %d: %s", numberOfTotalMachineDirs, len(mFiles), mFiles)
 	}
 
 	validProfiles, inValidProfiles, err := config.ListProfiles()
@@ -465,7 +461,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	}
 
 	if numberOfTotalProfileDirs != len(validProfiles)+len(inValidProfiles) {
-		t.Error("invalid testdata")
+		t.Error("ListProfiles length = %d, expected %d", len(validProfiles)+len(inValidProfiles), numberOfTotalProfileDirs)
 	}
 
 	profiles := append(validProfiles, inValidProfiles...)

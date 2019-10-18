@@ -976,8 +976,7 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 		}
 	}
 
-	// none driver does not need ssh access
-	if h.Driver.DriverName() != constants.DriverNone {
+	if driver.BareMetal(h.Driver.DriverName()) {
 		sshAddr := fmt.Sprintf("%s:22", ip)
 		conn, err := net.Dial("tcp", sshAddr)
 		if err != nil {

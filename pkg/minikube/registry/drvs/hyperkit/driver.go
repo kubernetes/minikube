@@ -25,7 +25,6 @@ import (
 	"github.com/pborman/uuid"
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )

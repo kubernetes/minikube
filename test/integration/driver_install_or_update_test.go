@@ -26,7 +26,7 @@ import (
 
 	"github.com/blang/semver"
 
-	"k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 func TestKVMDriverInstallOrUpdate(t *testing.T) {
