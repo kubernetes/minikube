@@ -459,8 +459,12 @@ func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, ma
 		exit.WithError("Failed to get machine client", err)
 	}
 	host, preExists = startHost(m, config.MachineConfig)
+	runner, err = machine.CommandRunner(host)
+	if err != nil {
+		exit.WithError("Failed to get command runner", err)
+	}
 
-	ip := validateNetwork(host)
+	ip := validateNetwork(host, runner)
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
@@ -470,10 +474,6 @@ func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, ma
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
 		exit.WithError("Failed to save config", err)
-	}
-	runner, err = machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
 	}
 
 	return runner, preExists, m, host
@@ -811,7 +811,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 		repository = autoSelectedRepository
 	}
 
-	if repository != "" {
+	if cmd.Flags().Changed(imageRepository) {
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
@@ -952,7 +952,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host) string {
+func validateNetwork(h *host.Host, r command.Runner) string {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
@@ -976,7 +976,51 @@ func validateNetwork(h *host.Host) string {
 		}
 	}
 
-	// Here is where we should be checking connectivity to/from the VM
+	// none driver does not need ssh access
+	if h.Driver.DriverName() != constants.DriverNone {
+		sshAddr := fmt.Sprintf("%s:22", ip)
+		conn, err := net.Dial("tcp", sshAddr)
+		if err != nil {
+			exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
+
+This is likely due to one of two reasons:
+
+- VPN or firewall interference
+- {{.hypervisor}} network configuration issue
+
+Suggested workarounds:
+
+- Disable your local VPN or firewall software
+- Configure your local VPN or firewall to allow access to {{.ip}}
+- Restart or reinstall {{.hypervisor}}
+- Use an alternative --vm-driver`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
+		}
+		defer conn.Close()
+	}
+
+	if err := r.Run("nslookup kubernetes.io"); err != nil {
+		out.WarningT("VM is unable to resolve DNS hosts: {[.error}}", out.V{"error": err})
+	}
+
+	// Try both UDP and ICMP to assert basic external connectivity
+	if err := r.Run("nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8"); err != nil {
+		out.WarningT("VM is unable to directly connect to the internet: {{.error}}", out.V{"error": err})
+	}
+
+	// Try an HTTPS connection to the
+	proxy := os.Getenv("HTTPS_PROXY")
+	opts := "-sS"
+	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
+		opts = fmt.Sprintf("-x %s %s", proxy, opts)
+	}
+
+	repo := viper.GetString(imageRepository)
+	if repo == "" {
+		repo = images.DefaultImageRepo
+	}
+	if err := r.Run(fmt.Sprintf("curl %s https://%s/", opts, repo)); err != nil {
+		out.WarningT("VM is unable to connect to the selected image repository: {{.error}}", out.V{"error": err})
+	}
 	return ip
 }
 
