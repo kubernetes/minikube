@@ -137,7 +137,6 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	return h, nil
 }
 
-
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
 	start := time.Now()

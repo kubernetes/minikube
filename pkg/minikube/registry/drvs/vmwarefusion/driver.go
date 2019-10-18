@@ -24,14 +24,13 @@ import (
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          constants.VMwareFusion,
+		Name:          driver.VMwareFusion,
 		Builtin:       true,
 		ConfigCreator: createVMwareFusionHost,
 		DriverCreator: func() drivers.Driver {

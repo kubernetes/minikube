@@ -18,19 +18,18 @@ package none
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/drivers/none"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          constants.None,
+		Name:          driver.None,
 		Builtin:       true,
 		ConfigCreator: createNoneHost,
 		DriverCreator: func() drivers.Driver {
@@ -42,11 +41,10 @@ func init() {
 }
 
 // createNoneHost creates a none Driver from a MachineConfig
-func createNoneHost(config cfg.MachineConfig) interface{} {
+func createNoneHost(mc config.MachineConfig) interface{} {
 	return none.NewDriver(none.Config{
-		MachineName:      cfg.GetMachineName(),
+		MachineName:      config.GetMachineName(),
 		StorePath:        localpath.MiniPath(),
-		ContainerRuntime: config.ContainerRuntime,
+		ContainerRuntime: mc.ContainerRuntime,
 	})
 }
-0
