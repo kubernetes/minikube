@@ -14,12 +14,14 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vmware
+package none
 
 import (
 	"fmt"
+	"os"
 
-	vmwcfg "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config"
+	"github.com/docker/machine/libmachine/drivers"
+	"k8s.io/minikube/pkg/drivers/none"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -27,25 +29,24 @@ import (
 )
 
 func init() {
-	err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverVmware,
-		Builtin:       false,
-		ConfigCreator: createVMwareHost,
-	})
-	if err != nil {
-		panic(fmt.Sprintf("unable to register: %v", err))
+	if err := registry.Register(registry.DriverDef{
+		Name:          constants.None,
+		Builtin:       true,
+		ConfigCreator: createNoneHost,
+		DriverCreator: func() drivers.Driver {
+			return none.NewDriver(none.Config{})
+		},
+	}); err != nil {
+		panic(fmt.Sprintf("register failed: %v", err))
 	}
 }
 
-func createVMwareHost(config cfg.MachineConfig) interface{} {
-	d := vmwcfg.NewConfig(cfg.GetMachineName(), localpath.MiniPath())
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.Memory = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = config.DiskSize
-
-	// TODO(frapposelli): push these defaults upstream to fixup this driver
-	d.SSHPort = 22
-	d.ISO = d.ResolveStorePath("boot2docker.iso")
-	return d
+// createNoneHost creates a none Driver from a MachineConfig
+func createNoneHost(config cfg.MachineConfig) interface{} {
+	return none.NewDriver(none.Config{
+		MachineName:      cfg.GetMachineName(),
+		StorePath:        localpath.MiniPath(),
+		ContainerRuntime: config.ContainerRuntime,
+	})
 }
+0

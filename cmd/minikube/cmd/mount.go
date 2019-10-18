@@ -31,7 +31,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -107,7 +107,7 @@ var mountCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error loading api", err)
 		}
-		if host.Driver.DriverName() == constants.DriverNone {
+		if host.Driver.DriverName() == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube mount' command`)
 		}
 		var ip net.IP

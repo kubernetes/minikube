@@ -1,3 +1,5 @@
+// +build darwin
+
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -14,14 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package none
+package parallels
 
 import (
 	"fmt"
-	"os"
 
+	parallels "github.com/Parallels/docker-machine-parallels"
 	"github.com/docker/machine/libmachine/drivers"
-	"k8s.io/minikube/pkg/drivers/none"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -29,33 +30,25 @@ import (
 )
 
 func init() {
-	if err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverNone,
+	err := registry.Register(registry.DriverDef{
+		Name:          constants.Parallels,
 		Builtin:       true,
-		ConfigCreator: createNoneHost,
+		ConfigCreator: createParallelsHost,
 		DriverCreator: func() drivers.Driver {
-			return none.NewDriver(none.Config{})
+			return parallels.NewDriver("", "")
 		},
-	}); err != nil {
-		panic(fmt.Sprintf("register failed: %v", err))
-	}
-}
-
-// createNoneHost creates a none Driver from a MachineConfig
-func createNoneHost(config cfg.MachineConfig) interface{} {
-	return none.NewDriver(none.Config{
-		MachineName:      cfg.GetMachineName(),
-		StorePath:        localpath.MiniPath(),
-		ContainerRuntime: config.ContainerRuntime,
 	})
+	if err != nil {
+		panic(fmt.Sprintf("unable to register: %v", err))
+	}
+
 }
 
-// AutoOptions returns suggested extra options based on the current config
-func AutoOptions() string {
-	// for more info see: https://github.com/kubernetes/minikube/issues/3511
-	f := "/run/systemd/resolve/resolv.conf"
-	if _, err := os.Stat(f); err != nil {
-		return ""
-	}
-	return fmt.Sprintf("kubelet.resolv-conf=%s", f)
+func createParallelsHost(config cfg.MachineConfig) interface{} {
+	d := parallels.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*parallels.Driver)
+	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
+	d.Memory = config.Memory
+	d.CPU = config.CPUs
+	d.DiskSize = config.DiskSize
+	return d
 }

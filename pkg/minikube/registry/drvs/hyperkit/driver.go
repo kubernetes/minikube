@@ -32,7 +32,7 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverHyperkit,
+		Name:          driver.HyperKit,
 		Builtin:       false,
 		ConfigCreator: createHyperkitHost,
 	}); err != nil {

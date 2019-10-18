@@ -146,5 +146,5 @@ func (driver *MockDriver) Stop() error {
 // DriverName returns the name of the driver
 func (driver *MockDriver) DriverName() string {
 	driver.Logf("MockDriver.Name")
-	return constants.DriverMock
+	return driver.Mock
 }
