@@ -1,5 +1,3 @@
-// +build darwin
-
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -16,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package parallels
+package virtualbox
 
 import (
 	"fmt"
 
-	parallels "github.com/Parallels/docker-machine-parallels"
+	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -29,26 +27,36 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
+const defaultVirtualboxNicType = "virtio"
+
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverParallels,
+		Name:          constants.VirtualBox,
 		Builtin:       true,
-		ConfigCreator: createParallelsHost,
+		ConfigCreator: createVirtualboxHost,
 		DriverCreator: func() drivers.Driver {
-			return parallels.NewDriver("", "")
+			return virtualbox.NewDriver("", "")
 		},
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
 	}
-
 }
 
-func createParallelsHost(config cfg.MachineConfig) interface{} {
-	d := parallels.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*parallels.Driver)
+func createVirtualboxHost(config cfg.MachineConfig) interface{} {
+	d := virtualbox.NewDriver(cfg.GetMachineName(), localpath.MiniPath())
+
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = config.DiskSize
+	d.HostOnlyCIDR = config.HostOnlyCIDR
+	d.NoShare = config.DisableDriverMounts
+	d.NoVTXCheck = config.NoVTXCheck
+	d.NatNicType = defaultVirtualboxNicType
+	d.HostOnlyNicType = defaultVirtualboxNicType
+	d.DNSProxy = config.DNSProxy
+	d.HostDNSResolver = config.HostDNSResolver
+
 	return d
 }

@@ -31,7 +31,7 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverVmwareFusion,
+		Name:          constants.VMwareFusion,
 		Builtin:       true,
 		ConfigCreator: createVMwareFusionHost,
 		DriverCreator: func() drivers.Driver {

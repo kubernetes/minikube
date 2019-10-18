@@ -14,49 +14,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package virtualbox
+package vmware
 
 import (
 	"fmt"
 
-	"github.com/docker/machine/drivers/virtualbox"
-	"github.com/docker/machine/libmachine/drivers"
+	vmwcfg "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
-const defaultVirtualboxNicType = "virtio"
-
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverVirtualbox,
-		Builtin:       true,
-		ConfigCreator: createVirtualboxHost,
-		DriverCreator: func() drivers.Driver {
-			return virtualbox.NewDriver("", "")
-		},
+		Name:          constants.VMware,
+		Builtin:       false,
+		ConfigCreator: createVMwareHost,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
 	}
 }
 
-func createVirtualboxHost(config cfg.MachineConfig) interface{} {
-	d := virtualbox.NewDriver(cfg.GetMachineName(), localpath.MiniPath())
-
+func createVMwareHost(config cfg.MachineConfig) interface{} {
+	d := vmwcfg.NewConfig(cfg.GetMachineName(), localpath.MiniPath())
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = config.DiskSize
-	d.HostOnlyCIDR = config.HostOnlyCIDR
-	d.NoShare = config.DisableDriverMounts
-	d.NoVTXCheck = config.NoVTXCheck
-	d.NatNicType = defaultVirtualboxNicType
-	d.HostOnlyNicType = defaultVirtualboxNicType
-	d.DNSProxy = config.DNSProxy
-	d.HostDNSResolver = config.HostDNSResolver
 
+	// TODO(frapposelli): push these defaults upstream to fixup this driver
+	d.SSHPort = 22
+	d.ISO = d.ResolveStorePath("boot2docker.iso")
 	return d
 }

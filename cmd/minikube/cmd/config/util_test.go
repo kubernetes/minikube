@@ -26,7 +26,7 @@ import (
 )
 
 var minikubeConfig = pkgConfig.MinikubeConfig{
-	"vm-driver":            constants.DriverKvm2,
+	"vm-driver":            constants.KVM2,
 	"cpus":                 12,
 	"show-libmachine-logs": true,
 }
@@ -49,7 +49,7 @@ func TestFindSetting(t *testing.T) {
 }
 
 func TestSetString(t *testing.T) {
-	err := SetString(minikubeConfig, "vm-driver", constants.DriverVirtualbox)
+	err := SetString(minikubeConfig, "vm-driver", constants.VirtualBox)
 	if err != nil {
 		t.Fatalf("Couldn't set string: %v", err)
 	}

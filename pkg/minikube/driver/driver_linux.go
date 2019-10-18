@@ -14,16 +14,26 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package driver
 
 import (
-	// Import all the default drivers
-	_ "k8s.io/minikube/pkg/minikube/drivers/hyperkit"
-	_ "k8s.io/minikube/pkg/minikube/drivers/hyperv"
-	_ "k8s.io/minikube/pkg/minikube/drivers/kvm2"
-	_ "k8s.io/minikube/pkg/minikube/drivers/none"
-	_ "k8s.io/minikube/pkg/minikube/drivers/parallels"
-	_ "k8s.io/minikube/pkg/minikube/drivers/virtualbox"
-	_ "k8s.io/minikube/pkg/minikube/drivers/vmware"
-	_ "k8s.io/minikube/pkg/minikube/drivers/vmwarefusion"
+	"os/exec"
 )
+
+// supportedDrivers is a list of supported drivers on Linux.
+var supportedDrivers = []string{
+	VirtualBox,
+	Parallels,
+	VMwareFusion,
+	KVM2,
+	VMware,
+	None,
+}
+
+func VBoxManagePath() string {
+	cmd := "VBoxManage"
+	if path, err := exec.LookPath(cmd); err == nil {
+		return path
+	}
+	return cmd
+}
