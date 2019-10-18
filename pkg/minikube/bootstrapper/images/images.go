@@ -25,10 +25,15 @@ import (
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
+const (
+	DefaultImageRepo    = "k8s.gcr.io"
+	DefaultMinikubeRepo = "gcr.io/k8s-minikube"
+)
+
 // getImageRepositories returns either the k8s image registry on GCR or a mirror if specified
 func getImageRepository(imageRepository string) string {
 	if imageRepository == "" {
-		imageRepository = "k8s.gcr.io"
+		imageRepository = DefaultImageRepo
 	}
 	if !strings.HasSuffix(imageRepository, "/") {
 		imageRepository += "/"
@@ -41,7 +46,7 @@ func getImageRepository(imageRepository string) string {
 func getMinikubeRepository(imageRepository string) string {
 	minikubeRepository := imageRepository
 	if minikubeRepository == "" {
-		minikubeRepository = "gcr.io/k8s-minikube"
+		minikubeRepository = DefaultMinikubeRepo
 	}
 	if !strings.HasSuffix(minikubeRepository, "/") {
 		minikubeRepository += "/"
