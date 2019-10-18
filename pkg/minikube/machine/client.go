@@ -274,7 +274,7 @@ func registerDriver(drvName string) {
 	def, err := registry.Driver(drvName)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
-			exit.UsageT("unsupported driver: {{.name}}", out.V{"name": drvName})
+			exit.UsageT("unsupported or missing driver: {{.name}}", out.V{"name": drvName})
 		}
 		exit.WithError("error getting driver", err)
 	}

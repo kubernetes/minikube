@@ -43,6 +43,7 @@ import (
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
+
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -50,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
+	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -432,7 +434,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
-			return nil, fmt.Errorf("unsupported driver: %s", config.VMDriver)
+			return nil, fmt.Errorf("unsupported/missing driver: %s", config.VMDriver)
 		}
 		return nil, errors.Wrap(err, "error getting driver")
 	}
