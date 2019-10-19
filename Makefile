@@ -249,6 +249,8 @@ endif
 	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
 	-gofmt -s -w $@
+	@#golint: Dns should be DNS (compat sed)
+	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
 
 pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
@@ -308,7 +310,7 @@ vet:
 	@go vet $(SOURCE_PACKAGES)
 
 .PHONY: golint
-golint:
+golint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	@golint -set_exit_status $(SOURCE_PACKAGES)
 
 .PHONY: gocyclo
