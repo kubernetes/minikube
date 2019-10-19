@@ -270,14 +270,18 @@ func StopHost(api libmachine.API) error {
 
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API) error {
-	host, err := api.Load(cfg.GetMachineName())
+	out.T(out.DeletingHost,"0 {{.err}}", out.V{"err":cfg.GetMachineName()})
+	host, err := api.Load(cfg.MachineProfile)
+
 	if err != nil {
+		out.T(out.DeletingHost,"1 {{.err}}", out.V{"err":err})
 		return errors.Wrap(err, "load")
 	}
-
+	out.T(out.DeletingHost, "Successfully powered off Hyper-V. minikube driver -- {{.driver}}", out.V{"driver": host.Driver.DriverName()})
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
 	status, err := GetHostStatus(api)
 	if err != nil {
+		out.T(out.DeletingHost,"2 {{.err}}", out.V{"err":err})
 		exit.WithCodeT(exit.Failure, "Unable to get the status of the cluster.")
 	}
 	if status == state.None.String() {
@@ -285,10 +289,14 @@ func DeleteHost(api libmachine.API) error {
 	}
 
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
-	if host.Driver.DriverName() == constants.DriverHyperv {
+	if host.DriverName == constants.DriverHyperv {
+		out.T(out.DeletingHost, "3 {{.driver}}", out.V{"driver": host.Driver.DriverName()})
+		out.T(out.DeletingHost, "4 {{.driver}}", out.V{"driver": host.DriverName})
 		if err := trySSHPowerOff(host); err != nil {
 			glog.Infof("Unable to power off minikube because the host was not found.")
+			out.T(out.DeletingHost,"3 {{.err}}", out.V{"err":err})
 		}
+		out.T(out.DeletingHost, "Successfully powered off Hyper-V. minikube driver -- {{.driver}}", out.V{"driver": host.Driver.DriverName()})
 	}
 
 	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
