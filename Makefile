@@ -130,14 +130,21 @@ ifeq ($(GOOS),windows)
 endif
 
 
+out/minikube-linux-x86_64: out/minikube-linux-amd64
+	cp $< $@
+
+out/minikube-linux-aarch64: out/minikube-linux-arm64
+	cp $< $@
+
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp $< $@
 
-.PHONY: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe
+.PHONY: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
 minikube-linux-amd64: out/minikube-linux-amd64
+minikube-linux-arm64: out/minikube-linux-arm64
 minikube-darwin-amd64: out/minikube-darwin-amd64
 minikube-windows-amd64.exe: out/minikube-windows-amd64.exe
 
@@ -265,7 +272,7 @@ endif
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
 .PHONY: cross
-cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe
+cross: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
 
 .PHONY: windows
 windows: minikube-windows-amd64.exe
@@ -281,7 +288,8 @@ e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
 
 .PHONY: checksum
 checksum:
-	for f in out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso \
+	for f in out/minikube.iso out/minikube-linux-amd64 minikube-linux-arm64 \
+		 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe \
 		 out/docker-machine-driver-kvm2 out/docker-machine-driver-hyperkit; do \
 		if [ -f "$${f}" ]; then \
 			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
@@ -348,21 +356,29 @@ mdlint:
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
-out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
+out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-0_amd64.deb
+	cp $< $@
+
+out/minikube_$(DEB_VERSION)-0_%.deb: out/minikube-linux-%
 	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
 	chmod 0755 out/minikube_$(DEB_VERSION)/DEBIAN
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
+	sed -E -i 's/--ARCH--/'$*'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
 	mkdir -p out/minikube_$(DEB_VERSION)/usr/bin
-	cp out/minikube-linux-amd64 out/minikube_$(DEB_VERSION)/usr/bin/minikube
-	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION)
+	cp $< out/minikube_$(DEB_VERSION)/usr/bin/minikube
+	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION) $@
 	rm -rf out/minikube_$(DEB_VERSION)
 
-out/minikube-$(RPM_VERSION).rpm: out/minikube-linux-amd64
+out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-0.x86_64.rpm
+	cp $< $@
+
+out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
 	cp -r installers/linux/rpm/minikube_rpm_template out/minikube-$(RPM_VERSION)
 	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/minikube-$(RPM_VERSION)/minikube.spec
 	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/minikube-$(RPM_VERSION)/minikube.spec
-	rpmbuild -bb -D "_rpmdir $(PWD)/out" -D "_rpmfilename minikube-$(RPM_VERSION).rpm" \
+	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
 		 out/minikube-$(RPM_VERSION)/minikube.spec
+	@mv out/$*/minikube-$(RPM_VERSION)-0.$*.rpm out/ && rmdir out/$*
 	rm -rf out/minikube-$(RPM_VERSION)
 
 .PHONY: apt
@@ -380,14 +396,16 @@ out/repodata/repomd.xml: out/minikube-$(RPM_VERSION).rpm
 	-u "$(MINIKUBE_RELEASES_URL)/$(VERSION)/" out
 
 .SECONDEXPANSION:
-TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
-TAR_TARGETS_darwin  := out/minikube-darwin-amd64 out/docker-machine-driver-hyperkit
-TAR_TARGETS_windows := out/minikube-windows-amd64.exe
-out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*)
+TAR_TARGETS_linux-amd64   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
+TAR_TARGETS_linux-arm64   := out/minikube-linux-arm64
+TAR_TARGETS_darwin-amd64  := out/minikube-darwin-amd64 out/docker-machine-driver-hyperkit
+TAR_TARGETS_windows-amd64 := out/minikube-windows-amd64.exe
+out/minikube-%.tar.gz: $$(TAR_TARGETS_$$*)
 	tar -cvzf $@ $^
 
 .PHONY: cross-tars
-cross-tars: out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
+cross-tars: out/minikube-linux-amd64.tar.gz out/minikube-linux-arm64.tar.gz \
+	    out/minikube-windows-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
 	-cd out && $(SHA512SUM) *.tar.gz > SHA512SUM
 
 out/minikube-installer.exe: out/minikube-windows-amd64.exe

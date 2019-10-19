@@ -18,12 +18,12 @@ day-to-day.
 %prep
 mkdir -p %{name}-%{version}
 cd %{name}-%{version}
-cp --OUT--/minikube-linux-amd64 .
+cp --OUT--/minikube-linux-%{_arch} minikube
 
 %install
 cd %{name}-%{version}
 mkdir -p %{buildroot}%{_bindir}
-install -m 755 minikube-linux-amd64 %{buildroot}%{_bindir}/%{name}
+install -m 755 minikube %{buildroot}%{_bindir}/%{name}
 
 %files
 %{_bindir}/%{name}
