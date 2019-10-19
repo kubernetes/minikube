@@ -56,11 +56,15 @@ associated files.`,
 type typeOfError int
 
 const (
-	Fatal          typeOfError = 0
+	// Fatal is a type of DeletionError
+	Fatal typeOfError = 0
+	// MissingProfile is a type of DeletionError
 	MissingProfile typeOfError = 1
+	// MissingCluster is a type of DeletionError
 	MissingCluster typeOfError = 2
 )
 
+// DeletionError can be returned from DeleteProfiles
 type DeletionError struct {
 	Err     error
 	Errtype typeOfError
@@ -118,7 +122,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 }
 
-// Deletes one or more profiles
+// DeleteProfiles deletes one or more profiles
 func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 	var errs []error
 	for _, profile := range profiles {
@@ -246,7 +250,7 @@ func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsN
 	return nil
 }
 
-// Handles deletion error from DeleteProfiles
+// HandleDeletionErrors handles deletion errors from DeleteProfiles
 func HandleDeletionErrors(errors []error) {
 	if len(errors) == 1 {
 		handleSingleDeletionError(errors[0])
