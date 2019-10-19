@@ -8,11 +8,11 @@ machine=$(uname -m)
 case ${machine} in
 	aarch64 )
 		TOOLBOX_DOCKER_IMAGE=arm64v8/fedora
-		TOOLBOX_DOCKER_TAG=29
+		TOOLBOX_DOCKER_TAG=latest
 		;;
 	x86_64 )
 		TOOLBOX_DOCKER_IMAGE=fedora
-		TOOLBOX_DOCKER_TAG=29
+		TOOLBOX_DOCKER_TAG=latest
 		;;
 	* )
 		echo "Warning: Unknown machine type ${machine}" >&2
