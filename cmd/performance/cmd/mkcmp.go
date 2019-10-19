@@ -30,14 +30,12 @@ var rootCmd = &cobra.Command{
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return validateArgs(args)
 	},
-	Run: func(cmd *cobra.Command, args []string) {
-		return
-	},
+	Run: func(cmd *cobra.Command, args []string) {},
 }
 
 func validateArgs(args []string) error {
 	if len(args) != 2 {
-		return errors.New("mkcmp requries two minikube binaries to compare: mkcmp [path to first binary] [path to second binary]")
+		return errors.New("mkcmp requires two minikube binaries to compare: mkcmp [path to first binary] [path to second binary]")
 	}
 	return nil
 }
