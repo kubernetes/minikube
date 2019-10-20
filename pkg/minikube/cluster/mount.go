@@ -69,8 +69,13 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 	return nil
 }
 
-func MountCifs(r mountRunner, mountCommand string) error {
-	out,err := r.CombinedOutput(mountCommand)
+func MountCifs(r mountRunner, target string, mountCommand string) error {
+	// Unmount the target path if it already exists
+	if err := Unmount(r, target); err != nil {
+		return errors.Wrap(err, "unmount")
+	}
+
+	out, err := r.CombinedOutput(mountCommand)
 	if err != nil {
 		//glog.Infof("%s failed: err=%s, output: %q", mountCommand, err, out)
 		glog.Infof("Mounting failed: err=%s, output: %q", err, out)

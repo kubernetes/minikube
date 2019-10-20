@@ -19,7 +19,6 @@ package cmd
 import (
 	"fmt"
 	"github.com/danieljoos/wincred"
-	"github.com/docker/machine/drivers/hyperv"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -209,36 +208,11 @@ var mountCmd = &cobra.Command{
 			wg.Wait()
 		} else if cfg.Type == cifs {
 			if host.Driver.DriverName() == constants.DriverHyperv {
-				// Use CommandRunner, as the native docker ssh service dies when Ctrl-C is received.
-				//runner, err := machine.CommandRunner(host)
-				//if err != nil {
-				//	exit.WithError("Failed to get command runner", err)
-				//}
-				//out.T(out.Notice, "CIFS Mount will be configured.")
-				//configureCifsOnHost(hostPath)
-				//
-				//hostname, _ := os.Hostname()
-				//user, err := hyperv.GetCurrentWindowsUser()
-				//if err != nil {
-				//	return
-				//}
-				//user = strings.Replace(user,(hostname + "\\"), "",1)
-				//fmt.Printf("Please Type in the password for the user - %s		-- ", user)
-				//password, _ := terminal.ReadPassword(int(os.Stdin.Fd()))
-				////fmt.Printf("Password is : %s", password)
-				//mountCmd := fmt.Sprintf("sudo mkdir -p %s && sudo mount.cifs //%s/%s %s -o username=%s,password=%s,domain=%s",vmPath, hostname, shareName, vmPath, user, password, hostname)
-				//error := cluster.MountCifs(runner, mountCmd)
-				//if error != nil {
-				//	out.ErrT(out.FailureType, "Failed unmount: {{.error}}", out.V{"error": error})
-				//}
 				var shareName = "minikube"
-
-				// Unmount the share if it already
-
 				out.T(out.Notice, "Trying to start the mounting.")
 				if err := pkghyperv.ConfigureHostMount(shareName,hostPath); err == nil {
-					if error := enableCifsShare(shareName,vmPath,runner); error != nil {
-						exit.WithError("Mount failed %v", error)
+					if err := enableCifsShare(shareName,vmPath,runner); err != nil {
+						exit.WithError("Mount failed %v", err)
 					}
 				} else {
 					exit.WithError("Mount failed %v", err)
@@ -280,13 +254,13 @@ func getPort() (int, error) {
 
 func enableCifsShare(hostShareName string, vmDestinationPath string, runner command.Runner) (error) {
 	// Ensure that the current user is administrator because creating a SMB Share requires Administrator privileges.
-	_ , err := hyperv.IsWindowsAdministrator()
+	_ , err := pkghyperv.IsWindowsAdministrator()
 	if err != nil {
 		return err
 	}
 
 	hostname, _ := os.Hostname()
-	user, err := hyperv.GetCurrentWindowsUser()
+	user, err := pkghyperv.GetCurrentWindowsUser()
 	if err != nil {
 		return err
 	}
@@ -312,26 +286,10 @@ func enableCifsShare(hostShareName string, vmDestinationPath string, runner comm
 		password = string(inputPassword)
 	}
 	mountCmd := fmt.Sprintf("sudo mkdir -p %s && sudo mount.cifs //%s/%s %s -o username=%s,password=%s,domain=%s",vmDestinationPath, hostname, shareName, vmDestinationPath, user, password, hostname)
-	error := cluster.MountCifs(runner, mountCmd)
-	if error != nil {
-		out.ErrT(out.FailureType, "Failed mounting: {{.error}}", out.V{"error": error})
-		return error
+	err = cluster.MountCifs(runner, vmDestinationPath, mountCmd)
+	if err != nil {
+		out.ErrT(out.FailureType, "Failed mounting: {{.error}}", out.V{"error": err})
+		return err
 	}
 	return nil
 }
-
-
-//func configureCifsOnHost(sourcePath string) (bool, error) {
-//	out.T(out.SuccessType, "Inside Cifs Mounting!")
-//	if _, err := hyperv.IsWindowsAdministrator(); err != nil {
-//		out.T(out.SuccessType, "Inside Cifs Mounting! {{.error}}", out.V{"error":err})
-//		return false, err
-//	}
-//
-//	if _, err := EnableCifsShare(sourcePath); err != nil {
-//		out.T(out.SuccessType, "Successfully mounted {{.sourcePath}}", out.V{"sourcePath": sourcePath})
-//	} else {
-//		out.T(out.Embarrassed, "Mounting has failed because of - [{{.err}}]",out.V{"err": err})
-//	}
-//	return true, nil
-//}
