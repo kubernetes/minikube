@@ -385,7 +385,7 @@ func checkKeyValueExpression(kvp *ast.KeyValueExpr, e *state) {
 
 		// Ok now this is just a mess
 		if help, ok := kvp.Value.(*ast.BinaryExpr); ok {
-			s := checkBinaryExpression(help, e)
+			s := checkBinaryExpression(help)
 			if s != "" {
 				e.translations[s] = ""
 			}
@@ -394,7 +394,7 @@ func checkKeyValueExpression(kvp *ast.KeyValueExpr, e *state) {
 }
 
 // checkBinaryExpression checks binary expressions, stuff of the form x + y, for strings and concats them
-func checkBinaryExpression(b *ast.BinaryExpr, e *state) string {
+func checkBinaryExpression(b *ast.BinaryExpr) string {
 	// Check the left side
 	var s string
 	if l, ok := b.X.(*ast.BasicLit); ok {
@@ -410,7 +410,7 @@ func checkBinaryExpression(b *ast.BinaryExpr, e *state) string {
 	}
 
 	if b1, ok := b.X.(*ast.BinaryExpr); ok {
-		if x := checkBinaryExpression(b1, e); x != "" {
+		if x := checkBinaryExpression(b1); x != "" {
 			s += x
 		}
 	}
@@ -429,7 +429,7 @@ func checkBinaryExpression(b *ast.BinaryExpr, e *state) string {
 	}
 
 	if b1, ok := b.Y.(*ast.BinaryExpr); ok {
-		if x := checkBinaryExpression(b1, e); x != "" {
+		if x := checkBinaryExpression(b1); x != "" {
 			s += x
 		}
 	}
