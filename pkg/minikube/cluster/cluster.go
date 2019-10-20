@@ -502,7 +502,6 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 	case constants.DriverHyperv:
 		re := regexp.MustCompile(`"VSwitch": "(.*?)",`)
 		// TODO(aprindle) Change this to deserialize the driver instead
-		out.T(out.Notice, "RawDriver -- {{.driver}}", out.V{"driver": string(host.RawDriver)})
 		hypervVirtualSwitch := re.FindStringSubmatch(string(host.RawDriver))[1]
 		ip, err := getIPForInterface(fmt.Sprintf("vEthernet (%s)", hypervVirtualSwitch))
 		if err != nil {
@@ -540,10 +539,8 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 
 // Based on code from http://stackoverflow.com/questions/23529663/how-to-get-all-addresses-and-masks-from-local-interfaces-in-go
 func getIPForInterface(name string) (net.IP, error) {
-	glog.Infof("Interface name -- %v", name)
 	i, _ := net.InterfaceByName(name)
 	addrs, _ := i.Addrs()
-	out.T(out.Notice, "Addrs -- {{.addrs}}", out.V{"addrs": addrs})
 	for _, a := range addrs {
 		if ipnet, ok := a.(*net.IPNet); ok {
 			if ip := ipnet.IP.To4(); ip != nil {
