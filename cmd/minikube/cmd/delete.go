@@ -25,7 +25,7 @@ import (
 
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
-	ps "github.com/mitchellh/go-ps"
+	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
 
 	"github.com/docker/machine/libmachine"
@@ -43,11 +43,7 @@ import (
 )
 
 var deleteAll bool
-
-const (
-	purge    = "purge"
-	forcedelete = "forcedelete"
-)
+var purge bool
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
@@ -76,12 +72,13 @@ func (error DeletionError) Error() string {
 }
 
 func init() {
-	deleteCmd.Flags().Bool(purge, false, "Set this flag to delete the '.minikube' folder from your user directory. This will prompt for confirmation.")
-	deleteCmd.Flags().Bool(forcedelete, false, "Set this flag to delete all configurations and profiles")
+	deleteCmd.Flags().BoolVar(&deleteAll, "all", false, "Set flag to delete all profiles")
+	deleteCmd.Flags().BoolVar(&purge, "purge", false, "Set this flag to delete the '.minikube' folder from your user directory.")
 
 	if err := viper.BindPFlags(deleteCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
 	}
+	RootCmd.AddCommand(deleteCmd)
 }
 
 // runDelete handles the executes the flow of "minikube delete"
@@ -94,22 +91,22 @@ func runDelete(cmd *cobra.Command, args []string) {
 		exit.WithError("Could not get profile flag", err)
 	}
 
+	validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
+	profilesToDelete := append(validProfiles, invalidProfiles...)
+
 	// If the purge flag is set, go ahead and delete the .minikube directory.
-	if viper.GetBool(purge) {
-		glog.Infof("Purging the '.minikube' directory located at %s", localpath.MiniPath())
-		if err := os.RemoveAll(localpath.MiniPath()); err != nil {
-			exit.WithError("unable to delete minikube config folder", err)
+	if purge && len(profilesToDelete) > 1 && !deleteAll {
+		out.ErrT(out.Notice, "Multiple minikube profiles were found - ")
+		for _, p := range profilesToDelete {
+			out.T(out.Notice, "    - {{.profile}}", out.V{"profile": p.Name})
 		}
-		out.T(out.Crushed, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory":localpath.MiniPath()})
+		exit.UsageT("Usage: minikube delete --all --purge")
 	}
 
 	if deleteAll {
 		if profileFlag != constants.DefaultMachineName {
 			exit.UsageT("usage: minikube delete --all")
 		}
-
-		validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
-		profilesToDelete := append(validProfiles, invalidProfiles...)
 
 		if err != nil {
 			exit.WithError("Error getting profiles to delete", err)
@@ -138,6 +135,15 @@ func runDelete(cmd *cobra.Command, args []string) {
 		} else {
 			out.T(out.DeletingHost, "Successfully deleted profile \"{{.name}}\"", out.V{"name": profileName})
 		}
+	}
+
+	// If the purge flag is set, go ahead and delete the .minikube directory.
+	if purge {
+		glog.Infof("Purging the '.minikube' directory located at %s", localpath.MiniPath())
+		if err := os.RemoveAll(localpath.MiniPath()); err != nil {
+			exit.WithError("unable to delete minikube config folder", err)
+		}
+		out.T(out.Crushed, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
 	}
 }
 
@@ -368,9 +374,4 @@ func killMountProcess() error {
 		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
 	}
 	return nil
-}
-
-func init() {
-	deleteCmd.Flags().BoolVar(&deleteAll, "all", false, "Set flag to delete all profiles")
-	RootCmd.AddCommand(deleteCmd)
 }
