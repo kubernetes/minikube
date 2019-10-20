@@ -28,6 +28,10 @@ define DOCKER_BIN_INSTALL_TARGET_CMDS
 		$(TARGET_DIR)/bin/dockerd
 
 	$(INSTALL) -D -m 0755 \
+		$(@D)/docker-init \
+		$(TARGET_DIR)/bin/docker-init
+
+	$(INSTALL) -D -m 0755 \
 		$(@D)/docker-proxy \
 		$(TARGET_DIR)/bin/docker-proxy
 endef
@@ -38,7 +42,7 @@ define DOCKER_BIN_INSTALL_INIT_SYSTEMD
 		$(TARGET_DIR)/usr/lib/systemd/system/docker.socket
 
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/docker-bin/forward.conf \
+		$(DOCKER_BIN_PKGDIR)/forward.conf \
 		$(TARGET_DIR)/etc/sysctl.d/forward.conf
 endef
 

@@ -55,6 +55,12 @@ Example output:
 minikube addons enable <name>
 ```
 
+or
+
+```shell
+minikube start --addons <name>
+```
+
 ## Interacting with an addon
 
 For addons that expose a browser endpoint, use:

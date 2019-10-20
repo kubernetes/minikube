@@ -42,7 +42,9 @@ import (
 const minikubeEnableProfile = "MINIKUBE_ENABLE_PROFILING"
 
 var (
-	machineLogErrorRe   = regexp.MustCompile(`(?i) (failed|error|fatal)`)
+	// This regex is intentionally very specific, it's supposed to surface
+	// unexpected errors from libmachine to the user.
+	machineLogErrorRe   = regexp.MustCompile(`VirtualizationException`)
 	machineLogWarningRe = regexp.MustCompile(`(?i)warning`)
 )
 
@@ -67,6 +69,7 @@ func bridgeLogMessages() {
 	log.SetOutput(stdLogBridge{})
 	mlog.SetErrWriter(machineLogBridge{})
 	mlog.SetOutWriter(machineLogBridge{})
+	mlog.SetDebug(true)
 }
 
 type stdLogBridge struct{}
