@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/delete"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -72,7 +73,7 @@ func runStop(cmd *cobra.Command, args []string) {
 		out.T(out.Stopped, `"{{.profile_name}}" stopped.`, out.V{"profile_name": profile})
 	}
 
-	if err := killMountProcess(); err != nil {
+	if err := delete.KillMountProcess(); err != nil {
 		out.T(out.WarningType, "Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 

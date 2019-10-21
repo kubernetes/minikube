@@ -18,15 +18,10 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strconv"
-
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
-	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -37,7 +32,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/delete"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -153,7 +147,7 @@ func deleteProfile(profile *config.Profile) error {
 		}
 	}
 
-	if err := killMountProcess(); err != nil {
+	if err := delete.KillMountProcess(); err != nil {
 		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
@@ -236,54 +230,6 @@ func handleMultipleDeletionErrors(errors []error) {
 			exit.WithError("Could not process errors from failed deletion", err)
 		}
 	}
-}
-
-// killMountProcess kills the mount process, if it is running
-func killMountProcess() error {
-	pidPath := filepath.Join(localpath.MiniPath(), constants.MountProcessFileName)
-	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
-		return nil
-	}
-
-	glog.Infof("Found %s ...", pidPath)
-	out, err := ioutil.ReadFile(pidPath)
-	if err != nil {
-		return errors.Wrap(err, "ReadFile")
-	}
-	glog.Infof("pidfile contents: %s", out)
-	pid, err := strconv.Atoi(string(out))
-	if err != nil {
-		return errors.Wrap(err, "error parsing pid")
-	}
-	// os.FindProcess does not check if pid is running :(
-	entry, err := ps.FindProcess(pid)
-	if err != nil {
-		return errors.Wrap(err, "ps.FindProcess")
-	}
-	if entry == nil {
-		glog.Infof("Stale pid: %d", pid)
-		if err := os.Remove(pidPath); err != nil {
-			return errors.Wrap(err, "Removing stale pid")
-		}
-		return nil
-	}
-
-	// We found a process, but it still may not be ours.
-	glog.Infof("Found process %d: %s", pid, entry.Executable())
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		return errors.Wrap(err, "os.FindProcess")
-	}
-
-	glog.Infof("Killing pid %d ...", pid)
-	if err := proc.Kill(); err != nil {
-		glog.Infof("Kill failed with %v - removing probably stale pid...", err)
-		if err := os.Remove(pidPath); err != nil {
-			return errors.Wrap(err, "Removing likely stale unkillable pid")
-		}
-		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
-	}
-	return nil
 }
 
 func init() {
