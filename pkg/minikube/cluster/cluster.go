@@ -264,16 +264,16 @@ func StopHost(api libmachine.API) error {
 
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API) error {
-	name := cfg.GetMachineName()
-	host, err := api.Load(name)
+	host, err := api.Load(cfg.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "load")
 	}
 
+	// Get the status of the host. Ensure that it exists before proceeding ahead.
 	status, err := GetHostStatus(api)
 	if err != nil {
 		// Warn, but proceed
-		out.WarningT("Unable to get the status of the {{.name}} cluster.", out.V{"name": name})
+		out.WarningT("Unable to get the status of the {{.name}} cluster.", out.V{"name": cfg.GetMachineName()})
 	}
 
 	if status == state.None.String() {
@@ -285,6 +285,7 @@ func DeleteHost(api libmachine.API) error {
 		if err := trySSHPowerOff(host); err != nil {
 			glog.Infof("Unable to power off minikube because the host was not found.")
 		}
+		out.T(out.DeletingHost, "Successfully powered off Hyper-V. minikube driver -- {{.driver}}", out.V{"driver": host.Driver.DriverName()})
 	}
 
 	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})

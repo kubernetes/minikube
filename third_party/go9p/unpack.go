@@ -218,7 +218,7 @@ func Unpack(buf []byte, dotu bool) (fc *Fcall, err error, fcsz int) {
 		goto szerror
 	}
 
-	return
+	return //NOSONAR
 
 szerror:
 	return nil, &Error{"invalid size", EINVAL}, 0

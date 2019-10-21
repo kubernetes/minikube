@@ -34,14 +34,15 @@ import (
 )
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
-func InstallOrUpdate(name string, directory string, v semver.Version, interactive bool) error {
+func InstallOrUpdate(name string, directory string, v semver.Version, interactive bool, autoUpdate bool) error {
 	if name != KVM2 && name != HyperKit {
 		return nil
 	}
 
 	executable := fmt.Sprintf("docker-machine-driver-%s", name)
+	exists := driverExists(executable)
 	path, err := validateDriver(executable, v)
-	if err != nil {
+	if !exists || (err != nil && autoUpdate) {
 		glog.Warningf("%s: %v", executable, err)
 		path = filepath.Join(directory, executable)
 		derr := download(executable, path, v)
@@ -164,4 +165,9 @@ func extractVMDriverVersion(s string) string {
 
 	v := strings.TrimSpace(matches[1])
 	return strings.TrimPrefix(v, "v")
+}
+
+func driverExists(driver string) bool {
+	_, err := exec.LookPath(driver)
+	return err == nil
 }
