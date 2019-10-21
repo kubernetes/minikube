@@ -39,7 +39,7 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return performance.CompareMinikubeStart(context.Background(), binaries)
+		return performance.CompareMinikubeStart(context.Background(), os.Stdout, binaries)
 	},
 }
 

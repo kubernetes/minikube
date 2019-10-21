@@ -19,6 +19,7 @@ package performance
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"os/exec"
@@ -27,12 +28,24 @@ import (
 	"github.com/pkg/errors"
 )
 
-const (
+var (
 	runs = 1
+	// For testing
+	collectTimeMinikubeStart = timeMinikubeStart
 )
 
 // CompareMinikubeStart compares the time to run `minikube start` between two minikube binaries
-func CompareMinikubeStart(ctx context.Context, binaries []*Binary) error {
+func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary) error {
+	durations, err := collectTimes(ctx, binaries)
+	if err != nil {
+		return err
+	}
+
+	fmt.Fprintf(out, "Old binary: %v\nNew binary: %v\nAverage Old: %f\nAverage New: %f\n", durations[0], durations[1], average(durations[0]), average(durations[1]))
+	return nil
+}
+
+func collectTimes(ctx context.Context, binaries []*Binary) ([][]float64, error) {
 	durations := make([][]float64, len(binaries))
 	for i := range durations {
 		durations[i] = make([]float64, runs)
@@ -41,17 +54,15 @@ func CompareMinikubeStart(ctx context.Context, binaries []*Binary) error {
 	for r := 0; r < runs; r++ {
 		log.Printf("Executing run %d...", r)
 		for index, binary := range binaries {
-			duration, err := timeMinikubeStart(ctx, binary)
+			duration, err := collectTimeMinikubeStart(ctx, binary)
 			if err != nil {
-				return errors.Wrapf(err, "timing run %d with %s", r, binary.path)
+				return nil, errors.Wrapf(err, "timing run %d with %s", r, binary.path)
 			}
 			durations[index][r] = duration
 		}
 	}
 
-	fmt.Printf("Old binary: %v\nNew binary: %v\nAverage Old: %f\nAverage New: %f\n", durations[0], durations[1], average(durations[0]), average(durations[1]))
-
-	return nil
+	return durations, nil
 }
 
 func average(array []float64) float64 {
