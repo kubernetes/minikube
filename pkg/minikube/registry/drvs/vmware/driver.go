@@ -20,15 +20,15 @@ import (
 	"fmt"
 
 	vmwcfg "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverVmware,
+		Name:          driver.VMware,
 		Builtin:       false,
 		ConfigCreator: createVMwareHost,
 	})
@@ -37,12 +37,12 @@ func init() {
 	}
 }
 
-func createVMwareHost(config cfg.MachineConfig) interface{} {
-	d := vmwcfg.NewConfig(cfg.GetMachineName(), localpath.MiniPath())
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.Memory = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = config.DiskSize
+func createVMwareHost(mc config.MachineConfig) interface{} {
+	d := vmwcfg.NewConfig(config.GetMachineName(), localpath.MiniPath())
+	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
+	d.Memory = mc.Memory
+	d.CPU = mc.CPUs
+	d.DiskSize = mc.DiskSize
 
 	// TODO(frapposelli): push these defaults upstream to fixup this driver
 	d.SSHPort = 22

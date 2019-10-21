@@ -1,5 +1,3 @@
-// +build darwin
-
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -16,41 +14,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vmwarefusion
+package none
 
 import (
 	"fmt"
 
-	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/drivers/none"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverVmwareFusion,
+		Name:          driver.None,
 		Builtin:       true,
-		ConfigCreator: createVMwareFusionHost,
+		ConfigCreator: createNoneHost,
 		DriverCreator: func() drivers.Driver {
-			return vmwarefusion.NewDriver("", "")
+			return none.NewDriver(none.Config{})
 		},
 	}); err != nil {
-		panic(fmt.Sprintf("register: %v", err))
+		panic(fmt.Sprintf("register failed: %v", err))
 	}
 }
 
-func createVMwareFusionHost(config cfg.MachineConfig) interface{} {
-	d := vmwarefusion.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*vmwarefusion.Driver)
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.Memory = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = config.DiskSize
-
-	// TODO(philips): push these defaults upstream to fixup this driver
-	d.SSHPort = 22
-	d.ISO = d.ResolveStorePath("boot2docker.iso")
-	return d
+// createNoneHost creates a none Driver from a MachineConfig
+func createNoneHost(mc config.MachineConfig) interface{} {
+	return none.NewDriver(none.Config{
+		MachineName:      config.GetMachineName(),
+		StorePath:        localpath.MiniPath(),
+		ContainerRuntime: mc.ContainerRuntime,
+	})
 }

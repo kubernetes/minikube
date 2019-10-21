@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package driver
 
-import (
-	// Import all the default drivers
-	_ "k8s.io/minikube/pkg/minikube/drivers/hyperkit"
-	_ "k8s.io/minikube/pkg/minikube/drivers/hyperv"
-	_ "k8s.io/minikube/pkg/minikube/drivers/kvm2"
-	_ "k8s.io/minikube/pkg/minikube/drivers/none"
-	_ "k8s.io/minikube/pkg/minikube/drivers/parallels"
-	_ "k8s.io/minikube/pkg/minikube/drivers/virtualbox"
-	_ "k8s.io/minikube/pkg/minikube/drivers/vmware"
-	_ "k8s.io/minikube/pkg/minikube/drivers/vmwarefusion"
-)
+import "os/exec"
+
+// supportedDrivers is a list of supported drivers on Darwin.
+var supportedDrivers = []string{
+	VirtualBox,
+	Parallels,
+	VMwareFusion,
+	HyperKit,
+	VMware,
+}
+
+func VBoxManagePath() string {
+	cmd := "VBoxManage"
+	if path, err := exec.LookPath(cmd); err == nil {
+		return path
+	}
+	return cmd
+}

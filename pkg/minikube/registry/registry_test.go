@@ -94,13 +94,13 @@ func TestRegistry2(t *testing.T) {
 		t.Skipf("error not expect but got: %v", err)
 	}
 	t.Run("Driver", func(t *testing.T) {
-		driverName := "foo"
-		driver, err := registry.Driver(driverName)
+		name := "foo"
+		d, err := registry.Driver(name)
 		if err != nil {
 			t.Fatalf("expect nil for registering foo driver, but got: %v", err)
 		}
-		if driver.Name != driverName {
-			t.Fatalf("expect registry.Driver(%s) returns registered driver, but got: %s", driverName, driver.Name)
+		if d.Name != name {
+			t.Fatalf("expect registry.Driver(%s) returns registered driver, but got: %s", name, d.Name)
 		}
 	})
 	t.Run("NotExistingDriver", func(t *testing.T) {

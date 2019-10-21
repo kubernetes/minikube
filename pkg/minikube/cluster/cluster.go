@@ -43,8 +43,10 @@ import (
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
+
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -78,7 +80,7 @@ func init() {
 
 // CacheISO downloads and caches ISO.
 func CacheISO(config cfg.MachineConfig) error {
-	if localDriver(config.VMDriver) {
+	if driver.BareMetal(config.VMDriver) {
 		return nil
 	}
 	return config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO)
@@ -136,14 +138,6 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	return h, nil
 }
 
-// localDriver returns whether or not the driver should be considered local
-func localDriver(name string) bool {
-	if name == constants.DriverNone || name == constants.DriverMock {
-		return true
-	}
-	return false
-}
-
 // configureHost handles any post-powerup configuration required
 func configureHost(h *host.Host, e *engine.Options) error {
 	start := time.Now()
@@ -165,7 +159,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		}
 	}
 
-	if localDriver(h.Driver.DriverName()) {
+	if driver.BareMetal(h.Driver.DriverName()) {
 		glog.Infof("%s is a local driver, skipping auth/time setup", h.Driver.DriverName())
 		return nil
 	}
@@ -251,7 +245,7 @@ func StopHost(api libmachine.API) error {
 	}
 
 	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
-	if host.DriverName == constants.DriverHyperv {
+	if host.DriverName == driver.HyperV {
 		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
 		if err := trySSHPowerOff(host); err != nil {
 			return errors.Wrap(err, "ssh power off")
@@ -287,7 +281,7 @@ func DeleteHost(api libmachine.API) error {
 	}
 
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
-	if host.Driver.DriverName() == constants.DriverHyperv {
+	if host.Driver.DriverName() == driver.HyperV {
 		if err := trySSHPowerOff(host); err != nil {
 			glog.Infof("Unable to power off minikube because the host was not found.")
 		}
@@ -424,13 +418,13 @@ func showRemoteOsRelease(driver drivers.Driver) {
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	if config.VMDriver == constants.DriverVmwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+	if config.VMDriver == driver.VMwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	if !localDriver(config.VMDriver) {
+	if !driver.BareMetal(config.VMDriver) {
 		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
 	} else {
 		info, err := getHostInfo()
@@ -442,13 +436,13 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	def, err := registry.Driver(config.VMDriver)
 	if err != nil {
 		if err == registry.ErrDriverNotFound {
-			return nil, fmt.Errorf("unsupported driver: %s", config.VMDriver)
+			return nil, fmt.Errorf("unsupported/missing driver: %s", config.VMDriver)
 		}
 		return nil, errors.Wrap(err, "error getting driver")
 	}
 
-	driver := def.ConfigCreator(config)
-	data, err := json.Marshal(driver)
+	dd := def.ConfigCreator(config)
+	data, err := json.Marshal(dd)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal")
 	}
@@ -468,7 +462,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "create")
 	}
 
-	if !localDriver(config.VMDriver) {
+	if !driver.BareMetal(config.VMDriver) {
 		showRemoteOsRelease(h.Driver)
 		// Ensure that even new VM's have proper time synchronization up front
 		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
@@ -510,9 +504,9 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 // GetVMHostIP gets the ip address to be used for mapping host -> VM and VM -> host
 func GetVMHostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
-	case constants.DriverKvm2:
+	case driver.KVM2:
 		return net.ParseIP("192.168.39.1"), nil
-	case constants.DriverHyperv:
+	case driver.HyperV:
 		re := regexp.MustCompile(`"VSwitch": "(.*?)",`)
 		// TODO(aprindle) Change this to deserialize the driver instead
 		hypervVirtualSwitch := re.FindStringSubmatch(string(host.RawDriver))[1]
@@ -521,8 +515,8 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, fmt.Sprintf("ip for interface (%s)", hypervVirtualSwitch))
 		}
 		return ip, nil
-	case constants.DriverVirtualbox:
-		out, err := exec.Command(detectVBoxManageCmd(), "showvminfo", host.Name, "--machinereadable").Output()
+	case driver.VirtualBox:
+		out, err := exec.Command(driver.VBoxManagePath(), "showvminfo", host.Name, "--machinereadable").Output()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "vboxmanage")
 		}
@@ -533,9 +527,9 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 			return []byte{}, errors.Wrap(err, "Error getting VM/Host IP address")
 		}
 		return ip, nil
-	case constants.DriverHyperkit:
+	case driver.HyperKit:
 		return net.ParseIP("192.168.64.1"), nil
-	case constants.DriverVmware:
+	case driver.VMware:
 		vmIPString, err := host.Driver.GetIP()
 		if err != nil {
 			return []byte{}, errors.Wrap(err, "Error getting VM IP address")
