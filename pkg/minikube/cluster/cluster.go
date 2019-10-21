@@ -270,16 +270,18 @@ func StopHost(api libmachine.API) error {
 
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API) error {
-	host, err := api.Load(cfg.GetMachineName())
+	name := cfg.GetMachineName()
+	host, err := api.Load(name)
 	if err != nil {
 		return errors.Wrap(err, "load")
 	}
 
-	// Get the status of the host. Ensure that it exists before proceeding ahead.
 	status, err := GetHostStatus(api)
 	if err != nil {
-		exit.WithCodeT(exit.Failure, "Unable to get the status of the cluster.")
+		// Warn, but proceed
+		out.WarningT("Unable to get the status of the {{.name}} cluster.", out.V{"name": name})
 	}
+
 	if status == state.None.String() {
 		return mcnerror.ErrHostDoesNotExist{Name: host.Name}
 	}
@@ -604,12 +606,13 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 
 // EnsureMinikubeRunningOrExit checks that minikube has a status available and that
 // the status is `Running`, otherwise it will exit
-func EnsureMinikubeRunningOrExit(api libmachine.API, exitStatus int) {
+func IsMinikubeRunning(api libmachine.API) bool {
 	s, err := GetHostStatus(api)
 	if err != nil {
-		exit.WithError("Error getting machine status", err)
+		return false
 	}
 	if s != state.Running.String() {
-		exit.WithCodeT(exit.Unavailable, "minikube is not running, so the service cannot be accessed")
+		return false
 	}
+	return true
 }
