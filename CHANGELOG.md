@@ -1,7 +1,18 @@
 # Release Notes
 
-## Version 1.5.0-beta.0 - 2019-10-15
+## Version 1.5.0-beta.0 - 2019-10-21
 
+* Add JSON output for addons list [#5601](https://github.com/kubernetes/minikube/pull/5601)
+* Added flags to purge configuration with minikube delete [#5548](https://github.com/kubernetes/minikube/pull/5548)
+* Add validation checking for minikube profile [#5624](https://github.com/kubernetes/minikube/pull/5624)
+* add ability to override autoupdating drivers [#5640](https://github.com/kubernetes/minikube/pull/5640)
+* fix "minikube update-context" command fail [#5626](https://github.com/kubernetes/minikube/pull/5626)
+* Warn if incompatible kubectl version is in use [#5596](https://github.com/kubernetes/minikube/pull/5596)
+* Make error message more human readable [#5563](https://github.com/kubernetes/minikube/pull/5563)
+* Add json output for profile list [#5554](https://github.com/kubernetes/minikube/pull/5554)
+* optimizing Chinese translation [#5201](https://github.com/kubernetes/minikube/pull/5201)
+* Allow addon enabling and disabling when minikube is not running [#5565](https://github.com/kubernetes/minikube/pull/5565)
+* Added option to delete all profiles [#4780](https://github.com/kubernetes/minikube/pull/4780)
 * Replace registry-creds addon ReplicationController with Deployment [#5586](https://github.com/kubernetes/minikube/pull/5586)
 * Performance and security enhancement for ingress-dns addon [#5614](https://github.com/kubernetes/minikube/pull/5614)
 * Add addons flag to 'minikube start' in order to enable specified addons [#5543](https://github.com/kubernetes/minikube/pull/5543)
@@ -25,10 +36,13 @@
 * Fix node InternalIP not matching host-only address [#5427](https://github.com/kubernetes/minikube/pull/5427)
 * Fix crash when deleting the cluster but it doesn't exist [#4980](https://github.com/kubernetes/minikube/pull/4980)
 
-Huge thank you for this release towards our contributors: 
+Huge thank you for this release towards our contributors:
 - Anders F Björklund
+- bhanu011
+- chentanjun
 - Cornelius Weig
 - Doug A
+- hwdef
 - James Peach
 - Josh Woodcock
 - Kenta Iso
@@ -37,18 +51,16 @@ Huge thank you for this release towards our contributors:
 - Nanik T
 - Pranav Jituri
 - Samuel Almeida
-- Sharif Elgamal
-- Thomas Strömberg
-- Zhongcheng Lao
-- Zoltán Reegn
-- bhanu011
-- chentanjun
-- hwdef
 - serhatcetinkaya
+- Sharif Elgamal
 - tanjunchen
+- Thomas Strömberg
 - u5surf
 - yugo horie
 - yuxiaobo
+- Zhongcheng Lao
+- Zoltán Reegn
+
 
 ## Version 1.4.0 - 2019-09-17
 
