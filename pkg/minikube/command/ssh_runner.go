@@ -138,7 +138,7 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	}()
 
 	elapsed := time.Since(start)
-	err = teeSSH(sess, cmdToStr(cmd), &outb, &errb)
+	err = teeSSH(sess, shellquote.Join(cmd.Args...), &outb, &errb)
 	if err == nil {
 		// Reduce log spam
 		if elapsed > (1 * time.Second) {
@@ -151,12 +151,6 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		glog.Infof("(SSHRunner) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
 	}
 	return rr, err
-}
-
-// converts a exec.Cmd to string to be used by ssh runner
-func cmdToStr(cmd *exec.Cmd) string {
-	//strings.Join(cmd.Args, " ")
-	return shellquote.Join(cmd.Args...)
 }
 
 // Copy copies a file to the remote over SSH.

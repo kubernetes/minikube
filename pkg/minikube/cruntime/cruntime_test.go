@@ -255,12 +255,9 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 }
 
 // crio is a fake implementation of crio
-func (f *FakeRunner) crio(args []string, _ bool) (string, error) {
+func (f *FakeRunner) crio(args []string, _ bool) (string, error) { //nolint (result 1 (error) is always nil)
 	if args[0] == "--version" {
 		return "crio version 1.13.0", nil
-	}
-	if args[0] == "something" { // doing this to suppress lint "result 1 (error) is always nil"
-		return "", fmt.Errorf("unknown args[0]")
 	}
 	return "", nil
 }

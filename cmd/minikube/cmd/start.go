@@ -1102,7 +1102,7 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 	}
 	// Loads cached images, generates config files, download binaries
 	if err := bs.UpdateCluster(kc); err != nil {
-		exit.WithError("Failed to update cluster<--Temproary logging-->", err)
+		exit.WithError("Failed to update cluster", err)
 	}
 	if err := bs.SetupCerts(kc); err != nil {
 		exit.WithError("Failed to setup certs", err)

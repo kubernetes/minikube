@@ -142,7 +142,6 @@ func Unmount(r mountRunner, target string) error {
 	// grep because findmnt will also display the parent!
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target))
 	if rr, err := r.RunCmd(c); err != nil {
-		glog.Infof("unmount force err=%v, out=%s", err, rr.Output())
 		return errors.Wrap(err, rr.Output())
 	}
 	glog.Infof("unmount for %s ran successfully", target)
