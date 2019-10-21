@@ -56,11 +56,15 @@ associated files.`,
 type typeOfError int
 
 const (
-	Fatal          typeOfError = 0
+	// Fatal is a type of DeletionError
+	Fatal typeOfError = 0
+	// MissingProfile is a type of DeletionError
 	MissingProfile typeOfError = 1
+	// MissingCluster is a type of DeletionError
 	MissingCluster typeOfError = 2
 )
 
+// DeletionError can be returned from DeleteProfiles
 type DeletionError struct {
 	Err     error
 	Errtype typeOfError
@@ -118,7 +122,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 }
 
-// Deletes one or more profiles
+// DeleteProfiles deletes one or more profiles
 func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 	var errs []error
 	for _, profile := range profiles {
@@ -177,7 +181,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	if err = cluster.DeleteHost(api); err != nil {
 		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": profile})
+			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": profile.Name})
 		default:
 			out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
 			out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
@@ -246,7 +250,7 @@ func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsN
 	return nil
 }
 
-// Handles deletion error from DeleteProfiles
+// HandleDeletionErrors handles deletion errors from DeleteProfiles
 func HandleDeletionErrors(errors []error) {
 	if len(errors) == 1 {
 		handleSingleDeletionError(errors[0])
