@@ -301,12 +301,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// No need to install a driver in download-only mode
 	if !viper.GetBool(downloadOnly) {
-		v, err := version.GetSemverVersion()
-		if err != nil {
-			out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-		} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
-			out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
-		}
+		updateDriver(driverName)
 	}
 
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
@@ -360,12 +355,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	configureMounts()
 
 	// enable addons with start command
-	for _, a := range addonList {
-		err = cmdcfg.Set(a, "true")
-		if err != nil {
-			exit.WithError("addon enable failed", err)
-		}
-	}
+	enableAddons()
 
 	if err = loadCachedImagesInConfigFile(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
@@ -375,13 +365,35 @@ func runStart(cmd *cobra.Command, args []string) {
 	if driverName == driver.None {
 		prepareNone()
 	}
+	waitCluster(bs, config)
+	if err := showKubectlInfo(kubeconfig, k8sVersion); err != nil {
+		glog.Errorf("kubectl info: %v", err)
+	}
+}
+
+func updateDriver(driverName string) {
+	v, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+	} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
+	}
+}
+
+func enableAddons() {
+	for _, a := range addonList {
+		err := cmdcfg.Set(a, "true")
+		if err != nil {
+			exit.WithError("addon enable failed", err)
+		}
+	}
+}
+
+func waitCluster(bs bootstrapper.Bootstrapper, config cfg.Config) {
 	if viper.GetBool(waitUntilHealthy) {
 		if err := bs.WaitCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
 			exit.WithError("Wait failed", err)
 		}
-	}
-	if err := showKubectlInfo(kubeconfig, k8sVersion); err != nil {
-		glog.Errorf("kubectl info: %v", err)
 	}
 }
 
@@ -1004,10 +1016,20 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 	}
 
 	if driver.BareMetal(h.Driver.DriverName()) {
-		sshAddr := fmt.Sprintf("%s:22", ip)
-		conn, err := net.Dial("tcp", sshAddr)
-		if err != nil {
-			exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
+		trySSH(h, ip)
+	}
+
+	tryLookup(r)
+	tryPing(r)
+	tryRegistry(r)
+	return ip
+}
+
+func trySSH(h *host.Host, ip string) {
+	sshAddr := fmt.Sprintf("%s:22", ip)
+	conn, err := net.Dial("tcp", sshAddr)
+	if err != nil {
+		exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
 
 This is likely due to one of two reasons:
 
@@ -1020,19 +1042,24 @@ Suggested workarounds:
 - Configure your local VPN or firewall to allow access to {{.ip}}
 - Restart or reinstall {{.hypervisor}}
 - Use an alternative --vm-driver`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
-		}
-		defer conn.Close()
 	}
+	defer conn.Close()
+}
 
+func tryLookup(r command.Runner) {
 	if err := r.Run("nslookup kubernetes.io"); err != nil {
 		out.WarningT("VM is unable to resolve DNS hosts: {[.error}}", out.V{"error": err})
 	}
+}
 
+func tryPing(r command.Runner) {
 	// Try both UDP and ICMP to assert basic external connectivity
 	if err := r.Run("nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8"); err != nil {
 		out.WarningT("VM is unable to directly connect to the internet: {{.error}}", out.V{"error": err})
 	}
+}
 
+func tryRegistry(r command.Runner) {
 	// Try an HTTPS connection to the
 	proxy := os.Getenv("HTTPS_PROXY")
 	opts := "-sS"
@@ -1047,7 +1074,6 @@ Suggested workarounds:
 	if err := r.Run(fmt.Sprintf("curl %s https://%s/", opts, repo)); err != nil {
 		out.WarningT("VM is unable to connect to the selected image repository: {{.error}}", out.V{"error": err})
 	}
-	return ip
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable
