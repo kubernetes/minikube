@@ -31,6 +31,7 @@ JOB_NAME="VirtualBox_macOS"
 EXTRA_ARGS="--bootstrapper=kubeadm"
 PARALLEL_COUNT=3
 
+mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron
 install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh
 crontab < cron/Darwin.crontab
 
