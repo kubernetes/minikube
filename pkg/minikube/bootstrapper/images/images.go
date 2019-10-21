@@ -26,7 +26,9 @@ import (
 )
 
 const (
-	DefaultImageRepo    = "k8s.gcr.io"
+	// DefaultImageRepo is the default repository for images
+	DefaultImageRepo = "k8s.gcr.io"
+	// DefaultMinikubeRepo is the default repository for minikube
 	DefaultMinikubeRepo = "gcr.io/k8s-minikube"
 )
 

@@ -396,6 +396,17 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("Plugin output did not match expected custom format. Got: %s", line)
 		}
 	}
+
+	// Json output
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list", "-o", "json"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	var jsonObject map[string]interface{}
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
 }
 
 // validateSSHCmd asserts basic "ssh" command functionality
