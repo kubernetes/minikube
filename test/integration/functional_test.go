@@ -177,13 +177,13 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 }
 
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "status"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
 	// Custom format
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "status", "-f", "host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubeconfig:{{.Kubeconfig}}"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-f", "host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubeconfig:{{.Kubeconfig}}"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
@@ -193,7 +193,7 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Json output
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "status", "-o", "json"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-o", "json"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
