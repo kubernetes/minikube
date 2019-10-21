@@ -129,7 +129,7 @@ func (r *Containerd) Version() (string, error) {
 	c := exec.Command("/bin/bash", "-c", "containerd --version")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", errors.Wrapf(err, "containerd check version. output: %s", rr.Output())
+		return "", errors.Wrapf(err, "containerd check version.")
 	}
 	// containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39
 	words := strings.Split(rr.Stdout.String(), " ")
@@ -162,8 +162,8 @@ func (r *Containerd) Active() bool {
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Containerd) Available() error {
 	c := exec.Command("/bin/bash", "-c", "command -v containerd")
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "check containerd availability. output: %s", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "check containerd availability.")
 	}
 	return nil
 }
@@ -182,8 +182,8 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersi
 		return err
 	}
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
-	if rr, err := cr.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "generate containerd cfg. ouptut: %s", rr.Output())
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "generate containerd cfg.")
 	}
 	return nil
 }
@@ -206,8 +206,8 @@ func (r *Containerd) Enable(disOthers bool) error {
 	}
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
 	c := exec.Command("/bin/bash", "-c", "sudo systemctl restart containerd")
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "enable containrd. output: %q", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "enable containrd.")
 	}
 	return nil
 }
@@ -215,8 +215,8 @@ func (r *Containerd) Enable(disOthers bool) error {
 // Disable idempotently disables containerd on a host
 func (r *Containerd) Disable() error {
 	c := exec.Command("/bin/bash", "-c", "sudo systemctl stop containerd")
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "disable containrd. output: %q", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "disable containrd.")
 	}
 	return nil
 }
@@ -225,8 +225,8 @@ func (r *Containerd) Disable() error {
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("ctr -n=k8s.io images import %s", path))
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "disable containrd. output: %q", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "disable containrd.")
 	}
 	return nil
 }

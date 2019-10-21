@@ -49,7 +49,7 @@ func (r *CRIO) Version() (string, error) {
 	c := exec.Command("/bin/bash", "-c", "crio --version")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", errors.Wrapf(err, "crio version. output: %s", rr.Output())
+		return "", errors.Wrap(err, "crio version.")
 	}
 
 	// crio version 1.13.0
@@ -74,8 +74,8 @@ func (r *CRIO) DefaultCNI() bool {
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *CRIO) Available() error {
 	c := exec.Command("/bin/bash", "-c", "command -v crio")
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "check crio available. output: %s", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "check crio available.")
 	}
 	return nil
 
@@ -105,16 +105,16 @@ func (r *CRIO) Enable(disOthers bool) error {
 		return err
 	}
 
-	if rr, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl restart crio")); err != nil {
-		return errors.Wrapf(err, "enable crio. output: %s", rr.Output())
+	if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl restart crio")); err != nil {
+		return errors.Wrapf(err, "enable crio.")
 	}
 	return nil
 }
 
 // Disable idempotently disables CRIO on a host
 func (r *CRIO) Disable() error {
-	if rr, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl stop crio")); err != nil {
-		return errors.Wrapf(err, "disable crio. output: %s", rr.Output())
+	if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl stop crio")); err != nil {
+		return errors.Wrapf(err, "disable crio.")
 	}
 	return nil
 }
@@ -123,8 +123,8 @@ func (r *CRIO) Disable() error {
 func (r *CRIO) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo podman load -i %s", path))
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "LoadImage crio. output: %s", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "LoadImage crio.")
 	}
 	return nil
 }

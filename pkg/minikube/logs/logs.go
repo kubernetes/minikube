@@ -73,9 +73,8 @@ func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr logRunner) erro
 	cmd := exec.Command("/bin/bash", "-c", strings.Join(cs, " "))
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stdout
-	rr, err := cr.RunCmd(cmd)
-	if err != nil {
-		return errors.Wrapf(err, "log follow with output %q", rr.Output())
+	if _, err := cr.RunCmd(cmd); err != nil {
+		return errors.Wrapf(err, "log follow")
 	}
 	return nil
 }

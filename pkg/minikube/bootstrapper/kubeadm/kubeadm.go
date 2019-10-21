@@ -139,7 +139,7 @@ func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl is-active kubelet"))
 	if err != nil {
-		return "", errors.Wrapf(err, "getting kublet status. command: %q output: %q", rr.Command(), rr.Output())
+		return "", errors.Wrapf(err, "getting kublet status. command: %q", rr.Command())
 	}
 	s := strings.TrimSpace(rr.Stdout.String() + rr.Stderr.String())
 	switch s {
@@ -224,14 +224,14 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 	legacyEtcd := "/data/minikube"
 	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo test -d %s", legacyEtcd)))
 	if err != nil {
-		glog.Infof("%s check failed, skipping compat symlinks: %v %q", legacyEtcd, err, rr.Output())
+		glog.Infof("%s check failed, skipping compat symlinks: %v", legacyEtcd, err)
 		return nil
 	}
 	glog.Infof("Found %s, creating compatibility symlinks ...", legacyEtcd)
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ln -s %s %s", legacyEtcd, etcdDataDir()))
 	if rr, err = k.c.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "create symlink failed: %s\n%q\n", rr.Command(), rr.Output())
+		return errors.Wrapf(err, "create symlink failed: %s", rr.Command())
 	}
 	return nil
 }
@@ -275,7 +275,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath, extraFlags, strings.Join(ignore, ",")))
 	if rr, err := k.c.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "init failed. cmd: %q output:%q", rr.Command(), rr.Output())
+		return errors.Wrapf(err, "init failed. cmd: %q", rr.Command())
 	}
 
 	glog.Infof("Configuring cluster permissions ...")
@@ -314,7 +314,7 @@ func (k *Bootstrapper) adjustResourceLimits() error {
 	// Prevent the apiserver from OOM'ing before other pods, as it is our gateway into the cluster.
 	// It'd be preferable to do this via Kubernetes, but kubeadm doesn't have a way to set pod QoS.
 	if rr, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj")); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("oom_adj adjust: %s", rr.Output()))
+		return errors.Wrap(err, fmt.Sprintf("oom_adj adjust"))
 	}
 
 	return nil
@@ -436,7 +436,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	for _, c := range cmds {
 		rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c))
 		if err != nil {
-			return errors.Wrapf(err, "running cmd: %s , output: %s", rr.Command(), rr.Output())
+			return errors.Wrapf(err, "running cmd: %s", rr.Command())
 		}
 	}
 
@@ -446,7 +446,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 
 	// restart the proxy and coredns
 	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, yamlConfigPath))); err != nil {
-		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q output:%q", rr.Command(), rr.Output()))
+		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q", rr.Command()))
 	}
 
 	if err := k.adjustResourceLimits(); err != nil {
@@ -468,7 +468,7 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 	err := wait.PollImmediate(time.Millisecond*300, time.Minute*3, func() (bool, error) {
 		rr, ierr := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo pgrep kube-apiserver"))
 		if ierr != nil {
-			glog.Warningf("pgrep apiserver: %v cmd: %s output: %s", ierr, rr.Command(), rr.Output())
+			glog.Warningf("pgrep apiserver: %v cmd: %s", ierr, rr.Command())
 			return false, nil
 		}
 		return true, nil
@@ -511,7 +511,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 	}
 
 	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd)); err != nil {
-		return errors.Wrapf(err, "kubeadm reset: cmd: %q\noutput:%q\n", rr.Command(), rr.Output())
+		return errors.Wrapf(err, "kubeadm reset: cmd: %q", rr.Command())
 	}
 
 	return nil
@@ -529,7 +529,7 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 
 	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s config images pull --config %s", invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath)))
 	if err != nil {
-		return errors.Wrapf(err, "running cmd: %q output: %q", rr.Command(), rr.Output())
+		return errors.Wrapf(err, "running cmd: %q", rr.Command())
 	}
 	return nil
 }
@@ -642,8 +642,8 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		}
 	}
 
-	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "set -x;sudo systemctl daemon-reload && sudo systemctl start kubelet")); err != nil {
-		return errors.Wrapf(err, "starting kubelet, output: %s", rr.Output())
+	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "set -x;sudo systemctl daemon-reload && sudo systemctl start kubelet")); err != nil {
+		return errors.Wrap(err, "starting kubelet.")
 	}
 	return nil
 }
