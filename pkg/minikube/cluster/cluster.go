@@ -21,6 +21,8 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"math"
 	"net"
 	"os/exec"
@@ -615,4 +617,21 @@ func IsMinikubeRunning(api libmachine.API) bool {
 		return false
 	}
 	return true
+}
+
+// GetClusterBootstrapper returns a new bootstrapper for the cluster
+func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
+	var b bootstrapper.Bootstrapper
+	var err error
+	switch bootstrapperName {
+	case bootstrapper.BootstrapperTypeKubeadm:
+		b, err = kubeadm.NewKubeadmBootstrapper(api)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting kubeadm bootstrapper")
+		}
+	default:
+		return nil, fmt.Errorf("unknown bootstrapper: %s", bootstrapperName)
+	}
+
+	return b, nil
 }

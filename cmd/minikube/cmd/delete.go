@@ -28,7 +28,6 @@ import (
 	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -143,7 +142,7 @@ func deleteProfile(profile *config.Profile) error {
 
 	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
 	if err == nil && cc.MachineConfig.VMDriver == constants.DriverNone {
-		if err := uninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+		if err := delete.UninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(delete.DeletionError)
 			if ok {
 				delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
@@ -195,17 +194,6 @@ func deleteProfile(profile *config.Profile) error {
 
 func profileDeletionErr(profileName string, additionalInfo string) error {
 	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
-}
-
-func uninstallKubernetes(api libmachine.API, kc config.KubernetesConfig, bsName string) error {
-	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := getClusterBootstrapper(api, bsName)
-	if err != nil {
-		return delete.DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), ErrorType: delete.Fatal}
-	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
-		return delete.DeletionError{Err: fmt.Errorf("failed to delete cluster: %v", err), ErrorType: delete.Fatal}
-	}
-	return nil
 }
 
 // Handles deletion error from DeleteProfiles

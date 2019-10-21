@@ -1,6 +1,8 @@
 package delete
 
 import (
+	"fmt"
+	"github.com/docker/machine/libmachine"
 	"k8s.io/minikube/pkg/minikube/config"
 	"os"
 	"path/filepath"
@@ -59,4 +61,15 @@ func DeleteInvalidProfile(profile *config.Profile) []error {
 		}
 	}
 	return errs
+}
+
+func UninstallKubernetes(api libmachine.API, kc config.KubernetesConfig, bsName string) error {
+	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
+	clusterBootstrapper, err := cluster.GetClusterBootstrapper(api, bsName)
+	if err != nil {
+		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), ErrorType: Fatal}
+	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
+		return DeletionError{Err: fmt.Errorf("failed to delete cluster: %v", err), ErrorType: Fatal}
+	}
+	return nil
 }

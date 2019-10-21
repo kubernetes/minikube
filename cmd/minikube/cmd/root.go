@@ -23,16 +23,12 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -258,23 +254,6 @@ func setupViper() {
 	viper.SetDefault(config.ShowDriverDeprecationNotification, true)
 	viper.SetDefault(config.ShowBootstrapperDeprecationNotification, true)
 	setFlagsUsingViper()
-}
-
-// getClusterBootstrapper returns a new bootstrapper for the cluster
-func getClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
-	var b bootstrapper.Bootstrapper
-	var err error
-	switch bootstrapperName {
-	case bootstrapper.BootstrapperTypeKubeadm:
-		b, err = kubeadm.NewKubeadmBootstrapper(api)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting kubeadm bootstrapper")
-		}
-	default:
-		return nil, fmt.Errorf("unknown bootstrapper: %s", bootstrapperName)
-	}
-
-	return b, nil
 }
 
 func addToPath(dir string) {
