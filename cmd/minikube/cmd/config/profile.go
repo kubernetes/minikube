@@ -45,8 +45,23 @@ var ProfileCmd = &cobra.Command{
 		}
 
 		profile := args[0]
+		/**
+		we need to add code over here to check whether the profile
+		name is in the list of reserved keywords
+		*/
+		if pkgConfig.ProfileNameInReservedKeywords(profile) {
+			out.ErrT(out.FailureType, `Profile name "{{.profilename}}" is minikube keyword. To delete profile use command minikube delete -p <profile name>  `, out.V{"profilename": profile})
+			os.Exit(0)
+		}
+
 		if profile == "default" {
 			profile = "minikube"
+		} else {
+			// not validating when it is default profile
+			errProfile, ok := ValidateProfile(profile)
+			if !ok && errProfile != nil {
+				out.FailureT(errProfile.Msg)
+			}
 		}
 
 		if !pkgConfig.ProfileExists(profile) {

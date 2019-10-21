@@ -8,11 +8,11 @@ machine=$(uname -m)
 case ${machine} in
 	aarch64 )
 		TOOLBOX_DOCKER_IMAGE=arm64v8/fedora
-		TOOLBOX_DOCKER_TAG=29
+		TOOLBOX_DOCKER_TAG=latest
 		;;
 	x86_64 )
 		TOOLBOX_DOCKER_IMAGE=fedora
-		TOOLBOX_DOCKER_TAG=29
+		TOOLBOX_DOCKER_TAG=latest
 		;;
 	* )
 		echo "Warning: Unknown machine type ${machine}" >&2
@@ -69,10 +69,9 @@ if [ "x${1-}" == x-c ]; then
 	set /bin/sh "$@"
 fi
 
-sudo systemd-nspawn \
+sudo SYSTEMD_NSPAWN_SHARE_SYSTEM=1 systemd-nspawn \
 	--directory="${machinepath}" \
 	--capability=all \
-	--share-system \
         ${TOOLBOX_BIND} \
         ${TOOLBOX_ENV} \
 	--user="${TOOLBOX_USER}" "$@"
