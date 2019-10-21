@@ -17,22 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
-	"os"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/delete"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/kubeconfig"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -69,9 +59,9 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.WithError("Error getting profiles to delete", err)
 		}
 
-		errs := DeleteProfiles(profilesToDelete)
+		errs := delete.DeleteProfiles(profilesToDelete)
 		if len(errs) > 0 {
-			HandleDeletionErrors(errs)
+			delete.HandleDeletionErrors(errs)
 		} else {
 			out.T(out.DeletingHost, "Successfully deleted all profiles")
 		}
@@ -86,148 +76,11 @@ func runDelete(cmd *cobra.Command, args []string) {
 			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
 		}
 
-		errs := DeleteProfiles([]*config.Profile{profile})
+		errs := delete.DeleteProfiles([]*config.Profile{profile})
 		if len(errs) > 0 {
-			HandleDeletionErrors(errs)
+			delete.HandleDeletionErrors(errs)
 		} else {
 			out.T(out.DeletingHost, "Successfully deleted profile \"{{.name}}\"", out.V{"name": profileName})
-		}
-	}
-}
-
-// Deletes one or more profiles
-func DeleteProfiles(profiles []*config.Profile) []error {
-	var errs []error
-	for _, profile := range profiles {
-		err := deleteProfile(profile)
-
-		if err != nil {
-			mm, loadErr := cluster.LoadMachine(profile.Name)
-
-			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
-				invalidProfileDeletionErrs := delete.DeleteInvalidProfile(profile)
-				if len(invalidProfileDeletionErrs) > 0 {
-					errs = append(errs, invalidProfileDeletionErrs...)
-				}
-			} else {
-				errs = append(errs, err)
-			}
-		}
-	}
-	return errs
-}
-
-func deleteProfile(profile *config.Profile) error {
-	viper.Set(config.MachineProfile, profile.Name)
-
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error getting client %v", err))
-		return delete.DeletionError{Err: delErr, ErrorType: delete.Fatal}
-	}
-	defer api.Close()
-
-	cc, err := config.Load()
-	if err != nil && !os.IsNotExist(err) {
-		out.ErrT(out.Sad, "Error loading profile {{.name}}: {{.error}}", out.V{"name": profile, "error": err})
-		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
-		return delete.DeletionError{Err: delErr, ErrorType: delete.MissingProfile}
-	}
-
-	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
-	if err == nil && cc.MachineConfig.VMDriver == constants.DriverNone {
-		if err := delete.UninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
-			deletionError, ok := err.(delete.DeletionError)
-			if ok {
-				delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
-				deletionError.Err = delErr
-				return deletionError
-			}
-			return err
-		}
-	}
-
-	if err := delete.KillMountProcess(); err != nil {
-		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
-	}
-
-	if err = cluster.DeleteHost(api); err != nil {
-		switch errors.Cause(err).(type) {
-		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": profile.Name})
-		default:
-			out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
-			out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
-		}
-	}
-
-	// In case DeleteHost didn't complete the job.
-	delete.DeleteProfileDirectory(profile.Name)
-
-	if err := config.DeleteProfile(profile.Name); err != nil {
-		if os.IsNotExist(err) {
-			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("\"%s\" profile does not exist", profile.Name))
-			return delete.DeletionError{Err: delErr, ErrorType: delete.MissingProfile}
-		}
-		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("failed to remove profile %v", err))
-		return delete.DeletionError{Err: delErr, ErrorType: delete.Fatal}
-	}
-
-	out.T(out.Crushed, `The "{{.name}}" cluster has been deleted.`, out.V{"name": profile.Name})
-
-	machineName := config.GetMachineName()
-	if err := kubeconfig.DeleteContext(constants.KubeconfigPath, machineName); err != nil {
-		return delete.DeletionError{Err: fmt.Errorf("update config: %v", err), ErrorType: delete.Fatal}
-	}
-
-	if err := cmdcfg.Unset(config.MachineProfile); err != nil {
-		return delete.DeletionError{Err: fmt.Errorf("unset minikube profile: %v", err), ErrorType: delete.Fatal}
-	}
-	return nil
-}
-
-func profileDeletionErr(profileName string, additionalInfo string) error {
-	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
-}
-
-// Handles deletion error from DeleteProfiles
-func HandleDeletionErrors(errors []error) {
-	if len(errors) == 1 {
-		handleSingleDeletionError(errors[0])
-	} else {
-		handleMultipleDeletionErrors(errors)
-	}
-}
-
-func handleSingleDeletionError(err error) {
-	deletionError, ok := err.(delete.DeletionError)
-
-	if ok {
-		switch deletionError.ErrorType {
-		case delete.Fatal:
-			out.FatalT(deletionError.Error())
-		case delete.MissingProfile:
-			out.ErrT(out.Sad, deletionError.Error())
-		case delete.MissingCluster:
-			out.ErrT(out.Meh, deletionError.Error())
-		default:
-			out.FatalT(deletionError.Error())
-		}
-	} else {
-		exit.WithError("Could not process error from failed deletion", err)
-	}
-}
-
-func handleMultipleDeletionErrors(errors []error) {
-	out.ErrT(out.Sad, "Multiple errors deleting profiles")
-
-	for _, err := range errors {
-		deletionError, ok := err.(delete.DeletionError)
-
-		if ok {
-			glog.Errorln(deletionError.Error())
-		} else {
-			exit.WithError("Could not process errors from failed deletion", err)
 		}
 	}
 }
