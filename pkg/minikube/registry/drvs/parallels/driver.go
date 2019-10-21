@@ -24,14 +24,14 @@ import (
 	parallels "github.com/Parallels/docker-machine-parallels"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverParallels,
+		Name:          driver.Parallels,
 		Builtin:       true,
 		ConfigCreator: createParallelsHost,
 		DriverCreator: func() drivers.Driver {

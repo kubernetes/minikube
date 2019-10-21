@@ -23,7 +23,7 @@ import (
 	"reflect"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 type configTestCase struct {
@@ -51,7 +51,7 @@ var configTestCases = []configTestCase{
     "vm-driver": "kvm2"
 }`,
 		config: map[string]interface{}{
-			"vm-driver":                 constants.DriverKvm2,
+			"vm-driver":                 driver.KVM2,
 			"cpus":                      4,
 			"disk-size":                 "20g",
 			"v":                         5,
@@ -132,7 +132,7 @@ func TestReadConfig(t *testing.T) {
 	}
 
 	expectedConfig := map[string]interface{}{
-		"vm-driver":            constants.DriverKvm2,
+		"vm-driver":            driver.KVM2,
 		"cpus":                 4,
 		"disk-size":            "20g",
 		"show-libmachine-logs": true,
@@ -151,7 +151,7 @@ func TestWriteConfig(t *testing.T) {
 	}
 
 	cfg := map[string]interface{}{
-		"vm-driver":            constants.DriverKvm2,
+		"vm-driver":            driver.KVM2,
 		"cpus":                 4,
 		"disk-size":            "20g",
 		"show-libmachine-logs": true,

@@ -23,15 +23,15 @@ import (
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine/drivers"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverKvm2,
+		Name:          driver.KVM2,
 		Builtin:       false,
 		ConfigCreator: createKVM2Host,
 	}); err != nil {
@@ -57,23 +57,24 @@ type kvmDriver struct {
 	ConnectionURI  string
 }
 
-func createKVM2Host(config cfg.MachineConfig) interface{} {
+func createKVM2Host(mc config.MachineConfig) interface{} {
+	name := config.GetMachineName()
 	return &kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: cfg.GetMachineName(),
+			MachineName: name,
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},
-		Memory:         config.Memory,
-		CPU:            config.CPUs,
-		Network:        config.KVMNetwork,
+		Memory:         mc.Memory,
+		CPU:            mc.CPUs,
+		Network:        mc.KVMNetwork,
 		PrivateNetwork: "minikube-net",
-		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
-		DiskSize:       config.DiskSize,
-		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", cfg.GetMachineName(), fmt.Sprintf("%s.rawdisk", cfg.GetMachineName())),
-		ISO:            filepath.Join(localpath.MiniPath(), "machines", cfg.GetMachineName(), "boot2docker.iso"),
-		GPU:            config.KVMGPU,
-		Hidden:         config.KVMHidden,
-		ConnectionURI:  config.KVMQemuURI,
+		Boot2DockerURL: mc.Downloader.GetISOFileURI(mc.MinikubeISO),
+		DiskSize:       mc.DiskSize,
+		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.rawdisk", name)),
+		ISO:            filepath.Join(localpath.MiniPath(), "machines", name, "boot2docker.iso"),
+		GPU:            mc.KVMGPU,
+		Hidden:         mc.KVMHidden,
+		ConnectionURI:  mc.KVMQemuURI,
 	}
 }

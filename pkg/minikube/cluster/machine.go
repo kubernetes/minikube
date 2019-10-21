@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine/host"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -69,6 +70,7 @@ func ListMachines(miniHome ...string) (validMachines []*Machine, inValidMachines
 	for _, n := range pDirs {
 		p, err := LoadMachine(n)
 		if err != nil {
+			glog.Infof("%s not valid: %v", n, err)
 			inValidMachines = append(inValidMachines, p)
 			continue
 		}

@@ -28,6 +28,9 @@ import (
 	// Fix for https://github.com/kubernetes/minikube/issues/4866
 	_ "k8s.io/minikube/pkg/initflag"
 
+	// Register drivers
+	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
+
 	mlog "github.com/docker/machine/libmachine/log"
 
 	"github.com/golang/glog"

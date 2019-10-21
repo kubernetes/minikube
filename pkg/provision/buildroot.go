@@ -89,8 +89,8 @@ func escapeSystemdDirectives(engineConfigContext *provision.EngineConfigContext)
 func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision.DockerOptions, error) {
 	var engineCfg bytes.Buffer
 
-	driverNameLabel := fmt.Sprintf("provider=%s", p.Driver.DriverName())
-	p.EngineOptions.Labels = append(p.EngineOptions.Labels, driverNameLabel)
+	drvLabel := fmt.Sprintf("provider=%s", p.Driver.DriverName())
+	p.EngineOptions.Labels = append(p.EngineOptions.Labels, drvLabel)
 
 	noPivot := true
 	// Using pivot_root is not supported on fstype rootfs

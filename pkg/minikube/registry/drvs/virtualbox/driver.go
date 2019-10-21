@@ -21,8 +21,8 @@ import (
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
@@ -31,7 +31,7 @@ const defaultVirtualboxNicType = "virtio"
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverVirtualbox,
+		Name:          driver.VirtualBox,
 		Builtin:       true,
 		ConfigCreator: createVirtualboxHost,
 		DriverCreator: func() drivers.Driver {
@@ -43,20 +43,20 @@ func init() {
 	}
 }
 
-func createVirtualboxHost(config cfg.MachineConfig) interface{} {
-	d := virtualbox.NewDriver(cfg.GetMachineName(), localpath.MiniPath())
+func createVirtualboxHost(mc config.MachineConfig) interface{} {
+	d := virtualbox.NewDriver(config.GetMachineName(), localpath.MiniPath())
 
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.Memory = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = config.DiskSize
-	d.HostOnlyCIDR = config.HostOnlyCIDR
-	d.NoShare = config.DisableDriverMounts
-	d.NoVTXCheck = config.NoVTXCheck
+	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
+	d.Memory = mc.Memory
+	d.CPU = mc.CPUs
+	d.DiskSize = mc.DiskSize
+	d.HostOnlyCIDR = mc.HostOnlyCIDR
+	d.NoShare = mc.DisableDriverMounts
+	d.NoVTXCheck = mc.NoVTXCheck
 	d.NatNicType = defaultVirtualboxNicType
 	d.HostOnlyNicType = defaultVirtualboxNicType
-	d.DNSProxy = config.DNSProxy
-	d.HostDNSResolver = config.HostDNSResolver
+	d.DNSProxy = mc.DNSProxy
+	d.HostDNSResolver = mc.HostDNSResolver
 
 	return d
 }

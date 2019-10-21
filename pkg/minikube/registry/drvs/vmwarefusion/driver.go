@@ -1,3 +1,5 @@
+// +build darwin
+
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -14,48 +16,42 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package none
+package vmwarefusion
 
 import (
 	"fmt"
-	"os"
 
+	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
-	"k8s.io/minikube/pkg/drivers/none"
 	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/driver"
+
 )
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverNone,
+		Name:          driver.VMwareFusion,
 		Builtin:       true,
-		ConfigCreator: createNoneHost,
+		ConfigCreator: createVMwareFusionHost,
 		DriverCreator: func() drivers.Driver {
-			return none.NewDriver(none.Config{})
+			return vmwarefusion.NewDriver("", "")
 		},
 	}); err != nil {
-		panic(fmt.Sprintf("register failed: %v", err))
+		panic(fmt.Sprintf("register: %v", err))
 	}
 }
 
-// createNoneHost creates a none Driver from a MachineConfig
-func createNoneHost(config cfg.MachineConfig) interface{} {
-	return none.NewDriver(none.Config{
-		MachineName:      cfg.GetMachineName(),
-		StorePath:        localpath.MiniPath(),
-		ContainerRuntime: config.ContainerRuntime,
-	})
-}
+func createVMwareFusionHost(config cfg.MachineConfig) interface{} {
+	d := vmwarefusion.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*vmwarefusion.Driver)
+	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
+	d.Memory = config.Memory
+	d.CPU = config.CPUs
+	d.DiskSize = config.DiskSize
 
-// AutoOptions returns suggested extra options based on the current config
-func AutoOptions() string {
-	// for more info see: https://github.com/kubernetes/minikube/issues/3511
-	f := "/run/systemd/resolve/resolv.conf"
-	if _, err := os.Stat(f); err != nil {
-		return ""
-	}
-	return fmt.Sprintf("kubelet.resolv-conf=%s", f)
+	// TODO(philips): push these defaults upstream to fixup this driver
+	d.SSHPort = 22
+	d.ISO = d.ResolveStorePath("boot2docker.iso")
+	return d
 }

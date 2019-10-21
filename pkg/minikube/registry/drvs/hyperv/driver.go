@@ -22,14 +22,14 @@ import (
 	"github.com/docker/machine/drivers/hyperv"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
-	_ = registry.Register(registry.DriverDef{
-		Name:          constants.DriverHyperv,
+	registry.Register(registry.DriverDef{
+		Name:          driver.HyperV,
 		Builtin:       true,
 		ConfigCreator: createHypervHost,
 		DriverCreator: func() drivers.Driver {
