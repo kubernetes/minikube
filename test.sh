@@ -20,7 +20,7 @@ TESTSUITE="${TESTSUITE:-all}" # if env variable not set run all the tests
 exitcode=0
 
 if [[ "$TESTSUITE" = "lint" ]] || [[ "$TESTSUITE" = "all" ]]
-then 
+then
     echo "= make lint ============================================================="
     make -s lint-ci && echo ok || ((exitcode += 4))
     echo "= go mod ================================================================"
