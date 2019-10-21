@@ -127,6 +127,12 @@ endif
 
 ifeq ($(GOOS),windows)
 	IS_EXE = .exe
+	DIRSEP_ = \\
+	DIRSEP = $(strip $(DIRSEP_))
+	PATHSEP = ;
+else
+	DIRSEP = /
+	PATHSEP = :
 endif
 
 
@@ -246,28 +252,20 @@ extract:
 pkg/minikube/assets/assets.go: $(shell find "deploy/addons" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
-else ifeq ($(GOOS),windows)
-	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)\bin" go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH);$(GOPATH)\bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
-	-gofmt -s -w $@
-else
-	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
-	-gofmt -s -w $@
 endif
+	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
+	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
+	-gofmt -s -w $@
+	@#golint: Dns should be DNS (compat sed)
+	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
 
 pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
-else ifeq ($(GOOS),windows)
-	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)\bin" go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH);$(GOPATH)\bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
-	-gofmt -s -w $@
-else
-	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
-	-gofmt -s -w $@
 endif
+	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
+	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
+	-gofmt -s -w $@
 	@#golint: Json should be JSON (compat sed)
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
@@ -320,7 +318,7 @@ vet:
 	@go vet $(SOURCE_PACKAGES)
 
 .PHONY: golint
-golint:
+golint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	@golint -set_exit_status $(SOURCE_PACKAGES)
 
 .PHONY: gocyclo
