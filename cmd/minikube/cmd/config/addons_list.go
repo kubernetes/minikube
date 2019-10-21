@@ -17,18 +17,23 @@ limitations under the License.
 package config
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"text/template"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 const defaultAddonListFormat = "- {{.AddonName}}: {{.AddonStatus}}\n"
 
 var addonListFormat string
+var addonListOutput string
 
 // AddonListTemplate represents the addon list template
 type AddonListTemplate struct {
@@ -44,9 +49,18 @@ var addonsListCmd = &cobra.Command{
 		if len(args) != 0 {
 			exit.UsageT("usage: minikube addons list")
 		}
-		err := addonList()
-		if err != nil {
-			exit.WithError("addon list failed", err)
+
+		if addonListOutput != "list" && addonListFormat != defaultAddonListFormat {
+			exit.UsageT("Cannot use both --output and --format options")
+		}
+
+		switch strings.ToLower(addonListOutput) {
+		case "list":
+			printAddonsList()
+		case "json":
+			printAddonsJSON()
+		default:
+			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'list', 'json'", addonListOutput))
 		}
 	},
 }
@@ -59,17 +73,25 @@ func init() {
 		defaultAddonListFormat,
 		`Go template format string for the addon list output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/config#AddonListTemplate`)
+
+	addonsListCmd.Flags().StringVarP(
+		&addonListOutput,
+		"output",
+		"o",
+		"list",
+		`minikube addons list --output OUTPUT. json, list`)
+
 	AddonsCmd.AddCommand(addonsListCmd)
 }
 
-func stringFromStatus(addonStatus bool) string {
+var stringFromStatus = func(addonStatus bool) string {
 	if addonStatus {
 		return "enabled"
 	}
 	return "disabled"
 }
 
-func addonList() error {
+var printAddonsList = func() {
 	addonNames := make([]string, 0, len(assets.Addons))
 	for addonName := range assets.Addons {
 		addonNames = append(addonNames, addonName)
@@ -80,7 +102,7 @@ func addonList() error {
 		addonBundle := assets.Addons[addonName]
 		addonStatus, err := addonBundle.IsEnabled()
 		if err != nil {
-			return err
+			exit.WithError("Error getting addons status", err)
 		}
 		tmpl, err := template.New("list").Parse(addonListFormat)
 		if err != nil {
@@ -92,5 +114,30 @@ func addonList() error {
 			exit.WithError("Error executing list template", err)
 		}
 	}
-	return nil
+}
+
+var printAddonsJSON = func() {
+	addonNames := make([]string, 0, len(assets.Addons))
+	for addonName := range assets.Addons {
+		addonNames = append(addonNames, addonName)
+	}
+	sort.Strings(addonNames)
+
+	addonsMap := map[string]map[string]interface{}{}
+
+	for _, addonName := range addonNames {
+		addonBundle := assets.Addons[addonName]
+
+		addonStatus, err := addonBundle.IsEnabled()
+		if err != nil {
+			exit.WithError("Error getting addons status", err)
+		}
+
+		addonsMap[addonName] = map[string]interface{}{
+			"Status": stringFromStatus(addonStatus),
+		}
+	}
+	jsonString, _ := json.Marshal(addonsMap)
+
+	out.String(string(jsonString))
 }
