@@ -225,7 +225,7 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 func stopKubelet(cr command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
 	stop := func() error {
-		cmdStop := exec.Command("/bin/bash", "-c", "sudo systemctl stop kubelet.service")
+		cmdStop := exec.Command("/bin/bash", "sudo systemctl stop kubelet.service")
 		if rr, err := cr.RunCmd(cmdStop); err != nil {
 			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
 		}

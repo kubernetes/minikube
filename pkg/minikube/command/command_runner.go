@@ -26,11 +26,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+// RunResult holds the results of a Runner
 type RunResult struct {
 	Stdout   *bytes.Buffer
 	Stderr   *bytes.Buffer
 	ExitCode int
-	Args     []string
+	Args     []string // the args that was passed to Runner
 }
 
 // Runner represents an interface to run commands.
