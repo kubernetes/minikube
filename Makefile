@@ -70,6 +70,7 @@ GOARCH ?= $(shell go env GOARCH)
 GOPATH ?= $(shell go env GOPATH)
 BUILD_DIR ?= ./out
 $(shell mkdir -p $(BUILD_DIR))
+CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
 # Use system python if it exists, otherwise use Docker.
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
@@ -571,3 +572,12 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo
 .PHONY: out/mkcmp
 out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/main.go
+
+.PHONY: compare
+compare: out/mkcmp out/minikube
+	mv out/minikube out/$(CURRENT_GIT_BRANCH).minikube
+	git checkout master
+	make out/minikube
+	mv out/minikube out/master.minikube
+	git checkout $(CURRENT_GIT_BRANCH)
+	out/mkcmp out/master.minikube out/$(CURRENT_GIT_BRANCH).minikube
