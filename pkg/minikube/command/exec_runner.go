@@ -42,8 +42,19 @@ func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	glog.Infof("(ExecRunner) Run:  %v", rr.Command())
 
 	var outb, errb bytes.Buffer
-	cmd.Stdout, rr.Stdout = &outb, &outb
-	cmd.Stderr, rr.Stderr = &errb, &errb
+	if cmd.Stdout == nil {
+		cmd.Stdout, rr.Stdout = &outb, &outb
+	} else {
+		io.MultiWriter(rr.Stdout, &outb)
+		rr.Stdout = &outb
+	}
+	if cmd.Stderr == nil {
+		cmd.Stderr, rr.Stderr = &errb, &errb
+	} else {
+		io.MultiWriter(rr.Stderr, &errb)
+		rr.Stdout = &errb
+	}
+
 	start := time.Now()
 	err := cmd.Run()
 	elapsed := time.Since(start)

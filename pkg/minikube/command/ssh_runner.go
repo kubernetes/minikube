@@ -111,6 +111,19 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr.Stderr = &errb.b
 	start := time.Now()
 
+	if cmd.Stdout == nil {
+		cmd.Stdout, rr.Stdout = &outb, &outb.b
+	} else {
+		io.MultiWriter(rr.Stdout, &outb)
+		rr.Stdout = &outb.b
+	}
+	if cmd.Stderr == nil {
+		cmd.Stderr, rr.Stderr = &errb, &errb.b
+	} else {
+		io.MultiWriter(rr.Stderr, &errb)
+		rr.Stdout = &errb.b
+	}
+
 	sess, err := s.c.NewSession()
 	if err != nil {
 		return rr, errors.Wrap(err, "NewSession")
