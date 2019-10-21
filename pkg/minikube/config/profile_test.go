@@ -72,6 +72,32 @@ func TestListProfiles(t *testing.T) {
 	}
 }
 
+func TestProfileNameInReservedKeywords(t *testing.T) {
+	var testCases = []struct {
+		name     string
+		expected bool
+	}{
+		{"start", true},
+		{"stop", true},
+		{"status", true},
+		{"delete", true},
+		{"config", true},
+		{"open", true},
+		{"profile", true},
+		{"addons", true},
+		{"cache", true},
+		{"logs", true},
+		{"myprofile", false},
+		{"log", false},
+	}
+	for _, tt := range testCases {
+		got := ProfileNameInReservedKeywords(tt.name)
+		if got != tt.expected {
+			t.Errorf("expected ProfileNameInReservedKeywords(%s)=%t but got %t ", tt.name, tt.expected, got)
+		}
+	}
+}
+
 func TestProfileExists(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/.minikube2")
 	if err != nil {
