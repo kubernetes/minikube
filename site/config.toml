@@ -115,6 +115,11 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	url = "https://kubernetes.slack.com/messages/C1F5CT6Q1"
 	icon = "fab fa-slack"
     desc = "Chat with other minikube users & developers"
+[[params.links.user]]
+	name = "minikube-users mailing list"
+	url = "https://groups.google.com/forum/#!forum/minikube-users"
+	icon = "fas fa-envelope"
+	desc = "Interact with the minikube Users here"
 
 # Developer relevant links. These will show up on right side of footer and in the community page if you have one.
 [[params.links.developer]]
@@ -122,3 +127,8 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	url = "https://github.com/kubernetes/minikube"
 	icon = "fab fa-github"
         desc = "Development takes place here!"
+[[params.links.developer]]
+	name = "minikube-dev mailing list"
+	url = "https://groups.google.com/forum/#!forum/minikube-dev"
+	icon = "fa fa-envelope"
+	desc = "Contact the minikube Dev's here"

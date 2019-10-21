@@ -3,7 +3,7 @@
 os: linux
 language: go
 go:
-  - 1.12.9
+  - 1.12.12
 env:
   global:
     - GOPROXY=https://proxy.golang.org
@@ -19,7 +19,7 @@ matrix:
 
     - language: go
       name: Code Lint
-      go: 1.12.9
+      go: 1.12.12
       env:
         - TESTSUITE=lint
       before_install:
@@ -28,7 +28,7 @@ matrix:
 
     - language: go
       name: Unit Test
-      go: 1.12.9
+      go: 1.12.12
       env:
         - TESTSUITE=unittest
       before_install:
