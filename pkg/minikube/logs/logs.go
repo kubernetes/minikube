@@ -148,8 +148,8 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 		out.T(out.Empty, "==> {{.name}} <==", out.V{"name": name})
 		var b bytes.Buffer
 		c := exec.Command("/bin/bash", "-c", cmds[name])
-		c.Stdin = &b
 		c.Stdout = &b
+		c.Stderr = &b
 		if rr, err := runner.RunCmd(c); err != nil {
 			glog.Errorf("command %s failed with error: %v output: %q", rr.Command(), err, rr.Output())
 			failed = append(failed, name)
