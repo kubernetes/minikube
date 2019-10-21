@@ -330,7 +330,6 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-
 // validateUpdateContextCmd asserts basic "update-context" command functionality
 func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context"))
@@ -341,7 +340,6 @@ func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string)
 		t.Errorf("%v stderr = %q, want empty", rr.Args, rr.Stderr.String())
 	}
 }
-
 
 // startHTTPProxy runs a local http proxy and sets the env vars for it.
 func startHTTPProxy(t *testing.T) (*http.Server, error) {
