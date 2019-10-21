@@ -29,7 +29,7 @@ import (
 )
 
 func TestDeleteProfileWithValidConfig(t *testing.T) {
-	testMinikubeDir := "./delete-single/.minikube"
+	testMinikubeDir := "./testdata/delete-single/.minikube"
 	miniDir, err := filepath.Abs(testMinikubeDir)
 
 	if err != nil {
@@ -79,7 +79,7 @@ func TestDeleteProfileWithValidConfig(t *testing.T) {
 }
 
 func TestDeleteProfileWithEmptyProfileConfig(t *testing.T) {
-	testMinikubeDir := "./delete-single/.minikube"
+	testMinikubeDir := "./testdata/delete-single/.minikube"
 	miniDir, err := filepath.Abs(testMinikubeDir)
 
 	if err != nil {
@@ -129,7 +129,7 @@ func TestDeleteProfileWithEmptyProfileConfig(t *testing.T) {
 }
 
 func TestDeleteProfileWithInvalidProfileConfig(t *testing.T) {
-	testMinikubeDir := "./delete-single/.minikube"
+	testMinikubeDir := "./testdata/delete-single/.minikube"
 	miniDir, err := filepath.Abs(testMinikubeDir)
 
 	if err != nil {
@@ -179,7 +179,7 @@ func TestDeleteProfileWithInvalidProfileConfig(t *testing.T) {
 }
 
 func TestDeleteProfileWithPartialProfileConfig(t *testing.T) {
-	testMinikubeDir := "./delete-single/.minikube"
+	testMinikubeDir := "./testdata/delete-single/.minikube"
 	miniDir, err := filepath.Abs(testMinikubeDir)
 
 	if err != nil {
@@ -229,7 +229,7 @@ func TestDeleteProfileWithPartialProfileConfig(t *testing.T) {
 }
 
 func TestDeleteProfileWithMissingMachineConfig(t *testing.T) {
-	testMinikubeDir := "./delete-single/.minikube"
+	testMinikubeDir := "./testdata/delete-single/.minikube"
 	miniDir, err := filepath.Abs(testMinikubeDir)
 
 	if err != nil {
@@ -279,7 +279,7 @@ func TestDeleteProfileWithMissingMachineConfig(t *testing.T) {
 }
 
 func TestDeleteProfileWithEmptyMachineConfig(t *testing.T) {
-	testMinikubeDir := "./delete-single/.minikube"
+	testMinikubeDir := "./testdata/delete-single/.minikube"
 	miniDir, err := filepath.Abs(testMinikubeDir)
 
 	if err != nil {
@@ -329,7 +329,7 @@ func TestDeleteProfileWithEmptyMachineConfig(t *testing.T) {
 }
 
 func TestDeleteProfileWithInvalidMachineConfig(t *testing.T) {
-	testMinikubeDir := "./delete-single/.minikube"
+	testMinikubeDir := "./testdata/delete-single/.minikube"
 	miniDir, err := filepath.Abs(testMinikubeDir)
 
 	if err != nil {
@@ -379,7 +379,7 @@ func TestDeleteProfileWithInvalidMachineConfig(t *testing.T) {
 }
 
 func TestDeleteProfileWithPartialMachineConfig(t *testing.T) {
-	testMinikubeDir := "./delete-single/.minikube"
+	testMinikubeDir := "./testdata/delete-single/.minikube"
 	miniDir, err := filepath.Abs(testMinikubeDir)
 
 	if err != nil {
@@ -432,7 +432,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	const numberOfTotalProfileDirs = 8
 	const numberOfTotalMachineDirs = 7
 
-	testMinikubeDir := "./delete-all/.minikube"
+	testMinikubeDir := "./testdata/delete-all/.minikube"
 	miniDir, err := filepath.Abs(testMinikubeDir)
 
 	if err != nil {
