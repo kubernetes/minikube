@@ -30,6 +30,7 @@ VM_DRIVER="virtualbox"
 JOB_NAME="VirtualBox_Linux"
 PARALLEL_COUNT=4
 
+mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron
 install cron/cleanup-and-reboot.linux /etc/cron.hourly/cleanup-and-reboot
 
 # Download files and set permissions
