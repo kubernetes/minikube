@@ -136,7 +136,7 @@ func TestCacheBinary(t *testing.T) {
 		{
 			desc:         "ok kubeadm",
 			version:      "v1.16.0",
-			osName:       runtime.GOOS,
+			osName:       "linux",
 			archName:     runtime.GOARCH,
 			binary:       "kubeadm",
 			err:          false,
