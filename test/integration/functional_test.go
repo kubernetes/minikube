@@ -297,11 +297,47 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateProfileCmd asserts basic "profile" command functionality
+// validateProfileCmd asserts "profile" command functionality
 func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	// Table output
+	listLines := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
+	profileExists := false
+	for i := 3; i < (len(listLines) - 1); i++ {
+		profileLine := listLines[i]
+		if strings.Contains(profileLine, profile) {
+			profileExists = true
+			break
+		}
+	}
+	if !profileExists {
+		t.Errorf("%s failed: Missing profile '%s'. Got '\n%s\n'", rr.Args, profile, rr.Stdout.String())
+	}
+
+	// Json output
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	var jsonObject map[string][]map[string]interface{}
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	validProfiles := jsonObject["valid"]
+	profileExists = false
+	for _, profileObject := range validProfiles {
+		if profileObject["Name"] == profile {
+			profileExists = true
+			break
+		}
+	}
+	if !profileExists {
+		t.Errorf("%s failed: Missing profile '%s'. Got '\n%s\n'", rr.Args, profile, rr.Stdout.String())
 	}
 }
 
@@ -359,6 +395,17 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 		if !match {
 			t.Errorf("Plugin output did not match expected custom format. Got: %s", line)
 		}
+	}
+
+	// Json output
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list", "-o", "json"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	var jsonObject map[string]interface{}
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 }
 

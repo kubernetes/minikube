@@ -18,6 +18,30 @@ associated files.
 minikube delete [flags]
 ```
 
+##### Delete all profiles
+```
+minikube delete --all
+```
+
+##### Delete profile & `.minikube` directory
+Do note that the following command only works if you have only 1 profile. If there are multiple profiles, the command will error out.
+```
+minikube delete --purge
+```
+
+##### Delete all profiles & `.minikube` directory
+This will delete all the profiles and `.minikube` directory.
+```
+minikube delete --purge --all
+```
+
+### Flags
+
+```
+      --all: Set flag to delete all profiles
+      --purge: Set this flag to delete the '.minikube' folder from your user directory.
+```
+
 ### Options inherited from parent commands
 
 ```
