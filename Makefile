@@ -567,3 +567,7 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo
 	  --navigateToChanged \
 	  --ignoreCache \
 	  --buildFuture)
+
+.PHONY: out/mkcmp
+out/mkcmp:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/main.go
