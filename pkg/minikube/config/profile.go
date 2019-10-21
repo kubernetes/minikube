@@ -21,14 +21,20 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-// isValid checks if the profile has the essential info needed for a profile
-func (p *Profile) isValid() bool {
+var keywords = []string{"start", "stop", "status", "delete", "config", "open", "profile", "addons", "cache", "logs"}
+
+// IsValid checks if the profile has the essential info needed for a profile
+func (p *Profile) IsValid() bool {
+	if p.Config == nil {
+		return false
+	}
 	if p.Config.MachineConfig.VMDriver == "" {
 		return false
 	}
@@ -36,6 +42,16 @@ func (p *Profile) isValid() bool {
 		return false
 	}
 	return true
+}
+
+// check if the profile is an internal keywords
+func ProfileNameInReservedKeywords(name string) bool {
+	for _, v := range keywords {
+		if strings.EqualFold(v, name) {
+			return true
+		}
+	}
+	return false
 }
 
 // ProfileExists returns true if there is a profile config (regardless of being valid)
@@ -106,7 +122,7 @@ func DeleteProfile(profile string, miniHome ...string) error {
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]
 	}
-	return os.RemoveAll(profileFolderPath(profile, miniPath))
+	return os.RemoveAll(ProfileFolderPath(profile, miniPath))
 }
 
 // ListProfiles returns all valid and invalid (if any) minikube profiles
@@ -118,12 +134,12 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		return nil, nil, err
 	}
 	for _, n := range pDirs {
-		p, err := loadProfile(n, miniHome...)
+		p, err := LoadProfile(n, miniHome...)
 		if err != nil {
 			inValidPs = append(inValidPs, p)
 			continue
 		}
-		if !p.isValid() {
+		if !p.IsValid() {
 			inValidPs = append(inValidPs, p)
 			continue
 		}
@@ -132,8 +148,8 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	return validPs, inValidPs, nil
 }
 
-// loadProfile loads type Profile based on its name
-func loadProfile(name string, miniHome ...string) (*Profile, error) {
+// LoadProfile loads type Profile based on its name
+func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
 	p := &Profile{
 		Name:   name,
@@ -168,8 +184,8 @@ func profileFilePath(profile string, miniHome ...string) string {
 	return filepath.Join(miniPath, "profiles", profile, "config.json")
 }
 
-// profileFolderPath returns path of profile folder
-func profileFolderPath(profile string, miniHome ...string) string {
+// ProfileFolderPath returns path of profile folder
+func ProfileFolderPath(profile string, miniHome ...string) string {
 	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]

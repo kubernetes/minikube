@@ -97,6 +97,27 @@ var serviceNamespaces = map[string]typed_core.ServiceInterface{
 	"default": defaultNamespaceServiceInterface,
 }
 
+var serviceNamespaceOther = map[string]typed_core.ServiceInterface{
+	"default": nondefaultNamespaceServiceInterface,
+}
+
+var nondefaultNamespaceServiceInterface = &MockServiceInterface{
+	ServiceList: &core.ServiceList{
+		Items: []core.Service{
+			{
+				ObjectMeta: meta.ObjectMeta{
+					Name:      "non-namespace-dashboard-no-ports",
+					Namespace: "cannot_be_found_namespace",
+					Labels:    map[string]string{"mock": "mock"},
+				},
+				Spec: core.ServiceSpec{
+					Ports: []core.ServicePort{},
+				},
+			},
+		},
+	},
+}
+
 var defaultNamespaceServiceInterface = &MockServiceInterface{
 	ServiceList: &core.ServiceList{
 		Items: []core.Service{
@@ -880,6 +901,57 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 		t.Run(test.description, func(t *testing.T) {
 			K8s = &MockClientGetter{
 				servicesMap:  serviceNamespaces,
+				endpointsMap: endpointNamespaces,
+			}
+			err := WaitAndMaybeOpenService(test.api, test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
+			if test.err && err == nil {
+				t.Fatalf("WaitAndMaybeOpenService expected to fail for test: %v", test)
+			}
+			if !test.err && err != nil {
+				t.Fatalf("WaitAndMaybeOpenService not expected to fail but got err: %v", err)
+			}
+
+		})
+	}
+}
+
+func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
+	defaultAPI := &tests.MockAPI{
+		FakeStore: tests.FakeStore{
+			Hosts: map[string]*host.Host{
+				config.GetMachineName(): {
+					Name:   config.GetMachineName(),
+					Driver: &tests.MockDriver{},
+				},
+			},
+		},
+	}
+	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
+
+	var tests = []struct {
+		description string
+		api         libmachine.API
+		namespace   string
+		service     string
+		expected    []string
+		urlMode     bool
+		https       bool
+		err         bool
+	}{
+		{
+			description: "correctly return empty serviceURLs",
+			namespace:   "default",
+			service:     "non-namespace-dashboard-no-ports",
+			api:         defaultAPI,
+			expected:    []string{},
+			err:         true,
+		},
+	}
+	defer revertK8sClient(K8s)
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			K8s = &MockClientGetter{
+				servicesMap:  serviceNamespaceOther,
 				endpointsMap: endpointNamespaces,
 			}
 			err := WaitAndMaybeOpenService(test.api, test.namespace, test.service, defaultTemplate, test.urlMode, test.https, 1, 0)
