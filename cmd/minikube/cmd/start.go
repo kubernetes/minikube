@@ -136,6 +136,7 @@ type kubectlversion struct {
 	SVersion VersionInfo `json:"serverVersion"`
 }
 
+// VersionInfo holds version information
 type VersionInfo struct {
 	Major      string `json:"major"`
 	Minor      string `json:"minor"`

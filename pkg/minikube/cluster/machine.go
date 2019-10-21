@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
+// Machine contains information about a machine
 type Machine struct {
 	*host.Host
 }
@@ -59,7 +60,7 @@ func (h *Machine) IsValid() bool {
 	return true
 }
 
-// ListsMachines return all valid and invalid machines
+// ListMachines return all valid and invalid machines
 // If a machine is valid or invalid is determined by the cluster.IsValid function
 func ListMachines(miniHome ...string) (validMachines []*Machine, inValidMachines []*Machine, err error) {
 	pDirs, err := machineDirs(miniHome...)
@@ -82,7 +83,7 @@ func ListMachines(miniHome ...string) (validMachines []*Machine, inValidMachines
 	return validMachines, inValidMachines, nil
 }
 
-// Loads a machine or throws an error if the machine could not be loadedG
+// LoadMachine loads a machine or throws an error if the machine could not be loadedG
 func LoadMachine(name string) (*Machine, error) {
 	api, err := machine.NewAPIClient()
 	if err != nil {
