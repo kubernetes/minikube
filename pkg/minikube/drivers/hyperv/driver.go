@@ -28,7 +28,7 @@ import (
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
+	_ = registry.Register(registry.DriverDef{
 		Name:          constants.DriverHyperv,
 		Builtin:       true,
 		ConfigCreator: createHypervHost,
@@ -45,7 +45,7 @@ func createHypervHost(config cfg.MachineConfig) interface{} {
 	d.VSwitch = config.HypervVirtualSwitch
 	d.MemSize = config.Memory
 	d.CPU = config.CPUs
-	d.DiskSize = int(config.DiskSize)
+	d.DiskSize = config.DiskSize
 	d.SSHUser = "docker"
 	d.DisableDynamicMemory = true // default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
 
