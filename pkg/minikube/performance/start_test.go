@@ -27,7 +27,7 @@ func mockCollectTimeMinikubeStart(durations []float64) func(ctx context.Context,
 	index := 0
 	return func(context.Context, *Binary) (float64, error) {
 		duration := durations[index]
-		index = index + 1
+		index++
 		return duration, nil
 	}
 }
