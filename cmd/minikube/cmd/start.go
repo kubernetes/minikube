@@ -17,7 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"os"
@@ -37,6 +39,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
@@ -117,6 +120,7 @@ const (
 	minimumMemorySize     = "1024mb"
 	minimumCPUS           = 2
 	minimumDiskSize       = "2000mb"
+	autoUpdate            = "auto-update-drivers"
 )
 
 var (
@@ -170,6 +174,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
+	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -293,7 +298,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateFlags(driver)
 	validateUser(driver)
 
-	_ = getMinikubeVersion(driver)
+	v, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+	}
+
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driver)
 	if err != nil {
@@ -366,7 +377,9 @@ func runStart(cmd *cobra.Command, args []string) {
 			exit.WithError("Wait failed", err)
 		}
 	}
-	showKubectlConnectInfo(kubeconfig)
+	if err := showKubectlInfo(kubeconfig, k8sVersion); err != nil {
+		glog.Errorf("kubectl info: %v", err)
+	}
 }
 
 func displayVersion(version string) {
@@ -446,8 +459,12 @@ func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, ma
 		exit.WithError("Failed to get machine client", err)
 	}
 	host, preExists = startHost(m, config.MachineConfig)
+	runner, err = machine.CommandRunner(host)
+	if err != nil {
+		exit.WithError("Failed to get command runner", err)
+	}
 
-	ip := validateNetwork(host)
+	ip := validateNetwork(host, runner)
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
@@ -457,10 +474,6 @@ func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, ma
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
 		exit.WithError("Failed to save config", err)
-	}
-	runner, err = machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
 	}
 
 	return runner, preExists, m, host
@@ -477,16 +490,48 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-func showKubectlConnectInfo(kcs *kubeconfig.Settings) {
+func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string) error {
 	if kcs.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
 	} else {
 		out.T(out.Ready, `Done! kubectl is now configured to use "{{.name}}"`, out.V{"name": cfg.GetMachineName()})
 	}
-	_, err := exec.LookPath("kubectl")
+
+	path, err := exec.LookPath("kubectl")
 	if err != nil {
 		out.T(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		return nil
 	}
+
+	j, err := exec.Command(path, "version", "--client", "--output=json").Output()
+	if err != nil {
+		return errors.Wrap(err, "exec")
+	}
+
+	cv := struct {
+		ClientVersion struct {
+			GitVersion string `json:"gitVersion"`
+		} `json:"clientVersion"`
+	}{}
+	err = json.Unmarshal(j, &cv)
+	if err != nil {
+		return errors.Wrap(err, "unmarshal")
+	}
+
+	client, err := semver.Make(strings.TrimPrefix(cv.ClientVersion.GitVersion, version.VersionPrefix))
+	if err != nil {
+		return errors.Wrap(err, "client semver")
+	}
+
+	cluster := semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix))
+	minorSkew := int(math.Abs(float64(int(client.Minor) - int(cluster.Minor))))
+	glog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
+
+	if client.Major != cluster.Major || minorSkew > 1 {
+		out.WarningT("{{.path}} is version {{.client_version}}, and is incompatible with Kubernetes {{.cluster_version}}. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
+			out.V{"path": path, "client_version": client, "cluster_version": cluster})
+	}
+	return nil
 }
 
 func selectDriver(oldConfig *cfg.Config) string {
@@ -764,7 +809,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 		repository = autoSelectedRepository
 	}
 
-	if repository != "" {
+	if cmd.Flags().Changed(imageRepository) {
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
@@ -905,7 +950,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host) string {
+func validateNetwork(h *host.Host, r command.Runner) string {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
@@ -929,19 +974,52 @@ func validateNetwork(h *host.Host) string {
 		}
 	}
 
-	// Here is where we should be checking connectivity to/from the VM
-	return ip
-}
+	// none driver does not need ssh access
+	if h.Driver.DriverName() != constants.DriverNone {
+		sshAddr := fmt.Sprintf("%s:22", ip)
+		conn, err := net.Dial("tcp", sshAddr)
+		if err != nil {
+			exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
 
-// getMinikubeVersion ensures that the driver binary is up to date
-func getMinikubeVersion(driver string) string {
-	v, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
-		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+This is likely due to one of two reasons:
+
+- VPN or firewall interference
+- {{.hypervisor}} network configuration issue
+
+Suggested workarounds:
+
+- Disable your local VPN or firewall software
+- Configure your local VPN or firewall to allow access to {{.ip}}
+- Restart or reinstall {{.hypervisor}}
+- Use an alternative --vm-driver`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
+		}
+		defer conn.Close()
 	}
-	return v.String()
+
+	if err := r.Run("nslookup kubernetes.io"); err != nil {
+		out.WarningT("VM is unable to resolve DNS hosts: {[.error}}", out.V{"error": err})
+	}
+
+	// Try both UDP and ICMP to assert basic external connectivity
+	if err := r.Run("nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8"); err != nil {
+		out.WarningT("VM is unable to directly connect to the internet: {{.error}}", out.V{"error": err})
+	}
+
+	// Try an HTTPS connection to the
+	proxy := os.Getenv("HTTPS_PROXY")
+	opts := "-sS"
+	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
+		opts = fmt.Sprintf("-x %s %s", proxy, opts)
+	}
+
+	repo := viper.GetString(imageRepository)
+	if repo == "" {
+		repo = images.DefaultImageRepo
+	}
+	if err := r.Run(fmt.Sprintf("curl %s https://%s/", opts, repo)); err != nil {
+		out.WarningT("VM is unable to connect to the selected image repository: {{.error}}", out.V{"error": err})
+	}
+	return ip
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable

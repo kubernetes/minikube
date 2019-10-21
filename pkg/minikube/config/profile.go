@@ -21,18 +21,20 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
+var keywords = []string{"start", "stop", "status", "delete", "config", "open", "profile", "addons", "cache", "logs"}
+
 // IsValid checks if the profile has the essential info needed for a profile
 func (p *Profile) IsValid() bool {
 	if p.Config == nil {
 		return false
 	}
-
 	if p.Config.MachineConfig.VMDriver == "" {
 		return false
 	}
@@ -40,6 +42,16 @@ func (p *Profile) IsValid() bool {
 		return false
 	}
 	return true
+}
+
+// check if the profile is an internal keywords
+func ProfileNameInReservedKeywords(name string) bool {
+	for _, v := range keywords {
+		if strings.EqualFold(v, name) {
+			return true
+		}
+	}
+	return false
 }
 
 // ProfileExists returns true if there is a profile config (regardless of being valid)
@@ -136,7 +148,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	return validPs, inValidPs, nil
 }
 
-// loadProfile loads type Profile based on its name
+// LoadProfile loads type Profile based on its name
 func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
 	p := &Profile{

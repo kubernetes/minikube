@@ -278,8 +278,10 @@ func DeleteHost(api libmachine.API) error {
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
 	status, err := GetHostStatus(api)
 	if err != nil {
-		exit.WithCodeT(exit.Failure, "Unable to get the status of the cluster.")
+		// Warn, but proceed
+		out.WarningT("Unable to get the status of the {{.name}} cluster.", out.V{"name": cfg.GetMachineName()})
 	}
+
 	if status == state.None.String() {
 		return mcnerror.ErrHostDoesNotExist{Name: host.Name}
 	}
@@ -289,6 +291,7 @@ func DeleteHost(api libmachine.API) error {
 		if err := trySSHPowerOff(host); err != nil {
 			glog.Infof("Unable to power off minikube because the host was not found.")
 		}
+		out.T(out.DeletingHost, "Successfully powered off Hyper-V. minikube driver -- {{.driver}}", out.V{"driver": host.Driver.DriverName()})
 	}
 
 	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
@@ -602,8 +605,8 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	return client.Shell(args...)
 }
 
-// EnsureMinikubeRunningOrExit checks that minikube has a status available and that
-// the status is `Running`, otherwise it will exit
+// IsMinikubeRunning checks that minikube has a status available and that
+// the status is `Running`
 func IsMinikubeRunning(api libmachine.API) bool {
 	s, err := GetHostStatus(api)
 	if err != nil {
