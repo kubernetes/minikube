@@ -17,20 +17,30 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/performance"
 )
 
 var rootCmd = &cobra.Command{
-	Use:   "mkcmp [path to first binary] [path to second binary]",
-	Short: "mkcmp is used to compare performance of two minikube binaries",
+	Use:           "mkcmp [path to first binary] [path to second binary]",
+	Short:         "mkcmp is used to compare performance of two minikube binaries",
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
 		return validateArgs(args)
 	},
-	Run: func(cmd *cobra.Command, args []string) {},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		binaries, err := performance.Binaries(args)
+		if err != nil {
+			return err
+		}
+		return performance.CompareMinikubeStart(context.Background(), binaries)
+	},
 }
 
 func validateArgs(args []string) error {
@@ -43,7 +53,7 @@ func validateArgs(args []string) error {
 // Execute runs the mkcmp command
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Println("Error:", err)
 		os.Exit(1)
 	}
 }
