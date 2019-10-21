@@ -174,7 +174,7 @@ func TestWriteConfig(t *testing.T) {
 	}
 }
 
-func Test_encode(t *testing.T) {
+func TestEncode(t *testing.T) {
 	var b bytes.Buffer
 	for _, tt := range configTestCases {
 		err := encode(&b, tt.config)
