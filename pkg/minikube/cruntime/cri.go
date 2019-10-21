@@ -344,7 +344,7 @@ func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
 		rr, err = cr.RunCmd(c)
 	}
 	if err != nil {
-		return nil, errors.Wrap(err, rr.Output())
+		return nil, err
 	}
 	var ids []string
 	for _, line := range strings.Split(rr.Stderr.String(), "\n") {
@@ -362,9 +362,8 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 	}
 	glog.Infof("Killing containers: %s", ids)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
-	rr, err := cr.RunCmd(c)
-	if err != nil {
-		return errors.Wrapf(err, "kill cri containers. output %s", rr.Output())
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "kill cri containers.")
 	}
 	return nil
 }
@@ -376,9 +375,8 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 	}
 	glog.Infof("Stopping containers: %s", ids)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
-	rr, err := cr.RunCmd(c)
-	if err != nil {
-		return errors.Wrapf(err, "stop cri containers. output %s", rr.Output())
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "stop cri containers")
 	}
 	return nil
 
@@ -400,8 +398,8 @@ image-endpoint: unix://{{.Socket}}
 		return err
 	}
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(cPath), b.String(), cPath))
-	if rr, err := cr.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "populateCRIConfig %s", rr.Output())
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "populateCRIConfig")
 	}
 	return nil
 }
@@ -421,8 +419,8 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string, k8sVersion str
 	}
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
-	if rr, err := cr.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "generateCRIOConfig. %s", rr.Output())
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "generateCRIOConfig.")
 	}
 	return nil
 }

@@ -87,8 +87,8 @@ func (r *Docker) Enable(disOthers bool) error {
 		}
 	}
 	c := exec.Command("/bin/bash", "-c", "sudo systemctl start docker")
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "enable docker. output: %q", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "enable docker.")
 	}
 	return nil
 }
@@ -96,8 +96,8 @@ func (r *Docker) Enable(disOthers bool) error {
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
 	c := exec.Command("/bin/bash", "-c", "sudo systemctl stop docker docker.socket")
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "disable docker. output: %q", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "disable docker")
 	}
 	return nil
 }
@@ -106,8 +106,8 @@ func (r *Docker) Disable() error {
 func (r *Docker) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker load -i %s", path))
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "loadimage docker. output: %q", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "loadimage docker.")
 	}
 	return nil
 
@@ -126,7 +126,7 @@ func (r *Docker) ListContainers(filter string) ([]string, error) {
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf(`docker ps -a --filter="name=%s" --format="{{.ID}}"`, filter))
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return nil, errors.Wrapf(err, "docker ListContainers. output: %q", rr.Output())
+		return nil, errors.Wrapf(err, "docker ListContainers. ")
 	}
 
 	var ids []string
@@ -145,8 +145,8 @@ func (r *Docker) KillContainers(ids []string) error {
 	}
 	glog.Infof("Killing containers: %s", ids)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker rm -f %s", strings.Join(ids, " ")))
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "Killing containers docker. output: %q", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "Killing containers docker.")
 	}
 	return nil
 }
@@ -158,8 +158,8 @@ func (r *Docker) StopContainers(ids []string) error {
 	}
 	glog.Infof("Stopping containers: %s", ids)
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker stop %s", strings.Join(ids, " ")))
-	if rr, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "stopping containers docker. output: %q", rr.Output())
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "stopping containers docker.")
 	}
 	return nil
 }

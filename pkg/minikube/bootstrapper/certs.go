@@ -350,8 +350,8 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 		if err != nil {
 			c = exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ln -s '%s' '%s'", caCertFile, certStorePath))
 
-			if rr, err := cr.RunCmd(c); err != nil {
-				return errors.Wrapf(err, "error making symbol link for certificate %s output: %s", caCertFile, rr.Output())
+			if _, err := cr.RunCmd(c); err != nil {
+				return errors.Wrapf(err, "error making symbol link for certificate %s", caCertFile)
 			}
 		}
 		if hasSSLBinary {
@@ -363,8 +363,8 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 
 			_, err = cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo test -f %s", subjectHashLink)))
 			if err != nil {
-				if rr, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, subjectHashLink))); err != nil {
-					return errors.Wrapf(err, "error making subject hash symbol %s link for certificate %s. output: %q", subjectHash, caCertFile, rr.Output())
+				if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, subjectHashLink))); err != nil {
+					return errors.Wrapf(err, "error making subject hash symbol %s link for certificate %s.", subjectHash, caCertFile)
 				}
 			}
 		}

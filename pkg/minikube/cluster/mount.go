@@ -61,17 +61,15 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 	}
 	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target, mntCmd(source, target, c))))
 	if err != nil {
-		glog.Infof("Failed to create folder pre-mount: err=%v, output: %q", err, rr.Output())
 		return errors.Wrap(err, "create folder pre-mount")
 	}
 
 	rr, err = r.RunCmd(exec.Command("/bin/bash", "-c", mntCmd(source, target, c)))
 	if err != nil {
-		glog.Infof("Failed to create folder before mount: err=%s, output: %q", err, rr.Output())
-		return errors.Wrap(err, rr.Output())
+		return errors.Wrap(err, "mount")
 	}
 
-	glog.Infof("output: %q", rr.Output())
+	glog.Infof("mount successful: %q", rr.Output())
 	return nil
 }
 
@@ -141,8 +139,8 @@ func mntCmd(source string, target string, c *MountConfig) string {
 func Unmount(r mountRunner, target string) error {
 	// grep because findmnt will also display the parent!
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target))
-	if rr, err := r.RunCmd(c); err != nil {
-		return errors.Wrap(err, rr.Output())
+	if _, err := r.RunCmd(c); err != nil {
+		return errors.Wrap(err, "unmount")
 	}
 	glog.Infof("unmount for %s ran successfully", target)
 	return nil
