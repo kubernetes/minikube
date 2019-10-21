@@ -82,6 +82,13 @@ func TestDownloadAndDeleteAll(t *testing.T) {
 				t.Errorf("%s failed: %v", rr.Args, err)
 			}
 		})
+		// Delete should always succeed, even if previously partially or fully deleted.
+		t.Run("DeleteAlwaysSucceeds", func(t *testing.T) {
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
+			if err != nil {
+				t.Errorf("%s failed: %v", rr.Args, err)
+			}
+		})
 	})
 
 }

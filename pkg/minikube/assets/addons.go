@@ -420,7 +420,7 @@ func GenerateTemplateData(cfg config.KubernetesConfig) interface{} {
 	// for  less common architectures blank suffix for amd64
 	ea := ""
 	if runtime.GOARCH != "amd64" {
-		ea = runtime.GOARCH
+		ea = "-" + runtime.GOARCH
 	}
 	opts := struct {
 		Arch            string
