@@ -79,6 +79,8 @@ This step uses the git tag to publish new binaries to GCS and create a github re
 
 After job completion, click "Console Output" to verify that the release completed without errors. This is typically where one will see brew automation fail, for instance.
 
+**Note: If you are releasing a beta, you are done when you get here.**
+
 ## Check releases.json
 
 This file is used for auto-update notifications, but is not active until releases.json is copied to GCS.
