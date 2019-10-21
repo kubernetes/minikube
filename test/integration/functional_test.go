@@ -427,7 +427,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateUpdateContextCmd asserts basic "update-context" command functionality
 func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

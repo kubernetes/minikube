@@ -64,11 +64,11 @@ func Port(clusterName string, configPath ...string) (int, error) {
 	}
 	cfg, err := readOrNew(path)
 	if err != nil {
-		return 0, errors.Wrap(err, "Error getting kubeconfig status")
+		return 0, errors.Wrapf(err, "read %s", configPath)
 	}
 	cluster, ok := cfg.Clusters[clusterName]
 	if !ok {
-		return 0, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
+		return 0, errors.Errorf("cluster %q not in %s", clusterName, configPath)
 	}
 	kurl, err := url.Parse(cluster.Server)
 	if err != nil {
@@ -137,24 +137,24 @@ func UpdateIP(ip net.IP, machineName string, configPath ...string) (bool, error)
 
 	kip, err := extractIP(machineName, path)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "extract ip")
 	}
 	if kip.Equal(ip) {
 		return false, nil
 	}
 	kport, err := Port(machineName, path)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "port")
 	}
 	cfg, err := readOrNew(path)
 	if err != nil {
-		return false, errors.Wrap(err, "Error getting kubeconfig status")
+		return false, errors.Wrap(err, "read")
 	}
 	// Safe to lookup server because if field non-existent getIPFromKubeconfig would have given an error
 	cfg.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(kport)
 	err = writeToFile(cfg, path)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "write")
 	}
 	// Kubeconfig IP reconfigured
 	return true, nil
@@ -206,30 +206,36 @@ func readOrNew(configPath ...string) (*api.Config, error) {
 		fPath = configPath[0]
 	}
 
+	glog.Infof("reading: %v", fPath)
 	data, err := ioutil.ReadFile(fPath)
 	if os.IsNotExist(err) {
+		glog.Infof("%s does not exist, returning new config", fPath)
 		return api.NewConfig(), nil
 	} else if err != nil {
-		return nil, errors.Wrapf(err, "Error reading file %q", fPath)
+		return nil, errors.Wrapf(err, "readfile %q", fPath)
 	}
 
 	// decode config, empty if no bytes
 	kcfg, err := decode(data)
 	if err != nil {
-		return nil, errors.Errorf("could not read config: %v", err)
+		return nil, errors.Wrapf(err, "decode")
 	}
 
 	// initialize nil maps
 	if kcfg.AuthInfos == nil {
 		kcfg.AuthInfos = map[string]*api.AuthInfo{}
+		glog.V(1).Infof("%s has no AuthInfos", fPath)
 	}
 	if kcfg.Clusters == nil {
 		kcfg.Clusters = map[string]*api.Cluster{}
+		glog.V(1).Infof("%s has no Clusters", fPath)
 	}
 	if kcfg.Contexts == nil {
 		kcfg.Contexts = map[string]*api.Context{}
+		glog.V(1).Infof("%s has no Contexts", fPath)
 	}
 
+	glog.Infof("returning %d clusters, %d contexts", len(kcfg.Clusters), len(kcfg.Contexts))
 	return kcfg, nil
 }
 

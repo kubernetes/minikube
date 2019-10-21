@@ -79,6 +79,6 @@ func runStop(cmd *cobra.Command, args []string) {
 	machineName := pkg_config.GetMachineName()
 	err = kubeconfig.UnsetCurrentContext(machineName, constants.KubeconfigPath)
 	if err != nil {
-		exit.WithError("update config", err)
+		exit.WithError("unset context", err)
 	}
 }

@@ -46,7 +46,7 @@ var updateContextCmd = &cobra.Command{
 		}
 		updated, err := kubeconfig.UpdateIP(ip, machineName, constants.KubeconfigPath)
 		if err != nil {
-			exit.WithError("update config", err)
+			exit.WithError("update IP", err)
 		}
 		if updated {
 			out.T(out.Celebrate, "{{.machine}} IP has been updated to point at {{.ip}}", out.V{"machine": machineName, "ip": ip})
