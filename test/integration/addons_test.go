@@ -65,6 +65,20 @@ func TestAddons(t *testing.T) {
 			})
 		}
 	})
+
+	// Assert that disable/enable works offline
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
 }
 
 func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {

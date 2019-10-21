@@ -34,13 +34,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// ErrPrefix notes an error
-const ErrPrefix = "! "
-
-// OutPrefix notes output
-const OutPrefix = "> "
-
 const (
+	// ErrPrefix notes an error
+	ErrPrefix = "! "
+
+	// OutPrefix notes output
+	OutPrefix = "> "
+
 	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-amd64%s"
 )
 
