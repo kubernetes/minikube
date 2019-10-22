@@ -269,6 +269,8 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
+	fmt.Println("Sleeping 15 seconds...")
+	time.Sleep(15 * time.Second)
 	displayVersion(version.GetVersion())
 	displayEnviron(os.Environ())
 
