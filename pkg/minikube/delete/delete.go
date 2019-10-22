@@ -1,27 +1,43 @@
+/*
+Copyright 2019 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package delete
 
 import (
 	"fmt"
-	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/spf13/viper"
 	"io/ioutil"
-	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/kubeconfig"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"os"
 	"path/filepath"
 	"strconv"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
 	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
