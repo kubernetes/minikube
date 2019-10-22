@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2017 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,16 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package main
 
-import (
-	"os/exec"
-)
+import "k8s.io/minikube/cmd/performance/cmd"
 
-func detectVBoxManageCmd() string {
-	cmd := "VBoxManage"
-	if path, err := exec.LookPath(cmd); err == nil {
-		return path
-	}
-	return cmd
+func main() {
+	cmd.Execute()
 }

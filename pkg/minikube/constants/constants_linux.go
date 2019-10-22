@@ -24,13 +24,3 @@ import (
 
 // DefaultMountDir is the default mount dir
 var DefaultMountDir = homedir.HomeDir()
-
-// SupportedVMDrivers is a list of supported drivers on Linux.
-var SupportedVMDrivers = [...]string{
-	DriverVirtualbox,
-	DriverParallels,
-	DriverVmwareFusion,
-	DriverKvm2,
-	DriverVmware,
-	DriverNone,
-}

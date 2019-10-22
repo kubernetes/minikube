@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package driver
 
 import (
 	"fmt"
@@ -27,7 +27,15 @@ import (
 	"golang.org/x/sys/windows/registry"
 )
 
-func detectVBoxManageCmd() string {
+// supportedDrivers is a list of supported drivers on Windows.
+var supportedDrivers = []string{
+	VirtualBox,
+	VMwareFusion,
+	HyperV,
+	VMware,
+}
+
+func VBoxManagePath() string {
 	cmd := "VBoxManage"
 	if p := os.Getenv("VBOX_INSTALL_PATH"); p != "" {
 		if path, err := exec.LookPath(filepath.Join(p, cmd)); err == nil {

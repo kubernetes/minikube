@@ -29,13 +29,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/retry"
 )
-
-const driverName = constants.DriverNone
 
 // cleanupPaths are paths to be removed by cleanup, and are used by both kubeadm and minikube.
 var cleanupPaths = []string{
@@ -92,7 +89,7 @@ func (d *Driver) Create() error {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	return driverName
+	return "none"
 }
 
 // GetIP returns an IP or hostname that this host is available at

@@ -28,8 +28,8 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -44,13 +44,11 @@ and then start minikube again with the following flags:
 minikube start --container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock`
 
 // IsValidDriver checks if a driver is supported
-func IsValidDriver(string, driver string) error {
-	for _, d := range constants.SupportedVMDrivers {
-		if driver == d {
-			return nil
-		}
+func IsValidDriver(string, name string) error {
+	if driver.Supported(name) {
+		return nil
 	}
-	return fmt.Errorf("driver %q is not supported", driver)
+	return fmt.Errorf("driver %q is not supported", name)
 }
 
 // RequiresRestartMsg returns the "requires restart" message

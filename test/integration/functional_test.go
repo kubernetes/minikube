@@ -84,6 +84,7 @@ func TestFunctional(t *testing.T) {
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DNS", validateDNS},
+			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
 			{"MountCmd", validateMountCmd},
 			{"ProfileCmd", validateProfileCmd},
@@ -172,6 +173,46 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 		if status != api.ConditionTrue {
 			t.Errorf("unexpected status: %v - item: %+v", status, i)
 		}
+	}
+}
+
+func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	// Custom format
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-f", "host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubeconfig:{{.Kubeconfig}}"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	match, _ := regexp.MatchString(`host:([A-z]+),kublet:([A-z]+),apiserver:([A-z]+),kubeconfig:([A-z]+)`, rr.Stdout.String())
+	if !match {
+		t.Errorf("%s failed: %v. Output for custom format did not match", rr.Args, err)
+	}
+
+	// Json output
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-o", "json"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	var jsonObject map[string]interface{}
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	if _, ok := jsonObject["Host"]; !ok {
+		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "Host")
+	}
+	if _, ok := jsonObject["Kubelet"]; !ok {
+		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "Kubelet")
+	}
+	if _, ok := jsonObject["APIServer"]; !ok {
+		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "APIServer")
+	}
+	if _, ok := jsonObject["Kubeconfig"]; !ok {
+		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "Kubeconfig")
 	}
 }
 
@@ -395,6 +436,17 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 		if !match {
 			t.Errorf("Plugin output did not match expected custom format. Got: %s", line)
 		}
+	}
+
+	// Json output
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list", "-o", "json"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	var jsonObject map[string]interface{}
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 }
 

@@ -1,3 +1,5 @@
+// +build windows
+
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -14,49 +16,38 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package virtualbox
+package hyperv
 
 import (
-	"fmt"
-
-	"github.com/docker/machine/drivers/virtualbox"
+	"github.com/docker/machine/drivers/hyperv"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
-const defaultVirtualboxNicType = "virtio"
-
 func init() {
-	err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverVirtualbox,
+	registry.Register(registry.DriverDef{
+		Name:          driver.HyperV,
 		Builtin:       true,
-		ConfigCreator: createVirtualboxHost,
+		ConfigCreator: createHypervHost,
 		DriverCreator: func() drivers.Driver {
-			return virtualbox.NewDriver("", "")
+			return hyperv.NewDriver("", "")
 		},
 	})
-	if err != nil {
-		panic(fmt.Sprintf("unable to register: %v", err))
-	}
 }
 
-func createVirtualboxHost(config cfg.MachineConfig) interface{} {
-	d := virtualbox.NewDriver(cfg.GetMachineName(), localpath.MiniPath())
+func createHypervHost(config cfg.MachineConfig) interface{} {
+	d := hyperv.NewDriver(cfg.GetMachineName(), localpath.MiniPath())
 
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.Memory = config.Memory
+	d.VSwitch = config.HypervVirtualSwitch
+	d.MemSize = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = config.DiskSize
-	d.HostOnlyCIDR = config.HostOnlyCIDR
-	d.NoShare = config.DisableDriverMounts
-	d.NoVTXCheck = config.NoVTXCheck
-	d.NatNicType = defaultVirtualboxNicType
-	d.HostOnlyNicType = defaultVirtualboxNicType
-	d.DNSProxy = config.DNSProxy
-	d.HostDNSResolver = config.HostDNSResolver
+	d.SSHUser = "docker"
+	d.DisableDynamicMemory = true // default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
 
 	return d
 }

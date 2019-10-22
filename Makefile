@@ -14,19 +14,19 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 4
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 5
+VERSION_BUILD ?= 0-beta.0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0-beta.0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.12.9
+GO_VERSION ?= 1.12.12
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2019.02.6
@@ -127,8 +127,20 @@ endif
 
 ifeq ($(GOOS),windows)
 	IS_EXE = .exe
+	DIRSEP_ = \\
+	DIRSEP = $(strip $(DIRSEP_))
+	PATHSEP = ;
+else
+	DIRSEP = /
+	PATHSEP = :
 endif
 
+
+out/minikube-linux-x86_64: out/minikube-linux-amd64
+	cp $< $@
+
+out/minikube-linux-aarch64: out/minikube-linux-arm64
+	cp $< $@
 
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
@@ -136,8 +148,9 @@ out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp $< $@
 
-.PHONY: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe
+.PHONY: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
 minikube-linux-amd64: out/minikube-linux-amd64
+minikube-linux-arm64: out/minikube-linux-arm64
 minikube-darwin-amd64: out/minikube-darwin-amd64
 minikube-windows-amd64.exe: out/minikube-windows-amd64.exe
 
@@ -239,33 +252,25 @@ extract:
 pkg/minikube/assets/assets.go: $(shell find "deploy/addons" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
-else ifeq ($(GOOS),windows)
-	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)\bin" go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH);$(GOPATH)\bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
-	-gofmt -s -w $@
-else
-	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
-	-gofmt -s -w $@
 endif
+	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
+	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
+	-gofmt -s -w $@
+	@#golint: Dns should be DNS (compat sed)
+	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
 
 pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
-else ifeq ($(GOOS),windows)
-	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)\bin" go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH);$(GOPATH)\bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
-	-gofmt -s -w $@
-else
-	which go-bindata || GO111MODULE=off GOBIN=$(GOPATH)/bin go get github.com/jteeuwen/go-bindata/...
-	PATH="$(PATH):$(GOPATH)/bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
-	-gofmt -s -w $@
 endif
+	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
+	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
+	-gofmt -s -w $@
 	@#golint: Json should be JSON (compat sed)
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
 .PHONY: cross
-cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe
+cross: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
 
 .PHONY: windows
 windows: minikube-windows-amd64.exe
@@ -281,7 +286,8 @@ e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
 
 .PHONY: checksum
 checksum:
-	for f in out/minikube-linux-amd64 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe out/minikube.iso \
+	for f in out/minikube.iso out/minikube-linux-amd64 minikube-linux-arm64 \
+		 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe \
 		 out/docker-machine-driver-kvm2 out/docker-machine-driver-hyperkit; do \
 		if [ -f "$${f}" ]; then \
 			openssl sha256 "$${f}" | awk '{print $$2}' > "$${f}.sha256" ; \
@@ -312,7 +318,7 @@ vet:
 	@go vet $(SOURCE_PACKAGES)
 
 .PHONY: golint
-golint:
+golint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	@golint -set_exit_status $(SOURCE_PACKAGES)
 
 .PHONY: gocyclo
@@ -348,21 +354,29 @@ mdlint:
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
-out/minikube_$(DEB_VERSION).deb: out/minikube-linux-amd64
+out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-0_amd64.deb
+	cp $< $@
+
+out/minikube_$(DEB_VERSION)-0_%.deb: out/minikube-linux-%
 	cp -r installers/linux/deb/minikube_deb_template out/minikube_$(DEB_VERSION)
 	chmod 0755 out/minikube_$(DEB_VERSION)/DEBIAN
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
+	sed -E -i 's/--ARCH--/'$*'/g' out/minikube_$(DEB_VERSION)/DEBIAN/control
 	mkdir -p out/minikube_$(DEB_VERSION)/usr/bin
-	cp out/minikube-linux-amd64 out/minikube_$(DEB_VERSION)/usr/bin/minikube
-	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION)
+	cp $< out/minikube_$(DEB_VERSION)/usr/bin/minikube
+	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION) $@
 	rm -rf out/minikube_$(DEB_VERSION)
 
-out/minikube-$(RPM_VERSION).rpm: out/minikube-linux-amd64
+out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-0.x86_64.rpm
+	cp $< $@
+
+out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
 	cp -r installers/linux/rpm/minikube_rpm_template out/minikube-$(RPM_VERSION)
 	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/minikube-$(RPM_VERSION)/minikube.spec
 	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/minikube-$(RPM_VERSION)/minikube.spec
-	rpmbuild -bb -D "_rpmdir $(PWD)/out" -D "_rpmfilename minikube-$(RPM_VERSION).rpm" \
+	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
 		 out/minikube-$(RPM_VERSION)/minikube.spec
+	@mv out/$*/minikube-$(RPM_VERSION)-0.$*.rpm out/ && rmdir out/$*
 	rm -rf out/minikube-$(RPM_VERSION)
 
 .PHONY: apt
@@ -380,14 +394,16 @@ out/repodata/repomd.xml: out/minikube-$(RPM_VERSION).rpm
 	-u "$(MINIKUBE_RELEASES_URL)/$(VERSION)/" out
 
 .SECONDEXPANSION:
-TAR_TARGETS_linux   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
-TAR_TARGETS_darwin  := out/minikube-darwin-amd64 out/docker-machine-driver-hyperkit
-TAR_TARGETS_windows := out/minikube-windows-amd64.exe
-out/minikube-%-amd64.tar.gz: $$(TAR_TARGETS_$$*)
+TAR_TARGETS_linux-amd64   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
+TAR_TARGETS_linux-arm64   := out/minikube-linux-arm64
+TAR_TARGETS_darwin-amd64  := out/minikube-darwin-amd64 out/docker-machine-driver-hyperkit
+TAR_TARGETS_windows-amd64 := out/minikube-windows-amd64.exe
+out/minikube-%.tar.gz: $$(TAR_TARGETS_$$*)
 	tar -cvzf $@ $^
 
 .PHONY: cross-tars
-cross-tars: out/minikube-windows-amd64.tar.gz out/minikube-linux-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
+cross-tars: out/minikube-linux-amd64.tar.gz out/minikube-linux-arm64.tar.gz \
+	    out/minikube-windows-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
 	-cd out && $(SHA512SUM) *.tar.gz > SHA512SUM
 
 out/minikube-installer.exe: out/minikube-windows-amd64.exe
@@ -551,3 +567,7 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo
 	  --navigateToChanged \
 	  --ignoreCache \
 	  --buildFuture)
+
+.PHONY: out/mkcmp
+out/mkcmp:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/main.go

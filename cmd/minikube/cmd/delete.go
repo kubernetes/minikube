@@ -17,16 +17,22 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/delete"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var deleteAll bool
+var purge bool
 
 // deleteCmd represents the delete command
 var deleteCmd = &cobra.Command{
@@ -45,6 +51,18 @@ func runDelete(cmd *cobra.Command, args []string) {
 	profileFlag, err := cmd.Flags().GetString("profile")
 	if err != nil {
 		exit.WithError("Could not get profile flag", err)
+	}
+
+	validProfiles, invalidProfiles, err := config.ListProfiles()
+	profilesToDelete := append(validProfiles, invalidProfiles...)
+
+	// If the purge flag is set, go ahead and delete the .minikube directory.
+	if purge && len(profilesToDelete) > 1 && !deleteAll {
+		out.ErrT(out.Notice, "Multiple minikube profiles were found - ")
+		for _, p := range profilesToDelete {
+			out.T(out.Notice, "    - {{.profile}}", out.V{"profile": p.Name})
+		}
+		exit.UsageT("Usage: minikube delete --all --purge")
 	}
 
 	if deleteAll {
@@ -83,9 +101,13 @@ func runDelete(cmd *cobra.Command, args []string) {
 			out.T(out.DeletingHost, "Successfully deleted profile \"{{.name}}\"", out.V{"name": profileName})
 		}
 	}
-}
 
-func init() {
-	deleteCmd.Flags().BoolVar(&deleteAll, "all", false, "Set flag to delete all profiles")
-	RootCmd.AddCommand(deleteCmd)
+	// If the purge flag is set, go ahead and delete the .minikube directory.
+	if purge {
+		glog.Infof("Purging the '.minikube' directory located at %s", localpath.MiniPath())
+		if err := os.RemoveAll(localpath.MiniPath()); err != nil {
+			exit.WithError("unable to delete minikube config folder", err)
+		}
+		out.T(out.Crushed, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
+	}
 }
