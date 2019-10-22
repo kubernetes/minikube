@@ -25,7 +25,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/delete"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -41,6 +40,16 @@ var deleteCmd = &cobra.Command{
 	Long: `Deletes a local kubernetes cluster. This command deletes the VM, and removes all
 associated files.`,
 	Run: runDelete,
+}
+
+func init() {
+	deleteCmd.Flags().BoolVar(&deleteAll, "all", false, "Set flag to delete all profiles")
+	deleteCmd.Flags().BoolVar(&purge, "purge", false, "Set this flag to delete the '.minikube' folder from your user directory.")
+
+	if err := viper.BindPFlags(deleteCmd.Flags()); err != nil {
+		exit.WithError("unable to bind flags", err)
+	}
+	RootCmd.AddCommand(deleteCmd)
 }
 
 // runDelete handles the executes the flow of "minikube delete"
@@ -70,14 +79,11 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.UsageT("usage: minikube delete --all")
 		}
 
-		validProfiles, invalidProfiles, err := config.ListProfiles()
-		profilesToDelete := append(validProfiles, invalidProfiles...)
-
 		if err != nil {
 			exit.WithError("Error getting profiles to delete", err)
 		}
 
-		errs := delete.DeleteProfiles(profilesToDelete)
+		errs := delete.RemoveProfiles(profilesToDelete)
 		if len(errs) > 0 {
 			delete.HandleDeletionErrors(errs)
 		} else {
@@ -94,7 +100,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
 		}
 
-		errs := delete.DeleteProfiles([]*config.Profile{profile})
+		errs := delete.RemoveProfiles([]*config.Profile{profile})
 		if len(errs) > 0 {
 			delete.HandleDeletionErrors(errs)
 		} else {

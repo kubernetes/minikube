@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package delete
 
 import (
 	"io/ioutil"
@@ -107,7 +107,7 @@ func TestDeleteProfile(t *testing.T) {
 				t.Logf("load failure: %v", err)
 			}
 
-			errs := DeleteProfiles([]*config.Profile{profile})
+			errs := RemoveProfiles([]*config.Profile{profile})
 			if len(errs) > 0 {
 				HandleDeletionErrors(errs)
 				t.Errorf("Errors while deleting profiles: %v", errs)
@@ -190,7 +190,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	}
 
 	profiles := append(validProfiles, inValidProfiles...)
-	errs := DeleteProfiles(profiles)
+	errs := RemoveProfiles(profiles)
 
 	if errs != nil {
 		t.Errorf("errors while deleting all profiles: %v", errs)

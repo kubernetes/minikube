@@ -5,6 +5,7 @@ import (
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/spf13/viper"
 	"io/ioutil"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"os"
@@ -26,6 +27,7 @@ import (
 
 type typeOfError int
 
+// DeletionError can be returned from RemoveProfiles
 type DeletionError struct {
 	Err       error
 	ErrorType typeOfError
@@ -36,22 +38,25 @@ func (error DeletionError) Error() string {
 }
 
 const (
-	Fatal          typeOfError = 0
+	// Fatal is a type of DeletionError
+	Fatal typeOfError = 0
+	// MissingProfile is a type of DeletionError
 	MissingProfile typeOfError = 1
+	// MissingCluster is a type of DeletionError
 	MissingCluster typeOfError = 2
 )
 
-// Deletes one or more profiles
-func DeleteProfiles(profiles []*config.Profile) []error {
+// RemoveProfiles deletes one or more profiles
+func RemoveProfiles(profiles []*config.Profile) []error {
 	var errs []error
 	for _, profile := range profiles {
-		err := deleteProfile(profile)
+		err := removeProfile(profile)
 
 		if err != nil {
 			mm, loadErr := cluster.LoadMachine(profile.Name)
 
 			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
-				invalidProfileDeletionErrs := DeleteInvalidProfile(profile)
+				invalidProfileDeletionErrs := RemoveInvalidProfile(profile)
 				if len(invalidProfileDeletionErrs) > 0 {
 					errs = append(errs, invalidProfileDeletionErrs...)
 				}
@@ -63,7 +68,7 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	return errs
 }
 
-func deleteProfile(profile *config.Profile) error {
+func removeProfile(profile *config.Profile) error {
 	viper.Set(config.MachineProfile, profile.Name)
 
 	api, err := machine.NewAPIClient()
@@ -80,8 +85,7 @@ func deleteProfile(profile *config.Profile) error {
 		return DeletionError{Err: delErr, ErrorType: MissingProfile}
 	}
 
-	// In the case of "none", we want to uninstall Kubernetes as there is no VM to delete
-	if err == nil && cc.MachineConfig.VMDriver == constants.DriverNone {
+	if err == nil && driver.BareMetal(cc.MachineConfig.VMDriver) {
 		if err := UninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
 			if ok {
@@ -108,7 +112,7 @@ func deleteProfile(profile *config.Profile) error {
 	}
 
 	// In case DeleteHost didn't complete the job.
-	DeleteProfileDirectory(profile.Name)
+	RemoveProfileDirectory(profile.Name)
 
 	if err := config.DeleteProfile(profile.Name); err != nil {
 		if os.IsNotExist(err) {
@@ -132,11 +136,33 @@ func deleteProfile(profile *config.Profile) error {
 	return nil
 }
 
+func RemoveInvalidProfile(profile *config.Profile) []error {
+	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
+
+	var errs []error
+	pathToProfile := config.ProfileFolderPath(profile.Name, localpath.MiniPath())
+	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
+		err := os.RemoveAll(pathToProfile)
+		if err != nil {
+			errs = append(errs, DeletionError{err, Fatal})
+		}
+	}
+
+	pathToMachine := cluster.MachinePath(profile.Name, localpath.MiniPath())
+	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
+		err := os.RemoveAll(pathToMachine)
+		if err != nil {
+			errs = append(errs, DeletionError{err, Fatal})
+		}
+	}
+	return errs
+}
+
 func profileDeletionErr(profileName string, additionalInfo string) error {
 	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
 }
 
-// Handles deletion error from DeleteProfiles
+// Handles deletion error from RemoveProfiles
 func HandleDeletionErrors(errors []error) {
 	if len(errors) == 1 {
 		handleSingleDeletionError(errors[0])
@@ -178,7 +204,7 @@ func handleMultipleDeletionErrors(errors []error) {
 	}
 }
 
-func DeleteProfileDirectory(profile string) {
+func RemoveProfileDirectory(profile string) {
 	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
 	if _, err := os.Stat(machineDir); err == nil {
 		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
@@ -187,28 +213,6 @@ func DeleteProfileDirectory(profile string) {
 			exit.WithError("Unable to remove machine directory: %v", err)
 		}
 	}
-}
-
-func DeleteInvalidProfile(profile *config.Profile) []error {
-	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
-
-	var errs []error
-	pathToProfile := config.ProfileFolderPath(profile.Name, localpath.MiniPath())
-	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
-		err := os.RemoveAll(pathToProfile)
-		if err != nil {
-			errs = append(errs, DeletionError{err, Fatal})
-		}
-	}
-
-	pathToMachine := cluster.MachinePath(profile.Name, localpath.MiniPath())
-	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
-		err := os.RemoveAll(pathToMachine)
-		if err != nil {
-			errs = append(errs, DeletionError{err, Fatal})
-		}
-	}
-	return errs
 }
 
 func UninstallKubernetes(api libmachine.API, kc config.KubernetesConfig, bsName string) error {
