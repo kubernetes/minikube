@@ -3,7 +3,7 @@
 Once started, you can use any regular Kubernetes command to interact with your minikube cluster. For example, you can see the pod states by running:
 
 ```shell
- kubectl get po -A
+ kubectl get pods --all-namespaces
 ```
 
 ### Increasing memory allocation
