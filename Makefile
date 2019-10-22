@@ -136,16 +136,16 @@ else
 endif
 
 
-out/minikube-linux-x86_64: out/minikube-linux-amd64
-	cp $< $@
-
-out/minikube-linux-aarch64: out/minikube-linux-arm64
-	cp $< $@
-
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
+	cp $< $@
+
+out/minikube-linux-x86_64: out/minikube-linux-amd64
+	cp $< $@
+
+out/minikube-linux-aarch64: out/minikube-linux-arm64
 	cp $< $@
 
 .PHONY: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
