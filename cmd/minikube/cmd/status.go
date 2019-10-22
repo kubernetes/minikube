@@ -17,7 +17,10 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
+	"fmt"
 	"os"
+	"strings"
 	"text/template"
 
 	"github.com/docker/machine/libmachine/state"
@@ -35,6 +38,15 @@ import (
 )
 
 var statusFormat string
+var output string
+
+var KubeconfigStatus = struct {
+	Configured    string
+	Misconfigured string
+}{
+	Configured:    `Configured`,
+	Misconfigured: `Misconfigured`,
+}
 
 // Status represents the status
 type Status struct {
@@ -51,7 +63,7 @@ const (
 	defaultStatusFormat          = `host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
-kubectl: {{.Kubeconfig}}
+kubeconfig: {{.Kubeconfig}}
 `
 )
 
@@ -63,6 +75,11 @@ var statusCmd = &cobra.Command{
 	Exit status contains the status of minikube's VM, cluster and kubernetes encoded on it's bits in this order from right to left.
 	Eg: 7 meaning: 1 (for minikube NOK) + 2 (for cluster NOK) + 4 (for kubernetes NOK)`,
 	Run: func(cmd *cobra.Command, args []string) {
+
+		if output != "text" && statusFormat != defaultStatusFormat {
+			exit.UsageT("Cannot use both --output and --format options")
+		}
+
 		var returnCode = 0
 		api, err := machine.NewAPIClient()
 		if err != nil {
@@ -115,10 +132,9 @@ var statusCmd = &cobra.Command{
 				glog.Errorln("Error kubeconfig status:", err)
 			}
 			if ks {
-				kubeconfigSt = "Correctly Configured: pointing to minikube-vm at " + ip.String()
+				kubeconfigSt = KubeconfigStatus.Configured
 			} else {
-				kubeconfigSt = "Misconfigured: pointing to stale minikube-vm." +
-					"\nTo fix the kubectl context, run minikube update-context"
+				kubeconfigSt = KubeconfigStatus.Misconfigured
 				returnCode |= k8sNotRunningStatusFlag
 			}
 		} else {
@@ -131,13 +147,14 @@ var statusCmd = &cobra.Command{
 			APIServer:  apiserverSt,
 			Kubeconfig: kubeconfigSt,
 		}
-		tmpl, err := template.New("status").Parse(statusFormat)
-		if err != nil {
-			exit.WithError("Error creating status template", err)
-		}
-		err = tmpl.Execute(os.Stdout, status)
-		if err != nil {
-			exit.WithError("Error executing status template", err)
+
+		switch strings.ToLower(output) {
+		case "text":
+			printStatusText(status)
+		case "json":
+			printStatusJSON(status)
+		default:
+			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
 		}
 
 		os.Exit(returnCode)
@@ -145,7 +162,32 @@ var statusCmd = &cobra.Command{
 }
 
 func init() {
-	statusCmd.Flags().StringVar(&statusFormat, "format", defaultStatusFormat,
+	statusCmd.Flags().StringVarP(&statusFormat, "format", "f", defaultStatusFormat,
 		`Go template format string for the status output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
 For the list accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#Status`)
+	statusCmd.Flags().StringVarP(&output, "output", "o", "text",
+		`minikube status --output OUTPUT. json, text`)
+}
+
+var printStatusText = func(status Status) {
+	tmpl, err := template.New("status").Parse(statusFormat)
+	if err != nil {
+		exit.WithError("Error creating status template", err)
+	}
+	err = tmpl.Execute(os.Stdout, status)
+	if err != nil {
+		exit.WithError("Error executing status template", err)
+	}
+	if status.Kubeconfig == KubeconfigStatus.Misconfigured {
+		out.WarningT("Warning: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`")
+	}
+}
+
+var printStatusJSON = func(status Status) {
+
+	jsonString, err := json.Marshal(status)
+	if err != nil {
+		exit.WithError("Error converting status to json", err)
+	}
+	out.String(string(jsonString))
 }
