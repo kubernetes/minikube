@@ -59,17 +59,6 @@ func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 	return sess.Run(cmd)
 }
 
-type singleWriter struct {
-	b  bytes.Buffer
-	mu sync.Mutex
-}
-
-func (w *singleWriter) Write(p []byte) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	return w.b.Write(p)
-}
-
 // teeSSH runs an SSH command, streaming stdout, stderr to logs
 func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	outPipe, err := s.StdoutPipe()
@@ -106,22 +95,28 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
 	glog.Infof("(SSHRunner) Run:  %v", rr.Command())
 
-	var outb, errb singleWriter
-	rr.Stdout = &outb.b
-	rr.Stderr = &errb.b
+	var outb, errb io.Writer
+
 	start := time.Now()
 
+	glog.Infof("cmd: %+v", cmd)
+	glog.Infof("stdout: %v", cmd.Stdout)
+	glog.Infof("stderr: %v", cmd.Stderr)
+
 	if cmd.Stdout == nil {
-		cmd.Stdout, rr.Stdout = &outb, &outb.b
+		var so bytes.Buffer
+		glog.Infof("makin a stdout buffer: %T %v %p", so, so, &so)
+		outb = io.MultiWriter(&so, &rr.Stdout)
 	} else {
-		io.MultiWriter(rr.Stdout, &outb)
-		rr.Stdout = &outb.b
+		outb = io.MultiWriter(cmd.Stdout, &rr.Stdout)
 	}
+
 	if cmd.Stderr == nil {
-		cmd.Stderr, rr.Stderr = &errb, &errb.b
+		var se bytes.Buffer
+		glog.Infof("makin a stderr buffer: %T %v %p", se, se, &se)
+		errb = io.MultiWriter(&se, &rr.Stderr)
 	} else {
-		io.MultiWriter(rr.Stderr, &errb)
-		rr.Stdout = &errb.b
+		errb = io.MultiWriter(cmd.Stderr, &rr.Stderr)
 	}
 
 	sess, err := s.c.NewSession()
@@ -138,7 +133,8 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	}()
 
 	elapsed := time.Since(start)
-	err = teeSSH(sess, shellquote.Join(cmd.Args...), &outb, &errb)
+	glog.Infof("%s out=%T %v err=%T %v", cmd, outb, outb, errb, errb)
+	err = teeSSH(sess, shellquote.Join(cmd.Args...), outb, errb)
 	if err == nil {
 		// Reduce log spam
 		if elapsed > (1 * time.Second) {
@@ -203,16 +199,19 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 
 // teePrefix copies bytes from a reader to writer, logging each new line.
 func teePrefix(prefix string, r io.Reader, w io.Writer, logger func(format string, args ...interface{})) error {
+	glog.Infof("prefix=%s, writer=%T %v", prefix, w, w)
 	scanner := bufio.NewScanner(r)
 	scanner.Split(bufio.ScanBytes)
 	var line bytes.Buffer
 
 	for scanner.Scan() {
+		glog.Infof("%s scan start ------", prefix)
 		b := scanner.Bytes()
+		glog.Infof("writing %d bytes to %T %v: %s", len(b), w, w, b)
 		if _, err := w.Write(b); err != nil {
 			return err
 		}
-
+		glog.Infof("written!")
 		if bytes.IndexAny(b, "\r\n") == 0 {
 			if line.Len() > 0 {
 				logger("%s%s", prefix, line.String())
@@ -220,7 +219,9 @@ func teePrefix(prefix string, r io.Reader, w io.Writer, logger func(format strin
 			}
 			continue
 		}
+		glog.Infof("copying to line...")
 		line.Write(b)
+		glog.Infof("%s scan end ------", prefix)
 	}
 	// Catch trailing output in case stream does not end with a newline
 	if line.Len() > 0 {

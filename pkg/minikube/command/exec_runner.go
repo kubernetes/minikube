@@ -44,16 +44,16 @@ func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 	var outb, errb bytes.Buffer
 	if cmd.Stdout == nil {
-		cmd.Stdout, rr.Stdout = &outb, &outb
+		cmd.Stdout, rr.Stdout = &outb, outb
 	} else {
-		io.MultiWriter(rr.Stdout, &outb)
-		rr.Stdout = &outb
+		cmd.Stdout = io.MultiWriter(cmd.Stdout, &outb)
+		rr.Stdout = outb
 	}
 	if cmd.Stderr == nil {
-		cmd.Stderr, rr.Stderr = &errb, &errb
+		cmd.Stderr, rr.Stderr = &errb, errb
 	} else {
-		io.MultiWriter(rr.Stderr, &errb)
-		rr.Stdout = &errb
+		cmd.Stderr = io.MultiWriter(cmd.Stderr, &errb)
+		rr.Stderr = errb
 	}
 
 	start := time.Now()

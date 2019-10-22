@@ -55,7 +55,7 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	start := time.Now()
 
 	out, ok := f.cmdMap.Load(strings.Join(rr.Args, " "))
-	buf := new(bytes.Buffer) // creating a buffer reader to convert out to rr.stdout
+	var buf bytes.Buffer
 	outStr := ""
 	if out != nil {
 		outStr = out.(string)

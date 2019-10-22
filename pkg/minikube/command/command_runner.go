@@ -28,8 +28,8 @@ import (
 
 // RunResult holds the results of a Runner
 type RunResult struct {
-	Stdout   *bytes.Buffer
-	Stderr   *bytes.Buffer
+	Stdout   bytes.Buffer
+	Stderr   bytes.Buffer
 	ExitCode int
 	Args     []string // the args that was passed to Runner
 }
