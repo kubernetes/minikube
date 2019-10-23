@@ -146,7 +146,7 @@ func (d *Driver) createDomain() (*libvirt.Domain, error) {
 	if d.MAC == "" {
 		mac, err := randomMAC()
 		if err != nil {
-			return nil, errors.Wrap(err, "generating mac address")
+			return nil, errors.Wrap(err, "generating mac addressssssss")
 		}
 		d.MAC = mac.String()
 	}
