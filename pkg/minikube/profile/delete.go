@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package delete
+package profile
 
 import (
 	"fmt"
@@ -43,7 +43,7 @@ import (
 
 type typeOfError int
 
-// DeletionError can be returned from RemoveProfiles
+// DeletionError can be returned from DeleteAll
 type DeletionError struct {
 	Err       error
 	ErrorType typeOfError
@@ -62,17 +62,17 @@ const (
 	MissingCluster typeOfError = 2
 )
 
-// RemoveProfiles deletes one or more profiles
-func RemoveProfiles(profiles []*config.Profile) []error {
+// DeleteAll deletes one or more profiles
+func DeleteAll(profiles []*config.Profile) []error {
 	var errs []error
 	for _, profile := range profiles {
-		err := removeProfile(profile)
+		err := delete(profile)
 
 		if err != nil {
 			mm, loadErr := cluster.LoadMachine(profile.Name)
 
 			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
-				invalidProfileDeletionErrs := RemoveInvalidProfile(profile)
+				invalidProfileDeletionErrs := DeleteInvalid(profile)
 				if len(invalidProfileDeletionErrs) > 0 {
 					errs = append(errs, invalidProfileDeletionErrs...)
 				}
@@ -84,7 +84,7 @@ func RemoveProfiles(profiles []*config.Profile) []error {
 	return errs
 }
 
-func removeProfile(profile *config.Profile) error {
+func delete(profile *config.Profile) error {
 	viper.Set(config.MachineProfile, profile.Name)
 
 	api, err := machine.NewAPIClient()
@@ -128,9 +128,9 @@ func removeProfile(profile *config.Profile) error {
 	}
 
 	// In case DeleteHost didn't complete the job.
-	RemoveProfileDirectory(profile.Name)
+	DeleteDirectoryOfProfile(profile.Name)
 
-	if err := config.DeleteProfile(profile.Name); err != nil {
+	if err := config.DeleteProfileDirectory(profile.Name); err != nil {
 		if os.IsNotExist(err) {
 			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("\"%s\" profile does not exist", profile.Name))
 			return DeletionError{Err: delErr, ErrorType: MissingProfile}
@@ -152,7 +152,7 @@ func removeProfile(profile *config.Profile) error {
 	return nil
 }
 
-func RemoveInvalidProfile(profile *config.Profile) []error {
+func DeleteInvalid(profile *config.Profile) []error {
 	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
@@ -178,7 +178,7 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
 }
 
-// Handles deletion error from RemoveProfiles
+// Handles deletion error from DeleteAll
 func HandleDeletionErrors(errors []error) {
 	if len(errors) == 1 {
 		handleSingleDeletionError(errors[0])
@@ -220,7 +220,7 @@ func handleMultipleDeletionErrors(errors []error) {
 	}
 }
 
-func RemoveProfileDirectory(profile string) {
+func DeleteDirectoryOfProfile(profile string) {
 	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
 	if _, err := os.Stat(machineDir); err == nil {
 		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})

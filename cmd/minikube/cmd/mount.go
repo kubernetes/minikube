@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"fmt"
+	"k8s.io/minikube/pkg/minikube/profile"
 	"net"
 	"os"
 	"os/signal"
@@ -31,7 +32,6 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/delete"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -67,7 +67,7 @@ var mountCmd = &cobra.Command{
 	Long:  `Mounts the specified directory into minikube.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if isKill {
-			if err := delete.KillMountProcess(); err != nil {
+			if err := profile.KillMountProcess(); err != nil {
 				exit.WithError("Error killing mount process", err)
 			}
 			os.Exit(0)

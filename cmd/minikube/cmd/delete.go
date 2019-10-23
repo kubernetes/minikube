@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"k8s.io/minikube/pkg/minikube/profile"
 	"os"
 
 	"github.com/golang/glog"
@@ -24,7 +25,6 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/delete"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -83,9 +83,9 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.WithError("Error getting profiles to delete", err)
 		}
 
-		errs := delete.RemoveProfiles(profilesToDelete)
+		errs := profile.DeleteAll(profilesToDelete)
 		if len(errs) > 0 {
-			delete.HandleDeletionErrors(errs)
+			profile.HandleDeletionErrors(errs)
 		} else {
 			out.T(out.DeletingHost, "Successfully deleted all profiles")
 		}
@@ -95,16 +95,16 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 
 		profileName := viper.GetString(config.MachineProfile)
-		profile, err := config.LoadProfile(profileName)
+		p, err := config.LoadProfile(profileName)
 		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
+			out.ErrT(out.Meh, `"{{.name}}" p does not exist`, out.V{"name": profileName})
 		}
 
-		errs := delete.RemoveProfiles([]*config.Profile{profile})
+		errs := profile.DeleteAll([]*config.Profile{p})
 		if len(errs) > 0 {
-			delete.HandleDeletionErrors(errs)
+			profile.HandleDeletionErrors(errs)
 		} else {
-			out.T(out.DeletingHost, "Successfully deleted profile \"{{.name}}\"", out.V{"name": profileName})
+			out.T(out.DeletingHost, "Successfully deleted p \"{{.name}}\"", out.V{"name": profileName})
 		}
 	}
 
