@@ -85,11 +85,11 @@ func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, e
 	var err error
 	if def, err = registry.Driver(drvName); err != nil {
 		return nil, err
-	} else if !def.Builtin || def.DriverCreator == nil {
+	} else if def.Init == nil {
 		return api.legacyClient.NewHost(drvName, rawDriver)
 	}
 
-	d := def.DriverCreator()
+	d := def.Init()
 
 	err = json.Unmarshal(rawDriver, d)
 	if err != nil {
@@ -130,11 +130,11 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 	var def registry.DriverDef
 	if def, err = registry.Driver(h.DriverName); err != nil {
 		return nil, err
-	} else if !def.Builtin || def.DriverCreator == nil {
+	} else if def.Init == nil {
 		return api.legacyClient.Load(name)
 	}
 
-	h.Driver = def.DriverCreator()
+	h.Driver = def.Init()
 	return h, json.Unmarshal(h.RawDriver, h.Driver)
 }
 
@@ -165,7 +165,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 func (api *LocalClient) Create(h *host.Host) error {
 	if def, err := registry.Driver(h.DriverName); err != nil {
 		return err
-	} else if !def.Builtin || def.DriverCreator == nil {
+	} else if def.Init == nil {
 		return api.legacyClient.Create(h)
 	}
 
@@ -278,5 +278,5 @@ func registerDriver(drvName string) {
 		}
 		exit.WithError("error getting driver", err)
 	}
-	plugin.RegisterDriver(def.DriverCreator())
+	plugin.RegisterDriver(def.Init())
 }

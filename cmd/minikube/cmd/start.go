@@ -120,6 +120,7 @@ const (
 	minimumCPUS           = 2
 	minimumDiskSize       = "2000mb"
 	autoUpdate            = "auto-update-drivers"
+	autoDetect            = "auto-detect"
 )
 
 var (
@@ -194,7 +195,7 @@ func initKubernetesFlags() {
 
 // initDriverFlags inits the commandline flags for vm drivers
 func initDriverFlags() {
-	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to %s)", driver.SupportedDrivers(), driver.Default()))
+	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.SupportedDrivers()))
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
 
 	// kvm2
@@ -289,6 +290,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	driverName := selectDriver(oldConfig)
+	glog.Infof("selected: %v", driverName)
 	err = autoSetDriverOptions(cmd, driverName)
 	if err != nil {
 		glog.Errorf("Error autoSetOptions : %v", err)
@@ -534,12 +536,21 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string) error {
 
 func selectDriver(oldConfig *cfg.Config) string {
 	name := viper.GetString("vm-driver")
-	// By default, the driver is whatever we used last time
+	glog.Infof("selectDriver: flag=%q, old=%v", name, oldConfig)
 	if name == "" {
-		name = driver.Default()
+		// By default, the driver is whatever we used last time
 		if oldConfig != nil {
 			return oldConfig.MachineConfig.VMDriver
 		}
+		options := driver.Choices()
+		if len(options) == 0 {
+			exit.WithCodeT(exit.Config, "Unable to find a usable default driver. Try specifying --vm-driver")
+		}
+		pick, alts := driver.Choose(options)
+		if len(options) > 1 {
+			out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"driver": pick.Name, "alternates": alts})
+		}
+		name = pick.Name
 	}
 	if !driver.Supported(name) {
 		exit.WithCodeT(exit.Failure, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})

@@ -19,6 +19,9 @@ package driver
 import (
 	"fmt"
 	"os"
+
+	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 const (
@@ -77,7 +80,37 @@ func FlagDefaults(name string) FlagHints {
 	}
 }
 
-// Default returns the default driver on this hos
-func Default() string {
-	return VirtualBox
+// Choices returns a list of drivers which are possible on this system
+func Choices() []registry.DriverState {
+	options := []registry.DriverState{}
+	for _, ds := range registry.Installed() {
+		if !ds.State.Healthy {
+			glog.Warningf("%s is installed, but unhealthy: %v", ds.Name, ds.State.Error)
+			continue
+		}
+		options = append(options, ds)
+		glog.Infof("%q driver appears healthy, priority %d", ds.Name, ds.Priority)
+
+	}
+	return options
+}
+
+// Choose returns a suggested driver from a set of options
+func Choose(options []registry.DriverState) (registry.DriverState, []registry.DriverState) {
+	pick := registry.DriverState{}
+	for _, ds := range options {
+		if ds.Priority > pick.Priority {
+			pick = ds
+		}
+	}
+
+	alternates := []registry.DriverState{}
+	for _, ds := range options {
+		if ds != pick {
+			alternates = append(alternates, ds)
+		}
+	}
+	glog.Infof("Picked: %+v", pick)
+	glog.Infof("Alternatives: %+v", alternates)
+	return pick, alternates
 }
