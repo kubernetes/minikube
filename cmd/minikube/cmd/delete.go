@@ -17,7 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"k8s.io/minikube/pkg/minikube/profile"
 	"os"
 
 	"github.com/golang/glog"
@@ -28,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/profile"
 )
 
 var deleteAll bool
