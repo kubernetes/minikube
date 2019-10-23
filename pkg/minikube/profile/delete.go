@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -99,14 +98,8 @@ func delete(profile *config.Profile) error {
 	}
 
 	if err == nil && driver.BareMetal(cc.MachineConfig.VMDriver) {
-		if err := UninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
-			deletionError, ok := err.(DeletionError)
-			if ok {
-				delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
-				deletionError.Err = delErr
-				return deletionError
-			}
-			return err
+		if err := cluster.UninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+			return profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
 		}
 	}
 
@@ -226,15 +219,4 @@ func DeleteDirectoryOfProfile(profile string) {
 			exit.WithError("Unable to remove machine directory: %v", err)
 		}
 	}
-}
-
-func UninstallKubernetes(api libmachine.API, kc config.KubernetesConfig, bsName string) error {
-	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := cluster.GetClusterBootstrapper(api, bsName)
-	if err != nil {
-		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), ErrorType: Fatal}
-	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
-		return DeletionError{Err: fmt.Errorf("failed to delete cluster: %v", err), ErrorType: Fatal}
-	}
-	return nil
 }

@@ -630,3 +630,14 @@ func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 
 	return b, nil
 }
+
+func UninstallKubernetes(api libmachine.API, kc cfg.KubernetesConfig, bsName string) error {
+	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
+	clusterBootstrapper, err := GetClusterBootstrapper(api, bsName)
+	if err != nil {
+		return fmt.Errorf("unable to get bootstrapper: %v", err)
+	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
+		return fmt.Errorf("failed to delete cluster: %v", err)
+	}
+	return nil
+}
