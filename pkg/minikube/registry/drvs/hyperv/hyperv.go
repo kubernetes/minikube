@@ -1,5 +1,3 @@
-// +build windows
-
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -19,6 +17,9 @@ limitations under the License.
 package hyperv
 
 import (
+	"fmt"
+	"os/exec"
+
 	"github.com/docker/machine/drivers/hyperv"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
@@ -27,17 +28,23 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
+const (
+	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperv/"
+)
+
 func init() {
-	registry.Register(registry.DriverDef{
-		Name:          driver.HyperV,
-		Init: func() drivers.Driver { return hyperv.NewDriver("", "") },		
-		Config: configure,
-		InstallStatus: status,
+	if err := registry.Register(registry.DriverDef{
+		Name:     driver.HyperV,
+		Init:     func() drivers.Driver { return hyperv.NewDriver("", "") },
+		Config:   configure,
+		Status:   status,
 		Priority: registry.Preferred,
-	})
+	}); err != nil {
+		panic(fmt.Sprintf("register: %v", err))
+	}
 }
 
-func configure(config cfg.MachineConfig) *hyperv.Driver {
+func configure(config cfg.MachineConfig) interface{} {
 	d := hyperv.NewDriver(cfg.GetMachineName(), localpath.MiniPath())
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.VSwitch = config.HypervVirtualSwitch
@@ -49,15 +56,15 @@ func configure(config cfg.MachineConfig) *hyperv.Driver {
 	return d
 }
 
-func status() registry.Status {
+func status() registry.State {
 	path, err := exec.LookPath("powershell")
 	if err != nil {
-		return registry.Status{Error: err}
+		return registry.State{Error: err}
 	}
 
 	err = exec.Command(path, "Get-WindowsOptionalFeature", "-FeatureName", "Microsoft-Hyper-V-All", "-Online").Run()
 	if err != nil {
-		return registry.Status{Installed: false, Error: err, Fix: "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'", Doc: docURL}
+		return registry.State{Installed: false, Error: err, Fix: "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'", Doc: docURL}
 	}
-	return registry.Status{Installed: true, Healthy: true}
+	return registry.State{Installed: true, Healthy: true}
 }
