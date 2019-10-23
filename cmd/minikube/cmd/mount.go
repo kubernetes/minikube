@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"fmt"
-	"k8s.io/minikube/pkg/minikube/profile"
 	"net"
 	"os"
 	"os/signal"
