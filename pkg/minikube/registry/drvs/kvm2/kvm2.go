@@ -24,7 +24,6 @@ import (
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"k8s.io/minikube/pkg/drivers/kvm"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -46,9 +45,26 @@ func init() {
 	}
 }
 
+// This is duplicate of kvm.Driver. Avoids importing the kvm2 driver, which requires cgo & libvirt.
+type kvmDriver struct {
+	*drivers.BaseDriver
+
+	Memory         int
+	DiskSize       int
+	CPU            int
+	Network        string
+	PrivateNetwork string
+	ISO            string
+	Boot2DockerURL string
+	DiskPath       string
+	GPU            bool
+	Hidden         bool
+	ConnectionURI  string
+}
+
 func configure(mc config.MachineConfig) interface{} {
 	name := config.GetMachineName()
-	return kvm.Driver{
+	return kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
 			StorePath:   localpath.MiniPath(),
