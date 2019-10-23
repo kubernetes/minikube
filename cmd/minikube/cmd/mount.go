@@ -67,7 +67,7 @@ var mountCmd = &cobra.Command{
 	Long:  `Mounts the specified directory into minikube.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if isKill {
-			if err := profile.KillMountProcess(); err != nil {
+			if err := cluster.KillMountProcess(); err != nil {
 				exit.WithError("Error killing mount process", err)
 			}
 			os.Exit(0)
