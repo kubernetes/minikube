@@ -35,6 +35,7 @@ then
     echo "= boilerplate ==========================================================="
     readonly ROOT_DIR=$(pwd)
     readonly BDIR="${ROOT_DIR}/hack/boilerplate"
+    pushd . >/dev/null
     cd ${BDIR}
     missing="$(go run boilerplate.go -rootdir ${ROOT_DIR} -boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/' || true)"
     if [[ -n "${missing}" ]]; then
@@ -44,6 +45,7 @@ then
     else
         echo "ok"
     fi
+    popd >/dev/null
 fi
 
 
