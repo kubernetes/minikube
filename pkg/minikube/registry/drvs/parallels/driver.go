@@ -20,6 +20,7 @@ package parallels
 
 import (
 	"fmt"
+	"os/exec"
 
 	parallels "github.com/Parallels/docker-machine-parallels"
 	"github.com/docker/machine/libmachine/drivers"
@@ -31,12 +32,11 @@ import (
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          driver.Parallels,
-		Builtin:       true,
-		ConfigCreator: createParallelsHost,
-		DriverCreator: func() drivers.Driver {
-			return parallels.NewDriver("", "")
-		},
+		Name:     driver.Parallels,
+		Config:   configure,
+		Status:   status,
+		Priority: registry.Default,
+		Init:     func() drivers.Driver { return parallels.NewDriver("", "") },
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
@@ -44,11 +44,19 @@ func init() {
 
 }
 
-func createParallelsHost(config cfg.MachineConfig) interface{} {
+func configure(config cfg.MachineConfig) interface{} {
 	d := parallels.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*parallels.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = config.DiskSize
 	return d
+}
+
+func status() registry.State {
+	_, err := exec.LookPath("docker-machine-driver-parallels")
+	if err != nil {
+		return registry.State{Error: err, Fix: "Install docker-machine-driver-parallels", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/parallels/"}
+	}
+	return registry.State{Installed: true, Healthy: true}
 }

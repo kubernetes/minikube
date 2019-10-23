@@ -83,4 +83,5 @@ const (
 	Fileserver
 	Empty
 	Workaround
+	Sparkle
 )

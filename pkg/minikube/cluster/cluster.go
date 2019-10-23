@@ -441,7 +441,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "error getting driver")
 	}
 
-	dd := def.ConfigCreator(config)
+	dd := def.Config(config)
 	data, err := json.Marshal(dd)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal")
