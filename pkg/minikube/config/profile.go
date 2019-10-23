@@ -44,7 +44,7 @@ func (p *Profile) IsValid() bool {
 	return true
 }
 
-// check if the profile is an internal keywords
+// ProfileNameInReservedKeywords checks if the profile is an internal keywords
 func ProfileNameInReservedKeywords(name string) bool {
 	for _, v := range keywords {
 		if strings.EqualFold(v, name) {
