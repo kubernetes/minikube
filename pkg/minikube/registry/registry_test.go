@@ -22,27 +22,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
-func TestDriverString(t *testing.T) {
-	bar := DriverDef{
-		Name:    "bar",
-		Builtin: true,
-		ConfigCreator: func(_ config.MachineConfig) interface{} {
-			return nil
-		},
-	}
-	s := bar.String()
-	if s != "{name: bar, builtin: true}" {
-		t.Fatalf("Driver bar.String() returned unexpected: %v", s)
-	}
-}
-
 func testDriver(name string) DriverDef {
 	return DriverDef{
-		Name:    name,
-		Builtin: true,
-		ConfigCreator: func(_ config.MachineConfig) interface{} {
-			return nil
-		},
+		Name:   name,
+		Config: func(_ config.MachineConfig) interface{} { return nil },
 	}
 }
 

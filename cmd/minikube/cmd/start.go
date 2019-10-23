@@ -120,7 +120,6 @@ const (
 	minimumCPUS           = 2
 	minimumDiskSize       = "2000mb"
 	autoUpdate            = "auto-update-drivers"
-	autoDetect            = "auto-detect"
 )
 
 var (

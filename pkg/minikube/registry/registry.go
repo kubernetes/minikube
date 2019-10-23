@@ -26,10 +26,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
+// Priority is how we determine what driver to default to
 type Priority int
 
 const (
-	// Priority for default driver selection
 	Unknown Priority = iota
 	Discouraged
 	Deprecated
@@ -69,7 +69,7 @@ type Configurator func(config.MachineConfig) interface{}
 // Loader is a function that loads a byte stream and creates a driver.
 type Loader func() drivers.Driver
 
-// Status checks if a driver is available, offering a
+// StatusChecker checks if a driver is available, offering a
 type StatusChecker func() State
 
 // State is the current state of the driver and its dependencies
@@ -81,7 +81,7 @@ type State struct {
 	Doc       string
 }
 
-// State is metadata relating to a driver and status
+// DriverState is metadata relating to a driver and status
 type DriverState struct {
 	Name     string
 	Priority Priority
@@ -200,5 +200,6 @@ func (r *driverRegistry) Driver(name string) (DriverDef, error) {
 		return driver, nil
 	}
 
+	glog.Errorf("driver %q not found in %v", name, r.drivers)
 	return DriverDef{}, ErrDriverNotFound
 }
