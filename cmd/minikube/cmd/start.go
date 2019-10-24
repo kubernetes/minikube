@@ -1006,7 +1006,7 @@ Suggested workarounds:
 		}
 		defer conn.Close()
 	}
-	w
+
 	if _, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
 		out.WarningT("VM is unable to resolve DNS hosts: {[.error}}", out.V{"error": err})
 	}
