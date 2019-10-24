@@ -17,11 +17,10 @@ limitations under the License.
 package registry
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/config"
 )
@@ -37,18 +36,6 @@ const (
 	Default
 	Preferred
 	StronglyPreferred
-)
-
-var (
-	registry = createRegistry()
-
-	// ErrDriverNameExist is the error returned when trying to register a driver
-	// which already exists in registry
-	ErrDriverNameExist = errors.New("registry: duplicated driver name")
-
-	// ErrDriverNotFound is the error returned when driver of a given name does
-	// not exist in registry
-	ErrDriverNotFound = errors.New("registry: driver not found")
 )
 
 // Registry contains all the supported driver definitions on the host
@@ -81,17 +68,6 @@ type State struct {
 	Doc       string
 }
 
-// DriverState is metadata relating to a driver and status
-type DriverState struct {
-	Name     string
-	Priority Priority
-	State    State
-}
-
-func (d DriverState) String() string {
-	return d.Name
-}
-
 // DriverDef defines how to initialize and load a machine driver
 type DriverDef struct {
 	// Name of the machine driver. It has to be unique.
@@ -110,6 +86,11 @@ type DriverDef struct {
 	Priority Priority
 }
 
+// Empty returns true if the driver is nil
+func (d DriverDef) Empty() bool {
+	return d.Name == ""
+}
+
 func (d DriverDef) String() string {
 	return d.Name
 }
@@ -119,59 +100,19 @@ type driverRegistry struct {
 	lock    sync.Mutex
 }
 
-func createRegistry() *driverRegistry {
+func newRegistry() *driverRegistry {
 	return &driverRegistry{
 		drivers: make(map[string]DriverDef),
 	}
 }
 
-// ListDrivers lists all drivers in registry
-func ListDrivers() []DriverDef {
-	return registry.List()
-}
-
-// Register registers driver
-func Register(driver DriverDef) error {
-	return registry.Register(driver)
-}
-
-// Driver gets a named driver
-func Driver(name string) (DriverDef, error) {
-	return registry.Driver(name)
-}
-
-// Installed returns a list of installed drivers
-func Installed() []DriverState {
-	sts := []DriverState{}
-	for _, d := range registry.List() {
-		if d.Status == nil {
-			glog.Errorf("%q does not implement Status", d.Name)
-			continue
-		}
-		s := d.Status()
-		if s.Installed {
-			sts = append(sts, DriverState{Name: d.Name, Priority: d.Priority, State: s})
-		}
-	}
-	return sts
-}
-
-// Status returns the state of a driver
-func Status(name string) (State, error) {
-	d, err := registry.Driver(name)
-	if err != nil {
-		return State{}, err
-	}
-	return d.Status(), nil
-}
-
-// Register registers a driver with minikube
+// Register registers a driver
 func (r *driverRegistry) Register(def DriverDef) error {
 	r.lock.Lock()
 	defer r.lock.Unlock()
 
 	if _, ok := r.drivers[def.Name]; ok {
-		return ErrDriverNameExist
+		return fmt.Errorf("%q is already registered: %+v", def.Name, def)
 	}
 
 	r.drivers[def.Name] = def
@@ -192,14 +133,9 @@ func (r *driverRegistry) List() []DriverDef {
 	return result
 }
 
-func (r *driverRegistry) Driver(name string) (DriverDef, error) {
+// Driver returns a driver given a name
+func (r *driverRegistry) Driver(name string) DriverDef {
 	r.lock.Lock()
 	defer r.lock.Unlock()
-
-	if driver, ok := r.drivers[name]; ok {
-		return driver, nil
-	}
-
-	glog.Errorf("driver %q not found in %v", name, r.drivers)
-	return DriverDef{}, ErrDriverNotFound
+	return r.drivers[name]
 }
