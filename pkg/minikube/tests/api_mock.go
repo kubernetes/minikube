@@ -67,14 +67,14 @@ func (api *MockAPI) Close() error {
 }
 
 // NewHost creates a new host.Host instance.
-func (api *MockAPI) NewHost(driverName string, rawDriver []byte) (*host.Host, error) {
+func (api *MockAPI) NewHost(drvName string, rawDriver []byte) (*host.Host, error) {
 	var driver MockDriver
 	if err := json.Unmarshal(rawDriver, &driver); err != nil {
 		return nil, errors.Wrap(err, "error unmarshalling json")
 	}
 
 	h := &host.Host{
-		DriverName: driverName,
+		DriverName: drvName,
 		RawDriver:  rawDriver,
 		Driver:     &MockDriver{},
 		Name:       fmt.Sprintf("mock-machine-%.8f", rand.Float64()),

@@ -25,14 +25,14 @@ import (
 	"github.com/pborman/uuid"
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverHyperkit,
+		Name:          driver.HyperKit,
 		Builtin:       false,
 		ConfigCreator: createHyperkitHost,
 	}); err != nil {
@@ -61,6 +61,6 @@ func createHyperkitHost(config cfg.MachineConfig) interface{} {
 		UUID:           uuID,
 		VpnKitSock:     config.HyperkitVpnKitSock,
 		VSockPorts:     config.HyperkitVSockPorts,
-		Cmdline:        "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=" + cfg.GetMachineName(),
+		Cmdline:        "loglevel=3 console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes random.trust_cpu=on hw_rng_model=virtio base host=" + cfg.GetMachineName(),
 	}
 }
