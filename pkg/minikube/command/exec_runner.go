@@ -69,7 +69,7 @@ func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 			rr.ExitCode = exitError.ExitCode()
 		}
 		glog.Infof("(ExecRunner) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
-		err = errors.Wrapf(err, fmt.Sprintf("stderr: %s", rr.Stderr))
+		err = errors.Wrapf(err, fmt.Sprintf("stderr: %s", rr.Stderr.String()))
 	}
 	return rr, err
 }

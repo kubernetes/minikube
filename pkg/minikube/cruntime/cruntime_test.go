@@ -23,10 +23,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/golang/glog"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
 )
@@ -118,10 +116,7 @@ func NewFakeRunner(t *testing.T) *FakeRunner {
 
 // Run a fake command!
 func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
-	xargs, err := shellquote.Split(cmd.Args[2])
-	if err != nil {
-		glog.Infof("FakeRunner shellquote.Split error %v", err)
-	}
+	xargs := cmd.Args
 	f.cmds = append(f.cmds, xargs...)
 	root := false
 	bin, args := xargs[0], xargs[1:]
@@ -215,8 +210,8 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 	case "ps":
 		// ps -a --filter="name=apiserver" --format="{{.ID}}"
 		if args[1] == "-a" && strings.HasPrefix(args[2], "--filter") {
-			filter := strings.Split(args[2], `"`)[0]
-			fname := strings.Split(filter, "=")[2]
+			filter := strings.Split(args[2], `"`)[1]
+			fname := strings.Split(filter, "=")[1]
 			ids := []string{}
 			f.t.Logf("fake docker: Looking for containers matching %q", fname)
 			for id, cname := range f.containers {
@@ -228,7 +223,8 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 			return strings.Join(ids, "\n"), nil
 		}
 	case "stop":
-		for _, id := range args[1:] {
+		ids := strings.Split(args[1], " ")
+		for _, id := range ids {
 			f.t.Logf("fake docker: Stopping id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
@@ -247,7 +243,7 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 		}
 	case "version":
 
-		if args[1] == "--format" && args[2] == "{{.Server.Version}}" {
+		if args[1] == "--format" && args[2] == "'{{.Server.Version}}'" {
 			return "18.06.2-ce", nil
 		}
 	}
