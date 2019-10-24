@@ -24,6 +24,8 @@ import (
 
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/pkg/errors"
+
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -58,7 +60,7 @@ func configure(config cfg.MachineConfig) interface{} {
 func status() registry.State {
 	_, err := exec.LookPath("vmrun")
 	if err != nil {
-		return registry.State{Error: err, Fix: "Install VMWare Fusion", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmwarefusion/"}
+		return registry.State{Error: errors.Wrap(err, "vmrun path check"), Fix: "Install VMWare Fusion", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmwarefusion/"}
 	}
 	return registry.State{Installed: true, Healthy: true}
 }

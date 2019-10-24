@@ -1,3 +1,5 @@
+// +build windows
+
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -19,9 +21,12 @@ package hyperv
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/docker/machine/drivers/hyperv"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/pkg/errors"
+
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -62,9 +67,10 @@ func status() registry.State {
 		return registry.State{Error: err}
 	}
 
-	err = exec.Command(path, "Get-WindowsOptionalFeature", "-FeatureName", "Microsoft-Hyper-V-All", "-Online").Run()
+	cmd := exec.Command(path, "Get-WindowsOptionalFeature", "-FeatureName", "Microsoft-Hyper-V-All", "-Online")
+	err = cmd.Run()
 	if err != nil {
-		return registry.State{Installed: false, Error: err, Fix: "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'", Doc: docURL}
+		return registry.State{Installed: false, Error: errors.Wrapf(err, strings.Join(cmd.Args, " ")), Fix: "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'", Doc: docURL}
 	}
 	return registry.State{Installed: true, Healthy: true}
 }

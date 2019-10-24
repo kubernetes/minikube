@@ -19,9 +19,12 @@ package virtualbox
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/pkg/errors"
+
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -65,12 +68,13 @@ func configure(mc config.MachineConfig) interface{} {
 func status() registry.State {
 	path, err := exec.LookPath("vboxmanage")
 	if err != nil {
-		return registry.State{Error: err, Fix: "Install VirtualBox", Doc: docURL}
+		return registry.State{Error: errors.Wrap(err, "vboxmanage path check"), Fix: "Install VirtualBox", Doc: docURL}
 	}
 
-	err = exec.Command(path, "list", "hostinfo").Run()
+	cmd := exec.Command(path, "list", "hostinfo")
+	err = cmd.Run()
 	if err != nil {
-		return registry.State{Installed: true, Error: err, Fix: "Install the latest version of VirtualBox", Doc: docURL}
+		return registry.State{Installed: true, Error: errors.Wrap(err, strings.Join(cmd.Args, " ")), Fix: "Install the latest version of VirtualBox", Doc: docURL}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
