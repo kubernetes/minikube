@@ -19,7 +19,6 @@ package profile
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
@@ -118,7 +117,10 @@ func delete(profile *config.Profile) error {
 	}
 
 	// In case DeleteHost didn't complete the job.
-	DeleteDirectoryOfProfile(profile.Name)
+	err = cluster.DeleteMachineDirectory(profile.Name)
+	if err != nil {
+		exit.WithError(fmt.Sprintf("unable to delete machine of profile %s", profile.Name), err)
+	}
 
 	if err := config.DeleteProfileDirectory(profile.Name); err != nil {
 		if os.IsNotExist(err) {
@@ -206,17 +208,6 @@ func handleMultipleDeletionErrors(errors []error) {
 			glog.Errorln(deletionError.Error())
 		} else {
 			exit.WithError("Could not process errors from failed deletion", err)
-		}
-	}
-}
-
-func DeleteDirectoryOfProfile(profile string) {
-	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
-	if _, err := os.Stat(machineDir); err == nil {
-		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
-		err := os.RemoveAll(machineDir)
-		if err != nil {
-			exit.WithError("Unable to remove machine directory: %v", err)
 		}
 	}
 }
