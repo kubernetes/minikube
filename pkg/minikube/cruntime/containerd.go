@@ -126,7 +126,7 @@ func (r *Containerd) Style() out.StyleEnum {
 
 // Version retrieves the current version of this runtime
 func (r *Containerd) Version() (string, error) {
-	c := exec.Command("/bin/bash", "-c", "containerd --version")
+	c := exec.Command("containerd", "--version")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return "", errors.Wrapf(err, "containerd check version.")
@@ -154,14 +154,14 @@ func (r *Containerd) DefaultCNI() bool {
 
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
-	c := exec.Command("/bin/bash", "-c", "systemctl is-active --quiet service containerd")
+	c := exec.Command("systemctl", "is-active", "--quiet", "service", "containerd")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Containerd) Available() error {
-	c := exec.Command("/bin/bash", "-c", "command -v containerd")
+	c := exec.Command("command", "-v", "containerd")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "check containerd availability.")
 	}
@@ -205,7 +205,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 		return err
 	}
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
-	c := exec.Command("/bin/bash", "-c", "sudo systemctl restart containerd")
+	c := exec.Command("sudo", "systemctl", "restart", "containerd")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "enable containrd.")
 	}
@@ -214,7 +214,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 
 // Disable idempotently disables containerd on a host
 func (r *Containerd) Disable() error {
-	c := exec.Command("/bin/bash", "-c", "sudo systemctl stop containerd")
+	c := exec.Command("sudo", "systemctl", "stop", "containerd")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "disable containrd.")
 	}

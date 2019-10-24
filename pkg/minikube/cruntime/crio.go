@@ -46,7 +46,7 @@ func (r *CRIO) Style() out.StyleEnum {
 
 // Version retrieves the current version of this runtime
 func (r *CRIO) Version() (string, error) {
-	c := exec.Command("/bin/bash", "-c", "crio --version")
+	c := exec.Command("crio", "--version")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return "", errors.Wrap(err, "crio version.")
@@ -73,7 +73,7 @@ func (r *CRIO) DefaultCNI() bool {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *CRIO) Available() error {
-	c := exec.Command("/bin/bash", "-c", "command -v crio")
+	c := exec.Command("command", "-v", "crio")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "check crio available.")
 	}
@@ -83,7 +83,7 @@ func (r *CRIO) Available() error {
 
 // Active returns if CRIO is active on the host
 func (r *CRIO) Active() bool {
-	c := exec.Command("/bin/bash", "-c", "systemctl is-active --quiet service crio")
+	c := exec.Command("systemctl", "is-active", "--quiet", "service", "crio")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
@@ -105,7 +105,7 @@ func (r *CRIO) Enable(disOthers bool) error {
 		return err
 	}
 
-	if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl restart crio")); err != nil {
+	if _, err := r.Runner.RunCmd(exec.Command("sudo", "systemctl", "restart", "crio")); err != nil {
 		return errors.Wrapf(err, "enable crio.")
 	}
 	return nil
@@ -113,7 +113,7 @@ func (r *CRIO) Enable(disOthers bool) error {
 
 // Disable idempotently disables CRIO on a host
 func (r *CRIO) Disable() error {
-	if _, err := r.Runner.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl stop crio")); err != nil {
+	if _, err := r.Runner.RunCmd(exec.Command("sudo", "systemctl", "stop", "crio")); err != nil {
 		return errors.Wrapf(err, "disable crio.")
 	}
 	return nil
@@ -122,7 +122,7 @@ func (r *CRIO) Disable() error {
 // LoadImage loads an image into this runtime
 func (r *CRIO) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo podman load -i %s", path))
+	c := exec.Command("sudo", "podman", "load", "-i", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "LoadImage crio.")
 	}

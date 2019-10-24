@@ -131,7 +131,7 @@ func disableOthers(me Manager, cr CommandRunner) error {
 // enableIPForwarding configures IP forwarding, which is handled normally by Docker
 // Context: https://github.com/kubernetes/kubeadm/issues/1062
 func enableIPForwarding(cr CommandRunner) error {
-	c := exec.Command("/bin/bash", "-c", "sudo modprobe br_netfilter")
+	c := exec.Command("sudo", "modprobe", "br_netfilter")
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "br_netfilter.")
 	}
