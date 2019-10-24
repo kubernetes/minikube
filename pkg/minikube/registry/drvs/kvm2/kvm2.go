@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
@@ -101,7 +102,7 @@ func status() registry.State {
 	cmd = exec.Command("virsh", "list")
 	err = cmd.Run()
 	if err != nil {
-		return registry.State{Installed: true, Error: errors.Wrap(err, "virsh list"), Fix: fmt.Sprintf("Check output of '%s'", , strings.Join(cmd.Args, " ")), Doc: docURL}
+		return registry.State{Installed: true, Error: errors.Wrap(err, "virsh list"), Fix: fmt.Sprintf("Check output of '%s'", strings.Join(cmd.Args, " ")), Doc: docURL}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
