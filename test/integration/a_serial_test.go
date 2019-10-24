@@ -20,6 +20,7 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -29,11 +30,12 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-func TestDownloadAndDeleteAll(t *testing.T) {
+func TestDownloadOnly(t *testing.T) {
 	profile := UniqueProfileName("download")
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer Cleanup(t, profile, cancel)
@@ -46,22 +48,21 @@ func TestDownloadAndDeleteAll(t *testing.T) {
 		}
 		for _, v := range versions {
 			t.Run(v, func(t *testing.T) {
-				args := append([]string{"start", "--download-only", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", v)}, StartArgs()...)
+				// Explicitly does not pass StartArgs() to test driver default
+				// --force to avoid uid check
+				args := []string{"start", "--download-only", "-p", profile, "--force", fmt.Sprintf("--kubernetes-version=%s", v)}
 				_, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 				if err != nil {
 					t.Errorf("%s failed: %v", args, err)
 				}
 
-				// None driver does not cache images, so this test will fail
-				if !NoneDriver() {
-					imgs := images.CachedImages("", v)
-					for _, img := range imgs {
-						img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
-						fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
-						_, err := os.Stat(fp)
-						if err != nil {
-							t.Errorf("expected image file exist at %q but got error: %v", fp, err)
-						}
+				imgs := images.CachedImages("", v)
+				for _, img := range imgs {
+					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
+					fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
+					_, err := os.Stat(fp)
+					if err != nil {
+						t.Errorf("expected image file exist at %q but got error: %v", fp, err)
 					}
 				}
 
@@ -73,10 +74,40 @@ func TestDownloadAndDeleteAll(t *testing.T) {
 						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
 					}
 				}
+
+				// Checking if the default driver meets expectations
+				if ExpectedDefaultDriver() == "" {
+					t.Logf("--expected-default-driver=%q, continuing", ExpectedDefaultDriver())
+					return
+				}
+				rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+				if err != nil {
+					t.Errorf("%s failed: %v", rr.Args, err)
+				}
+				var ps map[string][]config.Profile
+				err = json.Unmarshal(rr.Stdout.Bytes(), &ps)
+				if err != nil {
+					t.Errorf("%s failed: %v", rr.Args, err)
+				}
+
+				got := ""
+				for _, p := range ps["valid"] {
+					if p.Name == profile {
+						got = p.Config.MachineConfig.VMDriver
+					}
+				}
+
+				if got != ExpectedDefaultDriver() {
+					t.Errorf("got driver %q, expected %q", got, ExpectedDefaultDriver())
+				}
 			})
 		}
+
 		// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
 		t.Run("DeleteAll", func(t *testing.T) {
+			if !CanCleanup() {
+				t.Skip("skipping, as cleanup is disabled")
+			}
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
 			if err != nil {
 				t.Errorf("%s failed: %v", rr.Args, err)
@@ -84,6 +115,9 @@ func TestDownloadAndDeleteAll(t *testing.T) {
 		})
 		// Delete should always succeed, even if previously partially or fully deleted.
 		t.Run("DeleteAlwaysSucceeds", func(t *testing.T) {
+			if !CanCleanup() {
+				t.Skip("skipping, as cleanup is disabled")
+			}
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
 			if err != nil {
 				t.Errorf("%s failed: %v", rr.Args, err)
