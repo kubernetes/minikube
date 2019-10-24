@@ -32,6 +32,8 @@ JOB_NAME="HyperKit_macOS"
 EXTRA_ARGS="--bootstrapper=kubeadm"
 EXTRA_START_ARGS=""
 PARALLEL_COUNT=3
+EXPECTED_DEFAULT_DRIVER="hyperkit"
+
 
 # Download files and set permissions
 source common.sh
