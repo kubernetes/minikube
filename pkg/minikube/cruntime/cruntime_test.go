@@ -137,7 +137,7 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		if err != nil {
 			return rr, err
 		}
-		buf := new(bytes.Buffer)
+		var buf bytes.Buffer
 		_, err = buf.WriteString(s)
 		if err != nil {
 			return rr, errors.Wrap(err, "Writing outStr to FakeRunner's buffer")
@@ -151,7 +151,7 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		if err != nil {
 			return rr, err
 		}
-		buf := new(bytes.Buffer)
+		var buf bytes.Buffer
 		_, err = buf.WriteString(s)
 		if err != nil {
 			return rr, errors.Wrap(err, "Writing FakeRunner's buffer")
@@ -166,7 +166,7 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		if err != nil {
 			return rr, err
 		}
-		buf := new(bytes.Buffer)
+		var buf bytes.Buffer
 		_, err = buf.WriteString(s)
 		if err != nil {
 			return rr, errors.Wrap(err, "Writing to FakeRunner's buffer")
@@ -180,7 +180,7 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		if err != nil {
 			return rr, err
 		}
-		buf := new(bytes.Buffer)
+		var buf bytes.Buffer
 		_, err = buf.WriteString(s)
 		if err != nil {
 			return rr, errors.Wrap(err, "Writing to FakeRunner's buffer")
@@ -195,7 +195,7 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 			return rr, err
 		}
 
-		buf := new(bytes.Buffer)
+		var buf bytes.Buffer
 		_, err = buf.WriteString(s)
 		if err != nil {
 			return rr, errors.Wrap(err, "Writing to FakeRunner's buffer")
