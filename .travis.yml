@@ -11,6 +11,7 @@ matrix:
   include:
     - language: go
       name: Check Boilerplate 
+      go: 1.12.12
       env:
         - TESTSUITE=boilerplate
       script: make test
@@ -34,6 +35,8 @@ matrix:
       script: make test
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+travisBuddy:	
+    regex: (FAIL:|\.go:\d+:|^panic:|failed$)	
 notifications:
   webhooks:
     urls:
