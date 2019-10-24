@@ -165,7 +165,7 @@ if type -P vboxmanage; then
     vboxmanage unregistervm "${guid}" || true
   done
 
-  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ printf $2 }')
+  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ print $2 }')
   for if in $ifaces; do
     vboxmanage hostonlyif remove "${if}" || true
   done
