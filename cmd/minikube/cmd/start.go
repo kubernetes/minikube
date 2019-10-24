@@ -63,6 +63,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/translate"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
@@ -545,13 +546,15 @@ func selectDriver(oldConfig *cfg.Config) string {
 			return oldConfig.MachineConfig.VMDriver
 		}
 		options := driver.Choices()
-		if len(options) == 0 {
-			exit.WithCodeT(exit.Config, "Unable to find a usable default driver. Try specifying --vm-driver")
-		}
 		pick, alts := driver.Choose(options)
 		if len(options) > 1 {
 			out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"driver": pick.Name, "alternates": alts})
 		}
+
+		if pick.Name == "" {
+			exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --vm-driver, or visiting https://minikube.sigs.k8s.io/docs/start/")
+		}
+
 		name = pick.Name
 	}
 	if !driver.Supported(name) {
@@ -560,7 +563,13 @@ func selectDriver(oldConfig *cfg.Config) string {
 
 	st := driver.Status(name)
 	if st.Error != nil {
-		out.WarningT("'{{.driver}} error: {{.error}}", out.V{"driver": name, "error": st.Error})
+		out.ErrLn("")
+		out.WarningT("'{{.driver}}' driver reported a possible issue: {{.error}}", out.V{"driver": name, "error": st.Error, "fix": st.Fix})
+		out.ErrT(out.Tip, "Suggestion: {{.fix}}", out.V{"fix": translate.T(st.Fix)})
+		if st.Doc != "" {
+			out.ErrT(out.Documentation, "Documentation: {{.url}}", out.V{"url": st.Doc})
+		}
+		out.ErrLn("")
 	}
 
 	// Detect if our driver conflicts with a previously created VM. If we run into any errors, just move on.
