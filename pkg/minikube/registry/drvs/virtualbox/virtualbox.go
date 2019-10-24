@@ -72,9 +72,9 @@ func status() registry.State {
 	}
 
 	cmd := exec.Command(path, "list", "hostinfo")
-	err = cmd.Run()
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return registry.State{Installed: true, Error: errors.Wrap(err, strings.Join(cmd.Args, " ")), Fix: "Install the latest version of VirtualBox", Doc: docURL}
+		return registry.State{Installed: true, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Install the latest version of VirtualBox", Doc: docURL}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
