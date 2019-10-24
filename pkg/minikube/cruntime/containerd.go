@@ -224,7 +224,7 @@ func (r *Containerd) Disable() error {
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("ctr -n=k8s.io images import %s", path))
+	c := exec.Command("ctr", "-n=k8s.io", "images", "import", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "disable containrd.")
 	}

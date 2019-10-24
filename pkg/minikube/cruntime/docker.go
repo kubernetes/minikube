@@ -22,6 +22,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -123,12 +124,10 @@ func (r *Docker) KubeletOptions() map[string]string {
 // ListContainers returns a list of containers
 func (r *Docker) ListContainers(filter string) ([]string, error) {
 	filter = KubernetesContainerPrefix + filter
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf(`docker ps -a --filter="name=%s" --format="{{.ID}}"`, filter))
-	rr, err := r.Runner.RunCmd(c)
+	rr, err := r.Runner.RunCmd(exec.Command("docker", "ps", "-a", fmt.Sprintf(`--filter="name=%s"`, filter), "--format=\"{{.ID}}\""))
 	if err != nil {
 		return nil, errors.Wrapf(err, "docker ListContainers. ")
 	}
-
 	var ids []string
 	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
 		if line != "" {
@@ -144,7 +143,8 @@ func (r *Docker) KillContainers(ids []string) error {
 		return nil
 	}
 	glog.Infof("Killing containers: %s", ids)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker rm -f %s", strings.Join(ids, " ")))
+	args := append([]string{"rm", "-f"}, ids...)
+	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "Killing containers docker.")
 	}
@@ -157,7 +157,7 @@ func (r *Docker) StopContainers(ids []string) error {
 		return nil
 	}
 	glog.Infof("Stopping containers: %s", ids)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker stop %s", strings.Join(ids, " ")))
+	c := exec.Command("docker", "stop", shellquote.Join(ids...))
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "stopping containers docker.")
 	}

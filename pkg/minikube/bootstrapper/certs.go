@@ -332,7 +332,7 @@ func getSubjectHash(cr command.Runner, filePath string) (string, error) {
 // OpenSSL binary required in minikube ISO
 func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 	hasSSLBinary := true
-	_, err := cr.RunCmd(exec.Command("openssl version"))
+	_, err := cr.RunCmd(exec.Command("openssl", "version"))
 	if err != nil {
 		hasSSLBinary = false
 	}

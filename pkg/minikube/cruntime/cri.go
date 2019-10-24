@@ -337,11 +337,10 @@ func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
 	var rr *command.RunResult
 	state := "Running"
 	if filter != "" {
-		c := exec.Command("/bin/bash/", "-c", fmt.Sprintf(`sudo crictl ps -a --name=%s --state=%s --quiet`, filter, state))
+		c := exec.Command("sudo", "crictl", "ps", "-a", fmt.Sprintf("--name=%s", filter), fmt.Sprintf("--state=%s", state), "--quiet")
 		rr, err = cr.RunCmd(c)
 	} else {
-		c := exec.Command("/bin/bash/", "-c", fmt.Sprintf(`sudo crictl ps -a --state=%s --quiet`, state))
-		rr, err = cr.RunCmd(c)
+		rr, err = cr.RunCmd(exec.Command("sudo", "crictl", "ps", "-a", fmt.Sprintf("--state=%s", state), "--quiet"))
 	}
 	if err != nil {
 		return nil, err
@@ -361,7 +360,9 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 		return nil
 	}
 	glog.Infof("Killing containers: %s", ids)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
+
+	args := append([]string{"crictl", "rm"}, ids...)
+	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "kill cri containers.")
 	}
@@ -374,7 +375,8 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 		return nil
 	}
 	glog.Infof("Stopping containers: %s", ids)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo crictl rm %s", strings.Join(ids, " ")))
+	args := append([]string{"crictl", "rm"}, ids...)
+	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "stop cri containers")
 	}
