@@ -97,14 +97,14 @@ func runDelete(cmd *cobra.Command, args []string) {
 		profileName := viper.GetString(config.MachineProfile)
 		p, err := config.LoadProfile(profileName)
 		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" p does not exist`, out.V{"name": profileName})
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
 		}
 
 		errs := profile.DeleteAll([]*config.Profile{p})
 		if len(errs) > 0 {
 			profile.HandleDeletionErrors(errs)
 		} else {
-			out.T(out.DeletingHost, "Successfully deleted p \"{{.name}}\"", out.V{"name": profileName})
+			out.T(out.DeletingHost, "Successfully deleted profile \"{{.name}}\"", out.V{"name": profileName})
 		}
 	}
 
