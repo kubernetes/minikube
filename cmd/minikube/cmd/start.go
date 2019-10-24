@@ -558,6 +558,11 @@ func selectDriver(oldConfig *cfg.Config) string {
 		exit.WithCodeT(exit.Failure, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
 
+	st := driver.Status(name)
+	if st.Error != nil {
+		out.WarningT("'{{.driver}} error: {{.error}}", out.V{"driver": name, "error": st.Error})
+	}
+
 	// Detect if our driver conflicts with a previously created VM. If we run into any errors, just move on.
 	api, err := machine.NewAPIClient()
 	if err != nil {

@@ -60,9 +60,11 @@ func Installed() []DriverState {
 			continue
 		}
 		s := d.Status()
-		if s.Installed {
-			sts = append(sts, DriverState{Name: d.Name, Priority: d.Priority, State: s})
+		if !s.Installed {
+			glog.Infof("%q not installed: %v", d.Name, s.Error)
+			continue
 		}
+		sts = append(sts, DriverState{Name: d.Name, Priority: d.Priority, State: s})
 	}
 	return sts
 }
