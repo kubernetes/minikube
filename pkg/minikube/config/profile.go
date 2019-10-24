@@ -116,8 +116,8 @@ func CreateProfile(name string, cfg *Config, miniHome ...string) error {
 	return nil
 }
 
-// DeleteProfile deletes a profile and removes the profile dir
-func DeleteProfile(profile string, miniHome ...string) error {
+// DeleteProfileDirectory deletes a profile and removes the profile dir
+func DeleteProfileDirectory(profile string, miniHome ...string) error {
 	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]

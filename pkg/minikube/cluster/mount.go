@@ -18,13 +18,18 @@ package cluster
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // MountConfig defines the options available to the Mount command
@@ -145,6 +150,54 @@ func Unmount(r mountRunner, target string) error {
 	glog.Infof("unmount force err=%v, out=%s", err, out)
 	if err != nil {
 		return errors.Wrap(err, out)
+	}
+	return nil
+}
+
+// killMountProcess kills the mount process, if it is running
+func KillMountProcess() error {
+	pidPath := filepath.Join(localpath.MiniPath(), constants.MountProcessFileName)
+	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
+		return nil
+	}
+
+	glog.Infof("Found %s ...", pidPath)
+	out, err := ioutil.ReadFile(pidPath)
+	if err != nil {
+		return errors.Wrap(err, "ReadFile")
+	}
+	glog.Infof("pidfile contents: %s", out)
+	pid, err := strconv.Atoi(string(out))
+	if err != nil {
+		return errors.Wrap(err, "error parsing pid")
+	}
+	// os.FindProcess does not check if pid is running :(
+	entry, err := ps.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "ps.FindProcess")
+	}
+	if entry == nil {
+		glog.Infof("Stale pid: %d", pid)
+		if err := os.Remove(pidPath); err != nil {
+			return errors.Wrap(err, "Removing stale pid")
+		}
+		return nil
+	}
+
+	// We found a process, but it still may not be ours.
+	glog.Infof("Found process %d: %s", pid, entry.Executable())
+	proc, err := os.FindProcess(pid)
+	if err != nil {
+		return errors.Wrap(err, "os.FindProcess")
+	}
+
+	glog.Infof("Killing pid %d ...", pid)
+	if err := proc.Kill(); err != nil {
+		glog.Infof("Kill failed with %v - removing probably stale pid...", err)
+		if err := os.Remove(pidPath); err != nil {
+			return errors.Wrap(err, "Removing likely stale unkillable pid")
+		}
+		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
 	}
 	return nil
 }

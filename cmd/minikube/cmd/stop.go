@@ -24,9 +24,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/delete"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -45,7 +44,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
-	profile := viper.GetString(pkg_config.MachineProfile)
+	profile := viper.GetString(config.MachineProfile)
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Error getting client", err)
@@ -73,11 +72,11 @@ func runStop(cmd *cobra.Command, args []string) {
 		out.T(out.Stopped, `"{{.profile_name}}" stopped.`, out.V{"profile_name": profile})
 	}
 
-	if err := delete.KillMountProcess(); err != nil {
+	if err := cluster.KillMountProcess(); err != nil {
 		out.T(out.WarningType, "Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	machineName := pkg_config.GetMachineName()
+	machineName := config.GetMachineName()
 	err = kubeconfig.UnsetCurrentContext(machineName, constants.KubeconfigPath)
 	if err != nil {
 		exit.WithError("update config", err)

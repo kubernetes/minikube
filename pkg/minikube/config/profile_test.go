@@ -146,7 +146,7 @@ func TestCreateEmptyProfile(t *testing.T) {
 		}
 
 		defer func() { // tear down
-			err := DeleteProfile(n, miniDir)
+			err := DeleteProfileDirectory(n, miniDir)
 			if err != nil {
 				t.Errorf("error test tear down %v", err)
 			}
@@ -183,7 +183,7 @@ func TestCreateProfile(t *testing.T) {
 
 		defer func() { // tear down
 
-			err := DeleteProfile(n, miniDir)
+			err := DeleteProfileDirectory(n, miniDir)
 			if err != nil {
 				t.Errorf("error test tear down %v", err)
 			}
@@ -211,7 +211,7 @@ func TestDeleteProfile(t *testing.T) {
 		{"non_existing_prof", false},
 	}
 	for _, tc := range testCases {
-		gotErr := DeleteProfile(tc.name, miniDir)
+		gotErr := DeleteProfileDirectory(tc.name, miniDir)
 		if gotErr != nil && tc.expectErr == false {
 			t.Errorf("expected CreateEmptyProfile not to error but got err=%v", gotErr)
 		}

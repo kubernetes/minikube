@@ -14,19 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package delete
+package profile
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strconv"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
-	"github.com/mitchellh/go-ps"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -43,7 +39,7 @@ import (
 
 type typeOfError int
 
-// DeletionError can be returned from RemoveProfiles
+// DeletionError can be returned from DeleteAll
 type DeletionError struct {
 	Err       error
 	ErrorType typeOfError
@@ -62,17 +58,17 @@ const (
 	MissingCluster typeOfError = 2
 )
 
-// RemoveProfiles deletes one or more profiles
-func RemoveProfiles(profiles []*config.Profile) []error {
+// DeleteAll deletes one or more profiles
+func DeleteAll(profiles []*config.Profile) []error {
 	var errs []error
 	for _, profile := range profiles {
-		err := removeProfile(profile)
+		err := delete(profile)
 
 		if err != nil {
 			mm, loadErr := cluster.LoadMachine(profile.Name)
 
 			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
-				invalidProfileDeletionErrs := RemoveInvalidProfile(profile)
+				invalidProfileDeletionErrs := DeleteInvalid(profile)
 				if len(invalidProfileDeletionErrs) > 0 {
 					errs = append(errs, invalidProfileDeletionErrs...)
 				}
@@ -84,7 +80,7 @@ func RemoveProfiles(profiles []*config.Profile) []error {
 	return errs
 }
 
-func removeProfile(profile *config.Profile) error {
+func delete(profile *config.Profile) error {
 	viper.Set(config.MachineProfile, profile.Name)
 
 	api, err := machine.NewAPIClient()
@@ -102,18 +98,12 @@ func removeProfile(profile *config.Profile) error {
 	}
 
 	if err == nil && driver.BareMetal(cc.MachineConfig.VMDriver) {
-		if err := UninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
-			deletionError, ok := err.(DeletionError)
-			if ok {
-				delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
-				deletionError.Err = delErr
-				return deletionError
-			}
-			return err
+		if err := cluster.UninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+			return profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
 		}
 	}
 
-	if err := KillMountProcess(); err != nil {
+	if err := cluster.KillMountProcess(); err != nil {
 		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
@@ -128,9 +118,9 @@ func removeProfile(profile *config.Profile) error {
 	}
 
 	// In case DeleteHost didn't complete the job.
-	RemoveProfileDirectory(profile.Name)
+	DeleteDirectoryOfProfile(profile.Name)
 
-	if err := config.DeleteProfile(profile.Name); err != nil {
+	if err := config.DeleteProfileDirectory(profile.Name); err != nil {
 		if os.IsNotExist(err) {
 			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("\"%s\" profile does not exist", profile.Name))
 			return DeletionError{Err: delErr, ErrorType: MissingProfile}
@@ -152,7 +142,7 @@ func removeProfile(profile *config.Profile) error {
 	return nil
 }
 
-func RemoveInvalidProfile(profile *config.Profile) []error {
+func DeleteInvalid(profile *config.Profile) []error {
 	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
@@ -178,7 +168,7 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
 }
 
-// Handles deletion error from RemoveProfiles
+// Handles deletion error from DeleteAll
 func HandleDeletionErrors(errors []error) {
 	if len(errors) == 1 {
 		handleSingleDeletionError(errors[0])
@@ -220,7 +210,7 @@ func handleMultipleDeletionErrors(errors []error) {
 	}
 }
 
-func RemoveProfileDirectory(profile string) {
+func DeleteDirectoryOfProfile(profile string) {
 	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
 	if _, err := os.Stat(machineDir); err == nil {
 		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
@@ -229,63 +219,4 @@ func RemoveProfileDirectory(profile string) {
 			exit.WithError("Unable to remove machine directory: %v", err)
 		}
 	}
-}
-
-func UninstallKubernetes(api libmachine.API, kc config.KubernetesConfig, bsName string) error {
-	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := cluster.GetClusterBootstrapper(api, bsName)
-	if err != nil {
-		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), ErrorType: Fatal}
-	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
-		return DeletionError{Err: fmt.Errorf("failed to delete cluster: %v", err), ErrorType: Fatal}
-	}
-	return nil
-}
-
-// killMountProcess kills the mount process, if it is running
-func KillMountProcess() error {
-	pidPath := filepath.Join(localpath.MiniPath(), constants.MountProcessFileName)
-	if _, err := os.Stat(pidPath); os.IsNotExist(err) {
-		return nil
-	}
-
-	glog.Infof("Found %s ...", pidPath)
-	out, err := ioutil.ReadFile(pidPath)
-	if err != nil {
-		return errors.Wrap(err, "ReadFile")
-	}
-	glog.Infof("pidfile contents: %s", out)
-	pid, err := strconv.Atoi(string(out))
-	if err != nil {
-		return errors.Wrap(err, "error parsing pid")
-	}
-	// os.FindProcess does not check if pid is running :(
-	entry, err := ps.FindProcess(pid)
-	if err != nil {
-		return errors.Wrap(err, "ps.FindProcess")
-	}
-	if entry == nil {
-		glog.Infof("Stale pid: %d", pid)
-		if err := os.Remove(pidPath); err != nil {
-			return errors.Wrap(err, "Removing stale pid")
-		}
-		return nil
-	}
-
-	// We found a process, but it still may not be ours.
-	glog.Infof("Found process %d: %s", pid, entry.Executable())
-	proc, err := os.FindProcess(pid)
-	if err != nil {
-		return errors.Wrap(err, "os.FindProcess")
-	}
-
-	glog.Infof("Killing pid %d ...", pid)
-	if err := proc.Kill(); err != nil {
-		glog.Infof("Kill failed with %v - removing probably stale pid...", err)
-		if err := os.Remove(pidPath); err != nil {
-			return errors.Wrap(err, "Removing likely stale unkillable pid")
-		}
-		return errors.Wrap(err, fmt.Sprintf("Kill(%d/%s)", pid, entry.Executable()))
-	}
-	return nil
 }
