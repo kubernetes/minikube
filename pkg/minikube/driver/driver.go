@@ -107,6 +107,7 @@ func Choose(options []registry.DriverState) (registry.DriverState, []registry.Dr
 	pick := registry.DriverState{}
 	for _, ds := range options {
 		if ds.Priority <= registry.Discouraged {
+			glog.Infof("not recommending %q due to priority: %d", ds.Name, ds.Priority)
 			continue
 		}
 		if ds.Priority > pick.Priority {
@@ -123,4 +124,9 @@ func Choose(options []registry.DriverState) (registry.DriverState, []registry.Dr
 	glog.Infof("Picked: %+v", pick)
 	glog.Infof("Alternatives: %+v", alternates)
 	return pick, alternates
+}
+
+// Status returns the status of a driver
+func Status(name string) registry.State {
+	return registry.Status(name)
 }
