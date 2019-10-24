@@ -48,7 +48,7 @@ func (r *Docker) Style() out.StyleEnum {
 // Version retrieves the current version of this runtime
 func (r *Docker) Version() (string, error) {
 	// Note: the server daemon has to be running, for this call to return successfully
-	c := exec.Command("/bin/bash", "-c", "docker version --format '{{.Server.Version}}'")
+	c := exec.Command("docker", "version", "--format", "'{{.Server.Version}}'")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return "", err
@@ -74,7 +74,7 @@ func (r *Docker) Available() error {
 
 // Active returns if docker is active on the host
 func (r *Docker) Active() bool {
-	c := exec.Command("/bin/bash", "-c", "systemctl is-active --quiet service docker")
+	c := exec.Command("systemctl", "is-active", "--quiet", "service", "docker")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
@@ -86,7 +86,7 @@ func (r *Docker) Enable(disOthers bool) error {
 			glog.Warningf("disableOthers: %v", err)
 		}
 	}
-	c := exec.Command("/bin/bash", "-c", "sudo systemctl start docker")
+	c := exec.Command("sudo", "systemctl", "start", "docker")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "enable docker.")
 	}
@@ -95,7 +95,7 @@ func (r *Docker) Enable(disOthers bool) error {
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
-	c := exec.Command("/bin/bash", "-c", "sudo systemctl stop docker docker.socket")
+	c := exec.Command("sudo", "systemctl", "stop", "docker", "docker.socket")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "disable docker")
 	}
@@ -105,7 +105,7 @@ func (r *Docker) Disable() error {
 // LoadImage loads an image into this runtime
 func (r *Docker) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("docker load -i %s", path))
+	c := exec.Command("docker", "load", "-i", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "loadimage docker.")
 	}

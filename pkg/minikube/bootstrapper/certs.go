@@ -332,8 +332,7 @@ func getSubjectHash(cr command.Runner, filePath string) (string, error) {
 // OpenSSL binary required in minikube ISO
 func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 	hasSSLBinary := true
-	c := exec.Command("/bin/bash", "-c", "openssl version")
-	_, err := cr.RunCmd(c)
+	_, err := cr.RunCmd(exec.Command("openssl version"))
 	if err != nil {
 		hasSSLBinary = false
 	}
@@ -348,8 +347,7 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 
 		_, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo test -f %s", certStorePath)))
 		if err != nil {
-			c = exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ln -s '%s' '%s'", caCertFile, certStorePath))
-
+			c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ln -s '%s' '%s'", caCertFile, certStorePath))
 			if _, err := cr.RunCmd(c); err != nil {
 				return errors.Wrapf(err, "error making symbol link for certificate %s", caCertFile)
 			}
