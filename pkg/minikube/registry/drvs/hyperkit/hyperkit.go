@@ -24,6 +24,8 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pborman/uuid"
+	"github.com/pkg/errors"
+
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -72,14 +74,14 @@ func configure(config cfg.MachineConfig) interface{} {
 }
 
 func status() registry.State {
-	path, err := exec.LookPath("hyperkit")
+	path, err := exec.LookPath("hyperkitz")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Run 'brew install hyperkit'", Doc: docURL}
 	}
 
 	err = exec.Command(path, "-v").Run()
 	if err != nil {
-		return registry.State{Installed: true, Error: err, Fix: "Run 'brew install hyperkit'", Doc: docURL}
+		return registry.State{Installed: true, Error: errors.Wrap(err, "hyperkit -v"), Fix: "Run 'brew install hyperkit'", Doc: docURL}
 	}
 
 	return registry.State{Installed: true, Healthy: true}

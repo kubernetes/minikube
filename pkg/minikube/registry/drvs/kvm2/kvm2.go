@@ -24,6 +24,8 @@ import (
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/pkg/errors"
+
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -90,14 +92,16 @@ func status() registry.State {
 		return registry.State{Error: err, Fix: "Install libvirt", Doc: docURL}
 	}
 
-	err = exec.Command(path, "qemu").Run()
+	cmd := exec.Command(path, "qemu")
+	err = cmd.Run()
 	if err != nil {
-		return registry.State{Installed: true, Error: err, Fix: "Check output of 'virt-host-validate qemu'", Doc: docURL}
+		return registry.State{Installed: true, Error: errors.Wrap(err, "virt-host-validate"), Fix: fmt.Sprintf("Check output of '%s'", strings.Join(cmd.Args, " ")), Doc: docURL}
 	}
 
-	err = exec.Command("virsh", "list").Run()
+	cmd = exec.Command("virsh", "list")
+	err = cmd.Run()
 	if err != nil {
-		return registry.State{Installed: true, Error: err, Fix: "Check output of 'virsh list'", Doc: docURL}
+		return registry.State{Installed: true, Error: errors.Wrap(err, "virsh list"), Fix: fmt.Sprintf("Check output of '%s'", , strings.Join(cmd.Args, " ")), Doc: docURL}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
