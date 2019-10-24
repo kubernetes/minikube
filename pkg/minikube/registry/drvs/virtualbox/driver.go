@@ -1,5 +1,3 @@
-// +build darwin
-
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -16,39 +14,49 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package parallels
+package virtualbox
 
 import (
 	"fmt"
 
-	parallels "github.com/Parallels/docker-machine-parallels"
+	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
+const defaultVirtualboxNicType = "virtio"
+
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          constants.DriverParallels,
+		Name:          driver.VirtualBox,
 		Builtin:       true,
-		ConfigCreator: createParallelsHost,
+		ConfigCreator: createVirtualboxHost,
 		DriverCreator: func() drivers.Driver {
-			return parallels.NewDriver("", "")
+			return virtualbox.NewDriver("", "")
 		},
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
 	}
-
 }
 
-func createParallelsHost(config cfg.MachineConfig) interface{} {
-	d := parallels.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*parallels.Driver)
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.Memory = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = config.DiskSize
+func createVirtualboxHost(mc config.MachineConfig) interface{} {
+	d := virtualbox.NewDriver(config.GetMachineName(), localpath.MiniPath())
+
+	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
+	d.Memory = mc.Memory
+	d.CPU = mc.CPUs
+	d.DiskSize = mc.DiskSize
+	d.HostOnlyCIDR = mc.HostOnlyCIDR
+	d.NoShare = mc.DisableDriverMounts
+	d.NoVTXCheck = mc.NoVTXCheck
+	d.NatNicType = defaultVirtualboxNicType
+	d.HostOnlyNicType = defaultVirtualboxNicType
+	d.DNSProxy = mc.DNSProxy
+	d.HostDNSResolver = mc.HostDNSResolver
+
 	return d
 }

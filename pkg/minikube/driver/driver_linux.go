@@ -14,13 +14,23 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package driver
 
 import (
 	"os/exec"
 )
 
-func detectVBoxManageCmd() string {
+// supportedDrivers is a list of supported drivers on Linux.
+var supportedDrivers = []string{
+	VirtualBox,
+	Parallels,
+	VMwareFusion,
+	KVM2,
+	VMware,
+	None,
+}
+
+func VBoxManagePath() string {
 	cmd := "VBoxManage"
 	if path, err := exec.LookPath(cmd); err == nil {
 		return path

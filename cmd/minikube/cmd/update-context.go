@@ -44,7 +44,7 @@ var updateContextCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error host driver ip status", err)
 		}
-		updated, err := kubeconfig.UpdateIP(ip, constants.KubeconfigPath, machineName)
+		updated, err := kubeconfig.UpdateIP(ip, machineName, constants.KubeconfigPath)
 		if err != nil {
 			exit.WithError("update config", err)
 		}

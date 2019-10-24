@@ -1,5 +1,67 @@
 # Release Notes
 
+## Version 1.5.0-beta.0 - 2019-10-21
+
+* Fix node InternalIP not matching host-only address [#5427](https://github.com/kubernetes/minikube/pull/5427)
+* Add helm-tiller addon [#5363](https://github.com/kubernetes/minikube/pull/5363)
+* Add ingress-dns addon [#5507](https://github.com/kubernetes/minikube/pull/5507)
+* Add validation checking for minikube profile [#5624](https://github.com/kubernetes/minikube/pull/5624)
+* add ability to override autoupdating drivers [#5640](https://github.com/kubernetes/minikube/pull/5640)
+* Add option to  configure  dnsDomain in kubeAdm [#5566](https://github.com/kubernetes/minikube/pull/5566)
+* Added flags to purge configuration with minikube delete [#5548](https://github.com/kubernetes/minikube/pull/5548)
+* Upgrade Buildroot to 2019.02 and VirtualBox to 5.2 [#5609](https://github.com/kubernetes/minikube/pull/5609)
+* Add libmachine debug logs back [#5574](https://github.com/kubernetes/minikube/pull/5574)
+* Add JSON output for addons list [#5601](https://github.com/kubernetes/minikube/pull/5601)
+* Update default Kubernetes version to 1.16.1 [#5593](https://github.com/kubernetes/minikube/pull/5593)
+* Upgrade nginx ingress controller to 0.26.1 [#5514](https://github.com/kubernetes/minikube/pull/5514)
+* Initial translations for fr, es, de, ja, and zh-CN [#5466](https://github.com/kubernetes/minikube/pull/5466)
+* PL translation [#5491](https://github.com/kubernetes/minikube/pull/5491)
+* Warn if incompatible kubectl version is in use [#5596](https://github.com/kubernetes/minikube/pull/5596)
+* Fix crash when deleting the cluster but it doesn't exist [#4980](https://github.com/kubernetes/minikube/pull/4980)
+* Add json output for profile list [#5554](https://github.com/kubernetes/minikube/pull/5554)
+* Allow addon enabling and disabling when minikube is not running [#5565](https://github.com/kubernetes/minikube/pull/5565)
+* Added option to delete all profiles [#4780](https://github.com/kubernetes/minikube/pull/4780)
+* Replace registry-creds addon ReplicationController with Deployment [#5586](https://github.com/kubernetes/minikube/pull/5586)
+* Performance and security enhancement for ingress-dns addon [#5614](https://github.com/kubernetes/minikube/pull/5614)
+* Add addons flag to 'minikube start' in order to enable specified addons [#5543](https://github.com/kubernetes/minikube/pull/5543)
+* Warn when a user tries to set a profile name that is unlikely to be valid [#4999](https://github.com/kubernetes/minikube/pull/4999)
+* Make error message more human readable [#5563](https://github.com/kubernetes/minikube/pull/5563)
+* Adjusted Terminal Style Detection [#5508](https://github.com/kubernetes/minikube/pull/5508)
+* Fixes image repository flags when using CRI-O and containerd runtime [#5447](https://github.com/kubernetes/minikube/pull/5447)
+* fix "minikube update-context" command fail [#5626](https://github.com/kubernetes/minikube/pull/5626)
+* Fix pods not being scheduled when ingress deployment is patched [#5519](https://github.com/kubernetes/minikube/pull/5519)
+* Fix order of parameters to CurrentContext funcs [#5439](https://github.com/kubernetes/minikube/pull/5439)
+* Add solution for VERR_VMX_MSR_ALL_VMX_DISABLED [#5460](https://github.com/kubernetes/minikube/pull/5460)
+* fr: fix translations of environment & existent [#5483](https://github.com/kubernetes/minikube/pull/5483)
+* optimizing Chinese translation [#5201](https://github.com/kubernetes/minikube/pull/5201)
+* Change systemd unit files perm to 644 [#5492](https://github.com/kubernetes/minikube/pull/5492)
+
+Huge thank you for this release towards our contributors:
+- Anders F Björklund
+- bhanu011
+- chentanjun
+- Cornelius Weig
+- Doug A
+- hwdef
+- James Peach
+- Josh Woodcock
+- Kenta Iso
+- Marcin Niemira
+- Medya Ghazizadeh
+- Nanik T
+- Pranav Jituri
+- Samuel Almeida
+- serhatcetinkaya
+- Sharif Elgamal
+- tanjunchen
+- Thomas Strömberg
+- u5surf
+- yugo horie
+- yuxiaobo
+- Zhongcheng Lao
+- Zoltán Reegn
+
+
 ## Version 1.4.0 - 2019-09-17
 
 Notable user-facing changes:

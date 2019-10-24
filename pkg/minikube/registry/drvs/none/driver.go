@@ -1,5 +1,3 @@
-// +build windows
-
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -16,38 +14,37 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package hyperv
+package none
 
 import (
-	"github.com/docker/machine/drivers/hyperv"
+	"fmt"
+
 	"github.com/docker/machine/libmachine/drivers"
-	cfg "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/drivers/none"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
-		Name:          constants.DriverHyperv,
+	if err := registry.Register(registry.DriverDef{
+		Name:          driver.None,
 		Builtin:       true,
-		ConfigCreator: createHypervHost,
+		ConfigCreator: createNoneHost,
 		DriverCreator: func() drivers.Driver {
-			return hyperv.NewDriver("", "")
+			return none.NewDriver(none.Config{})
 		},
-	})
+	}); err != nil {
+		panic(fmt.Sprintf("register failed: %v", err))
+	}
 }
 
-func createHypervHost(config cfg.MachineConfig) interface{} {
-	d := hyperv.NewDriver(cfg.GetMachineName(), localpath.MiniPath())
-
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.VSwitch = config.HypervVirtualSwitch
-	d.MemSize = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = int(config.DiskSize)
-	d.SSHUser = "docker"
-	d.DisableDynamicMemory = true // default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
-
-	return d
+// createNoneHost creates a none Driver from a MachineConfig
+func createNoneHost(mc config.MachineConfig) interface{} {
+	return none.NewDriver(none.Config{
+		MachineName:      config.GetMachineName(),
+		StorePath:        localpath.MiniPath(),
+		ContainerRuntime: mc.ContainerRuntime,
+	})
 }

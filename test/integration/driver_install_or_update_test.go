@@ -26,7 +26,7 @@ import (
 
 	"github.com/blang/semver"
 
-	"k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 func TestKVMDriverInstallOrUpdate(t *testing.T) {
@@ -84,7 +84,7 @@ func TestKVMDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
-		err = drivers.InstallOrUpdate("kvm2", dir, newerVersion, true)
+		err = driver.InstallOrUpdate("kvm2", dir, newerVersion, true, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}
@@ -147,7 +147,7 @@ func TestHyperKitDriverInstallOrUpdate(t *testing.T) {
 			t.Fatalf("Expected new semver. test: %v, got: %v", tc.name, err)
 		}
 
-		err = drivers.InstallOrUpdate("hyperkit", dir, newerVersion, true)
+		err = driver.InstallOrUpdate("hyperkit", dir, newerVersion, true, true)
 		if err != nil {
 			t.Fatalf("Failed to update driver to %v. test: %s, got: %v", newerVersion, tc.name, err)
 		}

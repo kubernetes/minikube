@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"os"
 	"text/template"
 
 	"github.com/spf13/cobra"
@@ -62,7 +63,9 @@ var addonsOpenCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		cluster.EnsureMinikubeRunningOrExit(api, 1)
+		if !cluster.IsMinikubeRunning(api) {
+			os.Exit(1)
+		}
 		addon, ok := assets.Addons[addonName] // validate addon input
 		if !ok {
 			exit.WithCodeT(exit.Data, `addon '{{.name}}' is not a valid addon packaged with minikube.
