@@ -19,6 +19,7 @@ package driver
 import (
 	"fmt"
 	"os"
+	"sort"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -34,6 +35,11 @@ const (
 	VMwareFusion = "vmwarefusion"
 	HyperV       = "hyperv"
 	Parallels    = "parallels"
+)
+
+var (
+	// systemdResolvConf is path to systemd's DNS configuration. https://github.com/kubernetes/minikube/issues/3511
+	systemdResolvConf = "/run/systemd/resolve/resolv.conf"
 )
 
 // SupportedDrivers returns a list of supported drivers
@@ -65,14 +71,12 @@ type FlagHints struct {
 // FlagDefaults returns suggested defaults based on a driver
 func FlagDefaults(name string) FlagHints {
 	if name != None {
-		return FlagHints{}
+		return FlagHints{CacheImages: true}
 	}
 
-	// for more info see: https://github.com/kubernetes/minikube/issues/3511
-	f := "/run/systemd/resolve/resolv.conf"
 	extraOpts := ""
-	if _, err := os.Stat(f); err == nil {
-		extraOpts = fmt.Sprintf("kubelet.resolv-conf=%s", f)
+	if _, err := os.Stat(systemdResolvConf); err == nil {
+		extraOpts = fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
 	}
 	return FlagHints{
 		ExtraOptions: extraOpts,
@@ -85,13 +89,16 @@ func Choices() []registry.DriverState {
 	options := []registry.DriverState{}
 	for _, ds := range registry.Installed() {
 		if !ds.State.Healthy {
-			glog.Warningf("%s is installed, but unhealthy: %v", ds.Name, ds.State.Error)
+			glog.Warningf("%q is installed, but unhealthy: %v", ds.Name, ds.State.Error)
 			continue
 		}
 		options = append(options, ds)
-		glog.Infof("%q driver appears healthy, priority %d", ds.Name, ds.Priority)
-
 	}
+
+	// Descending priority for predictability and appearance
+	sort.Slice(options, func(i, j int) bool {
+		return options[i].Priority > options[j].Priority
+	})
 	return options
 }
 
@@ -99,6 +106,9 @@ func Choices() []registry.DriverState {
 func Choose(options []registry.DriverState) (registry.DriverState, []registry.DriverState) {
 	pick := registry.DriverState{}
 	for _, ds := range options {
+		if ds.Priority <= registry.Discouraged {
+			continue
+		}
 		if ds.Priority > pick.Priority {
 			pick = ds
 		}
