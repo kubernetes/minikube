@@ -19,28 +19,37 @@ limitations under the License.
 package hyperv
 
 import (
+	"fmt"
+	"os/exec"
+	"strings"
+
 	"github.com/docker/machine/drivers/hyperv"
 	"github.com/docker/machine/libmachine/drivers"
+
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
+const (
+	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperv/"
+)
+
 func init() {
-	registry.Register(registry.DriverDef{
-		Name:          driver.HyperV,
-		Builtin:       true,
-		ConfigCreator: createHypervHost,
-		DriverCreator: func() drivers.Driver {
-			return hyperv.NewDriver("", "")
-		},
-	})
+	if err := registry.Register(registry.DriverDef{
+		Name:     driver.HyperV,
+		Init:     func() drivers.Driver { return hyperv.NewDriver("", "") },
+		Config:   configure,
+		Status:   status,
+		Priority: registry.Preferred,
+	}); err != nil {
+		panic(fmt.Sprintf("register: %v", err))
+	}
 }
 
-func createHypervHost(config cfg.MachineConfig) interface{} {
+func configure(config cfg.MachineConfig) interface{} {
 	d := hyperv.NewDriver(cfg.GetMachineName(), localpath.MiniPath())
-
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.VSwitch = config.HypervVirtualSwitch
 	d.MemSize = config.Memory
@@ -48,6 +57,19 @@ func createHypervHost(config cfg.MachineConfig) interface{} {
 	d.DiskSize = config.DiskSize
 	d.SSHUser = "docker"
 	d.DisableDynamicMemory = true // default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
-
 	return d
+}
+
+func status() registry.State {
+	path, err := exec.LookPath("powershell")
+	if err != nil {
+		return registry.State{Error: err}
+	}
+
+	cmd := exec.Command(path, "Get-WindowsOptionalFeature", "-FeatureName", "Microsoft-Hyper-V-All", "-Online")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return registry.State{Installed: false, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'", Doc: docURL}
+	}
+	return registry.State{Installed: true, Healthy: true}
 }
