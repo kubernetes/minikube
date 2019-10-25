@@ -320,7 +320,8 @@ func collectCACerts() (map[string]string, error) {
 
 // getSubjectHash calculates Certificate Subject Hash for creating certificate symlinks
 func getSubjectHash(cr command.Runner, filePath string) (string, error) {
-	rr, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("openssl x509 -hash -noout -in '%s'", filePath)))
+	c := exec.Command("openssl", "x509", "-hash", "-noout", "-in", filePath)
+	rr, err := cr.RunCmd(c)
 	if err != nil {
 		return "", errors.Wrapf(err, "getSubjectHash")
 	}
@@ -344,11 +345,9 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 	for _, caCertFile := range caCerts {
 		dstFilename := path.Base(caCertFile)
 		certStorePath := path.Join(SSLCertStoreDir, dstFilename)
-
-		_, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo test -f %s", certStorePath)))
+		_, err := cr.RunCmd(exec.Command("sudo", "test", "-f", certStorePath))
 		if err != nil {
-			c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ln -s '%s' '%s'", caCertFile, certStorePath))
-			if _, err := cr.RunCmd(c); err != nil {
+			if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-s", caCertFile, certStorePath)); err != nil {
 				return errors.Wrapf(err, "error making symbol link for certificate %s", caCertFile)
 			}
 		}
@@ -358,11 +357,10 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 				return errors.Wrapf(err, "error calculating subject hash for certificate %s", caCertFile)
 			}
 			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
-
-			_, err = cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo test -f %s", subjectHashLink)))
+			_, err = cr.RunCmd(exec.Command("sudo", "test", "-f", subjectHashLink))
 			if err != nil {
-				if _, err := cr.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, subjectHashLink))); err != nil {
-					return errors.Wrapf(err, "error making subject hash symbol %s link for certificate %s.", subjectHash, caCertFile)
+				if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-s", certStorePath, subjectHashLink)); err != nil {
+					return errors.Wrapf(err, "linking caCertFile %s.", caCertFile)
 				}
 			}
 		}

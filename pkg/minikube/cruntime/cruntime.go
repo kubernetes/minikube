@@ -136,7 +136,7 @@ func enableIPForwarding(cr CommandRunner) error {
 		return errors.Wrap(err, "br_netfilter.")
 	}
 
-	c = exec.Command("/bin/bash", "-c", "sudo sh -c \"echo 1 > /proc/sys/net/ipv4/ip_forward\"")
+	c = exec.Command("sudo", "sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward")
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "ip_forward.")
 	}
