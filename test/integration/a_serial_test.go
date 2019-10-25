@@ -55,7 +55,14 @@ func TestDownloadOnly(t *testing.T) {
 				// Explicitly does not pass StartArgs() to test driver default
 				// --force to avoid uid check
 				args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v)}
-				rrr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+
+				// Preserve the initial run-result for debugging
+				if rrr == nil {
+					rrr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+				} else {
+					_, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+				}
+
 				if err != nil {
 					t.Errorf("%s failed: %v", args, err)
 				}
