@@ -133,7 +133,6 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	}()
 
 	elapsed := time.Since(start)
-	glog.Infof("%s out=%T %v err=%T %v", cmd, outb, outb, errb, errb)
 	err = teeSSH(sess, shellquote.Join(cmd.Args...), outb, errb)
 	if err == nil {
 		// Reduce log spam
