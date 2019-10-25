@@ -549,6 +549,8 @@ func selectDriver(oldConfig *cfg.Config) string {
 		pick, alts := driver.Choose(options)
 		if len(options) > 1 {
 			out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"driver": pick.Name, "alternates": alts})
+		} else {
+			out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver`, out.V{"driver": pick.Name})
 		}
 
 		if pick.Name == "" {
