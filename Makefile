@@ -484,7 +484,7 @@ gvisor-addon-image: out/gvisor-addon
 
 .PHONY: push-gvisor-addon-image
 push-gvisor-addon-image: gvisor-addon-image
-	gcloud docker -- push $(REGISTRY)/gvisor-addon:latest
+	gcloud docker -- push $(REGISTRY)/gvisor-addon:2
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum
