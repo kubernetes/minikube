@@ -245,13 +245,13 @@ mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
-# Build the gvisor image. This will be copied into minikube and loaded by ctr.
-# Used by TestContainerd for Gvisor Test.
-# TODO: move this to integration test setup.
+
+# Build the gvisor image so that we can integration test changes to pkg/gvisor
 chmod +x ./testdata/gvisor-addon
 # skipping gvisor mac because ofg https://github.com/kubernetes/minikube/issues/5137
 if [ "$(uname)" != "Darwin" ]; then
-  docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile ./testdata
+  # Should match GVISOR_IMAGE_VERSION in Makefile
+  docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
 fi
 
 echo ""
