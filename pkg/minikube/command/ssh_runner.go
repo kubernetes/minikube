@@ -96,16 +96,10 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	glog.Infof("(SSHRunner) Run:  %v", rr.Command())
 
 	var outb, errb io.Writer
-
 	start := time.Now()
-
-	glog.Infof("cmd: %+v", cmd)
-	glog.Infof("stdout: %v", cmd.Stdout)
-	glog.Infof("stderr: %v", cmd.Stderr)
 
 	if cmd.Stdout == nil {
 		var so bytes.Buffer
-		glog.Infof("makin a stdout buffer: %T %v %p", so, so, &so)
 		outb = io.MultiWriter(&so, &rr.Stdout)
 	} else {
 		outb = io.MultiWriter(cmd.Stdout, &rr.Stdout)
@@ -113,7 +107,6 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 	if cmd.Stderr == nil {
 		var se bytes.Buffer
-		glog.Infof("makin a stderr buffer: %T %v %p", se, se, &se)
 		errb = io.MultiWriter(&se, &rr.Stderr)
 	} else {
 		errb = io.MultiWriter(cmd.Stderr, &rr.Stderr)
