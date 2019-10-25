@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -157,7 +156,8 @@ func (r *Docker) StopContainers(ids []string) error {
 		return nil
 	}
 	glog.Infof("Stopping containers: %s", ids)
-	c := exec.Command("docker", "stop", shellquote.Join(ids...))
+	args := append([]string{"stop"}, ids...)
+	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "stopping containers docker.")
 	}
