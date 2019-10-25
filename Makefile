@@ -62,6 +62,8 @@ GOLINT_OPTIONS = --timeout 4m \
 	  --enable goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain'
 
+# Major version of gvisor image. Increment when there are breaking changes.
+GVISOR_IMAGE_VERSION ?= 2
 
 export GO111MODULE := on
 
@@ -480,11 +482,11 @@ out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translati
 
 .PHONY: gvisor-addon-image
 gvisor-addon-image: out/gvisor-addon
-	docker build -t $(REGISTRY)/gvisor-addon:latest -f deploy/gvisor/Dockerfile .
+	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_IMAGE_VERSION) -f deploy/gvisor/Dockerfile .
 
 .PHONY: push-gvisor-addon-image
 push-gvisor-addon-image: gvisor-addon-image
-	gcloud docker -- push $(REGISTRY)/gvisor-addon:latest
+	gcloud docker -- push $(REGISTRY)/gvisor-addon:$(GVISOR_IMAGE_VERSION)
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum
