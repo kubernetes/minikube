@@ -12,6 +12,8 @@ matrix:
     - language: go
       name: Code Lint
       go: 1.12.12
+      env:
+        - TESTSUITE=lintall
       before_install:
         - sudo apt-get install -y libvirt-dev
       script: make test
