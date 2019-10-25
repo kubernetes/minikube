@@ -552,7 +552,7 @@ func selectDriver(oldConfig *cfg.Config) string {
 		}
 
 		if pick.Name == "" {
-			exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --vm-driver, or visiting https://minikube.sigs.k8s.io/docs/start/")
+			exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --vm-driver, or see https://minikube.sigs.k8s.io/docs/start/")
 		}
 
 		name = pick.Name
