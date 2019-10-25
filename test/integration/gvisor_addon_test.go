@@ -35,6 +35,13 @@ func TestGvisorAddon(t *testing.T) {
 	profile := UniqueProfileName("gvisor")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
 	defer func() {
+		if t.Failed() {
+			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "gvisor", "-n", "kube-system"))
+			if err != nil {
+				t.Logf("failed to get gvisor post-mortem logs: %v", err)
+			}
+			t.Logf("gvisor post-mortem: %s:\n%s\n", rr.Command(), rr.Output())
+		}
 		CleanupWithLogs(t, profile, cancel)
 	}()
 
