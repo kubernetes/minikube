@@ -141,7 +141,7 @@ func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "getting kublet status. command: %q", rr.Command())
 	}
-	s := strings.TrimSpace(rr.Stdout.String() + rr.Stderr.String())
+	s := strings.TrimSpace(rr.Stdout.String())
 	switch s {
 	case "active":
 		return state.Running.String(), nil
