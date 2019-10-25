@@ -111,6 +111,7 @@ func Choose(options []registry.DriverState) (registry.DriverState, []registry.Dr
 			continue
 		}
 		if ds.Priority > pick.Priority {
+			glog.V(1).Infof("%q has a higher priority (%d) than %q (%d)", ds.Name, ds.Priority, pick.Name, pick.Priority)
 			pick = ds
 		}
 	}

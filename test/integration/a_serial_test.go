@@ -40,6 +40,10 @@ func TestDownloadOnly(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer Cleanup(t, profile, cancel)
 
+	// Stores the startup run result for later error messages
+	var rrr *RunResult
+	var err error
+
 	t.Run("group", func(t *testing.T) {
 		versions := []string{
 			constants.OldestKubernetesVersion,
@@ -51,7 +55,14 @@ func TestDownloadOnly(t *testing.T) {
 				// Explicitly does not pass StartArgs() to test driver default
 				// --force to avoid uid check
 				args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v)}
-				rrr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+
+				// Preserve the initial run-result for debugging
+				if rrr == nil {
+					rrr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+				} else {
+					_, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+				}
+
 				if err != nil {
 					t.Errorf("%s failed: %v", args, err)
 				}
@@ -74,34 +85,36 @@ func TestDownloadOnly(t *testing.T) {
 						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
 					}
 				}
-
-				// Checking if the default driver meets expectations
-				if ExpectedDefaultDriver() == "" {
-					t.Logf("--expected-default-driver=%q, continuing", ExpectedDefaultDriver())
-					return
-				}
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
-				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
-				}
-				var ps map[string][]config.Profile
-				err = json.Unmarshal(rr.Stdout.Bytes(), &ps)
-				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
-				}
-
-				got := ""
-				for _, p := range ps["valid"] {
-					if p.Name == profile {
-						got = p.Config.MachineConfig.VMDriver
-					}
-				}
-
-				if got != ExpectedDefaultDriver() {
-					t.Errorf("got driver %q, expected %q\nstart output: %s", got, ExpectedDefaultDriver(), rrr.Output())
-				}
 			})
 		}
+
+		// Check that the profile we've created has the expected driver
+		t.Run("ExpectedDefaultDriver", func(t *testing.T) {
+			if ExpectedDefaultDriver() == "" {
+				t.Skipf("--expected-default-driver is unset, skipping test")
+				return
+			}
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+			if err != nil {
+				t.Errorf("%s failed: %v", rr.Args, err)
+			}
+			var ps map[string][]config.Profile
+			err = json.Unmarshal(rr.Stdout.Bytes(), &ps)
+			if err != nil {
+				t.Errorf("%s failed: %v", rr.Args, err)
+			}
+
+			got := ""
+			for _, p := range ps["valid"] {
+				if p.Name == profile {
+					got = p.Config.MachineConfig.VMDriver
+				}
+			}
+
+			if got != ExpectedDefaultDriver() {
+				t.Errorf("got driver %q, expected %q\nstart output: %s", got, ExpectedDefaultDriver(), rrr.Output())
+			}
+		})
 
 		// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
 		t.Run("DeleteAll", func(t *testing.T) {
