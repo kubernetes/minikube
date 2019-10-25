@@ -17,6 +17,8 @@ limitations under the License.
 package registry
 
 import (
+	"os"
+
 	"github.com/golang/glog"
 )
 
@@ -54,12 +56,16 @@ func Driver(name string) DriverDef {
 // Installed returns a list of installed drivers in the global registry
 func Installed() []DriverState {
 	sts := []DriverState{}
+	glog.Infof("Querying for installed drivers using PATH=%s", os.Getenv("PATH"))
+
 	for _, d := range globalRegistry.List() {
 		if d.Status == nil {
 			glog.Errorf("%q does not implement Status", d.Name)
 			continue
 		}
 		s := d.Status()
+		glog.Infof("%s priority: %d, state: %+v", d.Name, d.Priority, s)
+
 		if !s.Installed {
 			glog.Infof("%q not installed: %v", d.Name, s.Error)
 			continue
