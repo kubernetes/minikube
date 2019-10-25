@@ -123,7 +123,7 @@ func (r *Docker) KubeletOptions() map[string]string {
 // ListContainers returns a list of containers
 func (r *Docker) ListContainers(filter string) ([]string, error) {
 	filter = KubernetesContainerPrefix + filter
-	rr, err := r.Runner.RunCmd(exec.Command("docker", "ps", "-a", fmt.Sprintf(`--filter="name=%s"`, filter), "--format=\"{{.ID}}\""))
+	rr, err := r.Runner.RunCmd(exec.Command("docker", "ps", "-a", fmt.Sprintf("--filter=name=%s", filter), "--format=\"{{.ID}}\""))
 	if err != nil {
 		return nil, errors.Wrapf(err, "docker ListContainers. ")
 	}
