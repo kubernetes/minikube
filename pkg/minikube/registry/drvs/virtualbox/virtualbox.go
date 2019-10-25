@@ -23,7 +23,6 @@ import (
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -66,15 +65,26 @@ func configure(mc config.MachineConfig) interface{} {
 }
 
 func status() registry.State {
-	path, err := exec.LookPath("vboxmanage")
+	// Re-use this function as it's particularly helpful for Windows
+	tryPath := driver.VBoxManagePath()
+	path, err := exec.LookPath(tryPath)
 	if err != nil {
-		return registry.State{Error: errors.Wrap(err, "vboxmanage path check"), Fix: "Install VirtualBox", Doc: docURL}
+		return registry.State{
+			Error: fmt.Errorf("unable to find VBoxManage in $PATH"),
+			Fix:   "Install VirtualBox",
+			Doc:   docURL,
+		}
 	}
 
 	cmd := exec.Command(path, "list", "hostinfo")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return registry.State{Installed: true, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Install the latest version of VirtualBox", Doc: docURL}
+		return registry.State{
+			Installed: true,
+			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out),
+			Fix:       "Install the latest version of VirtualBox",
+			Doc:       docURL,
+		}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
