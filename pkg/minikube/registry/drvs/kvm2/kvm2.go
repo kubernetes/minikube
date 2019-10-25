@@ -87,22 +87,31 @@ func configure(mc config.MachineConfig) interface{} {
 }
 
 func status() registry.State {
-	path, err := exec.LookPath("virt-host-validate")
+	path, err := exec.LookPath("virsh")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install libvirt", Doc: docURL}
 	}
 
-	cmd := exec.Command(path, "qemu")
+	cmd := exec.Command(path, "domcapabilities", "--virttype", "kvm")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return registry.State{Installed: true, Error: fmt.Errorf("validate failed:\n%s", out), Fix: fmt.Sprintf("Check output of '%s'", strings.Join(cmd.Args, " ")), Doc: docURL}
+		return registry.State{
+			Installed: true,
+			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), strings.TrimSpace(string(out))),
+			Fix:       "Follow your Linux distribution instructions for configuring KVM",
+			Doc:       docURL,
+		}
 	}
 
 	cmd = exec.Command("virsh", "list")
 	out, err = cmd.CombinedOutput()
 	if err != nil {
-		return registry.State{Installed: true, Error: fmt.Errorf("virsh failed:\n%s", out), Fix: fmt.Sprintf("Check output of '%s'", strings.Join(cmd.Args, " ")), Doc: docURL}
+		return registry.State{
+			Installed: true,
+			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), strings.TrimSpace(string(out))),
+			Fix:       "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group",
+			Doc:       docURL,
+		}
 	}
-
 	return registry.State{Installed: true, Healthy: true}
 }
