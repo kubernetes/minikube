@@ -19,6 +19,10 @@ package driver
 import (
 	"fmt"
 	"os"
+	"sort"
+
+	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 const (
@@ -31,6 +35,11 @@ const (
 	VMwareFusion = "vmwarefusion"
 	HyperV       = "hyperv"
 	Parallels    = "parallels"
+)
+
+var (
+	// systemdResolvConf is path to systemd's DNS configuration. https://github.com/kubernetes/minikube/issues/3511
+	systemdResolvConf = "/run/systemd/resolve/resolv.conf"
 )
 
 // SupportedDrivers returns a list of supported drivers
@@ -62,14 +71,12 @@ type FlagHints struct {
 // FlagDefaults returns suggested defaults based on a driver
 func FlagDefaults(name string) FlagHints {
 	if name != None {
-		return FlagHints{}
+		return FlagHints{CacheImages: true}
 	}
 
-	// for more info see: https://github.com/kubernetes/minikube/issues/3511
-	f := "/run/systemd/resolve/resolv.conf"
 	extraOpts := ""
-	if _, err := os.Stat(f); err == nil {
-		extraOpts = fmt.Sprintf("kubelet.resolv-conf=%s", f)
+	if _, err := os.Stat(systemdResolvConf); err == nil {
+		extraOpts = fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
 	}
 	return FlagHints{
 		ExtraOptions: extraOpts,
@@ -77,7 +84,50 @@ func FlagDefaults(name string) FlagHints {
 	}
 }
 
-// Default returns the default driver on this hos
-func Default() string {
-	return VirtualBox
+// Choices returns a list of drivers which are possible on this system
+func Choices() []registry.DriverState {
+	options := []registry.DriverState{}
+	for _, ds := range registry.Installed() {
+		if !ds.State.Healthy {
+			glog.Warningf("%q is installed, but unhealthy: %v", ds.Name, ds.State.Error)
+			continue
+		}
+		options = append(options, ds)
+	}
+
+	// Descending priority for predictability and appearance
+	sort.Slice(options, func(i, j int) bool {
+		return options[i].Priority > options[j].Priority
+	})
+	return options
+}
+
+// Choose returns a suggested driver from a set of options
+func Choose(options []registry.DriverState) (registry.DriverState, []registry.DriverState) {
+	pick := registry.DriverState{}
+	for _, ds := range options {
+		if ds.Priority <= registry.Discouraged {
+			glog.Infof("not recommending %q due to priority: %d", ds.Name, ds.Priority)
+			continue
+		}
+		if ds.Priority > pick.Priority {
+			glog.V(1).Infof("%q has a higher priority (%d) than %q (%d)", ds.Name, ds.Priority, pick.Name, pick.Priority)
+			pick = ds
+		}
+	}
+
+	alternates := []registry.DriverState{}
+	for _, ds := range options {
+		if ds != pick {
+			alternates = append(alternates, ds)
+		}
+	}
+	glog.Infof("Picked: %+v", pick)
+	glog.Infof("Alternatives: %+v", alternates)
+	return pick, alternates
+}
+
+// Status returns the status of a driver
+func Status(name string) registry.State {
+	return registry.Status(name)
 }

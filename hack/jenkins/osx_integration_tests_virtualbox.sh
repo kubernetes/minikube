@@ -30,6 +30,10 @@ VM_DRIVER="virtualbox"
 JOB_NAME="VirtualBox_macOS"
 EXTRA_ARGS="--bootstrapper=kubeadm"
 PARALLEL_COUNT=3
+# hyperkit behaves better, so it has higher precedence.
+# Assumes that hyperkit is also installed on the VirtualBox CI host.
+EXPECTED_DEFAULT_DRIVER="hyperkit"
+
 
 # Download files and set permissions
 source common.sh

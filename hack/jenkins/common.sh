@@ -256,11 +256,14 @@ fi
 
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
+set -x
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
+  -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
   -test.timeout=60m \
   -test.parallel=${PARALLEL_COUNT} \
   -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 

@@ -16,12 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package vmwarefusion
+package parallels
 
 import (
 	"fmt"
+	"os/exec"
 
-	"github.com/docker/machine/drivers/vmwarefusion"
+	parallels "github.com/Parallels/docker-machine-parallels"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -30,27 +31,32 @@ import (
 )
 
 func init() {
-	if err := registry.Register(registry.DriverDef{
-		Name:          driver.VMwareFusion,
-		Builtin:       true,
-		ConfigCreator: createVMwareFusionHost,
-		DriverCreator: func() drivers.Driver {
-			return vmwarefusion.NewDriver("", "")
-		},
-	}); err != nil {
-		panic(fmt.Sprintf("register: %v", err))
+	err := registry.Register(registry.DriverDef{
+		Name:     driver.Parallels,
+		Config:   configure,
+		Status:   status,
+		Priority: registry.Default,
+		Init:     func() drivers.Driver { return parallels.NewDriver("", "") },
+	})
+	if err != nil {
+		panic(fmt.Sprintf("unable to register: %v", err))
 	}
+
 }
 
-func createVMwareFusionHost(config cfg.MachineConfig) interface{} {
-	d := vmwarefusion.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*vmwarefusion.Driver)
+func configure(config cfg.MachineConfig) interface{} {
+	d := parallels.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*parallels.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = config.DiskSize
-
-	// TODO(philips): push these defaults upstream to fixup this driver
-	d.SSHPort = 22
-	d.ISO = d.ResolveStorePath("boot2docker.iso")
 	return d
+}
+
+func status() registry.State {
+	_, err := exec.LookPath("docker-machine-driver-parallels")
+	if err != nil {
+		return registry.State{Error: err, Fix: "Install docker-machine-driver-parallels", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/parallels/"}
+	}
+	return registry.State{Installed: true, Healthy: true}
 }
