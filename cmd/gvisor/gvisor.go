@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"flag"
 	"log"
 	"os"
 
@@ -25,8 +24,6 @@ import (
 )
 
 func main() {
-	flag.Parse()
-
 	if err := gvisor.Enable(); err != nil {
 		log.Print(err)
 		os.Exit(1)
