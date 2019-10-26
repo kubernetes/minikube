@@ -400,8 +400,8 @@ image-endpoint: unix://{{.Socket}}
 		return err
 	}
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(cPath), b.String(), cPath))
-	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "populateCRIConfig")
+	if rr, err := cr.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "Run: %q", rr.Command())
 	}
 	return nil
 }
