@@ -57,7 +57,7 @@ func status() registry.State {
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install docker-machine-driver-vmware", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/"}
 	}
-	_, err := exec.LookPath("vmrun")
+	_, err = exec.LookPath("vmrun")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install vmrun", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/"}
 	}
