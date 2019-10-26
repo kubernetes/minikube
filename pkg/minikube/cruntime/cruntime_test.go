@@ -210,7 +210,7 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 	case "ps":
 		// ps -a --filter="name=apiserver" --format="{{.ID}}"
 		if args[1] == "-a" && strings.HasPrefix(args[2], "--filter") {
-			filter := strings.Split(args[2], `"`)[1]
+			filter := strings.Split(args[2], `r=`)[1]
 			fname := strings.Split(filter, "=")[1]
 			ids := []string{}
 			f.t.Logf("fake docker: Looking for containers matching %q", fname)
