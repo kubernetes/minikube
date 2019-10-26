@@ -51,10 +51,10 @@ func TestGvisorAddon(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	// TODO: Re-examine if we should be pulling in an image which users don't normally invoke
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", "gcr.io/k8s-minikube/gvisor-addon:latest"))
+	// If it exists, include a locally built gvisor image
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", "gcr.io/k8s-minikube/gvisor-addon:2"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Logf("%s failed: %v (won't test local image)", rr.Args, err)
 	}
 
 	// NOTE: addons are global, but the addon must assert that the runtime is containerd
