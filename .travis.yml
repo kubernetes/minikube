@@ -4,6 +4,9 @@ os: linux
 language: go
 go:
   - 1.12.12
+cache:
+  directories:
+    - $GOPATH/pkg/mod
 env:
   global:
     - GOPROXY=https://proxy.golang.org
