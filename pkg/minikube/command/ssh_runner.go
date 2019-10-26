@@ -191,19 +191,15 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 
 // teePrefix copies bytes from a reader to writer, logging each new line.
 func teePrefix(prefix string, r io.Reader, w io.Writer, logger func(format string, args ...interface{})) error {
-	glog.Infof("prefix=%s, writer=%T %v", prefix, w, w)
 	scanner := bufio.NewScanner(r)
 	scanner.Split(bufio.ScanBytes)
 	var line bytes.Buffer
 
 	for scanner.Scan() {
-		glog.Infof("%s scan start ------", prefix)
 		b := scanner.Bytes()
-		glog.Infof("writing %d bytes to %T %v: %s", len(b), w, w, b)
 		if _, err := w.Write(b); err != nil {
 			return err
 		}
-		glog.Infof("written!")
 		if bytes.IndexAny(b, "\r\n") == 0 {
 			if line.Len() > 0 {
 				logger("%s%s", prefix, line.String())
@@ -211,9 +207,7 @@ func teePrefix(prefix string, r io.Reader, w io.Writer, logger func(format strin
 			}
 			continue
 		}
-		glog.Infof("copying to line...")
 		line.Write(b)
-		glog.Infof("%s scan end ------", prefix)
 	}
 	// Catch trailing output in case stream does not end with a newline
 	if line.Len() > 0 {

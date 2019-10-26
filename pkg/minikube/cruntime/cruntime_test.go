@@ -317,16 +317,12 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 }
 
 // systemctl is a fake implementation of systemctl
-func (f *FakeRunner) systemctl(args []string, root bool) (string, error) {
+func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // nolint result 0 (string) is always ""
 	action := args[0]
 	svcs := args[1:]
 	out := ""
 
 	for i, arg := range args {
-		// shamelessly useless if statement, only to suppress the lint : - result 0 (string) is always ""
-		if arg == "unknown" {
-			out = "unknown"
-		}
 		// systemctl is-active --quiet service crio
 		if arg == "service" {
 			svcs = args[i+1:]

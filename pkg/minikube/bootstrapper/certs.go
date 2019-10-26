@@ -320,10 +320,9 @@ func collectCACerts() (map[string]string, error) {
 
 // getSubjectHash calculates Certificate Subject Hash for creating certificate symlinks
 func getSubjectHash(cr command.Runner, filePath string) (string, error) {
-	c := exec.Command("openssl", "x509", "-hash", "-noout", "-in", filePath)
-	rr, err := cr.RunCmd(c)
+	rr, err := cr.RunCmd(exec.Command("openssl", "x509", "-hash", "-noout", "-in", filePath))
 	if err != nil {
-		return "", errors.Wrapf(err, "getSubjectHash")
+		return "", errors.Wrapf(err, rr.Command())
 	}
 	stringHash := strings.TrimSpace(rr.Stdout.String())
 	return stringHash, nil

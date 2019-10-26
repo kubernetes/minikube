@@ -300,9 +300,9 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 // adjustResourceLimits makes fine adjustments to pod resources that aren't possible via kubeadm config.
 func (k *Bootstrapper) adjustResourceLimits() error {
-	rr, err := k.c.RunCmd(exec.Command("cat", "/proc/$(pgrep kube-apiserver)/oom_adj"))
+	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "cat /proc/$(pgrep kube-apiserver)/oom_adj"))
 	if err != nil {
-		return errors.Wrap(err, "oom_adj check. command: %q output: %q")
+		return errors.Wrapf(err, "oom_adj check cmd %s. ", rr.Command())
 	}
 	glog.Infof("apiserver oom_adj: %s", rr.Stdout.String())
 	// oom_adj is already a negative number

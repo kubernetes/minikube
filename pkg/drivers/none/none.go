@@ -26,7 +26,6 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
@@ -173,8 +172,8 @@ func (d *Driver) Remove() error {
 		return errors.Wrap(err, "kill")
 	}
 	glog.Infof("Removing: %s", cleanupPaths)
-	c := exec.Command("sudo", "rm", "-rf", shellquote.Join(cleanupPaths...))
-	if _, err := d.exec.RunCmd(c); err != nil {
+	args := append([]string{"rm", "-rf"}, cleanupPaths...)
+	if _, err := d.exec.RunCmd(exec.Command("sudo", args...)); err != nil {
 		glog.Errorf("cleanup incomplete: %v", err)
 	}
 	return nil
@@ -225,15 +224,15 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 func stopKubelet(cr command.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
 	stop := func() error {
-		cmdStop := exec.Command("sudo", "systemctl", "stop", "kubelet.service")
-		if rr, err := cr.RunCmd(cmdStop); err != nil {
+		cmd := exec.Command("sudo", "systemctl", "stop", "kubelet.service")
+		if rr, err := cr.RunCmd(cmd); err != nil {
 			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
 		}
 		var out bytes.Buffer
-		cmdCheck := exec.Command("sudo", "systemctl", "show", "-p", "SubState", "kubelet")
-		cmdCheck.Stdout = &out
-		cmdCheck.Stderr = &out
-		if rr, err := cr.RunCmd(cmdCheck); err != nil {
+		cmd = exec.Command("sudo", "systemctl", "show", "-p", "SubState", "kubelet")
+		cmd.Stdout = &out
+		cmd.Stderr = &out
+		if rr, err := cr.RunCmd(cmd); err != nil {
 			glog.Errorf("temporary error: for %q : %v", rr.Command(), err)
 		}
 		if !strings.Contains(out.String(), "dead") && !strings.Contains(out.String(), "failed") {
@@ -254,7 +253,7 @@ func restartKubelet(cr command.Runner) error {
 	glog.Infof("restarting kubelet.service ...")
 	c := exec.Command("sudo", "systemctl", "restart", "kubelet.service")
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "restartKubelet")
+		return err
 	}
 	return nil
 }
