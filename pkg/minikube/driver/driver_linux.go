@@ -30,6 +30,7 @@ var supportedDrivers = []string{
 	None,
 }
 
+// VBoxManagePath returns the path to the VBoxManage command
 func VBoxManagePath() string {
 	cmd := "VBoxManage"
 	if path, err := exec.LookPath(cmd); err == nil {
