@@ -61,13 +61,13 @@ const (
 func DeleteAll(profiles []*config.Profile) []error {
 	var errs []error
 	for _, profile := range profiles {
-		err := delete(profile)
+		err := deleteOne(profile)
 
 		if err != nil {
 			mm, loadErr := cluster.LoadMachine(profile.Name)
 
 			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
-				invalidProfileDeletionErrs := DeleteInvalid(profile)
+				invalidProfileDeletionErrs := deleteInvalid(profile)
 				if len(invalidProfileDeletionErrs) > 0 {
 					errs = append(errs, invalidProfileDeletionErrs...)
 				}
@@ -79,7 +79,7 @@ func DeleteAll(profiles []*config.Profile) []error {
 	return errs
 }
 
-func delete(profile *config.Profile) error {
+func deleteOne(profile *config.Profile) error {
 	viper.Set(config.MachineProfile, profile.Name)
 
 	api, err := machine.NewAPIClient()
@@ -144,7 +144,7 @@ func delete(profile *config.Profile) error {
 	return nil
 }
 
-func DeleteInvalid(profile *config.Profile) []error {
+func deleteInvalid(profile *config.Profile) []error {
 	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
