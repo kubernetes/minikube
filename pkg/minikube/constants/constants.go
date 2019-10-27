@@ -35,33 +35,6 @@ const (
 	ClusterDNSDomain = "cluster.local"
 )
 
-// DriverMock is a mock driver.
-const DriverMock = "mock-driver"
-
-// DriverNone is the none driver.
-const DriverNone = "none"
-
-// DriverKvm2 is the kvm2 driver option name for in linux
-const DriverKvm2 = "kvm2"
-
-// DriverVirtualbox is the virtualbox driver option name
-const DriverVirtualbox = "virtualbox"
-
-// DriverHyperkit is the hyperkit driver option name for mac os
-const DriverHyperkit = "hyperkit"
-
-// DriverVmware is the vmware driver option name
-const DriverVmware = "vmware"
-
-// DriverVmwareFusion is the vmware fusion driver option
-const DriverVmwareFusion = "vmwarefusion"
-
-// DriverHyperv is the hyperv driver option for windows
-const DriverHyperv = "hyperv"
-
-// DriverParallels is the parallels driver option name
-const DriverParallels = "parallels"
-
 // DefaultMinipath is the default Minikube path (under the home directory)
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
 
@@ -92,10 +65,10 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.16.1"
+var DefaultKubernetesVersion = "v1.16.2"
 
 // NewestKubernetesVersion is the newest Kubernetes version to test against
-var NewestKubernetesVersion = "v1.16.1"
+var NewestKubernetesVersion = "v1.16.2"
 
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
 var OldestKubernetesVersion = "v1.11.10"
