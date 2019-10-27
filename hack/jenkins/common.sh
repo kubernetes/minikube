@@ -165,7 +165,7 @@ if type -P vboxmanage; then
     vboxmanage unregistervm "${guid}" || true
   done
 
-  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ printf $2 }')
+  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ print $2 }')
   for if in $ifaces; do
     vboxmanage hostonlyif remove "${if}" || true
   done
@@ -245,22 +245,25 @@ mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
-# Build the gvisor image. This will be copied into minikube and loaded by ctr.
-# Used by TestContainerd for Gvisor Test.
-# TODO: move this to integration test setup.
+
+# Build the gvisor image so that we can integration test changes to pkg/gvisor
 chmod +x ./testdata/gvisor-addon
 # skipping gvisor mac because ofg https://github.com/kubernetes/minikube/issues/5137
 if [ "$(uname)" != "Darwin" ]; then
-  docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile ./testdata
+  # Should match GVISOR_IMAGE_VERSION in Makefile
+  docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
 fi
 
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
+set -x
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
+  -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
   -test.timeout=60m \
   -test.parallel=${PARALLEL_COUNT} \
   -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
