@@ -106,6 +106,9 @@ CMD_SOURCE_DIRS = cmd pkg
 SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
+SOURCE_GENERATED = pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+SOURCE_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep -v _test.go)
+
 # kvm2 ldflags
 KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT)
 
@@ -139,8 +142,8 @@ else
 endif
 
 
-out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
-	cp $< $@
+out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES)
+	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp $< $@
@@ -157,11 +160,12 @@ minikube-linux-arm64: out/minikube-linux-arm64
 minikube-darwin-amd64: out/minikube-darwin-amd64
 minikube-windows-amd64.exe: out/minikube-windows-amd64.exe
 
-out/minikube-%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go  $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
+out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
-	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" \
+	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
 .PHONY: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
