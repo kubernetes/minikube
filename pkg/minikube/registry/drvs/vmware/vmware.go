@@ -18,6 +18,7 @@ package vmware
 
 import (
 	"fmt"
+	"os/exec"
 
 	vmwcfg "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -28,16 +29,17 @@ import (
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          driver.VMware,
-		Builtin:       false,
-		ConfigCreator: createVMwareHost,
+		Name:     driver.VMware,
+		Config:   configure,
+		Priority: registry.Default,
+		Status:   status,
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
 	}
 }
 
-func createVMwareHost(mc config.MachineConfig) interface{} {
+func configure(mc config.MachineConfig) interface{} {
 	d := vmwcfg.NewConfig(config.GetMachineName(), localpath.MiniPath())
 	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
 	d.Memory = mc.Memory
@@ -48,4 +50,16 @@ func createVMwareHost(mc config.MachineConfig) interface{} {
 	d.SSHPort = 22
 	d.ISO = d.ResolveStorePath("boot2docker.iso")
 	return d
+}
+
+func status() registry.State {
+	_, err := exec.LookPath("docker-machine-driver-vmware")
+	if err != nil {
+		return registry.State{Error: err, Fix: "Install docker-machine-driver-vmware", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/"}
+	}
+	_, err = exec.LookPath("vmrun")
+	if err != nil {
+		return registry.State{Error: err, Fix: "Install vmrun", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/"}
+	}
+	return registry.State{Installed: true, Healthy: true}
 }

@@ -19,6 +19,7 @@ package machine
 import (
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"net"
 	"os"
 	"path/filepath"
@@ -81,17 +82,15 @@ type LocalClient struct {
 
 // NewHost creates a new Host
 func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, error) {
-	var def registry.DriverDef
-	var err error
-	if def, err = registry.Driver(drvName); err != nil {
-		return nil, err
-	} else if !def.Builtin || def.DriverCreator == nil {
+	def := registry.Driver(drvName)
+	if def.Empty() {
+		return nil, fmt.Errorf("driver %q does not exist", drvName)
+	}
+	if def.Init == nil {
 		return api.legacyClient.NewHost(drvName, rawDriver)
 	}
-
-	d := def.DriverCreator()
-
-	err = json.Unmarshal(rawDriver, d)
+	d := def.Init()
+	err := json.Unmarshal(rawDriver, d)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error getting driver %s", string(rawDriver))
 	}
@@ -127,14 +126,14 @@ func (api *LocalClient) Load(name string) (*host.Host, error) {
 		return nil, errors.Wrapf(err, "filestore %q", name)
 	}
 
-	var def registry.DriverDef
-	if def, err = registry.Driver(h.DriverName); err != nil {
-		return nil, err
-	} else if !def.Builtin || def.DriverCreator == nil {
+	def := registry.Driver(h.DriverName)
+	if def.Empty() {
+		return nil, fmt.Errorf("driver %q does not exist", h.DriverName)
+	}
+	if def.Init == nil {
 		return api.legacyClient.Load(name)
 	}
-
-	h.Driver = def.DriverCreator()
+	h.Driver = def.Init()
 	return h, json.Unmarshal(h.RawDriver, h.Driver)
 }
 
@@ -163,9 +162,11 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 
 // Create creates the host
 func (api *LocalClient) Create(h *host.Host) error {
-	if def, err := registry.Driver(h.DriverName); err != nil {
-		return err
-	} else if !def.Builtin || def.DriverCreator == nil {
+	def := registry.Driver(h.DriverName)
+	if def.Empty() {
+		return fmt.Errorf("driver %q does not exist", h.DriverName)
+	}
+	if def.Init == nil {
 		return api.legacyClient.Create(h)
 	}
 
@@ -271,12 +272,9 @@ func (cg *CertGenerator) ValidateCertificate(addr string, authOptions *auth.Opti
 }
 
 func registerDriver(drvName string) {
-	def, err := registry.Driver(drvName)
-	if err != nil {
-		if err == registry.ErrDriverNotFound {
-			exit.UsageT("unsupported or missing driver: {{.name}}", out.V{"name": drvName})
-		}
-		exit.WithError("error getting driver", err)
+	def := registry.Driver(drvName)
+	if def.Empty() {
+		exit.UsageT("unsupported or missing driver: {{.name}}", out.V{"name": drvName})
 	}
-	plugin.RegisterDriver(def.DriverCreator())
+	plugin.RegisterDriver(def.Init())
 }

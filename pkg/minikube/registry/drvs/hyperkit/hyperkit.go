@@ -20,30 +20,38 @@ package hyperkit
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pborman/uuid"
+
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/minikube/driver"
+)
+
+const (
+	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperkit/"
 )
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          driver.HyperKit,
-		Builtin:       false,
-		ConfigCreator: createHyperkitHost,
+		Name:     driver.HyperKit,
+		Config:   configure,
+		Status:   status,
+		Priority: registry.Preferred,
 	}); err != nil {
 		panic(fmt.Sprintf("register: %v", err))
 	}
 }
 
-func createHyperkitHost(config cfg.MachineConfig) interface{} {
-	uuID := config.UUID
-	if uuID == "" {
-		uuID = uuid.NewUUID().String()
+func configure(config cfg.MachineConfig) interface{} {
+	u := config.UUID
+	if u == "" {
+		u = uuid.NewUUID().String()
 	}
 
 	return &hyperkit.Driver{
@@ -58,9 +66,24 @@ func createHyperkitHost(config cfg.MachineConfig) interface{} {
 		CPU:            config.CPUs,
 		NFSShares:      config.NFSShare,
 		NFSSharesRoot:  config.NFSSharesRoot,
-		UUID:           uuID,
+		UUID:           u,
 		VpnKitSock:     config.HyperkitVpnKitSock,
 		VSockPorts:     config.HyperkitVSockPorts,
 		Cmdline:        "loglevel=3 console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes random.trust_cpu=on hw_rng_model=virtio base host=" + cfg.GetMachineName(),
 	}
+}
+
+func status() registry.State {
+	path, err := exec.LookPath("hyperkit")
+	if err != nil {
+		return registry.State{Error: err, Fix: "Run 'brew install hyperkit'", Doc: docURL}
+	}
+
+	cmd := exec.Command(path, "-v")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return registry.State{Installed: true, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Run 'brew install hyperkit'", Doc: docURL}
+	}
+
+	return registry.State{Installed: true, Healthy: true}
 }
