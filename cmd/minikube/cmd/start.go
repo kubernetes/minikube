@@ -974,7 +974,7 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 		}
 	}
 
-	if driver.BareMetal(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) {
 		sshAddr := fmt.Sprintf("%s:22", ip)
 		conn, err := net.Dial("tcp", sshAddr)
 		if err != nil {
