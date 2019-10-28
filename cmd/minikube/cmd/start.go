@@ -1035,9 +1035,9 @@ Suggested workarounds:
 
 	// Try an HTTPS connection to the
 	proxy := os.Getenv("HTTPS_PROXY")
-	opts := "-sS"
+	opts := []string{"-sS"}
 	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
-		opts = fmt.Sprintf("-x %s %s", proxy, opts)
+		opts = append([]string{"-x", proxy}, opts...)
 	}
 
 	repo := viper.GetString(imageRepository)
@@ -1045,7 +1045,8 @@ Suggested workarounds:
 		repo = images.DefaultImageRepo
 	}
 
-	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("curl %s https://%s/", opts, repo))); err != nil {
+	opts = append(opts, fmt.Sprintf("https://%s/", repo))
+	if _, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
 		out.WarningT("VM is unable to connect to the selected image repository: {{.error}}", out.V{"error": err})
 	}
 	return ip
