@@ -36,6 +36,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -495,11 +496,21 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 		if status != "Running" {
 			return false, nil
 		}
-		return true, nil
+		// Make sure apiserver pod is retrievable
+		client, err := k.client(k8s)
+		if err != nil {
+			glog.Warningf("get kubernetes client: %v", err)
+			return false, nil
+		}
 
+		_, err = client.CoreV1().Pods("kube-system").Get("kube-apiserver-minikube", metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+
+		return true, nil
 		// TODO: Check apiserver/kubelet logs for fatal errors so that users don't
 		// need to wait minutes to find out their flag didn't work.
-
 	}
 	err = wait.PollImmediate(kconst.APICallRetryInterval, 2*kconst.DefaultControlPlaneTimeout, f)
 	return err
