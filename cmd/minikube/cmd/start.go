@@ -375,7 +375,6 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	if !viper.GetBool(waitUntilHealthy) {
 		// only wait for apiserver if wait=false
-		fmt.Println("only waiting for api server")
 		podsToWaitFor = map[string]struct{}{
 			"apiserver": struct{}{},
 		}
