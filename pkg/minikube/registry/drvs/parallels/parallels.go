@@ -1,4 +1,4 @@
-// +build windows
+// +build darwin
 
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
@@ -16,10 +16,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package hyperv
+package parallels
 
 import (
-	"github.com/docker/machine/drivers/hyperv"
+	"fmt"
+	"os/exec"
+
+	parallels "github.com/Parallels/docker-machine-parallels"
 	"github.com/docker/machine/libmachine/drivers"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -28,26 +31,32 @@ import (
 )
 
 func init() {
-	registry.Register(registry.DriverDef{
-		Name:          driver.HyperV,
-		Builtin:       true,
-		ConfigCreator: createHypervHost,
-		DriverCreator: func() drivers.Driver {
-			return hyperv.NewDriver("", "")
-		},
+	err := registry.Register(registry.DriverDef{
+		Name:     driver.Parallels,
+		Config:   configure,
+		Status:   status,
+		Priority: registry.Default,
+		Init:     func() drivers.Driver { return parallels.NewDriver("", "") },
 	})
+	if err != nil {
+		panic(fmt.Sprintf("unable to register: %v", err))
+	}
+
 }
 
-func createHypervHost(config cfg.MachineConfig) interface{} {
-	d := hyperv.NewDriver(cfg.GetMachineName(), localpath.MiniPath())
-
+func configure(config cfg.MachineConfig) interface{} {
+	d := parallels.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*parallels.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.VSwitch = config.HypervVirtualSwitch
-	d.MemSize = config.Memory
+	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = config.DiskSize
-	d.SSHUser = "docker"
-	d.DisableDynamicMemory = true // default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
-
 	return d
+}
+
+func status() registry.State {
+	_, err := exec.LookPath("docker-machine-driver-parallels")
+	if err != nil {
+		return registry.State{Error: err, Fix: "Install docker-machine-driver-parallels", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/parallels/"}
+	}
+	return registry.State{Installed: true, Healthy: true}
 }

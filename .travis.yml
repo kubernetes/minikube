@@ -9,12 +9,11 @@ env:
     - GOPROXY=https://proxy.golang.org
 matrix:
   include:
-    - language: python
-      name: Check Boilerplate
+    - language: go
+      name: Check Boilerplate 
+      go: 1.12.12
       env:
         - TESTSUITE=boilerplate
-      before_install:
-        - pip install flake8 && flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
       script: make test
 
     - language: go
@@ -36,6 +35,8 @@ matrix:
       script: make test
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+travisBuddy:	
+    regex: (FAIL:|\.go:\d+:|^panic:|failed$)	
 notifications:
   webhooks:
     urls:
