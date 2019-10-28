@@ -368,7 +368,9 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 }
 
 // WaitCluster blocks until Kubernetes appears to be healthy.
-func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
+// if waitForPods is nil, then wait for everything. Otherwise, only
+// wait for pods specified.
+func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Duration, waitForPods map[string]struct{}) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
@@ -377,9 +379,12 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 
 	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
 	// pod shows up as registered, but need the webserver for all subsequent queries.
-	out.String(" apiserver")
-	if err := k.waitForAPIServer(k8s); err != nil {
-		return errors.Wrap(err, "waiting for apiserver")
+
+	if _, ok := waitForPods["apiserver"]; ok || waitForPods == nil {
+		out.String(" apiserver")
+		if err := k.waitForAPIServer(k8s); err != nil {
+			return errors.Wrap(err, "waiting for apiserver")
+		}
 	}
 
 	client, err := k.client(k8s)
@@ -389,6 +394,9 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 
 	for _, p := range PodsByLayer {
 		if componentsOnly && p.key != "component" { // skip component check if network plugin is cni
+			continue
+		}
+		if _, ok := waitForPods[p.name]; waitForPods != nil && !ok {
 			continue
 		}
 		out.String(" %s", p.name)
