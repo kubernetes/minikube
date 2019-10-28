@@ -21,7 +21,9 @@ function prepend() {
   local pattern=$1
   local ref=$2
   local headers=$3
-  local files=$(hack/boilerplate/boilerplate.py --rootdir ${ROOT_DIR} | grep -v "$ignore" | grep "$pattern")
+  pushd hack/boilerplate > /dev/null
+  local files=$(go run boilerplate.go -rootdir ${ROOT_DIR} -boilerplate-dir ${ROOT_DIR}/hack/boilerplate | grep -v "$ignore" | grep "$pattern")
+  popd > /dev/null
   for f in ${files}; do
     echo ${f};
     local copyright="$(cat hack/boilerplate/boilerplate.${ref}.txt | sed s/YEAR/$(date +%Y)/g)"

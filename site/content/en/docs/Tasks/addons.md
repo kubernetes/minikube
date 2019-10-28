@@ -20,10 +20,10 @@ minikube has a set of built-in addons that, when enabled, can be used within Kub
 * [nvidia-driver-installer](https://github.com/GoogleCloudPlatform/container-engine-accelerators/tree/master/nvidia-driver-installer/minikube)
 * [nvidia-gpu-device-plugin](https://github.com/GoogleCloudPlatform/container-engine-accelerators/tree/master/cmd/nvidia_gpu)
 * [logviewer](https://github.com/ivans3/minikube-log-viewer)
-* [gvisor](../deploy/addons/gvisor/README.md)
-* [storage-provisioner-gluster](../deploy/addons/storage-provisioner-gluster/README.md)
-* [helm-tiller](../deploy/addons/helm-tiller/README.md)
-* [ingress-dns](../deploy/addons/ingress-dns/README.md)
+* [gvisor](../../../gvisor/readme/)
+* [storage-provisioner-gluster](../../../storage-provisioner-gluster/readme)
+* [helm-tiller](../../../helm-tiller/readme)
+* [ingress-dns](../../../ingress-dns/readme)
 
 ## Listing available addons
 

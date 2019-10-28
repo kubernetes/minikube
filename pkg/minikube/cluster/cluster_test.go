@@ -22,8 +22,8 @@ import (
 	"testing"
 	"time"
 
-	// Register drivers
-	_ "k8s.io/minikube/pkg/minikube/registry/drvs"
+	// Driver used by testdata
+	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
@@ -47,18 +47,13 @@ func createMockDriverHost(c config.MachineConfig) interface{} {
 
 func RegisterMockDriver(t *testing.T) {
 	t.Helper()
-	_, err := registry.Driver(driver.Mock)
-	// Already registered
-	if err == nil {
+	if !registry.Driver(driver.Mock).Empty() {
 		return
 	}
-	err = registry.Register(registry.DriverDef{
-		Name:          driver.Mock,
-		Builtin:       true,
-		ConfigCreator: createMockDriverHost,
-		DriverCreator: func() drivers.Driver {
-			return &tests.MockDriver{T: t}
-		},
+	err := registry.Register(registry.DriverDef{
+		Name:   driver.Mock,
+		Config: createMockDriverHost,
+		Init:   func() drivers.Driver { return &tests.MockDriver{T: t} },
 	})
 	if err != nil {
 		t.Fatalf("register failed: %v", err)
@@ -103,7 +98,7 @@ func TestCreateHost(t *testing.T) {
 	}
 
 	found := false
-	for _, def := range registry.ListDrivers() {
+	for _, def := range registry.List() {
 		if h.DriverName == def.Name {
 			found = true
 			break
@@ -111,7 +106,7 @@ func TestCreateHost(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatalf("Wrong driver name: %v. It should be among drivers %v", h.DriverName, registry.ListDrivers())
+		t.Fatalf("Wrong driver name: %v. It should be among drivers %v", h.DriverName, registry.List())
 	}
 }
 

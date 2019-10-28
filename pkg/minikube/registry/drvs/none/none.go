@@ -1,3 +1,5 @@
+// +build linux
+
 /*
 Copyright 2018 The Kubernetes Authors All rights reserved.
 
@@ -18,6 +20,7 @@ package none
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/drivers/none"
@@ -29,22 +32,28 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          driver.None,
-		Builtin:       true,
-		ConfigCreator: createNoneHost,
-		DriverCreator: func() drivers.Driver {
-			return none.NewDriver(none.Config{})
-		},
+		Name:     driver.None,
+		Config:   configure,
+		Init:     func() drivers.Driver { return none.NewDriver(none.Config{}) },
+		Status:   status,
+		Priority: registry.Discouraged, // requires root
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
 }
 
-// createNoneHost creates a none Driver from a MachineConfig
-func createNoneHost(mc config.MachineConfig) interface{} {
+func configure(mc config.MachineConfig) interface{} {
 	return none.NewDriver(none.Config{
 		MachineName:      config.GetMachineName(),
 		StorePath:        localpath.MiniPath(),
 		ContainerRuntime: mc.ContainerRuntime,
 	})
+}
+
+func status() registry.State {
+	_, err := exec.LookPath("systemctl")
+	if err != nil {
+		return registry.State{Error: err, Fix: "Use a systemd based Linux distribution", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
+	}
+	return registry.State{Installed: true, Healthy: true}
 }
