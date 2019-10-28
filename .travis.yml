@@ -28,7 +28,7 @@ matrix:
       script: make test
 
     - language: go
-      name: Cross Build
+      name: Build
       go: 1.12.12
       script: make
 after_success:
