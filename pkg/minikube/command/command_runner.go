@@ -54,7 +54,7 @@ func getDeleteFileCommand(f assets.CopyableFile) string {
 // Command returns a human readable command string that does not induce eye fatigue
 func (rr RunResult) Command() string {
 	var sb strings.Builder
-	sb.WriteString(strings.TrimPrefix(rr.Args[0], "../../"))
+	sb.WriteString(rr.Args[0])
 	for _, a := range rr.Args[1:] {
 		if strings.Contains(a, " ") {
 			sb.WriteString(fmt.Sprintf(` "%s"`, a))
