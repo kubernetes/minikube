@@ -30,7 +30,7 @@ matrix:
     - language: go
       name: Cross Build
       go: 1.12.12
-      script: make cross
+      script: make
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 travisBuddy:
