@@ -15,12 +15,12 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 5
-VERSION_BUILD ?= 0-beta.0
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0-beta.0
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
@@ -51,7 +51,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.19.76
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.20.0
+GOLINT_VERSION ?= v1.21.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -59,9 +59,11 @@ GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
 GOLINT_OPTIONS = --timeout 4m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
-	  --enable goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam \
+	  --enable goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain'
 
+# Major version of gvisor image. Increment when there are breaking changes.
+GVISOR_IMAGE_VERSION ?= 2
 
 export GO111MODULE := on
 
@@ -136,16 +138,16 @@ else
 endif
 
 
-out/minikube-linux-x86_64: out/minikube-linux-amd64
-	cp $< $@
-
-out/minikube-linux-aarch64: out/minikube-linux-arm64
-	cp $< $@
-
 out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
 	cp $< $@
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
+	cp $< $@
+
+out/minikube-linux-x86_64: out/minikube-linux-amd64
+	cp $< $@
+
+out/minikube-linux-aarch64: out/minikube-linux-arm64
 	cp $< $@
 
 .PHONY: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
@@ -480,11 +482,11 @@ out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translati
 
 .PHONY: gvisor-addon-image
 gvisor-addon-image: out/gvisor-addon
-	docker build -t $(REGISTRY)/gvisor-addon:latest -f deploy/gvisor/Dockerfile .
+	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_IMAGE_VERSION) -f deploy/gvisor/Dockerfile .
 
 .PHONY: push-gvisor-addon-image
 push-gvisor-addon-image: gvisor-addon-image
-	gcloud docker -- push $(REGISTRY)/gvisor-addon:latest
+	gcloud docker -- push $(REGISTRY)/gvisor-addon:$(GVISOR_IMAGE_VERSION)
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum

@@ -20,30 +20,31 @@ package vmwarefusion
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/pkg/errors"
+
 	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/minikube/driver"
-
 )
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          driver.VMwareFusion,
-		Builtin:       true,
-		ConfigCreator: createVMwareFusionHost,
-		DriverCreator: func() drivers.Driver {
-			return vmwarefusion.NewDriver("", "")
-		},
+		Name:     driver.VMwareFusion,
+		Config:   configure,
+		Status:   status,
+		Init:     func() drivers.Driver { return vmwarefusion.NewDriver("", "") },
+		Priority: registry.Deprecated,
 	}); err != nil {
 		panic(fmt.Sprintf("register: %v", err))
 	}
 }
 
-func createVMwareFusionHost(config cfg.MachineConfig) interface{} {
+func configure(config cfg.MachineConfig) interface{} {
 	d := vmwarefusion.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*vmwarefusion.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
@@ -54,4 +55,12 @@ func createVMwareFusionHost(config cfg.MachineConfig) interface{} {
 	d.SSHPort = 22
 	d.ISO = d.ResolveStorePath("boot2docker.iso")
 	return d
+}
+
+func status() registry.State {
+	_, err := exec.LookPath("vmrun")
+	if err != nil {
+		return registry.State{Error: errors.Wrap(err, "vmrun path check"), Fix: "Install VMWare Fusion", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmwarefusion/"}
+	}
+	return registry.State{Installed: true, Healthy: true}
 }

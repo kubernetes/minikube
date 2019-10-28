@@ -20,27 +20,34 @@ package kvm2
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
+
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
+const (
+	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/"
+)
+
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:          driver.KVM2,
-		Builtin:       false,
-		ConfigCreator: createKVM2Host,
+		Name:     driver.KVM2,
+		Config:   configure,
+		Status:   status,
+		Priority: registry.Preferred,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
 }
 
-// Delete this once the following PR is merged:
-// https://github.com/dhiltgen/docker-machine-kvm/pull/68
+// This is duplicate of kvm.Driver. Avoids importing the kvm2 driver, which requires cgo & libvirt.
 type kvmDriver struct {
 	*drivers.BaseDriver
 
@@ -57,9 +64,9 @@ type kvmDriver struct {
 	ConnectionURI  string
 }
 
-func createKVM2Host(mc config.MachineConfig) interface{} {
+func configure(mc config.MachineConfig) interface{} {
 	name := config.GetMachineName()
-	return &kvmDriver{
+	return kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
 			StorePath:   localpath.MiniPath(),
@@ -77,4 +84,34 @@ func createKVM2Host(mc config.MachineConfig) interface{} {
 		Hidden:         mc.KVMHidden,
 		ConnectionURI:  mc.KVMQemuURI,
 	}
+}
+
+func status() registry.State {
+	path, err := exec.LookPath("virsh")
+	if err != nil {
+		return registry.State{Error: err, Fix: "Install libvirt", Doc: docURL}
+	}
+
+	cmd := exec.Command(path, "domcapabilities", "--virttype", "kvm")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return registry.State{
+			Installed: true,
+			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), strings.TrimSpace(string(out))),
+			Fix:       "Follow your Linux distribution instructions for configuring KVM",
+			Doc:       docURL,
+		}
+	}
+
+	cmd = exec.Command("virsh", "list")
+	out, err = cmd.CombinedOutput()
+	if err != nil {
+		return registry.State{
+			Installed: true,
+			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), strings.TrimSpace(string(out))),
+			Fix:       "Check that libvirtd is properly installed and that you are a member of the appropriate libvirt group",
+			Doc:       docURL,
+		}
+	}
+	return registry.State{Installed: true, Healthy: true}
 }

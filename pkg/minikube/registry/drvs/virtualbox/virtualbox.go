@@ -18,34 +18,38 @@ package virtualbox
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
+
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
-const defaultVirtualboxNicType = "virtio"
+const (
+	defaultVirtualboxNicType = "virtio"
+	docURL                   = "https://minikube.sigs.k8s.io/docs/reference/drivers/virtualbox/"
+)
 
 func init() {
 	err := registry.Register(registry.DriverDef{
-		Name:          driver.VirtualBox,
-		Builtin:       true,
-		ConfigCreator: createVirtualboxHost,
-		DriverCreator: func() drivers.Driver {
-			return virtualbox.NewDriver("", "")
-		},
+		Name:     driver.VirtualBox,
+		Config:   configure,
+		Status:   status,
+		Priority: registry.Fallback,
+		Init:     func() drivers.Driver { return virtualbox.NewDriver("", "") },
 	})
 	if err != nil {
 		panic(fmt.Sprintf("unable to register: %v", err))
 	}
 }
 
-func createVirtualboxHost(mc config.MachineConfig) interface{} {
+func configure(mc config.MachineConfig) interface{} {
 	d := virtualbox.NewDriver(config.GetMachineName(), localpath.MiniPath())
-
 	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
 	d.Memory = mc.Memory
 	d.CPU = mc.CPUs
@@ -57,6 +61,31 @@ func createVirtualboxHost(mc config.MachineConfig) interface{} {
 	d.HostOnlyNicType = defaultVirtualboxNicType
 	d.DNSProxy = mc.DNSProxy
 	d.HostDNSResolver = mc.HostDNSResolver
-
 	return d
+}
+
+func status() registry.State {
+	// Re-use this function as it's particularly helpful for Windows
+	tryPath := driver.VBoxManagePath()
+	path, err := exec.LookPath(tryPath)
+	if err != nil {
+		return registry.State{
+			Error: fmt.Errorf("unable to find VBoxManage in $PATH"),
+			Fix:   "Install VirtualBox",
+			Doc:   docURL,
+		}
+	}
+
+	cmd := exec.Command(path, "list", "hostinfo")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return registry.State{
+			Installed: true,
+			Error:     fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out),
+			Fix:       "Install the latest version of VirtualBox",
+			Doc:       docURL,
+		}
+	}
+
+	return registry.State{Installed: true, Healthy: true}
 }
