@@ -486,14 +486,17 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "app=mysql", 2*time.Minute)
-	if err != nil {
-		t.Errorf("nginx: %v", err)
+	// Retry, as mysqld first comes up without users configured. Scan for names in case of a reschedule.
+	mysql := func() error {
+		names, err := PodWait(ctx, t, profile, "default", "app=mysql", 5*time.Second)
+		if err != nil {
+			return err
+		}
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
+		return err
 	}
-
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+	if err = retry.Expo(mysql, 1*time.Second, 2*time.Minute); err != nil {
+		t.Errorf("mysql failing: %v", err)
 	}
 }
 
