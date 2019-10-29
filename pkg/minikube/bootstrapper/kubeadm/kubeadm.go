@@ -36,6 +36,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -63,6 +64,7 @@ const (
 	defaultCNIConfigPath   = "/etc/cni/net.d/k8s.conf"
 	kubeletServiceFile     = "/lib/systemd/system/kubelet.service"
 	kubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	AllPods                = "ALL_PODS"
 )
 
 const (
@@ -352,7 +354,7 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 
 // client returns a Kubernetes client to use to speak to a kubeadm launched apiserver
 func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientset, error) {
-	// Catch case if WaitCluster was called with a stale ~/.kube/config
+	// Catch case if WaitForPods was called with a stale ~/.kube/config
 	config, err := kapi.ClientConfig(k.contextName)
 	if err != nil {
 		return nil, errors.Wrap(err, "client config")
@@ -367,8 +369,8 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 	return kubernetes.NewForConfig(config)
 }
 
-// WaitCluster blocks until Kubernetes appears to be healthy.
-func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
+// WaitForPods blocks until pods specified in podsToWaitFor appear to be healthy.
+func (k *Bootstrapper) WaitForPods(k8s config.KubernetesConfig, timeout time.Duration, podsToWaitFor []string) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
@@ -377,9 +379,12 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 
 	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
 	// pod shows up as registered, but need the webserver for all subsequent queries.
-	out.String(" apiserver")
-	if err := k.waitForAPIServer(k8s); err != nil {
-		return errors.Wrap(err, "waiting for apiserver")
+
+	if shouldWaitForPod("apiserver", podsToWaitFor) {
+		out.String(" apiserver")
+		if err := k.waitForAPIServer(k8s); err != nil {
+			return errors.Wrap(err, "waiting for apiserver")
+		}
 	}
 
 	client, err := k.client(k8s)
@@ -391,6 +396,9 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 		if componentsOnly && p.key != "component" { // skip component check if network plugin is cni
 			continue
 		}
+		if !shouldWaitForPod(p.name, podsToWaitFor) {
+			continue
+		}
 		out.String(" %s", p.name)
 		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
 		if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector, timeout); err != nil {
@@ -399,6 +407,29 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 	}
 	out.Ln("")
 	return nil
+}
+
+// shouldWaitForPod returns true if:
+// 	1. podsToWaitFor is nil
+// 	2. name is in podsToWaitFor
+// 	3. ALL_PODS is in podsToWaitFor
+// else, return false
+func shouldWaitForPod(name string, podsToWaitFor []string) bool {
+	if podsToWaitFor == nil {
+		return true
+	}
+	if len(podsToWaitFor) == 0 {
+		return false
+	}
+	for _, p := range podsToWaitFor {
+		if p == AllPods {
+			return true
+		}
+		if p == name {
+			return true
+		}
+	}
+	return false
 }
 
 // RestartCluster restarts the Kubernetes cluster configured by kubeadm
@@ -487,11 +518,21 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 		if status != "Running" {
 			return false, nil
 		}
-		return true, nil
+		// Make sure apiserver pod is retrievable
+		client, err := k.client(k8s)
+		if err != nil {
+			glog.Warningf("get kubernetes client: %v", err)
+			return false, nil
+		}
 
+		_, err = client.CoreV1().Pods("kube-system").Get("kube-apiserver-minikube", metav1.GetOptions{})
+		if err != nil {
+			return false, nil
+		}
+
+		return true, nil
 		// TODO: Check apiserver/kubelet logs for fatal errors so that users don't
 		// need to wait minutes to find out their flag didn't work.
-
 	}
 	err = wait.PollImmediate(kconst.APICallRetryInterval, 2*kconst.DefaultControlPlaneTimeout, f)
 	return err
