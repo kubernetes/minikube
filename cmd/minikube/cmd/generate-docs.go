@@ -35,9 +35,6 @@ var generateDocs = &cobra.Command{
 	Example: "minikube generate-docs --path <FOLDER_PATH>",
 	Hidden:  true,
 	Run: func(cmd *cobra.Command, args []string) {
-		if path == "" {
-			exit.UsageT("Please specify a directory to write docs to via the --path flag.")
-		}
 
 		// if directory does not exist
 		docsPath, err := os.Stat(path)
