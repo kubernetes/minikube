@@ -64,6 +64,7 @@ const (
 	defaultCNIConfigPath   = "/etc/cni/net.d/k8s.conf"
 	kubeletServiceFile     = "/lib/systemd/system/kubelet.service"
 	kubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	AllPods                = "ALL_PODS"
 )
 
 const (
@@ -353,7 +354,7 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 
 // client returns a Kubernetes client to use to speak to a kubeadm launched apiserver
 func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientset, error) {
-	// Catch case if WaitCluster was called with a stale ~/.kube/config
+	// Catch case if WaitForPods was called with a stale ~/.kube/config
 	config, err := kapi.ClientConfig(k.contextName)
 	if err != nil {
 		return nil, errors.Wrap(err, "client config")
@@ -368,10 +369,10 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 	return kubernetes.NewForConfig(config)
 }
 
-// WaitCluster blocks until Kubernetes appears to be healthy.
+// WaitForPods blocks until Kubernetes appears to be healthy.
 // if waitForPods is nil, then wait for everything. Otherwise, only
 // wait for pods specified.
-func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Duration, waitForPods map[string]struct{}) error {
+func (k *Bootstrapper) WaitForPods(k8s config.KubernetesConfig, timeout time.Duration, podsToWaitFor []string) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
 	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
@@ -381,7 +382,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
 	// pod shows up as registered, but need the webserver for all subsequent queries.
 
-	if _, ok := waitForPods["apiserver"]; ok || waitForPods == nil {
+	if shouldWaitForPod("apiserver", podsToWaitFor) {
 		out.String(" apiserver")
 		if err := k.waitForAPIServer(k8s); err != nil {
 			return errors.Wrap(err, "waiting for apiserver")
@@ -397,7 +398,7 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 		if componentsOnly && p.key != "component" { // skip component check if network plugin is cni
 			continue
 		}
-		if _, ok := waitForPods[p.name]; waitForPods != nil && !ok {
+		if !shouldWaitForPod(p.name, podsToWaitFor) {
 			continue
 		}
 		out.String(" %s", p.name)
@@ -408,6 +409,24 @@ func (k *Bootstrapper) WaitCluster(k8s config.KubernetesConfig, timeout time.Dur
 	}
 	out.Ln("")
 	return nil
+}
+
+func shouldWaitForPod(name string, podsToWaitFor []string) bool {
+	if podsToWaitFor == nil {
+		return true
+	}
+	if len(podsToWaitFor) == 0 {
+		return false
+	}
+	for _, p := range podsToWaitFor {
+		if p == AllPods {
+			return true
+		}
+		if p == name {
+			return true
+		}
+	}
+	return false
 }
 
 // RestartCluster restarts the Kubernetes cluster configured by kubeadm

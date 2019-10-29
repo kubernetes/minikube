@@ -363,3 +363,45 @@ func TestGenerateConfig(t *testing.T) {
 		}
 	}
 }
+
+func TestShouldWaitForPod(t *testing.T) {
+	tests := []struct {
+		description   string
+		pod           string
+		podsToWaitFor []string
+		expected      bool
+	}{
+		{
+			description: "pods to wait for is nil",
+			pod:         "apiserver",
+			expected:    true,
+		}, {
+			description:   "pods to wait for is empty",
+			pod:           "apiserver",
+			podsToWaitFor: []string{},
+		}, {
+			description:   "pod is in podsToWaitFor",
+			pod:           "apiserver",
+			podsToWaitFor: []string{"etcd", "apiserver"},
+			expected:      true,
+		}, {
+			description:   "pod is not in podsToWaitFor",
+			pod:           "apiserver",
+			podsToWaitFor: []string{"etcd", "gvisor"},
+		}, {
+			description:   "wait for all pods",
+			pod:           "apiserver",
+			podsToWaitFor: []string{"ALL_PODS"},
+			expected:      true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			actual := shouldWaitForPod(test.pod, test.podsToWaitFor)
+			if actual != test.expected {
+				t.Fatalf("unexpected diff: got %t, expected %t", actual, test.expected)
+			}
+		})
+	}
+}
