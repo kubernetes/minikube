@@ -31,7 +31,7 @@ JOB_NAME="KVM_Linux"
 PARALLEL_COUNT=4
 
 mkdir cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron
-install cron/cleanup-and-reboot.linux /etc/cron.hourly/cleanup-and-reboot
+install cron/cleanup-and-reboot_Linux.sh /etc/cron.hourly/cleanup-and-reboot
 
 # Download files and set permissions
 source ./common.sh
