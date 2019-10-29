@@ -108,6 +108,8 @@ Requires= minikube-automount.service docker.socket
 [Service]
 Type=notify
 
+# Automatically set options
+Environment=default-ulimit=nofile=99997:99997
 `
 	if noPivot {
 		log.Warn("Using fundamentally insecure --no-pivot option")
@@ -117,6 +119,7 @@ Environment=DOCKER_RAMDISK=yes
 `
 	}
 	engineConfigTmpl += `
+# Passed in-options
 {{range .EngineOptions.Env}}Environment={{.}}
 {{end}}
 
@@ -133,7 +136,7 @@ ExecReload=/bin/kill -s HUP $MAINPID
 
 # Having non-zero Limit*s causes performance problems due to accounting overhead
 # in the kernel. We recommend using cgroups to do container-local accounting.
-LimitNOFILE=infinity
+LimitNOFILE=1048576
 LimitNPROC=infinity
 LimitCORE=infinity
 
@@ -160,6 +163,7 @@ WantedBy=multi-user.target
 		DockerPort:    dockerPort,
 		AuthOptions:   p.AuthOptions,
 		EngineOptions: p.EngineOptions,
+		//	OpenFilesMax:  cruntime.OpenFilesLimit,
 	}
 
 	escapeSystemdDirectives(&engineConfigContext)
