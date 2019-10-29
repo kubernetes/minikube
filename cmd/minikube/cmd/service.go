@@ -17,8 +17,13 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 	"text/template"
+
+	"github.com/pkg/browser"
+
+	"k8s.io/minikube/pkg/minikube/out"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -68,10 +73,23 @@ var serviceCmd = &cobra.Command{
 		if !cluster.IsMinikubeRunning(api) {
 			os.Exit(1)
 		}
-		err = service.WaitAndMaybeOpenService(api, namespace, svc,
+
+		var urlString []string
+
+		urlString, err = service.WaitForService(api, namespace, svc,
 			serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
 			exit.WithError("Error opening service", err)
+		}
+
+		if len(urlString) != 0 {
+			out.T(out.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+
+			for _, url := range urlString {
+				if err := browser.OpenURL(url); err != nil {
+					exit.WithError(fmt.Sprintf("browser failed to open url %s", url), err)
+				}
+			}
 		}
 	},
 }
