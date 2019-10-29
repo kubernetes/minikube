@@ -50,8 +50,8 @@ systemctl is-active --quiet kubelet \
   && echo "stopping kubelet" \
   && sudo systemctl stop kubelet
 
-mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron
-install cron/cleanup-and-reboot.linux /etc/cron.hourly/cleanup-and-reboot
+mkdir -p cron && gsutil -m rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron
+install cron/cleanup-and-reboot_Linux.sh /etc/cron.hourly/cleanup-and-reboot
 
 # Download files and set permissions
 source ./common.sh
