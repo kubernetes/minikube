@@ -642,8 +642,8 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		}
 	}
 
-	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "set -x;sudo systemctl daemon-reload && sudo systemctl start kubelet")); err != nil {
-		return errors.Wrap(err, "starting kubelet.")
+	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl start kubelet")); err != nil {
+		return errors.Wrap(err, "starting kubelet")
 	}
 	return nil
 }

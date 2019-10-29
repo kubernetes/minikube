@@ -347,19 +347,19 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 		_, err := cr.RunCmd(exec.Command("sudo", "test", "-f", certStorePath))
 		if err != nil {
 			if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-s", caCertFile, certStorePath)); err != nil {
-				return errors.Wrapf(err, "error making symbol link for certificate %s", caCertFile)
+				return errors.Wrapf(err, "create symlink for %s", caCertFile)
 			}
 		}
 		if hasSSLBinary {
 			subjectHash, err := getSubjectHash(cr, caCertFile)
 			if err != nil {
-				return errors.Wrapf(err, "error calculating subject hash for certificate %s", caCertFile)
+				return errors.Wrapf(err, "calculate hash for cacert %s", caCertFile)
 			}
 			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
 			_, err = cr.RunCmd(exec.Command("sudo", "test", "-f", subjectHashLink))
 			if err != nil {
 				if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-s", certStorePath, subjectHashLink)); err != nil {
-					return errors.Wrapf(err, "linking caCertFile %s.", caCertFile)
+					return errors.Wrapf(err, "linking caCertFile %s", caCertFile)
 				}
 			}
 		}

@@ -36,8 +36,8 @@ type RunResult struct {
 
 // Runner represents an interface to run commands.
 type Runner interface {
-	// RunCmd is a new expermintal way to run commands, takes Cmd interface and returns run result.
-	// if succesfull will cause a clean up to get rid of older methods.
+	// RunCmd runs a cmd of exec.Cmd type. allowing user to set cmd.Stdin, cmd.Stdout,...
+	// not all implementors are guaranteed to handle all the properties of cmd.
 	RunCmd(cmd *exec.Cmd) (*RunResult, error)
 
 	// Copy is a convenience method that runs a command to copy a file

@@ -161,7 +161,7 @@ func (r *Containerd) Active() bool {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Containerd) Available() error {
-	c := exec.Command("command", "-v", "containerd")
+	c := exec.Command("which", "containerd")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "check containerd availability.")
 	}
@@ -207,7 +207,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
 	c := exec.Command("sudo", "systemctl", "restart", "containerd")
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "enable containrd.")
+		return errors.Wrap(err, "restart containerd")
 	}
 	return nil
 }
@@ -216,7 +216,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 func (r *Containerd) Disable() error {
 	c := exec.Command("sudo", "systemctl", "stop", "containerd")
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "disable containrd.")
+		return errors.Wrapf(err, "stop containerd")
 	}
 	return nil
 }
@@ -224,9 +224,9 @@ func (r *Containerd) Disable() error {
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	c := exec.Command("ctr", "-n=k8s.io", "images", "import", path)
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "import", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "disable containrd.")
+		return errors.Wrapf(err, "ctr images import")
 	}
 	return nil
 }

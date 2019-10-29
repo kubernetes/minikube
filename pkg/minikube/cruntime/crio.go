@@ -73,7 +73,7 @@ func (r *CRIO) DefaultCNI() bool {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *CRIO) Available() error {
-	c := exec.Command("command", "-v", "crio")
+	c := exec.Command("which", "crio")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "check crio available.")
 	}
@@ -124,7 +124,7 @@ func (r *CRIO) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
 	c := exec.Command("sudo", "podman", "load", "-i", path)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "LoadImage crio.")
+		return errors.Wrap(err, "crio load image")
 	}
 	return nil
 }

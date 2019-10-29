@@ -133,12 +133,12 @@ func disableOthers(me Manager, cr CommandRunner) error {
 func enableIPForwarding(cr CommandRunner) error {
 	c := exec.Command("sudo", "modprobe", "br_netfilter")
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "br_netfilter.")
+		return errors.Wrap(err, "br_netfilter")
 	}
 
 	c = exec.Command("sudo", "sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward")
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "ip_forward.")
+		return errors.Wrapf(err, "ip_forward")
 	}
 	return nil
 }

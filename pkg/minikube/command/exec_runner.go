@@ -18,7 +18,6 @@ package command
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -73,7 +72,7 @@ func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 			rr.ExitCode = exitError.ExitCode()
 		}
 		glog.Infof("(ExecRunner) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
-		err = errors.Wrapf(err, fmt.Sprintf("stderr: %s", rr.Stderr.String()))
+		err = errors.Wrapf(err, "command failed: %s\nstdout: %s\nstderr: %s", cmd, rr.Stdout.String(), rr.Stderr.String())
 	}
 	return rr, err
 }
