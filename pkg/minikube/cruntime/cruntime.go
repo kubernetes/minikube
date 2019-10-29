@@ -25,6 +25,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
+const (
+	// OpenFilesMax is the maximum number of open files allowed by container runtimes. Arbitrary, but commonly used.
+	OpenFilesMax = 1048576
+)
+
 // CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
 	Run(string) error
