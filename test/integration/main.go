@@ -32,7 +32,7 @@ var defaultDriver = flag.String("expected-default-driver", "", "Expected default
 // Flags for faster local integration testing
 var forceProfile = flag.String("profile", "", "force tests to run against a particular profile")
 var cleanup = flag.Bool("cleanup", true, "cleanup failed test run")
-var postMortemLogs = flag.Bool("postmortem-logs", true, "show logs after a failed test run")
+var postMortemLogLines = flag.Int("postmortem-log-lines", 5, "how many lines of logs to show during post-mortem, set to 0 to disable")
 
 // Paths to files - normally set for CI
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")

@@ -175,9 +175,9 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 // CleanupWithLogs cleans up after a test run, fetching logs and deleting the profile
 func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
-	if t.Failed() && *postMortemLogs {
+	if t.Failed() && *postMortemLogLines > 0 {
 		t.Logf("%s failed, collecting logs ...", t.Name())
-		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "-n", "100"))
+		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", fmt.Sprintf("-n%d", *postMortemLogLines)))
 		if err != nil {
 			t.Logf("failed logs error: %v", err)
 		}
