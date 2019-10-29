@@ -376,15 +376,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 
-	var podsToWaitFor map[string]struct{}
+	var podsToWaitFor []string
 
 	if !viper.GetBool(waitUntilHealthy) {
 		// only wait for apiserver if wait=false
-		podsToWaitFor = map[string]struct{}{
-			"apiserver": struct{}{},
-		}
+		podsToWaitFor = []string{"apiserver"}
 	}
-	if err := bs.WaitCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout), podsToWaitFor); err != nil {
+	if err := bs.WaitForPods(config.KubernetesConfig, viper.GetDuration(waitTimeout), podsToWaitFor); err != nil {
 		exit.WithError("Wait failed", err)
 	}
 	if err := showKubectlInfo(kubeconfig, k8sVersion); err != nil {
