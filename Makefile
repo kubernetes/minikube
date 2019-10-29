@@ -572,4 +572,8 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo
 
 .PHONY: out/mkcmp
 out/mkcmp:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/main.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
+
+.PHONY: out/performance-monitor
+out/performance-monitor:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/monitor/monitor.go

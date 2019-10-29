@@ -1,5 +1,5 @@
 /*
-Copyright 2017 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -16,8 +16,25 @@ limitations under the License.
 
 package main
 
-import "k8s.io/minikube/cmd/performance/cmd"
+import (
+	"context"
+	"log"
+	"time"
+)
 
 func main() {
-	cmd.Execute()
+	for {
+		if err := analyzePerformance(context.Background()); err != nil {
+			log.Printf("error executing performance analysis: %v", err)
+		}
+		time.Sleep(10 * time.Minute)
+	}
+}
+
+// analyzePerformance is responsible for:
+//   1. collecting PRs to run performance analysis on
+//   2. running mkcmp against those PRs
+//   3. commenting results on those PRs
+func analyzePerformance(ctx context.Context) error {
+	return nil
 }
