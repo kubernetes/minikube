@@ -229,10 +229,11 @@ func stopKubelet(cr command.Runner) error {
 		cmd = exec.Command("sudo", "systemctl", "show", "-p", "SubState", "kubelet")
 		cmd.Stdout = &out
 		cmd.Stderr = &out
-		if rr, err := cr.RunCmd(cmd); err != nil {
+		rr, err := cr.RunCmd(cmd)
+		if err != nil {
 			glog.Errorf("temporary error: for %q : %v", rr.Command(), err)
 		}
-		if !strings.Contains(out.String(), "dead") && !strings.Contains(out.String(), "failed") {
+		if !strings.Contains(rr.Stdout.String(), "dead") && !strings.Contains(rr.Stdout.String(), "failed") {
 			return fmt.Errorf("unexpected kubelet state: %q", out)
 		}
 		return nil
@@ -260,7 +261,7 @@ func checkKubelet(cr command.Runner) error {
 	glog.Infof("checking for running kubelet ...")
 	c := exec.Command("systemctl", "is-active", "--quiet", "service", "kubelet")
 	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "checkKubelet")
+		return errors.Wrap(err, "check kubelet")
 	}
 	return nil
 }
