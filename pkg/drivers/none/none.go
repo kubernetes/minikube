@@ -17,7 +17,6 @@ limitations under the License.
 package none
 
 import (
-	"bytes"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -225,16 +224,13 @@ func stopKubelet(cr command.Runner) error {
 		if rr, err := cr.RunCmd(cmd); err != nil {
 			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
 		}
-		var out bytes.Buffer
 		cmd = exec.Command("sudo", "systemctl", "show", "-p", "SubState", "kubelet")
-		cmd.Stdout = &out
-		cmd.Stderr = &out
 		rr, err := cr.RunCmd(cmd)
 		if err != nil {
 			glog.Errorf("temporary error: for %q : %v", rr.Command(), err)
 		}
 		if !strings.Contains(rr.Stdout.String(), "dead") && !strings.Contains(rr.Stdout.String(), "failed") {
-			return fmt.Errorf("unexpected kubelet state: %q", out)
+			return fmt.Errorf("unexpected kubelet state: %q", rr.Stdout.String())
 		}
 		return nil
 	}
