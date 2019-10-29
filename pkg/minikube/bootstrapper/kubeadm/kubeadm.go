@@ -369,9 +369,7 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 	return kubernetes.NewForConfig(config)
 }
 
-// WaitForPods blocks until Kubernetes appears to be healthy.
-// if waitForPods is nil, then wait for everything. Otherwise, only
-// wait for pods specified.
+// WaitForPods blocks until pods specified in podsToWaitFor appear to be healthy.
 func (k *Bootstrapper) WaitForPods(k8s config.KubernetesConfig, timeout time.Duration, podsToWaitFor []string) error {
 	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
 	// by a CNI plugin which is usually started after minikube has been brought
@@ -411,6 +409,11 @@ func (k *Bootstrapper) WaitForPods(k8s config.KubernetesConfig, timeout time.Dur
 	return nil
 }
 
+// shouldWaitForPod returns true if:
+// 	1. podsToWaitFor is nil
+// 	2. name is in podsToWaitFor
+// 	3. ALL_PODS is in podsToWaitFor
+// else, return false
 func shouldWaitForPod(name string, podsToWaitFor []string) bool {
 	if podsToWaitFor == nil {
 		return true
