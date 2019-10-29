@@ -60,6 +60,7 @@ func TestFunctional(t *testing.T) {
 		}{
 			{"StartWithProxy", validateStartWithProxy}, // Set everything else up for success
 			{"KubeContext", validateKubeContext},       // Racy: must come immediately after "minikube start"
+			{"KubectlGetPods", validateKubectlGetPods}, // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},             // Caches images needed for subsequent tests because of proxy
 		}
 		for _, tc := range tests {
@@ -139,6 +140,18 @@ func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 	}
 	if !strings.Contains(rr.Stdout.String(), profile) {
 		t.Errorf("current-context = %q, want %q", rr.Stdout.String(), profile)
+	}
+}
+
+// validateKubectlGetPods asserts that `kubectl get pod -A` returns non-zero content
+func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "get", "pod", "-A"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	podName := "kube-apiserver-minikube"
+	if !strings.Contains(rr.Stdout.String(), podName) {
+		t.Errorf("%s is not up in running, got: %s\n", podName, rr.Stdout.String())
 	}
 }
 
