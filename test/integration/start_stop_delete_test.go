@@ -30,7 +30,6 @@ import (
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
 func TestStartStop(t *testing.T) {
@@ -121,7 +120,7 @@ func TestStartStop(t *testing.T) {
 					}
 
 					// Arbitrary value set by some container runtimes. If higher, apps like MySQL may make bad decisions.
-					expected := int64(cruntime.OpenFilesMax)
+					expected := int64(1048576)
 					if got != expected {
 						t.Errorf("'ulimit -n' returned %d, expected %d", got, expected)
 					}
