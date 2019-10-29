@@ -94,6 +94,7 @@ func TestFunctional(t *testing.T) {
 			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
 			{"TunnelCmd", validateTunnelCmd},
 			{"SSHCmd", validateSSHCmd},
+			{"MySQL", validateMySQL},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -297,7 +298,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cache unsupported by none")
 	}
-	for _, img := range []string{"busybox", "busybox:1.28.4-glibc"} {
+	for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "mysql:5.6"} {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Args, err)
@@ -475,6 +476,27 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	if rr.Stdout.String() != want {
 		t.Errorf("%v = %q, want = %q", rr.Args, rr.Stdout.String(), want)
+	}
+}
+
+// validateMySQL validates a minimalist MySQL deployment
+func validateMySQL(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+
+	// Retry, as mysqld first comes up without users configured. Scan for names in case of a reschedule.
+	mysql := func() error {
+		names, err := PodWait(ctx, t, profile, "default", "app=mysql", 5*time.Second)
+		if err != nil {
+			return err
+		}
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
+		return err
+	}
+	if err = retry.Expo(mysql, 1*time.Second, 2*time.Minute); err != nil {
+		t.Errorf("mysql failing: %v", err)
 	}
 }
 
