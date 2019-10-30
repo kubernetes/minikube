@@ -227,7 +227,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 	f := func() (bool, error) {
 		pods, err := client.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
-			t.Logf("WARNING: Pod(%s).List(%v) returned error: %v", ns, selector, err)
+			t.Logf("WARNING: pod list for %q %q returned: %v", ns, selector, err)
 			return false, err
 		}
 		if len(pods.Items) == 0 {
