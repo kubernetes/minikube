@@ -42,21 +42,6 @@ echo "uptime:    $(uptime)"
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 
-readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]" | cut -d" " -f3)
-if [[ "${LOAD}" -gt 2 ]]; then
-  echo ""
-  echo "********************** LOAD WARNING ********************************"
-  echo "Load average is very high (${LOAD}), which may cause failures. Top:"
-  if [[ "$(uname)" == "Darwin" ]]; then
-    # Two samples, macOS does not calculate CPU usage on the first one
-    top -l 2 -o cpu -n 5 | tail -n 15
-  else
-    top -b -n1 | head -n 15
-  fi
-  echo "********************** LOAD WARNING ********************************"
-  echo ""
-fi
-
 case "${VM_DRIVER}" in
   kvm2)
     echo "virsh:     $(virsh --version)"
@@ -159,6 +144,10 @@ if type -P virsh; then
 fi
 
 if type -P vboxmanage; then
+  killall VBoxHeadless || true
+  sleep 1
+  killall -9 VBoxHeadless || true
+
   for guid in $(vboxmanage list vms | grep -Eo '\{[a-zA-Z0-9-]+\}'); do
     echo "- Removing stale VirtualBox VM: $guid"
     vboxmanage startvm "${guid}" --type emergencystop || true
@@ -253,6 +242,25 @@ if [ "$(uname)" != "Darwin" ]; then
   # Should match GVISOR_IMAGE_VERSION in Makefile
   docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
 fi
+
+readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]" | cut -d" " -f3)
+if [[ "${LOAD}" -gt 2 ]]; then
+  echo ""
+  echo "********************** LOAD WARNING ********************************"
+  echo "Load average is very high (${LOAD}), which may cause failures. Top:"
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Two samples, macOS does not calculate CPU usage on the first one
+    top -l 2 -o cpu -n 5 | tail -n 15
+  else
+    top -b -n1 | head -n 15
+  fi
+  echo "********************** LOAD WARNING ********************************"
+  echo ""
+  echo "Sleeping 30s to see if load goes down ...."
+  sleep 30
+  uptime
+fi
+
 
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
