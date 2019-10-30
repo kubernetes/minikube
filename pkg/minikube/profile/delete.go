@@ -19,7 +19,6 @@ package profile
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/golang/glog"
@@ -62,13 +61,13 @@ const (
 func DeleteAll(profiles []*config.Profile) []error {
 	var errs []error
 	for _, profile := range profiles {
-		err := delete(profile)
+		err := deleteOne(profile)
 
 		if err != nil {
 			mm, loadErr := cluster.LoadMachine(profile.Name)
 
 			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
-				invalidProfileDeletionErrs := DeleteInvalid(profile)
+				invalidProfileDeletionErrs := deleteInvalid(profile)
 				if len(invalidProfileDeletionErrs) > 0 {
 					errs = append(errs, invalidProfileDeletionErrs...)
 				}
@@ -80,7 +79,7 @@ func DeleteAll(profiles []*config.Profile) []error {
 	return errs
 }
 
-func delete(profile *config.Profile) error {
+func deleteOne(profile *config.Profile) error {
 	viper.Set(config.MachineProfile, profile.Name)
 
 	api, err := machine.NewAPIClient()
@@ -118,7 +117,10 @@ func delete(profile *config.Profile) error {
 	}
 
 	// In case DeleteHost didn't complete the job.
-	DeleteDirectoryOfProfile(profile.Name)
+	err = cluster.DeleteMachineDirectory(profile.Name)
+	if err != nil {
+		exit.WithError(fmt.Sprintf("unable to delete machine of profile %s", profile.Name), err)
+	}
 
 	if err := config.DeleteProfileDirectory(profile.Name); err != nil {
 		if os.IsNotExist(err) {
@@ -142,7 +144,7 @@ func delete(profile *config.Profile) error {
 	return nil
 }
 
-func DeleteInvalid(profile *config.Profile) []error {
+func deleteInvalid(profile *config.Profile) []error {
 	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
 
 	var errs []error
@@ -206,17 +208,6 @@ func handleMultipleDeletionErrors(errors []error) {
 			glog.Errorln(deletionError.Error())
 		} else {
 			exit.WithError("Could not process errors from failed deletion", err)
-		}
-	}
-}
-
-func DeleteDirectoryOfProfile(profile string) {
-	machineDir := filepath.Join(localpath.MiniPath(), "machines", profile)
-	if _, err := os.Stat(machineDir); err == nil {
-		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
-		err := os.RemoveAll(machineDir)
-		if err != nil {
-			exit.WithError("Unable to remove machine directory: %v", err)
 		}
 	}
 }

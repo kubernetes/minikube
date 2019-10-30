@@ -17,7 +17,9 @@ limitations under the License.
 package cluster
 
 import (
+	"fmt"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/docker/machine/libmachine/host"
@@ -127,4 +129,15 @@ func MachinePath(machine string, miniHome ...string) string {
 		miniPath = miniHome[0]
 	}
 	return filepath.Join(miniPath, "machines", machine)
+}
+
+func DeleteMachineDirectory(machine string) error {
+	machineDir := filepath.Join(localpath.MiniPath(), "machines", machine)
+	if _, err := os.Stat(machineDir); err == nil {
+		err := os.RemoveAll(machineDir)
+		if err != nil {
+			return fmt.Errorf("unable to remove machine directory: %v", err)
+		}
+	}
+	return nil
 }
