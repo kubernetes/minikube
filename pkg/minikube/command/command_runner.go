@@ -17,34 +17,28 @@ limitations under the License.
 package command
 
 import (
+	"bytes"
 	"fmt"
-	"io"
+	"os/exec"
 	"path"
+	"strings"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+// RunResult holds the results of a Runner
+type RunResult struct {
+	Stdout   bytes.Buffer
+	Stderr   bytes.Buffer
+	ExitCode int
+	Args     []string // the args that was passed to Runner
+}
+
 // Runner represents an interface to run commands.
 type Runner interface {
-	// Run starts the specified command and waits for it to complete.
-	Run(cmd string) error
-
-	// CombinedOutputTo runs the command and stores both command
-	// output and error to out. A typical usage is:
-	//
-	//          var b bytes.Buffer
-	//          CombinedOutput(cmd, &b)
-	//          fmt.Println(b.Bytes())
-	//
-	// Or, you can set out to os.Stdout, the command output and
-	// error would show on your terminal immediately before you
-	// cmd exit. This is useful for a long run command such as
-	// continuously print running logs.
-	CombinedOutputTo(cmd string, out io.Writer) error
-
-	// CombinedOutput runs the command and returns its combined standard
-	// output and standard error.
-	CombinedOutput(cmd string) (string, error)
+	// RunCmd runs a cmd of exec.Cmd type. allowing user to set cmd.Stdin, cmd.Stdout,...
+	// not all implementors are guaranteed to handle all the properties of cmd.
+	RunCmd(cmd *exec.Cmd) (*RunResult, error)
 
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
@@ -55,4 +49,30 @@ type Runner interface {
 
 func getDeleteFileCommand(f assets.CopyableFile) string {
 	return fmt.Sprintf("sudo rm %s", path.Join(f.GetTargetDir(), f.GetTargetName()))
+}
+
+// Command returns a human readable command string that does not induce eye fatigue
+func (rr RunResult) Command() string {
+	var sb strings.Builder
+	sb.WriteString(rr.Args[0])
+	for _, a := range rr.Args[1:] {
+		if strings.Contains(a, " ") {
+			sb.WriteString(fmt.Sprintf(` "%s"`, a))
+			continue
+		}
+		sb.WriteString(fmt.Sprintf(" %s", a))
+	}
+	return sb.String()
+}
+
+// Output returns human-readable output for an execution result
+func (rr RunResult) Output() string {
+	var sb strings.Builder
+	if rr.Stdout.Len() > 0 {
+		sb.WriteString(fmt.Sprintf("-- stdout --\n%s\n-- /stdout --", rr.Stdout.Bytes()))
+	}
+	if rr.Stderr.Len() > 0 {
+		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n** /stderr **", rr.Stderr.Bytes()))
+	}
+	return sb.String()
 }
