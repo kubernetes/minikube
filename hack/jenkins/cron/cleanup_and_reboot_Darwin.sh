@@ -21,11 +21,11 @@ PATH=/usr/local/bin:/sbin:/usr/local/sbin:$PATH
 
 exit_if_jenkins() {
   jenkins=$(pgrep java)
-  if [[ "$jenkins" -- "" ]]; then
+  if [[ "${jenkins}" == "" ]]; then
     echo "no java, no jenkins"
     return 0
   fi
-  pstree $jenkins | grep -v java && echo "jenkins is running..." && exit 1
+  pstree "${jenkins}" | grep -v java && echo "jenkins is running..." && exit 1
 }
 
 exit_if_jenkins
