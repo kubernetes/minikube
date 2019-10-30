@@ -34,5 +34,10 @@ EXTRA_ARGS="--bootstrapper=kubeadm"
 EXPECTED_DEFAULT_DRIVER="hyperkit"
 
 
+mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
+install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh  || echo "FAILED TO GET INSTALL CLEANUP"
+echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
+crontab -l
+
 # Download files and set permissions
 source common.sh
