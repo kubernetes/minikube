@@ -300,12 +300,8 @@ func WaitForService(api libmachine.API, namespace string, service string, urlTem
 	}
 
 	for _, bareURLString := range serviceURL.URLs {
-		url, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
-
-		if urlMode || !isHTTPSchemedURL {
-			out.T(out.Empty, url)
-			urlList = append(urlList, url)
-		}
+		url, _ := OptionallyHTTPSFormattedURLString(bareURLString, https)
+		urlList = append(urlList, url)
 	}
 	return urlList, nil
 }

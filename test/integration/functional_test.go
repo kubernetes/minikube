@@ -89,7 +89,7 @@ func TestFunctional(t *testing.T) {
 			{"LogsCmd", validateLogsCmd},
 			{"MountCmd", validateMountCmd},
 			{"ProfileCmd", validateProfileCmd},
-			{"ServicesCmd", validateServicesCmd},
+			{"ServiceCmd", validateServiceCmd},
 			{"AddonsCmd", validateAddonsCmd},
 			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
 			{"TunnelCmd", validateTunnelCmd},
@@ -397,13 +397,58 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 }
 
 // validateServiceCmd asserts basic "service" command functionality
-func validateServicesCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
+func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "hello-minikube", "--restart=Never", "--image=gcr.io/google_containers/echoserver:1.4", "--port=8080"))
+	if err != nil {
+		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-minikube", "--type=NodePort"))
+	if err != nil {
+		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	if !strings.Contains(rr.Stdout.String(), "kubernetes") {
-		t.Errorf("service list got %q, wanted *kubernetes*", rr.Stdout.String())
+	if !strings.Contains(rr.Stdout.String(), "hello-minikube") {
+		t.Errorf("service list got %q, wanted *hello-minikube*", rr.Stdout.String())
+	}
+
+	// Test --https --url mode
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-minikube"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	endpoint := rr.Stdout.String()
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", endpoint, err)
+	}
+	if u.Scheme != "https" {
+		t.Errorf("got scheme: %q, expected: %q", u.Scheme, "https")
+	}
+
+	// Test --format=IP
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-minikube", "--url", "--format={{.IP}}"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	if rr.Stdout.String() != u.Hostname() {
+		t.Errorf("%s = %q, wanted %q", rr.Args, rr.Stdout.String(), u.Hostname())
+	}
+
+	// Test a regular URL
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-minikube", "--url"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	resp, err := retryablehttp.Get(rr.Stdout.String())
+	if err != nil {
+		t.Errorf("get failed: %v\nresp: %v", err, resp)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Errorf("%s = status code %d, want %d", u, resp.StatusCode, http.StatusOK)
 	}
 }
 
