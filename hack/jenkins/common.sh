@@ -262,6 +262,7 @@ ${SUDO_PREFIX}${E2E_BIN} \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
   -test.timeout=60m \
   -test.parallel=${PARALLEL_COUNT} \
+  ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
