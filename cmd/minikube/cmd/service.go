@@ -84,12 +84,12 @@ var serviceCmd = &cobra.Command{
 			_, err := url.Parse(u)
 			if err != nil {
 				glog.Warning("could not parse %v (will not open)", u, err)
-				out.String(u)
+				out.String(fmt.Sprintf("%s\n", u))
 				continue
 			}
 
 			if serviceURLMode {
-				out.String(u)
+				out.String(fmt.Sprintf("%s\n", u))
 				continue
 			}
 			out.T(out.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
