@@ -89,7 +89,7 @@ func TestFunctional(t *testing.T) {
 			{"LogsCmd", validateLogsCmd},
 			{"MountCmd", validateMountCmd},
 			{"ProfileCmd", validateProfileCmd},
-			{"ServicesCmd", validateServicesCmd},
+			{"ServiceCmd", validateServiceCmd},
 			{"AddonsCmd", validateAddonsCmd},
 			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
 			{"TunnelCmd", validateTunnelCmd},
@@ -397,13 +397,77 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 }
 
 // validateServiceCmd asserts basic "service" command functionality
-func validateServicesCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
+func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=gcr.io/hello-minikube-zero-install/hello-node"))
+	if err != nil {
+		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
+	if err != nil {
+		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 4*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	if !strings.Contains(rr.Stdout.String(), "kubernetes") {
-		t.Errorf("service list got %q, wanted *kubernetes*", rr.Stdout.String())
+	if !strings.Contains(rr.Stdout.String(), "hello-node") {
+		t.Errorf("service list got %q, wanted *hello-node*", rr.Stdout.String())
+	}
+
+	// Test --https --url mode
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+	if rr.Stderr.String() != "" {
+		t.Errorf("unexpected stderr output: %s", rr.Stderr)
+	}
+
+	endpoint := strings.TrimSpace(rr.Stdout.String())
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", endpoint, err)
+	}
+	if u.Scheme != "https" {
+		t.Errorf("got scheme: %q, expected: %q", u.Scheme, "https")
+	}
+
+	// Test --format=IP
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	if strings.TrimSpace(rr.Stdout.String()) != u.Hostname() {
+		t.Errorf("%s = %q, wanted %q", rr.Args, rr.Stdout.String(), u.Hostname())
+	}
+
+	// Test a regular URLminikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	endpoint = strings.TrimSpace(rr.Stdout.String())
+	u, err = url.Parse(endpoint)
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", endpoint, err)
+	}
+	if u.Scheme != "http" {
+		t.Fatalf("got scheme: %q, expected: %q", u.Scheme, "http")
+	}
+
+	t.Logf("url: %s", endpoint)
+	resp, err := retryablehttp.Get(endpoint)
+	if err != nil {
+		t.Fatalf("get failed: %v\nresp: %v", err, resp)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("%s = status code %d, want %d", u, resp.StatusCode, http.StatusOK)
 	}
 }
 
