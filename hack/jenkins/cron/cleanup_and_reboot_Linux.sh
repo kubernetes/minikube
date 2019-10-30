@@ -14,28 +14,29 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# cleanup shared between Linux and macOS
 function check_jenkins() {
   jenkins_pid="$(pidof java)"
   if [[ "${jenkins_pid}" = "" ]]; then
           return
   fi
   pstree "${jenkins_pid}" \
-        | grep -v java \
-        && echo "jenkins is running at pid ${jenkins_pid} ..." \
+        | egrep -i 'bash|integration|e2e|minikube' \
+        && echo "tests are is running on pid ${jenkins_pid} ..." \
         && exit 1
 }
 
 check_jenkins
 logger "cleanup_and_reboot running - may shutdown in 60 seconds"
 wall "cleanup_and_reboot running - may shutdown in 60 seconds"
-
-sleep 60
-
+sleep 10
 check_jenkins
 logger "cleanup_and_reboot is happening!"
 
 # kill jenkins to avoid an incoming request
 killall java
+
+# Linux-specific cleanup
 
 # disable localkube, kubelet
 systemctl list-unit-files --state=enabled \
@@ -44,6 +45,4 @@ systemctl list-unit-files --state=enabled \
         | xargs systemctl disable
 
 # update and reboot
-apt update -y \
-        && apt upgrade -y \
-        && reboot
+apt update -y && apt upgrade -y && reboot
