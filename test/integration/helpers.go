@@ -230,7 +230,9 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 		pods, err := client.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
 			t.Logf("WARNING: pod list for %q %q returned: %v", ns, selector, err)
-			return false, err
+			// Don't return the error upwards so that this is retried, in case the apiserver is rescheduled
+			podStart = time.Time{}
+			return false, nil
 		}
 		if len(pods.Items) == 0 {
 			podStart = time.Time{}
