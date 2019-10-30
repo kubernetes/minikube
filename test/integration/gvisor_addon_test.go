@@ -34,8 +34,8 @@ func TestGvisorAddon(t *testing.T) {
 		t.Skip("skipping test because --gvisor=false")
 	}
 
-	MaybeSlowParallel(t)
-
+	MaybeParallel(t)
+	WaitForStartSlot(t)
 	profile := UniqueProfileName("gvisor")
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer func() {

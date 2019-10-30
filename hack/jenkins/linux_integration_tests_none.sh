@@ -30,7 +30,6 @@ OS_ARCH="linux-amd64"
 VM_DRIVER="none"
 JOB_NAME="none_Linux"
 EXTRA_ARGS="--bootstrapper=kubeadm"
-PARALLEL_COUNT=1
 EXPECTED_DEFAULT_DRIVER="kvm2"
 
 SUDO_PREFIX="sudo -E "
