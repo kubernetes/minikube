@@ -36,9 +36,10 @@ SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"
 
 # "none" driver specific cleanup from previous runs.
+sudo kubeadm reset -f || true
+# kubeadm reset may not stop pods immediately
+docker rm -f $(docker ps -aq) >/dev/null 2>&1 || true
 
-# Try without -f first, primarily because older kubeadm versions (v1.10) don't support it anyways.
-sudo kubeadm reset || sudo kubeadm reset -f || true
 # Cleanup data directory
 sudo rm -rf /data/*
 # Cleanup old Kubernetes configs
