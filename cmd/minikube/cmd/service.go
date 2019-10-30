@@ -83,7 +83,7 @@ var serviceCmd = &cobra.Command{
 		for _, u := range urls {
 			_, err := url.Parse(u)
 			if err != nil {
-				glog.Warning("could not parse %v (will not open)", u, err)
+				glog.Warning("unable to parse %s: %v (will not open)", u, err)
 				out.String(fmt.Sprintf("%s\n", u))
 				continue
 			}
