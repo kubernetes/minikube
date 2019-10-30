@@ -28,7 +28,7 @@ function check_jenkins() {
 
 check_jenkins
 logger "cleanup_and_reboot running - may shutdown in 60 seconds"
-wall "cleanup_and_reboot running - may shutdown in 60 seconds"
+echo "cleanup_and_reboot running - may shutdown in 60 seconds" | wall
 sleep 10
 check_jenkins
 logger "cleanup_and_reboot is happening!"
