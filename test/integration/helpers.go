@@ -42,8 +42,10 @@ import (
 )
 
 var (
-	startSchedule = []time.Time{}
-	antiRaceMutex = &sync.Mutex{}
+	// startTimes is a list of startup times, to guarantee --start-offset
+	startTimes = []time.Time{}
+	// startTimesMutex is a lock to update startTimes without a race condition
+	startTimesMutex = &sync.Mutex{}
 )
 
 // RunResult stores the result of an cmd.Run call
@@ -330,31 +332,32 @@ func MaybeParallel(t *testing.T) {
 	t.Parallel()
 }
 
-// MaybeSlowParallel offsets cluster starts by the value of --start-offset
-// TODO: Remove when possible
-func MaybeSlowParallel(t *testing.T) {
-	// NoneDriver shouldn't parallelize "minikube start"
+// WaitForStartSlot enforces --start-offset to avoid startup race conditions
+func WaitForStartSlot(t *testing.T) {
+	// Not parallel
 	if NoneDriver() {
 		return
 	}
 
 	wakeup := time.Now()
-	antiRaceMutex.Lock()
-	if len(startSchedule) == 0 {
-		startSchedule = append(startSchedule, wakeup)
-	} else {
-		wakeup = startSchedule[len(startSchedule)-1].Add(*startOffset)
-		startSchedule = append(startSchedule, wakeup)
+	startTimesMutex.Lock()
+	if len(startTimes) > 0 {
+		nextStart := startTimes[len(startTimes)-1].Add(*startOffset)
+		// Ignore nextStart if it is in the past - to guarantee offset for next caller
+		if time.Now().Before(nextStart) {
+			wakeup = nextStart
+		}
 	}
-	antiRaceMutex.Unlock()
+	startTimes = append(startTimes, wakeup)
+	startTimesMutex.Unlock()
 
 	if time.Now().Before(wakeup) {
 		d := time.Until(wakeup)
-		t.Logf("MaybeSlowParallel: Sleeping %s (until %s) to avoid start race ...", d, wakeup)
+		t.Logf("Waiting for start slot at %s (sleeping %s)  ...", wakeup, d)
 		time.Sleep(d)
-		// Leave our entry in startSchedule, otherwise we can't guarantee a 30 second offset for the next caller
+	} else {
+		t.Logf("No need to wait for start slot, it is already %s", time.Now())
 	}
-	t.Parallel()
 }
 
 // killProcessFamily kills a pid and all of its children
