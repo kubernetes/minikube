@@ -35,7 +35,7 @@ PARALLEL_COUNT=3
 
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron
 install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh
-echo "0 * * * * $HOME/cleanup-and-reboot.sh" | crontab
+echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
 crontab -l
 
 # Download files and set permissions

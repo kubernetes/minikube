@@ -26,13 +26,13 @@ function check_jenkins() {
 }
 
 check_jenkins
-logger "cleanup-and-reboot running - may shutdown in 60 seconds"
-wall "cleanup-and-reboot running - may shutdown in 60 seconds"
+logger "cleanup_and_reboot running - may shutdown in 60 seconds"
+wall "cleanup_and_reboot running - may shutdown in 60 seconds"
 
 sleep 60
 
 check_jenkins
-logger "cleanup-and-reboot is happening!"
+logger "cleanup_and_reboot is happening!"
 
 # kill jenkins to avoid an incoming request
 killall java

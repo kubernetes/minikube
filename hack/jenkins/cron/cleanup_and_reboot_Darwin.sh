@@ -36,4 +36,5 @@ echo "doing it"
 killall java
 sudo rm -Rf ~jenkins/.minikube || echo "could not delete minikube"
 sudo rm -Rf ~/jenkins/minikube-integration/* || true
+sudo rm /var/db/dhcpd_leases || echo "could not clear dhcpd leases"
 sudo reboot
