@@ -43,4 +43,5 @@ killall java
 
 # macOS specific cleanup
 sudo rm /var/db/dhcpd_leases || echo "could not clear dhcpd leases"
+sudo softwareupdate -i -a -R
 sudo reboot
