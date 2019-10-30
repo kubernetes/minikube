@@ -2,9 +2,9 @@
 
 ## Version 1.5.2 - 2019-10-30
 
-* service: fix --url mode, add integration tests [#5790](https://github.com/kubernetes/minikube/pull/5790)
+* service: fix --url mode [#5790](https://github.com/kubernetes/minikube/pull/5790)
 * Refactor command runner interface, allow stdin writes [#5530](https://github.com/kubernetes/minikube/pull/5530)
-* macOS install docs: Minikube is a normal Homebrew formula now [#5750](https://github.com/kubernetes/minikube/pull/5750)
+* macOS install docs: minikube is a normal Homebrew formula now [#5750](https://github.com/kubernetes/minikube/pull/5750)
 
 Thank you to our contributors for this release:
 
