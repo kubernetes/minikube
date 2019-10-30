@@ -31,7 +31,6 @@ func TestDockerFlags(t *testing.T) {
 		t.Skip("skipping: none driver does not support ssh or bundle docker")
 	}
 	MaybeSlowParallel(t)
-
 	profile := UniqueProfileName("docker-flags")
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
