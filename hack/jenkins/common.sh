@@ -40,7 +40,7 @@ echo "uptime:    $(uptime)"
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 
-readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]" | cut -d" " -f3)
+readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]+" | cut -d" " -f3)
 if [[ "${LOAD}" -gt 2 ]]; then
   echo ""
   echo "********************** LOAD WARNING ********************************"
@@ -258,7 +258,8 @@ set -x
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
-  -test.timeout=90m \
+  -test.timeout=70m \
+  ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
