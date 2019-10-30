@@ -345,7 +345,8 @@ func MaybeSlowParallel(t *testing.T) {
 
 	if antiRaceCounter > 0 {
 		// Slow enough to offset start, but not slow to be a major source of delay
-		penalty := time.Duration(5*antiRaceCounter) * time.Second
+		// TODO: Remove or minimize once #5353 is resolved
+		penalty := time.Duration(30*antiRaceCounter) * time.Second
 		t.Logf("MaybeSlowParallel: Sleeping %s to avoid start race ...", penalty)
 		time.Sleep(penalty)
 	}
