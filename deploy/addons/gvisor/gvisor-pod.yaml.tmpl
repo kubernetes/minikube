@@ -24,50 +24,28 @@ spec:
   hostPID: true
   containers:
     - name: gvisor
-      image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/gvisor-addon:latest
+      image: {{default "gcr.io/k8s-minikube" .ImageRepository}}/gvisor-addon:2
       securityContext:
         privileged: true
       volumeMounts:
       - mountPath: /node/
-        name: node
-      - mountPath: /usr/libexec/sudo
-        name: sudo
-      - mountPath: /var/run
-        name: varrun
-      - mountPath: /usr/bin
-        name: usrbin
-      - mountPath: /usr/lib
-        name: usrlib
-      - mountPath: /bin
-        name: bin
+        name: node-root
+      - mountPath: /node/run
+        name: node-run
       - mountPath: /tmp/gvisor
-        name: gvisor
+        name: node-tmp
       env:
-        - name: PATH
-          value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/node/bin
         - name: SYSTEMD_IGNORE_CHROOT
           value: "yes"
       imagePullPolicy: IfNotPresent
   volumes:
-  - name: node
+  - name: node-root
     hostPath:
       path: /
-  - name: sudo
+  - name: node-run
     hostPath:
-      path: /usr/libexec/sudo
-  - name: varrun
-    hostPath:
-      path: /var/run
-  - name: usrlib
-    hostPath:
-      path: /usr/lib
-  - name: usrbin
-    hostPath:
-      path: /usr/bin
-  - name: bin
-    hostPath:
-      path: /bin
-  - name: gvisor
+      path: /run
+  - name: node-tmp
     hostPath:
       path: /tmp/gvisor
   restartPolicy: Always

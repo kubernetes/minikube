@@ -29,6 +29,10 @@ OS_ARCH="linux-amd64"
 VM_DRIVER="kvm2"
 JOB_NAME="KVM_Linux"
 PARALLEL_COUNT=4
+EXPECTED_DEFAULT_DRIVER="kvm2"
+
+# We pick kvm as our gvisor testbed because it is fast & reliable
+EXTRA_TEST_ARGS="-gvisor"
 
 # Download files and set permissions
 source ./common.sh

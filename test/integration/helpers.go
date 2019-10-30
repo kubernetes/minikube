@@ -177,7 +177,7 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
 	if t.Failed() && *postMortemLogs {
 		t.Logf("%s failed, collecting logs ...", t.Name())
-		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "-n", "100"))
+		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
 		if err != nil {
 			t.Logf("failed logs error: %v", err)
 		}

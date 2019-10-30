@@ -16,13 +16,16 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package parallels
+package vmwarefusion
 
 import (
 	"fmt"
+	"os/exec"
 
-	parallels "github.com/Parallels/docker-machine-parallels"
+	"github.com/docker/machine/drivers/vmwarefusion"
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/pkg/errors"
+
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -30,25 +33,34 @@ import (
 )
 
 func init() {
-	err := registry.Register(registry.DriverDef{
-		Name:          driver.Parallels,
-		Builtin:       true,
-		ConfigCreator: createParallelsHost,
-		DriverCreator: func() drivers.Driver {
-			return parallels.NewDriver("", "")
-		},
-	})
-	if err != nil {
-		panic(fmt.Sprintf("unable to register: %v", err))
+	if err := registry.Register(registry.DriverDef{
+		Name:     driver.VMwareFusion,
+		Config:   configure,
+		Status:   status,
+		Init:     func() drivers.Driver { return vmwarefusion.NewDriver("", "") },
+		Priority: registry.Deprecated,
+	}); err != nil {
+		panic(fmt.Sprintf("register: %v", err))
 	}
-
 }
 
-func createParallelsHost(config cfg.MachineConfig) interface{} {
-	d := parallels.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*parallels.Driver)
+func configure(config cfg.MachineConfig) interface{} {
+	d := vmwarefusion.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*vmwarefusion.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs
 	d.DiskSize = config.DiskSize
+
+	// TODO(philips): push these defaults upstream to fixup this driver
+	d.SSHPort = 22
+	d.ISO = d.ResolveStorePath("boot2docker.iso")
 	return d
+}
+
+func status() registry.State {
+	_, err := exec.LookPath("vmrun")
+	if err != nil {
+		return registry.State{Error: errors.Wrap(err, "vmrun path check"), Fix: "Install VMWare Fusion", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/vmwarefusion/"}
+	}
+	return registry.State{Installed: true, Healthy: true}
 }

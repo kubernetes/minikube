@@ -1,5 +1,44 @@
 # Release Notes
 
+## Version 1.5.1 - 2019-10-29
+
+* Set Docker open-files limit ( 'ulimit -n') to be consistent with other runtimes [#5761](https://github.com/kubernetes/minikube/pull/5761)
+* Use fixed uid/gid for the default user account [#5767](https://github.com/kubernetes/minikube/pull/5767)
+* Set --wait=false to default but still wait for apiserver [#5757](https://github.com/kubernetes/minikube/pull/5757)
+* kubelet: Pass --config to use kubeadm generated configuration [#5697](https://github.com/kubernetes/minikube/pull/5697)
+* Refactor to remove opening browser and just return url(s) [#5718](https://github.com/kubernetes/minikube/pull/5718)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Medya Ghazizadeh
+- Nanik T
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+
+## Version 1.5.0 - 2019-10-25
+
+* Default to best-available local hypervisor rather than VirtualBox [#5700](https://github.com/kubernetes/minikube/pull/5700)
+* Update default Kubernetes version to v1.16.2 [#5731](https://github.com/kubernetes/minikube/pull/5731)
+* Add json output for status [#5611](https://github.com/kubernetes/minikube/pull/5611)
+* gvisor: Use chroot instead of LD_LIBRARY_PATH [#5735](https://github.com/kubernetes/minikube/pull/5735)
+* Hide innocuous viper ConfigFileNotFoundError [#5732](https://github.com/kubernetes/minikube/pull/5732)
+
+Thank you to our contributors!
+
+- Anders F Björklund
+- duohedron
+- Javis Zhou
+- Josh Woodcock
+- Kenta Iso
+- Marek Schwarz
+- Medya Ghazizadeh
+- Nanik T
+- Rob Bruce
+- Sharif Elgamal
+- Thomas Strömberg
+
 ## Version 1.5.0-beta.0 - 2019-10-21
 
 * Fix node InternalIP not matching host-only address [#5427](https://github.com/kubernetes/minikube/pull/5427)

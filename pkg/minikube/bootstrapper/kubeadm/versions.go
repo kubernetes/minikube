@@ -217,6 +217,9 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 		LessThanOrEqual: semver.MustParse("1.15.0-alpha.3"),
 	},
 
+	// Kubelet config file
+	config.NewUnversionedOption(Kubelet, "config", "/var/lib/kubelet/config.yaml"),
+
 	// Network args
 	config.NewUnversionedOption(Kubelet, "cluster-dns", "10.96.0.10"),
 	config.NewUnversionedOption(Kubelet, "cluster-domain", "cluster.local"),

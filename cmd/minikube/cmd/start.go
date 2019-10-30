@@ -63,6 +63,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/translate"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
@@ -170,7 +171,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
-	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
+	startCmd.Flags().Bool(waitUntilHealthy, false, "Wait until Kubernetes core services are healthy before exiting.")
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
@@ -194,7 +195,7 @@ func initKubernetesFlags() {
 
 // initDriverFlags inits the commandline flags for vm drivers
 func initDriverFlags() {
-	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to %s)", driver.SupportedDrivers(), driver.Default()))
+	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.SupportedDrivers()))
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
 
 	// kvm2
@@ -289,6 +290,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	driverName := selectDriver(oldConfig)
+	glog.Infof("selected: %v", driverName)
 	err = autoSetDriverOptions(cmd, driverName)
 	if err != nil {
 		glog.Errorf("Error autoSetOptions : %v", err)
@@ -297,11 +299,14 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateFlags(driverName)
 	validateUser(driverName)
 
-	v, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
-		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
+	// No need to install a driver in download-only mode
+	if !viper.GetBool(downloadOnly) {
+		v, err := version.GetSemverVersion()
+		if err != nil {
+			out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+		} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
+			out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
+		}
 	}
 
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
@@ -370,10 +375,15 @@ func runStart(cmd *cobra.Command, args []string) {
 	if driverName == driver.None {
 		prepareNone()
 	}
-	if viper.GetBool(waitUntilHealthy) {
-		if err := bs.WaitCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
-			exit.WithError("Wait failed", err)
-		}
+
+	var podsToWaitFor []string
+
+	if !viper.GetBool(waitUntilHealthy) {
+		// only wait for apiserver if wait=false
+		podsToWaitFor = []string{"apiserver"}
+	}
+	if err := bs.WaitForPods(config.KubernetesConfig, viper.GetDuration(waitTimeout), podsToWaitFor); err != nil {
+		exit.WithError("Wait failed", err)
 	}
 	if err := showKubectlInfo(kubeconfig, k8sVersion); err != nil {
 		glog.Errorf("kubectl info: %v", err)
@@ -534,15 +544,39 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string) error {
 
 func selectDriver(oldConfig *cfg.Config) string {
 	name := viper.GetString("vm-driver")
-	// By default, the driver is whatever we used last time
+	glog.Infof("selectDriver: flag=%q, old=%v", name, oldConfig)
 	if name == "" {
-		name = driver.Default()
+		// By default, the driver is whatever we used last time
 		if oldConfig != nil {
 			return oldConfig.MachineConfig.VMDriver
 		}
+		options := driver.Choices()
+		pick, alts := driver.Choose(options)
+		if len(options) > 1 {
+			out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"driver": pick.Name, "alternates": alts})
+		} else {
+			out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver`, out.V{"driver": pick.Name})
+		}
+
+		if pick.Name == "" {
+			exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --vm-driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		}
+
+		name = pick.Name
 	}
 	if !driver.Supported(name) {
 		exit.WithCodeT(exit.Failure, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+	}
+
+	st := driver.Status(name)
+	if st.Error != nil {
+		out.ErrLn("")
+		out.WarningT("'{{.driver}}' driver reported a possible issue: {{.error}}", out.V{"driver": name, "error": st.Error, "fix": st.Fix})
+		out.ErrT(out.Tip, "Suggestion: {{.fix}}", out.V{"fix": translate.T(st.Fix)})
+		if st.Doc != "" {
+			out.ErrT(out.Documentation, "Documentation: {{.url}}", out.V{"url": st.Doc})
+		}
+		out.ErrLn("")
 	}
 
 	// Detect if our driver conflicts with a previously created VM. If we run into any errors, just move on.
@@ -974,7 +1008,7 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 		}
 	}
 
-	if driver.BareMetal(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) {
 		sshAddr := fmt.Sprintf("%s:22", ip)
 		conn, err := net.Dial("tcp", sshAddr)
 		if err != nil {
@@ -995,27 +1029,29 @@ Suggested workarounds:
 		defer conn.Close()
 	}
 
-	if err := r.Run("nslookup kubernetes.io"); err != nil {
+	if _, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
 		out.WarningT("VM is unable to resolve DNS hosts: {[.error}}", out.V{"error": err})
 	}
 
 	// Try both UDP and ICMP to assert basic external connectivity
-	if err := r.Run("nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8"); err != nil {
+	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", "nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8")); err != nil {
 		out.WarningT("VM is unable to directly connect to the internet: {{.error}}", out.V{"error": err})
 	}
 
 	// Try an HTTPS connection to the
 	proxy := os.Getenv("HTTPS_PROXY")
-	opts := "-sS"
+	opts := []string{"-sS"}
 	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
-		opts = fmt.Sprintf("-x %s %s", proxy, opts)
+		opts = append([]string{"-x", proxy}, opts...)
 	}
 
 	repo := viper.GetString(imageRepository)
 	if repo == "" {
 		repo = images.DefaultImageRepo
 	}
-	if err := r.Run(fmt.Sprintf("curl %s https://%s/", opts, repo)); err != nil {
+
+	opts = append(opts, fmt.Sprintf("https://%s/", repo))
+	if _, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
 		out.WarningT("VM is unable to connect to the selected image repository: {{.error}}", out.V{"error": err})
 	}
 	return ip
