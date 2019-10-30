@@ -103,7 +103,8 @@ func TestStartStop(t *testing.T) {
 						t.Fatalf("%s failed: %v", rr.Args, err)
 					}
 
-					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute); err != nil {
+					names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute);
+					if err != nil {
 						t.Fatalf("wait: %v", err)
 					}
 
