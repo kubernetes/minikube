@@ -1,5 +1,17 @@
 # Release Notes
 
+## Version 1.5.2 - 2019-10-30
+
+* service: fix --url mode, add integration tests [#5790](https://github.com/kubernetes/minikube/pull/5790)
+* Refactor command runner interface, allow stdin writes [#5530](https://github.com/kubernetes/minikube/pull/5530)
+* macOS install docs: Minikube is a normal Homebrew formula now [#5750](https://github.com/kubernetes/minikube/pull/5750)
+
+Thank you to our contributors for this release:
+
+- Issy Long
+- Medya Ghazizadeh
+- Thomas Strömberg
+
 ## Version 1.5.1 - 2019-10-29
 
 * Set Docker open-files limit ( 'ulimit -n') to be consistent with other runtimes [#5761](https://github.com/kubernetes/minikube/pull/5761)
