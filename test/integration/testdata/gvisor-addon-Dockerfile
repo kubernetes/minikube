@@ -14,5 +14,5 @@
 
 # Need an image with chroot
 FROM alpine:3
-COPY out/gvisor-addon /gvisor-addon
+COPY gvisor-addon /gvisor-addon
 CMD ["/gvisor-addon"]
