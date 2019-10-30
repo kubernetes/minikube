@@ -19,6 +19,7 @@ package kubeadm
 import (
 	"bytes"
 	"crypto/tls"
+	"os/exec"
 
 	"fmt"
 	"net"
@@ -138,12 +139,11 @@ func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 
 // GetKubeletStatus returns the kubelet status
 func (k *Bootstrapper) GetKubeletStatus() (string, error) {
-	statusCmd := `sudo systemctl is-active kubelet`
-	status, err := k.c.CombinedOutput(statusCmd)
+	rr, err := k.c.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
 	if err != nil {
-		return "", errors.Wrap(err, "getting status")
+		return "", errors.Wrapf(err, "getting kublet status. command: %q", rr.Command())
 	}
-	s := strings.TrimSpace(status)
+	s := strings.TrimSpace(rr.Stdout.String())
 	switch s {
 	case "active":
 		return state.Running.String(), nil
@@ -224,16 +224,16 @@ func etcdDataDir() string {
 // createCompatSymlinks creates compatibility symlinks to transition running services to new directory structures
 func (k *Bootstrapper) createCompatSymlinks() error {
 	legacyEtcd := "/data/minikube"
-	if err := k.c.Run(fmt.Sprintf("sudo test -d %s", legacyEtcd)); err != nil {
-		glog.Infof("%s check failed, skipping compat symlinks: %v", legacyEtcd, err)
+
+	if _, err := k.c.RunCmd(exec.Command("sudo", "test", "-d", legacyEtcd)); err != nil {
+		glog.Infof("%s skipping compat symlinks: %v", legacyEtcd, err)
 		return nil
 	}
-
 	glog.Infof("Found %s, creating compatibility symlinks ...", legacyEtcd)
-	cmd := fmt.Sprintf("sudo ln -s %s %s", legacyEtcd, etcdDataDir())
-	out, err := k.c.CombinedOutput(cmd)
-	if err != nil {
-		return errors.Wrapf(err, "cmd failed: %s\n%s\n", cmd, out)
+
+	c := exec.Command("sudo", "ln", "-s", legacyEtcd, etcdDataDir())
+	if rr, err := k.c.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "create symlink failed: %s", rr.Command())
 	}
 	return nil
 }
@@ -275,11 +275,9 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		ignore = append(ignore, "SystemVerification")
 	}
 
-	cmd := fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s",
-		invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath, extraFlags, strings.Join(ignore, ","))
-	out, err := k.c.CombinedOutput(cmd)
-	if err != nil {
-		return errors.Wrapf(err, "cmd failed: %s\n%s\n", cmd, out)
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath, extraFlags, strings.Join(ignore, ",")))
+	if rr, err := k.c.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "init failed. cmd: %q", rr.Command())
 	}
 
 	glog.Infof("Configuring cluster permissions ...")
@@ -304,22 +302,23 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 // adjustResourceLimits makes fine adjustments to pod resources that aren't possible via kubeadm config.
 func (k *Bootstrapper) adjustResourceLimits() error {
-	score, err := k.c.CombinedOutput("cat /proc/$(pgrep kube-apiserver)/oom_adj")
+	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "cat /proc/$(pgrep kube-apiserver)/oom_adj"))
 	if err != nil {
-		return errors.Wrap(err, "oom_adj check")
+		return errors.Wrapf(err, "oom_adj check cmd %s. ", rr.Command())
 	}
-	glog.Infof("apiserver oom_adj: %s", score)
+	glog.Infof("apiserver oom_adj: %s", rr.Stdout.String())
 	// oom_adj is already a negative number
-	if strings.HasPrefix(score, "-") {
+	if strings.HasPrefix(rr.Stdout.String(), "-") {
 		return nil
 	}
 	glog.Infof("adjusting apiserver oom_adj to -10")
 
 	// Prevent the apiserver from OOM'ing before other pods, as it is our gateway into the cluster.
 	// It'd be preferable to do this via Kubernetes, but kubeadm doesn't have a way to set pod QoS.
-	if err := k.c.Run("echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj"); err != nil {
-		return errors.Wrap(err, "oom_adj adjust")
+	if _, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj")); err != nil {
+		return errors.Wrap(err, fmt.Sprintf("oom_adj adjust"))
 	}
+
 	return nil
 }
 
@@ -465,18 +464,20 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// Run commands one at a time so that it is easier to root cause failures.
-	for _, cmd := range cmds {
-		if err := k.c.Run(cmd); err != nil {
-			return errors.Wrapf(err, "running cmd: %s", cmd)
+	for _, c := range cmds {
+		rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", c))
+		if err != nil {
+			return errors.Wrapf(err, "running cmd: %s", rr.Command())
 		}
 	}
 
 	if err := k.waitForAPIServer(k8s); err != nil {
 		return errors.Wrap(err, "waiting for apiserver")
 	}
+
 	// restart the proxy and coredns
-	if err := k.c.Run(fmt.Sprintf("%s phase addon all --config %s", baseCmd, yamlConfigPath)); err != nil {
-		return errors.Wrapf(err, "addon phase")
+	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, yamlConfigPath))); err != nil {
+		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q", rr.Command()))
 	}
 
 	if err := k.adjustResourceLimits(); err != nil {
@@ -496,9 +497,9 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 	// To give a better error message, first check for process existence via ssh
 	// Needs minutes in case the image isn't cached (such as with v1.10.x)
 	err := wait.PollImmediate(time.Millisecond*300, time.Minute*3, func() (bool, error) {
-		ierr := k.c.Run(`sudo pgrep kube-apiserver`)
+		rr, ierr := k.c.RunCmd(exec.Command("sudo", "pgrep", "kube-apiserver"))
 		if ierr != nil {
-			glog.Warningf("pgrep apiserver: %v", ierr)
+			glog.Warningf("pgrep apiserver: %v cmd: %s", ierr, rr.Command())
 			return false, nil
 		}
 		return true, nil
@@ -549,9 +550,9 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 	if version.LT(semver.MustParse("1.11.0")) {
 		cmd = fmt.Sprintf("%s reset", invokeKubeadm(k8s.KubernetesVersion))
 	}
-	out, err := k.c.CombinedOutput(cmd)
-	if err != nil {
-		return errors.Wrapf(err, "kubeadm reset: %s\n%s\n", cmd, out)
+
+	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd)); err != nil {
+		return errors.Wrapf(err, "kubeadm reset: cmd: %q", rr.Command())
 	}
 
 	return nil
@@ -567,9 +568,9 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 		return fmt.Errorf("pull command is not supported by kubeadm v%s", version)
 	}
 
-	cmd := fmt.Sprintf("%s config images pull --config %s", invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath)
-	if err := k.c.Run(cmd); err != nil {
-		return errors.Wrapf(err, "running cmd: %s", cmd)
+	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s config images pull --config %s", invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath)))
+	if err != nil {
+		return errors.Wrapf(err, "running cmd: %q", rr.Command())
 	}
 	return nil
 }
@@ -663,11 +664,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 
 	glog.Infof("kubelet %s config:\n%s", cfg.KubernetesVersion, kubeletCfg)
 
+	stopCmd := exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")
 	// stop kubelet to avoid "Text File Busy" error
-	err = k.c.Run(`pgrep kubelet && sudo systemctl stop kubelet`)
-	if err != nil {
-		glog.Warningf("unable to stop kubelet: %s", err)
+	if rr, err := k.c.RunCmd(stopCmd); err != nil {
+		glog.Warningf("unable to stop kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
 	}
+
 	if err := transferBinaries(cfg, k.c); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
@@ -681,7 +683,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		}
 	}
 
-	if err := k.c.Run(`sudo systemctl daemon-reload && sudo systemctl start kubelet`); err != nil {
+	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl start kubelet")); err != nil {
 		return errors.Wrap(err, "starting kubelet")
 	}
 	return nil

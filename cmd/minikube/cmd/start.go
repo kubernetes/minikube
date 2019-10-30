@@ -1029,27 +1029,29 @@ Suggested workarounds:
 		defer conn.Close()
 	}
 
-	if err := r.Run("nslookup kubernetes.io"); err != nil {
+	if _, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
 		out.WarningT("VM is unable to resolve DNS hosts: {[.error}}", out.V{"error": err})
 	}
 
 	// Try both UDP and ICMP to assert basic external connectivity
-	if err := r.Run("nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8"); err != nil {
+	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", "nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8")); err != nil {
 		out.WarningT("VM is unable to directly connect to the internet: {{.error}}", out.V{"error": err})
 	}
 
 	// Try an HTTPS connection to the
 	proxy := os.Getenv("HTTPS_PROXY")
-	opts := "-sS"
+	opts := []string{"-sS"}
 	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
-		opts = fmt.Sprintf("-x %s %s", proxy, opts)
+		opts = append([]string{"-x", proxy}, opts...)
 	}
 
 	repo := viper.GetString(imageRepository)
 	if repo == "" {
 		repo = images.DefaultImageRepo
 	}
-	if err := r.Run(fmt.Sprintf("curl %s https://%s/", opts, repo)); err != nil {
+
+	opts = append(opts, fmt.Sprintf("https://%s/", repo))
+	if _, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
 		out.WarningT("VM is unable to connect to the selected image repository: {{.error}}", out.V{"error": err})
 	}
 	return ip
