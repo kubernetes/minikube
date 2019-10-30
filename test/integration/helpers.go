@@ -42,8 +42,8 @@ import (
 )
 
 var (
-	antiRaceCounter = 0
-	antiRaceMutex   = &sync.Mutex{}
+	startSchedule = []time.Time{}
+	antiRaceMutex = &sync.Mutex{}
 )
 
 // RunResult stores the result of an cmd.Run call
@@ -330,24 +330,29 @@ func MaybeParallel(t *testing.T) {
 	t.Parallel()
 }
 
-// MaybeSlowParallel is a terrible workaround for tests which start clusters in a race-filled world
-// TODO: Try removing this hack once certificates are deployed per-profile
+// MaybeSlowParallel offsets cluster starts by the value of --start-offset
+// TODO: Remove when possible
 func MaybeSlowParallel(t *testing.T) {
 	// NoneDriver shouldn't parallelize "minikube start"
 	if NoneDriver() {
 		return
 	}
 
+	wakeup := time.Now()
 	antiRaceMutex.Lock()
-	antiRaceCounter++
+	if len(startSchedule) == 0 {
+		startSchedule = append(startSchedule, wakeup)
+	} else {
+		wakeup = startSchedule[len(startSchedule)-1].Add(*startOffset)
+		startSchedule = append(startSchedule, wakeup)
+	}
 	antiRaceMutex.Unlock()
 
-	if antiRaceCounter > 0 {
-		// Slow enough to offset start, but not slow to be a major source of delay
-		// TODO: Remove or minimize once #5353 is resolved
-		penalty := time.Duration(30*antiRaceCounter) * time.Second
-		t.Logf("MaybeSlowParallel: Sleeping %s to avoid start race ...", penalty)
-		time.Sleep(penalty)
+	if time.Now().Before(wakeup) {
+		d := time.Until(wakeup)
+		t.Logf("MaybeSlowParallel: Sleeping %s (until %s) to avoid start race ...", d, wakeup)
+		time.Sleep(d)
+		// Leave our entry in startSchedule, otherwise we can't guarantee a 30 second offset for the next caller
 	}
 	t.Parallel()
 }

@@ -39,9 +39,9 @@ import (
 // the odlest supported k8s version and then runs the current head minikube
 // and it tries to upgrade from the older supported k8s to news supported k8s
 func TestVersionUpgrade(t *testing.T) {
+	MaybeSlowParallel(t)
 	profile := UniqueProfileName("vupgrade")
 	ctx, cancel := context.WithTimeout(context.Background(), 55*time.Minute)
-	MaybeSlowParallel(t)
 
 	defer CleanupWithLogs(t, profile, cancel)
 
