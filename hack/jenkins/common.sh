@@ -23,8 +23,6 @@
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
-# PARALLEL_COUNT: number of tests to run in parallel
-
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
@@ -243,7 +241,7 @@ if [ "$(uname)" != "Darwin" ]; then
   docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
 fi
 
-readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]" | cut -d" " -f3)
+readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]+" | cut -d" " -f3)
 if [[ "${LOAD}" -gt 2 ]]; then
   echo ""
   echo "********************** LOAD WARNING ********************************"
@@ -255,12 +253,10 @@ if [[ "${LOAD}" -gt 2 ]]; then
     top -b -n1 | head -n 15
   fi
   echo "********************** LOAD WARNING ********************************"
-  echo ""
   echo "Sleeping 30s to see if load goes down ...."
   sleep 30
   uptime
 fi
-
 
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
@@ -268,8 +264,7 @@ set -x
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
-  -test.timeout=60m \
-  -test.parallel=${PARALLEL_COUNT} \
+  -test.timeout=70m \
   ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 set +x
