@@ -18,9 +18,11 @@ package cruntime
 
 import (
 	"fmt"
+	"os/exec"
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -44,14 +46,15 @@ func (r *CRIO) Style() out.StyleEnum {
 
 // Version retrieves the current version of this runtime
 func (r *CRIO) Version() (string, error) {
-	ver, err := r.Runner.CombinedOutput("crio --version")
+	c := exec.Command("crio", "--version")
+	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", err
+		return "", errors.Wrap(err, "crio version.")
 	}
 
 	// crio version 1.13.0
 	// commit: ""
-	line := strings.Split(ver, "\n")[0]
+	line := strings.Split(rr.Stdout.String(), "\n")[0]
 	return strings.Replace(line, "crio version ", "", 1), nil
 }
 
@@ -70,12 +73,18 @@ func (r *CRIO) DefaultCNI() bool {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *CRIO) Available() error {
-	return r.Runner.Run("command -v crio")
+	c := exec.Command("which", "crio")
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "check crio available.")
+	}
+	return nil
+
 }
 
 // Active returns if CRIO is active on the host
 func (r *CRIO) Active() bool {
-	err := r.Runner.Run("systemctl is-active --quiet service crio")
+	c := exec.Command("systemctl", "is-active", "--quiet", "service", "crio")
+	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
 
@@ -95,18 +104,29 @@ func (r *CRIO) Enable(disOthers bool) error {
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
 	}
-	return r.Runner.Run("sudo systemctl restart crio")
+
+	if _, err := r.Runner.RunCmd(exec.Command("sudo", "systemctl", "restart", "crio")); err != nil {
+		return errors.Wrapf(err, "enable crio.")
+	}
+	return nil
 }
 
 // Disable idempotently disables CRIO on a host
 func (r *CRIO) Disable() error {
-	return r.Runner.Run("sudo systemctl stop crio")
+	if _, err := r.Runner.RunCmd(exec.Command("sudo", "systemctl", "stop", "crio")); err != nil {
+		return errors.Wrapf(err, "disable crio.")
+	}
+	return nil
 }
 
 // LoadImage loads an image into this runtime
 func (r *CRIO) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	return r.Runner.Run(fmt.Sprintf("sudo podman load -i %s", path))
+	c := exec.Command("sudo", "podman", "load", "-i", path)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "crio load image")
+	}
+	return nil
 }
 
 // KubeletOptions returns kubelet options for a runtime.
