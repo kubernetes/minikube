@@ -43,6 +43,7 @@ echo "***********************************************************************"
 echo "Sorry, this script has not yet been updated to support non-cask updates"
 echo "See https://github.com/kubernetes/minikube/issues/5779"
 echo "***********************************************************************"
+exit 99
 
 git config --global user.name "${GITHUB_USER}"
 git config --global user.email "${GITHUB_USER}@google.com"
