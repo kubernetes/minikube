@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.5.2 - 2019-10-30
+## Version 1.5.2 - 2019-10-31 (Happy Halloween!)
 
 * service: fix --url mode [#5790](https://github.com/kubernetes/minikube/pull/5790)
 * Refactor command runner interface, allow stdin writes [#5530](https://github.com/kubernetes/minikube/pull/5530)
