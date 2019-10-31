@@ -1029,16 +1029,13 @@ Suggested workarounds:
 		defer conn.Close()
 	}
 
-	if _, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
-		out.WarningT("VM is unable to resolve DNS hosts: {[.error}}", out.V{"error": err})
+	// DNS check
+	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
+		glog.Warningf("%s failed: %v", rr.Args, err)
+		out.WarningT("VM may be unable to resolve external DNS records")
 	}
 
-	// Try both UDP and ICMP to assert basic external connectivity
-	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", "nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8")); err != nil {
-		out.WarningT("VM is unable to directly connect to the internet: {{.error}}", out.V{"error": err})
-	}
-
-	// Try an HTTPS connection to the
+	// Try an HTTPS connection to the image repository
 	proxy := os.Getenv("HTTPS_PROXY")
 	opts := []string{"-sS"}
 	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
@@ -1051,8 +1048,9 @@ Suggested workarounds:
 	}
 
 	opts = append(opts, fmt.Sprintf("https://%s/", repo))
-	if _, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
-		out.WarningT("VM is unable to connect to the selected image repository: {{.error}}", out.V{"error": err})
+	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
+		glog.Warningf("%s failed: %v", rr.Args, err)
+		out.WarningT("VM is unable to access {{.repository}}, you may need to configure a proxy or set --image-repository", out.V{"repository": repo})
 	}
 	return ip
 }
