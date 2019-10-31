@@ -154,7 +154,7 @@ func Unmount(r mountRunner, target string) error {
 	return nil
 }
 
-// killMountProcess kills the mount process, if it is running
+// KillMountProcess kills the mount process, if it is running
 func KillMountProcess() error {
 	pidPath := filepath.Join(localpath.MiniPath(), constants.MountProcessFileName)
 	if _, err := os.Stat(pidPath); os.IsNotExist(err) {

@@ -610,8 +610,8 @@ func IsMinikubeRunning(api libmachine.API) bool {
 	return true
 }
 
-// GetClusterBootstrapper returns a new bootstrapper for the cluster
-func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
+// Bootstrapper returns a new bootstrapper for the cluster
+func Bootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
 	var b bootstrapper.Bootstrapper
 	var err error
 	switch bootstrapperName {
@@ -629,7 +629,7 @@ func GetClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 
 func UninstallKubernetes(api libmachine.API, kc cfg.KubernetesConfig, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := GetClusterBootstrapper(api, bsName)
+	clusterBootstrapper, err := Bootstrapper(api, bsName)
 	if err != nil {
 		return fmt.Errorf("unable to get bootstrapper: %v", err)
 	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
