@@ -18,17 +18,18 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"text/template"
 
+	"github.com/golang/glog"
 	"github.com/pkg/browser"
-
-	"k8s.io/minikube/pkg/minikube/out"
-
 	"github.com/spf13/cobra"
+
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
 )
 
@@ -74,21 +75,26 @@ var serviceCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		var urlString []string
-
-		urlString, err = service.WaitForService(api, namespace, svc,
-			serviceURLTemplate, serviceURLMode, https, wait, interval)
+		urls, err := service.WaitForService(api, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
 			exit.WithError("Error opening service", err)
 		}
 
-		if len(urlString) != 0 {
-			out.T(out.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+		for _, u := range urls {
+			_, err := url.Parse(u)
+			if err != nil {
+				glog.Warningf("failed to parse url %q: %v (will not open)", u, err)
+				out.String(fmt.Sprintf("%s\n", u))
+				continue
+			}
 
-			for _, url := range urlString {
-				if err := browser.OpenURL(url); err != nil {
-					exit.WithError(fmt.Sprintf("browser failed to open url %s", url), err)
-				}
+			if serviceURLMode {
+				out.String(fmt.Sprintf("%s\n", u))
+				continue
+			}
+			out.T(out.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+			if err := browser.OpenURL(u); err != nil {
+				exit.WithError(fmt.Sprintf("open url failed: %s", u), err)
 			}
 		}
 	},

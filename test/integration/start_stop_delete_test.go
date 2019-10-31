@@ -75,7 +75,8 @@ func TestStartStop(t *testing.T) {
 		for _, tc := range tests {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
-				MaybeSlowParallel(t)
+				MaybeParallel(t)
+				WaitForStartSlot(t)
 
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
@@ -85,7 +86,7 @@ func TestStartStop(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=3"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
@@ -103,7 +104,7 @@ func TestStartStop(t *testing.T) {
 						t.Fatalf("%s failed: %v", rr.Args, err)
 					}
 
-					names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute)
+					names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute)
 					if err != nil {
 						t.Fatalf("wait: %v", err)
 					}
@@ -136,6 +137,7 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("status = %q; want = %q", got, state.Stopped)
 				}
 
+				WaitForStartSlot(t)
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
