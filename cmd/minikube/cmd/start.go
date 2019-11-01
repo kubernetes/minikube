@@ -178,7 +178,7 @@ func initMinikubeFlags() {
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
 func initKubernetesFlags() {
-	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
+	startCmd.Flags().String(kubernetesVersion, "", "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
@@ -1114,15 +1114,20 @@ func tryRegistry(r command.Runner) {
 
 // getKubernetesVersion ensures that the requested version is reasonable
 func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
-	rawVersion := viper.GetString(kubernetesVersion)
+	paramVersion := viper.GetString(kubernetesVersion)
 	isUpgrade := false
-	if rawVersion == "" {
-		rawVersion = constants.DefaultKubernetesVersion
+
+	if paramVersion == "" { // if the user did not specify any version then ...
+		if old != nil { // .. use the old version from config
+			paramVersion = old.KubernetesConfig.KubernetesVersion
+		} else { // .. otherwise use the default version
+			paramVersion = constants.DefaultKubernetesVersion
+		}
 	}
 
-	nvs, err := semver.Make(strings.TrimPrefix(rawVersion, version.VersionPrefix))
+	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
 	if err != nil {
-		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": rawVersion, "error": err})
+		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
 	}
 	nv := version.VersionPrefix + nvs.String()
 
@@ -1133,6 +1138,10 @@ func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	if err != nil {
 		exit.WithCodeT(exit.Data, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
+	}
+	defaultVersion, err := semver.Make(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
+	if err != nil {
+		exit.WithCodeT(exit.Data, "Unable to parse default Kubernetes version from constants: {{.error}}", out.V{"error": err})
 	}
 
 	if nvs.LT(oldestVersion) {
@@ -1162,8 +1171,11 @@ func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 * Reuse the existing cluster with Kubernetes v{{.old}} or newer: Run "minikube start {{.profile}} --kubernetes-version={{.old}}"`, out.V{"new": nvs, "old": ovs, "profile": profileArg})
 
 	}
+	if defaultVersion.GT(nvs) {
+		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
+	}
+
 	if nvs.GT(ovs) {
-		out.T(out.ThumbsUp, "Upgrading from Kubernetes {{.old}} to {{.new}}", out.V{"old": ovs, "new": nvs})
 		isUpgrade = true
 	}
 	return nv, isUpgrade
