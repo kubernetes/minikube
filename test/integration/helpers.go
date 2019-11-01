@@ -42,8 +42,10 @@ import (
 )
 
 var (
-	antiRaceCounter = 0
-	antiRaceMutex   = &sync.Mutex{}
+	// startTimes is a list of startup times, to guarantee --start-offset
+	startTimes = []time.Time{}
+	// startTimesMutex is a lock to update startTimes without a race condition
+	startTimesMutex = &sync.Mutex{}
 )
 
 // RunResult stores the result of an cmd.Run call
@@ -177,7 +179,7 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
 	if t.Failed() && *postMortemLogs {
 		t.Logf("%s failed, collecting logs ...", t.Name())
-		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "-n", "100"))
+		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
 		if err != nil {
 			t.Logf("failed logs error: %v", err)
 		}
@@ -227,9 +229,10 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 	f := func() (bool, error) {
 		pods, err := client.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
-			t.Logf("Pod(%s).List(%v) returned error: %v", ns, selector, err)
-			// Don't bother to retry: something is very wrong.
-			return true, err
+			t.Logf("WARNING: pod list for %q %q returned: %v", ns, selector, err)
+			// Don't return the error upwards so that this is retried, in case the apiserver is rescheduled
+			podStart = time.Time{}
+			return false, nil
 		}
 		if len(pods.Items) == 0 {
 			podStart = time.Time{}
@@ -331,25 +334,32 @@ func MaybeParallel(t *testing.T) {
 	t.Parallel()
 }
 
-// MaybeSlowParallel is a terrible workaround for tests which start clusters in a race-filled world
-// TODO: Try removing this hack once certificates are deployed per-profile
-func MaybeSlowParallel(t *testing.T) {
-	// NoneDriver shouldn't parallelize "minikube start"
+// WaitForStartSlot enforces --start-offset to avoid startup race conditions
+func WaitForStartSlot(t *testing.T) {
+	// Not parallel
 	if NoneDriver() {
 		return
 	}
 
-	antiRaceMutex.Lock()
-	antiRaceCounter++
-	antiRaceMutex.Unlock()
-
-	if antiRaceCounter > 0 {
-		// Slow enough to offset start, but not slow to be a major source of delay
-		penalty := time.Duration(5*antiRaceCounter) * time.Second
-		t.Logf("MaybeSlowParallel: Sleeping %s to avoid start race ...", penalty)
-		time.Sleep(penalty)
+	wakeup := time.Now()
+	startTimesMutex.Lock()
+	if len(startTimes) > 0 {
+		nextStart := startTimes[len(startTimes)-1].Add(*startOffset)
+		// Ignore nextStart if it is in the past - to guarantee offset for next caller
+		if time.Now().Before(nextStart) {
+			wakeup = nextStart
+		}
 	}
-	t.Parallel()
+	startTimes = append(startTimes, wakeup)
+	startTimesMutex.Unlock()
+
+	if time.Now().Before(wakeup) {
+		d := time.Until(wakeup)
+		t.Logf("Waiting for start slot at %s (sleeping %s)  ...", wakeup, d)
+		time.Sleep(d)
+	} else {
+		t.Logf("No need to wait for start slot, it is already %s", time.Now())
+	}
 }
 
 // killProcessFamily kills a pid and all of its children

@@ -17,13 +17,17 @@ limitations under the License.
 package command
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io"
+	"os/exec"
 	"path"
 	"sync"
+	"time"
 
 	"github.com/golang/glog"
+	"github.com/kballard/go-shellquote"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
@@ -55,17 +59,6 @@ func (s *SSHRunner) Remove(f assets.CopyableFile) error {
 	return sess.Run(cmd)
 }
 
-type singleWriter struct {
-	b  bytes.Buffer
-	mu sync.Mutex
-}
-
-func (w *singleWriter) Write(p []byte) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	return w.b.Write(p)
-}
-
 // teeSSH runs an SSH command, streaming stdout, stderr to logs
 func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	outPipe, err := s.StdoutPipe()
@@ -81,13 +74,13 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	wg.Add(2)
 
 	go func() {
-		if err := util.TeePrefix(util.ErrPrefix, errPipe, errB, glog.V(8).Infof); err != nil {
+		if err := teePrefix(util.ErrPrefix, errPipe, errB, glog.V(8).Infof); err != nil {
 			glog.Errorf("tee stderr: %v", err)
 		}
 		wg.Done()
 	}()
 	go func() {
-		if err := util.TeePrefix(util.OutPrefix, outPipe, outB, glog.V(8).Infof); err != nil {
+		if err := teePrefix(util.OutPrefix, outPipe, outB, glog.V(8).Infof); err != nil {
 			glog.Errorf("tee stdout: %v", err)
 		}
 		wg.Done()
@@ -97,12 +90,31 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	return err
 }
 
-// Run starts a command on the remote and waits for it to return.
-func (s *SSHRunner) Run(cmd string) error {
-	glog.Infof("SSH: %s", cmd)
+// RunCmd implements the Command Runner interface to run a exec.Cmd object
+func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+	rr := &RunResult{Args: cmd.Args}
+	glog.Infof("(SSHRunner) Run:  %v", rr.Command())
+
+	var outb, errb io.Writer
+	start := time.Now()
+
+	if cmd.Stdout == nil {
+		var so bytes.Buffer
+		outb = io.MultiWriter(&so, &rr.Stdout)
+	} else {
+		outb = io.MultiWriter(cmd.Stdout, &rr.Stdout)
+	}
+
+	if cmd.Stderr == nil {
+		var se bytes.Buffer
+		errb = io.MultiWriter(&se, &rr.Stderr)
+	} else {
+		errb = io.MultiWriter(cmd.Stderr, &rr.Stderr)
+	}
+
 	sess, err := s.c.NewSession()
 	if err != nil {
-		return errors.Wrap(err, "NewSession")
+		return rr, errors.Wrap(err, "NewSession")
 	}
 
 	defer func() {
@@ -112,43 +124,21 @@ func (s *SSHRunner) Run(cmd string) error {
 			}
 		}
 	}()
-	var outB bytes.Buffer
-	var errB bytes.Buffer
-	err = teeSSH(sess, cmd, &outB, &errB)
-	if err != nil {
-		return errors.Wrapf(err, "command failed: %s\nstdout: %s\nstderr: %s", cmd, outB.String(), errB.String())
-	}
-	return nil
-}
 
-// CombinedOutputTo runs the command and stores both command
-// output and error to out.
-func (s *SSHRunner) CombinedOutputTo(cmd string, w io.Writer) error {
-	out, err := s.CombinedOutput(cmd)
-	if err != nil {
-		return err
+	elapsed := time.Since(start)
+	err = teeSSH(sess, shellquote.Join(cmd.Args...), outb, errb)
+	if err == nil {
+		// Reduce log spam
+		if elapsed > (1 * time.Second) {
+			glog.Infof("(SSHRunner) Done: %v: (%s)", rr.Command(), elapsed)
+		}
+	} else {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			rr.ExitCode = exitError.ExitCode()
+		}
+		glog.Infof("(SSHRunner) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
 	}
-	_, err = w.Write([]byte(out))
-	return err
-}
-
-// CombinedOutput runs the command on the remote and returns its combined
-// standard output and standard error.
-func (s *SSHRunner) CombinedOutput(cmd string) (string, error) {
-	glog.Infoln("Run with output:", cmd)
-	sess, err := s.c.NewSession()
-	if err != nil {
-		return "", errors.Wrap(err, "NewSession")
-	}
-	defer sess.Close()
-
-	var combined singleWriter
-	err = teeSSH(sess, cmd, &combined, &combined)
-	out := combined.b.String()
-	if err != nil {
-		return out, err
-	}
-	return out, nil
+	return rr, err
 }
 
 // Copy copies a file to the remote over SSH.
@@ -197,4 +187,31 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
 	}
 	return g.Wait()
+}
+
+// teePrefix copies bytes from a reader to writer, logging each new line.
+func teePrefix(prefix string, r io.Reader, w io.Writer, logger func(format string, args ...interface{})) error {
+	scanner := bufio.NewScanner(r)
+	scanner.Split(bufio.ScanBytes)
+	var line bytes.Buffer
+
+	for scanner.Scan() {
+		b := scanner.Bytes()
+		if _, err := w.Write(b); err != nil {
+			return err
+		}
+		if bytes.IndexAny(b, "\r\n") == 0 {
+			if line.Len() > 0 {
+				logger("%s%s", prefix, line.String())
+				line.Reset()
+			}
+			continue
+		}
+		line.Write(b)
+	}
+	// Catch trailing output in case stream does not end with a newline
+	if line.Len() > 0 {
+		logger("%s%s", prefix, line.String())
+	}
+	return nil
 }
