@@ -171,7 +171,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
-	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
+	startCmd.Flags().Bool(waitUntilHealthy, false, "Wait until Kubernetes core services are healthy before exiting.")
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
@@ -390,10 +390,14 @@ func enableAddons() {
 }
 
 func waitCluster(bs bootstrapper.Bootstrapper, config cfg.Config) {
-	if viper.GetBool(waitUntilHealthy) {
-		if err := bs.WaitCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
-			exit.WithError("Wait failed", err)
-		}
+	var podsToWaitFor []string
+
+	if !viper.GetBool(waitUntilHealthy) {
+		// only wait for apiserver if wait=false
+		podsToWaitFor = []string{"apiserver"}
+	}
+	if err := bs.WaitForPods(config.KubernetesConfig, viper.GetDuration(waitTimeout), podsToWaitFor); err != nil {
+		exit.WithError("Wait failed", err)
 	}
 }
 
@@ -748,7 +752,7 @@ func validateFlags(drvName string) {
 	} else {
 		cpuCount = viper.GetInt(cpus)
 	}
-	if cpuCount < minimumCPUS {
+	if cpuCount < minimumCPUS && !viper.GetBool(force) {
 		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
@@ -1015,7 +1019,7 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 		}
 	}
 
-	if driver.BareMetal(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) {
 		trySSH(h, ip)
 	}
 
@@ -1047,8 +1051,10 @@ Suggested workarounds:
 }
 
 func tryLookup(r command.Runner) {
-	if err := r.Run("nslookup kubernetes.io"); err != nil {
-		out.WarningT("VM is unable to resolve DNS hosts: {[.error}}", out.V{"error": err})
+	// DNS check
+	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
+		glog.Warningf("%s failed: %v", rr.Args, err)
+		out.WarningT("VM may be unable to resolve external DNS records")
 	}
 }
 
@@ -1060,19 +1066,22 @@ func tryPing(r command.Runner) {
 }
 
 func tryRegistry(r command.Runner) {
-	// Try an HTTPS connection to the
+	// Try an HTTPS connection to the image repository
 	proxy := os.Getenv("HTTPS_PROXY")
-	opts := "-sS"
+	opts := []string{"-sS"}
 	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
-		opts = fmt.Sprintf("-x %s %s", proxy, opts)
+		opts = append([]string{"-x", proxy}, opts...)
 	}
 
 	repo := viper.GetString(imageRepository)
 	if repo == "" {
 		repo = images.DefaultImageRepo
 	}
-	if err := r.Run(fmt.Sprintf("curl %s https://%s/", opts, repo)); err != nil {
-		out.WarningT("VM is unable to connect to the selected image repository: {{.error}}", out.V{"error": err})
+
+	opts = append(opts, fmt.Sprintf("https://%s/", repo))
+	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
+		glog.Warningf("%s failed: %v", rr.Args, err)
+		out.WarningT("VM is unable to access {{.repository}}, you may need to configure a proxy or set --image-repository", out.V{"repository": repo})
 	}
 }
 

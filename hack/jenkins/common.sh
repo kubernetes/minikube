@@ -23,8 +23,6 @@
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
-# PARALLEL_COUNT: number of tests to run in parallel
-
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
@@ -41,21 +39,6 @@ echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
-
-readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]" | cut -d" " -f3)
-if [[ "${LOAD}" -gt 2 ]]; then
-  echo ""
-  echo "********************** LOAD WARNING ********************************"
-  echo "Load average is very high (${LOAD}), which may cause failures. Top:"
-  if [[ "$(uname)" == "Darwin" ]]; then
-    # Two samples, macOS does not calculate CPU usage on the first one
-    top -l 2 -o cpu -n 5 | tail -n 15
-  else
-    top -b -n1 | head -n 15
-  fi
-  echo "********************** LOAD WARNING ********************************"
-  echo ""
-fi
 
 case "${VM_DRIVER}" in
   kvm2)
@@ -159,6 +142,10 @@ if type -P virsh; then
 fi
 
 if type -P vboxmanage; then
+  killall VBoxHeadless || true
+  sleep 1
+  killall -9 VBoxHeadless || true
+
   for guid in $(vboxmanage list vms | grep -Eo '\{[a-zA-Z0-9-]+\}'); do
     echo "- Removing stale VirtualBox VM: $guid"
     vboxmanage startvm "${guid}" --type emergencystop || true
@@ -254,14 +241,31 @@ if [ "$(uname)" != "Darwin" ]; then
   docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
 fi
 
+readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]+" | cut -d" " -f3)
+if [[ "${LOAD}" -gt 2 ]]; then
+  echo ""
+  echo "********************** LOAD WARNING ********************************"
+  echo "Load average is very high (${LOAD}), which may cause failures. Top:"
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Two samples, macOS does not calculate CPU usage on the first one
+    top -l 2 -o cpu -n 5 | tail -n 15
+  else
+    top -b -n1 | head -n 15
+  fi
+  echo "********************** LOAD WARNING ********************************"
+  echo "Sleeping 30s to see if load goes down ...."
+  sleep 30
+  uptime
+fi
+
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 set -x
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
-  -test.timeout=60m \
-  -test.parallel=${PARALLEL_COUNT} \
+  -test.timeout=70m \
+  ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" && result=$? || result=$?
 set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"

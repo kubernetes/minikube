@@ -30,10 +30,14 @@ func TestGvisorAddon(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("Can't run containerd backend with none driver")
 	}
-	MaybeSlowParallel(t)
+	if !*enableGvisor {
+		t.Skip("skipping test because --gvisor=false")
+	}
 
+	MaybeParallel(t)
+	WaitForStartSlot(t)
 	profile := UniqueProfileName("gvisor")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer func() {
 		if t.Failed() {
 			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "gvisor", "-n", "kube-system"))

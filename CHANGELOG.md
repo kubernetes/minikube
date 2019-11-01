@@ -1,5 +1,37 @@
 # Release Notes
 
+## Version 1.5.2 - 2019-10-31 (Happy Halloween!)
+
+* service: fix --url mode [#5790](https://github.com/kubernetes/minikube/pull/5790)
+* Refactor command runner interface, allow stdin writes [#5530](https://github.com/kubernetes/minikube/pull/5530)
+* macOS install docs: minikube is a normal Homebrew formula now [#5750](https://github.com/kubernetes/minikube/pull/5750)
+* Allow CPU count check to be disabled using --force [#5803](https://github.com/kubernetes/minikube/pull/5803)
+* Make network validation friendlier, especially to corp networks [#5802](https://github.com/kubernetes/minikube/pull/5802)
+
+Thank you to our contributors for this release:
+
+- Anders F Björklund
+- Issy Long
+- Medya Ghazizadeh
+- Thomas Strömberg
+
+## Version 1.5.1 - 2019-10-29
+
+* Set Docker open-files limit ( 'ulimit -n') to be consistent with other runtimes [#5761](https://github.com/kubernetes/minikube/pull/5761)
+* Use fixed uid/gid for the default user account [#5767](https://github.com/kubernetes/minikube/pull/5767)
+* Set --wait=false to default but still wait for apiserver [#5757](https://github.com/kubernetes/minikube/pull/5757)
+* kubelet: Pass --config to use kubeadm generated configuration [#5697](https://github.com/kubernetes/minikube/pull/5697)
+* Refactor to remove opening browser and just return url(s) [#5718](https://github.com/kubernetes/minikube/pull/5718)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Medya Ghazizadeh
+- Nanik T
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+
 ## Version 1.5.0 - 2019-10-25
 
 * Default to best-available local hypervisor rather than VirtualBox [#5700](https://github.com/kubernetes/minikube/pull/5700)
