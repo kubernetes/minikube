@@ -114,6 +114,21 @@ func NewFakeRunner(t *testing.T) *FakeRunner {
 	}
 }
 
+func buffer(s string, err error) (*command.RunResult, error) {
+	rr := &command.RunResult{}
+	if err != nil {
+		return rr, err
+	}
+	var buf bytes.Buffer
+	_, err = buf.WriteString(s)
+	if err != nil {
+		return rr, errors.Wrap(err, "Writing outStr to FakeRunner's buffer")
+	}
+	rr.Stdout = buf
+	rr.Stderr = buf
+	return rr, err
+}
+
 // Run a fake command!
 func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	xargs := cmd.Args
@@ -127,77 +142,15 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	}
 	switch bin {
 	case "systemctl":
-		s, err := f.systemctl(args, root)
-		rr := &command.RunResult{}
-		if err != nil {
-			return rr, err
-		}
-		var buf bytes.Buffer
-		_, err = buf.WriteString(s)
-		if err != nil {
-			return rr, errors.Wrap(err, "Writing outStr to FakeRunner's buffer")
-		}
-		rr.Stdout = buf
-		rr.Stderr = buf
-		return rr, err
+		return buffer(f.systemctl(args, root))
 	case "docker":
-		s, err := f.docker(args, root)
-		rr := &command.RunResult{}
-		if err != nil {
-			return rr, err
-		}
-		var buf bytes.Buffer
-		_, err = buf.WriteString(s)
-		if err != nil {
-			return rr, errors.Wrap(err, "Writing FakeRunner's buffer")
-		}
-		rr.Stdout = buf
-		rr.Stderr = buf
-		return rr, err
-
+		return buffer(f.docker(args, root))
 	case "crictl":
-		s, err := f.crictl(args, root)
-		rr := &command.RunResult{}
-		if err != nil {
-			return rr, err
-		}
-		var buf bytes.Buffer
-		_, err = buf.WriteString(s)
-		if err != nil {
-			return rr, errors.Wrap(err, "Writing to FakeRunner's buffer")
-		}
-		rr.Stdout = buf
-		rr.Stderr = buf
-		return rr, err
+		return buffer(f.crictl(args, root))
 	case "crio":
-		s, err := f.crio(args, root)
-		rr := &command.RunResult{}
-		if err != nil {
-			return rr, err
-		}
-		var buf bytes.Buffer
-		_, err = buf.WriteString(s)
-		if err != nil {
-			return rr, errors.Wrap(err, "Writing to FakeRunner's buffer")
-		}
-		rr.Stdout = buf
-		rr.Stderr = buf
-		return rr, err
+		return buffer(f.crio(args, root))
 	case "containerd":
-		s, err := f.containerd(args, root)
-		rr := &command.RunResult{}
-		if err != nil {
-			return rr, err
-		}
-
-		var buf bytes.Buffer
-		_, err = buf.WriteString(s)
-		if err != nil {
-			return rr, errors.Wrap(err, "Writing to FakeRunner's buffer")
-		}
-		rr.Stdout = buf
-		rr.Stderr = buf
-		return rr, err
+		return buffer(f.containerd(args, root))
 	default:
 		rr := &command.RunResult{}
 		return rr, nil
