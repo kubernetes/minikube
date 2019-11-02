@@ -142,7 +142,7 @@ else
 endif
 
 
-out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES)
+out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES) go.mod
 	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
