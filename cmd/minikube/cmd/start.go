@@ -1024,7 +1024,6 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 	}
 
 	tryLookup(r)
-	tryPing(r)
 	tryRegistry(r)
 	return ip
 }
@@ -1055,13 +1054,6 @@ func tryLookup(r command.Runner) {
 	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
 		glog.Warningf("%s failed: %v", rr.Args, err)
 		out.WarningT("VM may be unable to resolve external DNS records")
-	}
-}
-
-func tryPing(r command.Runner) {
-	// Try both UDP and ICMP to assert basic external connectivity
-	if err := r.Run("nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8"); err != nil {
-		out.WarningT("VM is unable to directly connect to the internet: {{.error}}", out.V{"error": err})
 	}
 }
 
