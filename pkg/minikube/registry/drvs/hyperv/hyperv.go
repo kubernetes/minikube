@@ -57,6 +57,7 @@ func configure(config cfg.MachineConfig) interface{} {
 	d.DiskSize = config.DiskSize
 	d.SSHUser = "docker"
 	d.DisableDynamicMemory = true // default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
+	d.PreferredNetworkProtocol = hyperv.PreferIPv4 // default to IPv4 network
 	return d
 }
 
