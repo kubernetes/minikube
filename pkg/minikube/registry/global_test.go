@@ -81,7 +81,7 @@ func TestGlobalInstalled(t *testing.T) {
 	}
 
 	expected := []DriverState{
-		DriverState{
+		{
 			Name:     "bar",
 			Priority: Default,
 			State: State{
