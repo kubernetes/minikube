@@ -29,12 +29,19 @@ import (
 type Priority int
 
 const (
+	// Unknown priority
 	Unknown Priority = iota
+	// Discouraged priority
 	Discouraged
+	// Deprecated priority
 	Deprecated
+	// Fallback priority
 	Fallback
+	// Default priority
 	Default
+	// Preferred priority
 	Preferred
+	// StronglyPreferred priority
 	StronglyPreferred
 )
 
