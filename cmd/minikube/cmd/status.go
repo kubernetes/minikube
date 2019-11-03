@@ -40,6 +40,7 @@ import (
 var statusFormat string
 var output string
 
+// KubeconfigStatus represents the kubeconfig status
 var KubeconfigStatus = struct {
 	Configured    string
 	Misconfigured string

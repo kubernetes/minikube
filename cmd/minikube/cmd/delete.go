@@ -17,15 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/profile"
 )
@@ -110,10 +106,6 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	// If the purge flag is set, go ahead and delete the .minikube directory.
 	if purge {
-		glog.Infof("Purging the '.minikube' directory located at %s", localpath.MiniPath())
-		if err := os.RemoveAll(localpath.MiniPath()); err != nil {
-			exit.WithError("unable to delete minikube config folder", err)
-		}
-		out.T(out.Crushed, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
+		profile.PurgeMinikubeDirectory()
 	}
 }

@@ -211,3 +211,11 @@ func handleMultipleDeletionErrors(errors []error) {
 		}
 	}
 }
+
+func PurgeMinikubeDirectory() {
+	glog.Infof("Purging the '.minikube' directory located at %s", localpath.MiniPath())
+	if err := os.RemoveAll(localpath.MiniPath()); err != nil {
+		exit.WithError("unable to delete minikube config folder", err)
+	}
+	out.T(out.Crushed, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
+}
