@@ -509,6 +509,7 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 	}
 
 	glog.Infof("Waiting for apiserver to port healthy status ...")
+	var client *kubernetes.Clientset
 	f := func() (bool, error) {
 		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
 		glog.Infof("apiserver status: %s, err: %v", status, err)
@@ -520,10 +521,13 @@ func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
 			return false, nil
 		}
 		// Make sure apiserver pod is retrievable
-		client, err := k.client(k8s)
-		if err != nil {
-			glog.Warningf("get kubernetes client: %v", err)
-			return false, nil
+		if client == nil {
+			// We only want to get the clientset once, because this line takes ~1 second to complete
+			client, err = k.client(k8s)
+			if err != nil {
+				glog.Warningf("get kubernetes client: %v", err)
+				return false, nil
+			}
 		}
 
 		_, err = client.CoreV1().Pods("kube-system").Get("kube-apiserver-minikube", metav1.GetOptions{})

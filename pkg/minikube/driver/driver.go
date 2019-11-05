@@ -26,15 +26,24 @@ import (
 )
 
 const (
-	Mock         = "mock"
-	None         = "none"
-	KVM2         = "kvm2"
-	VirtualBox   = "virtualbox"
-	HyperKit     = "hyperkit"
-	VMware       = "vmware"
+	// Mock driver
+	Mock = "mock"
+	// None driver
+	None = "none"
+	// KVM2 driver
+	KVM2 = "kvm2"
+	// VirtualBox driver
+	VirtualBox = "virtualbox"
+	// HyperKit driver
+	HyperKit = "hyperkit"
+	// VMware driver
+	VMware = "vmware"
+	// VMwareFusion driver
 	VMwareFusion = "vmwarefusion"
-	HyperV       = "hyperv"
-	Parallels    = "parallels"
+	// HyperV driver
+	HyperV = "hyperv"
+	// Parallels driver
+	Parallels = "parallels"
 )
 
 var (

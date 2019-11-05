@@ -30,8 +30,9 @@ VM_DRIVER="virtualbox"
 JOB_NAME="VirtualBox_Linux"
 EXPECTED_DEFAULT_DRIVER="kvm2"
 
-mkdir -p cron && gsutil -m rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron
-sudo install cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot
+mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
+sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
+
 
 # Download files and set permissions
 source ./common.sh
