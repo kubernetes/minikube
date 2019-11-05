@@ -284,13 +284,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	oldConfig, err := cfg.Load()
+	existing, err := cfg.Load()
 	if err != nil && !os.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
-	driverName := selectDriver(oldConfig)
-	glog.Infof("selected: %v", driverName)
+	driverName := selectDriver(existing)
+	validateDriver(driverName, existing)
 	err = autoSetDriverOptions(cmd, driverName)
 	if err != nil {
 		glog.Errorf("Error autoSetOptions : %v", err)
@@ -309,7 +309,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
+	k8sVersion, isUpgrade := getKubernetesVersion(existing)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
@@ -542,67 +542,85 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string) error {
 	return nil
 }
 
-func selectDriver(oldConfig *cfg.Config) string {
+// selectDriver returns which driver to choose based on flags, existing configs, and hypervisor detection
+func selectDriver(existing *cfg.Config) string {
 	name := viper.GetString("vm-driver")
-	glog.Infof("selectDriver: flag=%q, old=%v", name, oldConfig)
-	if name == "" {
-		// By default, the driver is whatever we used last time
-		if oldConfig != nil {
-			return oldConfig.MachineConfig.VMDriver
-		}
-		options := driver.Choices()
-		pick, alts := driver.Choose(options)
-		if len(options) > 1 {
-			out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"driver": pick.Name, "alternates": alts})
-		} else {
-			out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver`, out.V{"driver": pick.Name})
-		}
-
-		if pick.Name == "" {
-			exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --vm-driver, or see https://minikube.sigs.k8s.io/docs/start/")
-		}
-
-		name = pick.Name
+	glog.Infof("selectDriver: flag=%q, old=%v", name, existing)
+	if name != "" {
+		return name
 	}
+
+	options := driver.Choices()
+	pick, alts := driver.Choose(options)
+
+	// By default, the driver is whatever we used last time
+	if existing != nil {
+		// alts by any other name
+		others := []string{}
+		if pick.Name != existing.MachineConfig.VMDriver {
+			others = append(others, pick.Name)
+		}
+		for _, d := range alts {
+			if d.Name != existing.MachineConfig.VMDriver {
+				others = append(others, d.Name)
+			}
+		}
+		out.T(out.Sparkle, `Using '{{.driver}}' driver as per existing configuration (alternates: {{.alternates}})`, out.V{"driver": existing.MachineConfig.VMDriver, "alternates": others})
+		return existing.MachineConfig.VMDriver
+	}
+
+	if len(options) > 1 {
+		out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"driver": pick.Name, "alternates": alts})
+	} else {
+		out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver`, out.V{"driver": pick.Name})
+	}
+
+	if pick.Name == "" {
+		exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --vm-driver, or see https://minikube.sigs.k8s.io/docs/start/")
+	}
+	return pick.Name
+}
+
+// validateDriver validates that the selected driver appears sane, exits if not
+func validateDriver(name string, existing *cfg.Config) {
 	if !driver.Supported(name) {
-		exit.WithCodeT(exit.Failure, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+		exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
 
 	st := driver.Status(name)
 	if st.Error != nil {
 		out.ErrLn("")
-		out.WarningT("'{{.driver}}' driver reported a possible issue: {{.error}}", out.V{"driver": name, "error": st.Error, "fix": st.Fix})
+
+		out.WarningT("'{{.driver}}' driver reported an issue: {{.error}}", out.V{"driver": name, "error": st.Error})
 		out.ErrT(out.Tip, "Suggestion: {{.fix}}", out.V{"fix": translate.T(st.Fix)})
 		if st.Doc != "" {
 			out.ErrT(out.Documentation, "Documentation: {{.url}}", out.V{"url": st.Doc})
 		}
 		out.ErrLn("")
+
+		if !st.Installed && !viper.GetBool(force) {
+			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
+		}
 	}
 
-	// Detect if our driver conflicts with a previously created VM. If we run into any errors, just move on.
+	if existing == nil {
+		return
+	}
+
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Infof("selectDriver NewAPIClient: %v", err)
-		return name
-	}
-
-	exists, err := api.Exists(cfg.GetMachineName())
-	if err != nil {
-		glog.Infof("selectDriver api.Exists: %v", err)
-		return name
-	}
-	if !exists {
-		return name
+		glog.Warningf("selectDriver NewAPIClient: %v", err)
+		return
 	}
 
 	h, err := api.Load(cfg.GetMachineName())
 	if err != nil {
-		glog.Infof("selectDriver api.Load: %v", err)
-		return name
+		glog.Warningf("selectDriver api.Load: %v", err)
+		return
 	}
 
-	if h.Driver.DriverName() == name || h.Driver.DriverName() == "not-found" {
-		return name
+	if h.Driver.DriverName() == name {
+		return
 	}
 
 	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
@@ -613,7 +631,6 @@ func selectDriver(oldConfig *cfg.Config) string {
       or
       2) Restart with the existing driver: '{{.command}} start --vm-driver={{.old_driver}}'`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName()})
 	exit.WithCodeT(exit.Config, "Exiting due to driver incompatibility")
-	return ""
 }
 
 func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
