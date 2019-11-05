@@ -301,12 +301,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// No need to install a driver in download-only mode
 	if !viper.GetBool(downloadOnly) {
-		v, err := version.GetSemverVersion()
-		if err != nil {
-			out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-		} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
-			out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
-		}
+		updateDriver(driverName)
 	}
 
 	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
@@ -360,12 +355,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	configureMounts()
 
 	// enable addons with start command
-	for _, a := range addonList {
-		err = cmdcfg.Set(a, "true")
-		if err != nil {
-			exit.WithError("addon enable failed", err)
-		}
-	}
+	enableAddons()
 
 	if err = loadCachedImagesInConfigFile(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
@@ -375,7 +365,31 @@ func runStart(cmd *cobra.Command, args []string) {
 	if driverName == driver.None {
 		prepareNone()
 	}
+	waitCluster(bs, config)
+	if err := showKubectlInfo(kubeconfig, k8sVersion); err != nil {
+		glog.Errorf("kubectl info: %v", err)
+	}
+}
 
+func updateDriver(driverName string) {
+	v, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+	} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
+	}
+}
+
+func enableAddons() {
+	for _, a := range addonList {
+		err := cmdcfg.Set(a, "true")
+		if err != nil {
+			exit.WithError("addon enable failed", err)
+		}
+	}
+}
+
+func waitCluster(bs bootstrapper.Bootstrapper, config cfg.Config) {
 	var podsToWaitFor []string
 
 	if !viper.GetBool(waitUntilHealthy) {
@@ -384,9 +398,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	if err := bs.WaitForPods(config.KubernetesConfig, viper.GetDuration(waitTimeout), podsToWaitFor); err != nil {
 		exit.WithError("Wait failed", err)
-	}
-	if err := showKubectlInfo(kubeconfig, k8sVersion); err != nil {
-		glog.Errorf("kubectl info: %v", err)
 	}
 }
 
@@ -741,7 +752,7 @@ func validateFlags(drvName string) {
 	} else {
 		cpuCount = viper.GetInt(cpus)
 	}
-	if cpuCount < minimumCPUS {
+	if cpuCount < minimumCPUS && !viper.GetBool(force) {
 		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
@@ -1009,10 +1020,19 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 	}
 
 	if !driver.BareMetal(h.Driver.DriverName()) {
-		sshAddr := fmt.Sprintf("%s:22", ip)
-		conn, err := net.Dial("tcp", sshAddr)
-		if err != nil {
-			exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
+		trySSH(h, ip)
+	}
+
+	tryLookup(r)
+	tryRegistry(r)
+	return ip
+}
+
+func trySSH(h *host.Host, ip string) {
+	sshAddr := fmt.Sprintf("%s:22", ip)
+	conn, err := net.Dial("tcp", sshAddr)
+	if err != nil {
+		exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
 
 This is likely due to one of two reasons:
 
@@ -1025,20 +1045,20 @@ Suggested workarounds:
 - Configure your local VPN or firewall to allow access to {{.ip}}
 - Restart or reinstall {{.hypervisor}}
 - Use an alternative --vm-driver`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
-		}
-		defer conn.Close()
 	}
+	defer conn.Close()
+}
 
-	if _, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
-		out.WarningT("VM is unable to resolve DNS hosts: {[.error}}", out.V{"error": err})
+func tryLookup(r command.Runner) {
+	// DNS check
+	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
+		glog.Warningf("%s failed: %v", rr.Args, err)
+		out.WarningT("VM may be unable to resolve external DNS records")
 	}
+}
 
-	// Try both UDP and ICMP to assert basic external connectivity
-	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", "nslookup k8s.io 8.8.8.8 || nslookup k8s.io 1.1.1.1 || ping -c1 8.8.8.8")); err != nil {
-		out.WarningT("VM is unable to directly connect to the internet: {{.error}}", out.V{"error": err})
-	}
-
-	// Try an HTTPS connection to the
+func tryRegistry(r command.Runner) {
+	// Try an HTTPS connection to the image repository
 	proxy := os.Getenv("HTTPS_PROXY")
 	opts := []string{"-sS"}
 	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
@@ -1051,10 +1071,10 @@ Suggested workarounds:
 	}
 
 	opts = append(opts, fmt.Sprintf("https://%s/", repo))
-	if _, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
-		out.WarningT("VM is unable to connect to the selected image repository: {{.error}}", out.V{"error": err})
+	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
+		glog.Warningf("%s failed: %v", rr.Args, err)
+		out.WarningT("VM is unable to access {{.repository}}, you may need to configure a proxy or set --image-repository", out.V{"repository": repo})
 	}
-	return ip
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable

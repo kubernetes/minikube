@@ -144,12 +144,16 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	// If the purge flag is set, go ahead and delete the .minikube directory.
 	if purge {
-		glog.Infof("Purging the '.minikube' directory located at %s", localpath.MiniPath())
-		if err := os.RemoveAll(localpath.MiniPath()); err != nil {
-			exit.WithError("unable to delete minikube config folder", err)
-		}
-		out.T(out.Crushed, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
+		purgeMinikubeDirectory()
 	}
+}
+
+func purgeMinikubeDirectory() {
+	glog.Infof("Purging the '.minikube' directory located at %s", localpath.MiniPath())
+	if err := os.RemoveAll(localpath.MiniPath()); err != nil {
+		exit.WithError("unable to delete minikube config folder", err)
+	}
+	out.T(out.Crushed, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
 }
 
 // DeleteProfiles deletes one or more profiles
@@ -232,6 +236,13 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	out.T(out.Crushed, `The "{{.name}}" cluster has been deleted.`, out.V{"name": profile.Name})
 
 	machineName := pkg_config.GetMachineName()
+	if err := deleteContext(machineName); err != nil {
+		return err
+	}
+	return nil
+}
+
+func deleteContext(machineName string) error {
 	if err := kubeconfig.DeleteContext(constants.KubeconfigPath, machineName); err != nil {
 		return DeletionError{Err: fmt.Errorf("update config: %v", err), Errtype: Fatal}
 	}
