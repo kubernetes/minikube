@@ -38,6 +38,9 @@ var isoVersion = "v0.0.0-unset"
 
 var isoPath = "minikube/iso"
 
+// hyperKitVersion is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.hyperKitVersion=v0.YYYYMMDD"
+var hyperKitVersion = "v0.20000101-unset"
+
 // GetVersion returns the current minikube version
 func GetVersion() string {
 	return version
@@ -56,6 +59,11 @@ func GetISOVersion() string {
 // GetISOPath returns the remote path to the minikube.iso
 func GetISOPath() string {
 	return isoPath
+}
+
+// GetHyperKitVersion returns the specific hyperKit version
+func GetHyperKitVersion() string {
+	return hyperKitVersion
 }
 
 // GetSemverVersion returns the current minikube semantic version (semver)

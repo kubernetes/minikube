@@ -22,8 +22,10 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/golang/glog"
 	"github.com/pborman/uuid"
 
 	"k8s.io/minikube/pkg/drivers/hyperkit"
@@ -31,6 +33,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/version"
 )
 
 const (
@@ -85,5 +88,57 @@ func status() registry.State {
 		return registry.State{Installed: true, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Run 'brew install hyperkit'", Doc: docURL}
 	}
 
+	// Split version from v0.YYYYMMDD-HH-xxxxxxx or 0.YYYYMMDD to YYYYMMDD
+	specificVersion := splitHyperKitVersion(version.GetHyperKitVersion())
+	// If hyperkit is not newer than specificVersion, suggest upgrade information
+	isNew := isNewerVersion(convertVersionToDate(string(out)), specificVersion)
+	if !isNew {
+		return registry.State{Installed: true, Error: fmt.Errorf("%s is too old. the higher than %s is needed", "hyperkit version", version.GetHyperKitVersion()), Fix: "Run 'brew upgrade hyperkit' or Upgrade Docker for Desktop version", Doc: docURL}
+	}
+
 	return registry.State{Installed: true, Healthy: true}
+}
+
+// isNewerVersion checks whether current hyperkit is newer than specific version
+func isNewerVersion(currentVersion string, specificVersion string) bool {
+	// Convert hyperkit version to time.Date to compare whether hyperkit version is not old.
+	layout := "20060102"
+	currentVersionDate, err := time.Parse(layout, currentVersion)
+	if err != nil {
+		glog.Warningf("Unable to parse to time.Date: %v", err)
+	}
+	specificVersionDate, err := time.Parse(layout, specificVersion)
+	if err != nil {
+		glog.Warningf("Unable to parse to time.Date: %v", err)
+	}
+	// If currentVersionDate is equal to specificVersionDate, no need to upgrade hyperkit
+	if currentVersionDate.Equal(specificVersionDate) {
+		return true
+	}
+	// If currentVersionDate is after specificVersionDate, return true
+	return currentVersionDate.After(specificVersionDate)
+}
+
+// convertVersionToDate returns current hyperkit version
+// hyperkit returns version info with two patterns(v0.YYYYMMDD-HH-xxxxxxx or 0.YYYYMMDD)
+// convertVersionToDate splits version to YYYYMMDD format
+func convertVersionToDate(hyperKitVersionOutput string) string {
+	// `hyperkit -v` returns version info with multi line.
+	// Cut off like "hyperkit: v0.20190201-11-gc0dd46" or "hyperkit: 0.20190201"
+	versionLine := strings.Split(hyperKitVersionOutput, "\n")[0]
+	// Cut off like "v0.20190201-11-gc0dd46" or "0.20190201"
+	version := strings.Split(versionLine, ": ")[1]
+	// Format to "YYYYMMDD"
+	return splitHyperKitVersion(version)
+}
+
+// splitHyperKitVersion splits version from v0.YYYYMMDD-HH-xxxxxxx or 0.YYYYMMDD to YYYYMMDD
+func splitHyperKitVersion(version string) string {
+	// Cut off like "20190201-11-gc0dd46" or "20190201"
+	version = strings.Split(version, ".")[1]
+	if len(version) >= 8 {
+		// Format to "20190201"
+		version = version[:8]
+	}
+	return version
 }
