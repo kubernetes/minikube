@@ -16,40 +16,55 @@
 
 set -eu -o pipefail
 
+TESTSUITE="${TESTSUITE:-all}" # if env variable not set run all the tests
 exitcode=0
 
-echo "= go mod ================================================================"
-go mod download 2>&1 | grep -v "go: finding" || true
-go mod tidy -v && echo ok || ((exitcode += 2))
-
-echo "= make lint ============================================================="
-make -s lint-ci && echo ok || ((exitcode += 4))
-
-echo "= boilerplate ==========================================================="
-readonly PYTHON=$(type -P python || echo docker run --rm -it -v $(pwd):/minikube -w /minikube python python)
-readonly BDIR="./hack/boilerplate"
-missing="$($PYTHON ${BDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/' || true)"
-if [[ -n "${missing}" ]]; then
-    echo "boilerplate missing: $missing"
-    echo "consider running: ${BDIR}/fix.sh"
-    ((exitcode += 4))
-else
-    echo "ok"
+if [[ "$TESTSUITE" = "lint" ]] || [[ "$TESTSUITE" = "all" ]] || [[ "$TESTSUITE" = "lintall" ]]
+then
+    echo "= make lint ============================================================="
+    make -s lint-ci && echo ok || ((exitcode += 4))
+    echo "= go mod ================================================================"
+    go mod download 2>&1 | grep -v "go: finding" || true
+    go mod tidy -v && echo ok || ((exitcode += 2))
 fi
 
-echo "= schema_check =========================================================="
-go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode += 8))
 
-echo "= go test ==============================================================="
-cov_tmp="$(mktemp)"
-readonly COVERAGE_PATH=./out/coverage.txt
-echo "mode: count" >"${COVERAGE_PATH}"
-pkgs=$(go list -f '{{ if .TestGoFiles }}{{.ImportPath}}{{end}}' ./cmd/... ./pkg/... | xargs)
-go test \
-    -tags "container_image_ostree_stub containers_image_openpgp" \
-    -covermode=count \
-    -coverprofile="${cov_tmp}" \
-    ${pkgs} && echo ok || ((exitcode += 16))
-tail -n +2 "${cov_tmp}" >>"${COVERAGE_PATH}"
+
+if [[ "$TESTSUITE" = "boilerplate" ]] || [[ "$TESTSUITE" = "all" ]] || [[ "$TESTSUITE" = "lintall" ]]
+then
+    echo "= boilerplate ==========================================================="
+    readonly ROOT_DIR=$(pwd)
+    readonly BDIR="${ROOT_DIR}/hack/boilerplate"
+    pushd . >/dev/null
+    cd ${BDIR}
+    missing="$(go run boilerplate.go -rootdir ${ROOT_DIR} -boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/' || true)"
+    if [[ -n "${missing}" ]]; then
+        echo "boilerplate missing: $missing"
+        echo "consider running: ${BDIR}/fix.sh"
+        ((exitcode += 8))
+    else
+        echo "ok"
+    fi
+    popd >/dev/null
+fi
+
+
+if [[ "$TESTSUITE" = "unittest" ]] || [[ "$TESTSUITE" = "all" ]]
+then
+    echo "= schema_check =========================================================="
+    go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode += 16))
+
+    echo "= go test ==============================================================="
+    cov_tmp="$(mktemp)"
+    readonly COVERAGE_PATH=./out/coverage.txt
+    echo "mode: count" >"${COVERAGE_PATH}"
+    pkgs=$(go list -f '{{ if .TestGoFiles }}{{.ImportPath}}{{end}}' ./cmd/... ./pkg/... | xargs)
+    go test \
+        -tags "container_image_ostree_stub containers_image_openpgp" \
+        -covermode=count \
+        -coverprofile="${cov_tmp}" \
+        ${pkgs} && echo ok || ((exitcode += 32))
+    tail -n +2 "${cov_tmp}" >>"${COVERAGE_PATH}"
+fi
 
 exit "${exitcode}"

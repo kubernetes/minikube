@@ -24,6 +24,12 @@ metadata:
     addonmanager.kubernetes.io/mode: Reconcile
 spec:
   replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # maxUnavailable needs to be 1 so that port conflicts between the old and new pod doesn't happen when using hostPort
+      maxUnavailable: 1
+      maxSurge: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: nginx-ingress-controller
@@ -42,7 +48,7 @@ spec:
       serviceAccountName: nginx-ingress
       terminationGracePeriodSeconds: 60
       containers:
-      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller{{.ExoticArch}}:0.25.1
+      - image: quay.io/kubernetes-ingress-controller/nginx-ingress-controller{{.ExoticArch}}:0.26.1
         name: nginx-ingress-controller
         imagePullPolicy: IfNotPresent
         readinessProbe:

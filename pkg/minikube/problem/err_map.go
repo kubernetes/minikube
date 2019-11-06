@@ -56,7 +56,7 @@ var vmProblems = map[string]match{
 		Issues: []int{1926, 4206},
 	},
 	"HYPERKIT_NOT_FOUND": {
-		Regexp:         re(`Driver "hyperkit" not found. Do you have the plugin binary .* accessible in your PATH?`),
+		Regexp:         re(`Driver "hyperkit" not found.`),
 		Advice:         "Please install the minikube hyperkit VM driver, or select an alternative --vm-driver",
 		URL:            "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperkit/",
 		HideCreateLink: true,
@@ -227,8 +227,14 @@ var vmProblems = map[string]match{
 	},
 	"VBOX_VTX_DISABLED": {
 		Regexp:         re(`This computer doesn't have VT-X/AMD-v enabled`),
-		Advice:         "Your host does not support virtualization. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, enable virtualization in your BIOS",
+		Advice:         "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
 		Issues:         []int{3900, 4730},
+		HideCreateLink: true,
+	},
+	"VERR_VERR_VMX_DISABLED": {
+		Regexp:         re(`VT-x is disabled.*VERR_VMX_MSR_ALL_VMX_DISABLED`),
+		Advice:         "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
+		Issues:         []int{5282, 5456},
 		HideCreateLink: true,
 	},
 	"VBOX_VERR_VMX_NO_VMX": {

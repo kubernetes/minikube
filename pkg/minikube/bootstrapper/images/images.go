@@ -25,19 +25,43 @@ import (
 	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
-// CachedImages gets the images to cache for kubeadm for a version
-func CachedImages(imageRepository string, kubernetesVersionStr string) (string, []string) {
-	minikubeRepository := imageRepository
+const (
+	// DefaultImageRepo is the default repository for images
+	DefaultImageRepo = "k8s.gcr.io"
+	// DefaultMinikubeRepo is the default repository for minikube
+	DefaultMinikubeRepo = "gcr.io/k8s-minikube"
+)
+
+// getImageRepositories returns either the k8s image registry on GCR or a mirror if specified
+func getImageRepository(imageRepository string) string {
 	if imageRepository == "" {
-		imageRepository = "k8s.gcr.io"
-		minikubeRepository = "gcr.io/k8s-minikube"
+		imageRepository = DefaultImageRepo
 	}
 	if !strings.HasSuffix(imageRepository, "/") {
 		imageRepository += "/"
 	}
+
+	return imageRepository
+}
+
+// getMinikubeRepository returns either the minikube image registry on GCR or a mirror if specified
+func getMinikubeRepository(imageRepository string) string {
+	minikubeRepository := imageRepository
+	if minikubeRepository == "" {
+		minikubeRepository = DefaultMinikubeRepo
+	}
 	if !strings.HasSuffix(minikubeRepository, "/") {
 		minikubeRepository += "/"
 	}
+
+	return minikubeRepository
+}
+
+// CachedImages gets the images to cache for kubeadm for a version
+func CachedImages(imageRepositoryStr string, kubernetesVersionStr string) []string {
+	imageRepository := getImageRepository(imageRepositoryStr)
+	minikubeRepository := getMinikubeRepository(imageRepositoryStr)
+
 	v1_16plus := semver.MustParseRange(">=1.16.0")
 	v1_14plus := semver.MustParseRange(">=1.14.0 <1.16.0")
 	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
@@ -67,9 +91,8 @@ func CachedImages(imageRepository string, kubernetesVersionStr string) (string, 
 		}...)
 	}
 
-	var podInfraContainerImage string
+	podInfraContainerImage := PauseImage(imageRepository, kubernetesVersionStr)
 	if v1_16plus(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
 			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.13",
@@ -80,7 +103,6 @@ func CachedImages(imageRepository string, kubernetesVersionStr string) (string, 
 		}...)
 
 	} else if v1_14plus(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
 			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.13",
@@ -91,7 +113,6 @@ func CachedImages(imageRepository string, kubernetesVersionStr string) (string, 
 		}...)
 
 	} else if v1_13(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
 			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
@@ -102,7 +123,6 @@ func CachedImages(imageRepository string, kubernetesVersionStr string) (string, 
 		}...)
 
 	} else if v1_12(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause:3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
 			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
@@ -113,7 +133,6 @@ func CachedImages(imageRepository string, kubernetesVersionStr string) (string, 
 		}...)
 
 	} else if v1_11(kubernetesVersion) {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
 		images = append(images, []string{
 			podInfraContainerImage,
 			imageRepository + "k8s-dns-kube-dns" + ArchTag(true) + "1.14.8",
@@ -122,8 +141,6 @@ func CachedImages(imageRepository string, kubernetesVersionStr string) (string, 
 			imageRepository + "etcd" + ArchTag(true) + "3.2.18",
 			imageRepository + "coredns:1.1.3",
 		}...)
-	} else {
-		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
 	}
 
 	images = append(images, []string{
@@ -132,7 +149,46 @@ func CachedImages(imageRepository string, kubernetesVersionStr string) (string, 
 		minikubeRepository + "storage-provisioner" + ArchTag(false) + "v1.8.1",
 	}...)
 
-	return podInfraContainerImage, images
+	return images
+}
+
+// PauseImage returns the image name for pause image (for pod infra)
+func PauseImage(imageRepositoryStr string, kubernetesVersionStr string) string {
+	imageRepository := getImageRepository(imageRepositoryStr)
+
+	v1_16plus := semver.MustParseRange(">=1.16.0")
+	v1_14plus := semver.MustParseRange(">=1.14.0 <1.16.0")
+	v1_13 := semver.MustParseRange(">=1.13.0 <1.14.0")
+	v1_12 := semver.MustParseRange(">=1.12.0 <1.13.0")
+	v1_11 := semver.MustParseRange(">=1.11.0 <1.12.0")
+
+	kubernetesVersion, err := semver.Make(strings.TrimPrefix(kubernetesVersionStr, minikubeVersion.VersionPrefix))
+	if err != nil {
+		glog.Errorln("Error parsing version semver: ", err)
+	}
+
+	var podInfraContainerImage string
+	switch {
+	case v1_16plus(kubernetesVersion):
+		podInfraContainerImage = imageRepository + "pause:3.1"
+
+	case v1_14plus(kubernetesVersion):
+		podInfraContainerImage = imageRepository + "pause:3.1"
+
+	case v1_13(kubernetesVersion):
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
+
+	case v1_12(kubernetesVersion):
+		podInfraContainerImage = imageRepository + "pause:3.1"
+
+	case v1_11(kubernetesVersion):
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.1"
+
+	default:
+		podInfraContainerImage = imageRepository + "pause" + ArchTag(false) + "3.0"
+	}
+
+	return podInfraContainerImage
 }
 
 // ArchTag returns the archtag for images

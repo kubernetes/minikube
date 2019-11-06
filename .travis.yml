@@ -1,23 +1,45 @@
-language: go
+---
+# linted with yamllint
 os: linux
-
+language: go
+go:
+  - 1.12.12
 env:
-  - GOPROXY=https://proxy.golang.org
+  global:
+    - GOPROXY=https://proxy.golang.org
 matrix:
   include:
-    - go: 1.12.9
-    - language: python
-      before_install: pip install flake8
-      script: flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+    - language: go
+      name: Code Lint
+      go: 1.12.12
+      env:
+        - TESTSUITE=lintall
+      before_install:
+        - sudo apt-get install -y libvirt-dev
+      script: make test
 
-before_install:
-  - sudo apt-get install -y libvirt-dev
-install:
-  - echo "Don't run anything."
-script:
-  - make test
+    - language: go
+      name: Unit Test
+      go: 1.12.12
+      env:
+        - TESTSUITE=unittest
+      before_install:
+        - sudo apt-get install -y libvirt-dev
+      script: make test
+
+    - language: go
+      name: Build
+      go: 1.12.12
+      script: make
 after_success:
   - bash <(curl -s https://codecov.io/bash)
+travisBuddy:
+    regex: (FAIL:|\.go:\d+:|^panic:|failed$)
 notifications:
-    webhooks: https://www.travisbuddy.com/
-    on_success: never # travisbuddy don't comment on successfull 
+  webhooks:
+    urls:
+      - https://www.travisbuddy.com?only=failed,errored
+    on_success: never  # don't comment on successful builds.
+    on_failure: always
+    on_cancel: always
+    on_error: always

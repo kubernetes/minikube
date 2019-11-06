@@ -4,18 +4,42 @@ linkTitle: "delete"
 weight: 1
 date: 2019-08-01
 description: >
-  Deletes a local kubernetes cluster
+  Deletes a local Kubernetes cluster
 ---
 
 ### Overview
 
-Deletes a local kubernetes cluster. This command deletes the VM, and removes all
+Deletes a local Kubernetes cluster. This command deletes the VM, and removes all
 associated files.
 
 ## Usage
 
 ```
 minikube delete [flags]
+```
+
+##### Delete all profiles
+```
+minikube delete --all
+```
+
+##### Delete profile & `.minikube` directory
+Do note that the following command only works if you have only 1 profile. If there are multiple profiles, the command will error out.
+```
+minikube delete --purge
+```
+
+##### Delete all profiles & `.minikube` directory
+This will delete all the profiles and `.minikube` directory.
+```
+minikube delete --purge --all
+```
+
+### Flags
+
+```
+      --all: Set flag to delete all profiles
+      --purge: Set this flag to delete the '.minikube' folder from your user directory.
 ```
 
 ### Options inherited from parent commands

@@ -21,14 +21,16 @@ require (
 	github.com/docker/machine v0.7.1-0.20190718054102-a555e4f7a8f5 // version is 0.7.1 to pin to a555e4f7a8f5
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
+	github.com/google/btree v1.0.0 // indirect
 	github.com/google/go-cmp v0.3.0
-	github.com/google/go-github/v25 v25.0.2
 	github.com/gorilla/mux v1.7.1 // indirect
+	github.com/grpc-ecosystem/grpc-gateway v1.5.0 // indirect
 	github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce // indirect
-	github.com/hashicorp/go-getter v1.3.0
+	github.com/hashicorp/go-getter v1.4.0
 	github.com/hashicorp/go-multierror v0.0.0-20160811015721-8c5f0ad93604 // indirect
 	github.com/hashicorp/go-retryablehttp v0.5.4
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
@@ -44,12 +46,14 @@ require (
 	github.com/juju/testing v0.0.0-20190723135506-ce30eb24acd2 // indirect
 	github.com/juju/utils v0.0.0-20180820210520-bf9cc5bdd62d // indirect
 	github.com/juju/version v0.0.0-20180108022336-b64dbd566305 // indirect
+	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
 	github.com/mattn/go-isatty v0.0.8
 	github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
 	github.com/olekukonko/tablewriter v0.0.0-20160923125401-bdcc175572fd
+	github.com/otiai10/copy v1.0.2
 	github.com/pborman/uuid v1.2.0
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2
 	github.com/pkg/browser v0.0.0-20160118053552-9302be274faa
@@ -69,13 +73,13 @@ require (
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	golang.org/x/build v0.0.0-20190111050920-041ab4dc3f9d
 	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
-	golang.org/x/oauth2 v0.0.0-20190402181905-9f3314589c9a
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb
 	golang.org/x/text v0.3.2
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
+	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
 	k8s.io/client-go v0.0.0
@@ -86,6 +90,7 @@ require (
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20190910053320-21bd2f51b8ea
+	github.com/hashicorp/go-getter => github.com/afbjorklund/go-getter v1.4.1-0.20190910175809-eb9f6c26742c
 	k8s.io/api => k8s.io/kubernetes/staging/src/k8s.io/api v0.0.0-20190623232353-8c3b7d7679cc
 	k8s.io/apiextensions-apiserver => k8s.io/kubernetes/staging/src/k8s.io/apiextensions-apiserver v0.0.0-20190623232353-8c3b7d7679cc
 	k8s.io/apimachinery => k8s.io/kubernetes/staging/src/k8s.io/apimachinery v0.0.0-20190623232353-8c3b7d7679cc

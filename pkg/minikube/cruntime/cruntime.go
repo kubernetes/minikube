@@ -19,16 +19,17 @@ package cruntime
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
-	Run(string) error
-	CombinedOutput(string) (string, error)
+	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
 }
 
 // Manager is a common interface for container runtimes
@@ -78,6 +79,10 @@ type Config struct {
 	Socket string
 	// Runner is the CommandRunner object to execute commands with
 	Runner CommandRunner
+	// ImageRepository image repository to download image from
+	ImageRepository string
+	// KubernetesVersion Kubernetes version
+	KubernetesVersion string
 }
 
 // New returns an appropriately configured runtime
@@ -86,9 +91,9 @@ func New(c Config) (Manager, error) {
 	case "", "docker":
 		return &Docker{Socket: c.Socket, Runner: c.Runner}, nil
 	case "crio", "cri-o":
-		return &CRIO{Socket: c.Socket, Runner: c.Runner}, nil
+		return &CRIO{Socket: c.Socket, Runner: c.Runner, ImageRepository: c.ImageRepository, KubernetesVersion: c.KubernetesVersion}, nil
 	case "containerd":
-		return &Containerd{Socket: c.Socket, Runner: c.Runner}, nil
+		return &Containerd{Socket: c.Socket, Runner: c.Runner, ImageRepository: c.ImageRepository, KubernetesVersion: c.KubernetesVersion}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
 	}
@@ -126,11 +131,14 @@ func disableOthers(me Manager, cr CommandRunner) error {
 // enableIPForwarding configures IP forwarding, which is handled normally by Docker
 // Context: https://github.com/kubernetes/kubeadm/issues/1062
 func enableIPForwarding(cr CommandRunner) error {
-	if err := cr.Run("sudo modprobe br_netfilter"); err != nil {
+	c := exec.Command("sudo", "modprobe", "br_netfilter")
+	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "br_netfilter")
 	}
-	if err := cr.Run("sudo sh -c \"echo 1 > /proc/sys/net/ipv4/ip_forward\""); err != nil {
-		return errors.Wrap(err, "ip_forward")
+
+	c = exec.Command("sudo", "sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward")
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "ip_forward")
 	}
 	return nil
 }

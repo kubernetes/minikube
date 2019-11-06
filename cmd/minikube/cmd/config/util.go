@@ -27,12 +27,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/storageclass"
 )
+
+// defaultStorageClassProvisioner is the name of the default storage class provisioner
+const defaultStorageClassProvisioner = "standard"
 
 // Runs all the validation or callback functions and collects errors
 func run(name string, value string, fns []setFn) error {
@@ -109,6 +111,18 @@ func EnableOrDisableAddon(name string, val string) error {
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
 	}
+	addon := assets.Addons[name]
+
+	// check addon status before enabling/disabling it
+	alreadySet, err := isAddonAlreadySet(addon, enable)
+	if err != nil {
+		out.ErrT(out.Conflict, "{{.error}}", out.V{"error": err})
+		return err
+	}
+	//if addon is already enabled or disabled, do nothing
+	if alreadySet {
+		return nil
+	}
 
 	// TODO(r2d4): config package should not reference API, pull this out
 	api, err := machine.NewAPIClient()
@@ -116,13 +130,18 @@ func EnableOrDisableAddon(name string, val string) error {
 		return errors.Wrap(err, "machine client")
 	}
 	defer api.Close()
-	cluster.EnsureMinikubeRunningOrExit(api, 0)
 
-	addon := assets.Addons[name]
+	//if minikube is not running, we return and simply update the value in the addon
+	//config and rewrite the file
+	if !cluster.IsMinikubeRunning(api) {
+		return nil
+	}
+
 	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "getting host")
 	}
+
 	cmd, err := machine.CommandRunner(host)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
@@ -137,30 +156,24 @@ func EnableOrDisableAddon(name string, val string) error {
 	return enableOrDisableAddonInternal(addon, cmd, data, enable)
 }
 
-func isAddonAlreadySet(addon *assets.Addon, enable bool) error {
-
+func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
 	addonStatus, err := addon.IsEnabled()
 
 	if err != nil {
-		return errors.Wrap(err, "get the addon status")
+		return false, errors.Wrap(err, "get the addon status")
 	}
 
 	if addonStatus && enable {
-		return fmt.Errorf("addon %s was already enabled", addon.Name())
+		return true, nil
 	} else if !addonStatus && !enable {
-		return fmt.Errorf("addon %s was already disabled", addon.Name())
+		return true, nil
 	}
 
-	return nil
+	return false, nil
 }
 
 func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
 	var err error
-	// check addon status before enabling/disabling it
-	if err := isAddonAlreadySet(addon, enable); err != nil {
-		out.ErrT(out.Conflict, "{{.error}}", out.V{"error": err})
-		os.Exit(0)
-	}
 
 	if enable {
 		for _, addon := range addon.Assets {
@@ -205,7 +218,7 @@ func EnableOrDisableStorageClasses(name, val string) error {
 		return errors.Wrap(err, "Error parsing boolean")
 	}
 
-	class := constants.DefaultStorageClassProvisioner
+	class := defaultStorageClassProvisioner
 	if name == "storage-provisioner-gluster" {
 		class = "glusterfile"
 	}
@@ -229,4 +242,43 @@ func EnableOrDisableStorageClasses(name, val string) error {
 	}
 
 	return EnableOrDisableAddon(name, val)
+}
+
+// ErrValidateProfile Error to validate profile
+type ErrValidateProfile struct {
+	Name string
+	Msg  string
+}
+
+func (e ErrValidateProfile) Error() string {
+	return e.Msg
+}
+
+// ValidateProfile checks if the profile user is trying to switch exists, else throws error
+func ValidateProfile(profile string) (*ErrValidateProfile, bool) {
+
+	validProfiles, invalidProfiles, err := config.ListProfiles()
+	if err != nil {
+		out.FailureT(err.Error())
+	}
+
+	// handling invalid profiles
+	for _, invalidProf := range invalidProfiles {
+		if profile == invalidProf.Name {
+			return &ErrValidateProfile{Name: profile, Msg: fmt.Sprintf("%q is an invalid profile", profile)}, false
+		}
+	}
+
+	profileFound := false
+	// valid profiles if found, setting profileFound to trueexpectedMsg
+	for _, prof := range validProfiles {
+		if prof.Name == profile {
+			profileFound = true
+			break
+		}
+	}
+	if !profileFound {
+		return &ErrValidateProfile{Name: profile, Msg: fmt.Sprintf("profile %q not found", profile)}, false
+	}
+	return nil, true
 }

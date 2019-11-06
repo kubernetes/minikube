@@ -29,7 +29,15 @@ OS_ARCH="darwin-amd64"
 VM_DRIVER="virtualbox"
 JOB_NAME="VirtualBox_macOS"
 EXTRA_ARGS="--bootstrapper=kubeadm"
-PARALLEL_COUNT=3
+# hyperkit behaves better, so it has higher precedence.
+# Assumes that hyperkit is also installed on the VirtualBox CI host.
+EXPECTED_DEFAULT_DRIVER="hyperkit"
+
+
+mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
+install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh  || echo "FAILED TO GET INSTALL CLEANUP"
+echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
+crontab -l
 
 # Download files and set permissions
 source common.sh
