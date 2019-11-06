@@ -72,19 +72,33 @@ func TestGlobalAvailable(t *testing.T) {
 	}
 
 	bar := DriverDef{
-		Name:     "bar",
+		Name:     "healthy-bar",
 		Priority: Default,
-		Status:   func() State { return State{} },
+		Status:   func() State { return State{Healthy: true} },
 	}
 	if err := Register(bar); err != nil {
 		t.Errorf("register returned error: %v", err)
 	}
 
+	foo := DriverDef{
+		Name:     "unhealthy-foo",
+		Priority: Default,
+		Status:   func() State { return State{Healthy: false} },
+	}
+	if err := Register(foo); err != nil {
+		t.Errorf("register returned error: %v", err)
+	}
+
 	expected := []DriverState{
 		{
-			Name:     "bar",
+			Name:     "healthy-bar",
 			Priority: Default,
-			State:    State{},
+			State:    State{Healthy: true},
+		},
+		{
+			Name:     "unhealthy-foo",
+			Priority: Unhealthy,
+			State:    State{Healthy: false},
 		},
 	}
 
