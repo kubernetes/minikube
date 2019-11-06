@@ -177,14 +177,17 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 // CleanupWithLogs cleans up after a test run, fetching logs and deleting the profile
 func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
-	if t.Failed() && *postMortemLogs {
-		t.Logf("%s failed, collecting logs ...", t.Name())
-		rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
-		if err != nil {
-			t.Logf("failed logs error: %v", err)
+	if t.Failed() {
+		t.Logf("*** %s FAILED at %s", t.Name(), time.Now())
+		if *postMortemLogs {
+			t.Logf(">>> %s FAILED: start of post-mortem logs >>>", t.Name())
+			rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
+			if err != nil {
+				t.Logf("failed logs error: %v", err)
+			}
+			t.Logf("%s logs: %s", t.Name(), rr.Stdout)
+			t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
 		}
-		t.Logf("%s logs: %s", t.Name(), rr.Stdout)
-		t.Logf("Sorry that %s failed :(", t.Name())
 	}
 	Cleanup(t, profile, cancel)
 }
@@ -225,11 +228,11 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 	lastMsg := ""
 
 	start := time.Now()
-	t.Logf("(dbg) waiting for pods with labels %q in namespace %q ...", selector, ns)
+	t.Logf("(dbg) %s: waiting %s for pods matching %q in namespace %q ...", t.Name(), timeout, selector, ns)
 	f := func() (bool, error) {
 		pods, err := client.CoreV1().Pods(ns).List(listOpts)
 		if err != nil {
-			t.Logf("WARNING: pod list for %q %q returned: %v", ns, selector, err)
+			t.Logf("%s: WARNING: pod list for %q %q returned: %v", t.Name(), ns, selector, err)
 			// Don't return the error upwards so that this is retried, in case the apiserver is rescheduled
 			podStart = time.Time{}
 			return false, nil
@@ -254,7 +257,7 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 			// Long-running process state
 			if pod.Status.Phase != core.PodRunning {
 				if !podStart.IsZero() {
-					t.Logf("WARNING: %s was running %s ago - may be unstable", selector, time.Since(podStart))
+					t.Logf("%s: WARNING: %s was running %s ago - may be unstable", t.Name(), selector, time.Since(podStart))
 				}
 				podStart = time.Time{}
 				return false, nil
@@ -271,24 +274,25 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 		return false, nil
 	}
 
-	err = wait.PollImmediate(500*time.Millisecond, timeout, f)
+	err = wait.PollImmediate(1*time.Second, timeout, f)
 	names := []string{}
 	for n := range foundNames {
 		names = append(names, n)
 	}
 
 	if err == nil {
-		t.Logf("(dbg) pods %s up and healthy within %s", selector, time.Since(start))
+		t.Logf("(dbg) %s: %s healthy within %s", t.Name(), selector, time.Since(start))
 		return names, nil
 	}
 
-	t.Logf("pod %q failed to start: %v", selector, err)
+	t.Logf("***** %s: pod %q failed to start within %s: %v ****", t.Name(), selector, timeout, err)
 	showPodLogs(ctx, t, profile, ns, names)
 	return names, fmt.Errorf("%s: %v", fmt.Sprintf("%s within %s", selector, timeout), err)
 }
 
 // showPodLogs logs debug info for pods
 func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, names []string) {
+	t.Logf("%s: showing logs for failed pods as of %s", t.Name(), time.Now())
 	rr, rerr := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
 	if rerr != nil {
 		t.Logf("%s: %v", rr.Command(), rerr)
@@ -311,6 +315,13 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 		} else {
 			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 		}
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "node"))
+	if err != nil {
+		t.Logf("%s: %v", rr.Command(), err)
+	} else {
+		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 	}
 }
 
