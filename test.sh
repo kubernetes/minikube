@@ -19,7 +19,7 @@ set -eu -o pipefail
 TESTSUITE="${TESTSUITE:-all}" # if env variable not set run all the tests
 exitcode=0
 
-if [[ "$TESTSUITE" = "lint" ]] || [[ "$TESTSUITE" = "all" ]]
+if [[ "$TESTSUITE" = "lint" ]] || [[ "$TESTSUITE" = "all" ]] || [[ "$TESTSUITE" = "lintall" ]]
 then
     echo "= make lint ============================================================="
     make -s lint-ci && echo ok || ((exitcode += 4))
@@ -30,7 +30,7 @@ fi
 
 
 
-if [[ "$TESTSUITE" = "boilerplate" ]] || [[ "$TESTSUITE" = "all" ]]
+if [[ "$TESTSUITE" = "boilerplate" ]] || [[ "$TESTSUITE" = "all" ]] || [[ "$TESTSUITE" = "lintall" ]]
 then
     echo "= boilerplate ==========================================================="
     readonly ROOT_DIR=$(pwd)
@@ -50,7 +50,7 @@ fi
 
 
 if [[ "$TESTSUITE" = "unittest" ]] || [[ "$TESTSUITE" = "all" ]]
-then 
+then
     echo "= schema_check =========================================================="
     go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode += 16))
 
