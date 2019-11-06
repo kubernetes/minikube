@@ -111,7 +111,9 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
-	startArgs := append([]string{"start", "-p", profile, "--wait=false"}, StartArgs()...)
+
+	// Use more memory so that we may reliably fit MySQL and nginx
+	startArgs := append([]string{"start", "-p", profile, "--wait=false", "--memory", "2500MB"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -159,8 +161,8 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 // validateAddonManager asserts that the kube-addon-manager pod is deployed properly
 func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
 	// If --wait=false, this may take a couple of minutes
-	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 3*time.Minute); err != nil {
-		t.Errorf("wait: %v", err)
+	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 5*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 }
 
@@ -272,7 +274,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 3*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 5*time.Minute)
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}
@@ -407,7 +409,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 4*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 5*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -550,16 +552,17 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
+	names, err := PodWait(ctx, t, profile, "default", "app=mysql", 5*time.Minute)
+	if err != nil {
+		t.Fatalf("podwait: %v", err)
+	}
+
 	// Retry, as mysqld first comes up without users configured. Scan for names in case of a reschedule.
 	mysql := func() error {
-		names, err := PodWait(ctx, t, profile, "default", "app=mysql", 5*time.Second)
-		if err != nil {
-			return err
-		}
 		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
 		return err
 	}
-	if err = retry.Expo(mysql, 1*time.Second, 2*time.Minute); err != nil {
+	if err = retry.Expo(mysql, 10*time.Second, 60*time.Second); err != nil {
 		t.Errorf("mysql failing: %v", err)
 	}
 }
