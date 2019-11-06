@@ -104,7 +104,7 @@ var serviceCmd = &cobra.Command{
 
 		urls, err := service.WaitForService(api, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
-			exit.WithError("Error opening service", err)
+			exit.WithCodeT(exit.Data, fmt.Sprintf("Error opening service: %s", err))
 		}
 
 		openURLs(svc, urls)

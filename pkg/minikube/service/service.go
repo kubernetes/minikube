@@ -276,7 +276,7 @@ func WaitForService(api libmachine.API, namespace string, service string, urlTem
 	chkSVC := func() error { return CheckService(namespace, service) }
 
 	if err := retry.Expo(chkSVC, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return urlList, errors.Wrapf(err, "Service %s was not found in %q namespace. You may select another namespace by using 'minikube service %s -n <namespace>", service, namespace, service)
+		return urlList, errors.Wrapf(err, "Service %s was not found in %q namespace. You may select another namespace by using 'minikube service %s -n <namespace>'. Or list out all the services using 'minikube service list'", service, namespace, service)
 	}
 
 	serviceURL, err := GetServiceURLsForService(api, namespace, service, urlTemplate)
