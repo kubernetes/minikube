@@ -20,9 +20,13 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"os/exec"
+	"strings"
+	"time"
 
 	"golang.org/x/sync/syncmap"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -43,34 +47,38 @@ func NewFakeCommandRunner() *FakeCommandRunner {
 	return &FakeCommandRunner{}
 }
 
-// Run returns nil if output has been set for the given command text.
-func (f *FakeCommandRunner) Run(cmd string) error {
-	_, err := f.CombinedOutput(cmd)
-	return err
-}
+// RunCmd implements the Command Runner interface to run a exec.Cmd object
+func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+	rr := &RunResult{Args: cmd.Args}
+	glog.Infof("(FakeCommandRunner) Run:  %v", rr.Command())
 
-// CombinedOutputTo runs the command and stores both command
-// output and error to out.
-func (f *FakeCommandRunner) CombinedOutputTo(cmd string, out io.Writer) error {
-	value, ok := f.cmdMap.Load(cmd)
-	if !ok {
-		return fmt.Errorf("unavailable command: %s", cmd)
+	start := time.Now()
+
+	out, ok := f.cmdMap.Load(strings.Join(rr.Args, " "))
+	var buf bytes.Buffer
+	outStr := ""
+	if out != nil {
+		outStr = out.(string)
 	}
-	_, err := fmt.Fprint(out, value)
+	_, err := buf.WriteString(outStr)
 	if err != nil {
-		return err
+		return rr, errors.Wrap(err, "Writing outStr to FakeCommandRunner's buffer")
 	}
+	rr.Stdout = buf
+	rr.Stderr = buf
 
-	return nil
-}
+	elapsed := time.Since(start)
 
-// CombinedOutput returns the set output for a given command text.
-func (f *FakeCommandRunner) CombinedOutput(cmd string) (string, error) {
-	out, ok := f.cmdMap.Load(cmd)
-	if !ok {
-		return "", fmt.Errorf("unavailable command: %s", cmd)
+	if ok {
+		// Reduce log spam
+		if elapsed > (1 * time.Second) {
+			glog.Infof("(FakeCommandRunner) Done: %v: (%s)", rr.Command(), elapsed)
+		}
+	} else {
+		glog.Infof("(FakeCommandRunner) Non-zero exit: %v: (%s)\n%s", rr.Command(), elapsed, out)
+		return rr, fmt.Errorf("unavailable command: %s", rr.Command())
 	}
-	return out.(string), nil
+	return rr, nil
 }
 
 // Copy adds the filename, file contents key value pair to the stored map.

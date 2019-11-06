@@ -23,8 +23,6 @@
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
-# PARALLEL_COUNT: number of tests to run in parallel
-
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
@@ -37,6 +35,7 @@ echo "job:       ${JOB_NAME}"
 echo "test home: ${TEST_HOME}"
 echo "sudo:      ${SUDO_PREFIX}"
 echo "kernel:    $(uname -v)"
+echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
@@ -82,6 +81,7 @@ gsutil -qm cp "gs://minikube-builds/${MINIKUBE_LOCATION}/gvisor-addon" testdata/
 export MINIKUBE_BIN="out/minikube-${OS_ARCH}"
 export E2E_BIN="out/e2e-${OS_ARCH}"
 chmod +x "${MINIKUBE_BIN}" "${E2E_BIN}" out/docker-machine-driver-*
+"${MINIKUBE_BIN}" version
 
 procs=$(pgrep "minikube-${OS_ARCH}|e2e-${OS_ARCH}" || true)
 if [[ "${procs}" != "" ]]; then
@@ -91,28 +91,36 @@ if [[ "${procs}" != "" ]]; then
   kill -9 ${procs} || true
 fi
 
+# Quickly notice misconfigured test roots
+mkdir -p "${TEST_ROOT}"
+
 # Cleanup stale test outputs.
 echo ""
 echo ">> Cleaning up after previous test runs ..."
+for entry in $(ls ${TEST_ROOT}); do
+  test_path="${TEST_ROOT}/${entry}"
+  ls -lad "${test_path}" || continue
 
-for stale_dir in ${TEST_ROOT}/*; do
-  echo "* Cleaning stale test root: ${stale_dir}"
-
-  for tunnel in $(find ${stale_dir} -name tunnels.json -type f); do
+  echo "* Cleaning stale test path: ${test_path}"
+  for tunnel in $(find ${test_path} -name tunnels.json -type f); do
     env MINIKUBE_HOME="$(dirname ${tunnel})" ${MINIKUBE_BIN} tunnel --cleanup || true
   done
 
-  for home in $(find ${stale_dir} -name .minikube -type d); do
-   env MINIKUBE_HOME="$(dirname ${home})" ${MINIKUBE_BIN} delete || true
-   sudo rm -Rf "${home}"
+  for home in $(find ${test_path} -name .minikube -type d); do
+    env MINIKUBE_HOME="$(dirname ${home})" ${MINIKUBE_BIN} delete --all || true
+    sudo rm -Rf "${home}"
   done
 
-  for kconfig in $(find ${stale_dir} -name kubeconfig -type f); do
+  for kconfig in $(find ${test_path} -name kubeconfig -type f); do
     sudo rm -f "${kconfig}"
   done
 
-  rm -f "${stale_dir}/*" || true
-  rmdir "${stale_dir}" || ls "${stale_dir}"
+  # Be very specific to avoid accidentally deleting other items, like wildcards or devices
+  if [[ -d "${test_path}" ]]; then
+    rm -Rf "${test_path}" || true
+  elif [[ -f "${test_path}" ]]; then
+    rm -f "${test_path}" || true
+  fi
 done
 
 # sometimes tests left over zombie procs that won't exit
@@ -134,14 +142,25 @@ if type -P virsh; then
 fi
 
 if type -P vboxmanage; then
-  vboxmanage list vms || true
-  vboxmanage list vms \
-    | egrep -o '{.*?}' \
-    | xargs -I {} sh -c "vboxmanage startvm {} --type emergencystop; vboxmanage unregistervm {} --delete" \
-    || true
+  killall VBoxHeadless || true
+  sleep 1
+  killall -9 VBoxHeadless || true
+
+  for guid in $(vboxmanage list vms | grep -Eo '\{[a-zA-Z0-9-]+\}'); do
+    echo "- Removing stale VirtualBox VM: $guid"
+    vboxmanage startvm "${guid}" --type emergencystop || true
+    vboxmanage unregistervm "${guid}" || true
+  done
+
+  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ print $2 }')
+  for if in $ifaces; do
+    vboxmanage hostonlyif remove "${if}" || true
+  done
 
   echo ">> VirtualBox VM list after clean up (should be empty):"
   vboxmanage list vms || true
+  echo ">> VirtualBox interface list after clean up (should be empty):"
+  vboxmanage list hostonlyifs || true
 fi
 
 
@@ -213,22 +232,42 @@ mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
-# Build the gvisor image. This will be copied into minikube and loaded by ctr.
-# Used by TestContainerd for Gvisor Test.
-# TODO: move this to integration test setup.
+
+# Build the gvisor image so that we can integration test changes to pkg/gvisor
 chmod +x ./testdata/gvisor-addon
 # skipping gvisor mac because ofg https://github.com/kubernetes/minikube/issues/5137
 if [ "$(uname)" != "Darwin" ]; then
-  docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile ./testdata
+  # Should match GVISOR_IMAGE_VERSION in Makefile
+  docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
+fi
+
+readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]+" | cut -d" " -f3)
+if [[ "${LOAD}" -gt 2 ]]; then
+  echo ""
+  echo "********************** LOAD WARNING ********************************"
+  echo "Load average is very high (${LOAD}), which may cause failures. Top:"
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Two samples, macOS does not calculate CPU usage on the first one
+    top -l 2 -o cpu -n 5 | tail -n 15
+  else
+    top -b -n1 | head -n 15
+  fi
+  echo "********************** LOAD WARNING ********************************"
+  echo "Sleeping 30s to see if load goes down ...."
+  sleep 30
+  uptime
 fi
 
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
+set -x
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
-  -test.timeout=60m \
-  -test.parallel=${PARALLEL_COUNT} \
+  -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
+  -test.timeout=70m \
+  ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 

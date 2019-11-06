@@ -23,11 +23,3 @@ import (
 )
 
 var DefaultMountDir = homedir.HomeDir()
-
-// SupportedVMDrivers is a list of supported drivers on Windows.
-var SupportedVMDrivers = [...]string{
-	DriverVirtualbox,
-	DriverVmwareFusion,
-	DriverHyperv,
-	DriverVmware,
-}

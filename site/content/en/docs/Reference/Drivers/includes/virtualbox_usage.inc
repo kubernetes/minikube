@@ -4,7 +4,7 @@
 
 ## Usage
 
-minikube currently uses VirtualBox by default, but it can also be explicitly set:
+Start a cluster using the virtualbox driver:
 
 ```shell
 minikube start --vm-driver=virtualbox

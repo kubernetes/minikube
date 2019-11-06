@@ -30,15 +30,16 @@ OS_ARCH="linux-amd64"
 VM_DRIVER="none"
 JOB_NAME="none_Linux"
 EXTRA_ARGS="--bootstrapper=kubeadm"
-PARALLEL_COUNT=1
+EXPECTED_DEFAULT_DRIVER="kvm2"
 
 SUDO_PREFIX="sudo -E "
 export KUBECONFIG="/root/.kube/config"
 
 # "none" driver specific cleanup from previous runs.
+sudo kubeadm reset -f || true
+# kubeadm reset may not stop pods immediately
+docker rm -f $(docker ps -aq) >/dev/null 2>&1 || true
 
-# Try without -f first, primarily because older kubeadm versions (v1.10) don't support it anyways.
-sudo kubeadm reset || sudo kubeadm reset -f || true
 # Cleanup data directory
 sudo rm -rf /data/*
 # Cleanup old Kubernetes configs
@@ -49,6 +50,9 @@ sudo rm -rf /var/lib/minikube/*
 systemctl is-active --quiet kubelet \
   && echo "stopping kubelet" \
   && sudo systemctl stop kubelet
+
+mkdir -p cron && gsutil -m rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
+sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 
 # Download files and set permissions
 source ./common.sh

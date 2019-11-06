@@ -45,8 +45,23 @@ var ProfileCmd = &cobra.Command{
 		}
 
 		profile := args[0]
+		/**
+		we need to add code over here to check whether the profile
+		name is in the list of reserved keywords
+		*/
+		if pkgConfig.ProfileNameInReservedKeywords(profile) {
+			out.ErrT(out.FailureType, `Profile name "{{.profilename}}" is minikube keyword. To delete profile use command minikube delete -p <profile name>  `, out.V{"profilename": profile})
+			os.Exit(0)
+		}
+
 		if profile == "default" {
 			profile = "minikube"
+		} else {
+			// not validating when it is default profile
+			errProfile, ok := ValidateProfile(profile)
+			if !ok && errProfile != nil {
+				out.FailureT(errProfile.Msg)
+			}
 		}
 
 		if !pkgConfig.ProfileExists(profile) {
@@ -71,7 +86,7 @@ var ProfileCmd = &cobra.Command{
 				out.SuccessT("Skipped switching kubectl context for {{.profile_name}} because --keep-context was set.", out.V{"profile_name": profile})
 				out.SuccessT("To connect to this cluster, use: kubectl --context={{.profile_name}}", out.V{"profile_name": profile})
 			} else {
-				err := kubeconfig.SetCurrentContext(constants.KubeconfigPath, profile)
+				err := kubeconfig.SetCurrentContext(profile, constants.KubeconfigPath)
 				if err != nil {
 					out.ErrT(out.Sad, `Error while setting kubectl current context :  {{.error}}`, out.V{"error": err})
 				}

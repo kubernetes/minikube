@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -29,12 +28,8 @@ var updateCheckCmd = &cobra.Command{
 	Use:   "update-check",
 	Short: "Print current and latest version number",
 	Long:  `Print current and latest version number`,
-	PersistentPreRun: func(cmd *cobra.Command, args []string) {
-		// Explicitly disable update checking for the version command
-		enableUpdateNotification = false
-	},
 	Run: func(command *cobra.Command, args []string) {
-		url := constants.GithubMinikubeReleasesURL
+		url := notify.GithubMinikubeReleasesURL
 		r, err := notify.GetAllVersionsFromURL(url)
 		if err != nil {
 			exit.WithError("Unable to fetch latest version info", err)

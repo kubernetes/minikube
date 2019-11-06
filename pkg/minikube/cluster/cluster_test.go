@@ -22,12 +22,16 @@ import (
 	"testing"
 	"time"
 
+	// Driver used by testdata
+	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
+
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
@@ -43,18 +47,13 @@ func createMockDriverHost(c config.MachineConfig) interface{} {
 
 func RegisterMockDriver(t *testing.T) {
 	t.Helper()
-	_, err := registry.Driver(constants.DriverMock)
-	// Already registered
-	if err == nil {
+	if !registry.Driver(driver.Mock).Empty() {
 		return
 	}
-	err = registry.Register(registry.DriverDef{
-		Name:          constants.DriverMock,
-		Builtin:       true,
-		ConfigCreator: createMockDriverHost,
-		DriverCreator: func() drivers.Driver {
-			return &tests.MockDriver{T: t}
-		},
+	err := registry.Register(registry.DriverDef{
+		Name:   driver.Mock,
+		Config: createMockDriverHost,
+		Init:   func() drivers.Driver { return &tests.MockDriver{T: t} },
 	})
 	if err != nil {
 		t.Fatalf("register failed: %v", err)
@@ -62,7 +61,7 @@ func RegisterMockDriver(t *testing.T) {
 }
 
 var defaultMachineConfig = config.MachineConfig{
-	VMDriver:    constants.DriverMock,
+	VMDriver:    driver.Mock,
 	MinikubeISO: constants.DefaultISOURL,
 	Downloader:  MockDownloader{},
 	DockerEnv:   []string{"MOCK_MAKE_IT_PROVISION=true"},
@@ -99,7 +98,7 @@ func TestCreateHost(t *testing.T) {
 	}
 
 	found := false
-	for _, def := range registry.ListDrivers() {
+	for _, def := range registry.List() {
 		if h.DriverName == def.Name {
 			found = true
 			break
@@ -107,7 +106,7 @@ func TestCreateHost(t *testing.T) {
 	}
 
 	if !found {
-		t.Fatalf("Wrong driver name: %v. It should be among drivers %v", h.DriverName, registry.ListDrivers())
+		t.Fatalf("Wrong driver name: %v. It should be among drivers %v", h.DriverName, registry.List())
 	}
 }
 
@@ -216,7 +215,7 @@ func TestStartHostConfig(t *testing.T) {
 	provision.SetDetector(md)
 
 	config := config.MachineConfig{
-		VMDriver:   constants.DriverMock,
+		VMDriver:   driver.Mock,
 		DockerEnv:  []string{"FOO=BAR"},
 		DockerOpt:  []string{"param=value"},
 		Downloader: MockDownloader{},

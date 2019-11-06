@@ -23,17 +23,16 @@ import (
 
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // Disable reverts containerd config files and restarts containerd
 func Disable() error {
 	log.Print("Disabling gvisor...")
-	if err := os.Remove(filepath.Join(nodeDir, constants.ContainerdConfigTomlPath)); err != nil {
-		return errors.Wrapf(err, "removing %s", constants.ContainerdConfigTomlPath)
+	if err := os.Remove(filepath.Join(nodeDir, containerdConfigTomlPath)); err != nil {
+		return errors.Wrapf(err, "removing %s", containerdConfigTomlPath)
 	}
-	log.Printf("Restoring default config.toml at %s", constants.ContainerdConfigTomlPath)
-	if err := mcnutils.CopyFile(filepath.Join(nodeDir, constants.StoredContainerdConfigTomlPath), filepath.Join(nodeDir, constants.ContainerdConfigTomlPath)); err != nil {
+	log.Printf("Restoring default config.toml at %s", containerdConfigTomlPath)
+	if err := mcnutils.CopyFile(filepath.Join(nodeDir, storedContainerdConfigTomlPath), filepath.Join(nodeDir, containerdConfigTomlPath)); err != nil {
 		return errors.Wrap(err, "reverting back to default config.toml")
 	}
 	// restart containerd

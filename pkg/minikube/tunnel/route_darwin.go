@@ -156,21 +156,21 @@ func (router *osRouter) Cleanup(route *Route) error {
 	if !exists {
 		return nil
 	}
-	command := exec.Command("sudo", "route", "-n", "delete", route.DestCIDR.String())
-	stdInAndOut, err := command.CombinedOutput()
+	cmd := exec.Command("sudo", "route", "-n", "delete", route.DestCIDR.String())
+	stdInAndOut, err := cmd.CombinedOutput()
 	if err != nil {
 		return err
 	}
-	message := fmt.Sprintf("%s", stdInAndOut)
-	glog.V(4).Infof("%s", message)
+	msg := fmt.Sprintf("%s", stdInAndOut)
+	glog.V(4).Infof("%s", msg)
 	re := regexp.MustCompile("^delete net ([^:]*)$")
-	if !re.MatchString(message) {
-		return fmt.Errorf("error deleting route: %s, %d", message, len(strings.Split(message, "\n")))
+	if !re.MatchString(msg) {
+		return fmt.Errorf("error deleting route: %s, %d", msg, len(strings.Split(msg, "\n")))
 	}
 	// idempotent removal of cluster domain dns
 	resolverFile := fmt.Sprintf("/etc/resolver/%s", route.ClusterDomain)
-	command = exec.Command("sudo", "rm", "-f", resolverFile)
-	if err := command.Run(); err != nil {
+	cmd = exec.Command("sudo", "rm", "-f", resolverFile)
+	if err := cmd.Run(); err != nil {
 		return fmt.Errorf("could not remove %s: %s", resolverFile, err)
 	}
 	return nil
@@ -191,12 +191,12 @@ func writeResolverFile(route *Route) error {
 	if err = tmpFile.Close(); err != nil {
 		return err
 	}
-	command := exec.Command("sudo", "mkdir", "-p", "/etc/resolver")
-	if err := command.Run(); err != nil {
+	cmd := exec.Command("sudo", "mkdir", "-p", "/etc/resolver")
+	if err := cmd.Run(); err != nil {
 		return err
 	}
-	command = exec.Command("sudo", "cp", "-f", tmpFile.Name(), resolverFile)
-	if err := command.Run(); err != nil {
+	cmd = exec.Command("sudo", "cp", "-f", tmpFile.Name(), resolverFile)
+	if err := cmd.Run(); err != nil {
 		return err
 	}
 	return nil

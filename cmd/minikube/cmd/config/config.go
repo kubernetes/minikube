@@ -22,7 +22,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // Bootstrapper is the name for bootstrapper
@@ -160,12 +160,6 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableStorageClasses},
 	},
 	{
-		name:        "heapster",
-		set:         SetBool,
-		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableAddon},
-	},
-	{
 		name:        "efk",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
@@ -200,12 +194,6 @@ var settings = []Setting{
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
 		callbacks:   []setFn{EnableOrDisableAddon},
-	},
-	{
-		name:        "default-storageclass",
-		set:         SetBool,
-		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableStorageClasses},
 	},
 	{
 		name:        "storage-provisioner",
@@ -246,6 +234,18 @@ var settings = []Setting{
 		name:        "gvisor",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon, IsContainerdRuntime},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:        "helm-tiller",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
+		callbacks:   []setFn{EnableOrDisableAddon},
+	},
+	{
+		name:        "ingress-dns",
+		set:         SetBool,
+		validations: []setFn{IsValidAddon},
 		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
@@ -294,7 +294,7 @@ func configurableFields() string {
 
 // ListConfigMap list entries from config file
 func ListConfigMap(name string) ([]string, error) {
-	configFile, err := config.ReadConfig(constants.ConfigFile)
+	configFile, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return nil, err
 	}
@@ -314,7 +314,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig(constants.ConfigFile)
+	cfg, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return err
 	}
@@ -331,7 +331,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(constants.ConfigFile, cfg)
+	return config.WriteConfig(localpath.ConfigFile, cfg)
 }
 
 // DeleteFromConfigMap deletes entries from a map in the config file
@@ -341,7 +341,7 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig(constants.ConfigFile)
+	cfg, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return err
 	}
@@ -356,5 +356,5 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(constants.ConfigFile, cfg)
+	return config.WriteConfig(localpath.ConfigFile, cfg)
 }

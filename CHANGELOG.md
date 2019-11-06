@@ -1,5 +1,121 @@
 # Release Notes
 
+## Version 1.5.2 - 2019-10-31 (Happy Halloween!)
+
+* service: fix --url mode [#5790](https://github.com/kubernetes/minikube/pull/5790)
+* Refactor command runner interface, allow stdin writes [#5530](https://github.com/kubernetes/minikube/pull/5530)
+* macOS install docs: minikube is a normal Homebrew formula now [#5750](https://github.com/kubernetes/minikube/pull/5750)
+* Allow CPU count check to be disabled using --force [#5803](https://github.com/kubernetes/minikube/pull/5803)
+* Make network validation friendlier, especially to corp networks [#5802](https://github.com/kubernetes/minikube/pull/5802)
+
+Thank you to our contributors for this release:
+
+- Anders F Björklund
+- Issy Long
+- Medya Ghazizadeh
+- Thomas Strömberg
+
+## Version 1.5.1 - 2019-10-29
+
+* Set Docker open-files limit ( 'ulimit -n') to be consistent with other runtimes [#5761](https://github.com/kubernetes/minikube/pull/5761)
+* Use fixed uid/gid for the default user account [#5767](https://github.com/kubernetes/minikube/pull/5767)
+* Set --wait=false to default but still wait for apiserver [#5757](https://github.com/kubernetes/minikube/pull/5757)
+* kubelet: Pass --config to use kubeadm generated configuration [#5697](https://github.com/kubernetes/minikube/pull/5697)
+* Refactor to remove opening browser and just return url(s) [#5718](https://github.com/kubernetes/minikube/pull/5718)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Medya Ghazizadeh
+- Nanik T
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+
+## Version 1.5.0 - 2019-10-25
+
+* Default to best-available local hypervisor rather than VirtualBox [#5700](https://github.com/kubernetes/minikube/pull/5700)
+* Update default Kubernetes version to v1.16.2 [#5731](https://github.com/kubernetes/minikube/pull/5731)
+* Add json output for status [#5611](https://github.com/kubernetes/minikube/pull/5611)
+* gvisor: Use chroot instead of LD_LIBRARY_PATH [#5735](https://github.com/kubernetes/minikube/pull/5735)
+* Hide innocuous viper ConfigFileNotFoundError [#5732](https://github.com/kubernetes/minikube/pull/5732)
+
+Thank you to our contributors!
+
+- Anders F Björklund
+- duohedron
+- Javis Zhou
+- Josh Woodcock
+- Kenta Iso
+- Marek Schwarz
+- Medya Ghazizadeh
+- Nanik T
+- Rob Bruce
+- Sharif Elgamal
+- Thomas Strömberg
+
+## Version 1.5.0-beta.0 - 2019-10-21
+
+* Fix node InternalIP not matching host-only address [#5427](https://github.com/kubernetes/minikube/pull/5427)
+* Add helm-tiller addon [#5363](https://github.com/kubernetes/minikube/pull/5363)
+* Add ingress-dns addon [#5507](https://github.com/kubernetes/minikube/pull/5507)
+* Add validation checking for minikube profile [#5624](https://github.com/kubernetes/minikube/pull/5624)
+* add ability to override autoupdating drivers [#5640](https://github.com/kubernetes/minikube/pull/5640)
+* Add option to  configure  dnsDomain in kubeAdm [#5566](https://github.com/kubernetes/minikube/pull/5566)
+* Added flags to purge configuration with minikube delete [#5548](https://github.com/kubernetes/minikube/pull/5548)
+* Upgrade Buildroot to 2019.02 and VirtualBox to 5.2 [#5609](https://github.com/kubernetes/minikube/pull/5609)
+* Add libmachine debug logs back [#5574](https://github.com/kubernetes/minikube/pull/5574)
+* Add JSON output for addons list [#5601](https://github.com/kubernetes/minikube/pull/5601)
+* Update default Kubernetes version to 1.16.1 [#5593](https://github.com/kubernetes/minikube/pull/5593)
+* Upgrade nginx ingress controller to 0.26.1 [#5514](https://github.com/kubernetes/minikube/pull/5514)
+* Initial translations for fr, es, de, ja, and zh-CN [#5466](https://github.com/kubernetes/minikube/pull/5466)
+* PL translation [#5491](https://github.com/kubernetes/minikube/pull/5491)
+* Warn if incompatible kubectl version is in use [#5596](https://github.com/kubernetes/minikube/pull/5596)
+* Fix crash when deleting the cluster but it doesn't exist [#4980](https://github.com/kubernetes/minikube/pull/4980)
+* Add json output for profile list [#5554](https://github.com/kubernetes/minikube/pull/5554)
+* Allow addon enabling and disabling when minikube is not running [#5565](https://github.com/kubernetes/minikube/pull/5565)
+* Added option to delete all profiles [#4780](https://github.com/kubernetes/minikube/pull/4780)
+* Replace registry-creds addon ReplicationController with Deployment [#5586](https://github.com/kubernetes/minikube/pull/5586)
+* Performance and security enhancement for ingress-dns addon [#5614](https://github.com/kubernetes/minikube/pull/5614)
+* Add addons flag to 'minikube start' in order to enable specified addons [#5543](https://github.com/kubernetes/minikube/pull/5543)
+* Warn when a user tries to set a profile name that is unlikely to be valid [#4999](https://github.com/kubernetes/minikube/pull/4999)
+* Make error message more human readable [#5563](https://github.com/kubernetes/minikube/pull/5563)
+* Adjusted Terminal Style Detection [#5508](https://github.com/kubernetes/minikube/pull/5508)
+* Fixes image repository flags when using CRI-O and containerd runtime [#5447](https://github.com/kubernetes/minikube/pull/5447)
+* fix "minikube update-context" command fail [#5626](https://github.com/kubernetes/minikube/pull/5626)
+* Fix pods not being scheduled when ingress deployment is patched [#5519](https://github.com/kubernetes/minikube/pull/5519)
+* Fix order of parameters to CurrentContext funcs [#5439](https://github.com/kubernetes/minikube/pull/5439)
+* Add solution for VERR_VMX_MSR_ALL_VMX_DISABLED [#5460](https://github.com/kubernetes/minikube/pull/5460)
+* fr: fix translations of environment & existent [#5483](https://github.com/kubernetes/minikube/pull/5483)
+* optimizing Chinese translation [#5201](https://github.com/kubernetes/minikube/pull/5201)
+* Change systemd unit files perm to 644 [#5492](https://github.com/kubernetes/minikube/pull/5492)
+
+Huge thank you for this release towards our contributors:
+- Anders F Björklund
+- bhanu011
+- chentanjun
+- Cornelius Weig
+- Doug A
+- hwdef
+- James Peach
+- Josh Woodcock
+- Kenta Iso
+- Marcin Niemira
+- Medya Ghazizadeh
+- Nanik T
+- Pranav Jituri
+- Samuel Almeida
+- serhatcetinkaya
+- Sharif Elgamal
+- tanjunchen
+- Thomas Strömberg
+- u5surf
+- yugo horie
+- yuxiaobo
+- Zhongcheng Lao
+- Zoltán Reegn
+
+
 ## Version 1.4.0 - 2019-09-17
 
 Notable user-facing changes:
@@ -784,7 +900,7 @@ Huge thank you for this release towards our contributors:
 
 * Issue #3037 change dependency management to dep [#3136](https://github.com/kubernetes/minikube/pull/3136)
 * Update dashboard version to v1.10.0 [#3122](https://github.com/kubernetes/minikube/pull/3122)
-* fix: --format outputs any string, --https only subsitute http URL scheme [#3114](https://github.com/kubernetes/minikube/pull/3114)
+* fix: --format outputs any string, --https only substitute http URL scheme [#3114](https://github.com/kubernetes/minikube/pull/3114)
 * Change default docker storage driver to overlay2 [#3121](https://github.com/kubernetes/minikube/pull/3121)
 * Add env variable for default ES_JAVA_OPTS [#3086](https://github.com/kubernetes/minikube/pull/3086)
 * fix(cli): `minikube start --mount --mountsting` without write permission [#2671](https://github.com/kubernetes/minikube/pull/2671)

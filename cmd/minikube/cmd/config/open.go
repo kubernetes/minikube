@@ -17,12 +17,15 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
+	"os"
 	"text/template"
+
+	"github.com/pkg/browser"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -63,7 +66,9 @@ var addonsOpenCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		cluster.EnsureMinikubeRunningOrExit(api, 1)
+		if !cluster.IsMinikubeRunning(api) {
+			os.Exit(1)
+		}
 		addon, ok := assets.Addons[addonName] // validate addon input
 		if !ok {
 			exit.WithCodeT(exit.Data, `addon '{{.name}}' is not a valid addon packaged with minikube.
@@ -93,8 +98,19 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 		}
 		for i := range serviceList.Items {
 			svc := serviceList.Items[i].ObjectMeta.Name
-			if err := service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
+			var urlString []string
+
+			if urlString, err = service.WaitForService(api, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
 				exit.WithCodeT(exit.Unavailable, "Wait failed: {{.error}}", out.V{"error": err})
+			}
+
+			if len(urlString) != 0 {
+				out.T(out.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+				for _, url := range urlString {
+					if err := browser.OpenURL(url); err != nil {
+						exit.WithError(fmt.Sprintf("browser failed to open url %s", url), err)
+					}
+				}
 			}
 		}
 	},
@@ -103,8 +119,8 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 func init() {
 	addonsOpenCmd.Flags().BoolVar(&addonsURLMode, "url", false, "Display the kubernetes addons URL in the CLI instead of opening it in the default browser")
 	addonsOpenCmd.Flags().BoolVar(&https, "https", false, "Open the addons URL with https instead of http")
-	addonsOpenCmd.Flags().IntVar(&wait, "wait", constants.DefaultWait, "Amount of time to wait for service in seconds")
-	addonsOpenCmd.Flags().IntVar(&interval, "interval", constants.DefaultInterval, "The time interval for each check that wait performs in seconds")
+	addonsOpenCmd.Flags().IntVar(&wait, "wait", service.DefaultWait, "Amount of time to wait for service in seconds")
+	addonsOpenCmd.Flags().IntVar(&interval, "interval", service.DefaultInterval, "The time interval for each check that wait performs in seconds")
 	addonsOpenCmd.PersistentFlags().StringVar(&addonsURLFormat, "format", defaultAddonsFormatTemplate, "Format to output addons URL in.  This format will be applied to each url individually and they will be printed one at a time.")
 	AddonsCmd.AddCommand(addonsOpenCmd)
 }

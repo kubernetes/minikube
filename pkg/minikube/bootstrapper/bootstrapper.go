@@ -41,7 +41,7 @@ type Bootstrapper interface {
 	UpdateCluster(config.KubernetesConfig) error
 	RestartCluster(config.KubernetesConfig) error
 	DeleteCluster(config.KubernetesConfig) error
-	WaitCluster(config.KubernetesConfig, time.Duration) error
+	WaitForPods(config.KubernetesConfig, time.Duration, []string) error
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(LogOptions) map[string]string
 	SetupCerts(cfg config.KubernetesConfig) error
@@ -68,7 +68,7 @@ func GetCachedBinaryList(bootstrapper string) []string {
 func GetCachedImageList(imageRepository string, version string, bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		_, images := images.CachedImages(imageRepository, version)
+		images := images.CachedImages(imageRepository, version)
 		return images
 	default:
 		return []string{}
