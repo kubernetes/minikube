@@ -22,7 +22,7 @@ Please send a PR to suggest any improvements to it.
 
 - [x] Creation of a user-centric minikube website for installation & documentation
 - [x] Make minikube usable in environments with challenging connectivity requirements
-- [ ] Localized output to 5+ written languages
+- [x] Localized output to 5+ written languages
 
 ## (#3) Support all Kubernetes features
 
@@ -72,7 +72,6 @@ Please send a PR to suggest any improvements to it.
 - [ ] IPv6
 - [ ] Usage documentation for 3 leading CNI providers
 - [ ] Automatically publish conformance test results after a release
-- [ ] Modernize the local path provisioner
 
 ## (#4) Cross-platform
 
@@ -86,7 +85,6 @@ Please send a PR to suggest any improvements to it.
 
 - [ ] Resource alerts
 - [ ] Time synchronization on HyperKit
-- [ ] Consistent IP across restarts
 - [ ] Prototype post-libmachine implementation of minikube
 
 ## (#6) High Performance
@@ -99,3 +97,4 @@ Please send a PR to suggest any improvements to it.
 ## (#7) Developer Focused
 
 - [ ] Container build integration
+- [ ] Documented workflow for Kubernetes development
