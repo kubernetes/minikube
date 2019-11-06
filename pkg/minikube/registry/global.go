@@ -18,6 +18,7 @@ package registry
 
 import (
 	"os"
+	"sort"
 
 	"github.com/golang/glog"
 )
@@ -65,8 +66,19 @@ func Available() []DriverState {
 		}
 		s := d.Status()
 		glog.Infof("%s priority: %d, state: %+v", d.Name, d.Priority, s)
-		sts = append(sts, DriverState{Name: d.Name, Priority: d.Priority, State: s})
+
+		priority := d.Priority
+		if !s.Healthy {
+			priority = Unhealthy
+		}
+
+		sts = append(sts, DriverState{Name: d.Name, Priority: priority, State: s})
 	}
+
+	// Descending priority for predictability
+	sort.Slice(sts, func(i, j int) bool {
+		return sts[i].Priority > sts[j].Priority
+	})
 	return sts
 }
 
