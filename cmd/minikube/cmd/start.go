@@ -290,6 +290,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	driverName := selectDriver(existing)
+	glog.Infof("selected driver: %s", driverName)
 	validateDriver(driverName, existing)
 	err = autoSetDriverOptions(cmd, driverName)
 	if err != nil {
@@ -557,27 +558,19 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string) error {
 func selectDriver(existing *cfg.Config) string {
 	name := viper.GetString("vm-driver")
 	glog.Infof("selectDriver: flag=%q, old=%v", name, existing)
+	options := driver.Choices()
+	pick, alts := driver.Choose(name, options)
+
 	if name != "" {
+		out.T(out.Sparkle, `Selecting '{{.driver}}' driver from user configuration (alternates: {{.alternates}})`, out.V{"driver": existing.MachineConfig.VMDriver, "alternates": alts})
 		return name
 	}
 
-	options := driver.Choices()
-	pick, alts := driver.Choose(options)
-
 	// By default, the driver is whatever we used last time
 	if existing != nil {
-		// alts by any other name
-		others := []string{}
-		if pick.Name != existing.MachineConfig.VMDriver {
-			others = append(others, pick.Name)
-		}
-		for _, d := range alts {
-			if d.Name != existing.MachineConfig.VMDriver {
-				others = append(others, d.Name)
-			}
-		}
-		out.T(out.Sparkle, `Using '{{.driver}}' driver as per existing configuration (alternates: {{.alternates}})`, out.V{"driver": existing.MachineConfig.VMDriver, "alternates": others})
-		return existing.MachineConfig.VMDriver
+		pick, alts := driver.Choose(existing.MachineConfig.VMDriver, options)
+		out.T(out.Sparkle, `Selecting '{{.driver}}' driver from existing profile (alternates: {{.alternates}})`, out.V{"driver": existing.MachineConfig.VMDriver, "alternates": alts})
+		return pick.Name
 	}
 
 	if len(options) > 1 {
@@ -594,11 +587,14 @@ func selectDriver(existing *cfg.Config) string {
 
 // validateDriver validates that the selected driver appears sane, exits if not
 func validateDriver(name string, existing *cfg.Config) {
+	glog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
 		exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
 
 	st := driver.Status(name)
+	glog.Infof("status for %s: %+v", name, st)
+
 	if st.Error != nil {
 		out.ErrLn("")
 
@@ -610,6 +606,9 @@ func validateDriver(name string, existing *cfg.Config) {
 		out.ErrLn("")
 
 		if !st.Installed && !viper.GetBool(force) {
+			if existing != nil && name == existing.MachineConfig.VMDriver {
+				exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+			}
 			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
 	}

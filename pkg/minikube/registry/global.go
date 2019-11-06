@@ -53,8 +53,8 @@ func Driver(name string) DriverDef {
 	return globalRegistry.Driver(name)
 }
 
-// Installed returns a list of installed drivers in the global registry
-func Installed() []DriverState {
+// Available returns a list of available drivers in the global registry
+func Available() []DriverState {
 	sts := []DriverState{}
 	glog.Infof("Querying for installed drivers using PATH=%s", os.Getenv("PATH"))
 
@@ -65,11 +65,6 @@ func Installed() []DriverState {
 		}
 		s := d.Status()
 		glog.Infof("%s priority: %d, state: %+v", d.Name, d.Priority, s)
-
-		if !s.Installed {
-			glog.Infof("%q not installed: %v", d.Name, s.Error)
-			continue
-		}
 		sts = append(sts, DriverState{Name: d.Name, Priority: d.Priority, State: s})
 	}
 	return sts
