@@ -562,7 +562,7 @@ func selectDriver(existing *cfg.Config) string {
 	pick, alts := driver.Choose(name, options)
 
 	if name != "" {
-		out.T(out.Sparkle, `Selecting '{{.driver}}' driver from user configuration (alternates: {{.alternates}})`, out.V{"driver": existing.MachineConfig.VMDriver, "alternates": alts})
+		out.T(out.Sparkle, `Selecting '{{.driver}}' driver from user configuration (alternates: {{.alternates}})`, out.V{"driver": name, "alternates": alts})
 		return name
 	}
 
