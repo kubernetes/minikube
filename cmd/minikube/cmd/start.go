@@ -616,7 +616,7 @@ func selectDriver(oldConfig *cfg.Config) string {
 		return name
 	}
 
-	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" cluster that was created using the "{{.old_driver}}" driver, and cannot be started using the "{{.driver}}" driver.`,
+	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" cluster was created using the "{{.old_driver}}" driver, and cannot be started using the "{{.driver}}" driver.`,
 		out.V{"profile_name": cfg.GetMachineName(), "driver": name, "old_driver": h.Driver.DriverName()})
 
 	out.ErrT(out.Workaround, `To proceed, either:
