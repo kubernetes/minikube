@@ -562,7 +562,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
 		return err
 	}
-	if err = retry.Expo(mysql, 10*time.Second, 60*time.Second); err != nil {
+	if err = retry.Expo(mysql, 3*time.Second, 60*time.Second); err != nil {
 		t.Errorf("mysql failing: %v", err)
 	}
 }
