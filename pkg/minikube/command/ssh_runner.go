@@ -23,6 +23,8 @@ import (
 	"io"
 	"os/exec"
 	"path"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -143,6 +145,12 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 // Copy copies a file to the remote over SSH.
 func (s *SSHRunner) Copy(f assets.CopyableFile) error {
+	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
+	if s.fileExistsInVM(f, dst) {
+		glog.Infof("Skipping copying %s as it already exists", f.GetAssetName())
+		return nil
+	}
+
 	sess, err := s.c.NewSession()
 	if err != nil {
 		return errors.Wrap(err, "NewSession")
@@ -156,7 +164,6 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	// StdinPipe is closed. But let's use errgroup to make it explicit.
 	var g errgroup.Group
 	var copied int64
-	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 	glog.Infof("Transferring %d bytes to %s", f.GetLength(), dst)
 
 	g.Go(func() error {
@@ -187,6 +194,49 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
 	}
 	return g.Wait()
+}
+
+func (s *SSHRunner) fileExistsInVM(f assets.CopyableFile, dst string) bool {
+	sess, err := s.c.NewSession()
+	if err != nil {
+		return false
+	}
+
+	// check if sizes of the two files are the same
+	srcSize := f.GetLength()
+	size := fmt.Sprintf("ls -l %s | cut -d \" \" -f5", dst)
+	out, err := sess.CombinedOutput(size)
+	if err != nil {
+		return false
+	}
+	dstSize, err := strconv.Atoi(strings.Trim(string(out), "\n"))
+	if err != nil {
+		return false
+	}
+	if srcSize != dstSize {
+		return false
+	}
+
+	sess, err = s.c.NewSession()
+	if err != nil {
+		return false
+	}
+	// ensure src file hasn't been modified since dst was copied over
+	srcModTime := f.GetModTime()
+	stat := "stat -c %Y" + fmt.Sprintf(" %s", dst)
+	out, err = sess.CombinedOutput(stat)
+	if err != nil {
+		return false
+	}
+	unix, err := strconv.Atoi(strings.Trim(string(out), "\n"))
+	if err != nil {
+		return false
+	}
+	dstModTime := time.Unix(int64(unix), 0)
+	if err != nil {
+		return false
+	}
+	return srcModTime.Before(dstModTime)
 }
 
 // teePrefix copies bytes from a reader to writer, logging each new line.
