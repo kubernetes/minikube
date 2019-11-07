@@ -88,7 +88,7 @@ func CacheISO(config cfg.MachineConfig) error {
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	exists, err := api.Exists(cfg.GetMachineName())
+	exists, err := api.Exists(config.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "exists: %s", cfg.GetMachineName())
 	}
@@ -100,12 +100,12 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 
 	glog.Infoln("Skipping create...Using existing machine configuration")
 
-	h, err := api.Load(cfg.GetMachineName())
+	h, err := api.Load(config.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
 
-	if exists && cfg.GetMachineName() == constants.DefaultMachineName {
+	if exists && config.Name == constants.DefaultMachineName {
 		out.T(out.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 

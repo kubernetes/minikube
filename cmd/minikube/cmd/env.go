@@ -171,7 +171,8 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 	}
 
 	if noProxy {
-		host, err := api.Load(config.GetMachineName())
+		cc, err := config.Load()
+		host, err := api.Load(cc.MachineConfig.Name)
 		if err != nil {
 			return nil, errors.Wrap(err, "Error getting IP")
 		}
@@ -339,7 +340,8 @@ var dockerEnvCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
+		cc, err := config.Load()
+		host, err := cluster.CheckIfHostExistsAndLoad(api, cc.MachineConfig.Name)
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}

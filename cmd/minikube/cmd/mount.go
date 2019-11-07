@@ -102,7 +102,8 @@ var mountCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		host, err := api.Load(config.GetMachineName())
+		cc, err := config.Load()
+		host, err := api.Load(cc.MachineConfig.Name)
 
 		if err != nil {
 			exit.WithError("Error loading api", err)

@@ -439,7 +439,7 @@ func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) 
 	}
 
 	kcs := &kubeconfig.Settings{
-		ClusterName:          cfg.GetMachineName(),
+		ClusterName:          c.MachineConfig.Name,
 		ClusterServerAddress: addr,
 		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
 		ClientKey:            localpath.MakeMiniPath("client.key"),
@@ -858,6 +858,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
+			Name:                cfg.GetMachineName(),
 			KeepContext:         viper.GetBool(keepContext),
 			EmbedCerts:          viper.GetBool(embedCerts),
 			MinikubeISO:         viper.GetString(isoURL),
@@ -971,7 +972,7 @@ func prepareNone() {
 
 // startHost starts a new minikube host using a VM or None
 func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
-	exists, err := api.Exists(cfg.GetMachineName())
+	exists, err := api.Exists(mc.Name)
 	if err != nil {
 		exit.WithError("Failed to check if machine exists", err)
 	}

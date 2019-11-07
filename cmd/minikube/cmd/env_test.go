@@ -21,7 +21,7 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/host"
-	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
@@ -46,8 +46,8 @@ func (f FakeNoProxyGetter) GetNoProxyVar() (string, string) {
 var defaultAPI = &tests.MockAPI{
 	FakeStore: tests.FakeStore{
 		Hosts: map[string]*host.Host{
-			config.GetMachineName(): {
-				Name:   config.GetMachineName(),
+			constants.DefaultMachineName: {
+				Name:   constants.DefaultMachineName,
 				Driver: &tests.MockDriver{},
 			},
 		},
