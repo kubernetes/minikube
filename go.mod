@@ -1,6 +1,6 @@
 module k8s.io/minikube
 
-go 1.12
+go 1.13
 
 require github.com/google/go-containerregistry v0.0.0-20180731221751-697ee0b3d46e
 
