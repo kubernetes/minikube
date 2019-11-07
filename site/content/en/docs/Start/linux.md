@@ -65,6 +65,10 @@ If you are already running minikube from inside a VM, it is possible to skip the
 
 {{% readfile file="/docs/Reference/Drivers/includes/none_usage.inc" %}}
 {{% /tab %}}
+{{% tab "Kic (Experimental)" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/kic_usage.inc" %}}
+{{% /tab %}}
+
 {{% /tabs %}}
 
 {{% readfile file="/docs/Start/includes/post_install.inc" %}}

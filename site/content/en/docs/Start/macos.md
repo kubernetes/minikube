@@ -62,6 +62,10 @@ brew upgrade minikube
 {{% tab "VMware" %}}
 {{% readfile file="/docs/Reference/Drivers/includes/vmware_macos_usage.inc" %}}
 {{% /tab %}}
+{{% tab "Kic (Experimental)" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/kic_usage.inc" %}}
+{{% /tab %}}
+
 
 {{% /tabs %}}
 
