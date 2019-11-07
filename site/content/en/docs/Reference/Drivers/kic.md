@@ -10,6 +10,8 @@ description: >
 
 ## Overview
 
-This is an experimental driver. Run kubernetes inside a container, instead of creating a VM, kubernertes will be installed in container.
+This is an experimental driver. installs kuberentes inside a containe (instead of inside a VM or a container)
+
+kic supports oci tools such as docker and podman.
 
 {{% readfile file="/docs/Reference/Drivers/includes/kic_usage.inc" %}}

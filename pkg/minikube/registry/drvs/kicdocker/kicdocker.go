@@ -1,5 +1,5 @@
 /*
-Copyright 2018 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kic
+package kicdocker
 
 import (
 	"fmt"
@@ -30,7 +30,7 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.Kic,
+		Name:     driver.Docker,
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{}) },
 		Status:   status,
@@ -51,7 +51,7 @@ func configure(mc config.MachineConfig) interface{} {
 func status() registry.State {
 	_, err := exec.LookPath("docker")
 	if err != nil {
-		return registry.State{Error: err, Fix: "You need docker to use kic driver.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/kic/"}
+		return registry.State{Error: err, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/kic/"}
 	}
 	return registry.State{Installed: true, Healthy: true}
 }

@@ -28,8 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
-// Driver is a driver designed to run kubeadm w/o VM management, and assumes systemctl.
-// https://minikube.sigs.k8s.io/docs/reference/drivers/none/
+// https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -45,7 +44,7 @@ type Config struct {
 	ContainerRuntime string
 }
 
-// NewDriver returns a fully configured None driver
+// NewDriver returns a fully configured Kic driver
 func NewDriver(c Config) *Driver {
 	runner := &command.ExecRunner{}
 	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})

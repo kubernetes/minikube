@@ -28,8 +28,8 @@ import (
 const (
 	// Mock driver
 	Mock = "mock"
-	// Kic driver
-	Kic = "kic"
+	// Docker driver implemented by kic
+	KicDocker = "docker"
 	// None driver
 	None = "none"
 	// KVM2 driver
