@@ -994,7 +994,7 @@ func prepareNone() {
 	}
 }
 
-// startHost starts a new minikube host using a VM or None
+// startHost starts a new minikube host using a VM, Container or baremetal (none)
 func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 	exists, err := api.Exists(mc.Name)
 	if err != nil {

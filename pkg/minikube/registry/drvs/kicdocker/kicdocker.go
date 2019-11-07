@@ -30,7 +30,7 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.Docker,
+		Name:     driver.KicDocker,
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{}) },
 		Status:   status,

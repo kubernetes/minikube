@@ -87,7 +87,7 @@ func CacheISO(config cfg.MachineConfig) error {
 	return config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO)
 }
 
-// StartHost starts a host VM.
+// StartHost starts a host VM/Container.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	exists, err := api.Exists(config.Name)
 	if err != nil {

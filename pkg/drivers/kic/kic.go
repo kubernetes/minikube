@@ -35,6 +35,7 @@ type Driver struct {
 	URL     string
 	runtime cruntime.Manager
 	exec    command.Runner
+	oci     string
 }
 
 // Config is configuration for the kic driver
@@ -42,6 +43,7 @@ type Config struct {
 	MachineName      string
 	StorePath        string
 	ContainerRuntime string
+	OciBinary        string // oci tool to use (docker, podman,...)
 }
 
 // NewDriver returns a fully configured Kic driver
@@ -59,6 +61,7 @@ func NewDriver(c Config) *Driver {
 		},
 		runtime: runtime,
 		exec:    runner,
+		oci:     c.OciBinary,
 	}
 }
 
@@ -75,7 +78,10 @@ func (d *Driver) Create() error {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	return "kic"
+	if d.oci == "podman" {
+		return "podman"
+	}
+	return "docker"
 }
 
 // GetIP returns an IP or hostname that this host is available at
