@@ -16,11 +16,14 @@ require (
 	github.com/cheggaaa/pb/v3 v3.0.1
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
+	github.com/cratonica/2goarray v0.0.0-20190331194516-514510793eaa // indirect
 	github.com/docker/docker v1.13.1 // indirect
 	github.com/docker/go-units v0.3.3
 	github.com/docker/machine v0.7.1-0.20190718054102-a555e4f7a8f5 // version is 0.7.1 to pin to a555e4f7a8f5
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
+	github.com/getlantern/golog v0.0.0-20190830074920-4ef2e798c2d7 // indirect
+	github.com/getlantern/systray v0.0.0-20191102120558-baeca33b8639
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
@@ -61,6 +64,7 @@ require (
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
 	github.com/sirupsen/logrus v1.4.1 // indirect
+	github.com/skratchdot/open-golang v0.0.0-20190402232053-79abb63cd66e
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.3
 	github.com/spf13/viper v1.3.2
