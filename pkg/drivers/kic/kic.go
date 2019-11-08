@@ -39,7 +39,7 @@ type Driver struct {
 	ImageSha      string
 	CPU           int
 	Memory        int
-	ApiServerPort int32
+	APIServerPort int32
 }
 
 // Config is configuration for the kic driver
@@ -50,7 +50,7 @@ type Config struct {
 	StorePath     string
 	OciBinary     string // oci tool to use (docker, podman,...)
 	ImageSha      string // image name with sha to use for the node
-	ApiServerPort int32  // port to connect to forward from container to user's machine
+	APIServerPort int32  // port to connect to forward from container to user's machine
 }
 
 // NewDriver returns a fully configured Kic driver
@@ -66,7 +66,7 @@ func NewDriver(c Config) *Driver {
 		ImageSha:      c.ImageSha,
 		CPU:           c.CPU,
 		Memory:        c.Memory,
-		ApiServerPort: c.ApiServerPort,
+		APIServerPort: c.APIServerPort,
 	}
 	return d
 }
@@ -83,7 +83,7 @@ func (d *Driver) Create() error {
 		ExtraMounts:       []cri.Mount{},
 		ExtraPortMappings: []cri.PortMapping{},
 		APIServerAddress:  "127.0.0.1", // MEDYA:TODO make configurable
-		APIServerPort:     d.ApiServerPort,
+		APIServerPort:     d.APIServerPort,
 		IPv6:              false, // MEDYA:TODO add proxy envs here
 	}
 	fmt.Printf("\t(medya dbg) KickSpec: %+v\n", ks)

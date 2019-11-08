@@ -127,13 +127,13 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 }
 
 // Copy copies a file and its permissions
-func (*kicRunner) Copy(f assets.CopyableFile) error {
-	return fmt.Errorf("Not implemented yet for kic runner")
+func (k *kicRunner) Copy(f assets.CopyableFile) error {
+	return fmt.Errorf("not implemented yet for kic runner")
 }
 
 // Remove removes a file
-func (e *kicRunner) Remove(f assets.CopyableFile) error {
-	return fmt.Errorf("Not implemented yet for kic runner")
+func (k *kicRunner) Remove(f assets.CopyableFile) error {
+	return fmt.Errorf("not implemented yet for kic runner")
 }
 
 // isTerminal returns true if the writer w is a terminal

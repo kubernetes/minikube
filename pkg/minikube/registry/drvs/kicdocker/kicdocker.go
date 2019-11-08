@@ -54,7 +54,7 @@ func configure(mc config.MachineConfig) interface{} {
 		ImageSha:      imgSha,
 		CPU:           mc.CPUs,
 		Memory:        mc.Memory,
-		ApiServerPort: 5013,
+		APIServerPort: 5013, // (medya dbg: todo generate or get from config)
 		OciBinary:     "docker",
 	})
 
