@@ -74,38 +74,37 @@ The two primary shortcomings is that this layout does not allow for multiple nod
 | Config.MachineConfig.KVMGPU | EnableGPU | 
 | Config.MachineConfig.KVMHidden | HideHypervisor | 
 | Config.MachineConfig.KVMQemuURI | ConnectionURI |
-| Config.MachineConfig.NFSShares | Mounts | 
 | Config.MachineConfig.NoVTXCheck | VTXCheck |
 | Config.MachineConfig.VMDriver | Driver |
+| Config.MachineConfig.HostOnlyCIDR | CIDR |
 
 ## Cluster
 
 | *Old* | *New* |
 |-------|-------|
-| Config.KubernetesConfig.APIServerIPs | APIServer.IPs |
-| Config.KubernetesConfig.APIServerName | APIServer.Names[0] |
-| Config.KubernetesConfig.APIServerNames | APIServer.Names |
+| Config.KubernetesConfig.APIServerIPs | APIServerIPs |
+| Config.KubernetesConfig.APIServerName | APIServerNames[0] |
+| Config.KubernetesConfig.APIServerNames | APIServerNames |
 | Config.KubernetesConfig.DNSDomain | DNSDomain |
 | Config.KubernetesConfig.FeatureGates | FeatureGates |
 | Config.KubernetesConfig.ImageRepository | ImageRepository |
 | Config.KubernetesConfig.NetworkPlugin | NetworkPlugin |
-| Config.KubernetesConfig.NodePort | APIServer.Port |
-| Config.KubernetesConfig.ServiceCIDR | ServiceCIDR |
-| Config.MachineConfig.HostOnlyCIDR | CIDR |
+| Config.KubernetesConfig.NodePort | APIServerPort |
+| Config.KubernetesConfig.ServiceCIDR | CIDR |
 
 ## Node (multiple)
 
 | *Old* | *New* |
 |-------|-------|
 | N/A | Role | 
-| Config.KubernetesConfig.ContainerRuntime | ContainerRuntime |
-| Config.KubernetesConfig.CRISocket | ContainerRuntimeSocket |
+| Config.KubernetesConfig.ContainerRuntime | Runtime |
+| Config.KubernetesConfig.CRISocket | RuntimeSocket |
 | Config.KubernetesConfig.EnableDefaultCNI | EnableDefaultCNI |
 | Config.KubernetesConfig.ExtraOptions | KubeletOptions | 
 | Config.KubernetesConfig.KubernetesVersion | KubeletVersion |
 | Config.KubernetesConfig.NodeIP | IP |
 | Config.KubernetesConfig.NodeName | Name |
-| Config.MachineConfig.ContainerRuntime | ContainerRuntime 
+| Config.MachineConfig.ContainerRuntime | Runtime |
 | Config.MachineConfig.CPUs | CPUCount | 
 | Config.MachineConfig.DiskSize | DiskSize |
 | Config.MachineConfig.DockerEnv | DockerEnv |
@@ -113,7 +112,7 @@ The two primary shortcomings is that this layout does not allow for multiple nod
 | Config.MachineConfig.InsecureRegistry | InsecureRegistry |
 | Config.MachineConfig.Memory | Memory |
 | Config.MachineConfig.MinikubeISO | BootImage |
-| Config.MachineConfig.NFSShares | MountRoot | 
+| Config.MachineConfig.NFSShares | Mounts |
 | Config.MachineConfig.RegistryMirror | RegistryMirror |
 | Config.MachineConfig.UUID | UUID |
 
