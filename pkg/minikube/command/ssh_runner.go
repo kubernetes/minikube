@@ -37,6 +37,10 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
+var (
+	layout = "2006-01-02 15:04:05.999999999 -0700"
+)
+
 // SSHRunner runs commands through SSH.
 //
 // It implements the CommandRunner interface.
@@ -146,11 +150,14 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 // Copy copies a file to the remote over SSH.
 func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
-	if s.fileExistsInVM(f, dst) {
+	exists, err := s.sameFileExists(f, dst)
+	if err != nil {
+		glog.Infof("Checked if %s exists, but got error: %v", f.GetAssetName(), err)
+	}
+	if exists {
 		glog.Infof("Skipping copying %s as it already exists", f.GetAssetName())
 		return nil
 	}
-
 	sess, err := s.c.NewSession()
 	if err != nil {
 		return errors.Wrap(err, "NewSession")
@@ -189,6 +196,12 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	})
 
 	scp := fmt.Sprintf("sudo mkdir -p %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
+	mtime, err := f.GetModTime()
+	if err != nil {
+		glog.Infof("error getting modtime for %s: %v", f.GetAssetName(), err)
+	} else {
+		scp += fmt.Sprintf(" && sudo touch -d \"%s\" %s", mtime.Format(layout), dst)
+	}
 	out, err := sess.CombinedOutput(scp)
 	if err != nil {
 		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
@@ -196,47 +209,43 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	return g.Wait()
 }
 
-func (s *SSHRunner) fileExistsInVM(f assets.CopyableFile, dst string) bool {
+func (s *SSHRunner) sameFileExists(f assets.CopyableFile, dst string) (bool, error) {
+	// get file size and modtime of the source
+	srcSize := f.GetLength()
+	srcModTime, err := f.GetModTime()
+	if err != nil {
+		return false, err
+	}
+
+	// get file size and modtime of the destination
 	sess, err := s.c.NewSession()
 	if err != nil {
-		return false
+		return false, err
 	}
 
-	// check if sizes of the two files are the same
-	srcSize := f.GetLength()
 	size := fmt.Sprintf("ls -l %s | cut -d \" \" -f5", dst)
-	out, err := sess.CombinedOutput(size)
+	stat := "stat -c %y" + fmt.Sprintf(" %s", dst)
+
+	out, err := sess.CombinedOutput(size + " && " + stat)
 	if err != nil {
-		return false
+		return false, err
 	}
-	dstSize, err := strconv.Atoi(strings.Trim(string(out), "\n"))
+	outputs := strings.Split(strings.Trim(string(out), "\n"), "\n")
+
+	dstSize, err := strconv.Atoi(outputs[0])
 	if err != nil {
-		return false
+		return false, err
 	}
-	if srcSize != dstSize {
-		return false
+	dstModTime, err := time.Parse(layout, outputs[1])
+	if err != nil {
+		return false, err
 	}
 
-	sess, err = s.c.NewSession()
-	if err != nil {
-		return false
+	// compare sizes and modtimes
+	if srcSize != dstSize {
+		return false, errors.New("source file and destination file are different sizes")
 	}
-	// ensure src file hasn't been modified since dst was copied over
-	srcModTime := f.GetModTime()
-	stat := "stat -c %Y" + fmt.Sprintf(" %s", dst)
-	out, err = sess.CombinedOutput(stat)
-	if err != nil {
-		return false
-	}
-	unix, err := strconv.Atoi(strings.Trim(string(out), "\n"))
-	if err != nil {
-		return false
-	}
-	dstModTime := time.Unix(int64(unix), 0)
-	if err != nil {
-		return false
-	}
-	return srcModTime.Before(dstModTime)
+	return srcModTime.Equal(dstModTime), nil
 }
 
 // teePrefix copies bytes from a reader to writer, logging each new line.
