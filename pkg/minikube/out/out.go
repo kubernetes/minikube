@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 
@@ -92,6 +93,7 @@ func ErrT(style StyleEnum, format string, a ...V) {
 // Err writes a basic formatted string to stderr
 func Err(format string, a ...interface{}) {
 	if errFile == nil {
+		debug.PrintStack()
 		glog.Errorf("[unset errFile]: %s", fmt.Sprintf(format, a...))
 		return
 	}
