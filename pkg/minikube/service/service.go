@@ -119,11 +119,7 @@ type URLs []SvcURL
 // GetServiceURLs returns a SvcURL object for every service in a particular namespace.
 // Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
-	cc, err := config.Load()
-	if err != nil {
-		return nil, err
-	}
-	host, err := cluster.CheckIfHostExistsAndLoad(api, cc.MachineConfig.Name)
+	host, err := cluster.CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
 	if err != nil {
 		return nil, err
 	}
@@ -159,11 +155,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 // GetServiceURLsForService returns a SvcUrl object for a service in a namespace. Supports optional formatting.
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) (SvcURL, error) {
-	cc, err := config.Load()
-	if err != nil {
-		return SvcURL{}, errors.Wrap(err, "Error loading config")
-	}
-	host, err := cluster.CheckIfHostExistsAndLoad(api, cc.MachineConfig.Name)
+	host, err := cluster.CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
 	if err != nil {
 		return SvcURL{}, errors.Wrap(err, "Error checking if api exist and loading it")
 	}

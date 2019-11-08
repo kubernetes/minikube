@@ -39,6 +39,9 @@ var ipCmd = &cobra.Command{
 		defer api.Close()
 
 		cc, err := config.Load()
+		if err != nil {
+			exit.WithError("Error getting config", err)
+		}
 		host, err := api.Load(cc.MachineConfig.Name)
 		if err != nil {
 			switch err := errors.Cause(err).(type) {
