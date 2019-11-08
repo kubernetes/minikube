@@ -423,6 +423,7 @@ func TestGetServiceURLs(t *testing.T) {
 		},
 	}
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
+	viper.Set(config.MachineProfile, constants.DefaultMachineName)
 
 	var tests = []struct {
 		description string
@@ -466,7 +467,6 @@ func TestGetServiceURLs(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			viper.SetDefault(config.MachineProfile, constants.DefaultMachineName)
 
 			K8s = &MockClientGetter{
 				servicesMap:  serviceNamespaces,
@@ -498,6 +498,7 @@ func TestGetServiceURLsForService(t *testing.T) {
 		},
 	}
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
+	viper.Set(config.MachineProfile, constants.DefaultMachineName)
 
 	var tests = []struct {
 		description string
@@ -536,7 +537,6 @@ func TestGetServiceURLsForService(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			viper.SetDefault(config.MachineProfile, constants.DefaultMachineName)
 			K8s = &MockClientGetter{
 				servicesMap:  serviceNamespaces,
 				endpointsMap: endpointNamespaces,
