@@ -18,67 +18,82 @@ package kic
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/golang/glog"
+	"github.com/medyagh/kic/pkg/config/cri"
+	"github.com/medyagh/kic/pkg/node"
 	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
 // https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
-	URL     string
-	runtime cruntime.Manager
-	exec    command.Runner
-	oci     string
+	URL           string
+	exec          command.Runner
+	OciBinary     string
+	ImageSha      string
+	CPU           int
+	Memory        int
+	ApiServerPort int32
 }
 
 // Config is configuration for the kic driver
 type Config struct {
-	MachineName      string
-	StorePath        string
-	ContainerRuntime string
-	OciBinary        string // oci tool to use (docker, podman,...)
+	MachineName   string
+	CPU           int
+	Memory        int
+	StorePath     string
+	OciBinary     string // oci tool to use (docker, podman,...)
+	ImageSha      string // image name with sha to use for the node
+	ApiServerPort int32  // port to connect to forward from container to user's machine
 }
 
 // NewDriver returns a fully configured Kic driver
 func NewDriver(c Config) *Driver {
 	runner := &command.ExecRunner{}
-	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
-	// Libraries shouldn't panic, but there is no way for drivers to return error :(
-	if err != nil {
-		glog.Fatalf("unable to create container runtime: %v", err)
-	}
-	return &Driver{
+	d := &Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
-		runtime: runtime,
-		exec:    runner,
-		oci:     c.OciBinary,
+		exec:          runner,
+		OciBinary:     c.OciBinary,
+		ImageSha:      c.ImageSha,
+		CPU:           c.CPU,
+		Memory:        c.Memory,
+		ApiServerPort: c.ApiServerPort,
 	}
-}
-
-// PreCreateCheck checks for correct privileges and dependencies
-func (d *Driver) PreCreateCheck() error {
-	return fmt.Errorf("driver does not support ssh commands")
+	return d
 }
 
 // Create a host using the driver's config
 func (d *Driver) Create() error {
-	// creation for the none driver is handled by commands.go
-	return fmt.Errorf("driver does not support ssh commands")
+	ks := &node.Spec{ // kic spec
+		Profile:           d.MachineName,
+		Name:              d.MachineName + "-control-plane",
+		Image:             d.ImageSha,
+		CPUs:              strconv.Itoa(d.CPU),    //TODO: change kic to take int
+		Memory:            strconv.Itoa(d.Memory), // TODO: change kic to take int
+		Role:              "control-plane",
+		ExtraMounts:       []cri.Mount{},
+		ExtraPortMappings: []cri.PortMapping{},
+		APIServerAddress:  "127.0.0.1", // MEDYA:TODO make configurable
+		APIServerPort:     d.ApiServerPort,
+		IPv6:              false, // MEDYA:TODO add proxy envs here
+	}
+	fmt.Printf("\t(medya dbg) KickSpec: %+v\n", ks)
+	// d.Node = ks.Create()
+	return nil
 }
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	if d.oci == "podman" {
+	if d.OciBinary == "podman" {
 		return "podman"
 	}
 	return "docker"
@@ -135,10 +150,5 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
-	return fmt.Errorf("not implemented for kic yet")
-}
-
-// RunSSHCommandFromDriver implements direct ssh control to the driver
-func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("not implemented for kic yet")
 }

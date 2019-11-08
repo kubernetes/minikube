@@ -47,6 +47,7 @@ require (
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
 	github.com/mattn/go-isatty v0.0.8
+	github.com/medyagh/kic v0.0.6
 	github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
 	github.com/olekukonko/tablewriter v0.0.0-20160923125401-bdcc175572fd
@@ -69,7 +70,7 @@ require (
 	github.com/xeipuuv/gojsonschema v0.0.0-20160623135812-c539bca196be
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	golang.org/x/build v0.0.0-20190111050920-041ab4dc3f9d
-	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
+	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb
 	golang.org/x/text v0.3.2
@@ -79,7 +80,7 @@ require (
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
-	k8s.io/client-go v0.0.0
+	k8s.io/client-go v11.0.0+incompatible
 	k8s.io/kubectl v0.0.0-00010101000000-000000000000
 	sigs.k8s.io/sig-storage-lib-external-provisioner v4.0.0+incompatible
 )

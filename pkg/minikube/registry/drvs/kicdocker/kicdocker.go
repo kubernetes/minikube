@@ -21,6 +21,8 @@ import (
 	"os/exec"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/golang/glog"
+	"github.com/medyagh/kic/pkg/image"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -34,24 +36,40 @@ func init() {
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{}) },
 		Status:   status,
-		Priority: registry.Discouraged, // requires root
+		Priority: registry.Discouraged, // experimental
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
 }
 
 func configure(mc config.MachineConfig) interface{} {
+	imgSha, err := image.NameForVersion(mc.KubeVersion)
+	if err != nil {
+		glog.Errorf("Failed to getting image name for %s: imgesha:%s", imgSha, mc.KubeVersion)
+	}
+
 	return kic.NewDriver(kic.Config{
-		MachineName:      config.GetMachineName(),
-		StorePath:        localpath.MiniPath(),
-		ContainerRuntime: mc.ContainerRuntime,
+		MachineName:   config.GetMachineName(),
+		StorePath:     localpath.MiniPath(),
+		ImageSha:      imgSha,
+		CPU:           mc.CPUs,
+		Memory:        mc.Memory,
+		ApiServerPort: 5013,
+		OciBinary:     "docker",
 	})
+
 }
 
 func status() registry.State {
 	_, err := exec.LookPath("docker")
 	if err != nil {
-		return registry.State{Error: err, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/kic/"}
+		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/kic/"}
 	}
+
+	err = exec.Command("docker", "info").Run()
+	if err != nil {
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is not running. Try: restarting docker desktop."}
+	}
+
 	return registry.State{Installed: true, Healthy: true}
 }
