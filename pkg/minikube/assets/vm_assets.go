@@ -37,7 +37,7 @@ type CopyableFile interface {
 	GetTargetDir() string
 	GetTargetName() string
 	GetPermissions() string
-	GetModTime() time.Time
+	GetModTime() (time.Time, error)
 }
 
 // BaseAsset is the base asset class
@@ -69,8 +69,8 @@ func (b *BaseAsset) GetPermissions() string {
 }
 
 // GetModTime returns mod time
-func (b *BaseAsset) GetModTime() time.Time {
-	return time.Time{}
+func (b *BaseAsset) GetModTime() (time.Time, error) {
+	return time.Time{}, errors.New("modtime isn't available for this asset")
 }
 
 // FileAsset is an asset using a file
@@ -112,12 +112,12 @@ func (f *FileAsset) GetLength() (flen int) {
 }
 
 // GetModTime returns modification time of the file
-func (f *FileAsset) GetModTime() time.Time {
+func (f *FileAsset) GetModTime() (time.Time, error) {
 	fi, err := os.Stat(f.AssetName)
 	if err != nil {
-		return time.Time{}
+		return time.Time{}, err
 	}
-	return fi.ModTime()
+	return fi.ModTime(), nil
 }
 
 func (f *FileAsset) Read(p []byte) (int, error) {
