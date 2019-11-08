@@ -211,7 +211,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	if err = cluster.DeleteHost(api); err != nil {
+	if err = cluster.DeleteHost(api, cc.MachineConfig.Name); err != nil {
 		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
 			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": profile.Name})

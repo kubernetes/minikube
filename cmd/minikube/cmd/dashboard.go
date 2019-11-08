@@ -119,7 +119,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		out.ErrT(out.Launch, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy(kubectl)
+		p, hostPort, err := kubectlProxy(kubectl, cc.MachineConfig.Name)
 		if err != nil {
 			exit.WithError("kubectl proxy", err)
 		}

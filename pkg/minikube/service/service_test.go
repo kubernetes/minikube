@@ -38,7 +38,7 @@ import (
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	testing_fake "k8s.io/client-go/testing"
-	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
@@ -413,8 +413,8 @@ func TestGetServiceURLs(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
-				config.GetMachineName(): {
-					Name:   config.GetMachineName(),
+				constants.DefaultMachineName: {
+					Name:   constants.DefaultMachineName,
 					Driver: &tests.MockDriver{},
 				},
 			},
@@ -487,8 +487,8 @@ func TestGetServiceURLsForService(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
-				config.GetMachineName(): {
-					Name:   config.GetMachineName(),
+				constants.DefaultMachineName: {
+					Name:   constants.DefaultMachineName,
 					Driver: &tests.MockDriver{},
 				},
 			},
@@ -827,8 +827,8 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
-				config.GetMachineName(): {
-					Name:   config.GetMachineName(),
+				constants.DefaultMachineName: {
+					Name:   constants.DefaultMachineName,
 					Driver: &tests.MockDriver{},
 				},
 			},
@@ -944,8 +944,8 @@ func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
-				config.GetMachineName(): {
-					Name:   config.GetMachineName(),
+				constants.DefaultMachineName: {
+					Name:   constants.DefaultMachineName,
 					Driver: &tests.MockDriver{},
 				},
 			},

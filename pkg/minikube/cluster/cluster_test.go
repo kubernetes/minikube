@@ -61,6 +61,7 @@ func RegisterMockDriver(t *testing.T) {
 }
 
 var defaultMachineConfig = config.MachineConfig{
+	Name:        constants.DefaultMachineName,
 	VMDriver:    driver.Mock,
 	MinikubeISO: constants.DefaultISOURL,
 	Downloader:  MockDownloader{},
@@ -71,7 +72,7 @@ func TestCreateHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
-	exists, _ := api.Exists(config.GetMachineName())
+	exists, _ := api.Exists(defaultMachineConfig.Name)
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
@@ -80,15 +81,15 @@ func TestCreateHost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	exists, err = api.Exists(config.GetMachineName())
+	exists, err = api.Exists(defaultMachineConfig.Name)
 	if err != nil {
-		t.Fatalf("exists failed for %q: %v", config.GetMachineName(), err)
+		t.Fatalf("exists failed for %q: %v", defaultMachineConfig.Name, err)
 	}
 	if !exists {
-		t.Fatalf("%q does not exist, but should.", config.GetMachineName())
+		t.Fatalf("%q does not exist, but should.", defaultMachineConfig.Name)
 	}
 
-	h, err := api.Load(config.GetMachineName())
+	h, err := api.Load(defaultMachineConfig.Name)
 	if err != nil {
 		t.Fatalf("Error loading machine: %v", err)
 	}
@@ -133,8 +134,8 @@ func TestStartHostExists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
-	if h.Name != config.GetMachineName() {
-		t.Fatalf("GetMachineName()=%q, want %q", config.GetMachineName(), h.Name)
+	if h.Name != defaultMachineConfig.Name {
+		t.Fatalf("GetMachineName()=%q, want %q", defaultMachineConfig.Name, h.Name)
 	}
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
@@ -162,7 +163,7 @@ func TestStartStoppedHost(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != config.GetMachineName() {
+	if h.Name != defaultMachineConfig.Name {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
 
@@ -190,8 +191,8 @@ func TestStartHost(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != config.GetMachineName() {
-		t.Fatalf("GetMachineName()=%q, want %q", config.GetMachineName(), h.Name)
+	if h.Name != defaultMachineConfig.Name {
+		t.Fatalf("GetMachineName()=%q, want %q", defaultMachineConfig.Name, h.Name)
 	}
 	if exists, _ := api.Exists(h.Name); !exists {
 		t.Fatal("Machine not saved.")
@@ -271,7 +272,7 @@ func TestDeleteHost(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api); err != nil {
+	if err := DeleteHost(api, defaultMachineConfig.Name); err != nil {
 		t.Fatalf("Unexpected error deleting host: %v", err)
 	}
 }
@@ -287,7 +288,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	d := &tests.MockDriver{RemoveError: true, T: t}
 	h.Driver = d
 
-	if err := DeleteHost(api); err == nil {
+	if err := DeleteHost(api, defaultMachineConfig.Name); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -300,7 +301,7 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api); err == nil {
+	if err := DeleteHost(api, defaultMachineConfig.Name); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -310,7 +311,7 @@ func TestGetHostStatus(t *testing.T) {
 	api := tests.NewMockAPI(t)
 
 	checkState := func(expected string) {
-		s, err := GetHostStatus(api)
+		s, err := GetHostStatus(api, defaultMachineConfig.Name)
 		if err != nil {
 			t.Fatalf("Unexpected error getting status: %v", err)
 		}
@@ -415,7 +416,7 @@ func TestCreateSSHShell(t *testing.T) {
 		},
 		T: t,
 	}
-	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
+	api.Hosts[defaultMachineConfig.Name] = &host.Host{Driver: d}
 
 	cliArgs := []string{"exit"}
 	if err := CreateSSHShell(api, cliArgs); err != nil {
