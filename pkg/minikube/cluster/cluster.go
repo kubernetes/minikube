@@ -44,6 +44,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
 
+	"k8s.io/minikube/pkg/minikube/config"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -239,16 +240,13 @@ func trySSHPowerOff(h *host.Host) error {
 
 // StopHost stops the host VM, saving state to disk.
 func StopHost(api libmachine.API) error {
-	cc, err := cfg.Load()
-	if err != nil {
-		exit.WithError("Error loading config", err)
-	}
-	host, err := api.Load(cc.MachineConfig.Name)
+	machineName := viper.GetString(config.MachineProfile)
+	host, err := api.Load(machineName)
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
 
-	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cc.MachineConfig.Name, "driver_name": host.DriverName})
+	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
 	if host.DriverName == driver.HyperV {
 		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
 		if err := trySSHPowerOff(host); err != nil {
@@ -261,7 +259,7 @@ func StopHost(api libmachine.API) error {
 		if ok && alreadyInStateError.State == state.Stopped {
 			return nil
 		}
-		return &retry.RetriableError{Err: errors.Wrapf(err, "Stop: %s", cc.MachineConfig.Name)}
+		return &retry.RetriableError{Err: errors.Wrapf(err, "Stop: %s", machineName)}
 	}
 	return nil
 }
@@ -481,11 +479,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
 func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	cc, err := cfg.Load()
-	if err != nil {
-		exit.WithError("Error loading config", err)
-	}
-	host, err := CheckIfHostExistsAndLoad(api, cc.MachineConfig.Name)
+	host, err := CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -581,11 +575,7 @@ func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Hos
 
 // CreateSSHShell creates a new SSH shell / client
 func CreateSSHShell(api libmachine.API, args []string) error {
-	cc, err := cfg.Load()
-	if err != nil {
-		exit.WithError("Error loading config", err)
-	}
-	machineName := cc.MachineConfig.Name
+	machineName := viper.GetString(config.MachineProfile)
 	host, err := CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return errors.Wrap(err, "host exists and load")

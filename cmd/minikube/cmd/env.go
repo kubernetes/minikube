@@ -33,6 +33,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -171,11 +172,7 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 	}
 
 	if noProxy {
-		cc, err := config.Load()
-		if err != nil {
-			return nil, errors.Wrap(err, "Error getting config")
-		}
-		host, err := api.Load(cc.MachineConfig.Name)
+		host, err := api.Load(viper.GetString(config.MachineProfile))
 		if err != nil {
 			return nil, errors.Wrap(err, "Error getting IP")
 		}
