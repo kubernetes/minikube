@@ -60,6 +60,7 @@ The two primary shortcomings is that this layout does not allow for multiple nod
 ## Host
 
 | *Old* | *New* |
+|-------|-------|
 | Config.KubernetesConfig.ShouldLoadCachedImages | LoadCachedImages |
 | Config.MachineConfig.DisableDriverMounts | EnableMounts | 
 | Config.MachineConfig.DNSProxy | EnableDNSProxy |
@@ -80,6 +81,7 @@ The two primary shortcomings is that this layout does not allow for multiple nod
 ## Cluster
 
 | *Old* | *New* |
+|-------|-------|
 | Config.KubernetesConfig.APIServerIPs | APIServer.IPs |
 | Config.KubernetesConfig.APIServerName | APIServer.Names[0] |
 | Config.KubernetesConfig.APIServerNames | APIServer.Names |
@@ -94,6 +96,7 @@ The two primary shortcomings is that this layout does not allow for multiple nod
 ## Node (multiple)
 
 | *Old* | *New* |
+|-------|-------|
 | N/A | Role | 
 | Config.KubernetesConfig.ContainerRuntime | ContainerRuntime |
 | Config.KubernetesConfig.CRISocket | ContainerRuntimeSocket |
