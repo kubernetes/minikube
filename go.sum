@@ -329,8 +329,8 @@ github.com/lithammer/dedent v1.1.0/go.mod h1:jrXYCQtgg0nJiN+StA2KgR7w6CiQNv9Fd/Z
 github.com/lpabon/godbc v0.1.1/go.mod h1:Jo9QV0cf3U6jZABgiJ2skINAXb9j8m51r07g4KI92ZA=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.1 h1:+E1IKKk+6kaQrCPg6edJZ/zISZijuZTPnzy6RE4C/Ho=
 github.com/machine-drivers/docker-machine-driver-vmware v0.1.1/go.mod h1:ej014C83EmSnxJeJ8PtVb8OLJ91PJKO1Q8Y7sM5CK0o=
-github.com/machine-drivers/machine v0.7.1-0.20190910053320-21bd2f51b8ea h1:HVlxRL2rDz7hmchX5ZtvCArWmki1Z4pQg19FHrwQCgw=
-github.com/machine-drivers/machine v0.7.1-0.20190910053320-21bd2f51b8ea/go.mod h1:79Uwa2hGd5S39LDJt58s8JZcIhGEK6pkq9bsuTbFWbk=
+github.com/machine-drivers/machine v0.7.1-0.20190910053320-b39d5b50de51 h1:aQ49jonyXz46jU+YWkkRkVPKOHG9FHTgLTv1p/+nAyM=
+github.com/machine-drivers/machine v0.7.1-0.20190910053320-b39d5b50de51/go.mod h1:79Uwa2hGd5S39LDJt58s8JZcIhGEK6pkq9bsuTbFWbk=
 github.com/magiconair/properties v0.0.0-20160816085511-61b492c03cf4/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
 github.com/magiconair/properties v1.8.0 h1:LLgXmsheXeRoUOBOjtwPQCWIYqM/LU1ayDtDePerRcY=
 github.com/magiconair/properties v1.8.0/go.mod h1:PppfXfuXeibc/6YijjN8zIbojt8czPbwD3XqdrwzmxQ=
