@@ -600,11 +600,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 // IsMinikubeRunning checks that minikube has a status available and that
 // the status is `Running`
 func IsMinikubeRunning(api libmachine.API) bool {
-	cc, err := cfg.Load()
-	if err != nil {
-		exit.WithError("Error loading config", err)
-	}
-	s, err := GetHostStatus(api, cc.MachineConfig.Name)
+	s, err := GetHostStatus(api, viper.GetString(config.MachineProfile))
 	if err != nil {
 		return false
 	}
