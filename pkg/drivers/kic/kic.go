@@ -24,6 +24,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/medyagh/kic/pkg/config/cri"
 	"github.com/medyagh/kic/pkg/node"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -77,8 +78,8 @@ func (d *Driver) Create() error {
 		Profile:           d.MachineName,
 		Name:              d.MachineName + "-control-plane",
 		Image:             d.ImageSha,
-		CPUs:              strconv.Itoa(d.CPU),    //TODO: change kic to take int
-		Memory:            strconv.Itoa(d.Memory), // TODO: change kic to take int
+		CPUs:              strconv.Itoa(d.CPU),           //TODO: change kic to take int
+		Memory:            strconv.Itoa(d.Memory) + "mb", // TODO: change kic to take int
 		Role:              "control-plane",
 		ExtraMounts:       []cri.Mount{},
 		ExtraPortMappings: []cri.PortMapping{},
@@ -86,8 +87,11 @@ func (d *Driver) Create() error {
 		APIServerPort:     d.APIServerPort,
 		IPv6:              false, // MEDYA:TODO add proxy envs here
 	}
-	fmt.Printf("\t(medya dbg) KickSpec: %+v\n", ks)
-	// d.Node = ks.Create()
+	_, err := ks.Create(command.NewKICRunner(d.MachineName, d.OciBinary))
+	if err != nil {
+		fmt.Printf("\t(medya dbg) error create kic from spec: \n\t%v\n", err)
+		return errors.Wrap(err, "create kic from spec")
+	}
 	return nil
 }
 

@@ -39,8 +39,8 @@ type kicRunner struct {
 	ociBin   string
 }
 
-// New creates a new implementor of runner
-func New(containerNameOrID string, oci string) command.Runner {
+// NewKICRunner returns a kicRunner implementor of runner which runs cmds inside a container
+func NewKICRunner(containerNameOrID string, oci string) command.Runner {
 	return &kicRunner{
 		nameOrID: containerNameOrID,
 		ociBin:   oci, // docker or podman
