@@ -234,8 +234,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 
 	out.T(out.Crushed, `The "{{.name}}" cluster has been deleted.`, out.V{"name": profile.Name})
 
-	machineName := cc.MachineConfig.Name
-	if err := deleteContext(machineName); err != nil {
+	if err := deleteContext(profile.Name); err != nil {
 		return err
 	}
 	return nil
