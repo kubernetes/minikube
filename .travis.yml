@@ -3,40 +3,38 @@
 os: linux
 language: go
 go:
-  - 1.12.12
+  - 1.13.4
 env:
   global:
     - GOPROXY=https://proxy.golang.org
 matrix:
   include:
     - language: go
-      name: Check Boilerplate 
-      go: 1.12.12
-      env:
-        - TESTSUITE=boilerplate
-      script: make test
-
-    - language: go
       name: Code Lint
-      go: 1.12.12
+      go: 1.13.4
       env:
-        - TESTSUITE=lint
+        - TESTSUITE=lintall
       before_install:
         - sudo apt-get install -y libvirt-dev
       script: make test
 
     - language: go
       name: Unit Test
-      go: 1.12.12
+      go: 1.13.4
       env:
         - TESTSUITE=unittest
       before_install:
         - sudo apt-get install -y libvirt-dev
       script: make test
+
+    - language: go
+      name: Build
+      go: 1.13.4
+      script: make
 after_success:
   - bash <(curl -s https://codecov.io/bash)
-travisBuddy:	
-    regex: (FAIL:|\.go:\d+:|^panic:|failed$)	
+travisBuddy:
+    regex: (FAIL:|\.go:\d+:|^panic:|failed$)
 notifications:
   webhooks:
     urls:

@@ -30,6 +30,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -244,7 +245,10 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	start := time.Now()
 	s, err := ReadLineWithTimeout(ss.Stdout, 300*time.Second)
 	if err != nil {
-		t.Fatalf("failed to read url within %s: %v\n", time.Since(start), err)
+		if runtime.GOOS == "windows" {
+			t.Skipf("failed to read url within %s: %v\noutput: %q\n", time.Since(start), err, s)
+		}
+		t.Fatalf("failed to read url within %s: %v\noutput: %q\n", time.Since(start), err, s)
 	}
 
 	u, err := url.Parse(strings.TrimSpace(s))

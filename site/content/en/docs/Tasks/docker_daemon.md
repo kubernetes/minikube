@@ -27,19 +27,23 @@ You should now be able to use docker on the command line on your host mac/linux 
 docker ps
 ```
 
+Remember to turn off the _imagePullPolicy:Always_, as otherwise Kubernetes won't use images you built locally.
+
+### Possible errors and solutions
+
 Docker may report following forbidden error if you are using http proxy and the `$(minikube ip)` is not added to `no_proxy`/`NO_PROXY`:
 
-```shell
+```
 error during connect: Get https://192.168.39.98:2376/v1.39/containers/json: Forbidden
 ```
 
 On Centos 7, docker may report the following error:
 
-```shell
+```
 Could not read CA certificate "/etc/docker/ca.pem": open /etc/docker/ca.pem: no such file or directory
 ```
 
-The fix is to update /etc/sysconfig/docker to ensure that minikube's environment changes are respected:
+The fix is to update ``/etc/sysconfig/docker`` to ensure that minikube's environment changes are respected:
 
 ```diff
 < DOCKER_CERT_PATH=/etc/docker
@@ -49,7 +53,26 @@ The fix is to update /etc/sysconfig/docker to ensure that minikube's environment
 > fi
 ```
 
-Remember to turn off the _imagePullPolicy:Always_, as otherwise Kubernetes won't use images you built locally.
+When you're using a docker installed via `snap` on a distribution like Ubuntu that uses AppArmor profiles the following error may appear:
+
+```
+could not read CA certificate "/home/USERNAME/.minikube/certs/ca.pem": open /home/USERNAME/.minikube/certs/ca.pem: permission denied
+```
+
+The solution is to allow docker to read the minikube certificates by adding a line in ``/var/lib/snapd/apparmor/profiles/snap.docker.docker`` file:
+
+```shell
+# allow docker to read minikube certificates
+owner @{HOME}/.minikube/certs/* r,
+```
+
+After that check for syntax errors and try again:
+
+```shell
+sudo apparmor_parser -r /var/lib/snapd/apparmor/profiles/snap.docker.docker
+eval $(minikube docker-env)
+docker ps
+```
 
 ##  Related Documentation
 
