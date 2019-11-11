@@ -366,7 +366,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 	waitCluster(bs, config)
-	if err := showKubectlInfo(kubeconfig, k8sVersion); err != nil {
+	if err := showKubectlInfo(kubeconfig, k8sVersion, config.MachineConfig.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
 	}
 }
@@ -439,7 +439,7 @@ func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) 
 	}
 
 	kcs := &kubeconfig.Settings{
-		ClusterName:          cfg.GetMachineName(),
+		ClusterName:          c.MachineConfig.Name,
 		ClusterServerAddress: addr,
 		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
 		ClientKey:            localpath.MakeMiniPath("client.key"),
@@ -509,11 +509,11 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string) error {
+func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
 	if kcs.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
 	} else {
-		out.T(out.Ready, `Done! kubectl is now configured to use "{{.name}}"`, out.V{"name": cfg.GetMachineName()})
+		out.T(out.Ready, `Done! kubectl is now configured to use "{{.name}}"`, out.V{"name": machineName})
 	}
 
 	path, err := exec.LookPath("kubectl")
@@ -622,7 +622,8 @@ func validateDriver(name string, existing *cfg.Config) {
 		return
 	}
 
-	h, err := api.Load(cfg.GetMachineName())
+	machineName := viper.GetString(cfg.MachineProfile)
+	h, err := api.Load(machineName)
 	if err != nil {
 		glog.Warningf("selectDriver api.Load: %v", err)
 		return
@@ -632,8 +633,8 @@ func validateDriver(name string, existing *cfg.Config) {
 		return
 	}
 
-	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" cluster was created using the "{{.old_driver}}" driver, and cannot be started using the "{{.driver}}" driver.`,
-		out.V{"profile_name": cfg.GetMachineName(), "driver": name, "old_driver": h.Driver.DriverName()})
+	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
+		out.V{"profile_name": machineName, "driver": name, "old_driver": h.Driver.DriverName()})
 
 	out.ErrT(out.Workaround, `To proceed, either:
 
@@ -642,7 +643,7 @@ func validateDriver(name string, existing *cfg.Config) {
     * or *
 
     2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --vm-driver={{.old_driver}}'
-	`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+	`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": machineName})
 
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
@@ -758,7 +759,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	var cpuCount int
 	if driver.BareMetal(drvName) {
-		if cfg.GetMachineName() != constants.DefaultMachineName {
+		if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
 			exit.WithCodeT(exit.Config, "The 'none' driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 		}
 
@@ -890,6 +891,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 
 	cfg := cfg.Config{
 		MachineConfig: cfg.MachineConfig{
+			Name:                viper.GetString(cfg.MachineProfile),
 			KeepContext:         viper.GetBool(keepContext),
 			EmbedCerts:          viper.GetBool(embedCerts),
 			MinikubeISO:         viper.GetString(isoURL),
@@ -1003,7 +1005,7 @@ func prepareNone() {
 
 // startHost starts a new minikube host using a VM or None
 func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
-	exists, err := api.Exists(cfg.GetMachineName())
+	exists, err := api.Exists(mc.Name)
 	if err != nil {
 		exit.WithError("Failed to check if machine exists", err)
 	}
@@ -1013,7 +1015,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 		host, err = cluster.StartHost(api, mc)
 		if err != nil {
 			out.T(out.Resetting, "Retriable failure: {{.error}}", out.V{"error": err})
-			if derr := cluster.DeleteHost(api); derr != nil {
+			if derr := cluster.DeleteHost(api, mc.Name); derr != nil {
 				glog.Warningf("DeleteHost: %v", derr)
 			}
 		}
@@ -1149,8 +1151,8 @@ func getKubernetesVersion(old *cfg.Config) (string, bool) {
 	if nvs.LT(ovs) {
 		nv = version.VersionPrefix + ovs.String()
 		profileArg := ""
-		if cfg.GetMachineName() != constants.DefaultMachineName {
-			profileArg = fmt.Sprintf("-p %s", cfg.GetMachineName())
+		if old.MachineConfig.Name != constants.DefaultMachineName {
+			profileArg = fmt.Sprintf("-p %s", old.MachineConfig.Name)
 		}
 		exit.WithCodeT(exit.Config, `Error: You have selected Kubernetes v{{.new}}, but the existing cluster for your profile is running Kubernetes v{{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
 

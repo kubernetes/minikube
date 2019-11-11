@@ -190,7 +190,6 @@ func deleteProfile(profile *pkg_config.Profile) error {
 
 	cc, err := pkg_config.Load()
 	if err != nil && !os.IsNotExist(err) {
-		out.ErrT(out.Sad, "Error loading profile {{.name}}: {{.error}}", out.V{"name": profile, "error": err})
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
 		return DeletionError{Err: delErr, Errtype: MissingProfile}
 	}
@@ -211,7 +210,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	if err = cluster.DeleteHost(api); err != nil {
+	if err = cluster.DeleteHost(api, profile.Name); err != nil {
 		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
 			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": profile.Name})
@@ -235,8 +234,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 
 	out.T(out.Crushed, `The "{{.name}}" cluster has been deleted.`, out.V{"name": profile.Name})
 
-	machineName := pkg_config.GetMachineName()
-	if err := deleteContext(machineName); err != nil {
+	if err := deleteContext(profile.Name); err != nil {
 		return err
 	}
 	return nil

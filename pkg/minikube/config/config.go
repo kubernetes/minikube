@@ -25,7 +25,6 @@ import (
 	"os"
 
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -124,18 +123,10 @@ func encode(w io.Writer, m MinikubeConfig) error {
 	return err
 }
 
-// GetMachineName gets the machine name for the VM
-func GetMachineName() string {
-	// REFACTOR NECESSARY: This function should not rely on globals.
-	if viper.GetString(MachineProfile) == "" {
-		return constants.DefaultMachineName
-	}
-	return viper.GetString(MachineProfile)
-}
-
 // Load loads the kubernetes and machine config for the current machine
 func Load() (*Config, error) {
-	return DefaultLoader.LoadConfigFromFile(GetMachineName())
+	machine := viper.GetString(MachineProfile)
+	return DefaultLoader.LoadConfigFromFile(machine)
 }
 
 // Loader loads the kubernetes and machine config based on the machine profile name
