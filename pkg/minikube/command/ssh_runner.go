@@ -152,10 +152,10 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 	exists, err := s.sameFileExists(f, dst)
 	if err != nil {
-		glog.Infof("Checked if %s exists, but got error: %v", f.GetAssetName(), err)
+		glog.Infof("Checked if %s exists, but got error: %v", dst, err)
 	}
 	if exists {
-		glog.Infof("Skipping copying %s as it already exists", f.GetAssetName())
+		glog.Infof("Skipping copying %s as it already exists", dst)
 		return nil
 	}
 	sess, err := s.c.NewSession()
@@ -198,7 +198,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	scp := fmt.Sprintf("sudo mkdir -p %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
 	mtime, err := f.GetModTime()
 	if err != nil {
-		glog.Infof("error getting modtime for %s: %v", f.GetAssetName(), err)
+		glog.Infof("error getting modtime for %s: %v", dst, err)
 	} else {
 		scp += fmt.Sprintf(" && sudo touch -d \"%s\" %s", mtime.Format(layout), dst)
 	}
@@ -216,6 +216,9 @@ func (s *SSHRunner) sameFileExists(f assets.CopyableFile, dst string) (bool, err
 	if err != nil {
 		return false, err
 	}
+	if srcModTime.IsZero() {
+		return false, nil
+	}
 
 	// get file size and modtime of the destination
 	sess, err := s.c.NewSession()
@@ -223,14 +226,12 @@ func (s *SSHRunner) sameFileExists(f assets.CopyableFile, dst string) (bool, err
 		return false, err
 	}
 
-	size := fmt.Sprintf("ls -l %s | cut -d \" \" -f5", dst)
-	stat := "stat -c %y" + fmt.Sprintf(" %s", dst)
-
-	out, err := sess.CombinedOutput(size + " && " + stat)
+	cmd := "stat -c \"%s %y\" " + dst
+	out, err := sess.CombinedOutput(cmd)
 	if err != nil {
 		return false, err
 	}
-	outputs := strings.Split(strings.Trim(string(out), "\n"), "\n")
+	outputs := strings.SplitN(strings.Trim(string(out), "\n"), " ", 2)
 
 	dstSize, err := strconv.Atoi(outputs[0])
 	if err != nil {
