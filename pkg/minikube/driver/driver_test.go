@@ -83,10 +83,11 @@ func TestFlagDefaults(t *testing.T) {
 func TestChoices(t *testing.T) {
 
 	tests := []struct {
-		def     registry.DriverDef
-		choices []string
-		pick    string
-		alts    []string
+		def       registry.DriverDef
+		choices   []string
+		pick      string
+		alts      []string
+		requested string
 	}{
 		{
 			def: registry.DriverDef{
@@ -94,7 +95,7 @@ func TestChoices(t *testing.T) {
 				Priority: registry.Default,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: false} },
 			},
-			choices: []string{},
+			choices: []string{"unhealthy"},
 			pick:    "",
 			alts:    []string{},
 		},
@@ -104,7 +105,7 @@ func TestChoices(t *testing.T) {
 				Priority: registry.Discouraged,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
-			choices: []string{"discouraged"},
+			choices: []string{"discouraged", "unhealthy"},
 			pick:    "",
 			alts:    []string{"discouraged"},
 		},
@@ -114,7 +115,7 @@ func TestChoices(t *testing.T) {
 				Priority: registry.Default,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
-			choices: []string{"default", "discouraged"},
+			choices: []string{"default", "discouraged", "unhealthy"},
 			pick:    "default",
 			alts:    []string{"discouraged"},
 		},
@@ -124,15 +125,23 @@ func TestChoices(t *testing.T) {
 				Priority: registry.Preferred,
 				Status:   func() registry.State { return registry.State{Installed: true, Healthy: true} },
 			},
-			choices: []string{"preferred", "default", "discouraged"},
+			choices: []string{"preferred", "default", "discouraged", "unhealthy"},
 			pick:    "preferred",
 			alts:    []string{"default", "discouraged"},
+		},
+		{
+			requested: "unhealthy",
+			choices:   []string{"preferred", "default", "discouraged", "unhealthy"},
+			pick:      "unhealthy",
+			alts:      []string{"preferred", "default", "discouraged"},
 		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.def.Name, func(t *testing.T) {
-			if err := registry.Register(tc.def); err != nil {
-				t.Errorf("register returned error: %v", err)
+			if tc.def.Name != "" {
+				if err := registry.Register(tc.def); err != nil {
+					t.Errorf("register returned error: %v", err)
+				}
 			}
 
 			got := Choices()
@@ -145,7 +154,7 @@ func TestChoices(t *testing.T) {
 				t.Errorf("choices mismatch (-want +got):\n%s", diff)
 			}
 
-			pick, alts := Choose(got)
+			pick, alts := Choose(tc.requested, got)
 			if pick.Name != tc.pick {
 				t.Errorf("pick = %q, expected %q", pick.Name, tc.pick)
 			}
