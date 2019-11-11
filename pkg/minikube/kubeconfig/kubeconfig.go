@@ -168,6 +168,12 @@ func writeToFile(config runtime.Object, configPath ...string) error {
 		fPath = configPath[0]
 	}
 
+	info, err := os.Stat(fpath)
+	m := info.Mode()
+	if m&(1<<2) == 0 {
+		return errors.Errorf("Could not write to file, give minikube permissions with:\nsudo chown -R $USER ~/.kube")
+	}
+
 	if config == nil {
 		glog.Errorf("could not write to '%s': config can't be nil", fPath)
 	}
