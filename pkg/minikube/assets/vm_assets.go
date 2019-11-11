@@ -70,7 +70,7 @@ func (b *BaseAsset) GetPermissions() string {
 
 // GetModTime returns mod time
 func (b *BaseAsset) GetModTime() (time.Time, error) {
-	return time.Time{}, errors.New("modtime isn't available for this asset")
+	return time.Time{}, nil
 }
 
 // FileAsset is an asset using a file
@@ -114,10 +114,7 @@ func (f *FileAsset) GetLength() (flen int) {
 // GetModTime returns modification time of the file
 func (f *FileAsset) GetModTime() (time.Time, error) {
 	fi, err := os.Stat(f.AssetName)
-	if err != nil {
-		return time.Time{}, err
-	}
-	return fi.ModTime(), nil
+	return fi.ModTime(), err
 }
 
 func (f *FileAsset) Read(p []byte) (int, error) {
