@@ -177,17 +177,35 @@ func Cleanup(t *testing.T, profile string, cancel context.CancelFunc) {
 // CleanupWithLogs cleans up after a test run, fetching logs and deleting the profile
 func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Helper()
-	if t.Failed() {
-		t.Logf("*** %s FAILED at %s", t.Name(), time.Now())
-		if *postMortemLogs {
-			t.Logf(">>> %s FAILED: start of post-mortem logs >>>", t.Name())
-			rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
-			if err != nil {
-				t.Logf("failed logs error: %v", err)
-			}
-			t.Logf("%s logs: %s", t.Name(), rr.Stdout)
-			t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
+	if !t.Failed() {
+		Cleanup(t, profile, cancel)
+		return
+	}
+
+	t.Logf("*** %s FAILED at %s", t.Name(), time.Now())
+
+	if *postMortemLogs {
+		t.Logf(">>> %s FAILED: start of post-mortem logs >>>", t.Name())
+
+		rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
+		if rerr != nil {
+			t.Logf("%s: %v", rr.Command(), rerr)
 		}
+		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
+
+		rr, err := Run(t, exec.Command("kubectl", "--context", profile, "describe", "node"))
+		if err != nil {
+			t.Logf("%s: %v", rr.Command(), err)
+		} else {
+			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
+		}
+
+		rr, err = Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
+		if err != nil {
+			t.Logf("failed logs error: %v", err)
+		}
+		t.Logf("%s logs: %s", t.Name(), rr.Stdout)
+		t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
 	}
 	Cleanup(t, profile, cancel)
 }
@@ -293,13 +311,6 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 // showPodLogs logs debug info for pods
 func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, names []string) {
 	t.Logf("%s: showing logs for failed pods as of %s", t.Name(), time.Now())
-	rr, rerr := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
-	if rerr != nil {
-		t.Logf("%s: %v", rr.Command(), rerr)
-		// return now, because kubectl is hosed
-		return
-	}
-	t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 
 	for _, name := range names {
 		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "po", name, "-n", ns))
@@ -315,13 +326,6 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 		} else {
 			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 		}
-	}
-
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "describe", "node"))
-	if err != nil {
-		t.Logf("%s: %v", rr.Command(), err)
-	} else {
-		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 	}
 }
 
