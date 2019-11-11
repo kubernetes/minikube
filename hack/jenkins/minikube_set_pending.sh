@@ -42,11 +42,15 @@ jobs=(
      'none_Linux'
 )
 
+
+
 for j in ${jobs[@]}; do
-  target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}.txt"
+  target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}/${ghprbActualCommit}.txt"
   curl "https://api.github.com/repos/kubernetes/minikube/statuses/${ghprbActualCommit}?access_token=$access_token" \
     -H "Content-Type: application/json" \
     -X POST \
     -d "{\"state\": \"pending\", \"description\": \"Jenkins\", \"target_url\": \"${target_url}\", \"context\": \"${j}\"}"
+
+  echo "Pending as of $(date)" gsutil cp - "${target_url}" || echo "Unable to upload placeholder"
 done
 

@@ -23,6 +23,14 @@
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
+# MINIKUBE_LOCATION: PR number
+# COMMIT: GitHub commit
+
+if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
+  readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}/${COMMIT}.txt"
+else
+  readonly target_url=""
+fi
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
@@ -39,6 +47,10 @@ echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
+
+if [[ "${target_url}" != "" ]]; then
+  echo "Initialized at $(date)" | gsutil cp - "${target_url}"
+fi
 
 case "${VM_DRIVER}" in
   kvm2)
@@ -258,6 +270,10 @@ if [[ "${LOAD}" -gt 2 ]]; then
   uptime
 fi
 
+if [[ "${target_url}" != "" ]]; then
+  echo "Started at $(date)" | gsutil cp - "${target_url}"
+fi
+
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 set -x
@@ -270,6 +286,10 @@ ${SUDO_PREFIX}${E2E_BIN} \
 set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
+
+if [[ "${target_url}" != "" ]]; then
+  echo "Completed at $(date): exit code ${result}" | gsutil cp - "${target_url}"
+fi
 
 if [[ $result -eq 0 ]]; then
   status="success"
@@ -290,7 +310,6 @@ rmdir "${TEST_HOME}"
 echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
-  readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
   curl -s "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
   -H "Content-Type: application/json" \
   -X POST \
