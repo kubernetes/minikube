@@ -310,7 +310,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	if !driver.BareMetal(driverName) {
-		if err := cluster.CacheISO(config.MachineConfig); err != nil {
+		if err := cluster.CacheISO(config); err != nil {
 			exit.WithError("Failed to cache ISO", err)
 		}
 	}
@@ -341,7 +341,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	waitCacheImages(&cacheGroup)
 
 	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-	kubeconfig, err := setupKubeconfig(host, &config)
+	kubeconfig, err := setupKubeconfig(host, &config, config.Name)
 	if err != nil {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
@@ -365,7 +365,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		prepareNone()
 	}
 	waitCluster(bs, config)
-	if err := showKubectlInfo(kubeconfig, k8sVersion, config.MachineConfig.Name); err != nil {
+	if err := showKubectlInfo(kubeconfig, k8sVersion, config.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
 	}
 }
@@ -388,7 +388,7 @@ func enableAddons() {
 	}
 }
 
-func waitCluster(bs bootstrapper.Bootstrapper, config cfg.Config) {
+func waitCluster(bs bootstrapper.Bootstrapper, config cfg.MachineConfig) {
 	var podsToWaitFor []string
 
 	if !viper.GetBool(waitUntilHealthy) {
@@ -426,7 +426,7 @@ func displayEnviron(env []string) {
 	}
 }
 
-func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) {
+func setupKubeconfig(h *host.Host, c *cfg.MachineConfig, clusterName string) (*kubeconfig.Settings, error) {
 	addr, err := h.Driver.GetURL()
 	if err != nil {
 		exit.WithError("Failed to get driver URL", err)
@@ -438,7 +438,7 @@ func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) 
 	}
 
 	kcs := &kubeconfig.Settings{
-		ClusterName:          c.MachineConfig.Name,
+		ClusterName:          clusterName,
 		ClusterServerAddress: addr,
 		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
 		ClientKey:            localpath.MakeMiniPath("client.key"),
@@ -471,12 +471,12 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 
 }
 
-func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(config *cfg.MachineConfig) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
-	host, preExists = startHost(m, config.MachineConfig)
+	host, preExists = startHost(m, *config)
 	runner, err = machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
@@ -552,13 +552,13 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	return nil
 }
 
-func selectDriver(oldConfig *cfg.Config) string {
+func selectDriver(oldConfig *cfg.MachineConfig) string {
 	name := viper.GetString("vm-driver")
 	glog.Infof("selectDriver: flag=%q, old=%v", name, oldConfig)
 	if name == "" {
 		// By default, the driver is whatever we used last time
 		if oldConfig != nil {
-			return oldConfig.MachineConfig.VMDriver
+			return oldConfig.VMDriver
 		}
 		options := driver.Choices()
 		pick, alts := driver.Choose(options)
@@ -829,10 +829,10 @@ func waitCacheImages(g *errgroup.Group) {
 }
 
 // generateCfgFromFlags generates cfg.Config based on flags and supplied arguments
-func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) (cfg.Config, error) {
+func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) (cfg.MachineConfig, error) {
 	r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
 	if err != nil {
-		return cfg.Config{}, err
+		return cfg.MachineConfig{}, err
 	}
 
 	// Pick good default values for --network-plugin and --enable-default-cni based on runtime.
@@ -873,38 +873,36 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
-	cfg := cfg.Config{
-		MachineConfig: cfg.MachineConfig{
-			Name:                viper.GetString(cfg.MachineProfile),
-			KeepContext:         viper.GetBool(keepContext),
-			EmbedCerts:          viper.GetBool(embedCerts),
-			MinikubeISO:         viper.GetString(isoURL),
-			Memory:              pkgutil.CalculateSizeInMB(viper.GetString(memory)),
-			CPUs:                viper.GetInt(cpus),
-			DiskSize:            pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
-			VMDriver:            drvName,
-			ContainerRuntime:    viper.GetString(containerRuntime),
-			HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
-			HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
-			NFSShare:            viper.GetStringSlice(nfsShare),
-			NFSSharesRoot:       viper.GetString(nfsSharesRoot),
-			DockerEnv:           dockerEnv,
-			DockerOpt:           dockerOpt,
-			InsecureRegistry:    insecureRegistry,
-			RegistryMirror:      registryMirror,
-			HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
-			HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
-			KVMNetwork:          viper.GetString(kvmNetwork),
-			KVMQemuURI:          viper.GetString(kvmQemuURI),
-			KVMGPU:              viper.GetBool(kvmGPU),
-			KVMHidden:           viper.GetBool(kvmHidden),
-			Downloader:          pkgutil.DefaultDownloader{},
-			DisableDriverMounts: viper.GetBool(disableDriverMounts),
-			UUID:                viper.GetString(uuid),
-			NoVTXCheck:          viper.GetBool(noVTXCheck),
-			DNSProxy:            viper.GetBool(dnsProxy),
-			HostDNSResolver:     viper.GetBool(hostDNSResolver),
-		},
+	cfg := cfg.MachineConfig{
+		Name:                viper.GetString(cfg.MachineProfile),
+		KeepContext:         viper.GetBool(keepContext),
+		EmbedCerts:          viper.GetBool(embedCerts),
+		MinikubeISO:         viper.GetString(isoURL),
+		Memory:              pkgutil.CalculateSizeInMB(viper.GetString(memory)),
+		CPUs:                viper.GetInt(cpus),
+		DiskSize:            pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
+		VMDriver:            drvName,
+		ContainerRuntime:    viper.GetString(containerRuntime),
+		HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
+		HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
+		NFSShare:            viper.GetStringSlice(nfsShare),
+		NFSSharesRoot:       viper.GetString(nfsSharesRoot),
+		DockerEnv:           dockerEnv,
+		DockerOpt:           dockerOpt,
+		InsecureRegistry:    insecureRegistry,
+		RegistryMirror:      registryMirror,
+		HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
+		HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
+		KVMNetwork:          viper.GetString(kvmNetwork),
+		KVMQemuURI:          viper.GetString(kvmQemuURI),
+		KVMGPU:              viper.GetBool(kvmGPU),
+		KVMHidden:           viper.GetBool(kvmHidden),
+		Downloader:          pkgutil.DefaultDownloader{},
+		DisableDriverMounts: viper.GetBool(disableDriverMounts),
+		UUID:                viper.GetString(uuid),
+		NoVTXCheck:          viper.GetBool(noVTXCheck),
+		DNSProxy:            viper.GetBool(dnsProxy),
+		HostDNSResolver:     viper.GetBool(hostDNSResolver),
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			NodePort:               viper.GetInt(apiServerPort),
@@ -1096,7 +1094,7 @@ func tryRegistry(r command.Runner) {
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable
-func getKubernetesVersion(old *cfg.Config) (string, bool) {
+func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 	rawVersion := viper.GetString(kubernetesVersion)
 	isUpgrade := false
 	if rawVersion == "" {
@@ -1135,8 +1133,8 @@ func getKubernetesVersion(old *cfg.Config) (string, bool) {
 	if nvs.LT(ovs) {
 		nv = version.VersionPrefix + ovs.String()
 		profileArg := ""
-		if old.MachineConfig.Name != constants.DefaultMachineName {
-			profileArg = fmt.Sprintf("-p %s", old.MachineConfig.Name)
+		if old.Name != constants.DefaultMachineName {
+			profileArg = fmt.Sprintf("-p %s", old.Name)
 		}
 		exit.WithCodeT(exit.Config, `Error: You have selected Kubernetes v{{.new}}, but the existing cluster for your profile is running Kubernetes v{{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
 
@@ -1244,6 +1242,6 @@ func configureMounts() {
 }
 
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterCfg *cfg.Config) error {
+func saveConfig(clusterCfg *cfg.MachineConfig) error {
 	return cfg.CreateProfile(viper.GetString(cfg.MachineProfile), clusterCfg)
 }

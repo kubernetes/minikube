@@ -74,10 +74,10 @@ var dashboardCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 
-		if _, err = api.Load(cc.MachineConfig.Name); err != nil {
+		if _, err = api.Load(cc.Name); err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
-				exit.WithCodeT(exit.Unavailable, "{{.name}} cluster does not exist", out.V{"name": cc.MachineConfig.Name})
+				exit.WithCodeT(exit.Unavailable, "{{.name}} cluster does not exist", out.V{"name": cc.Name})
 			default:
 				exit.WithError("Error getting cluster", err)
 			}
@@ -119,7 +119,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		out.ErrT(out.Launch, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy(kubectl, cc.MachineConfig.Name)
+		p, hostPort, err := kubectlProxy(kubectl, cc.Name)
 		if err != nil {
 			exit.WithError("kubectl proxy", err)
 		}

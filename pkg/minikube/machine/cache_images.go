@@ -135,7 +135,7 @@ func CacheAndLoadImages(images []string) error {
 	if err != nil {
 		return err
 	}
-	h, err := api.Load(cc.MachineConfig.Name)
+	h, err := api.Load(cc.Name)
 	if err != nil {
 		return err
 	}

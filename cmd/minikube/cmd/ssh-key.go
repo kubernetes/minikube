@@ -36,6 +36,6 @@ var sshKeyCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Getting machine config failed", err)
 		}
-		out.Ln(filepath.Join(localpath.MiniPath(), "machines", cc.MachineConfig.Name, "id_rsa"))
+		out.Ln(filepath.Join(localpath.MiniPath(), "machines", cc.Name, "id_rsa"))
 	},
 }

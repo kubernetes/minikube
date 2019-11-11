@@ -142,7 +142,7 @@ func EnableOrDisableAddon(name string, val string) error {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
-	host, err := cluster.CheckIfHostExistsAndLoad(api, cfg.MachineConfig.Name)
+	host, err := cluster.CheckIfHostExistsAndLoad(api, cfg.Name)
 	if err != nil {
 		return errors.Wrap(err, "getting host")
 	}

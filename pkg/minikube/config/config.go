@@ -124,14 +124,14 @@ func encode(w io.Writer, m MinikubeConfig) error {
 }
 
 // Load loads the kubernetes and machine config for the current machine
-func Load() (*Config, error) {
+func Load() (*MachineConfig, error) {
 	machine := viper.GetString(MachineProfile)
 	return DefaultLoader.LoadConfigFromFile(machine)
 }
 
 // Loader loads the kubernetes and machine config based on the machine profile name
 type Loader interface {
-	LoadConfigFromFile(profile string, miniHome ...string) (*Config, error)
+	LoadConfigFromFile(profile string, miniHome ...string) (*MachineConfig, error)
 }
 
 type simpleConfigLoader struct{}
@@ -139,8 +139,8 @@ type simpleConfigLoader struct{}
 // DefaultLoader is the default config loader
 var DefaultLoader Loader = &simpleConfigLoader{}
 
-func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*Config, error) {
-	var cc Config
+func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*MachineConfig, error) {
+	var cc MachineConfig
 	// Move to profile package
 	path := profileFilePath(profileName, miniHome...)
 
