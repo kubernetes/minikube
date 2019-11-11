@@ -40,6 +40,11 @@ func TestSplitHyperKitVersion(t *testing.T) {
 			expect:  "20190201",
 		},
 		{
+			desc:    "non split YYYYMMDD output to YYYYMMDD format",
+			version: "20190201",
+			expect:  "20190201",
+		},
+		{
 			desc:    "split semver output to YYYYMMDD format",
 			version: "v1.0.0",
 			expect:  "0",
@@ -111,7 +116,10 @@ func TestIsNewerVersion(t *testing.T) {
 	}
 	for _, test := range tc {
 		t.Run(test.desc, func(t *testing.T) {
-			isNew := isNewerVersion(test.currentVersion, test.specificVersion)
+			isNew, err := isNewerVersion(test.currentVersion, test.specificVersion)
+			if err != nil {
+				t.Fatalf("Got unexpected error %v", err)
+			}
 			if isNew != test.isNew {
 				t.Fatalf("Error %v expected but result %v", test.isNew, isNew)
 			}
