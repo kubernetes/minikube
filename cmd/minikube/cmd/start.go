@@ -142,7 +142,6 @@ func init() {
 	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
 	}
-
 }
 
 // initMinikubeFlags includes commandline flags for minikube.
@@ -296,7 +295,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		glog.Errorf("Error autoSetOptions : %v", err)
 	}
 
-	validateFlags(driverName)
+	validateFlags(cmd, driverName)
 	validateUser(driverName)
 
 	// No need to install a driver in download-only mode
@@ -621,10 +620,15 @@ func selectDriver(oldConfig *cfg.Config) string {
 		out.V{"profile_name": machineName, "driver": name, "old_driver": h.Driver.DriverName()})
 
 	out.ErrT(out.Workaround, `To proceed, either:
-      1) Delete the existing VM using: '{{.command}} delete'
-      or
-      2) Restart with the existing driver: '{{.command}} start --vm-driver={{.old_driver}}'`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName()})
-	exit.WithCodeT(exit.Config, "Exiting due to driver incompatibility")
+
+    1) Delete the existing "{{.profile_name}}" cluster using: '{{.command}} delete'
+
+    * or *
+
+    2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --vm-driver={{.old_driver}}'
+	`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+
+	exit.WithCodeT(exit.Config, "Exiting.")
 	return ""
 }
 
@@ -722,7 +726,7 @@ func validateUser(drvName string) {
 }
 
 // validateFlags validates the supplied flags against known bad combinations
-func validateFlags(drvName string) {
+func validateFlags(cmd *cobra.Command, drvName string) {
 	diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 	if diskSizeMB < pkgutil.CalculateSizeInMB(minimumDiskSize) && !viper.GetBool(force) {
 		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumDiskSize)})
@@ -741,6 +745,18 @@ func validateFlags(drvName string) {
 	if driver.BareMetal(drvName) {
 		if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
 			exit.WithCodeT(exit.Config, "The 'none' driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+		}
+
+		if cmd.Flags().Changed(cpus) {
+			out.WarningT("The 'none' driver does not respect the --cpus flag")
+		}
+		if cmd.Flags().Changed(memory) {
+			out.WarningT("The 'none' driver does not respect the --memory flag")
+		}
+
+		runtime := viper.GetString(containerRuntime)
+		if runtime != "docker" {
+			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
 		}
 
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
