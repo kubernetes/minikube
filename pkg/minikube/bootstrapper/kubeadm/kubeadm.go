@@ -36,6 +36,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -125,7 +126,7 @@ type Bootstrapper struct {
 
 // NewKubeadmBootstrapper creates a new kubeadm.Bootstrapper
 func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
-	name := config.GetMachineName()
+	name := viper.GetString(config.MachineProfile)
 	h, err := api.Load(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")

@@ -29,6 +29,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -71,7 +72,7 @@ func TestCreateHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
-	exists, _ := api.Exists(config.GetMachineName())
+	exists, _ := api.Exists(viper.GetString("profile"))
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
@@ -80,15 +81,15 @@ func TestCreateHost(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	exists, err = api.Exists(config.GetMachineName())
+	exists, err = api.Exists(viper.GetString("profile"))
 	if err != nil {
-		t.Fatalf("exists failed for %q: %v", config.GetMachineName(), err)
+		t.Fatalf("exists failed for %q: %v", viper.GetString("profile"), err)
 	}
 	if !exists {
-		t.Fatalf("%q does not exist, but should.", config.GetMachineName())
+		t.Fatalf("%q does not exist, but should.", viper.GetString("profile"))
 	}
 
-	h, err := api.Load(config.GetMachineName())
+	h, err := api.Load(viper.GetString("profile"))
 	if err != nil {
 		t.Fatalf("Error loading machine: %v", err)
 	}
@@ -114,7 +115,7 @@ func TestStartHostExists(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	// Create an initial host.
-	_, err := createHost(api, defaultMachineConfig)
+	ih, err := createHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -128,13 +129,15 @@ func TestStartHostExists(t *testing.T) {
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
+	mc := defaultMachineConfig
+	mc.Name = ih.Name
 	// This should pass without calling Create because the host exists already.
-	h, err := StartHost(api, defaultMachineConfig)
+	h, err := StartHost(api, mc)
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
-	if h.Name != config.GetMachineName() {
-		t.Fatalf("GetMachineName()=%q, want %q", config.GetMachineName(), h.Name)
+	if h.Name != viper.GetString("profile") {
+		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
 	}
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
@@ -158,11 +161,13 @@ func TestStartStoppedHost(t *testing.T) {
 
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
-	h, err = StartHost(api, defaultMachineConfig)
+	mc := defaultMachineConfig
+	mc.Name = h.Name
+	h, err = StartHost(api, mc)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != config.GetMachineName() {
+	if h.Name != viper.GetString("profile") {
 		t.Fatalf("Machine created with incorrect name: %s", h.Name)
 	}
 
@@ -190,8 +195,8 @@ func TestStartHost(t *testing.T) {
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
-	if h.Name != config.GetMachineName() {
-		t.Fatalf("GetMachineName()=%q, want %q", config.GetMachineName(), h.Name)
+	if h.Name != viper.GetString("profile") {
+		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
 	}
 	if exists, _ := api.Exists(h.Name); !exists {
 		t.Fatal("Machine not saved.")
@@ -271,7 +276,7 @@ func TestDeleteHost(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api); err != nil {
+	if err := DeleteHost(api, viper.GetString("profile")); err != nil {
 		t.Fatalf("Unexpected error deleting host: %v", err)
 	}
 }
@@ -287,7 +292,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	d := &tests.MockDriver{RemoveError: true, T: t}
 	h.Driver = d
 
-	if err := DeleteHost(api); err == nil {
+	if err := DeleteHost(api, viper.GetString("profile")); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -300,7 +305,7 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api); err == nil {
+	if err := DeleteHost(api, viper.GetString("profile")); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -310,7 +315,7 @@ func TestGetHostStatus(t *testing.T) {
 	api := tests.NewMockAPI(t)
 
 	checkState := func(expected string) {
-		s, err := GetHostStatus(api)
+		s, err := GetHostStatus(api, viper.GetString("profile"))
 		if err != nil {
 			t.Fatalf("Unexpected error getting status: %v", err)
 		}
@@ -415,7 +420,7 @@ func TestCreateSSHShell(t *testing.T) {
 		},
 		T: t,
 	}
-	api.Hosts[config.GetMachineName()] = &host.Host{Driver: d}
+	api.Hosts[viper.GetString("profile")] = &host.Host{Driver: d}
 
 	cliArgs := []string{"exit"}
 	if err := CreateSSHShell(api, cliArgs); err != nil {

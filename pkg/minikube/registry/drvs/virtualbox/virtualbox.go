@@ -49,7 +49,7 @@ func init() {
 }
 
 func configure(mc config.MachineConfig) interface{} {
-	d := virtualbox.NewDriver(config.GetMachineName(), localpath.MiniPath())
+	d := virtualbox.NewDriver(mc.Name, localpath.MiniPath())
 	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
 	d.Memory = mc.Memory
 	d.CPU = mc.CPUs
