@@ -300,7 +300,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cache unsupported by none")
 	}
-	for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "mysql:5.6"} {
+	for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "mysql:5.6", "gcr.io/hello-minikube-zero-install/hello-node"} {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Args, err)
@@ -562,7 +562,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
 		return err
 	}
-	if err = retry.Expo(mysql, 3*time.Second, 60*time.Second); err != nil {
+	if err = retry.Expo(mysql, 5*time.Second, 180*time.Second); err != nil {
 		t.Errorf("mysql failing: %v", err)
 	}
 }
