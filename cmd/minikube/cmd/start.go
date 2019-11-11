@@ -645,7 +645,6 @@ func validateDriver(name string, existing *cfg.Config) {
 	`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
 
 	exit.WithCodeT(exit.Config, "Exiting.")
-	return
 }
 
 func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
