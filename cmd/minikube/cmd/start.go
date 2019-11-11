@@ -626,7 +626,7 @@ func selectDriver(oldConfig *cfg.Config) string {
     * or *
 
     2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --vm-driver={{.old_driver}}'
-	`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+	`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": machineName})
 
 	exit.WithCodeT(exit.Config, "Exiting.")
 	return ""
