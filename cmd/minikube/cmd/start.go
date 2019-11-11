@@ -615,14 +615,19 @@ func selectDriver(oldConfig *cfg.Config) string {
 		return name
 	}
 
-	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
+	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" cluster was created using the "{{.old_driver}}" driver, and cannot be started using the "{{.driver}}" driver.`,
 		out.V{"profile_name": cfg.GetMachineName(), "driver": name, "old_driver": h.Driver.DriverName()})
 
 	out.ErrT(out.Workaround, `To proceed, either:
-      1) Delete the existing VM using: '{{.command}} delete'
-      or
-      2) Restart with the existing driver: '{{.command}} start --vm-driver={{.old_driver}}'`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName()})
-	exit.WithCodeT(exit.Config, "Exiting due to driver incompatibility")
+
+    1) Delete the existing "{{.profile_name}}" cluster using: '{{.command}} delete'
+
+    * or *
+
+    2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --vm-driver={{.old_driver}}'
+	`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": cfg.GetMachineName()})
+
+	exit.WithCodeT(exit.Config, "Exiting.")
 	return ""
 }
 
