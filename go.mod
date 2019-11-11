@@ -1,6 +1,6 @@
 module k8s.io/minikube
 
-go 1.12
+go 1.13
 
 require github.com/google/go-containerregistry v0.0.0-20180731221751-697ee0b3d46e
 
@@ -86,7 +86,7 @@ require (
 
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
-	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20190910053320-21bd2f51b8ea
+	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20191109154235-b39d5b50de51
 	github.com/hashicorp/go-getter => github.com/afbjorklund/go-getter v1.4.1-0.20190910175809-eb9f6c26742c
 	k8s.io/api => k8s.io/kubernetes/staging/src/k8s.io/api v0.0.0-20190623232353-8c3b7d7679cc
 	k8s.io/apiextensions-apiserver => k8s.io/kubernetes/staging/src/k8s.io/apiextensions-apiserver v0.0.0-20190623232353-8c3b7d7679cc

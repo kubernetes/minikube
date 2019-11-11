@@ -26,7 +26,7 @@ DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.12.12
+GO_VERSION ?= 1.13.4
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2019.02.6
@@ -106,6 +106,9 @@ CMD_SOURCE_DIRS = cmd pkg
 SOURCE_DIRS = $(CMD_SOURCE_DIRS) test
 SOURCE_PACKAGES = ./cmd/... ./pkg/... ./test/...
 
+SOURCE_GENERATED = pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+SOURCE_FILES = $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go" | grep -v _test.go)
+
 # kvm2 ldflags
 KVM2_LDFLAGS := -X k8s.io/minikube/pkg/drivers/kvm.version=$(VERSION) -X k8s.io/minikube/pkg/drivers/kvm.gitCommitID=$(COMMIT)
 
@@ -139,8 +142,12 @@ else
 endif
 
 
-out/minikube$(IS_EXE): out/minikube-$(GOOS)-$(GOARCH)$(IS_EXE)
-	cp $< $@
+out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES) go.mod
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) /usr/bin/make $@)
+else
+	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
+endif
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
 	cp $< $@
@@ -152,22 +159,23 @@ out/minikube-linux-aarch64: out/minikube-linux-arm64
 	cp $< $@
 
 .PHONY: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
-minikube-linux-amd64: out/minikube-linux-amd64
-minikube-linux-arm64: out/minikube-linux-arm64
-minikube-darwin-amd64: out/minikube-darwin-amd64
-minikube-windows-amd64.exe: out/minikube-windows-amd64.exe
+minikube-linux-amd64: out/minikube-linux-amd64 ## Build Minikube for Linux 64bit
+minikube-linux-arm64: out/minikube-linux-arm64 ## Build Minikube for ARM 64bit
+minikube-darwin-amd64: out/minikube-darwin-amd64 ## Build Minikube for Darwin 64bit
+minikube-windows-amd64.exe: out/minikube-windows-amd64.exe ## Build Minikube for Windows 64bit
 
-out/minikube-%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go  $(shell find $(CMD_SOURCE_DIRS) -type f -name "*.go")
+out/minikube-%: $(SOURCE_GENERATED) $(SOURCE_FILES)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 else
-	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
+	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" \
+	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -a -o $@ k8s.io/minikube/cmd/minikube
 endif
 
 .PHONY: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
-e2e-linux-amd64: out/e2e-linux-amd64
-e2e-darwin-amd64: out/e2e-darwin-amd64
-e2e-windows-amd64.exe: out/e2e-windows-amd64.exe
+e2e-linux-amd64: out/e2e-linux-amd64 ## Execute end-to-end testing for Linux 64bit
+e2e-darwin-amd64: out/e2e-darwin-amd64 ## Execute end-to-end testing for Darwin 64bit
+e2e-windows-amd64.exe: out/e2e-windows-amd64.exe ## Execute end-to-end testing for Windows 64bit
 
 out/e2e-%: out/minikube-%
 	GOOS="$(firstword $(subst -, ,$*))" GOARCH="$(lastword $(subst -, ,$(subst $(IS_EXE), ,$*)))" go test -c k8s.io/minikube/test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" -o $@
@@ -187,13 +195,13 @@ minikube_iso: # old target kept for making tests happy
 
 # Change buildroot configuration for the minikube ISO
 .PHONY: iso-menuconfig
-iso-menuconfig:
+iso-menuconfig: ## Configure buildroot configuration
 	$(MAKE) -C $(BUILD_DIR)/buildroot menuconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot savedefconfig
 
 # Change the kernel configuration for the minikube ISO
 .PHONY: linux-menuconfig
-linux-menuconfig:
+linux-menuconfig:  ## Configure Linux kernel configuration
 	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ menuconfig
 	$(MAKE) -C $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/ savedefconfig
 	cp $(BUILD_DIR)/buildroot/output/build/linux-$(KERNEL_VERSION)/defconfig deploy/iso/minikube-iso/board/coreos/minikube/linux_defconfig
@@ -216,39 +224,39 @@ test-iso: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go test -v ./test/integration --tags=iso --minikube-start-args="--iso-url=file://$(shell pwd)/out/buildroot/output/images/rootfs.iso9660"
 
 .PHONY: test-pkg
-test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger packaging test
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross out/gvisor-addon
+all: cross drivers e2e-cross out/gvisor-addon ## Build all different minikube components
 
 .PHONY: drivers
-drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2
+drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2 ## Build Hyperkit and KVM2 drivers
 
 .PHONY: docker-machine-driver-hyperkit
-docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit
+docker-machine-driver-hyperkit: out/docker-machine-driver-hyperkit ## Build Hyperkit driver
 
 .PHONY: docker-machine-driver-kvm2
-docker-machine-driver-kvm2: out/docker-machine-driver-kvm2
+docker-machine-driver-kvm2: out/docker-machine-driver-kvm2 ## Build KVM2 driver
 
 .PHONY: integration
-integration: out/minikube
+integration: out/minikube ## Trigger minikube integration test
 	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS)" $(TEST_ARGS)
 
 .PHONY: integration-none-driver
-integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)
+integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test
 	sudo -E out/e2e-linux-$(GOARCH) -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
 
 .PHONY: integration-versioned
-integration-versioned: out/minikube
+integration-versioned: out/minikube ## Trigger minikube integration testing
 	go test -v -test.timeout=60m ./test/integration --tags="$(MINIKUBE_INTEGRATION_BUILD_TAGS) versioned" $(TEST_ARGS)
 
 .PHONY: test
-test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
 	./test.sh
 
 .PHONY: extract
-extract:
+extract: ## Compile extract tool
 	go run cmd/extract/extract.go
 
 # Regenerates assets.go when template files have been updated
@@ -275,22 +283,22 @@ endif
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
 .PHONY: cross
-cross: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe
+cross: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
 
 .PHONY: windows
-windows: minikube-windows-amd64.exe
+windows: minikube-windows-amd64.exe ## Build minikube for Windows 64bit
 
 .PHONY: darwin
-darwin: minikube-darwin-amd64
+darwin: minikube-darwin-amd64 ## Build minikube for Darwin 64bit
 
 .PHONY: linux
-linux: minikube-linux-amd64
+linux: minikube-linux-amd64 ## Build minikube for Linux 64bit
 
 .PHONY: e2e-cross
-e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe
+e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe ## End-to-end cross test
 
 .PHONY: checksum
-checksum:
+checksum: ## Generate checksums
 	for f in out/minikube.iso out/minikube-linux-amd64 minikube-linux-arm64 \
 		 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe \
 		 out/docker-machine-driver-kvm2 out/docker-machine-driver-hyperkit; do \
@@ -300,34 +308,34 @@ checksum:
 	done
 
 .PHONY: clean
-clean:
+clean: ## Clean build
 	rm -rf $(BUILD_DIR)
 	rm -f pkg/minikube/assets/assets.go
 	rm -f pkg/minikube/translate/translations.go
 	rm -rf ./vendor
 
 .PHONY: gendocs
-gendocs: out/docs/minikube.md
+gendocs: out/docs/minikube.md  ## Generate documentation
 
 .PHONY: fmt
-fmt:
+fmt: ## Run go fmt and modify files in place
 	@gofmt -s -w $(SOURCE_DIRS)
 
 .PHONY: gofmt
-gofmt:
+gofmt: ## Run go fmt and list the files differs from gofmt's
 	@gofmt -s -l $(SOURCE_DIRS)
 	@test -z "`gofmt -s -l $(SOURCE_DIRS)`"
 
 .PHONY: vet
-vet:
+vet: ## Run go vet
 	@go vet $(SOURCE_PACKAGES)
 
 .PHONY: golint
-golint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+golint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Run golint
 	@golint -set_exit_status $(SOURCE_PACKAGES)
 
 .PHONY: gocyclo
-gocyclo:
+gocyclo: ## Run gocyclo (calculates cyclomatic complexities)
 	@gocyclo -over 15 `find $(SOURCE_DIRS) -type f -name "*.go"`
 
 out/linters/golangci-lint-$(GOLINT_VERSION):
@@ -337,17 +345,17 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 
 # this one is meant for local use
 .PHONY: lint
-lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION)
+lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
 	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
 
 # lint-ci is slower version of lint and is meant to be used in ci (travis) to avoid out of memory leaks.
 .PHONY: lint-ci
-lint-ci: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION)
+lint-ci: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint-ci
 	GOGC=${GOLINT_GOGC} ./out/linters/golangci-lint-$(GOLINT_VERSION) run \
 	--concurrency ${GOLINT_JOBS} ${GOLINT_OPTIONS} ./...
 
 .PHONY: reportcard
-reportcard:
+reportcard: ## Run goreportcard for minikube
 	goreportcard-cli -v
 	# "disabling misspell on large repo..."
 	-misspell -error $(SOURCE_DIRS)
@@ -385,7 +393,7 @@ out/minikube-$(RPM_VERSION)-0.%.rpm: out/minikube-linux-%
 	rm -rf out/minikube-$(RPM_VERSION)
 
 .PHONY: apt
-apt: out/Release
+apt: out/Release ## Generate apt package file
 
 out/Release: out/minikube_$(DEB_VERSION).deb
 	( cd out && apt-ftparchive packages . ) | gzip -c > out/Packages.gz
@@ -407,7 +415,7 @@ out/minikube-%.tar.gz: $$(TAR_TARGETS_$$*)
 	tar -cvzf $@ $^
 
 .PHONY: cross-tars
-cross-tars: out/minikube-linux-amd64.tar.gz out/minikube-linux-arm64.tar.gz \
+cross-tars: out/minikube-linux-amd64.tar.gz out/minikube-linux-arm64.tar.gz \ ## Cross-compile minikube
 	    out/minikube-windows-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
 	-cd out && $(SHA512SUM) *.tar.gz > SHA512SUM
 
@@ -439,19 +447,19 @@ hyperkit_in_docker:
 	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make out/docker-machine-driver-hyperkit)
 
 .PHONY: install-hyperkit-driver
-install-hyperkit-driver: out/docker-machine-driver-hyperkit
+install-hyperkit-driver: out/docker-machine-driver-hyperkit ## Install hyperkit to local machine
 	mkdir -p $(HOME)/bin
 	sudo cp out/docker-machine-driver-hyperkit $(HOME)/bin/docker-machine-driver-hyperkit
 	sudo chown root:wheel $(HOME)/bin/docker-machine-driver-hyperkit
 	sudo chmod u+s $(HOME)/bin/docker-machine-driver-hyperkit
 
 .PHONY: release-hyperkit-driver
-release-hyperkit-driver: install-hyperkit-driver checksum
+release-hyperkit-driver: install-hyperkit-driver checksum ## Copy hyperkit using gsutil
 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit gs://minikube/drivers/hyperkit/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-hyperkit.sha256 gs://minikube/drivers/hyperkit/$(VERSION)/
 
 .PHONY: check-release
-check-release:
+check-release: ## Execute go test
 	go test -v ./deploy/minikube/release_sanity_test.go -tags=release
 
 buildroot-image: $(ISO_BUILD_IMAGE) # convenient alias to build the docker container
@@ -464,7 +472,7 @@ out/storage-provisioner:
 	GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
-storage-provisioner-image: out/storage-provisioner
+storage-provisioner-image: out/storage-provisioner ## Build storage-provisioner docker image
 ifeq ($(GOARCH),amd64)
 	docker build -t $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  .
 else
@@ -472,7 +480,7 @@ else
 endif
 
 .PHONY: push-storage-provisioner-image
-push-storage-provisioner-image: storage-provisioner-image
+push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
 ifeq ($(GOARCH),amd64)
 	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
 else
@@ -480,11 +488,11 @@ else
 endif
 
 .PHONY: out/gvisor-addon
-out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
+out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
 	GOOS=linux CGO_ENABLED=0 go build -o $@ cmd/gvisor/gvisor.go
 
 .PHONY: gvisor-addon-image
-gvisor-addon-image: out/gvisor-addon
+gvisor-addon-image: out/gvisor-addon  ## Build docker image for gvisor
 	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_IMAGE_VERSION) -f deploy/gvisor/Dockerfile .
 
 .PHONY: push-gvisor-addon-image
@@ -492,12 +500,12 @@ push-gvisor-addon-image: gvisor-addon-image
 	gcloud docker -- push $(REGISTRY)/gvisor-addon:$(GVISOR_IMAGE_VERSION)
 
 .PHONY: release-iso
-release-iso: minikube_iso checksum
+release-iso: minikube_iso checksum  ## Build and release .iso file
 	gsutil cp out/minikube.iso gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso
 	gsutil cp out/minikube.iso.sha256 gs://$(ISO_BUCKET)/minikube-$(ISO_VERSION).iso.sha256
 
 .PHONY: release-minikube
-release-minikube: out/minikube checksum
+release-minikube: out/minikube checksum ## Minikube release
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
@@ -534,8 +542,8 @@ out/docker-machine-driver-kvm2-$(RPM_VERSION).rpm: out/docker-machine-driver-kvm
 		out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
 	rm -rf out/docker-machine-driver-kvm2-$(RPM_VERSION)
 
-.PHONY: kvm-image # convenient alias to build the docker container
-kvm-image: installers/linux/kvm/Dockerfile
+.PHONY: kvm-image
+kvm-image: installers/linux/kvm/Dockerfile  ## Convenient alias to build the docker container
 	docker build --build-arg "GO_VERSION=$(GO_VERSION)" -t $(KVM_BUILD_IMAGE) -f $< $(dir $<)
 	@echo ""
 	@echo "$(@) successfully built"
@@ -546,27 +554,25 @@ kvm_in_docker:
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 
 .PHONY: install-kvm-driver
-install-kvm-driver: out/docker-machine-driver-kvm2
+install-kvm-driver: out/docker-machine-driver-kvm2  ## Install KVM Driver
 	mkdir -p $(GOBIN)
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
 .PHONY: release-kvm-driver
-release-kvm-driver: install-kvm-driver checksum
+release-kvm-driver: install-kvm-driver checksum  ## Release KVM Driver
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
 
 site/themes/docsy/assets/vendor/bootstrap/package.js:
 	git submodule update -f --init --recursive
 
-# hugo for generating site previews
 out/hugo/hugo:
 	mkdir -p out
 	test -d out/hugo || git clone https://github.com/gohugoio/hugo.git out/hugo
 	(cd out/hugo && go build --tags extended)
 
-# Serve the documentation site to localhost
 .PHONY: site
-site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo
+site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serve the documentation site to localhost
 	(cd site && ../out/hugo/hugo serve \
 	  --disableFastRender \
 	  --navigateToChanged \
@@ -576,3 +582,9 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo
 .PHONY: out/mkcmp
 out/mkcmp:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/main.go
+
+.PHONY: help
+help:
+	@printf "\033[1mAvailable targets for minikube ${VERSION}\033[21m\n"
+	@printf "\033[1m--------------------------------------\033[21m\n"
+	@grep -h -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

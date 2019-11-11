@@ -90,8 +90,9 @@ func TestIsAddonAlreadySet(t *testing.T) {
 		{
 			addonName: "ingress",
 		},
+
 		{
-			addonName: "heapster",
+			addonName: "registry",
 		},
 	}
 
