@@ -64,7 +64,7 @@ func TestGlobalList(t *testing.T) {
 	}
 }
 
-func TestGlobalInstalled(t *testing.T) {
+func TestGlobalAvailable(t *testing.T) {
 	globalRegistry = newRegistry()
 
 	if err := Register(DriverDef{Name: "foo"}); err != nil {
@@ -72,26 +72,38 @@ func TestGlobalInstalled(t *testing.T) {
 	}
 
 	bar := DriverDef{
-		Name:     "bar",
+		Name:     "healthy-bar",
 		Priority: Default,
-		Status:   func() State { return State{Installed: true} },
+		Status:   func() State { return State{Healthy: true} },
 	}
 	if err := Register(bar); err != nil {
 		t.Errorf("register returned error: %v", err)
 	}
 
+	foo := DriverDef{
+		Name:     "unhealthy-foo",
+		Priority: Default,
+		Status:   func() State { return State{Healthy: false} },
+	}
+	if err := Register(foo); err != nil {
+		t.Errorf("register returned error: %v", err)
+	}
+
 	expected := []DriverState{
 		{
-			Name:     "bar",
+			Name:     "healthy-bar",
 			Priority: Default,
-			State: State{
-				Installed: true,
-			},
+			State:    State{Healthy: true},
+		},
+		{
+			Name:     "unhealthy-foo",
+			Priority: Unhealthy,
+			State:    State{Healthy: false},
 		},
 	}
 
-	if diff := cmp.Diff(Installed(), expected); diff != "" {
-		t.Errorf("installed mismatch (-want +got):\n%s", diff)
+	if diff := cmp.Diff(Available(), expected); diff != "" {
+		t.Errorf("available mismatch (-want +got):\n%s", diff)
 	}
 }
 
