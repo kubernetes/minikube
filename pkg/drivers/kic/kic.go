@@ -89,7 +89,6 @@ func (d *Driver) Create() error {
 	}
 	_, err := ks.Create(command.NewKICRunner(d.MachineName, d.OciBinary))
 	if err != nil {
-		fmt.Printf("\t(medya dbg) error create kic from spec: \n\t%v\n", err)
 		return errors.Wrap(err, "create kic from spec")
 	}
 	return nil
@@ -130,7 +129,12 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	return state.Stopped, fmt.Errorf("not implemented for kic yet")
+	node, err := node.Find(d.MachineName+"-control-plane", command.NewKICRunner(d.MachineName+"-control-plane", d.OciBinary))
+	if err != nil {
+		return state.Error, nil
+	}
+	return node.Status()
+
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
@@ -138,8 +142,18 @@ func (d *Driver) Kill() error {
 	return fmt.Errorf("not implemented for kic yet")
 }
 
+// Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
-	return fmt.Errorf("not implemented for kic yet")
+	n := d.MachineName + "-control-plane"
+	node, err := node.Find(n, command.NewKICRunner(n, d.OciBinary))
+	if err != nil {
+		return errors.Wrapf(err, "find node %s", d.MachineName)
+	}
+	err = node.Remove()
+	if err != nil {
+		return errors.Wrapf(err, "remove kic node %s", d.MachineName)
+	}
+	return nil
 }
 
 // Restart a host
