@@ -168,6 +168,7 @@ func writeToFile(config runtime.Object, configPath ...string) error {
 		fPath = configPath[0]
 	}
 
+	// checks permissions for ~/.kube/config
 	info, err := os.Stat(fpath)
 	m := info.Mode()
 	if m&(1<<2) == 0 {
