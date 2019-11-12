@@ -56,23 +56,26 @@ function retry_github_status() {
   local code=-1
 
   while [[ "${attempt}" -lt 8 ]]; do
-    code=$(curl -o /dev/null -s --write-out "%{http_code}" -L \
-      "https://api.github.com/repos/kubernetes/minikube/statuses/${pr}?access_token=$token" \
+    local out=$(mktemp)
+    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L \
+      "https://api.github.com/repos/kubernetes/minikube/statuses/${pr}?access_token=${token}" \
       -H "Content-Type: application/json" \
       -X POST \
-      -d "{\"state\": \"$state\", \"description\": \"Jenkins\", \"target_url\": \"$target\", \"context\": \"${context}\"}" || echo 999)
+      -d "{\"state\": \"${state}\", \"description\": \"Jenkins\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
 
     # 2xx HTTP codes
     if [[ "${code}" =~ ^2 ]]; then
       break
     fi
 
+    cat "${out}" && rm -f "${out}"
     echo "HTTP code ${code}! Retrying in ${timeout} .."
     sleep "${timeout}"
     attempt=$(( attempt + 1 ))
     timeout=$(( timeout * 2 ))
   done
 }
+
 
 for j in ${jobs[@]}; do
   retry_github_status "${ghprbActualCommit}" "${j}" "pending" "${access_token}" \
