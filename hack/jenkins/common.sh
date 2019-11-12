@@ -293,11 +293,9 @@ if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
   exit $result
 fi
 
-set -x
-
 # retry_github_status provides reliable github status updates
 function retry_github_status() {
-  local pr=$1
+  local commit=$1
   local context=$2
   local state=$3
   local token=$4
@@ -311,7 +309,7 @@ function retry_github_status() {
   while [[ "${attempt}" -lt 8 ]]; do
     local out=$(mktemp)
     code=$(curl -o "${out}" -s --write-out "%{http_code}" -L \
-      "https://api.github.com/repos/kubernetes/minikube/statuses/${pr}?access_token=${token}" \
+      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}?access_token=${token}" \
       -H "Content-Type: application/json" \
       -X POST \
       -d "{\"state\": \"${state}\", \"description\": \"Jenkins\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
@@ -329,5 +327,5 @@ function retry_github_status() {
   done
 }
 
-retry_github_status "${MINIKUBE_LOCATION}" "${JOB_NAME}" "${status}" "${access_token}" "https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
+retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
 exit $result
