@@ -306,7 +306,7 @@ function retry_github_status() {
   local timeout=2
   local code=-1
 
-  while [[ "${attempt}" -lt 6 ]]; do
+  while [[ "${attempt}" -lt 8 ]]; do
     code=$(curl -s -i --write-out "%{http_code}" -L \
       "https://api.github.com/repos/kubernetes/minikube/statuses/${pr}?access_token=$token" \
       -H "Content-Type: application/json" \
