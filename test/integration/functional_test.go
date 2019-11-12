@@ -153,9 +153,9 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	podName := "kube-apiserver-minikube"
+	podName := "kube-system"
 	if !strings.Contains(rr.Stdout.String(), podName) {
-		t.Errorf("%s is not up in running, got: %s\n", podName, rr.Stdout.String())
+		t.Errorf("%s pods are not listed, got: %s\n", podName, rr.Stdout.String())
 	}
 }
 
