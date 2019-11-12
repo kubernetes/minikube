@@ -42,11 +42,42 @@ jobs=(
      'none_Linux'
 )
 
+# retry_github_status provides reliable github status updates
+function retry_github_status() {
+  local commit=$1
+  local context=$2
+  local state=$3
+  local token=$4
+  local target=$5
+
+   # Retry in case we hit our GitHub API quota or fail other ways.
+  local attempt=0
+  local timeout=2
+  local code=-1
+
+  while [[ "${attempt}" -lt 8 ]]; do
+    local out=$(mktemp)
+    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L \
+      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}?access_token=${token}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"state\": \"${state}\", \"description\": \"Jenkins\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
+
+    # 2xx HTTP codes
+    if [[ "${code}" =~ ^2 ]]; then
+      break
+    fi
+
+    cat "${out}" && rm -f "${out}"
+    echo "HTTP code ${code}! Retrying in ${timeout} .."
+    sleep "${timeout}"
+    attempt=$(( attempt + 1 ))
+    timeout=$(( timeout * 2 ))
+  done
+}
+
 for j in ${jobs[@]}; do
-  target_url="https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}.txt"
-  curl "https://api.github.com/repos/kubernetes/minikube/statuses/${ghprbActualCommit}?access_token=$access_token" \
-    -H "Content-Type: application/json" \
-    -X POST \
-    -d "{\"state\": \"pending\", \"description\": \"Jenkins\", \"target_url\": \"${target_url}\", \"context\": \"${j}\"}"
+  retry_github_status "${ghprbActualCommit}" "${j}" "pending" "${access_token}" \
+    "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}.txt"
 done
 
