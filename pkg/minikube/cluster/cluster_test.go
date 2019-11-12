@@ -149,13 +149,13 @@ func TestStartHostExists(t *testing.T) {
 func TestStartHostErrMachineNotExist(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
 	api.NotExistError = true
 	_, err := createHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
+
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
