@@ -297,9 +297,9 @@ fi
 function retry_github_status() {
   local pr=$1
   local context=$2
-  local state=$4
-  local token=$5
-  local target=$6
+  local state=$3
+  local token=$4
+  local target=$5
 
    # Retry in case we hit our GitHub API quota or fail other ways.
   local attempt=0
