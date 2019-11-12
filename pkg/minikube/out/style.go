@@ -65,7 +65,6 @@ var styles = map[StyleEnum]style{
 	Stopped:       {Prefix: "🛑  "},
 	WarningType:   {Prefix: "⚠️  ", LowPrefix: lowWarning},
 	Waiting:       {Prefix: "⌛  "},
-	WaitingPods:   {Prefix: "⌛  ", OmitNewline: true},
 	Usage:         {Prefix: "💡  "},
 	Launch:        {Prefix: "🚀  "},
 	Sad:           {Prefix: "😿  "},
