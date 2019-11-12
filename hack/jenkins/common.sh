@@ -307,7 +307,7 @@ function retry_github_status() {
   local code=-1
 
   while [[ "${attempt}" -lt 8 ]]; do
-    code=$(curl -s -i --write-out "%{http_code}" -L \
+    code=$(curl -s --write-out "%{http_code}" -L \
       "https://api.github.com/repos/kubernetes/minikube/statuses/${pr}?access_token=$token" \
       -H "Content-Type: application/json" \
       -X POST \
@@ -324,6 +324,7 @@ function retry_github_status() {
     timeout=$(( timeout * 2 ))
   done
 }
+
 
 retry_github_status "${MINIKUBE_LOCATION}" "${JOB_NAME}" "${status}" "${access_token}" "https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
 exit $result
