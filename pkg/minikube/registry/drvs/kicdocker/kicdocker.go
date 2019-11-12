@@ -43,13 +43,13 @@ func init() {
 }
 
 func configure(mc config.MachineConfig) interface{} {
-	imgSha, err := image.NameForVersion(mc.KubeVersion)
+	imgSha, err := image.NameForVersion(mc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
-		glog.Errorf("Failed to getting image name for %s: imgesha:%s", imgSha, mc.KubeVersion)
+		glog.Errorf("Failed to getting image name for %s: imgesha:%s", imgSha, mc.KubernetesConfig.KubernetesVersion)
 	}
 
 	return kic.NewDriver(kic.Config{
-		MachineName:   config.GetMachineName(),
+		MachineName:   mc.Name,
 		StorePath:     localpath.MiniPath(),
 		ImageSha:      imgSha,
 		CPU:           mc.CPUs,
