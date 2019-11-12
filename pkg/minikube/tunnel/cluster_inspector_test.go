@@ -62,7 +62,7 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 	}
 
 	configLoader := &stubConfigLoader{
-		c: &config.Config{
+		c: &config.MachineConfig{
 			KubernetesConfig: config.KubernetesConfig{
 				ServiceCIDR: "96.0.0.0/12",
 			},
@@ -100,7 +100,7 @@ func TestMinikubeCheckReturnsHostInformation(t *testing.T) {
 }
 
 func TestUnparseableCIDR(t *testing.T) {
-	cfg := config.Config{
+	cfg := config.MachineConfig{
 		KubernetesConfig: config.KubernetesConfig{
 			ServiceCIDR: "bad.cidr.0.0/12",
 		}}
@@ -120,7 +120,7 @@ func TestUnparseableCIDR(t *testing.T) {
 func TestRouteIPDetection(t *testing.T) {
 	expectedTargetCIDR := "10.96.0.0/12"
 
-	cfg := config.Config{
+	cfg := config.MachineConfig{
 		KubernetesConfig: config.KubernetesConfig{
 			ServiceCIDR: expectedTargetCIDR,
 		},

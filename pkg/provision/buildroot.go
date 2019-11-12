@@ -330,7 +330,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return err
 	}
 
-	if config.MachineConfig.ContainerRuntime == "" {
+	if config.ContainerRuntime == "" {
 
 		if err := p.Service("docker", serviceaction.Enable); err != nil {
 			return err
