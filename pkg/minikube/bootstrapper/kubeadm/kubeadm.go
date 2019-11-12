@@ -398,6 +398,10 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 	glog.Infof("waiting for pod list to contain data ...")
 	pStart := time.Now()
 	client, err := k.client(k8s)
+	if err != nil {
+		return errors.Wrap(err, "client")
+	}
+
 	podList := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during pod check")

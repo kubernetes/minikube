@@ -153,9 +153,8 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	podName := "kube-system"
-	if !strings.Contains(rr.Stdout.String(), podName) {
-		t.Errorf("%s pods are not listed, got: %s\n", podName, rr.Stdout.String())
+	if !strings.Contains(rr.Stdout.String(), "kube-system") {
+		t.Errorf("%s = %q, want *kube-system*", rr.Command(), rr.Stdout.String())
 	}
 }
 
