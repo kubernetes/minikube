@@ -38,7 +38,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -395,17 +395,22 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 	}
 	glog.Infof("duration metric: took %s to wait for apiserver healthz  status ...", time.Since(hStart))
 
-	glog.Infof("waiting for apiserver to appear in pod list ...")
+	glog.Infof("waiting for pod list to contain data ...")
 	pStart := time.Now()
 	client, err := k.client(k8s)
 	podList := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during pod check")
 		}
-		_, err := client.CoreV1().Pods("kube-system").Get("kube-apiserver-minikube", metav1.GetOptions{})
+		// Wait for any system pod, as waiting for apiserver may block until etcd
+		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+		if len(pods.Items) == 0 {
+			return true, nil
+		}
 		if err != nil {
 			return false, nil
 		}
+		glog.Infof("%d kube-system pods found", len(pods.Items))
 		return true, nil
 	}
 	if err = wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
