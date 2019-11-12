@@ -107,7 +107,7 @@ func TestDownloadOnly(t *testing.T) {
 			got := ""
 			for _, p := range ps["valid"] {
 				if p.Name == profile {
-					got = p.Config.MachineConfig.VMDriver
+					got = p.Config[0].VMDriver
 				}
 			}
 
