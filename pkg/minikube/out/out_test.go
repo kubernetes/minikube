@@ -46,7 +46,6 @@ func TestOutT(t *testing.T) {
 		{Option, "Option", nil, "    ▪ Option\n", "  - Option\n"},
 		{WarningType, "Warning", nil, "⚠️  Warning\n", "! Warning\n"},
 		{FatalType, "Fatal: {{.error}}", V{"error": "ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
-		{WaitingPods, "wait", nil, "⌛  wait", "* wait"},
 		{Issue, "http://i/{{.number}}", V{"number": 10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
 		{Usage, "raw: {{.one}} {{.two}}", V{"one": "'%'", "two": "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},
 		{Running, "Installing Kubernetes version {{.version}} ...", V{"version": "v1.13"}, "🏃  ... v1.13 تثبيت Kubernetes الإصدار\n", "* ... v1.13 تثبيت Kubernetes الإصدار\n"},
