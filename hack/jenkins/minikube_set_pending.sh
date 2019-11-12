@@ -51,6 +51,6 @@ for j in ${jobs[@]}; do
     -X POST \
     -d "{\"state\": \"pending\", \"description\": \"Jenkins\", \"target_url\": \"${target_url}\", \"context\": \"${j}\"}"
 
-  echo "Pending as of $(date)" gsutil cp - "${target_url}" || echo "Unable to upload placeholder"
+  echo "Pending as of $(date)" | gsutil cp - "${target_url}"
 done
 
