@@ -75,7 +75,7 @@ function retry_github_status() {
 }
 
 for j in ${jobs[@]}; do
-  update_github_status "${ghprbActualCommit}" "${j}" "pending" "${access_token}" \
+  retry_github_status "${ghprbActualCommit}" "${j}" "pending" "${access_token}" \
     "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}.txt"
 done
 
