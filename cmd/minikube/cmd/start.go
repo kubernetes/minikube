@@ -170,7 +170,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
-	startCmd.Flags().Bool(waitUntilHealthy, true, "Block until the apiserver can service API requests")
+	startCmd.Flags().Bool(waitUntilHealthy, true, "Block until the apiserver is servicing API requests")
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
