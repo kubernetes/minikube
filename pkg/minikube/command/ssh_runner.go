@@ -23,6 +23,8 @@ import (
 	"io"
 	"os/exec"
 	"path"
+	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,6 +35,10 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/util"
+)
+
+var (
+	layout = "2006-01-02 15:04:05.999999999 -0700"
 )
 
 // SSHRunner runs commands through SSH.
@@ -143,6 +149,15 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 // Copy copies a file to the remote over SSH.
 func (s *SSHRunner) Copy(f assets.CopyableFile) error {
+	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
+	exists, err := s.sameFileExists(f, dst)
+	if err != nil {
+		glog.Infof("Checked if %s exists, but got error: %v", dst, err)
+	}
+	if exists {
+		glog.Infof("Skipping copying %s as it already exists", dst)
+		return nil
+	}
 	sess, err := s.c.NewSession()
 	if err != nil {
 		return errors.Wrap(err, "NewSession")
@@ -156,7 +171,6 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	// StdinPipe is closed. But let's use errgroup to make it explicit.
 	var g errgroup.Group
 	var copied int64
-	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 	glog.Infof("Transferring %d bytes to %s", f.GetLength(), dst)
 
 	g.Go(func() error {
@@ -182,11 +196,57 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	})
 
 	scp := fmt.Sprintf("sudo mkdir -p %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
+	mtime, err := f.GetModTime()
+	if err != nil {
+		glog.Infof("error getting modtime for %s: %v", dst, err)
+	} else {
+		scp += fmt.Sprintf(" && sudo touch -d \"%s\" %s", mtime.Format(layout), dst)
+	}
 	out, err := sess.CombinedOutput(scp)
 	if err != nil {
 		return fmt.Errorf("%s: %s\noutput: %s", scp, err, out)
 	}
 	return g.Wait()
+}
+
+func (s *SSHRunner) sameFileExists(f assets.CopyableFile, dst string) (bool, error) {
+	// get file size and modtime of the source
+	srcSize := f.GetLength()
+	srcModTime, err := f.GetModTime()
+	if err != nil {
+		return false, err
+	}
+	if srcModTime.IsZero() {
+		return false, nil
+	}
+
+	// get file size and modtime of the destination
+	sess, err := s.c.NewSession()
+	if err != nil {
+		return false, err
+	}
+
+	cmd := "stat -c \"%s %y\" " + dst
+	out, err := sess.CombinedOutput(cmd)
+	if err != nil {
+		return false, err
+	}
+	outputs := strings.SplitN(strings.Trim(string(out), "\n"), " ", 2)
+
+	dstSize, err := strconv.Atoi(outputs[0])
+	if err != nil {
+		return false, err
+	}
+	dstModTime, err := time.Parse(layout, outputs[1])
+	if err != nil {
+		return false, err
+	}
+
+	// compare sizes and modtimes
+	if srcSize != dstSize {
+		return false, errors.New("source file and destination file are different sizes")
+	}
+	return srcModTime.Equal(dstModTime), nil
 }
 
 // teePrefix copies bytes from a reader to writer, logging each new line.
