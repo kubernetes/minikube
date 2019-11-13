@@ -351,7 +351,7 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 	return kubernetes.NewForConfig(config)
 }
 
-func (k *Bootstrapper) waitForApiServerProcess(start time.Time, timeout time.Duration) error {
+func (k *Bootstrapper) waitForAPIServerProcess(start time.Time, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver process to appear ...")
 	err := wait.PollImmediate(time.Second*1, timeout, func() (bool, error) {
 		if time.Since(start) > timeout {
@@ -371,7 +371,7 @@ func (k *Bootstrapper) waitForApiServerProcess(start time.Time, timeout time.Dur
 	return nil
 }
 
-func (k *Bootstrapper) waitForApiServerHealthz(start time.Time, k8s config.KubernetesConfig, timeout time.Duration) error {
+func (k *Bootstrapper) waitForAPIServerHealthz(start time.Time, k8s config.KubernetesConfig, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
 	healthz := func() (bool, error) {
@@ -442,10 +442,10 @@ func (k *Bootstrapper) waitForSystemPods(start time.Time, k8s config.KubernetesC
 func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
-	if err := k.waitForApiServerProcess(start, timeout); err != nil {
+	if err := k.waitForAPIServerProcess(start, timeout); err != nil {
 		return err
 	}
-	if err := k.waitForApiServerHealthz(start, k8s, timeout); err != nil {
+	if err := k.waitForAPIServerHealthz(start, k8s, timeout); err != nil {
 		return err
 	}
 	return k.waitForSystemPods(start, k8s, timeout)
@@ -492,7 +492,7 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// We must ensure that the apiserver is healthy before proceeding
-	if err := k.waitForApiServerHealthz(time.Now(), k8s, kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := k.waitForAPIServerHealthz(time.Now(), k8s, kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 	if err := k.waitForSystemPods(time.Now(), k8s, kconst.DefaultControlPlaneTimeout); err != nil {
