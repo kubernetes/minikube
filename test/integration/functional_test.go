@@ -114,7 +114,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Use more memory so that we may reliably fit MySQL and nginx
-	startArgs := append([]string{"start", "-p", profile, "--wait=false", "--memory", "2500MB"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory", "2500MB"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -149,13 +149,15 @@ func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 
 // validateKubectlGetPods asserts that `kubectl get pod -A` returns non-zero content
 func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "get", "pod", "-A"))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	podName := "kube-apiserver-minikube"
-	if !strings.Contains(rr.Stdout.String(), podName) {
-		t.Errorf("%s is not up in running, got: %s\n", podName, rr.Stdout.String())
+	if rr.Stderr.String() != "" {
+		t.Errorf("%s: got unexpected stderr: %s", rr.Command(), rr.Stderr)
+	}
+	if !strings.Contains(rr.Stdout.String(), "kube-system") {
+		t.Errorf("%s = %q, want *kube-system*", rr.Command(), rr.Stdout)
 	}
 }
 
