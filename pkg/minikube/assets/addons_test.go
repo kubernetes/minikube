@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	kicassets "github.com/medyagh/kic/pkg/assets"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
@@ -139,7 +140,7 @@ func TestAddMinikubeDirAssets(t *testing.T) {
 				}
 			}
 
-			var actualFiles []CopyableFile
+			var actualFiles []kicassets.LegacyCopyableFile
 			err = addMinikubeDirToAssets(testFileBaseDir, test.vmPath, &actualFiles)
 			if err != nil {
 				t.Errorf("got unexpected error adding minikube dir assets: %v", err)

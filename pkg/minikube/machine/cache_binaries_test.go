@@ -24,19 +24,20 @@ import (
 	"testing"
 
 	kicassets "github.com/medyagh/kic/pkg/assets"
-	"github.com/medyagh/kic/pkg/command"
+	kiccommand "github.com/medyagh/kic/pkg/command"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/command"
 )
 
 type copyFailRunner struct {
-	command.Runner
+	kiccommand.Runner
 }
 
 func (copyFailRunner) Copy(a kicassets.LegacyCopyableFile) error {
 	return fmt.Errorf("test error during copy file")
 }
 
-func newFakeCommandRunnerCopyFail() command.Runner {
+func newFakeCommandRunnerCopyFail() kiccommand.Runner {
 	return copyFailRunner{command.NewFakeCommandRunner()}
 }
 
@@ -45,7 +46,7 @@ func TestCopyBinary(t *testing.T) {
 		lastUpdateCheckFilePath string
 		src, dst, desc          string
 		err                     bool
-		runner                  command.Runner
+		runner                  kiccommand.Runner
 	}{
 		{
 			desc:   "not existing src",
