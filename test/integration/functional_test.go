@@ -114,7 +114,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Use more memory so that we may reliably fit MySQL and nginx
-	startArgs := append([]string{"start", "-p", profile, "--wait=false", "--memory", "2500MB"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory", "2500MB"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
