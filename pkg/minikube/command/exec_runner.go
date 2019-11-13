@@ -27,8 +27,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/medyagh/kic/pkg/command"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/assets"
+	kicassets "github.com/medyagh/kic/pkg/assets"
 )
 
 // ExecRunner runs commands using the os/exec package.
@@ -37,8 +38,8 @@ import (
 type ExecRunner struct{}
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
-func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
-	rr := &RunResult{Args: cmd.Args}
+func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
+	rr := &command.RunResult{Args: cmd.Args}
 	glog.Infof("(ExecRunner) Run:  %v", rr.Command())
 
 	var outb, errb io.Writer
@@ -78,7 +79,7 @@ func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 }
 
 // Copy copies a file and its permissions
-func (*ExecRunner) Copy(f assets.CopyableFile) error {
+func (*ExecRunner) Copy(f kicassets.LegacyCopyableFile) error {
 	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {
 		return errors.Wrapf(err, "error making dirs for %s", f.GetTargetDir())
 	}
@@ -110,7 +111,7 @@ do you have the correct permissions?`,
 }
 
 // Remove removes a file
-func (e *ExecRunner) Remove(f assets.CopyableFile) error {
+func (e *ExecRunner) Remove(f kicassets.LegacyCopyableFile) error {
 	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 	return os.Remove(targetPath)
 }

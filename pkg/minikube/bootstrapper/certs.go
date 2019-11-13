@@ -33,8 +33,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	kicassets "github.com/medyagh/kic/pkg/assets"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -43,6 +43,7 @@ import (
 
 	"github.com/juju/clock"
 	"github.com/juju/mutex"
+	kiccommand "github.com/medyagh/kic/pkg/command"
 )
 
 const (
@@ -60,7 +61,7 @@ var (
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
+func SetupCerts(cmd kiccommand.Runner, k8s config.KubernetesConfig) error {
 	// WARNING: This function was not designed for multiple profiles, so it is VERY racey:
 	//
 	// It updates a shared certificate file and uploads it to the apiserver before launch.
@@ -85,7 +86,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	if err := generateCerts(k8s); err != nil {
 		return errors.Wrap(err, "Error generating certs")
 	}
-	copyableFiles := []assets.CopyableFile{}
+	copyableFiles := []kicassets.LegacyCopyableFile{}
 	for _, cert := range certs {
 		p := filepath.Join(localPath, cert)
 		perms := "0644"
@@ -319,7 +320,7 @@ func collectCACerts() (map[string]string, error) {
 }
 
 // getSubjectHash calculates Certificate Subject Hash for creating certificate symlinks
-func getSubjectHash(cr command.Runner, filePath string) (string, error) {
+func getSubjectHash(cr kiccommand.Runner, filePath string) (string, error) {
 	rr, err := cr.RunCmd(exec.Command("openssl", "x509", "-hash", "-noout", "-in", filePath))
 	if err != nil {
 		return "", errors.Wrapf(err, rr.Command())
@@ -330,7 +331,7 @@ func getSubjectHash(cr command.Runner, filePath string) (string, error) {
 
 // configureCACerts looks up and installs all uploaded PEM certificates in /usr/share/ca-certificates to system-wide certificate store (/etc/ssl/certs).
 // OpenSSL binary required in minikube ISO
-func configureCACerts(cr command.Runner, caCerts map[string]string) error {
+func configureCACerts(cr kiccommand.Runner, caCerts map[string]string) error {
 	hasSSLBinary := true
 	_, err := cr.RunCmd(exec.Command("openssl", "version"))
 	if err != nil {

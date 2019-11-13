@@ -25,11 +25,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	kicassets "github.com/medyagh/kic/pkg/assets"
 	"github.com/medyagh/kic/pkg/command"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh/terminal"
-
-	"k8s.io/minikube/pkg/minikube/assets"
 )
 
 // kicRunner runs commands inside a container
@@ -127,12 +126,12 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 }
 
 // Copy copies a file and its permissions
-func (k *kicRunner) Copy(f assets.CopyableFile) error {
+func (k *kicRunner) Copy(f kicassets.LegacyCopyableFile) error {
 	return fmt.Errorf("not implemented yet for kic runner")
 }
 
 // Remove removes a file
-func (k *kicRunner) Remove(f assets.CopyableFile) error {
+func (k *kicRunner) Remove(f kicassets.LegacyCopyableFile) error {
 	return fmt.Errorf("not implemented yet for kic runner")
 }
 

@@ -23,7 +23,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/command"
+	"github.com/medyagh/kic/pkg/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"

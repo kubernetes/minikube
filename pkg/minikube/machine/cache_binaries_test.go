@@ -23,16 +23,16 @@ import (
 	"runtime"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/assets"
+	kicassets "github.com/medyagh/kic/pkg/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/command"
+	"github.com/medyagh/kic/pkg/command"
 )
 
 type copyFailRunner struct {
 	command.Runner
 }
 
-func (copyFailRunner) Copy(a assets.CopyableFile) error {
+func (copyFailRunner) Copy(a kicassets.LegacyCopyableFile) error {
 	return fmt.Errorf("test error during copy file")
 }
 

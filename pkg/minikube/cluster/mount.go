@@ -26,7 +26,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/command"
+	"github.com/medyagh/kic/pkg/command"
 )
 
 // MountConfig defines the options available to the Mount command

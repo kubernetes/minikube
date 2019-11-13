@@ -22,6 +22,7 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
+	kiccommand "github.com/medyagh/kic/pkg/command"
 	"github.com/medyagh/kic/pkg/config/cri"
 	"github.com/medyagh/kic/pkg/node"
 	"github.com/pkg/errors"
@@ -35,7 +36,7 @@ type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
 	URL           string
-	exec          command.Runner
+	exec          kiccommand.Runner
 	OciBinary     string
 	ImageSha      string
 	CPU           int

@@ -41,6 +41,7 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
 	"github.com/pkg/errors"
+	kiccommand "github.com/medyagh/kic/pkg/command"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -146,7 +147,7 @@ func (api *LocalClient) Close() error {
 }
 
 // CommandRunner returns best available command runner for this host
-func CommandRunner(h *host.Host) (command.Runner, error) {
+func CommandRunner(h *host.Host) (kiccommand.Runner, error) {
 	if h.DriverName == driver.Mock {
 		return &command.FakeCommandRunner{}, nil
 	}

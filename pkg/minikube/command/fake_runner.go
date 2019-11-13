@@ -29,7 +29,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
-	"k8s.io/minikube/pkg/minikube/assets"
+	"github.com/medyagh/kic/pkg/command"
+	kicassets "github.com/medyagh/kic/pkg/assets"
 )
 
 // FakeCommandRunner mocks command output without running the Commands
@@ -48,8 +49,8 @@ func NewFakeCommandRunner() *FakeCommandRunner {
 }
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
-func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
-	rr := &RunResult{Args: cmd.Args}
+func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
+	rr := &command.RunResult{Args: cmd.Args}
 	glog.Infof("(FakeCommandRunner) Run:  %v", rr.Command())
 
 	start := time.Now()
@@ -82,7 +83,7 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 }
 
 // Copy adds the filename, file contents key value pair to the stored map.
-func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
+func (f *FakeCommandRunner) Copy(file kicassets.LegacyCopyableFile) error {
 	var b bytes.Buffer
 	_, err := io.Copy(&b, file)
 	if err != nil {
@@ -93,7 +94,7 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 }
 
 // Remove removes the filename, file contents key value pair from the stored map
-func (f *FakeCommandRunner) Remove(file assets.CopyableFile) error {
+func (f *FakeCommandRunner) Remove(file kicassets.LegacyCopyableFile) error {
 	f.fileMap.Delete(file.GetAssetName())
 	return nil
 }

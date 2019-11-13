@@ -23,9 +23,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	kicassets "github.com/medyagh/kic/pkg/assets"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/command"
+	"github.com/medyagh/kic/pkg/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -177,7 +178,7 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 
 	if enable {
 		for _, addon := range addon.Assets {
-			var addonFile assets.CopyableFile
+			var addonFile kicassets.LegacyCopyableFile
 			if addon.IsTemplate() {
 				addonFile, err = addon.Evaluate(data)
 				if err != nil {
@@ -193,7 +194,7 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 		}
 	} else {
 		for _, addon := range addon.Assets {
-			var addonFile assets.CopyableFile
+			var addonFile kicassets.LegacyCopyableFile
 			if addon.IsTemplate() {
 				addonFile, err = addon.Evaluate(data)
 				if err != nil {

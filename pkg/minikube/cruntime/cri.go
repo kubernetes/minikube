@@ -26,9 +26,9 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	kiccommand "github.com/medyagh/kic/pkg/command"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/command"
 )
 
 const (
@@ -334,7 +334,7 @@ plugin_dirs = [
 // listCRIContainers returns a list of containers using crictl
 func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
 	var err error
-	var rr *command.RunResult
+	var rr *kiccommand.RunResult
 	state := "Running"
 	if filter != "" {
 		c := exec.Command("sudo", "crictl", "ps", "-a", fmt.Sprintf("--name=%s", filter), fmt.Sprintf("--state=%s", state), "--quiet")

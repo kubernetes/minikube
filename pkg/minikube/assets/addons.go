@@ -24,6 +24,7 @@ import (
 	"runtime"
 	"strconv"
 
+	kicassets "github.com/medyagh/kic/pkg/assets"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -328,7 +329,7 @@ var Addons = map[string]*Addon{
 
 // AddMinikubeDirAssets adds all addons and files to the list
 // of files to be copied to the vm.
-func AddMinikubeDirAssets(assets *[]CopyableFile) error {
+func AddMinikubeDirAssets(assets *[]kicassets.LegacyCopyableFile) error {
 	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("addons"), vmpath.GuestAddonsDir, assets); err != nil {
 		return errors.Wrap(err, "adding addons folder to assets")
 	}
@@ -342,7 +343,7 @@ func AddMinikubeDirAssets(assets *[]CopyableFile) error {
 // AddMinikubeDirToAssets adds all the files in the basedir argument to the list
 // of files to be copied to the vm.  If vmpath is left blank, the files will be
 // transferred to the location according to their relative minikube folder path.
-func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) error {
+func addMinikubeDirToAssets(basedir, vmpath string, assets *[]kicassets.LegacyCopyableFile) error {
 	return filepath.Walk(basedir, func(hostpath string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err

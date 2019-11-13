@@ -43,10 +43,11 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/kapi"
-	"k8s.io/minikube/pkg/minikube/assets"
+	kicassets "github.com/medyagh/kic/pkg/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/command"
+	"github.com/medyagh/kic/pkg/command"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -306,7 +307,7 @@ func (k *Bootstrapper) adjustResourceLimits() error {
 	return nil
 }
 
-func addAddons(files *[]assets.CopyableFile, data interface{}) error {
+func addAddons(files *[]kicassets.LegacyCopyableFile, data interface{}) error {
 	// add addons to file list
 	// custom addons
 	if err := assets.AddMinikubeDirAssets(files); err != nil {
@@ -767,8 +768,8 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 }
 
 // configFiles returns configuration file assets
-func configFiles(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte) []assets.CopyableFile {
-	fs := []assets.CopyableFile{
+func configFiles(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte) []kicassets.LegacyCopyableFile {
+	fs := []kicassets.LegacyCopyableFile{
 		assets.NewMemoryAssetTarget(kubeadm, yamlConfigPath, "0640"),
 		assets.NewMemoryAssetTarget(kubelet, kubeletSystemdConfFile, "0644"),
 		assets.NewMemoryAssetTarget(kubeletSvc, kubeletServiceFile, "0644"),

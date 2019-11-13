@@ -30,10 +30,11 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/kballard/go-shellquote"
+	kicassets "github.com/medyagh/kic/pkg/assets"
+	"github.com/medyagh/kic/pkg/command"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -55,7 +56,7 @@ func NewSSHRunner(c *ssh.Client) *SSHRunner {
 }
 
 // Remove runs a command to delete a file on the remote.
-func (s *SSHRunner) Remove(f assets.CopyableFile) error {
+func (s *SSHRunner) Remove(f kicassets.LegacyCopyableFile) error {
 	sess, err := s.c.NewSession()
 	if err != nil {
 		return errors.Wrap(err, "getting ssh session")
@@ -97,8 +98,8 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 }
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
-func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
-	rr := &RunResult{Args: cmd.Args}
+func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
+	rr := &command.RunResult{Args: cmd.Args}
 	glog.Infof("(SSHRunner) Run:  %v", rr.Command())
 
 	var outb, errb io.Writer
@@ -148,7 +149,7 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 }
 
 // Copy copies a file to the remote over SSH.
-func (s *SSHRunner) Copy(f assets.CopyableFile) error {
+func (s *SSHRunner) Copy(f kicassets.LegacyCopyableFile) error {
 	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 	exists, err := s.sameFileExists(f, dst)
 	if err != nil {
@@ -209,7 +210,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 	return g.Wait()
 }
 
-func (s *SSHRunner) sameFileExists(f assets.CopyableFile, dst string) (bool, error) {
+func (s *SSHRunner) sameFileExists(f kicassets.LegacyCopyableFile, dst string) (bool, error) {
 	// get file size and modtime of the source
 	srcSize := f.GetLength()
 	srcModTime, err := f.GetModTime()

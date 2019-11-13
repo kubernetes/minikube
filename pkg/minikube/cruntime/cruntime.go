@@ -23,7 +23,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/command"
+	"github.com/medyagh/kic/pkg/command"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
