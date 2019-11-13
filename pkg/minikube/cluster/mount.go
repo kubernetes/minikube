@@ -25,8 +25,8 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/medyagh/kic/pkg/command"
+	"github.com/pkg/errors"
 )
 
 // MountConfig defines the options available to the Mount command

@@ -25,13 +25,13 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/jimmidyson/go-download"
+	"github.com/medyagh/kic/pkg/command"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"github.com/medyagh/kic/pkg/command"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/assets"
 )
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper

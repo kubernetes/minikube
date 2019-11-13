@@ -22,11 +22,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/pkg/errors"
 	kicassets "github.com/medyagh/kic/pkg/assets"
+	"github.com/medyagh/kic/pkg/command"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"github.com/medyagh/kic/pkg/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"

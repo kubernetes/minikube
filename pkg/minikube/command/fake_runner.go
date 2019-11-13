@@ -29,8 +29,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
-	"github.com/medyagh/kic/pkg/command"
 	kicassets "github.com/medyagh/kic/pkg/assets"
+	"github.com/medyagh/kic/pkg/command"
 )
 
 // FakeCommandRunner mocks command output without running the Commands

@@ -30,7 +30,7 @@ import (
 
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/pkg/errors"
-	kicassets "github.com/medyagh/kic/pkg/assets"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 

@@ -24,8 +24,8 @@ import (
 	"testing"
 
 	kicassets "github.com/medyagh/kic/pkg/assets"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"github.com/medyagh/kic/pkg/command"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 )
 
 type copyFailRunner struct {

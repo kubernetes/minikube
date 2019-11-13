@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"testing"
 
-	kicassets "github.com/medyagh/kic/pkg/assets"
+	"k8s.io/minikube/pkg/minikube/assets"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 )

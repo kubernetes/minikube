@@ -25,8 +25,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/pkg/errors"
 	"github.com/medyagh/kic/pkg/command"
+	"github.com/pkg/errors"
 )
 
 func TestName(t *testing.T) {

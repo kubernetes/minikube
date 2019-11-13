@@ -28,9 +28,9 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/medyagh/kic/pkg/command"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"github.com/medyagh/kic/pkg/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/out"
 )

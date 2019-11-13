@@ -22,8 +22,8 @@ import (
 	"os/exec"
 
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/medyagh/kic/pkg/command"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 

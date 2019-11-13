@@ -27,9 +27,9 @@ import (
 	"time"
 
 	"github.com/golang/glog"
+	kicassets "github.com/medyagh/kic/pkg/assets"
 	"github.com/medyagh/kic/pkg/command"
 	"github.com/pkg/errors"
-	kicassets "github.com/medyagh/kic/pkg/assets"
 )
 
 // ExecRunner runs commands using the os/exec package.
