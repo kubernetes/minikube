@@ -38,8 +38,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/labels"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
@@ -66,7 +65,6 @@ const (
 	defaultCNIConfigPath   = "/etc/cni/net.d/k8s.conf"
 	kubeletServiceFile     = "/lib/systemd/system/kubelet.service"
 	kubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-	AllPods                = "ALL_PODS"
 )
 
 const (
@@ -94,22 +92,6 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 	KubeadmConfigParam: {
 		"pod-network-cidr",
 	},
-}
-
-type pod struct {
-	// Human friendly name
-	name  string
-	key   string
-	value string
-}
-
-// PodsByLayer are queries we run when health checking, sorted roughly by dependency layer
-var PodsByLayer = []pod{
-	{"proxy", "k8s-app", "kube-proxy"},
-	{"etcd", "component", "etcd"},
-	{"scheduler", "component", "kube-scheduler"},
-	{"controller", "component", "kube-controller-manager"},
-	{"dns", "k8s-app", "kube-dns"},
 }
 
 // yamlConfigPath is the path to the kubeadm configuration
@@ -166,12 +148,13 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string,
 	}
 	client := &http.Client{Transport: tr}
 	resp, err := client.Get(url)
-	glog.Infof("%s response: %v %+v", url, err, resp)
 	// Connection refused, usually.
 	if err != nil {
+		glog.Warningf("%s response: %v %+v", url, err, resp)
 		return state.Stopped.String(), nil
 	}
 	if resp.StatusCode != http.StatusOK {
+		glog.Warningf("%s response: %v %+v", url, err, resp)
 		return state.Error.String(), nil
 	}
 	return state.Running.String(), nil
@@ -354,7 +337,6 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 
 // client returns a Kubernetes client to use to speak to a kubeadm launched apiserver
 func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientset, error) {
-	// Catch case if WaitForPods was called with a stale ~/.kube/config
 	config, err := kapi.ClientConfig(k.contextName)
 	if err != nil {
 		return nil, errors.Wrap(err, "client config")
@@ -369,67 +351,104 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 	return kubernetes.NewForConfig(config)
 }
 
-// WaitForPods blocks until pods specified in podsToWaitFor appear to be healthy.
-func (k *Bootstrapper) WaitForPods(k8s config.KubernetesConfig, timeout time.Duration, podsToWaitFor []string) error {
-	// Do not wait for "k8s-app" pods in the case of CNI, as they are managed
-	// by a CNI plugin which is usually started after minikube has been brought
-	// up. Otherwise, minikube won't start, as "k8s-app" pods are not ready.
-	componentsOnly := k8s.NetworkPlugin == "cni"
-	out.T(out.WaitingPods, "Waiting for:")
-
-	// Wait until the apiserver can answer queries properly. We don't care if the apiserver
-	// pod shows up as registered, but need the webserver for all subsequent queries.
-
-	if shouldWaitForPod("apiserver", podsToWaitFor) {
-		out.String(" apiserver")
-		if err := k.waitForAPIServer(k8s); err != nil {
-			return errors.Wrap(err, "waiting for apiserver")
+func (k *Bootstrapper) waitForAPIServerProcess(start time.Time, timeout time.Duration) error {
+	glog.Infof("waiting for apiserver process to appear ...")
+	err := wait.PollImmediate(time.Second*1, timeout, func() (bool, error) {
+		if time.Since(start) > timeout {
+			return false, fmt.Errorf("cluster wait timed out during process check")
 		}
+		rr, ierr := k.c.RunCmd(exec.Command("sudo", "pgrep", "kube-apiserver"))
+		if ierr != nil {
+			glog.Warningf("pgrep apiserver: %v cmd: %s", ierr, rr.Command())
+			return false, nil
+		}
+		return true, nil
+	})
+	if err != nil {
+		return fmt.Errorf("apiserver process never appeared")
+	}
+	glog.Infof("duration metric: took %s to wait for apiserver process to appear ...", time.Since(start))
+	return nil
+}
+
+func (k *Bootstrapper) waitForAPIServerHealthz(start time.Time, k8s config.KubernetesConfig, timeout time.Duration) error {
+	glog.Infof("waiting for apiserver healthz status ...")
+	hStart := time.Now()
+	healthz := func() (bool, error) {
+		if time.Since(start) > timeout {
+			return false, fmt.Errorf("cluster wait timed out during healthz check")
+		}
+
+		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
+		if err != nil {
+			glog.Warningf("status: %v", err)
+			return false, nil
+		}
+		if status != "Running" {
+			return false, nil
+		}
+		return true, nil
 	}
 
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, healthz); err != nil {
+		return fmt.Errorf("apiserver healthz never reported healthy")
+	}
+	glog.Infof("duration metric: took %s to wait for apiserver healthz status ...", time.Since(hStart))
+	return nil
+}
+
+func (k *Bootstrapper) waitForSystemPods(start time.Time, k8s config.KubernetesConfig, timeout time.Duration) error {
+	glog.Infof("waiting for kube-system pods to appear ...")
+	pStart := time.Now()
 	client, err := k.client(k8s)
 	if err != nil {
 		return errors.Wrap(err, "client")
 	}
 
-	for _, p := range PodsByLayer {
-		if componentsOnly && p.key != "component" { // skip component check if network plugin is cni
-			continue
+	podStart := time.Time{}
+	podList := func() (bool, error) {
+		if time.Since(start) > timeout {
+			return false, fmt.Errorf("cluster wait timed out during pod check")
 		}
-		if !shouldWaitForPod(p.name, podsToWaitFor) {
-			continue
+		// Wait for any system pod, as waiting for apiserver may block until etcd
+		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+		if len(pods.Items) < 2 {
+			podStart = time.Time{}
+			return false, nil
 		}
-		out.String(" %s", p.name)
-		selector := labels.SelectorFromSet(labels.Set(map[string]string{p.key: p.value}))
-		if err := kapi.WaitForPodsWithLabelRunning(client, "kube-system", selector, timeout); err != nil {
-			return errors.Wrap(err, fmt.Sprintf("waiting for %s=%s", p.key, p.value))
+		if err != nil {
+			podStart = time.Time{}
+			return false, nil
 		}
+		if podStart.IsZero() {
+			podStart = time.Now()
+		}
+
+		glog.Infof("%d kube-system pods found since %s", len(pods.Items), podStart)
+		if time.Since(podStart) > 2*kconst.APICallRetryInterval {
+			glog.Infof("stability requirement met, returning")
+			return true, nil
+		}
+		return false, nil
 	}
-	out.Ln("")
+	if err = wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
+		return fmt.Errorf("apiserver never returned a pod list")
+	}
+	glog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
 	return nil
 }
 
-// shouldWaitForPod returns true if:
-// 	1. podsToWaitFor is nil
-// 	2. name is in podsToWaitFor
-// 	3. ALL_PODS is in podsToWaitFor
-// else, return false
-func shouldWaitForPod(name string, podsToWaitFor []string) bool {
-	if podsToWaitFor == nil {
-		return true
+// WaitForCluster blocks until the cluster appears to be healthy
+func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
+	start := time.Now()
+	out.T(out.Waiting, "Waiting for cluster to come online ...")
+	if err := k.waitForAPIServerProcess(start, timeout); err != nil {
+		return err
 	}
-	if len(podsToWaitFor) == 0 {
-		return false
+	if err := k.waitForAPIServerHealthz(start, k8s, timeout); err != nil {
+		return err
 	}
-	for _, p := range podsToWaitFor {
-		if p == AllPods {
-			return true
-		}
-		if p == name {
-			return true
-		}
-	}
-	return false
+	return k.waitForSystemPods(start, k8s, timeout)
 }
 
 // RestartCluster restarts the Kubernetes cluster configured by kubeadm
@@ -472,11 +491,15 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		}
 	}
 
-	if err := k.waitForAPIServer(k8s); err != nil {
-		return errors.Wrap(err, "waiting for apiserver")
+	// We must ensure that the apiserver is healthy before proceeding
+	if err := k.waitForAPIServerHealthz(time.Now(), k8s, kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "apiserver healthz")
+	}
+	if err := k.waitForSystemPods(time.Now(), k8s, kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "system pods")
 	}
 
-	// restart the proxy and coredns
+	// Explicitly re-enable kubeadm addons (proxy, coredns) so that they will check for IP or configuration changes.
 	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, yamlConfigPath))); err != nil {
 		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q", rr.Command()))
 	}
@@ -485,63 +508,6 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
 	return nil
-}
-
-// waitForAPIServer waits for the apiserver to start up
-func (k *Bootstrapper) waitForAPIServer(k8s config.KubernetesConfig) error {
-	start := time.Now()
-	defer func() {
-		glog.Infof("duration metric: took %s to wait for apiserver status ...", time.Since(start))
-	}()
-
-	glog.Infof("Waiting for apiserver process ...")
-	// To give a better error message, first check for process existence via ssh
-	// Needs minutes in case the image isn't cached (such as with v1.10.x)
-	err := wait.PollImmediate(time.Millisecond*300, time.Minute*3, func() (bool, error) {
-		rr, ierr := k.c.RunCmd(exec.Command("sudo", "pgrep", "kube-apiserver"))
-		if ierr != nil {
-			glog.Warningf("pgrep apiserver: %v cmd: %s", ierr, rr.Command())
-			return false, nil
-		}
-		return true, nil
-	})
-	if err != nil {
-		return fmt.Errorf("apiserver process never appeared")
-	}
-
-	glog.Infof("Waiting for apiserver to port healthy status ...")
-	var client *kubernetes.Clientset
-	f := func() (bool, error) {
-		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
-		glog.Infof("apiserver status: %s, err: %v", status, err)
-		if err != nil {
-			glog.Warningf("status: %v", err)
-			return false, nil
-		}
-		if status != "Running" {
-			return false, nil
-		}
-		// Make sure apiserver pod is retrievable
-		if client == nil {
-			// We only want to get the clientset once, because this line takes ~1 second to complete
-			client, err = k.client(k8s)
-			if err != nil {
-				glog.Warningf("get kubernetes client: %v", err)
-				return false, nil
-			}
-		}
-
-		_, err = client.CoreV1().Pods("kube-system").Get("kube-apiserver-minikube", metav1.GetOptions{})
-		if err != nil {
-			return false, nil
-		}
-
-		return true, nil
-		// TODO: Check apiserver/kubelet logs for fatal errors so that users don't
-		// need to wait minutes to find out their flag didn't work.
-	}
-	err = wait.PollImmediate(kconst.APICallRetryInterval, 2*kconst.DefaultControlPlaneTimeout, f)
-	return err
 }
 
 // DeleteCluster removes the components that were started earlier
