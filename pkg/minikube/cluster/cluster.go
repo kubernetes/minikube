@@ -582,7 +582,6 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	}
 
 	currentState, err := host.Driver.GetState()
-	fmt.Println("(medya db) CreateSSHShell", currentState)
 	if err != nil {
 		return errors.Wrap(err, "state")
 	}

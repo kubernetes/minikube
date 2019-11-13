@@ -542,7 +542,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
 	want := "hello\r\n"
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello")))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "echo", "hello"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
