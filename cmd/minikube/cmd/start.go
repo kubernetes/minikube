@@ -365,7 +365,9 @@ func runStart(cmd *cobra.Command, args []string) {
 	if driverName == driver.None {
 		prepareNone()
 	}
-	if viper.GetBool(waitUntilHealthy) {
+
+	// Skip pre-existing, because we already waited for health
+	if viper.GetBool(waitUntilHealthy) && !preExists {
 		if err := bs.WaitForCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
 			exit.WithError("Wait failed", err)
 		}

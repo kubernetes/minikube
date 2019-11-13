@@ -492,23 +492,14 @@ func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// We must ensure that the apiserver is healthy before proceeding
-	glog.Infof("waiting for apiserver healthz ...")
-	healthz := func() (bool, error) {
-		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
-		if err != nil {
-			glog.Warningf("status: %v", err)
-			return false, nil
-		}
-		if status != "Running" {
-			return false, nil
-		}
-		return true, nil
+	if err := k.waitForApiServerHealthz(time.Now(), k8s, kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "apiserver healthz")
 	}
-	if err = wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, healthz); err != nil {
-		return fmt.Errorf("apiserver healthz never reported healthy")
+	if err := k.waitForSystemPods(time.Now(), k8s, kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "system pods")
 	}
 
-	// restart the proxy and coredns
+	// Explicitly re-enable kubeadm addons (proxy, coredns) so that they will check for IP or configuration changes.
 	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, yamlConfigPath))); err != nil {
 		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q", rr.Command()))
 	}
