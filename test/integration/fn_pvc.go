@@ -37,7 +37,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
 	defer cancel()
 
-	if _, err := PodWait(ctx, t, profile, "kube-system", "integration-test=storage-provisioner", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "integration-test=storage-provisioner", 4*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -83,7 +83,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 		return fmt.Errorf("testpvc phase = %q, want %q (msg=%+v)", pvc.Status.Phase, "Bound", pvc)
 	}
 
-	if err := retry.Expo(checkStoragePhase, 2*time.Second, 2*time.Minute); err != nil {
+	if err := retry.Expo(checkStoragePhase, 2*time.Second, 4*time.Minute); err != nil {
 		t.Fatalf("PV Creation failed with error: %v", err)
 	}
 }

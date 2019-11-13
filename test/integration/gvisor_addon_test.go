@@ -75,7 +75,7 @@ func TestGvisorAddon(t *testing.T) {
 		}
 	}()
 
-	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 4*time.Minute); err != nil {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
@@ -90,10 +90,10 @@ func TestGvisorAddon(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", 4*time.Minute); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", 4*time.Minute); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
 
@@ -107,13 +107,13 @@ func TestGvisorAddon(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
-	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 4*time.Minute); err != nil {
 		t.Errorf("waiting for gvisor controller to be up: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", 4*time.Minute); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", 4*time.Minute); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
 }
