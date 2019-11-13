@@ -149,12 +149,15 @@ func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 
 // validateKubectlGetPods asserts that `kubectl get pod -A` returns non-zero content
 func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pod", "-A"))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
+	if rr.Stderr.String() != "" {
+		t.Errorf("%s: got unexpected stderr: %s", rr.Command(), rr.Stderr)
+	}
 	if !strings.Contains(rr.Stdout.String(), "kube-system") {
-		t.Errorf("%s = %q, want *kube-system*", rr.Command(), rr.Stdout.String())
+		t.Errorf("%s = %q, want *kube-system*", rr.Command(), rr.Stdout)
 	}
 }
 
