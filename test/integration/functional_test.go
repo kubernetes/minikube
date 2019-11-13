@@ -149,7 +149,7 @@ func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 
 // validateKubectlGetPods asserts that `kubectl get pod -A` returns non-zero content
 func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "get", "pod", "-A"))
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "pod", "-A"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
