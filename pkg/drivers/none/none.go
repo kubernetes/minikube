@@ -25,10 +25,11 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"github.com/medyagh/kic/pkg/command"
+	kiccommand "github.com/medyagh/kic/pkg/command"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/retry"
@@ -48,7 +49,7 @@ type Driver struct {
 	*pkgdrivers.CommonDriver
 	URL     string
 	runtime cruntime.Manager
-	exec    command.Runner
+	exec    kiccommand.Runner
 }
 
 // Config is configuration for the None driver
@@ -217,7 +218,7 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 }
 
 // stopKubelet idempotently stops the kubelet
-func stopKubelet(cr command.Runner) error {
+func stopKubelet(cr kiccommand.Runner) error {
 	glog.Infof("stopping kubelet.service ...")
 	stop := func() error {
 		cmd := exec.Command("sudo", "systemctl", "stop", "kubelet.service")
@@ -243,7 +244,7 @@ func stopKubelet(cr command.Runner) error {
 }
 
 // restartKubelet restarts the kubelet
-func restartKubelet(cr command.Runner) error {
+func restartKubelet(cr kiccommand.Runner) error {
 	glog.Infof("restarting kubelet.service ...")
 	c := exec.Command("sudo", "systemctl", "restart", "kubelet.service")
 	if _, err := cr.RunCmd(c); err != nil {
@@ -253,7 +254,7 @@ func restartKubelet(cr command.Runner) error {
 }
 
 // checkKubelet returns an error if the kubelet is not running.
-func checkKubelet(cr command.Runner) error {
+func checkKubelet(cr kiccommand.Runner) error {
 	glog.Infof("checking for running kubelet ...")
 	c := exec.Command("systemctl", "is-active", "--quiet", "service", "kubelet")
 	if _, err := cr.RunCmd(c); err != nil {
