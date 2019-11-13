@@ -148,12 +148,13 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string,
 	}
 	client := &http.Client{Transport: tr}
 	resp, err := client.Get(url)
-	glog.Infof("%s response: %v %+v", url, err, resp)
 	// Connection refused, usually.
 	if err != nil {
+		glog.Warningf("%s response: %v %+v", url, err, resp)
 		return state.Stopped.String(), nil
 	}
 	if resp.StatusCode != http.StatusOK {
+		glog.Warningf("%s response: %v %+v", url, err, resp)
 		return state.Error.String(), nil
 	}
 	return state.Running.String(), nil
@@ -350,13 +351,9 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 	return kubernetes.NewForConfig(config)
 }
 
-// WaitForCluster blocks until the cluster appears to be healthy
-func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
-	start := time.Now()
-	out.T(out.Waiting, "Waiting for cluster to come online ...")
-
+func (k *Bootstrapper) waitForApiServerProcess(start time.Time, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver process to appear ...")
-	err := wait.PollImmediate(time.Second*1, time.Minute*5, func() (bool, error) {
+	err := wait.PollImmediate(time.Second*1, timeout, func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during process check")
 		}
@@ -371,7 +368,10 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 		return fmt.Errorf("apiserver process never appeared")
 	}
 	glog.Infof("duration metric: took %s to wait for apiserver process to appear ...", time.Since(start))
+	return nil
+}
 
+func (k *Bootstrapper) waitForApiServerHealthz(start time.Time, k8s config.KubernetesConfig, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
 	healthz := func() (bool, error) {
@@ -390,38 +390,65 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 		return true, nil
 	}
 
-	if err = wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, healthz); err != nil {
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, healthz); err != nil {
 		return fmt.Errorf("apiserver healthz never reported healthy")
 	}
-	glog.Infof("duration metric: took %s to wait for apiserver healthz  status ...", time.Since(hStart))
+	glog.Infof("duration metric: took %s to wait for apiserver healthz status ...", time.Since(hStart))
+	return nil
+}
 
-	glog.Infof("waiting for pod list to contain data ...")
+func (k *Bootstrapper) waitForSystemPods(start time.Time, k8s config.KubernetesConfig, timeout time.Duration) error {
+	glog.Infof("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
 	client, err := k.client(k8s)
 	if err != nil {
 		return errors.Wrap(err, "client")
 	}
 
+	podStart := time.Time{}
 	podList := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during pod check")
 		}
 		// Wait for any system pod, as waiting for apiserver may block until etcd
 		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
-		if len(pods.Items) == 0 {
-			return true, nil
-		}
-		if err != nil {
+		if len(pods.Items) < 2 {
+			podStart = time.Time{}
 			return false, nil
 		}
-		glog.Infof("%d kube-system pods found", len(pods.Items))
-		return true, nil
+		if err != nil {
+			podStart = time.Time{}
+			return false, nil
+		}
+		if podStart.IsZero() {
+			podStart = time.Now()
+		}
+
+		glog.Infof("%d kube-system pods found since %s", len(pods.Items), podStart)
+		if time.Since(podStart) > 2*kconst.APICallRetryInterval {
+			glog.Infof("stability requirement met, returning")
+			return true, nil
+		}
+		return false, nil
 	}
 	if err = wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
 		return fmt.Errorf("apiserver never returned a pod list")
 	}
 	glog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
 	return nil
+}
+
+// WaitForCluster blocks until the cluster appears to be healthy
+func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
+	start := time.Now()
+	out.T(out.Waiting, "Waiting for cluster to come online ...")
+	if err := k.waitForApiServerProcess(start, timeout); err != nil {
+		return err
+	}
+	if err := k.waitForApiServerHealthz(start, k8s, timeout); err != nil {
+		return err
+	}
+	return k.waitForSystemPods(start, k8s, timeout)
 }
 
 // RestartCluster restarts the Kubernetes cluster configured by kubeadm
