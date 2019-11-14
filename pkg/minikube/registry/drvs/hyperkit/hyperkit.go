@@ -40,8 +40,8 @@ const (
 )
 
 var (
-	// hyperkitSpecificVersion is used by hyperkit versionCheck(whether user's hyperkit is older than this)
-	hyperkitSpecificVersion = "0.20190201"
+	// minimumVersion is used by hyperkit versionCheck(whether user's hyperkit is older than this)
+	minimumVersion = "0.20190201"
 )
 
 func init() {
@@ -94,14 +94,14 @@ func status() registry.State {
 
 	// Split version from v0.YYYYMMDD-HH-xxxxxxx or 0.YYYYMMDD to YYYYMMDD
 	currentVersion := convertVersionToDate(string(out))
-	specificVersion := splitHyperKitVersion(GetHyperKitVersion())
-	// If hyperkit is not newer than specificVersion, suggest upgrade information
+	specificVersion := splitHyperKitVersion(getHyperKitVersion())
+	// If current hyperkit is not newer than minimumVersion, suggest upgrade information
 	isNew, err := isNewerVersion(currentVersion, specificVersion)
 	if err != nil {
-		return registry.State{Installed: true, Error: fmt.Errorf("hyperkit version check failed:\n%s", err), Doc: docURL}
+		return registry.State{Installed: true, Healthy: true, Error: fmt.Errorf("hyperkit version check failed:\n%s", err), Doc: docURL}
 	}
 	if !isNew {
-		return registry.State{Installed: true, Error: fmt.Errorf("the mininum recommended hyperkit version is %s. your hyperkit version is 0.%s. please consider upgrading your hyperkit", GetHyperKitVersion(), currentVersion), Fix: "Run 'brew upgrade hyperkit'", Doc: docURL}
+		return registry.State{Installed: true, Healthy: true, Error: fmt.Errorf("the installed hyperkit version (0.%s) is older than the minimum recommended version (%s)", currentVersion, getHyperKitVersion()), Fix: "Run 'brew upgrade hyperkit'", Doc: docURL}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
@@ -155,7 +155,7 @@ func splitHyperKitVersion(version string) string {
 	return version
 }
 
-// GetHyperKitVersion returns the specific hyperKit version
-func GetHyperKitVersion() string {
-	return hyperkitSpecificVersion
+// getHyperKitVersion returns the minimum hyperKit version
+func getHyperKitVersion() string {
+	return minimumVersion
 }
