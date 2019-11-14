@@ -96,7 +96,7 @@ func TestT(t *testing.T) {
 			Translations = test.translations
 			got := T(test.input)
 			if test.expected != got {
-				t.Errorf("T(%v) shoud return %v, but got: %v", test.input, test.expected, got)
+				t.Errorf("T(%v) should return %v, but got: %v", test.input, test.expected, got)
 			}
 		})
 	}
