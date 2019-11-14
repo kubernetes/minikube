@@ -24,8 +24,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
+
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/golang/glog"
 	"github.com/pborman/uuid"
 
 	"k8s.io/minikube/pkg/drivers/hyperkit"
@@ -94,14 +95,14 @@ func status() registry.State {
 
 	// Split version from v0.YYYYMMDD-HH-xxxxxxx or 0.YYYYMMDD to YYYYMMDD
 	currentVersion := convertVersionToDate(string(out))
-	specificVersion := splitHyperKitVersion(getHyperKitVersion())
+	specificVersion := splitHyperKitVersion(minimumVersion)
 	// If current hyperkit is not newer than minimumVersion, suggest upgrade information
 	isNew, err := isNewerVersion(currentVersion, specificVersion)
 	if err != nil {
-		return registry.State{Installed: true, Healthy: true, Error: fmt.Errorf("hyperkit version check failed:\n%s", err), Doc: docURL}
+		return registry.State{Installed: true, Healthy: true, Error: fmt.Errorf("hyperkit version check failed:\n%v", err), Doc: docURL}
 	}
 	if !isNew {
-		return registry.State{Installed: true, Healthy: true, Error: fmt.Errorf("the installed hyperkit version (0.%s) is older than the minimum recommended version (%s)", currentVersion, getHyperKitVersion()), Fix: "Run 'brew upgrade hyperkit'", Doc: docURL}
+		return registry.State{Installed: true, Healthy: true, Error: fmt.Errorf("the installed hyperkit version (0.%s) is older than the minimum recommended version (%s)", currentVersion, minimumVersion), Fix: "Run 'brew upgrade hyperkit'", Doc: docURL}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
@@ -113,13 +114,11 @@ func isNewerVersion(currentVersion string, specificVersion string) (bool, error)
 	layout := "20060102"
 	currentVersionDate, err := time.Parse(layout, currentVersion)
 	if err != nil {
-		glog.Warningf("Unable to parse to time.Date: %v", err)
-		return false, err
+		return false, errors.Wrap(err, "parse date")
 	}
 	specificVersionDate, err := time.Parse(layout, specificVersion)
 	if err != nil {
-		glog.Warningf("Unable to parse to time.Date: %v", err)
-		return false, err
+		return false, errors.Wrap(err, "parse date")
 	}
 	// If currentVersionDate is equal to specificVersionDate, no need to upgrade hyperkit
 	if currentVersionDate.Equal(specificVersionDate) {
@@ -153,9 +152,4 @@ func splitHyperKitVersion(version string) string {
 		version = version[:8]
 	}
 	return version
-}
-
-// getHyperKitVersion returns the minimum hyperKit version
-func getHyperKitVersion() string {
-	return minimumVersion
 }
