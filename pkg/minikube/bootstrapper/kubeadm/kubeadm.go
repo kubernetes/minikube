@@ -94,6 +94,17 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 	},
 }
 
+// remote artifacts that must exist for minikube to function properly. The sign of a previously working installation.
+var expectedArtifacts = []string{
+	"/etc/kubernetes/scheduler.conf",
+	"/etc/kubernetes/kubelet.conf",
+	"/var/lib/kubelet/kubeadm-flags.env",
+	"/var/lib/kubelet/config.yaml",
+	"/var/lib/minikube",
+	"/etc/kubernetes/manifests/kube-apiserver.yaml",
+	"/etc/kubernetes/manifests/etcd.yaml",
+}
+
 // yamlConfigPath is the path to the kubeadm configuration
 var yamlConfigPath = path.Join(vmpath.GuestEphemeralDir, "kubeadm.yaml")
 
@@ -222,8 +233,20 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 	return nil
 }
 
+func (k *Bootstrapper) existingConfig() error {
+	_, err := k.c.RunCmd(exec.Command("ls", expectedArtifacts...))
+	return err
+}
+
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
+	err := k.existingConfig()
+	if err == nil {
+		return k.RestartCluster(k8s)
+	} else {
+		glog.Infof("existence check: %v", err)
+	}
+
 	start := time.Now()
 	glog.Infof("StartCluster: %+v", k8s)
 	defer func() {
@@ -281,6 +304,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	if err := k.adjustResourceLimits(); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
+
 	return nil
 }
 
@@ -454,6 +478,7 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 // RestartCluster restarts the Kubernetes cluster configured by kubeadm
 func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
 	glog.Infof("RestartCluster start")
+
 	start := time.Now()
 	defer func() {
 		glog.Infof("RestartCluster took %s", time.Since(start))
