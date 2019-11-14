@@ -18,7 +18,9 @@ package lock
 
 import "testing"
 
-func TestGetMutexName(t *testing.T) {
+func TestUserMutexSpec(t *testing.T) {
+	forceID = "test"
+
 	var tests = []struct {
 		description string
 		path        string
@@ -27,40 +29,40 @@ func TestGetMutexName(t *testing.T) {
 		{
 			description: "standard",
 			path:        "/foo/bar",
-			expected:    "foo-bar",
+			expected:    "mfoo-bar-test",
 		},
 		{
 			description: "deep directory",
 			path:        "/foo/bar/baz/bat",
-			expected:    "baz-bat",
+			expected:    "mfoo-bar-baz-bat-test",
 		},
 		{
 			description: "underscores",
 			path:        "/foo_bar/baz",
-			expected:    "foo-bar-baz",
+			expected:    "mfoo-bar-baz-test",
 		},
 		{
 			description: "starts with number",
 			path:        "/foo/2bar/baz",
-			expected:    "m2bar-baz",
+			expected:    "mfoo-2bar-baz-test",
 		},
 		{
 			description: "starts with punctuation",
 			path:        "/.foo/bar",
-			expected:    "foo-bar",
+			expected:    "mfoo-bar-test",
 		},
 		{
 			description: "long filename",
 			path:        "/very-very-very-very-very-very-very-very-long/bar",
-			expected:    "very-very-very-very-very-very-very-very",
+			expected:    "m-very-very-very-very-very-long-bar-test",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			got := getMutexName(tc.path)
-			if got != tc.expected {
-				t.Errorf("Unexpected mutex name for path %s. got: %s, expected: %s", tc.path, got, tc.expected)
+			got := UserMutexSpec(tc.path)
+			if got.Name != tc.expected {
+				t.Errorf("%s mutex name = %q, expected %q", tc.path, got.Name, tc.expected)
 			}
 		})
 	}
