@@ -148,12 +148,17 @@ func (api *LocalClient) Close() error {
 
 // CommandRunner returns best available command runner for this host
 func CommandRunner(h *host.Host) (kiccommand.Runner, error) {
+	fmt.Printf("(medya dbg)host.CommandRunner h.Name is %q DriverName is %q ", h.Name, h.DriverName)
 	if h.DriverName == driver.Mock {
 		return &command.FakeCommandRunner{}, nil
 	}
 	if driver.BareMetal(h.Driver.DriverName()) {
 		return &command.ExecRunner{}, nil
 	}
+	if h.DriverName == driver.KicDocker {
+		return command.NewKICRunner(h.Name, "docker"), nil
+	}
+
 	client, err := sshutil.NewSSHClient(h.Driver)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
@@ -206,6 +211,9 @@ func (api *LocalClient) Create(h *host.Host) error {
 			"provisioning",
 			func() error {
 				if driver.BareMetal(h.Driver.DriverName()) {
+					return nil
+				}
+				if driver.KicDocker == h.Driver.DriverName() {
 					return nil
 				}
 				pv := provision.NewBuildrootProvisioner(h.Driver)

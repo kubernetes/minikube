@@ -77,7 +77,7 @@ func NewDriver(c Config) *Driver {
 func (d *Driver) Create() error {
 	ks := &node.Spec{ // kic spec
 		Profile:           d.MachineName,
-		Name:              d.MachineName + "-control-plane",
+		Name:              d.MachineName,
 		Image:             d.ImageSha,
 		CPUs:              strconv.Itoa(d.CPU),           //TODO: change kic to take int
 		Memory:            strconv.Itoa(d.Memory) + "mb", // TODO: change kic to take int
@@ -88,10 +88,12 @@ func (d *Driver) Create() error {
 		APIServerPort:     d.APIServerPort,
 		IPv6:              false, // MEDYA:TODO add proxy envs here
 	}
+
 	_, err := ks.Create(command.NewKICRunner(d.MachineName, d.OciBinary))
 	if err != nil {
 		return errors.Wrap(err, "create kic from spec")
 	}
+	fmt.Printf("(medya dbg) ks.create finished with NO ERROR:%v", err)
 	return nil
 }
 
@@ -114,12 +116,12 @@ func (d *Driver) GetIP() (string, error) {
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
-	return "", fmt.Errorf("driver does not support ssh commands")
+	return "", fmt.Errorf("driver does not have SSHHostName")
 }
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
-	return 0, fmt.Errorf("driver does not support ssh commands")
+	return 0, fmt.Errorf("driver does not support GetSSHPort")
 }
 
 // GetURL returns a Docker compatible host URL for connecting to this host
@@ -130,7 +132,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	node, err := node.Find(d.MachineName+"-control-plane", command.NewKICRunner(d.MachineName+"-control-plane", d.OciBinary))
+	node, err := node.Find(d.MachineName, command.NewKICRunner(d.MachineName, d.OciBinary))
 	if err != nil {
 		return state.Error, nil
 	}
@@ -145,7 +147,8 @@ func (d *Driver) Kill() error {
 
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
-	n := d.MachineName + "-control-plane"
+	n := d.MachineName
+	fmt.Println("inside Remove n=", n)
 	node, err := node.Find(n, command.NewKICRunner(n, d.OciBinary))
 	if err != nil {
 		return errors.Wrapf(err, "find node %s", d.MachineName)
@@ -170,4 +173,10 @@ func (d *Driver) Start() error {
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
 	return fmt.Errorf("not implemented for kic yet")
+}
+
+// RunSSHCommandFromDriver implements direct ssh control to the driver
+func (d *Driver) RunSSHCommandFromDriver() error {
+	fmt.Println("**********************INSIDE KIC RunSSHCommandFromDriver*************")
+	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
 }

@@ -40,6 +40,8 @@ type kicRunner struct {
 
 // NewKICRunner returns a kicRunner implementor of runner which runs cmds inside a container
 func NewKICRunner(containerNameOrID string, oci string) command.Runner {
+	fmt.Printf("\n(medya dbg) creating a NewKicRunner %q,%q\n", containerNameOrID, oci)
+	// debug.PrintStack()
 	return &kicRunner{
 		nameOrID: containerNameOrID,
 		ociBin:   oci, // docker or podman

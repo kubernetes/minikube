@@ -89,6 +89,7 @@ func CacheISO(config cfg.MachineConfig) error {
 
 // StartHost starts a host VM/Container.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
+	fmt.Println("inside cluster.StartHost")
 	exists, err := api.Exists(config.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "exists: %s", config.Name)
@@ -111,6 +112,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	s, err := h.Driver.GetState()
+	fmt.Printf("inside cluster.StartHost, state is %s error is %v", s, err)
 	glog.Infoln("Machine state: ", s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting state for host")
@@ -195,6 +197,7 @@ func guestClockDelta(h hostRunner, local time.Time) (time.Duration, error) {
 	if err != nil {
 		return 0, errors.Wrap(err, "get clock")
 	}
+
 	glog.Infof("guest clock: %s", out)
 	ns := strings.Split(strings.TrimSpace(out), ".")
 	secs, err := strconv.ParseInt(strings.TrimSpace(ns[0]), 10, 64)
@@ -403,8 +406,8 @@ func showLocalOsRelease() {
 }
 
 // showRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM
-func showRemoteOsRelease(driver drivers.Driver) {
-	provisioner, err := provision.DetectProvisioner(driver)
+func showRemoteOsRelease(drver drivers.Driver) {
+	provisioner, err := provision.DetectProvisioner(drver)
 	if err != nil {
 		glog.Errorf("DetectProvisioner: %v", err)
 		return
@@ -415,18 +418,21 @@ func showRemoteOsRelease(driver drivers.Driver) {
 		glog.Errorf("GetOsReleaseInfo: %v", err)
 		return
 	}
-
 	glog.Infof("Provisioned with %s", osReleaseInfo.PrettyName)
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
+	fmt.Printf("inside cluster.createHost\n")
+
 	if config.VMDriver == driver.VMwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	if !driver.BareMetal(config.VMDriver) {
+	if driver.KicDocker == config.VMDriver { // TODO:medyagh get docker machine disk size/infoç
+		out.T(out.StartingVM, "Creating {{.driver_name}} Container (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB)", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory})
+	} else if driver.BareMetal(config.VMDriver) {
 		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
 	} else {
 		info, err := getHostInfo()
@@ -444,7 +450,6 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal")
 	}
-
 	h, err := api.NewHost(config.VMDriver, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "new host")
@@ -453,22 +458,23 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
 	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
 	h.HostOptions.EngineOptions = engineOptions(config)
-
-	if err := api.Create(h); err != nil {
+	err = api.Create(h)
+	if err != nil {
+		fmt.Printf("\ncluster.createHost:\n api.Create error is:\n--------------------------------------------\n%v\n---------------------------------\n", err)
 		// Wait for all the logs to reach the client
 		time.Sleep(2 * time.Second)
 		return nil, errors.Wrap(err, "create")
 	}
 
-	if !driver.BareMetal(config.VMDriver) {
+	if driver.BareMetal(config.VMDriver) {
+		showLocalOsRelease()
+	} else if driver.KicDocker != config.VMDriver { // TODO:medyagh add a func for kic os release
 		showRemoteOsRelease(h.Driver)
 		// Ensure that even new VM's have proper time synchronization up front
 		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
 		if err := ensureSyncedGuestClock(h); err != nil {
 			return h, err
 		}
-	} else {
-		showLocalOsRelease()
 	}
 
 	if err := api.Save(h); err != nil {

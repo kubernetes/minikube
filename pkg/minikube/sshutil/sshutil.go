@@ -57,7 +57,6 @@ type sshHost struct {
 }
 
 func newSSHHost(d drivers.Driver) (*sshHost, error) {
-
 	ip, err := d.GetSSHHostname()
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting ssh host name for driver")
