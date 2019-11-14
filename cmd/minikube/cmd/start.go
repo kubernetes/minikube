@@ -1087,7 +1087,7 @@ Suggested workarounds:
 
 func tryLookup(r command.Runner) {
 	// DNS check
-	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
+	if rr, err := r.RunCmd(exec.Command("nslookup", "-querytype=ns", "kubernetes.io")); err != nil {
 		glog.Warningf("%s failed: %v", rr.Args, err)
 		out.WarningT("VM may be unable to resolve external DNS records")
 	}

@@ -433,12 +433,12 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	if driver.KicDocker == config.VMDriver { // TODO:medyagh get docker machine disk size/infoç
 		out.T(out.StartingVM, "Creating {{.driver_name}} Container (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB)", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory})
 	} else if driver.BareMetal(config.VMDriver) {
-		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
-	} else {
 		info, err := getHostInfo()
 		if err == nil {
 			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
+	} else {
+		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
 	}
 
 	def := registry.Driver(config.VMDriver)
