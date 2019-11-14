@@ -122,17 +122,16 @@ func TestValidateProfile(t *testing.T) {
 			profileName: "82374328742_2974224498",
 		},
 		{
-			profileName: "minikube",
+			profileName: "validate_test",
 		},
 	}
 
 	for _, test := range testCases {
 		profileNam := test.profileName
-		expectedMsg := fmt.Sprintf("profile %q not found", test.profileName)
-
+		expected := fmt.Sprintf("profile %q not found", test.profileName)
 		err, ok := ValidateProfile(profileNam)
-		if !ok && err.Error() != expectedMsg {
-			t.Errorf("Didnt receive expected message")
+		if !ok && err.Error() != expected {
+			t.Errorf("got error %q, expected %q", err, expected)
 		}
 	}
 }
