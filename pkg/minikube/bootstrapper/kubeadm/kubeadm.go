@@ -242,10 +242,9 @@ func (k *Bootstrapper) existingConfig() error {
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	err := k.existingConfig()
 	if err == nil {
-		return k.RestartCluster(k8s)
-	} else {
-		glog.Infof("existence check: %v", err)
+		return k.restartCluster(k8s)
 	}
+	glog.Infof("existence check: %v", err)
 
 	start := time.Now()
 	glog.Infof("StartCluster: %+v", k8s)
@@ -475,13 +474,13 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 	return k.waitForSystemPods(start, k8s, timeout)
 }
 
-// RestartCluster restarts the Kubernetes cluster configured by kubeadm
-func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
-	glog.Infof("RestartCluster start")
+// restartCluster restarts the Kubernetes cluster configured by kubeadm
+func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
+	glog.Infof("restartCluster start")
 
 	start := time.Now()
 	defer func() {
-		glog.Infof("RestartCluster took %s", time.Since(start))
+		glog.Infof("restartCluster took %s", time.Since(start))
 	}()
 
 	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
@@ -554,7 +553,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 	return nil
 }
 
-// PullImages downloads images that will be used by RestartCluster
+// PullImages downloads images that will be used by Kubernetes
 func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
