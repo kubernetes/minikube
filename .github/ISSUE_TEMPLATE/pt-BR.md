@@ -5,15 +5,15 @@ labels: l/pt-BR
 ---
 <!-- Use este modelo ao reportar um problema e forneça o máximo de informações possível. Se não fazer isso, pode haver um atraso na resposta. A equipe agradece. -->
  
-**Os comandos necessários para reproduzir o problema**:
+**Os commandos necessários para reproduzir o problema**:
  
-**A saída completa do comando que apresentou falha**: <details>
+**A saída completa do commando queue apresentou falha**: <details>
 
 
 
 </details>
 
-**A saída do comando `minikube logs`**:<details>
+**A saída do commando `minikube logs`**:<details>
 
 
 </details>

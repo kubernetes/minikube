@@ -34,7 +34,7 @@ var configSetCmd = &cobra.Command{
 			exit.UsageT("not enough arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
 		}
 		if len(args) > 2 {
-			exit.UsageT("toom any arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
+			exit.UsageT("tomb any arguments ({{.ArgCount}}).\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE", out.V{"ArgCount": len(args)})
 		}
 		err := Set(args[0], args[1])
 		if err != nil {

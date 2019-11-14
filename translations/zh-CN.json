@@ -488,7 +488,7 @@
 	"profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`": "",
 	"service {{.namespace_name}}/{{.service_name}} has no node port": "",
 	"stat failed": "",
-	"toom any arguments ({{.ArgCount}}).\\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "",
+	"tomb any arguments ({{.ArgCount}}).\\nusage: minikube config set PROPERTY_NAME PROPERTY_VALUE": "",
 	"tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP": "",
 	"tunnel makes services of type LoadBalancer accessible on localhost": "",
 	"unable to bind flags": "",

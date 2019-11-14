@@ -3,7 +3,7 @@ name: Bahasa Indonesia
 about: Laporkan masalah
 labels: l/id
 ---
-<!-- Gunakan template ini saat melaporkan masalah, dengan memberikan informasi sebanyak mungkin. Jika hal ini tidak dilakukan, respons terhadap laporan dapat menjadi tertunda. Terima kasih. -->
+<!-- Gunakan template ini saat melaporkan masalah, dengan memberikan informasi sebanyak mungkin. Jika hal ini tidak dilakukan, response terhadap laporan dapat menjadi tertunda. Terima kasih. -->
 
 **Perintah yang diperlukan untuk merekonstruksi masalah**:
 

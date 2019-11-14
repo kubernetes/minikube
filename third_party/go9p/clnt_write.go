@@ -45,7 +45,7 @@ func (file *File) WriteAt(buf []byte, offset int64) (int, error) {
 // Writes exactly len(buf) bytes starting from offset. Returns the number of
 // bytes written. If Error is returned the number of bytes can be less
 // than len(buf).
-func (file *File) Writen(buf []byte, offset uint64) (int, error) {
+func (file *File) Written(buf []byte, offset uint64) (int, error) {
 	ret := 0
 	for len(buf) > 0 {
 		n, err := file.WriteAt(buf, int64(offset))

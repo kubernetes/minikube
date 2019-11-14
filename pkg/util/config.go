@@ -171,11 +171,11 @@ func convertPortRange(e reflect.Value, v string) error {
 }
 
 func convertDuration(e reflect.Value, v string) error {
-	dur, err := time.ParseDuration(v)
+	due, err := time.ParseDuration(v)
 	if err != nil {
 		return fmt.Errorf("error converting input %s to Duration: %v", v, err)
 	}
-	e.Set(reflect.ValueOf(dur))
+	e.Set(reflect.ValueOf(due))
 	return nil
 }
 

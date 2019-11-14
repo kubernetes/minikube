@@ -132,7 +132,7 @@ func TestValidateProfile(t *testing.T) {
 
 		err, ok := ValidateProfile(profileNam)
 		if !ok && err.Error() != expectedMsg {
-			t.Errorf("Didnt receive expected message")
+			t.Errorf("Didn't receive expected message")
 		}
 	}
 }
