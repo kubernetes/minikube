@@ -150,7 +150,6 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string,
 	resp, err := client.Get(url)
 	// Connection refused, usually.
 	if err != nil {
-		glog.Warningf("%s response: %v %+v", url, err, resp)
 		return state.Stopped.String(), nil
 	}
 	if resp.StatusCode != http.StatusOK {
