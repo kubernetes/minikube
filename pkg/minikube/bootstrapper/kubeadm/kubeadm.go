@@ -266,7 +266,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	ignore := []string{
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestManifestsDir, "/", "-", -1)),
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestPersistentDir, "/", "-", -1)),
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(path.Join(vmpath.GuestPersistentDir, "etcd"), "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", etcdDataDir(), "/", "-", -1)),
 		"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
