@@ -45,7 +45,7 @@ var importantPods = []string{
 
 // lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
 // include usage messages from a failed binary, but small enough to not include irrelevant problems.
-const lookBackwardsCount = 200
+const lookBackwardsCount = 400
 
 // Follow follows logs from multiple files in tail(1) format
 func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner bootstrapper.CommandRunner) error {
