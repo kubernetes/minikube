@@ -17,7 +17,6 @@ limitations under the License.
 package config
 
 import (
-	"fmt"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -116,22 +115,23 @@ func TestIsAddonAlreadySet(t *testing.T) {
 
 func TestValidateProfile(t *testing.T) {
 	testCases := []struct {
-		profileName string
+		profileName, expectedMsg string
 	}{
 		{
 			profileName: "82374328742_2974224498",
+			expectedMsg: "profile \"82374328742_2974224498\" not found",
 		},
 		{
 			profileName: "minikube",
+			expectedMsg: "\"minikube\" is an invalid profile",
 		},
 	}
 
 	for _, test := range testCases {
 		profileNam := test.profileName
-		expectedMsg := fmt.Sprintf("profile %q not found", test.profileName)
 
 		err, ok := ValidateProfile(profileNam)
-		if !ok && err.Error() != expectedMsg {
+		if !ok && err.Error() != test.expectedMsg {
 			t.Errorf("Didnt receive expected message")
 		}
 	}
