@@ -1,5 +1,36 @@
 # Release Notes
 
+## Version 1.6.0-beta.0 - 2019-11-15
+
+* Update DefaultKubernetesVersion to v1.17.0-beta.1 to prepare for betas [#5925](https://github.com/kubernetes/minikube/pull/5925)
+* Make it possible to recover from a previously aborted StartCluster (Ctrl-C) [#5916](https://github.com/kubernetes/minikube/pull/5916)
+* Add retry to SSH connectivity check [#5848](https://github.com/kubernetes/minikube/pull/5848)
+* Make --wait=false non-blocking, --wait=true blocks on system pods [#5894](https://github.com/kubernetes/minikube/pull/5894)
+* Only copy new or modified files into VM on restart [#5864](https://github.com/kubernetes/minikube/pull/5864)
+* Remove heapster addon [#5243](https://github.com/kubernetes/minikube/pull/5243)
+* mention fix for AppArmor related permission errors [#5842](https://github.com/kubernetes/minikube/pull/5842)
+* Health check previously configured driver & exit if not installed [#5840](https://github.com/kubernetes/minikube/pull/5840)
+* Add memory and wait longer for TestFunctional tests, include node logs [#5852](https://github.com/kubernetes/minikube/pull/5852)
+* Improve message when selected driver is incompatible with existing cluster [#5854](https://github.com/kubernetes/minikube/pull/5854)
+* Update libmachine to point to latest [#5877](https://github.com/kubernetes/minikube/pull/5877)
+* none driver: Warn about --cpus, --memory, and --container-runtime settings [#5845](https://github.com/kubernetes/minikube/pull/5845)
+* Refactor config.Config to prepare for multinode [#5889](https://github.com/kubernetes/minikube/pull/5889)
+
+Huge thank you for this release towards our contributors: 
+- Anders Björklund
+- Aresforchina
+- Igor Zibarev
+- Josh Woodcock
+- Medya Ghazizadeh
+- Nanik T
+- Priya Wadhwa
+- RA489
+- Ruslan Gustomiasov
+- Sharif Elgamal
+- Steffen Gransow
+- Thomas Strömberg
+
+
 ## Version 1.5.2 - 2019-10-31 (Happy Halloween!)
 
 * service: fix --url mode [#5790](https://github.com/kubernetes/minikube/pull/5790)
