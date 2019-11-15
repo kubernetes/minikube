@@ -139,7 +139,7 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	}
 	// Decrease log spam
 	if elapsed > (1 * time.Second) {
-		glog.Infof("Exit %d for %v: (%s)", rr.Command(), elapsed)
+		glog.Infof("Completed: %s: (%s)", rr.Command(), elapsed)
 	}
 	if err == nil {
 		return rr, nil
