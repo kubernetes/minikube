@@ -99,7 +99,7 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
 func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
-	glog.Infof("(SSHRunner) Run:  %v", rr.Command())
+	glog.Infof("Run: %v", rr.Command())
 
 	var outb, errb io.Writer
 	start := time.Now()
@@ -131,20 +131,21 @@ func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		}
 	}()
 
-	elapsed := time.Since(start)
 	err = teeSSH(sess, shellquote.Join(cmd.Args...), outb, errb)
-	if err == nil {
-		// Reduce log spam
-		if elapsed > (1 * time.Second) {
-			glog.Infof("(SSHRunner) Done: %v: (%s)", rr.Command(), elapsed)
-		}
-	} else {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			rr.ExitCode = exitError.ExitCode()
-		}
-		glog.Infof("(SSHRunner) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
+	elapsed := time.Since(start)
+
+	if exitError, ok := err.(*exec.ExitError); ok {
+		rr.ExitCode = exitError.ExitCode()
 	}
-	return rr, err
+	// Decrease log spam
+	if elapsed > (1 * time.Second) {
+		glog.Infof("Exit %d for %v: (%s)", rr.Command(), elapsed)
+	}
+	if err == nil {
+		return rr, nil
+	}
+
+	return rr, fmt.Errorf("%s: %v\nstdout: %s\nstderr: %s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
 }
 
 // Copy copies a file to the remote over SSH.
