@@ -148,7 +148,6 @@ func (api *LocalClient) Close() error {
 
 // CommandRunner returns best available command runner for this host
 func CommandRunner(h *host.Host) (kiccommand.Runner, error) {
-	fmt.Printf("(medya dbg)host.CommandRunner h.Name is %q DriverName is %q ", h.Name, h.DriverName)
 	if h.DriverName == driver.Mock {
 		return &command.FakeCommandRunner{}, nil
 	}

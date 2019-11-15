@@ -57,13 +57,12 @@ type Config struct {
 
 // NewDriver returns a fully configured Kic driver
 func NewDriver(c Config) *Driver {
-	runner := &command.ExecRunner{}
 	d := &Driver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
-		exec:          runner,
+		exec:          command.NewKICRunner(c.MachineName, c.OciBinary),
 		OciBinary:     c.OciBinary,
 		ImageSha:      c.ImageSha,
 		CPU:           c.CPU,
@@ -93,7 +92,6 @@ func (d *Driver) Create() error {
 	if err != nil {
 		return errors.Wrap(err, "create kic from spec")
 	}
-	fmt.Printf("(medya dbg) ks.create finished with NO ERROR:%v", err)
 	return nil
 }
 
@@ -124,10 +122,14 @@ func (d *Driver) GetSSHPort() (int, error) {
 	return 0, fmt.Errorf("driver does not support GetSSHPort")
 }
 
-// GetURL returns a Docker compatible host URL for connecting to this host
-// e.g. tcp://1.2.3.4:2376
+// GetURL returns ip of the container running kic control-panel
 func (d *Driver) GetURL() (string, error) {
-	return "tcp://1.2.3.4:2376", fmt.Errorf("not implemented for kic yet")
+	node, err := node.Find(d.MachineName, d.exec)
+	if err != nil {
+		return "", fmt.Errorf("ip not found for nil node")
+	}
+	ip, _, err := node.IP()
+	return ip, err
 }
 
 // GetState returns the state that the host is in (running, stopped, etc)
@@ -148,7 +150,6 @@ func (d *Driver) Kill() error {
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
 	n := d.MachineName
-	fmt.Println("inside Remove n=", n)
 	node, err := node.Find(n, command.NewKICRunner(n, d.OciBinary))
 	if err != nil {
 		return errors.Wrapf(err, "find node %s", d.MachineName)
@@ -177,6 +178,5 @@ func (d *Driver) Stop() error {
 
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
-	fmt.Println("**********************INSIDE KIC RunSSHCommandFromDriver*************")
 	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
 }

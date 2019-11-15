@@ -190,6 +190,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersi
 
 // Enable idempotently enables containerd on a host
 func (r *Containerd) Enable(disOthers bool) error {
+	fmt.Println("(medya dbg): Inside containerd Enable")
 	if disOthers {
 		if err := disableOthers(r, r.Runner); err != nil {
 			glog.Warningf("disableOthers: %v", err)

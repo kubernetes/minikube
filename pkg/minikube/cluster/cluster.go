@@ -89,7 +89,6 @@ func CacheISO(config cfg.MachineConfig) error {
 
 // StartHost starts a host VM/Container.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	fmt.Println("inside cluster.StartHost")
 	exists, err := api.Exists(config.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "exists: %s", config.Name)
@@ -112,7 +111,6 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	s, err := h.Driver.GetState()
-	fmt.Printf("inside cluster.StartHost, state is %s error is %v", s, err)
 	glog.Infoln("Machine state: ", s)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error getting state for host")
@@ -422,8 +420,6 @@ func showRemoteOsRelease(drver drivers.Driver) {
 }
 
 func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	fmt.Printf("inside cluster.createHost\n")
-
 	if config.VMDriver == driver.VMwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
 		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.

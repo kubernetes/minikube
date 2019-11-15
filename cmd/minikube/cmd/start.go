@@ -39,7 +39,9 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/medyagh/kic/pkg/action"
 	"github.com/medyagh/kic/pkg/command"
+	"github.com/medyagh/kic/pkg/node"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
@@ -51,6 +53,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	minicommand "k8s.io/minikube/pkg/minikube/command"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -336,44 +339,113 @@ func runStart(cmd *cobra.Command, args []string) {
 	handleDownloadOnly(&cacheGroup, k8sVersion)
 	mRunner, preExists, machineAPI, host := startMachine(&config)
 	defer machineAPI.Close()
-	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, driverName, config.KubernetesConfig)
-	showVersionInfo(k8sVersion, cr)
-	waitCacheImages(&cacheGroup)
 
-	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-	kubeconfig, err := setupKubeconfig(host, &config, config.Name)
-	if err != nil {
-		exit.WithError("Failed to setup kubeconfig", err)
-	}
-
-	// setup kubeadm (must come after setupKubeconfig)
-	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
-
-	// pull images or restart cluster
-	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
-	configureMounts()
-
-	// enable addons with start command
-	enableAddons()
-
-	if err = loadCachedImagesInConfigFile(); err != nil {
-		out.T(out.FailureType, "Unable to load cached images from config file.")
-	}
-
-	// special ops for none , like change minikube directory.
-	if driverName == driver.None {
-		prepareNone()
-	}
-
-	// Skip pre-existing, because we already waited for health
-	if viper.GetBool(waitUntilHealthy) && !preExists {
-		if err := bs.WaitForCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
-			exit.WithError("Wait failed", err)
+	if config.VMDriver == driver.KicDocker { // bootstrap kic this will eventually be integreated into bootstrapper
+		ip, err := host.Driver.GetURL()
+		if err != nil {
+			fmt.Println("Error GetUrl in kic bs")
 		}
-	}
-	if err := showKubectlInfo(kubeconfig, k8sVersion, config.Name); err != nil {
-		glog.Errorf("kubectl info: %v", err)
+		podNetworkCIDR := "10.244.0.0/16" // TODO:medyagh get it from ExtraOptions pod-network-cidr
+		kicBsCfg := action.ConfigData{
+			ClusterName:          config.Name,
+			KubernetesVersion:    config.KubernetesConfig.KubernetesVersion,
+			ControlPlaneEndpoint: ip + ":6443", // TODO:medyagh get it form kubernetesConfig
+			APIBindPort:          6443,
+			APIServerAddress:     "127.0.0.1",
+			Token:                "abcdef.0123456789abcdef",
+			PodSubnet:            podNetworkCIDR,
+			ServiceSubnet:        config.KubernetesConfig.ServiceCIDR,
+			ControlPlane:         true,
+			IPv6:                 false,
+			NodeAddress:          ip,
+		}
+
+		kCfg, err := action.KubeAdmCfg(kicBsCfg)
+		if err != nil {
+			glog.Errorf("failed to generate kubeaddm  error: %v , kCfg :\n %+v", err, kCfg)
+		}
+		kaCfgPath := "/kic/kubeadm.conf"
+		r := minicommand.NewKICRunner(config.Name, "docker")
+		node, err := node.Find(config.Name, r)
+		if err != nil {
+			glog.Errorf("error finding kic node to bootstrap it %v", err)
+		}
+		// copy the config to the node
+		if err := node.WriteFile(kaCfgPath, kCfg, "644"); err != nil {
+			glog.Errorf("failed to copy kubeadm config to node : %v", err)
+		}
+
+		err = action.RunKubeadmInit(node.R, kaCfgPath, config.Name)
+		if err != nil {
+			glog.Errorf("failed to RunKubeadmInit : %v", err)
+		}
+
+		err = action.RemoveMasterTaint(node.R)
+		if err != nil {
+			glog.Errorf("failed to RunTaint : %v", err)
+		}
+
+		cniManifest, err := action.GetDefaultCNIManifest(node.R, podNetworkCIDR)
+		if err != nil {
+			glog.Errorf("failed to InstallCNI : %v", err)
+		}
+
+		err = action.ApplyCNIManifest(node.R, cniManifest)
+		if err != nil {
+			glog.Errorf("failed to ApplyCNI : %v", err)
+		}
+
+		c, err := action.GenerateKubeConfig(node.R, ip, 50013, config.Name) // generates from the /etc/ inside container
+		if err != nil {
+			glog.Errorf("failed to GenerateKubeConfig : %v", err)
+		}
+
+		// kubeconfig for end-user
+		err = action.WriteKubeConfig(c, config.Name)
+		if err != nil {
+			glog.Errorf("failed to WriteKubeConfig : %v", err)
+		}
+
+	} else { // bootstrap other than kic
+		// configure the runtime (docker, containerd, crio)
+		cr := configureRuntimes(mRunner, driverName, config.KubernetesConfig)
+		showVersionInfo(k8sVersion, cr)
+		waitCacheImages(&cacheGroup)
+
+		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
+		kubeconfig, err := setupKubeconfig(host, &config, config.Name)
+		if err != nil {
+			exit.WithError("Failed to setup kubeconfig", err)
+		}
+
+		// setup kubeadm (must come after setupKubeconfig)
+		bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
+
+		// pull images or restart cluster
+		bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
+		configureMounts()
+
+		// enable addons with start command
+		enableAddons()
+
+		if err = loadCachedImagesInConfigFile(); err != nil {
+			out.T(out.FailureType, "Unable to load cached images from config file.")
+		}
+
+		// special ops for none , like change minikube directory.
+		if driverName == driver.None {
+			prepareNone()
+		}
+
+		// Skip pre-existing, because we already waited for health
+		if viper.GetBool(waitUntilHealthy) && !preExists {
+			if err := bs.WaitForCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
+				exit.WithError("Wait failed", err)
+			}
+		}
+		if err := showKubectlInfo(kubeconfig, k8sVersion, config.Name); err != nil {
+			glog.Errorf("kubectl info: %v", err)
+		}
 	}
 }
 
@@ -962,6 +1034,12 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) error {
 	if !cmd.Flags().Changed(cacheImages) {
 		viper.Set(cacheImages, hints.CacheImages)
 	}
+	if !cmd.Flags().Changed(containerRuntime) && hints.ContainerRuntime != "" {
+		viper.Set(containerRuntime, hints.ContainerRuntime)
+		glog.Infof("auto set container runtime to %s for kic driver.", hints.ContainerRuntime)
+
+	}
+
 	return nil
 }
 
@@ -996,7 +1074,6 @@ func prepareNone() {
 
 // startHost starts a new minikube host using a VM, Container or baremetal (none)
 func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
-	fmt.Println("Inside startHost")
 	exists, err := api.Exists(mc.Name)
 	if err != nil {
 		exit.WithError("Failed to check if machine exists", err)

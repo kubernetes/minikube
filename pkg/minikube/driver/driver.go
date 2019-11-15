@@ -75,14 +75,20 @@ func BareMetal(name string) bool {
 
 // FlagHints are hints for what default options should be used for this driver
 type FlagHints struct {
-	ExtraOptions string
-	CacheImages  bool
+	ExtraOptions     string
+	CacheImages      bool
+	ContainerRuntime string
 }
 
 // FlagDefaults returns suggested defaults based on a driver
 func FlagDefaults(name string) FlagHints {
 	if name != None {
-		return FlagHints{CacheImages: true}
+		fh := FlagHints{CacheImages: true}
+		if name == KicDocker {
+			fh.ContainerRuntime = "containerd"
+		}
+		return fh
+
 	}
 
 	extraOpts := ""

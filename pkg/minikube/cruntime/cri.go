@@ -386,6 +386,7 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 
 // populateCRIConfig sets up /etc/crictl.yaml
 func populateCRIConfig(cr CommandRunner, socket string) error {
+	fmt.Printf("(medya dbg) inside populateCRIConfig socket %s", socket)
 	cPath := "/etc/crictl.yaml"
 	tmpl := `runtime-endpoint: unix://{{.Socket}}
 image-endpoint: unix://{{.Socket}}

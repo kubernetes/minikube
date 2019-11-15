@@ -22,6 +22,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime/debug"
 	"time"
 
 	"github.com/golang/glog"
@@ -40,7 +41,6 @@ type kicRunner struct {
 
 // NewKICRunner returns a kicRunner implementor of runner which runs cmds inside a container
 func NewKICRunner(containerNameOrID string, oci string) command.Runner {
-	fmt.Printf("\n(medya dbg) creating a NewKicRunner %q,%q\n", containerNameOrID, oci)
 	// debug.PrintStack()
 	return &kicRunner{
 		nameOrID: containerNameOrID,
@@ -119,6 +119,7 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
 		}
+		debug.PrintStack()
 		fmt.Printf("(medya dbg) (kicRunner) Non-zero exit: %v: %v (%s)\n", cmd2.Args, err, elapsed)
 		fmt.Printf("(medya dbg) (kicRunner) Output:\n %q \n", rr.Output())
 		err = errors.Wrapf(err, "command failed: %s", cmd2.Args)
