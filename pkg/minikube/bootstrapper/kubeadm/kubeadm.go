@@ -95,14 +95,11 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 }
 
 // remote artifacts that must exist for minikube to function properly. The sign of a previously working installation.
+// NOTE: /etc is not persistent across restarts, so don't bother checking there
 var expectedArtifacts = []string{
-	"/etc/kubernetes/scheduler.conf",
-	"/etc/kubernetes/kubelet.conf",
 	"/var/lib/kubelet/kubeadm-flags.env",
 	"/var/lib/kubelet/config.yaml",
-	"/var/lib/minikube",
-	"/etc/kubernetes/manifests/kube-apiserver.yaml",
-	"/etc/kubernetes/manifests/etcd.yaml",
+	etcdDataDir(),
 }
 
 // yamlConfigPath is the path to the kubeadm configuration
@@ -234,7 +231,8 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 }
 
 func (k *Bootstrapper) existingConfig() error {
-	_, err := k.c.RunCmd(exec.Command("ls", expectedArtifacts...))
+	args := append([]string{"ls"}, expectedArtifacts...)
+	_, err := k.c.RunCmd(exec.Command("sudo", args...))
 	return err
 }
 
@@ -266,7 +264,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	ignore := []string{
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestManifestsDir, "/", "-", -1)),
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestPersistentDir, "/", "-", -1)),
-		fmt.Sprintf("DirAvailable-%s", etcdDataDir(), "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", strings.Replace(etcdDataDir(), "/", "-", -1)),
 		"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
