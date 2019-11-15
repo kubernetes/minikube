@@ -39,7 +39,6 @@ type Bootstrapper interface {
 	PullImages(config.KubernetesConfig) error
 	StartCluster(config.KubernetesConfig) error
 	UpdateCluster(config.KubernetesConfig) error
-	RestartCluster(config.KubernetesConfig) error
 	DeleteCluster(config.KubernetesConfig) error
 	WaitForCluster(config.KubernetesConfig, time.Duration) error
 	// LogCommands returns a map of log type to a command which will display that log.

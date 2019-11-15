@@ -1210,22 +1210,11 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s cfg.Ku
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
 func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, kc cfg.KubernetesConfig, preexisting bool, isUpgrade bool) {
-	// hum. bootstrapper.Bootstrapper should probably have a Name function.
-	bsName := viper.GetString(cmdcfg.Bootstrapper)
-
 	if isUpgrade || !preexisting {
 		out.T(out.Pulling, "Pulling images ...")
 		if err := bs.PullImages(kc); err != nil {
 			out.T(out.FailureType, "Unable to pull images, which may be OK: {{.error}}", out.V{"error": err})
 		}
-	}
-
-	if preexisting {
-		out.T(out.Restarting, "Relaunching Kubernetes using {{.bootstrapper}} ... ", out.V{"bootstrapper": bsName})
-		if err := bs.RestartCluster(kc); err != nil {
-			exit.WithLogEntries("Error restarting cluster", err, logs.FindProblems(r, bs, runner))
-		}
-		return
 	}
 
 	out.T(out.Launch, "Launching Kubernetes ... ")

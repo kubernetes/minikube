@@ -94,6 +94,14 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 	},
 }
 
+// remote artifacts that must exist for minikube to function properly. The sign of a previously working installation.
+// NOTE: /etc is not persistent across restarts, so don't bother checking there
+var expectedArtifacts = []string{
+	"/var/lib/kubelet/kubeadm-flags.env",
+	"/var/lib/kubelet/config.yaml",
+	etcdDataDir(),
+}
+
 // yamlConfigPath is the path to the kubeadm configuration
 var yamlConfigPath = path.Join(vmpath.GuestEphemeralDir, "kubeadm.yaml")
 
@@ -221,8 +229,20 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 	return nil
 }
 
+func (k *Bootstrapper) existingConfig() error {
+	args := append([]string{"ls"}, expectedArtifacts...)
+	_, err := k.c.RunCmd(exec.Command("sudo", args...))
+	return err
+}
+
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
+	err := k.existingConfig()
+	if err == nil {
+		return k.restartCluster(k8s)
+	}
+	glog.Infof("existence check: %v", err)
+
 	start := time.Now()
 	glog.Infof("StartCluster: %+v", k8s)
 	defer func() {
@@ -243,6 +263,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	ignore := []string{
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestManifestsDir, "/", "-", -1)),
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestPersistentDir, "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", strings.Replace(etcdDataDir(), "/", "-", -1)),
 		"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
@@ -280,6 +301,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	if err := k.adjustResourceLimits(); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
+
 	return nil
 }
 
@@ -450,12 +472,13 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 	return k.waitForSystemPods(start, k8s, timeout)
 }
 
-// RestartCluster restarts the Kubernetes cluster configured by kubeadm
-func (k *Bootstrapper) RestartCluster(k8s config.KubernetesConfig) error {
-	glog.Infof("RestartCluster start")
+// restartCluster restarts the Kubernetes cluster configured by kubeadm
+func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
+	glog.Infof("restartCluster start")
+
 	start := time.Now()
 	defer func() {
-		glog.Infof("RestartCluster took %s", time.Since(start))
+		glog.Infof("restartCluster took %s", time.Since(start))
 	}()
 
 	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
@@ -528,7 +551,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 	return nil
 }
 
-// PullImages downloads images that will be used by RestartCluster
+// PullImages downloads images that will be used by Kubernetes
 func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
