@@ -138,7 +138,6 @@ func (m *MemoryAsset) GetLength() int {
 
 // Read reads the asset
 func (m *MemoryAsset) Read(p []byte) (int, error) {
-	fmt.Println("medya dbg inside MemoryAsset.Read")
 	return m.reader.Read(p)
 }
 
