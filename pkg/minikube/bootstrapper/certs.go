@@ -137,9 +137,11 @@ func SetupCerts(cmd kiccommand.Runner, k8s config.KubernetesConfig) error {
 
 	for _, f := range copyableFiles {
 		if err := cmd.Copy(f); err != nil {
+			fmt.Printf("Error copying %s err : %v\n", f.GetTargetName(), err)
 			return errors.Wrapf(err, "Copy %s", f.GetAssetName())
 		}
 	}
+	fmt.Println("(medya dbg) finishged copying")
 
 	// configure CA certificates
 	if err := configureCACerts(cmd, caCerts); err != nil {
@@ -332,6 +334,7 @@ func getSubjectHash(cr kiccommand.Runner, filePath string) (string, error) {
 // configureCACerts looks up and installs all uploaded PEM certificates in /usr/share/ca-certificates to system-wide certificate store (/etc/ssl/certs).
 // OpenSSL binary required in minikube ISO
 func configureCACerts(cr kiccommand.Runner, caCerts map[string]string) error {
+	fmt.Println("(medya dbg) inside configureCACerts")
 	hasSSLBinary := true
 	_, err := cr.RunCmd(exec.Command("openssl", "version"))
 	if err != nil {
@@ -347,13 +350,16 @@ func configureCACerts(cr kiccommand.Runner, caCerts map[string]string) error {
 		certStorePath := path.Join(SSLCertStoreDir, dstFilename)
 		_, err := cr.RunCmd(exec.Command("sudo", "test", "-f", certStorePath))
 		if err != nil {
+			fmt.Println("(medya dbg) test -f er but thats fine.")
 			if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-s", caCertFile, certStorePath)); err != nil {
+				fmt.Println("(medya dbg) making ln")
 				return errors.Wrapf(err, "create symlink for %s", caCertFile)
 			}
 		}
 		if hasSSLBinary {
 			subjectHash, err := getSubjectHash(cr, caCertFile)
 			if err != nil {
+				fmt.Println("(medya dbg) errror hash")
 				return errors.Wrapf(err, "calculate hash for cacert %s", caCertFile)
 			}
 			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))

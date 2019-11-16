@@ -20,9 +20,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
-	"runtime/debug"
 	"time"
 
 	"github.com/golang/glog"
@@ -41,7 +41,6 @@ type kicRunner struct {
 
 // NewKICRunner returns a kicRunner implementor of runner which runs cmds inside a container
 func NewKICRunner(containerNameOrID string, oci string) command.Runner {
-	// debug.PrintStack()
 	return &kicRunner{
 		nameOrID: containerNameOrID,
 		ociBin:   oci, // docker or podman
@@ -119,7 +118,6 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
 		}
-		debug.PrintStack()
 		fmt.Printf("(medya dbg) (kicRunner) Non-zero exit: %v: %v (%s)\n", cmd2.Args, err, elapsed)
 		fmt.Printf("(medya dbg) (kicRunner) Output:\n %q \n", rr.Output())
 		err = errors.Wrapf(err, "command failed: %s", cmd2.Args)
@@ -130,15 +128,39 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f kicassets.LegacyCopyableFile) error {
+	assetName := f.GetAssetName()
 	if _, err := os.Stat(f.GetAssetName()); os.IsNotExist(err) {
-		return errors.Wrapf(err, "error source %s does not exist", f.GetAssetName())
+		fc := make([]byte, f.GetLength()) // Read  asset file into a []byte
+		if _, err := f.Read(fc); err != nil {
+			return errors.Wrap(err, "can't copy non-existing file")
+		} else { // we have a MemoryAsset, will write to disk before copying
+			tmpFile, err := ioutil.TempFile(os.TempDir(), "tmpf-memory-asset")
+			if err != nil {
+				return errors.Wrap(err, "creating temporary file")
+			}
+			//  clean up the temp file
+			defer os.Remove(tmpFile.Name())
+			if _, err = tmpFile.Write(fc); err != nil {
+				return errors.Wrap(err, "write to temporary file")
+			}
+
+			// Close the file
+			if err := tmpFile.Close(); err != nil {
+				return errors.Wrap(err, "close temporary file")
+			}
+			assetName = tmpFile.Name()
+
+		}
+	}
+	// based of format of "docker cp containerName:destination"
+	destination := fmt.Sprintf("%s:%s/%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
+	// make sure dir exists inside the container
+	if _, err := k.RunCmd(exec.Command("mkdir", "-p", f.GetTargetDir())); err != nil {
+		return errors.Wrapf(err, "error making dir %s", f.GetTargetDir())
 	}
 
-	destination := fmt.Sprintf("%s:%s", k.nameOrID, f.GetTargetDir())
-	cmd := exec.Command(k.ociBin, "cp", f.GetAssetName(), destination)
-	err := cmd.Run()
-	if err != nil {
-		return errors.Wrapf(err, "error copying %s into node", f.GetAssetName())
+	if out, err := exec.Command(k.ociBin, "cp", assetName, destination).CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "error copying %s into node, output: %s", f.GetAssetName(), string(out))
 	}
 
 	if _, err := k.RunCmd(exec.Command("chmod", f.GetPermissions(), f.GetTargetDir())); err != nil {

@@ -27,6 +27,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -342,9 +343,17 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	kcs := &kubeconfig.Settings{}
 	if config.VMDriver == driver.KicDocker { // bootstrap kic this will eventually be integreated into bootstrapper
+		r := minicommand.NewKICRunner(config.Name, "docker")
+
+		err := bootstrapper.SetupCerts(r, config.KubernetesConfig)
+		if err != nil {
+			debug.PrintStack()
+			glog.Fatalf("Failed to setup certs for kic")
+		}
+
 		ip, err := host.Driver.GetURL()
 		if err != nil {
-			fmt.Println("Error GetUrl in kic bs")
+			glog.Fatalf("Error GetUrl in kic bs", err)
 		}
 		podNetworkCIDR := "10.244.0.0/16" // TODO:medyagh get it from ExtraOptions pod-network-cidr
 		kicBsCfg := action.ConfigData{
@@ -366,7 +375,6 @@ func runStart(cmd *cobra.Command, args []string) {
 			glog.Errorf("failed to generate kubeaddm  error: %v , kCfg :\n %+v", err, kCfg)
 		}
 		kaCfgPath := "/kic/kubeadm.conf"
-		r := minicommand.NewKICRunner(config.Name, "docker")
 		node, err := node.Find(config.Name, r)
 		if err != nil {
 			glog.Errorf("error finding kic node to bootstrap it %v", err)
