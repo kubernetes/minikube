@@ -340,6 +340,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	mRunner, preExists, machineAPI, host := startMachine(&config)
 	defer machineAPI.Close()
 
+	kcs := &kubeconfig.Settings{}
 	if config.VMDriver == driver.KicDocker { // bootstrap kic this will eventually be integreated into bootstrapper
 		ip, err := host.Driver.GetURL()
 		if err != nil {
@@ -413,7 +414,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		waitCacheImages(&cacheGroup)
 
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-		kubeconfig, err := setupKubeconfig(host, &config, config.Name)
+		kcs, err = setupKubeconfig(host, &config, config.Name)
 		if err != nil {
 			exit.WithError("Failed to setup kubeconfig", err)
 		}
@@ -443,10 +444,11 @@ func runStart(cmd *cobra.Command, args []string) {
 				exit.WithError("Wait failed", err)
 			}
 		}
-		if err := showKubectlInfo(kubeconfig, k8sVersion, config.Name); err != nil {
-			glog.Errorf("kubectl info: %v", err)
-		}
 	}
+	if err := showKubectlInfo(kcs, k8sVersion, config.Name); err != nil {
+		glog.Errorf("kubectl info: %v", err)
+	}
+
 }
 
 func updateDriver(driverName string) {

@@ -130,7 +130,21 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f kicassets.LegacyCopyableFile) error {
-	return fmt.Errorf("not implemented yet for kic runner")
+	if _, err := os.Stat(f.GetAssetName()); os.IsNotExist(err) {
+		return errors.Wrapf(err, "error source %s does not exist", f.GetAssetName())
+	}
+
+	destination := fmt.Sprintf("%s:%s", k.nameOrID, f.GetTargetDir())
+	cmd := exec.Command(k.ociBin, "cp", f.GetAssetName(), destination)
+	err := cmd.Run()
+	if err != nil {
+		return errors.Wrapf(err, "error copying %s into node", f.GetAssetName())
+	}
+
+	if _, err := k.RunCmd(exec.Command("chmod", f.GetPermissions(), f.GetTargetDir())); err != nil {
+		return errors.Wrap(err, "failed to chmod file permissions")
+	}
+	return nil
 }
 
 // Remove removes a file
