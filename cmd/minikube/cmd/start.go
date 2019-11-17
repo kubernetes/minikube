@@ -27,7 +27,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
-	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -68,6 +67,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/translate"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
@@ -341,88 +341,23 @@ func runStart(cmd *cobra.Command, args []string) {
 	mRunner, preExists, machineAPI, host := startMachine(&config)
 	defer machineAPI.Close()
 
-	kcs := &kubeconfig.Settings{}
 	if config.VMDriver == driver.KicDocker { // bootstrap kic this will eventually be integreated into bootstrapper
-		r := minicommand.NewKICRunner(config.Name, "docker")
-
-		err := bootstrapper.SetupCerts(r, config.KubernetesConfig)
-		if err != nil {
-			debug.PrintStack()
-			glog.Fatalf("Failed to setup certs for kic")
-		}
-
 		ip, err := host.Driver.GetURL()
 		if err != nil {
-			glog.Fatalf("Error GetUrl in kic bs", err)
+			glog.Fatalf("Error GetUrl in kic bs: %v", err)
 		}
-		podNetworkCIDR := "10.244.0.0/16" // TODO:medyagh get it from ExtraOptions pod-network-cidr
-		kicBsCfg := action.ConfigData{
-			ClusterName:          config.Name,
-			KubernetesVersion:    config.KubernetesConfig.KubernetesVersion,
-			ControlPlaneEndpoint: ip + ":6443", // TODO:medyagh get it form kubernetesConfig
-			APIBindPort:          6443,
-			APIServerAddress:     "127.0.0.1",
-			Token:                "abcdef.0123456789abcdef",
-			PodSubnet:            podNetworkCIDR,
-			ServiceSubnet:        config.KubernetesConfig.ServiceCIDR,
-			ControlPlane:         true,
-			IPv6:                 false,
-			NodeAddress:          ip,
-		}
-
-		kCfg, err := action.KubeAdmCfg(kicBsCfg)
-		if err != nil {
-			glog.Errorf("failed to generate kubeaddm  error: %v , kCfg :\n %+v", err, kCfg)
-		}
-		kaCfgPath := "/kic/kubeadm.conf"
-		node, err := node.Find(config.Name, r)
-		if err != nil {
-			glog.Errorf("error finding kic node to bootstrap it %v", err)
-		}
-		// copy the config to the node
-		if err := node.WriteFile(kaCfgPath, kCfg, "644"); err != nil {
-			glog.Errorf("failed to copy kubeadm config to node : %v", err)
-		}
-
-		err = action.RunKubeadmInit(node.R, kaCfgPath, config.Name)
-		if err != nil {
-			glog.Errorf("failed to RunKubeadmInit : %v", err)
-		}
-
-		err = action.RemoveMasterTaint(node.R)
-		if err != nil {
-			glog.Errorf("failed to RunTaint : %v", err)
-		}
-
-		cniManifest, err := action.GetDefaultCNIManifest(node.R, podNetworkCIDR)
-		if err != nil {
-			glog.Errorf("failed to InstallCNI : %v", err)
-		}
-
-		err = action.ApplyCNIManifest(node.R, cniManifest)
-		if err != nil {
-			glog.Errorf("failed to ApplyCNI : %v", err)
-		}
-
-		c, err := action.GenerateKubeConfig(node.R, ip, 50013, config.Name) // generates from the /etc/ inside container
-		if err != nil {
-			glog.Errorf("failed to GenerateKubeConfig : %v", err)
-		}
-
-		// kubeconfig for end-user
-		err = action.WriteKubeConfig(c, config.Name)
-		if err != nil {
-			glog.Errorf("failed to WriteKubeConfig : %v", err)
-		}
-
+		bootStrapKic(config, ip)
 	} else { // bootstrap other than kic
 		// configure the runtime (docker, containerd, crio)
 		cr := configureRuntimes(mRunner, driverName, config.KubernetesConfig)
 		showVersionInfo(k8sVersion, cr)
 		waitCacheImages(&cacheGroup)
-
+		addr, err := host.Driver.GetURL()
+		if err != nil {
+			exit.WithError("Failed to get driver URL", err)
+		}
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-		kcs, err = setupKubeconfig(host, &config, config.Name)
+		kcs, err := setupKubeconfig(addr, &config, config.Name)
 		if err != nil {
 			exit.WithError("Failed to setup kubeconfig", err)
 		}
@@ -452,10 +387,92 @@ func runStart(cmd *cobra.Command, args []string) {
 				exit.WithError("Wait failed", err)
 			}
 		}
+		if err := showKubectlInfo(kcs, k8sVersion, config.Name); err != nil {
+			glog.Errorf("kubectl info: %v", err)
+		}
+
 	}
-	if err := showKubectlInfo(kcs, k8sVersion, config.Name); err != nil {
+
+}
+
+// TODO:medyagh this will be moved to the bootstrapper package
+func bootStrapKic(config cfg.MachineConfig, ip string) {
+	r := minicommand.NewKICRunner(config.Name, "docker")
+
+	err := bootstrapper.SetupCerts(r, config.KubernetesConfig)
+	if err != nil {
+		glog.Fatalf("Failed to setup certs for kic")
+	}
+
+	podNetworkCIDR := "10.244.0.0/16" // TODO:medyagh get it from ExtraOptions pod-network-cidr
+	kicBsCfg := action.ConfigData{
+		CertDir:              vmpath.GuestCertsDir,
+		ClusterName:          config.Name,
+		KubernetesVersion:    config.KubernetesConfig.KubernetesVersion,
+		ControlPlaneEndpoint: ip + ":6443", // TODO:medyagh get it form kubernetesConfig
+		APIBindPort:          6443,
+		APIServerAddress:     config.KubernetesConfig.NodeIP,
+		Token:                "abcdef.0123456789abcdef",
+		PodSubnet:            podNetworkCIDR,
+		ServiceSubnet:        config.KubernetesConfig.ServiceCIDR,
+		ControlPlane:         true,
+		IPv6:                 false,
+		NodeAddress:          ip,
+	}
+
+	kCfg, err := action.KubeAdmCfg(kicBsCfg)
+	if err != nil {
+		glog.Errorf("failed to generate kubeaddm  error: %v , kCfg :\n %+v", err, kCfg)
+	}
+	kaCfgPath := "/kic/kubeadm.conf"
+	node, err := node.Find(config.Name, r)
+	if err != nil {
+		glog.Errorf("error finding kic node to bootstrap it %v", err)
+	}
+	// copy the config to the node
+	if err := node.WriteFile(kaCfgPath, kCfg, "644"); err != nil {
+		glog.Errorf("failed to copy kubeadm config to node : %v", err)
+	}
+
+	err = action.RunKubeadmInit(node.R, kaCfgPath, config.Name)
+	if err != nil {
+		glog.Errorf("failed to RunKubeadmInit : %v", err)
+	}
+
+	err = action.RemoveMasterTaint(node.R)
+	if err != nil {
+		glog.Errorf("failed to RunTaint : %v", err)
+	}
+
+	cniManifest, err := action.GetDefaultCNIManifest(node.R, podNetworkCIDR)
+	if err != nil {
+		glog.Errorf("failed to InstallCNI : %v", err)
+	}
+
+	err = action.ApplyCNIManifest(node.R, cniManifest)
+	if err != nil {
+		glog.Errorf("failed to ApplyCNI : %v", err)
+	}
+
+	kcs, err := setupKubeconfig("https://localhost:50013", &config, config.Name)
+	if err != nil {
+		exit.WithError("Failed to setup kubeconfig", err)
+	}
+
+	if err := showKubectlInfo(kcs, config.KubernetesConfig.KubernetesVersion, config.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
 	}
+
+	// c, err := action.GenerateKubeConfig(node.R, ip, 50013, config.Name) // generates from the /etc/ inside container
+	// if err != nil {
+	// 	glog.Errorf("failed to GenerateKubeConfig : %v", err)
+	// }
+
+	// // kubeconfig for end-user
+	// err = action.WriteKubeConfig(c, config.Name)
+	// if err != nil {
+	// 	glog.Errorf("failed to WriteKubeConfig : %v", err)
+	// }
 
 }
 
@@ -503,17 +520,15 @@ func displayEnviron(env []string) {
 	}
 }
 
-func setupKubeconfig(h *host.Host, c *cfg.MachineConfig, clusterName string) (*kubeconfig.Settings, error) {
-	addr, err := h.Driver.GetURL()
-	if err != nil {
-		exit.WithError("Failed to get driver URL", err)
-	}
-	addr = strings.Replace(addr, "tcp://", "https://", -1)
-	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
-	if c.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
-	}
+func setupKubeconfig(addr string, c *cfg.MachineConfig, clusterName string) (*kubeconfig.Settings, error) {
+	if c.VMDriver != driver.KicDocker {
+		addr = strings.Replace(addr, "tcp://", "https://", -1)
+		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
+		if c.KubernetesConfig.APIServerName != constants.APIServerName {
+			addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
+		}
 
+	}
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
 		ClusterServerAddress: addr,
@@ -1113,7 +1128,6 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
 	}
-
 	optSeen := false
 	warnedOnce := false
 	for _, k := range proxy.EnvVars {
@@ -1132,10 +1146,9 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 		}
 	}
 
-	if !driver.BareMetal(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) && h.Driver.DriverName() != driver.KicDocker {
 		trySSH(h, ip)
 	}
-
 	tryLookup(r)
 	tryRegistry(r)
 	return ip
@@ -1176,7 +1189,7 @@ func tryLookup(r command.Runner) {
 	// DNS check
 	if rr, err := r.RunCmd(exec.Command("nslookup", "-querytype=ns", "kubernetes.io")); err != nil {
 		glog.Warningf("%s failed: %v", rr.Args, err)
-		out.WarningT("VM may be unable to resolve external DNS records")
+		out.WarningT("Node may be unable to resolve external DNS records")
 	}
 }
 

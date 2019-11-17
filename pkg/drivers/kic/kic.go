@@ -26,7 +26,6 @@ import (
 	"github.com/medyagh/kic/pkg/config/cri"
 	"github.com/medyagh/kic/pkg/node"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/command"
 )
@@ -105,11 +104,12 @@ func (d *Driver) DriverName() string {
 
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
-	ip, err := net.ChooseBindAddress(nil)
+	node, err := node.Find(d.MachineName, d.exec)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("ip not found for nil node")
 	}
-	return ip.String(), nil
+	ip, _, err := node.IP()
+	return ip, err
 }
 
 // GetSSHHostname returns hostname for use with ssh
@@ -124,12 +124,7 @@ func (d *Driver) GetSSHPort() (int, error) {
 
 // GetURL returns ip of the container running kic control-panel
 func (d *Driver) GetURL() (string, error) {
-	node, err := node.Find(d.MachineName, d.exec)
-	if err != nil {
-		return "", fmt.Errorf("ip not found for nil node")
-	}
-	ip, _, err := node.IP()
-	return ip, err
+	return d.GetIP()
 }
 
 // GetState returns the state that the host is in (running, stopped, etc)

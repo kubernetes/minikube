@@ -118,8 +118,6 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
 		}
-		fmt.Printf("(medya dbg) (kicRunner) Non-zero exit: %v: %v (%s)\n", cmd2.Args, err, elapsed)
-		fmt.Printf("(medya dbg) (kicRunner) Output:\n %q \n", rr.Output())
 		err = errors.Wrapf(err, "command failed: %s", cmd2.Args)
 	}
 	return rr, err
