@@ -21,6 +21,7 @@ package kvm2
 import (
 	"fmt"
 	"os/exec"
+	"os/user"
 	"path/filepath"
 	"strings"
 
@@ -86,6 +87,24 @@ func configure(mc config.MachineConfig) interface{} {
 	}
 }
 
+// check whether current user is in either libvirt or libvirtd group
+func isUserInVirtGroup() (bool, string) {
+	v, _ := user.LookupGroup("libvirt")
+	vd, _ := user.LookupGroup("libvirtd")
+
+	u, _ := user.Current()
+	o, _ := u.GroupIds()
+	uf := false
+	for _, g := range o {
+		if ( ((v!=nil) && (g == v.Gid))  || ((vd!=nil) && (g == vd.Gid)) ) {
+			uf = true
+			break
+		}
+	}
+
+	return uf, u.Name
+}
+
 func status() registry.State {
 	path, err := exec.LookPath("virsh")
 	if err != nil {
@@ -101,6 +120,13 @@ func status() registry.State {
 			Fix:       "Follow your Linux distribution instructions for configuring KVM",
 			Doc:       docURL,
 		}
+	}
+
+
+	ig, n := isUserInVirtGroup()
+
+	if !ig {
+		return registry.State{Healthy: false, Fix: fmt.Sprintf("make user %s part of libvirt/libvirtd group", n), Installed: true, Error: fmt.Errorf("user %s is not part of libvirt/libvirtd group", n)}
 	}
 
 	cmd = exec.Command("virsh", "list")

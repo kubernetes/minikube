@@ -607,6 +607,10 @@ func validateDriver(name string, existing *cfg.MachineConfig) {
 			}
 			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
+
+		if ! st.Healthy {
+			exit.WithCodeT(exit.Unavailable, "{{.driver}} cannot proceed. Perform the fix suggested above", out.V{"driver": name})
+		}
 	}
 
 	if existing == nil {

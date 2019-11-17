@@ -68,11 +68,11 @@ type StatusChecker func() State
 
 // State is the current state of the driver and its dependencies
 type State struct {
-	Installed bool
-	Healthy   bool
-	Error     error
-	Fix       string
-	Doc       string
+	Installed   bool
+	Healthy     bool
+	Error       error
+	Fix         string
+	Doc         string
 }
 
 // DriverDef defines how to initialize and load a machine driver
