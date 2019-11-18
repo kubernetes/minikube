@@ -125,6 +125,7 @@ const (
 	minimumCPUS           = 2
 	minimumDiskSize       = "2000mb"
 	autoUpdate            = "auto-update-drivers"
+	nodeBindPort          = "node-bind-port"
 )
 
 var (
@@ -233,6 +234,8 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().Int32(nodeBindPort, 50014, "The port to bind the container/vm to the host on. Currently only used by kic.")
+
 }
 
 // startCmd represents the start command
@@ -454,7 +457,7 @@ func bootStrapKic(config cfg.MachineConfig, ip string) {
 		glog.Errorf("failed to ApplyCNI : %v", err)
 	}
 
-	kcs, err := setupKubeconfig("https://localhost:50013", &config, config.Name)
+	kcs, err := setupKubeconfig(fmt.Sprintf("https://localhost:%d", config.NodeBindPort), &config, config.Name)
 	if err != nil {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
@@ -1009,6 +1012,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		NoVTXCheck:          viper.GetBool(noVTXCheck),
 		DNSProxy:            viper.GetBool(dnsProxy),
 		HostDNSResolver:     viper.GetBool(hostDNSResolver),
+		NodeBindPort:        viper.GetInt32(nodeBindPort),
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			NodePort:               viper.GetInt(apiServerPort),

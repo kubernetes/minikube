@@ -47,14 +47,13 @@ func configure(mc config.MachineConfig) interface{} {
 	if err != nil {
 		glog.Errorf("Failed to getting image name for %s: imgesha:%s", imgSha, mc.KubernetesConfig.KubernetesVersion)
 	}
-
 	return kic.NewDriver(kic.Config{
 		MachineName:   mc.Name,
 		StorePath:     localpath.MiniPath(),
 		ImageSha:      imgSha,
 		CPU:           mc.CPUs,
 		Memory:        mc.Memory,
-		APIServerPort: 50013, // (medya dbg: todo generate or get from config)
+		APIServerPort: mc.NodeBindPort,
 		OciBinary:     "docker",
 	})
 

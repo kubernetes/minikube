@@ -81,7 +81,7 @@ func init() {
 
 // CacheISO downloads and caches ISO.
 func CacheISO(config cfg.MachineConfig) error {
-	if driver.BareMetal(config.VMDriver) {
+	if driver.BareMetal(config.VMDriver) || config.VMDriver == driver.KicDocker {
 		return nil
 	}
 	return config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO)

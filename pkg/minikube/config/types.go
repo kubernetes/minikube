@@ -60,6 +60,7 @@ type MachineConfig struct {
 	NoVTXCheck          bool   // Only used by virtualbox
 	DNSProxy            bool   // Only used by virtualbox
 	HostDNSResolver     bool   // Only used by virtualbox
+	NodeBindPort        int32  // Port to bind node , currently only used by kic
 	KubernetesConfig    KubernetesConfig
 }
 
