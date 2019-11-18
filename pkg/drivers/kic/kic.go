@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strconv"
+	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
@@ -130,29 +131,48 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	node, err := node.Find(d.MachineName, command.NewKICRunner(d.MachineName, d.OciBinary))
+	cmd := exec.Command(d.OciBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
+	out, err := cmd.CombinedOutput()
+	o := strings.Trim(string(out), "\n")
 	if err != nil {
+		return state.Error, errors.Wrapf(err, "error stop node %s", d.MachineName)
+	}
+	if o == "running" {
+		return state.Running, nil
+	}
+	if o == "exited" {
+		return state.Stopped, nil
+	}
+	if o == "paused" {
+		return state.Paused, nil
+	}
+	if o == "restarting" {
+		return state.Starting, nil
+	}
+	if o == "dead" {
 		return state.Error, nil
 	}
-	return node.Status()
+	return state.None, fmt.Errorf("unknown state")
 
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	return fmt.Errorf("kill not implemented for kic yet")
+	cmd := exec.Command(d.OciBinary, "kill", d.MachineName)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "killing kic node %s", d.MachineName)
+	}
+	return nil
 }
 
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
-	n := d.MachineName
-	node, err := node.Find(n, command.NewKICRunner(n, d.OciBinary))
-	if err != nil {
-		return errors.Wrapf(err, "find node %s", d.MachineName)
+	if _, err := d.nodeID(d.MachineName); err != nil {
+		return errors.Wrapf(err, "not found node %s", d.MachineName)
 	}
-	err = node.Remove()
-	if err != nil {
-		return errors.Wrapf(err, "remove kic node %s", d.MachineName)
+	cmd := exec.Command(d.OciBinary, "rm", "-f", "-v", d.MachineName)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "error removing node %s", d.MachineName)
 	}
 	return nil
 }
@@ -221,4 +241,14 @@ func (d *Driver) Stop() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
+}
+
+// looks up for a container node by name, will return error if not found.
+func (d *Driver) nodeID(nameOrID string) (string, error) {
+	cmd := exec.Command(d.OciBinary, "inspect", "-f", "{{.Id}}", nameOrID)
+	id, err := cmd.CombinedOutput()
+	if err != nil {
+		id = []byte{}
+	}
+	return string(id), err
 }
