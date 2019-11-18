@@ -128,6 +128,10 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		}
 	}
 
+	if config.VMDriver == driver.KicDocker { // TODO:medyagh implement this
+		out.T(out.Tip, "Skipping updating configuration for the running docker-driver node")
+		return h, nil
+	}
 	e := engineOptions(config)
 	glog.Infof("engine options: %+v", e)
 

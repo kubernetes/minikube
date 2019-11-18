@@ -18,6 +18,7 @@ package kic
 
 import (
 	"fmt"
+	"os/exec"
 	"strconv"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -139,7 +140,7 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	return fmt.Errorf("not implemented for kic yet")
+	return fmt.Errorf("kill not implemented for kic yet")
 }
 
 // Remove will delete the Kic Node Container
@@ -158,17 +159,63 @@ func (d *Driver) Remove() error {
 
 // Restart a host
 func (d *Driver) Restart() error {
-	return fmt.Errorf("not implemented for kic yet")
+	s, err := d.GetState()
+	if err != nil {
+		return errors.Wrap(err, "get kic state")
+	}
+	if s == state.Paused {
+		return d.Unpause()
+	}
+	if s == state.Stopped {
+		return d.Start()
+	}
+	if s == state.Running {
+		if err = d.Stop(); err != nil {
+			return fmt.Errorf("restarting a running kic node at stop phase %v", err)
+		}
+		if err = d.Start(); err != nil {
+			return fmt.Errorf("restarting a running kic node at start phase %v", err)
+		}
+		return nil
+	}
+
+	// TODO:medyagh handle Stopping/Starting... states
+	return fmt.Errorf("restarted not implemented for kic yet")
 }
 
-// Start a host
+// Unpause a kic container
+func (d *Driver) Unpause() error {
+	cmd := exec.Command(d.OciBinary, "pause", d.MachineName)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "unpausing %s", d.MachineName)
+	}
+	return nil
+}
+
+// Start a _stopped_ kic container
+// not meant to be used for Create().
 func (d *Driver) Start() error {
-	return fmt.Errorf("not implemented for kic yet")
+	s, err := d.GetState()
+	if err != nil {
+		return errors.Wrap(err, "get kic state")
+	}
+	if s == state.Stopped {
+		cmd := exec.Command(d.OciBinary, "start", d.MachineName)
+		if err := cmd.Run(); err != nil {
+			return errors.Wrapf(err, "starting a stopped kic node %s", d.MachineName)
+		}
+		return nil
+	}
+	return fmt.Errorf("cant start a not-stopped (%s) kic node", s)
 }
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
-	return fmt.Errorf("not implemented for kic yet")
+	cmd := exec.Command(d.OciBinary, "stop", d.MachineName)
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "stopping %s", d.MachineName)
+	}
+	return nil
 }
 
 // RunSSHCommandFromDriver implements direct ssh control to the driver

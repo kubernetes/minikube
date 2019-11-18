@@ -349,7 +349,18 @@ func runStart(cmd *cobra.Command, args []string) {
 		if err != nil {
 			glog.Fatalf("Error GetUrl in kic bs: %v", err)
 		}
-		bootStrapKic(config, ip)
+		if !preExists {
+			bootStrapKic(config, ip)
+		}
+
+		kcs, err := setupKubeconfig(fmt.Sprintf("https://localhost:%d", config.NodeBindPort), &config, config.Name)
+		if err != nil {
+			exit.WithError("Failed to setup kubeconfig", err)
+		}
+		if err := showKubectlInfo(kcs, config.KubernetesConfig.KubernetesVersion, config.Name); err != nil {
+			glog.Errorf("kubectl info: %v", err)
+		}
+
 	} else { // bootstrap other than kic
 		// configure the runtime (docker, containerd, crio)
 		cr := configureRuntimes(mRunner, driverName, config.KubernetesConfig)
@@ -456,27 +467,6 @@ func bootStrapKic(config cfg.MachineConfig, ip string) {
 	if err != nil {
 		glog.Errorf("failed to ApplyCNI : %v", err)
 	}
-
-	kcs, err := setupKubeconfig(fmt.Sprintf("https://localhost:%d", config.NodeBindPort), &config, config.Name)
-	if err != nil {
-		exit.WithError("Failed to setup kubeconfig", err)
-	}
-
-	if err := showKubectlInfo(kcs, config.KubernetesConfig.KubernetesVersion, config.Name); err != nil {
-		glog.Errorf("kubectl info: %v", err)
-	}
-
-	// c, err := action.GenerateKubeConfig(node.R, ip, 50013, config.Name) // generates from the /etc/ inside container
-	// if err != nil {
-	// 	glog.Errorf("failed to GenerateKubeConfig : %v", err)
-	// }
-
-	// // kubeconfig for end-user
-	// err = action.WriteKubeConfig(c, config.Name)
-	// if err != nil {
-	// 	glog.Errorf("failed to WriteKubeConfig : %v", err)
-	// }
-
 }
 
 func updateDriver(driverName string) {
