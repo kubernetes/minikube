@@ -411,4 +411,10 @@ var stateProblems = map[string]match{
 		Advice: "The minikube VM is offline. Please run 'minikube start' to start it again.",
 		Issues: []int{3849, 3648},
 	},
+	"SUDO_DASHBOARD_CRASH": {
+		Regexp:         re(`sudo dashboard crash: Error getting machine status: state: machine does not exist`),
+		Advice:         "Run 'minikube dashboard' without sudo",
+		Issues:         []int{5807},
+		HideCreateLink: true,
+	},
 }
