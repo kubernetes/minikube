@@ -75,7 +75,7 @@ func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		return rr, nil
 	}
 
-	return rr, fmt.Errorf("%s: %v\nstdout: %s\nstderr: %s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
+	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
 }
 
 // Copy copies a file and its permissions
