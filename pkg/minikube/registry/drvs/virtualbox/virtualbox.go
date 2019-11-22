@@ -31,8 +31,7 @@ import (
 )
 
 const (
-	defaultVirtualboxNicType = "virtio"
-	docURL                   = "https://minikube.sigs.k8s.io/docs/reference/drivers/virtualbox/"
+	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/virtualbox/"
 )
 
 func init() {
@@ -57,8 +56,8 @@ func configure(mc config.MachineConfig) interface{} {
 	d.HostOnlyCIDR = mc.HostOnlyCIDR
 	d.NoShare = mc.DisableDriverMounts
 	d.NoVTXCheck = mc.NoVTXCheck
-	d.NatNicType = defaultVirtualboxNicType
-	d.HostOnlyNicType = defaultVirtualboxNicType
+	d.NatNicType = mc.NatNicType
+	d.HostOnlyNicType = mc.HostOnlyNicType
 	d.DNSProxy = mc.DNSProxy
 	d.HostDNSResolver = mc.HostDNSResolver
 	return d
