@@ -32,6 +32,7 @@ import (
 )
 
 const (
+	containerdNamespaceRoot = "/run/containerd/runc/k8s.io"
 	// ContainerdConfFile is the path to the containerd configuration
 	containerdConfigFile     = "/etc/containerd/config.toml"
 	containerdConfigTemplate = `root = "/var/lib/containerd"
@@ -242,8 +243,18 @@ func (r *Containerd) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of managed by this container runtime
-func (r *Containerd) ListContainers(filter string) ([]string, error) {
-	return listCRIContainers(r.Runner, filter)
+func (r *Containerd) ListContainers(o ListOptions) ([]string, error) {
+	return listCRIContainers(r.Runner, containerdNamespaceRoot, o)
+}
+
+// PauseContainers pauses a running container based on ID
+func (r *Containerd) PauseContainers(ids []string) error {
+	return pauseCRIContainers(r.Runner, containerdNamespaceRoot, ids)
+}
+
+// PauseContainers pauses a running container based on ID
+func (r *Containerd) UnpauseContainers(ids []string) error {
+	return unpauseCRIContainers(r.Runner, containerdNamespaceRoot, ids)
 }
 
 // KillContainers removes containers based on ID

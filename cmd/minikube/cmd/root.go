@@ -172,6 +172,8 @@ func init() {
 				stopCmd,
 				deleteCmd,
 				dashboardCmd,
+				pauseCmd,
+				unpauseCmd,
 			},
 		},
 		{
