@@ -27,6 +27,18 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
+type ContainerState int
+
+const (
+	All ContainerState = iota
+	Running
+	Paused
+)
+
+func (cs ContainerState) String() string {
+	return [...]string{"All", "Running", "Paused"}[cs]
+}
+
 // CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
@@ -60,11 +72,15 @@ type Manager interface {
 	LoadImage(string) error
 
 	// ListContainers returns a list of managed by this container runtime
-	ListContainers(string) ([]string, error)
+	ListContainers(ListOptions) ([]string, error)
 	// KillContainers removes containers based on ID
 	KillContainers([]string) error
 	// StopContainers stops containers based on ID
 	StopContainers([]string) error
+	// PauseContainers pauses containers based on ID
+	PauseContainers([]string) error
+	// UnpauseContainers unpauses containers based on ID
+	UnpauseContainers([]string) error
 	// ContainerLogCmd returns the command to retrieve the log for a container based on ID
 	ContainerLogCmd(string, int, bool) string
 	// SystemLogCmd returns the command to return the system logs
@@ -83,6 +99,13 @@ type Config struct {
 	ImageRepository string
 	// KubernetesVersion Kubernetes version
 	KubernetesVersion string
+}
+
+type ListOptions struct {
+	// State is the container state to filter by (All, Running, Paused)
+	State ContainerState
+	// Name is a name filter
+	Name string
 }
 
 // New returns an appropriately configured runtime
