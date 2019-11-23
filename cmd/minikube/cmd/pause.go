@@ -17,7 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -33,6 +35,7 @@ var pauseCmd = &cobra.Command{
 	Use:   "pause",
 	Short: "pause containers",
 	Run: func(cmd *cobra.Command, args []string) {
+		cname := viper.GetString(config.MachineProfile)
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			exit.WithError("Error getting client", err)
@@ -42,7 +45,8 @@ var pauseCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := cluster.CheckIfHostExistsAndLoad(api, cc.Name)
+		glog.Infof("config: %+v", cc)
+		host, err := cluster.CheckIfHostExistsAndLoad(api, cname)
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
@@ -52,7 +56,7 @@ var pauseCmd = &cobra.Command{
 			exit.WithError("Failed to get command runner", err)
 		}
 
-		config := cruntime.Config{Type: cc.ContainerRuntime}
+		config := cruntime.Config{Type: cc.ContainerRuntime, Runner: r}
 		cr, err := cruntime.New(config)
 		if err != nil {
 			exit.WithError("Failed runtime", err)

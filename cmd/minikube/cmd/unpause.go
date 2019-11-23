@@ -17,8 +17,11 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -32,22 +35,20 @@ var unpauseCmd = &cobra.Command{
 	Use:   "unpause",
 	Short: "unpause Kubernetes",
 	Run: func(cmd *cobra.Command, args []string) {
+		cname := viper.GetString(config.MachineProfile)
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-
 		cc, err := config.Load()
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := api.Load(cc.Name)
-
-		config := cruntime.Config{Type: cc.ContainerRuntime}
-		cr, err := cruntime.New(config)
+		glog.Infof("config: %+v", cc)
+		host, err := cluster.CheckIfHostExistsAndLoad(api, cname)
 		if err != nil {
-			exit.WithError("Failed runtime", err)
+			exit.WithError("Error getting host", err)
 		}
 
 		r, err := machine.CommandRunner(host)
@@ -55,10 +56,15 @@ var unpauseCmd = &cobra.Command{
 			exit.WithError("Failed to get command runner", err)
 		}
 
-		err = pause.Pause(cr, r)
+		config := cruntime.Config{Type: cc.ContainerRuntime, Runner: r}
+		cr, err := cruntime.New(config)
+		if err != nil {
+			exit.WithError("Failed runtime", err)
+		}
+		err = pause.Unpause(cr, r)
 		if err != nil {
 			exit.WithError("Pause", err)
 		}
-		out.T(out.Pause, "The '{{.name}}' cluster is now paused", out.V{"name": cc.Name})
+		out.T(out.Unpause, "The '{{.name}}' cluster is now unpaused", out.V{"name": cc.Name})
 	},
 }

@@ -36,7 +36,7 @@ const (
 )
 
 func (cs ContainerState) String() string {
-	return [...]string{"All", "Running", "Paused"}[cs]
+	return [...]string{"all", "running", "paused"}[cs]
 }
 
 // CommandRunner is the subset of command.Runner this package consumes

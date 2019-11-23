@@ -87,7 +87,7 @@ func Check(cr command.Runner) error {
 // Disable disables the Kubelet
 func Disable(cr command.Runner) error {
 	glog.Infof("disabling kubelet ...")
-	c := exec.Command("systemctl", "disable", "kubelet")
+	c := exec.Command("sudo", "systemctl", "disable", "kubelet")
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "disable")
 	}
@@ -97,7 +97,7 @@ func Disable(cr command.Runner) error {
 // Enable enables the Kubelet
 func Enable(cr command.Runner) error {
 	glog.Infof("enabling kubelet ...")
-	c := exec.Command("systemctl", "enable", "kubelet")
+	c := exec.Command("sudo", "systemctl", "enable", "kubelet")
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "enable")
 	}

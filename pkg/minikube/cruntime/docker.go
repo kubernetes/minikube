@@ -127,9 +127,9 @@ func (r *Docker) ListContainers(o ListOptions) ([]string, error) {
 	case All:
 		args = append(args, "-a")
 	case Paused:
-		args = append(args, "--filter status=paused")
+		args = append(args, "--filter", "status=paused")
 	}
-	args = append(args, fmt.Sprintf("--filter=name=%s", KubernetesContainerPrefix+o.Name), "--format=\"{{.ID}}\"")
+	args = append(args, fmt.Sprintf("--filter=name=%s", KubernetesContainerPrefix+o.Name), "--format={{.ID}}")
 	rr, err := r.Runner.RunCmd(exec.Command("docker", args...))
 	if err != nil {
 		return nil, errors.Wrapf(err, "docker")
