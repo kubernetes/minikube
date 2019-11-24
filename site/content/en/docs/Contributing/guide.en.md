@@ -37,6 +37,12 @@ Once you've discovered an issue to work on:
 4. Fork the minikube repository, develop and test your code changes.
 5. Submit a pull request.
 
+## Contributing larger changes
+
+To get feedback on a larger, more ambitious changes, create a PR containing your idea using the [MEP (minikube enhancement proposal) template](https://github.com/kubernetes/minikube/tree/master/enhancements). This way other contributors can comment on design issues early on, though you are welcome to work on the code in parallel.
+
+If you send out a large change without a MEP, prepare to be asked by other contributors for one to be included within the PR.
+
 ### Style Guides
 
 For coding, refer to the [Kubernetes Coding Conventions](https://github.com/kubernetes/community/blob/master/contributors/guide/coding-conventions.md#code-conventions)

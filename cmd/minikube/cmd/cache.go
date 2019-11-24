@@ -22,8 +22,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
+
+// cacheImageConfigKey is the config field name used to store which images we have previously cached
+const cacheImageConfigKey = "cache"
 
 // cacheCmd represents the cache command
 var cacheCmd = &cobra.Command{
@@ -43,7 +47,7 @@ var addCacheCmd = &cobra.Command{
 			exit.WithError("Failed to cache and load images", err)
 		}
 		// Add images to config file
-		if err := cmdConfig.AddToConfigMap(constants.Cache, args); err != nil {
+		if err := cmdConfig.AddToConfigMap(cacheImageConfigKey, args); err != nil {
 			exit.WithError("Failed to update config", err)
 		}
 	},
@@ -56,7 +60,7 @@ var deleteCacheCmd = &cobra.Command{
 	Long:  "Delete an image from the local cache.",
 	Run: func(cmd *cobra.Command, args []string) {
 		// Delete images from config file
-		if err := cmdConfig.DeleteFromConfigMap(constants.Cache, args); err != nil {
+		if err := cmdConfig.DeleteFromConfigMap(cacheImageConfigKey, args); err != nil {
 			exit.WithError("Failed to delete images from config", err)
 		}
 		// Delete images from cache/images directory
@@ -67,11 +71,11 @@ var deleteCacheCmd = &cobra.Command{
 }
 
 func imagesInConfigFile() ([]string, error) {
-	configFile, err := config.ReadConfig(constants.ConfigFile)
+	configFile, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return nil, err
 	}
-	if values, ok := configFile[constants.Cache]; ok {
+	if values, ok := configFile[cacheImageConfigKey]; ok {
 		var images []string
 		for key := range values.(map[string]interface{}) {
 			images = append(images, key)

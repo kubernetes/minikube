@@ -161,7 +161,7 @@ func setFlagsUsingViper() {
 func init() {
 	translate.DetermineLocale()
 	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
-	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", constants.DefaultClusterBootstrapper, "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
+	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
 
 	groups := templates.CommandGroups{
 		{
@@ -232,18 +232,20 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	configPath := constants.ConfigFile
+	configPath := localpath.ConfigFile
 	viper.SetConfigFile(configPath)
 	viper.SetConfigType("json")
-	err := viper.ReadInConfig()
-	if err != nil {
-		glog.Warningf("Error reading config file at %s: %v", configPath, err)
+	if err := viper.ReadInConfig(); err != nil {
+		// This config file is optional, so don't emit errors if missing
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			glog.Warningf("Error reading config file at %s: %v", configPath, err)
+		}
 	}
 	setupViper()
 }
 
 func setupViper() {
-	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	viper.SetEnvPrefix(minikubeEnvPrefix)
 	// Replaces '-' in flags with '_' in env variables
 	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))

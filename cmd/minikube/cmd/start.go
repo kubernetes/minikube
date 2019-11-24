@@ -17,7 +17,9 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
+	"math"
 	"net"
 	"net/url"
 	"os"
@@ -37,13 +39,13 @@ import (
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
@@ -52,7 +54,7 @@ import (
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/drivers/none"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -61,6 +63,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/translate"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
@@ -85,6 +88,9 @@ const (
 	kvmQemuURI            = "kvm-qemu-uri"
 	kvmGPU                = "kvm-gpu"
 	kvmHidden             = "kvm-hidden"
+	minikubeEnvPrefix     = "MINIKUBE"
+	defaultMemorySize     = "2000mb"
+	defaultDiskSize       = "20000mb"
 	keepContext           = "keep-context"
 	createMount           = "mount"
 	featureGates          = "feature-gates"
@@ -96,6 +102,7 @@ const (
 	imageMirrorCountry    = "image-mirror-country"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
+	addons                = "addons"
 	cacheImages           = "cache-images"
 	uuid                  = "uuid"
 	vpnkitSock            = "hyperkit-vpnkit-sock"
@@ -110,17 +117,21 @@ const (
 	interactive           = "interactive"
 	waitTimeout           = "wait-timeout"
 	nativeSSH             = "native-ssh"
+	minimumMemorySize     = "1024mb"
+	minimumCPUS           = 2
+	minimumDiskSize       = "2000mb"
+	autoUpdate            = "auto-update-drivers"
 )
 
 var (
-	registryMirror           []string
-	dockerEnv                []string
-	dockerOpt                []string
-	insecureRegistry         []string
-	apiServerNames           []string
-	apiServerIPs             []net.IP
-	extraOptions             cfg.ExtraOptionSlice
-	enableUpdateNotification = true
+	registryMirror   []string
+	dockerEnv        []string
+	dockerOpt        []string
+	insecureRegistry []string
+	apiServerNames   []string
+	addonList        []string
+	apiServerIPs     []net.IP
+	extraOptions     cfg.ExtraOptionSlice
 )
 
 func init() {
@@ -131,12 +142,11 @@ func init() {
 	if err := viper.BindPFlags(startCmd.Flags()); err != nil {
 		exit.WithError("unable to bind flags", err)
 	}
-
 }
 
 // initMinikubeFlags includes commandline flags for minikube.
 func initMinikubeFlags() {
-	viper.SetEnvPrefix(constants.MinikubeEnvPrefix)
+	viper.SetEnvPrefix(minikubeEnvPrefix)
 	// Replaces '-' in flags with '_' in env variables
 	// e.g. iso-url => $ENVPREFIX_ISO_URL
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -145,23 +155,25 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 
-	startCmd.Flags().Int(cpus, constants.DefaultCPUS, "Number of CPUs allocated to the minikube VM.")
-	startCmd.Flags().String(memory, constants.DefaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
-	startCmd.Flags().String(humanReadableDiskSize, constants.DefaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to the minikube VM.")
+	startCmd.Flags().String(memory, defaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso.")
-	startCmd.Flags().Bool(keepContext, constants.DefaultKeepContext, "This will keep the existing kubectl context and will create a minikube context.")
-	startCmd.Flags().Bool(embedCerts, constants.DefaultEmbedCerts, "if true, will embed the certs in kubeconfig.")
+	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
+	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
-	startCmd.Flags().String(mountString, constants.DefaultMountDir+":"+constants.DefaultMountEndpoint, "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
+	startCmd.Flags().StringArrayVar(&addonList, addons, nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
-	startCmd.Flags().Bool(waitUntilHealthy, true, "Wait until Kubernetes core services are healthy before exiting.")
+	startCmd.Flags().Bool(waitUntilHealthy, true, "Block until the apiserver is servicing API requests")
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
+	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -182,7 +194,7 @@ func initKubernetesFlags() {
 
 // initDriverFlags inits the commandline flags for vm drivers
 func initDriverFlags() {
-	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to virtualbox)", constants.SupportedVMDrivers))
+	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.SupportedDrivers()))
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
 
 	// kvm2
@@ -257,17 +269,7 @@ func platform() string {
 
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
-	prefix := ""
-	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
-		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
-	}
-
-	versionState := out.Happy
-	if notify.MaybePrintUpdateTextFromGithub() {
-		versionState = out.Meh
-	}
-
-	out.T(versionState, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version.GetVersion(), "platform": platform()})
+	displayVersion(version.GetVersion())
 	displayEnviron(os.Environ())
 
 	// if --registry-mirror specified when run minikube start,
@@ -281,36 +283,35 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	oldConfig, err := cfg.Load()
+	existing, err := cfg.Load()
 	if err != nil && !os.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
-	driver := selectDriver(oldConfig)
-	err = autoSetDriverOptions(driver)
+	driverName := selectDriver(existing)
+	glog.Infof("selected driver: %s", driverName)
+	validateDriver(driverName, existing)
+	err = autoSetDriverOptions(cmd, driverName)
 	if err != nil {
 		glog.Errorf("Error autoSetOptions : %v", err)
 	}
 
-	validateFlags(driver)
-	validateUser(driver)
+	validateFlags(cmd, driverName)
+	validateUser(driverName)
 
-	v, err := version.GetSemverVersion()
-	if err != nil {
-		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := drivers.InstallOrUpdate(driver, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive)); err != nil {
-		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driver, "error": err})
+	// No need to install a driver in download-only mode
+	if !viper.GetBool(downloadOnly) {
+		updateDriver(driverName)
 	}
 
-	k8sVersion, isUpgrade := getKubernetesVersion(oldConfig)
-	config, err := generateCfgFromFlags(cmd, k8sVersion, driver)
+	k8sVersion, isUpgrade := getKubernetesVersion(existing)
+	config, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
 
-	// For non-"none", the ISO is required to boot, so block until it is downloaded
-	if driver != constants.DriverNone {
-		if err := cluster.CacheISO(config.MachineConfig); err != nil {
+	if !driver.BareMetal(driverName) {
+		if err := cluster.CacheISO(config); err != nil {
 			exit.WithError("Failed to cache ISO", err)
 		}
 	}
@@ -336,12 +337,12 @@ func runStart(cmd *cobra.Command, args []string) {
 	mRunner, preExists, machineAPI, host := startMachine(&config)
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, driver)
+	cr := configureRuntimes(mRunner, driverName, config.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
 	waitCacheImages(&cacheGroup)
 
 	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-	kubeconfig, err := setupKubeconfig(host, &config)
+	kubeconfig, err := setupKubeconfig(host, &config, config.Name)
 	if err != nil {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
@@ -352,20 +353,60 @@ func runStart(cmd *cobra.Command, args []string) {
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
 	configureMounts()
+
+	// enable addons with start command
+	enableAddons()
+
 	if err = loadCachedImagesInConfigFile(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}
 
-	// special ops for none driver, like change minikube directory.
-	if driver == constants.DriverNone {
+	// special ops for none , like change minikube directory.
+	if driverName == driver.None {
 		prepareNone()
 	}
-	if viper.GetBool(waitUntilHealthy) {
-		if err := bs.WaitCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
+
+	// Skip pre-existing, because we already waited for health
+	if viper.GetBool(waitUntilHealthy) && !preExists {
+		if err := bs.WaitForCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
 			exit.WithError("Wait failed", err)
 		}
 	}
-	showKubectlConnectInfo(kubeconfig)
+	if err := showKubectlInfo(kubeconfig, k8sVersion, config.Name); err != nil {
+		glog.Errorf("kubectl info: %v", err)
+	}
+}
+
+func updateDriver(driverName string) {
+	v, err := version.GetSemverVersion()
+	if err != nil {
+		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
+	} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
+		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
+	}
+}
+
+func enableAddons() {
+	for _, a := range addonList {
+		err := cmdcfg.Set(a, "true")
+		if err != nil {
+			exit.WithError("addon enable failed", err)
+		}
+	}
+}
+
+func displayVersion(version string) {
+	prefix := ""
+	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
+		prefix = fmt.Sprintf("[%s] ", viper.GetString(cfg.MachineProfile))
+	}
+
+	versionState := out.Happy
+	if notify.MaybePrintUpdateTextFromGithub() {
+		versionState = out.Meh
+	}
+
+	out.T(versionState, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version, "platform": platform()})
 }
 
 // displayEnviron makes the user aware of environment variables that will affect how minikube operates
@@ -380,7 +421,7 @@ func displayEnviron(env []string) {
 	}
 }
 
-func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) {
+func setupKubeconfig(h *host.Host, c *cfg.MachineConfig, clusterName string) (*kubeconfig.Settings, error) {
 	addr, err := h.Driver.GetURL()
 	if err != nil {
 		exit.WithError("Failed to get driver URL", err)
@@ -392,7 +433,7 @@ func setupKubeconfig(h *host.Host, c *cfg.Config) (*kubeconfig.Settings, error) 
 	}
 
 	kcs := &kubeconfig.Settings{
-		ClusterName:          cfg.GetMachineName(),
+		ClusterName:          clusterName,
 		ClusterServerAddress: addr,
 		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
 		ClientKey:            localpath.MakeMiniPath("client.key"),
@@ -425,14 +466,18 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 
 }
 
-func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(config *cfg.MachineConfig) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
-	host, preExists = startHost(m, config.MachineConfig)
+	host, preExists = startHost(m, *config)
+	runner, err = machine.CommandRunner(host)
+	if err != nil {
+		exit.WithError("Failed to get command runner", err)
+	}
 
-	ip := validateNetwork(host)
+	ip := validateNetwork(host, runner)
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
@@ -442,10 +487,6 @@ func startMachine(config *cfg.Config) (runner command.Runner, preExists bool, ma
 	config.KubernetesConfig.NodeIP = ip
 	if err := saveConfig(config); err != nil {
 		exit.WithError("Failed to save config", err)
-	}
-	runner, err = machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
 	}
 
 	return runner, preExists, m, host
@@ -462,66 +503,142 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
-func showKubectlConnectInfo(kcs *kubeconfig.Settings) {
+func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
 	if kcs.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
 	} else {
-		out.T(out.Ready, `Done! kubectl is now configured to use "{{.name}}"`, out.V{"name": cfg.GetMachineName()})
+		out.T(out.Ready, `Done! kubectl is now configured to use "{{.name}}"`, out.V{"name": machineName})
 	}
-	_, err := exec.LookPath("kubectl")
+
+	path, err := exec.LookPath("kubectl")
 	if err != nil {
 		out.T(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		return nil
 	}
+
+	j, err := exec.Command(path, "version", "--client", "--output=json").Output()
+	if err != nil {
+		return errors.Wrap(err, "exec")
+	}
+
+	cv := struct {
+		ClientVersion struct {
+			GitVersion string `json:"gitVersion"`
+		} `json:"clientVersion"`
+	}{}
+	err = json.Unmarshal(j, &cv)
+	if err != nil {
+		return errors.Wrap(err, "unmarshal")
+	}
+
+	client, err := semver.Make(strings.TrimPrefix(cv.ClientVersion.GitVersion, version.VersionPrefix))
+	if err != nil {
+		return errors.Wrap(err, "client semver")
+	}
+
+	cluster := semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix))
+	minorSkew := int(math.Abs(float64(int(client.Minor) - int(cluster.Minor))))
+	glog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
+
+	if client.Major != cluster.Major || minorSkew > 1 {
+		out.WarningT("{{.path}} is version {{.client_version}}, and is incompatible with Kubernetes {{.cluster_version}}. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
+			out.V{"path": path, "client_version": client, "cluster_version": cluster})
+	}
+	return nil
 }
 
-func selectDriver(oldConfig *cfg.Config) string {
-	driver := viper.GetString("vm-driver")
+func selectDriver(existing *cfg.MachineConfig) string {
+	name := viper.GetString("vm-driver")
+	glog.Infof("selectDriver: flag=%q, old=%v", name, existing)
+	options := driver.Choices()
+	pick, alts := driver.Choose(name, options)
+
+	if name != "" {
+		out.T(out.Sparkle, `Selecting '{{.driver}}' driver from user configuration (alternates: {{.alternates}})`, out.V{"driver": name, "alternates": alts})
+		return name
+	}
+
 	// By default, the driver is whatever we used last time
-	if driver == "" {
-		driver = constants.DefaultVMDriver
-		if oldConfig != nil {
-			driver = oldConfig.MachineConfig.VMDriver
+	if existing != nil {
+		pick, alts := driver.Choose(existing.VMDriver, options)
+		out.T(out.Sparkle, `Selecting '{{.driver}}' driver from existing profile (alternates: {{.alternates}})`, out.V{"driver": existing.VMDriver, "alternates": alts})
+		return pick.Name
+	}
+
+	if len(options) > 1 {
+		out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"driver": pick.Name, "alternates": alts})
+	} else {
+		out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver`, out.V{"driver": pick.Name})
+	}
+
+	if pick.Name == "" {
+		exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --vm-driver, or see https://minikube.sigs.k8s.io/docs/start/")
+	}
+	return pick.Name
+}
+
+// validateDriver validates that the selected driver appears sane, exits if not
+func validateDriver(name string, existing *cfg.MachineConfig) {
+	glog.Infof("validating driver %q against %+v", name, existing)
+	if !driver.Supported(name) {
+		exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+	}
+
+	st := driver.Status(name)
+	glog.Infof("status for %s: %+v", name, st)
+
+	if st.Error != nil {
+		out.ErrLn("")
+
+		out.WarningT("'{{.driver}}' driver reported an issue: {{.error}}", out.V{"driver": name, "error": st.Error})
+		out.ErrT(out.Tip, "Suggestion: {{.fix}}", out.V{"fix": translate.T(st.Fix)})
+		if st.Doc != "" {
+			out.ErrT(out.Documentation, "Documentation: {{.url}}", out.V{"url": st.Doc})
+		}
+		out.ErrLn("")
+
+		if !st.Installed && !viper.GetBool(force) {
+			if existing != nil && name == existing.VMDriver {
+				exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+			}
+			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
 	}
-	if err := cmdcfg.IsValidDriver(runtime.GOOS, driver); err != nil {
-		exit.WithCodeT(exit.Failure, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": driver, "os": runtime.GOOS})
+
+	if existing == nil {
+		return
 	}
 
-	// Detect if our driver conflicts with a previously created VM. If we run into any errors, just move on.
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Infof("selectDriver NewAPIClient: %v", err)
-		return driver
+		glog.Warningf("selectDriver NewAPIClient: %v", err)
+		return
 	}
 
-	exists, err := api.Exists(cfg.GetMachineName())
+	machineName := viper.GetString(cfg.MachineProfile)
+	h, err := api.Load(machineName)
 	if err != nil {
-		glog.Infof("selectDriver api.Exists: %v", err)
-		return driver
-	}
-	if !exists {
-		return driver
+		glog.Warningf("selectDriver api.Load: %v", err)
+		return
 	}
 
-	h, err := api.Load(cfg.GetMachineName())
-	if err != nil {
-		glog.Infof("selectDriver api.Load: %v", err)
-		return driver
-	}
-
-	if h.Driver.DriverName() == driver || h.Driver.DriverName() == "not-found" {
-		return driver
+	if h.Driver.DriverName() == name {
+		return
 	}
 
 	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
-		out.V{"profile_name": cfg.GetMachineName(), "driver": driver, "old_driver": h.Driver.DriverName()})
+		out.V{"profile_name": machineName, "driver": name, "old_driver": h.Driver.DriverName()})
 
 	out.ErrT(out.Workaround, `To proceed, either:
-      1) Delete the existing VM using: '{{.command}} delete'
-      or
-      2) Restart with the existing driver: '{{.command}} start --vm-driver={{.old_driver}}'`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName()})
-	exit.WithCodeT(exit.Config, "Exiting due to driver incompatibility")
-	return ""
+
+    1) Delete the existing "{{.profile_name}}" cluster using: '{{.command}} delete'
+
+    * or *
+
+    2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --vm-driver={{.old_driver}}'
+	`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": machineName})
+
+	exit.WithCodeT(exit.Config, "Exiting.")
 }
 
 func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
@@ -552,9 +669,8 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	}
 
 	checkRepository := func(repo string) error {
-		podInfraContainerImage, _ := images.CachedImages(repo, k8sVersion)
-
-		ref, err := name.ParseReference(podInfraContainerImage, name.WeakValidation)
+		pauseImage := images.PauseImage(repo, k8sVersion)
+		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
 		if err != nil {
 			return err
 		}
@@ -585,7 +701,7 @@ func minikubeCmd() string {
 }
 
 // validerUser validates minikube is run by the recommended user (privileged or regular)
-func validateUser(driver string) {
+func validateUser(drvName string) {
 	u, err := user.Current()
 	if err != nil {
 		glog.Errorf("Error getting the current user: %v", err)
@@ -594,15 +710,15 @@ func validateUser(driver string) {
 
 	useForce := viper.GetBool(force)
 
-	if driver == constants.DriverNone && u.Uid != "0" && !useForce {
-		exit.WithCodeT(exit.Permissions, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo minikube --vm-driver={{.driver_name}}'.`, out.V{"driver_name": driver})
+	if driver.BareMetal(drvName) && u.Uid != "0" && !useForce {
+		exit.WithCodeT(exit.Permissions, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo minikube --vm-driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
 	}
 
-	if driver == constants.DriverNone || u.Uid != "0" {
+	if driver.BareMetal(drvName) || u.Uid != "0" {
 		return
 	}
 
-	out.T(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": driver})
+	out.T(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
 	out.T(out.Tip, "If you are running minikube within a VM, consider using --vm-driver=none:")
 	out.T(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 
@@ -619,25 +735,37 @@ func validateUser(driver string) {
 }
 
 // validateFlags validates the supplied flags against known bad combinations
-func validateFlags(driver string) {
+func validateFlags(cmd *cobra.Command, drvName string) {
 	diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
-	if diskSizeMB < pkgutil.CalculateSizeInMB(constants.MinimumDiskSize) && !viper.GetBool(force) {
-		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(constants.MinimumDiskSize)})
+	if diskSizeMB < pkgutil.CalculateSizeInMB(minimumDiskSize) && !viper.GetBool(force) {
+		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumDiskSize)})
 	}
 
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
-	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.MinimumMemorySize) && !viper.GetBool(force) {
-		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(constants.MinimumMemorySize)})
+	if memorySizeMB < pkgutil.CalculateSizeInMB(minimumMemorySize) && !viper.GetBool(force) {
+		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumMemorySize)})
 	}
-	if memorySizeMB < pkgutil.CalculateSizeInMB(constants.DefaultMemorySize) && !viper.GetBool(force) {
+	if memorySizeMB < pkgutil.CalculateSizeInMB(defaultMemorySize) && !viper.GetBool(force) {
 		out.T(out.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default_memorysize}}MB. Beware that minikube might not work correctly or crash unexpectedly.",
-			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(constants.DefaultMemorySize)})
+			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(defaultMemorySize)})
 	}
 
 	var cpuCount int
-	if driver == constants.DriverNone {
-		if cfg.GetMachineName() != constants.DefaultMachineName {
+	if driver.BareMetal(drvName) {
+		if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
 			exit.WithCodeT(exit.Config, "The 'none' driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+		}
+
+		if cmd.Flags().Changed(cpus) {
+			out.WarningT("The 'none' driver does not respect the --cpus flag")
+		}
+		if cmd.Flags().Changed(memory) {
+			out.WarningT("The 'none' driver does not respect the --memory flag")
+		}
+
+		runtime := viper.GetString(containerRuntime)
+		if runtime != "docker" {
+			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
 		}
 
 		// Uses the gopsutil cpu package to count the number of physical cpu cores
@@ -650,8 +778,8 @@ func validateFlags(driver string) {
 	} else {
 		cpuCount = viper.GetInt(cpus)
 	}
-	if cpuCount < constants.MinimumCPUS {
-		exit.UsageT("Requested CPU count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": constants.MinimumCPUS})
+	if cpuCount < minimumCPUS && !viper.GetBool(force) {
+		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
@@ -710,10 +838,10 @@ func waitCacheImages(g *errgroup.Group) {
 }
 
 // generateCfgFromFlags generates cfg.Config based on flags and supplied arguments
-func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) (cfg.Config, error) {
+func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) (cfg.MachineConfig, error) {
 	r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
 	if err != nil {
-		return cfg.Config{}, err
+		return cfg.MachineConfig{}, err
 	}
 
 	// Pick good default values for --network-plugin and --enable-default-cni based on runtime.
@@ -727,23 +855,8 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 	}
 
 	// Feed Docker our host proxy environment by default, so that it can pull images
-	if _, ok := r.(*cruntime.Docker); ok {
-		if !cmd.Flags().Changed("docker-env") {
-			for _, k := range proxy.EnvVars {
-				if v := os.Getenv(k); v != "" {
-					// convert https_proxy to HTTPS_PROXY for linux
-					// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
-					k = strings.ToUpper(k)
-					if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
-						if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
-							out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
-							continue
-						}
-					}
-					dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
-				}
-			}
-		}
+	if _, ok := r.(*cruntime.Docker); ok && !cmd.Flags().Changed("docker-env") {
+		setDockerProxy()
 	}
 
 	repository := viper.GetString(imageRepository)
@@ -765,41 +878,40 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 		repository = autoSelectedRepository
 	}
 
-	if repository != "" {
+	if cmd.Flags().Changed(imageRepository) {
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
-	cfg := cfg.Config{
-		MachineConfig: cfg.MachineConfig{
-			KeepContext:         viper.GetBool(keepContext),
-			EmbedCerts:          viper.GetBool(embedCerts),
-			MinikubeISO:         viper.GetString(isoURL),
-			Memory:              pkgutil.CalculateSizeInMB(viper.GetString(memory)),
-			CPUs:                viper.GetInt(cpus),
-			DiskSize:            pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
-			VMDriver:            driver,
-			ContainerRuntime:    viper.GetString(containerRuntime),
-			HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
-			HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
-			NFSShare:            viper.GetStringSlice(nfsShare),
-			NFSSharesRoot:       viper.GetString(nfsSharesRoot),
-			DockerEnv:           dockerEnv,
-			DockerOpt:           dockerOpt,
-			InsecureRegistry:    insecureRegistry,
-			RegistryMirror:      registryMirror,
-			HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
-			HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
-			KVMNetwork:          viper.GetString(kvmNetwork),
-			KVMQemuURI:          viper.GetString(kvmQemuURI),
-			KVMGPU:              viper.GetBool(kvmGPU),
-			KVMHidden:           viper.GetBool(kvmHidden),
-			Downloader:          pkgutil.DefaultDownloader{},
-			DisableDriverMounts: viper.GetBool(disableDriverMounts),
-			UUID:                viper.GetString(uuid),
-			NoVTXCheck:          viper.GetBool(noVTXCheck),
-			DNSProxy:            viper.GetBool(dnsProxy),
-			HostDNSResolver:     viper.GetBool(hostDNSResolver),
-		},
+	cfg := cfg.MachineConfig{
+		Name:                viper.GetString(cfg.MachineProfile),
+		KeepContext:         viper.GetBool(keepContext),
+		EmbedCerts:          viper.GetBool(embedCerts),
+		MinikubeISO:         viper.GetString(isoURL),
+		Memory:              pkgutil.CalculateSizeInMB(viper.GetString(memory)),
+		CPUs:                viper.GetInt(cpus),
+		DiskSize:            pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
+		VMDriver:            drvName,
+		ContainerRuntime:    viper.GetString(containerRuntime),
+		HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
+		HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
+		NFSShare:            viper.GetStringSlice(nfsShare),
+		NFSSharesRoot:       viper.GetString(nfsSharesRoot),
+		DockerEnv:           dockerEnv,
+		DockerOpt:           dockerOpt,
+		InsecureRegistry:    insecureRegistry,
+		RegistryMirror:      registryMirror,
+		HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
+		HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
+		KVMNetwork:          viper.GetString(kvmNetwork),
+		KVMQemuURI:          viper.GetString(kvmQemuURI),
+		KVMGPU:              viper.GetBool(kvmGPU),
+		KVMHidden:           viper.GetBool(kvmHidden),
+		Downloader:          pkgutil.DefaultDownloader{},
+		DisableDriverMounts: viper.GetBool(disableDriverMounts),
+		UUID:                viper.GetString(uuid),
+		NoVTXCheck:          viper.GetBool(noVTXCheck),
+		DNSProxy:            viper.GetBool(dnsProxy),
+		HostDNSResolver:     viper.GetBool(hostDNSResolver),
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			NodePort:               viper.GetInt(apiServerPort),
@@ -822,13 +934,33 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, driver string) 
 	return cfg, nil
 }
 
-// autoSetDriverOptions sets the options needed for specific vm-driver automatically.
-func autoSetDriverOptions(driver string) error {
-	if driver == constants.DriverNone {
-		if o := none.AutoOptions(); o != "" {
-			return extraOptions.Set(o)
+// setDockerProxy sets the proxy environment variables in the docker environment.
+func setDockerProxy() {
+	for _, k := range proxy.EnvVars {
+		if v := os.Getenv(k); v != "" {
+			// convert https_proxy to HTTPS_PROXY for linux
+			// TODO (@medyagh): if user has both http_proxy & HTTPS_PROXY set merge them.
+			k = strings.ToUpper(k)
+			if k == "HTTP_PROXY" || k == "HTTPS_PROXY" {
+				if strings.HasPrefix(v, "localhost") || strings.HasPrefix(v, "127.0") {
+					out.WarningT("Not passing {{.name}}={{.value}} to docker env.", out.V{"name": k, "value": v})
+					continue
+				}
+			}
+			dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
 		}
-		viper.Set(cacheImages, false)
+	}
+}
+
+// autoSetDriverOptions sets the options needed for specific vm-driver automatically.
+func autoSetDriverOptions(cmd *cobra.Command, drvName string) error {
+	hints := driver.FlagDefaults(drvName)
+	if !cmd.Flags().Changed("extra-config") && hints.ExtraOptions != "" {
+		return extraOptions.Set(hints.ExtraOptions)
+	}
+
+	if !cmd.Flags().Changed(cacheImages) {
+		viper.Set(cacheImages, hints.CacheImages)
 	}
 	return nil
 }
@@ -864,7 +996,7 @@ func prepareNone() {
 
 // startHost starts a new minikube host using a VM or None
 func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
-	exists, err := api.Exists(cfg.GetMachineName())
+	exists, err := api.Exists(mc.Name)
 	if err != nil {
 		exit.WithError("Failed to check if machine exists", err)
 	}
@@ -874,7 +1006,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 		host, err = cluster.StartHost(api, mc)
 		if err != nil {
 			out.T(out.Resetting, "Retriable failure: {{.error}}", out.V{"error": err})
-			if derr := cluster.DeleteHost(api); derr != nil {
+			if derr := cluster.DeleteHost(api, mc.Name); derr != nil {
 				glog.Warningf("DeleteHost: %v", derr)
 			}
 		}
@@ -888,7 +1020,7 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host) string {
+func validateNetwork(h *host.Host, r command.Runner) string {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
@@ -912,12 +1044,76 @@ func validateNetwork(h *host.Host) string {
 		}
 	}
 
-	// Here is where we should be checking connectivity to/from the VM
+	if !driver.BareMetal(h.Driver.DriverName()) {
+		trySSH(h, ip)
+	}
+
+	tryLookup(r)
+	tryRegistry(r)
 	return ip
 }
 
+func trySSH(h *host.Host, ip string) {
+	sshAddr := fmt.Sprintf("%s:22", ip)
+
+	dial := func() (err error) {
+		d := net.Dialer{Timeout: 3 * time.Second}
+		conn, err := d.Dial("tcp", sshAddr)
+		if err != nil {
+			out.WarningT("Unable to verify SSH connectivity: {{.error}}. Will retry...", out.V{"error": err})
+			return err
+		}
+		_ = conn.Close()
+		return nil
+	}
+
+	if err := retry.Expo(dial, time.Second, 13*time.Second); err != nil {
+		exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
+
+This is likely due to one of two reasons:
+
+- VPN or firewall interference
+- {{.hypervisor}} network configuration issue
+
+Suggested workarounds:
+
+- Disable your local VPN or firewall software
+- Configure your local VPN or firewall to allow access to {{.ip}}
+- Restart or reinstall {{.hypervisor}}
+- Use an alternative --vm-driver`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
+	}
+}
+
+func tryLookup(r command.Runner) {
+	// DNS check
+	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
+		glog.Warningf("%s failed: %v", rr.Args, err)
+		out.WarningT("VM may be unable to resolve external DNS records")
+	}
+}
+
+func tryRegistry(r command.Runner) {
+	// Try an HTTPS connection to the image repository
+	proxy := os.Getenv("HTTPS_PROXY")
+	opts := []string{"-sS"}
+	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
+		opts = append([]string{"-x", proxy}, opts...)
+	}
+
+	repo := viper.GetString(imageRepository)
+	if repo == "" {
+		repo = images.DefaultImageRepo
+	}
+
+	opts = append(opts, fmt.Sprintf("https://%s/", repo))
+	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
+		glog.Warningf("%s failed: %v", rr.Args, err)
+		out.WarningT("VM is unable to access {{.repository}}, you may need to configure a proxy or set --image-repository", out.V{"repository": repo})
+	}
+}
+
 // getKubernetesVersion ensures that the requested version is reasonable
-func getKubernetesVersion(old *cfg.Config) (string, bool) {
+func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 	rawVersion := viper.GetString(kubernetesVersion)
 	isUpgrade := false
 	if rawVersion == "" {
@@ -956,8 +1152,8 @@ func getKubernetesVersion(old *cfg.Config) (string, bool) {
 	if nvs.LT(ovs) {
 		nv = version.VersionPrefix + ovs.String()
 		profileArg := ""
-		if cfg.GetMachineName() != constants.DefaultMachineName {
-			profileArg = fmt.Sprintf("-p %s", cfg.GetMachineName())
+		if old.Name != constants.DefaultMachineName {
+			profileArg = fmt.Sprintf("-p %s", old.Name)
 		}
 		exit.WithCodeT(exit.Config, `Error: You have selected Kubernetes v{{.new}}, but the existing cluster for your profile is running Kubernetes v{{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
 
@@ -993,15 +1189,15 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 }
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, driver string) cruntime.Manager {
-	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner}
+func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s cfg.KubernetesConfig) cruntime.Manager {
+	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner, ImageRepository: k8s.ImageRepository, KubernetesVersion: k8s.KubernetesVersion}
 	cr, err := cruntime.New(config)
 	if err != nil {
 		exit.WithError("Failed runtime", err)
 	}
 
 	disableOthers := true
-	if driver == constants.DriverNone {
+	if driver.BareMetal(drvName) {
 		disableOthers = false
 	}
 	err = cr.Enable(disableOthers)
@@ -1014,22 +1210,11 @@ func configureRuntimes(runner cruntime.CommandRunner, driver string) cruntime.Ma
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
 func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, kc cfg.KubernetesConfig, preexisting bool, isUpgrade bool) {
-	// hum. bootstrapper.Bootstrapper should probably have a Name function.
-	bsName := viper.GetString(cmdcfg.Bootstrapper)
-
 	if isUpgrade || !preexisting {
 		out.T(out.Pulling, "Pulling images ...")
 		if err := bs.PullImages(kc); err != nil {
 			out.T(out.FailureType, "Unable to pull images, which may be OK: {{.error}}", out.V{"error": err})
 		}
-	}
-
-	if preexisting {
-		out.T(out.Restarting, "Relaunching Kubernetes using {{.bootstrapper}} ... ", out.V{"bootstrapper": bsName})
-		if err := bs.RestartCluster(kc); err != nil {
-			exit.WithLogEntries("Error restarting cluster", err, logs.FindProblems(r, bs, runner))
-		}
-		return
 	}
 
 	out.T(out.Launch, "Launching Kubernetes ... ")
@@ -1065,6 +1250,6 @@ func configureMounts() {
 }
 
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterCfg *cfg.Config) error {
+func saveConfig(clusterCfg *cfg.MachineConfig) error {
 	return cfg.CreateProfile(viper.GetString(cfg.MachineProfile), clusterCfg)
 }

@@ -93,7 +93,7 @@ func (router *osRouter) parseTable(table []byte) routingTable {
 					},
 					line: line,
 				}
-				glog.V(4).Infof("adding line %s", tableLine)
+				glog.V(4).Infof("adding line %v", tableLine)
 				t = append(t, tableLine)
 			}
 		}

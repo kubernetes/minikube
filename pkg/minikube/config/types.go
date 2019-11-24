@@ -26,17 +26,12 @@ import (
 // Profile represents a minikube profile
 type Profile struct {
 	Name   string
-	Config *Config
-}
-
-// Config contains machine and k8s config
-type Config struct {
-	MachineConfig    MachineConfig
-	KubernetesConfig KubernetesConfig
+	Config []*MachineConfig
 }
 
 // MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
+	Name                string
 	KeepContext         bool // used by start and profile command to or not to switch kubectl's current context
 	EmbedCerts          bool // used by kubeconfig.Setup
 	MinikubeISO         string
@@ -65,6 +60,7 @@ type MachineConfig struct {
 	NoVTXCheck          bool   // Only used by virtualbox
 	DNSProxy            bool   // Only used by virtualbox
 	HostDNSResolver     bool   // Only used by virtualbox
+	KubernetesConfig    KubernetesConfig
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

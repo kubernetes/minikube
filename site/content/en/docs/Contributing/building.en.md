@@ -32,6 +32,11 @@ make
 
 Note: On Windows, this will only work in Git Bash or other terminals that support bash commands.
 
+You can also build platform specific executables like below:
+    1. `make windows` will build the binary for Windows platform
+    2. `make linux` will build the binary for Linux platform
+    3. `make darwin` will build the binary for Darwin/Mac platform
+
 ## Compiling minikube using Docker
 
 To cross-compile to/from different operating systems:

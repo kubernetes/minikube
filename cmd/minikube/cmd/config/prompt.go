@@ -149,7 +149,7 @@ func posString(slice []string, element string) int {
 	return -1
 }
 
-// containsString returns true iff slice contains element
+// containsString returns true if slice contains element
 func containsString(slice []string, element string) bool {
-	return !(posString(slice, element) == -1)
+	return posString(slice, element) != -1
 }

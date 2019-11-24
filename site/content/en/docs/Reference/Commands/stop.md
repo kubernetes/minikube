@@ -4,12 +4,12 @@ linkTitle: "stop"
 weight: 1
 date: 2019-08-01
 description: >
-  Stops a running local kubernetes cluster
+  Stops a running local Kubernetes cluster
 ---
 
 ### Overview
 
-Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
+Stops a local Kubernetes cluster running in Virtualbox. This command stops the VM
 itself, leaving all files intact. The cluster can be started again with the "start" command.
 
 ### Usage

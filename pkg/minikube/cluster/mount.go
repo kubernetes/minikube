@@ -19,12 +19,14 @@ package cluster
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/command"
 )
 
 // MountConfig defines the options available to the Mount command
@@ -49,7 +51,7 @@ type MountConfig struct {
 
 // mountRunner is the subset of CommandRunner used for mounting
 type mountRunner interface {
-	CombinedOutput(string) (string, error)
+	RunCmd(*exec.Cmd) (*command.RunResult, error)
 }
 
 // Mount runs the mount command from the 9p client on the VM to the 9p server on the host
@@ -58,30 +60,16 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 		return errors.Wrap(err, "umount")
 	}
 
-	cmd := fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target, mntCmd(source, target, c))
-	glog.Infof("Will run: %s", cmd)
-	out, err := r.CombinedOutput(cmd)
-	if err != nil {
-		glog.Infof("%s failed: err=%s, output: %q", cmd, err, out)
-		return errors.Wrap(err, out)
-	}
-	glog.Infof("%s output: %q", cmd, out)
-	return nil
-}
-
-func MountCifs(r mountRunner, target string, mountCommand string) error {
-	// Unmount the target path if it already exists
-	if err := Unmount(r, target); err != nil {
-		return errors.Wrap(err, "unmount")
+	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target, mntCmd(source, target, c)))); err != nil {
+		return errors.Wrap(err, "create folder pre-mount")
 	}
 
-	out, err := r.CombinedOutput(mountCommand)
+	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c", mntCmd(source, target, c)))
 	if err != nil {
-		//glog.Infof("%s failed: err=%s, output: %q", mountCommand, err, out)
-		glog.Infof("Mounting failed: err=%s, output: %q", err, out)
+		return errors.Wrapf(err, "mount with cmd %s ", rr.Command())
 	}
-	//glog.Infof("%s output: %q", mountCommand, out)
-	glog.Infof("CIFS Mounting is complete!")
+
+	glog.Infof("mount successful: %q", rr.Output())
 	return nil
 }
 
@@ -155,12 +143,12 @@ func umountCmd(target string) string {
 
 // Unmount unmounts a path
 func Unmount(r mountRunner, target string) error {
+	// grep because findmnt will also display the parent!
 	cmd := umountCmd(target)
-	glog.Infof("Will run: %s", cmd)
-	out, err := r.CombinedOutput(cmd)
-	glog.Infof("unmount force err=%v, out=%s", err, out)
-	if err != nil {
-		return errors.Wrap(err, out)
+	c := exec.Command("/bin/bash", "-c",cmd)
+	if _, err := r.RunCmd(c); err != nil {
+		return errors.Wrap(err, "unmount")
 	}
+	glog.Infof("unmount for %s ran successfully", target)
 	return nil
 }

@@ -22,6 +22,7 @@ import (
 	"io/ioutil"
 	"net"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -35,9 +36,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 
 	"github.com/juju/clock"
@@ -45,8 +46,10 @@ import (
 )
 
 const (
+	// CACertificatesDir contains CA certificates
 	CACertificatesDir = "/usr/share/ca-certificates"
-	SSLCertStoreDir   = "/etc/ssl/certs"
+	// SSLCertStoreDir contains SSL certificates
+	SSLCertStoreDir = "/etc/ssl/certs"
 )
 
 var (
@@ -89,7 +92,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		if strings.HasSuffix(cert, ".key") {
 			perms = "0600"
 		}
-		certFile, err := assets.NewFileAsset(p, constants.GuestCertsDir, cert, perms)
+		certFile, err := assets.NewFileAsset(p, vmpath.GuestCertsDir, cert, perms)
 		if err != nil {
 			return err
 		}
@@ -112,9 +115,9 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	kcs := &kubeconfig.Settings{
 		ClusterName:          k8s.NodeName,
 		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
-		ClientCertificate:    path.Join(constants.GuestCertsDir, "apiserver.crt"),
-		ClientKey:            path.Join(constants.GuestCertsDir, "apiserver.key"),
-		CertificateAuthority: path.Join(constants.GuestCertsDir, "ca.crt"),
+		ClientCertificate:    path.Join(vmpath.GuestCertsDir, "apiserver.crt"),
+		ClientKey:            path.Join(vmpath.GuestCertsDir, "apiserver.key"),
+		CertificateAuthority: path.Join(vmpath.GuestCertsDir, "ca.crt"),
 		KeepContext:          false,
 	}
 
@@ -128,7 +131,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "encoding kubeconfig")
 	}
 
-	kubeCfgFile := assets.NewMemoryAsset(data, constants.GuestPersistentDir, "kubeconfig", "0644")
+	kubeCfgFile := assets.NewMemoryAsset(data, vmpath.GuestPersistentDir, "kubeconfig", "0644")
 	copyableFiles = append(copyableFiles, kubeCfgFile)
 
 	for _, f := range copyableFiles {
@@ -139,7 +142,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 
 	// configure CA certificates
 	if err := configureCACerts(cmd, caCerts); err != nil {
-		return errors.Wrapf(err, "error configuring CA certificates during provisioning %v", err)
+		return errors.Wrapf(err, "Configuring CA certs")
 	}
 	return nil
 }
@@ -316,21 +319,21 @@ func collectCACerts() (map[string]string, error) {
 }
 
 // getSubjectHash calculates Certificate Subject Hash for creating certificate symlinks
-func getSubjectHash(cmd command.Runner, filePath string) (string, error) {
-	out, err := cmd.CombinedOutput(fmt.Sprintf("openssl x509 -hash -noout -in '%s'", filePath))
+func getSubjectHash(cr command.Runner, filePath string) (string, error) {
+	rr, err := cr.RunCmd(exec.Command("openssl", "x509", "-hash", "-noout", "-in", filePath))
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, rr.Command())
 	}
-
-	stringHash := strings.TrimSpace(out)
+	stringHash := strings.TrimSpace(rr.Stdout.String())
 	return stringHash, nil
 }
 
 // configureCACerts looks up and installs all uploaded PEM certificates in /usr/share/ca-certificates to system-wide certificate store (/etc/ssl/certs).
 // OpenSSL binary required in minikube ISO
-func configureCACerts(cmd command.Runner, caCerts map[string]string) error {
+func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 	hasSSLBinary := true
-	if err := cmd.Run("which openssl"); err != nil {
+	_, err := cr.RunCmd(exec.Command("openssl", "version"))
+	if err != nil {
 		hasSSLBinary = false
 	}
 
@@ -341,24 +344,25 @@ func configureCACerts(cmd command.Runner, caCerts map[string]string) error {
 	for _, caCertFile := range caCerts {
 		dstFilename := path.Base(caCertFile)
 		certStorePath := path.Join(SSLCertStoreDir, dstFilename)
-		if err := cmd.Run(fmt.Sprintf("sudo test -f '%s'", certStorePath)); err != nil {
-			if err := cmd.Run(fmt.Sprintf("sudo ln -s '%s' '%s'", caCertFile, certStorePath)); err != nil {
-				return errors.Wrapf(err, "error making symbol link for certificate %s", caCertFile)
+		_, err := cr.RunCmd(exec.Command("sudo", "test", "-f", certStorePath))
+		if err != nil {
+			if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-s", caCertFile, certStorePath)); err != nil {
+				return errors.Wrapf(err, "create symlink for %s", caCertFile)
 			}
 		}
 		if hasSSLBinary {
-			subjectHash, err := getSubjectHash(cmd, caCertFile)
+			subjectHash, err := getSubjectHash(cr, caCertFile)
 			if err != nil {
-				return errors.Wrapf(err, "error calculating subject hash for certificate %s", caCertFile)
+				return errors.Wrapf(err, "calculate hash for cacert %s", caCertFile)
 			}
 			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
-			if err := cmd.Run(fmt.Sprintf("sudo test -f '%s'", subjectHashLink)); err != nil {
-				if err := cmd.Run(fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, subjectHashLink)); err != nil {
-					return errors.Wrapf(err, "error making subject hash symbol link for certificate %s", caCertFile)
+			_, err = cr.RunCmd(exec.Command("sudo", "test", "-f", subjectHashLink))
+			if err != nil {
+				if _, err := cr.RunCmd(exec.Command("sudo", "ln", "-s", certStorePath, subjectHashLink)); err != nil {
+					return errors.Wrapf(err, "linking caCertFile %s", caCertFile)
 				}
 			}
 		}
 	}
-
 	return nil
 }

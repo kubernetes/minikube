@@ -26,7 +26,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
@@ -97,7 +96,7 @@ func runCommand(f func(*cobra.Command, []string)) {
 func hideEnv(t *testing.T) func(t *testing.T) {
 	envs := make(map[string]string)
 	for _, env := range os.Environ() {
-		if strings.HasPrefix(env, constants.MinikubeEnvPrefix) {
+		if strings.HasPrefix(env, minikubeEnvPrefix) {
 			line := strings.Split(env, "=")
 			key, val := line[0], line[1]
 			envs[key] = val
@@ -143,7 +142,7 @@ func TestViperConfig(t *testing.T) {
 }
 
 func getEnvVarName(name string) string {
-	return constants.MinikubeEnvPrefix + "_" + strings.ToUpper(name)
+	return minikubeEnvPrefix + "_" + strings.ToUpper(name)
 }
 
 func setValues(tt configTest) error {

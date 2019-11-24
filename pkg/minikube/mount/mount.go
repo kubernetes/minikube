@@ -19,6 +19,8 @@ package mount
 import (
 	"fmt"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/command"
+	"os/exec"
 	"os"
 )
 
@@ -52,7 +54,7 @@ type CommandRunner interface {
 
 // mountRunner is the subset of CommandRunner used for mounting
 type mountRunner interface {
-	CombinedOutput(string) (string, error)
+	RunCmd(*exec.Cmd) (*command.RunResult, error)
 }
 
 // MountConfig defines the options available to the Mount command

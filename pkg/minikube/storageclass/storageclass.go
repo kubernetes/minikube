@@ -70,7 +70,7 @@ func SetDefaultStorageClass(storage storagev1.StorageV1Interface, name string) e
 	return nil
 }
 
-// GetStorageV1 return storage v1 interface for client
+// GetStoragev1 return storage v1 interface for client
 func GetStoragev1() (storagev1.StorageV1Interface, error) {
 	client, err := getClient()
 	if err != nil {

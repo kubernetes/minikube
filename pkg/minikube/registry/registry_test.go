@@ -19,97 +19,47 @@ package registry
 import (
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/config"
+	"github.com/google/go-cmp/cmp"
 )
 
-func TestDriverString(t *testing.T) {
-	bar := DriverDef{
-		Name:    "bar",
-		Builtin: true,
-		ConfigCreator: func(_ config.MachineConfig) interface{} {
-			return nil
-		},
+func TestRegister(t *testing.T) {
+	r := newRegistry()
+	foo := DriverDef{Name: "foo"}
+	if err := r.Register(foo); err != nil {
+		t.Errorf("Register = %v, expected nil", err)
 	}
-	s := bar.String()
-	if s != "{name: bar, builtin: true}" {
-		t.Fatalf("Driver bar.String() returned unexpected: %v", s)
+	if err := r.Register(foo); err == nil {
+		t.Errorf("Register = nil, expected duplicate err")
 	}
 }
 
-func TestRegistry(t *testing.T) {
-	foo := DriverDef{
-		Name:    "foo",
-		Builtin: true,
-		ConfigCreator: func(_ config.MachineConfig) interface{} {
-			return nil
-		},
-	}
-	bar := DriverDef{
-		Name:    "bar",
-		Builtin: true,
-		ConfigCreator: func(_ config.MachineConfig) interface{} {
-			return nil
-		},
+func TestDriver(t *testing.T) {
+	foo := DriverDef{Name: "foo"}
+	r := newRegistry()
+
+	if err := r.Register(foo); err != nil {
+		t.Errorf("Register = %v, expected nil", err)
 	}
 
-	registry := createRegistry()
-	t.Run("registry.Register", func(t *testing.T) {
-		t.Run("foo", func(t *testing.T) {
-			if err := registry.Register(foo); err != nil {
-				t.Fatalf("error not expected but got %v", err)
-			}
-		})
-		t.Run("fooAlreadyExist", func(t *testing.T) {
-			if err := registry.Register(foo); err != ErrDriverNameExist {
-				t.Fatalf("expect ErrDriverNameExist but got: %v", err)
-			}
-		})
-		t.Run("bar", func(t *testing.T) {
-			if err := registry.Register(bar); err != nil {
-				t.Fatalf("error not expect but got: %v", err)
-			}
-		})
-	})
-	t.Run("registry.List", func(t *testing.T) {
-		list := registry.List()
-		if !(list[0].Name == "bar" && list[1].Name == "foo" ||
-			list[0].Name == "foo" && list[1].Name == "bar") {
-			t.Fatalf("expect registry.List return %s; got %s", []string{"bar", "foo"}, list)
-		}
-		if drivers := ListDrivers(); len(list) == len(drivers) {
-			t.Fatalf("Expectect ListDrivers and registry.List() to return same number of items, but got: drivers=%v and list=%v", drivers, list)
-		} else if len(list) == len(drivers) {
-			t.Fatalf("expect len(list) to be %d; got %d", 2, len(list))
-		}
-	})
-
-	t.Run("Driver", func(t *testing.T) {
-		driverName := "foo"
-		driver, err := registry.Driver(driverName)
-		if err != nil {
-			t.Fatalf("expect nil for registering foo driver, but got: %v", err)
-		}
-		if driver.Name != driverName {
-			t.Fatalf("expect registry.Driver(%s) returns registered driver, but got: %s", driverName, driver.Name)
-		}
-	})
-	t.Run("NotExistingDriver", func(t *testing.T) {
-		_, err := registry.Driver("foo2")
-		if err != ErrDriverNotFound {
-			t.Fatalf("expect ErrDriverNotFound bug got: %v", err)
-		}
-	})
-	t.Run("Driver", func(t *testing.T) {
-		if _, err := Driver("no_such_driver"); err == nil {
-			t.Fatal("expect to get error for not existing driver")
-		}
-	})
-	if _, err := Driver("foo"); err == nil {
-		t.Fatal("expect to not get error during existing driver foo")
+	d := r.Driver("foo")
+	if d.Empty() {
+		t.Errorf("driver.Empty = true, expected false")
 	}
-	t.Run("Register", func(t *testing.T) {
-		if err := Register(foo); err != nil {
-			t.Fatalf("expect to not get error during registering driver foo, but got: %v", err)
-		}
-	})
+
+	d = r.Driver("bar")
+	if !d.Empty() {
+		t.Errorf("driver.Empty = false, expected true")
+	}
+}
+
+func TestList(t *testing.T) {
+	foo := DriverDef{Name: "foo"}
+	r := newRegistry()
+	if err := r.Register(foo); err != nil {
+		t.Errorf("register returned error: %v", err)
+	}
+
+	if diff := cmp.Diff(r.List(), []DriverDef{foo}); diff != "" {
+		t.Errorf("list mismatch (-want +got):\n%s", diff)
+	}
 }

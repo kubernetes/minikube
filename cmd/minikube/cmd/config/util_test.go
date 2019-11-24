@@ -17,21 +17,22 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"testing"
 
 	"k8s.io/minikube/pkg/minikube/assets"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 )
 
 var minikubeConfig = pkgConfig.MinikubeConfig{
-	"vm-driver":            constants.DriverKvm2,
+	"vm-driver":            driver.KVM2,
 	"cpus":                 12,
 	"show-libmachine-logs": true,
 }
 
 func TestFindSettingNotFound(t *testing.T) {
-	s, err := findSetting("nonexistant")
+	s, err := findSetting("nonexistent")
 	if err == nil {
 		t.Fatalf("Shouldn't have found setting, but did. [%+v]", s)
 	}
@@ -48,9 +49,9 @@ func TestFindSetting(t *testing.T) {
 }
 
 func TestSetString(t *testing.T) {
-	err := SetString(minikubeConfig, "vm-driver", constants.DriverVirtualbox)
+	err := SetString(minikubeConfig, "vm-driver", driver.VirtualBox)
 	if err != nil {
-		t.Fatalf("Couldnt set string: %v", err)
+		t.Fatalf("Couldn't set string: %v", err)
 	}
 }
 
@@ -85,15 +86,13 @@ func TestSetBool(t *testing.T) {
 func TestIsAddonAlreadySet(t *testing.T) {
 	testCases := []struct {
 		addonName string
-		expectErr string
 	}{
 		{
 			addonName: "ingress",
-			expectErr: "addon ingress was already ",
 		},
+
 		{
-			addonName: "heapster",
-			expectErr: "addon heapster was already ",
+			addonName: "registry",
 		},
 	}
 
@@ -101,13 +100,39 @@ func TestIsAddonAlreadySet(t *testing.T) {
 		addon := assets.Addons[test.addonName]
 		addonStatus, _ := addon.IsEnabled()
 
-		expectMsg := test.expectErr + "enabled"
-		if !addonStatus {
-			expectMsg = test.expectErr + "disabled"
+		alreadySet, err := isAddonAlreadySet(addon, addonStatus)
+		if !alreadySet {
+			if addonStatus {
+				t.Errorf("Did not get expected status, \n\n expected %+v already enabled", test.addonName)
+			} else {
+				t.Errorf("Did not get expected status, \n\n expected %+v already disabled", test.addonName)
+			}
 		}
-		err := isAddonAlreadySet(addon, addonStatus)
-		if err.Error() != expectMsg {
-			t.Errorf("Did not get expected error, \n\n expected: %+v \n\n actual: %+v", expectMsg, err)
+		if err != nil {
+			t.Errorf("Got unexpected error: %+v", err)
+		}
+	}
+}
+
+func TestValidateProfile(t *testing.T) {
+	testCases := []struct {
+		profileName string
+	}{
+		{
+			profileName: "82374328742_2974224498",
+		},
+		{
+			profileName: "minikube",
+		},
+	}
+
+	for _, test := range testCases {
+		profileNam := test.profileName
+		expectedMsg := fmt.Sprintf("profile %q not found", test.profileName)
+
+		err, ok := ValidateProfile(profileNam)
+		if !ok && err.Error() != expectedMsg {
+			t.Errorf("Didnt receive expected message")
 		}
 	}
 }

@@ -4,12 +4,12 @@ linkTitle: "service"
 weight: 1
 date: 2019-08-01
 description: >
-  Gets the kubernetes URL(s) for the specified service in your local cluster
+  Gets the Kubernetes URL(s) for the specified service in your local cluster
 ---
 
 ### Overview
 
-Gets the kubernetes URL(s) for the specified service in your local cluster. In the case of multiple URLs they will be printed one at a time.
+Gets the Kubernetes URL(s) for the specified service in your local cluster. In the case of multiple URLs they will be printed one at a time.
 
 ### Usage
 

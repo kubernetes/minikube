@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-VBOX_GUEST_VERSION = 5.1.38
+VBOX_GUEST_VERSION = 5.2.32
 VBOX_GUEST_SITE = http://download.virtualbox.org/virtualbox/$(VBOX_GUEST_VERSION)
 VBOX_GUEST_LICENSE = GPLv2
 VBOX_GUEST_LICENSE_FILES = COPYING
@@ -12,7 +12,7 @@ VBOX_GUEST_SOURCE = VirtualBox-$(VBOX_GUEST_VERSION).tar.bz2
 VBOX_GUEST_EXTRA_DOWNLOADS = http://download.virtualbox.org/virtualbox/${VBOX_GUEST_VERSION}/VBoxGuestAdditions_${VBOX_GUEST_VERSION}.iso
 
 define VBOX_GUEST_EXPORT_MODULES
-	( cd $(@D)/src/VBox/Additions/linux; ./export_modules modules.tar.gz )
+	( cd $(@D)/src/VBox/Additions/linux; ./export_modules.sh modules.tar.gz )
 	mkdir -p $(@D)/vbox-modules
 	tar -C $(@D)/vbox-modules -xzf $(@D)/src/VBox/Additions/linux/modules.tar.gz
 endef
@@ -20,7 +20,7 @@ endef
 VBOX_GUEST_POST_EXTRACT_HOOKS += VBOX_GUEST_EXPORT_MODULES
 
 VBOX_GUEST_MODULE_SUBDIRS = vbox-modules/
-VBOX_GUEST_MODULE_MAKE_OPTS = KVERSION=$(LINUX_VERSION_PROBED)
+VBOX_GUEST_MODULE_MAKE_OPTS = KVERSION=$(LINUX_VERSION_PROBED) KERN_DIR=$(LINUX_DIR)
 
 define VBOX_GUEST_USERS
 	- -1 vboxsf -1 - - - - -
@@ -28,7 +28,7 @@ endef
 
 define VBOX_GUEST_INSTALL_INIT_SYSTEMD
 	$(INSTALL) -D -m 644 \
-		$(BR2_EXTERNAL_MINIKUBE_PATH)/package/vbox-guest/vboxservice.service \
+		$(VBOX_GUEST_PKGDIR)/vboxservice.service \
 		$(TARGET_DIR)/usr/lib/systemd/system/vboxservice.service
 
 	ln -fs /usr/lib/systemd/system/vboxservice.service \

@@ -2,7 +2,7 @@ Package: minikube
 Version: --VERSION--
 Section: base
 Priority: optional
-Architecture: amd64
+Architecture: --ARCH--
 Recommends: virtualbox
 Maintainer: Thomas Strömberg <t+minikube@stromberg.org>
 Description: Minikube

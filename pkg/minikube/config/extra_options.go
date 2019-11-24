@@ -109,7 +109,7 @@ func (cm ComponentExtraOptionMap) Get(component string) map[string]string {
 }
 
 // ContainsParam checks if a given slice of strings contains the provided string.
-// If a modifier func is provided, it is called with the slice item before the comparation.
+// If a modifier func is provided, it is called with the slice item before the comparison.
 func ContainsParam(slice []string, s string) bool {
 	for _, item := range slice {
 		if item == s {

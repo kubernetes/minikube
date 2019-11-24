@@ -1,0 +1,80 @@
+{
+    "ConfigVersion": 3,
+    "Driver": {
+        "IPAddress": "192.168.64.50",
+        "MachineName": "p2",
+        "SSHUser": "docker",
+        "SSHPort": 22,
+        "SSHKeyPath": "/Users/someuser/.minikube/machines/p2/id_rsa",
+        "StorePath": "/Users/someuser/.minikube",
+        "SwarmMaster": false,
+        "SwarmHost": "",
+        "SwarmDiscovery": "",
+        "Boot2DockerURL": "file:///Users/someuser/.minikube/cache/iso/minikube-v1.2.0.iso",
+        "DiskSize": 20000,
+        "CPU": 2,
+        "Memory": 2000,
+        "Cmdline": "loglevel=3 user=docker console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes base host=p2",
+        "NFSShares": [],
+        "NFSSharesRoot": "/nfsshares",
+        "UUID": "5e6787b6-aecb-11e9-81cf-8c8590c3b8b4",
+        "BootKernel": "/Users/someuser/.minikube/machines/p2/b2d-image/boot/bzImage",
+        "BootInitrd": "/Users/someuser/.minikube/machines/p2/b2d-image/boot/initrd",
+        "Initrd": "initrd",
+        "Vmlinuz": "bzImage"
+    },
+    "DriverName": "virtualbox",
+    "HostOptions": {
+        "Driver": "",
+        "Memory": 0,
+        "Disk": 0,
+        "EngineOptions": {
+            "ArbitraryFlags": null,
+            "Dns": null,
+            "GraphDir": "",
+            "Env": null,
+            "Ipv6": false,
+            "InsecureRegistry": [
+                "10.96.0.0/12"
+            ],
+            "Labels": null,
+            "LogLevel": "",
+            "StorageDriver": "",
+            "SelinuxEnabled": false,
+            "TlsVerify": false,
+            "RegistryMirror": null,
+            "InstallURL": ""
+        },
+        "SwarmOptions": {
+            "IsSwarm": false,
+            "Address": "",
+            "Discovery": "",
+            "Agent": false,
+            "Master": false,
+            "Host": "tcp://0.0.0.0:3376",
+            "Image": "swarm:latest",
+            "Strategy": "spread",
+            "Heartbeat": 0,
+            "Overcommit": 0,
+            "ArbitraryFlags": null,
+            "ArbitraryJoinFlags": null,
+            "Env": null,
+            "IsExperimental": false
+        },
+        "AuthOptions": {
+            "CertDir": "/Users/someuser/.minikube",
+            "CaCertPath": "/Users/someuser/.minikube/certs/ca.pem",
+            "CaPrivateKeyPath": "/Users/someuser/.minikube/certs/ca-key.pem",
+            "CaCertRemotePath": "",
+            "ServerCertPath": "/Users/someuser/.minikube/machines/server.pem",
+            "ServerKeyPath": "/Users/someuser/.minikube/machines/server-key.pem",
+            "ClientKeyPath": "/Users/someuser/.minikube/certs/key.pem",
+            "ServerCertRemotePath": "",
+            "ServerKeyRemotePath": "",
+            "ClientCertPath": "/Users/someuser/.minikube/certs/cert.pem",
+            "ServerCertSANs": null,
+            "StorePath": "/Users/someuser/.minikube"
+        }
+    },
+    "Name": "p2"
+}

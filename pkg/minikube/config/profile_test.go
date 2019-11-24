@@ -23,7 +23,7 @@ import (
 
 // TestListProfiles uses a different uses different MINIKUBE_HOME with rest of tests since it relies on file list index
 func TestListProfiles(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube")
+	miniDir, err := filepath.Abs("./testdata/profile/.minikube")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
@@ -54,8 +54,8 @@ func TestListProfiles(t *testing.T) {
 		if val[tt.index].Name != tt.expectName {
 			t.Errorf("expected %s got %v", tt.expectName, val[tt.index].Name)
 		}
-		if val[tt.index].Config.MachineConfig.VMDriver != tt.vmDriver {
-			t.Errorf("expected %s got %v", tt.vmDriver, val[tt.index].Config.MachineConfig.VMDriver)
+		if val[tt.index].Config[0].VMDriver != tt.vmDriver {
+			t.Errorf("expected %s got %v", tt.vmDriver, val[tt.index].Config[0].VMDriver)
 		}
 
 	}
@@ -69,6 +69,32 @@ func TestListProfiles(t *testing.T) {
 
 	if err != nil {
 		t.Errorf("error listing profiles %v", err)
+	}
+}
+
+func TestProfileNameInReservedKeywords(t *testing.T) {
+	var testCases = []struct {
+		name     string
+		expected bool
+	}{
+		{"start", true},
+		{"stop", true},
+		{"status", true},
+		{"delete", true},
+		{"config", true},
+		{"open", true},
+		{"profile", true},
+		{"addons", true},
+		{"cache", true},
+		{"logs", true},
+		{"myprofile", false},
+		{"log", false},
+	}
+	for _, tt := range testCases {
+		got := ProfileNameInReservedKeywords(tt.name)
+		if got != tt.expected {
+			t.Errorf("expected ProfileNameInReservedKeywords(%s)=%t but got %t ", tt.name, tt.expected, got)
+		}
 	}
 }
 
@@ -138,15 +164,15 @@ func TestCreateProfile(t *testing.T) {
 
 	var testCases = []struct {
 		name      string
-		cfg       *Config
+		cfg       *MachineConfig
 		expectErr bool
 	}{
-		{"p_empty_config", &Config{}, false},
-		{"p_partial_config", &Config{KubernetesConfig: KubernetesConfig{
+		{"p_empty_config", &MachineConfig{}, false},
+		{"p_partial_config", &MachineConfig{KubernetesConfig: KubernetesConfig{
 			ShouldLoadCachedImages: false}}, false},
-		{"p_partial_config2", &Config{MachineConfig: MachineConfig{
-			KeepContext: false}, KubernetesConfig: KubernetesConfig{
-			ShouldLoadCachedImages: false}}, false},
+		{"p_partial_config2", &MachineConfig{
+			KeepContext: false, KubernetesConfig: KubernetesConfig{
+				ShouldLoadCachedImages: false}}, false},
 	}
 	for _, tc := range testCases {
 		n := tc.name // capturing  loop variable

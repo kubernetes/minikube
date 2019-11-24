@@ -28,7 +28,7 @@ INSTALL_PATH=${2}
 # installs or updates golang if right version doesn't exists
 function check_and_install_golang() {
   if ! go version &>/dev/null; then
-    echo "WARNING: No golang installation found in your enviroment."
+    echo "WARNING: No golang installation found in your environment."
     install_golang "$VERSION_TO_INSTALL" "$INSTALL_PATH"
     return
   fi

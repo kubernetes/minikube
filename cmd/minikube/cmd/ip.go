@@ -38,11 +38,15 @@ var ipCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		host, err := api.Load(config.GetMachineName())
+		cc, err := config.Load()
+		if err != nil {
+			exit.WithError("Error getting config", err)
+		}
+		host, err := api.Load(cc.Name)
 		if err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
-				exit.WithCodeT(exit.NoInput, `"{{.profile_name}}" host does not exist, unable to show an IP`, out.V{"profile_name": config.GetMachineName()})
+				exit.WithCodeT(exit.NoInput, `"{{.profile_name}}" host does not exist, unable to show an IP`, out.V{"profile_name": cc.Name})
 			default:
 				exit.WithError("Error getting host", err)
 			}

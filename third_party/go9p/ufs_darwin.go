@@ -23,14 +23,12 @@ func atime(stat *syscall.Stat_t) time.Time {
 func isBlock(d os.FileInfo) bool {
 	stat := d.Sys().(*syscall.Stat_t)
 	return (stat.Mode & syscall.S_IFMT) == syscall.S_IFBLK
-	return true
 }
 
 // IsChar reports if the file is a character device
 func isChar(d os.FileInfo) bool {
 	stat := d.Sys().(*syscall.Stat_t)
 	return (stat.Mode & syscall.S_IFMT) == syscall.S_IFCHR
-	return true
 }
 
 func dir2Qid(d os.FileInfo) *Qid {

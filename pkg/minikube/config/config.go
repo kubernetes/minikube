@@ -25,7 +25,7 @@ import (
 	"os"
 
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const (
@@ -59,7 +59,7 @@ type MinikubeConfig map[string]interface{}
 
 // Get gets a named value from config
 func Get(name string) (string, error) {
-	m, err := ReadConfig(constants.ConfigFile)
+	m, err := ReadConfig(localpath.ConfigFile)
 	if err != nil {
 		return "", err
 	}
@@ -94,13 +94,13 @@ func ReadConfig(configFile string) (MinikubeConfig, error) {
 		if os.IsNotExist(err) {
 			return make(map[string]interface{}), nil
 		}
-		return nil, fmt.Errorf("open %s: %v", constants.ConfigFile, err)
+		return nil, fmt.Errorf("open %s: %v", localpath.ConfigFile, err)
 	}
 	defer f.Close()
 
 	m, err := decode(f)
 	if err != nil {
-		return nil, fmt.Errorf("decode %s: %v", constants.ConfigFile, err)
+		return nil, fmt.Errorf("decode %s: %v", localpath.ConfigFile, err)
 	}
 
 	return m, nil
@@ -123,23 +123,15 @@ func encode(w io.Writer, m MinikubeConfig) error {
 	return err
 }
 
-// GetMachineName gets the machine name for the VM
-func GetMachineName() string {
-	// REFACTOR NECESSARY: This function should not rely on globals.
-	if viper.GetString(MachineProfile) == "" {
-		return constants.DefaultMachineName
-	}
-	return viper.GetString(MachineProfile)
-}
-
 // Load loads the kubernetes and machine config for the current machine
-func Load() (*Config, error) {
-	return DefaultLoader.LoadConfigFromFile(GetMachineName())
+func Load() (*MachineConfig, error) {
+	machine := viper.GetString(MachineProfile)
+	return DefaultLoader.LoadConfigFromFile(machine)
 }
 
 // Loader loads the kubernetes and machine config based on the machine profile name
 type Loader interface {
-	LoadConfigFromFile(profile string, miniHome ...string) (*Config, error)
+	LoadConfigFromFile(profile string, miniHome ...string) (*MachineConfig, error)
 }
 
 type simpleConfigLoader struct{}
@@ -147,8 +139,8 @@ type simpleConfigLoader struct{}
 // DefaultLoader is the default config loader
 var DefaultLoader Loader = &simpleConfigLoader{}
 
-func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*Config, error) {
-	var cc Config
+func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*MachineConfig, error) {
+	var cc MachineConfig
 	// Move to profile package
 	path := profileFilePath(profileName, miniHome...)
 

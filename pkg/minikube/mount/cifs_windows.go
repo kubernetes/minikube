@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/drivers/hyperv"
 	"k8s.io/minikube/pkg/minikube/out"
 	"os"
+	"os/exec"
 	"strings"
 )
 
@@ -101,12 +102,12 @@ func (m *Cifs) Mount(r mountRunner) error {
 	}
 
 	mountCmd := fmt.Sprintf("sudo mkdir -p %s && sudo mount.cifs //%s/%s %s -o username=%s,password=%s,domain=%s",m.VmDestinationPath, hostname, m.HostShareName, m.VmDestinationPath, username, mountPassword , domain)
-	output, err := r.CombinedOutput(mountCmd)
+	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c",mountCmd))
 	if err != nil {
-		glog.Infof("%s failed: err=%s, output: %q", mountCmd, err, output)
-		return errors.Wrap(err, output)
+		errMsg := fmt.Sprintf("cifs mount. %s failed: err=%s, output: %q",mountCmd, err, rr.Output())
+		return errors.Wrap(err, errMsg)
 	}
-	glog.Infof("%s output: %q", mountCmd, output)
+	glog.Infof("%s output: %q", mountCmd, rr.Output())
 	return nil
 }
 
@@ -114,10 +115,10 @@ func (m *Cifs) Unmount(r mountRunner) error {
 	// Unmount the minikube destination path
 	cmd := umountCmd(m.VmDestinationPath)
 	glog.Infof("Will run: %s", cmd)
-	output, err := r.CombinedOutput(cmd)
-	glog.Infof("unmount force err=%v, out=%s", err, output)
+	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c",cmd))
+	glog.Infof("unmount force err=%v, out=%s", err, rr.Output())
 	if err != nil {
-		return errors.Wrap(err, output)
+		return errors.Wrap(err, rr.Output())
 	}
 	return nil
 }

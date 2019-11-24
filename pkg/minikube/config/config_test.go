@@ -22,8 +22,6 @@ import (
 	"os"
 	"reflect"
 	"testing"
-
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 type configTestCase struct {
@@ -48,10 +46,10 @@ var configTestCases = []configTestCase{
     "log_dir": "/etc/hosts",
     "show-libmachine-logs": true,
     "v": 5,
-    "vm-driver": "kvm2"
+    "vm-driver": "test-driver"
 }`,
 		config: map[string]interface{}{
-			"vm-driver":                 constants.DriverKvm2,
+			"vm-driver":                 "test-driver",
 			"cpus":                      4,
 			"disk-size":                 "20g",
 			"v":                         5,
@@ -108,7 +106,7 @@ func TestReadConfig(t *testing.T) {
 	// non existing file
 	mkConfig, err := ReadConfig("non_existing_file")
 	if err != nil {
-		t.Fatalf("Error not exepected but got %v", err)
+		t.Fatalf("Error not expected but got %v", err)
 	}
 
 	if len(mkConfig) != 0 {
@@ -132,7 +130,7 @@ func TestReadConfig(t *testing.T) {
 	}
 
 	expectedConfig := map[string]interface{}{
-		"vm-driver":            constants.DriverKvm2,
+		"vm-driver":            "test-driver",
 		"cpus":                 4,
 		"disk-size":            "20g",
 		"show-libmachine-logs": true,
@@ -151,7 +149,7 @@ func TestWriteConfig(t *testing.T) {
 	}
 
 	cfg := map[string]interface{}{
-		"vm-driver":            constants.DriverKvm2,
+		"vm-driver":            "test-driver",
 		"cpus":                 4,
 		"disk-size":            "20g",
 		"show-libmachine-logs": true,
@@ -174,7 +172,7 @@ func TestWriteConfig(t *testing.T) {
 	}
 }
 
-func Test_encode(t *testing.T) {
+func TestEncode(t *testing.T) {
 	var b bytes.Buffer
 	for _, tt := range configTestCases {
 		err := encode(&b, tt.config)

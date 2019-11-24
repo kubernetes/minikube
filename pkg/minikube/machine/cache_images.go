@@ -42,10 +42,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 // loadRoot is where images should be loaded from within the guest VM
-var loadRoot = path.Join(constants.GuestPersistentDir, "images")
+var loadRoot = path.Join(vmpath.GuestPersistentDir, "images")
 
 var getWindowsVolumeName = getWindowsVolumeNameCmd
 
@@ -130,7 +131,11 @@ func CacheAndLoadImages(images []string) error {
 		return err
 	}
 	defer api.Close()
-	h, err := api.Load(config.GetMachineName())
+	cc, err := config.Load()
+	if err != nil {
+		return err
+	}
+	h, err := api.Load(cc.Name)
 	if err != nil {
 		return err
 	}

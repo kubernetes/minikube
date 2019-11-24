@@ -24,6 +24,7 @@ import (
 	"path"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -35,41 +36,45 @@ import (
 // It implements the CommandRunner interface.
 type ExecRunner struct{}
 
-// Run starts the specified command in a bash shell and waits for it to complete.
-func (*ExecRunner) Run(cmd string) error {
-	glog.Infoln("Run:", cmd)
-	c := exec.Command("/bin/bash", "-c", cmd)
-	if err := c.Run(); err != nil {
-		return errors.Wrapf(err, "running command: %s", cmd)
-	}
-	return nil
-}
+// RunCmd implements the Command Runner interface to run a exec.Cmd object
+func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+	rr := &RunResult{Args: cmd.Args}
+	glog.Infof("(ExecRunner) Run:  %v", rr.Command())
 
-// CombinedOutputTo runs the command and stores both command
-// output and error to out.
-func (*ExecRunner) CombinedOutputTo(cmd string, out io.Writer) error {
-	glog.Infoln("Run with output:", cmd)
-	c := exec.Command("/bin/bash", "-c", cmd)
-	c.Stdout = out
-	c.Stderr = out
-	err := c.Run()
-	if err != nil {
-		return errors.Wrapf(err, "running command: %s\n.", cmd)
+	var outb, errb io.Writer
+	if cmd.Stdout == nil {
+		var so bytes.Buffer
+		outb = io.MultiWriter(&so, &rr.Stdout)
+	} else {
+		outb = io.MultiWriter(cmd.Stdout, &rr.Stdout)
 	}
 
-	return nil
-}
-
-// CombinedOutput runs the command  in a bash shell and returns its
-// combined standard output and standard error.
-func (e *ExecRunner) CombinedOutput(cmd string) (string, error) {
-	var b bytes.Buffer
-	err := e.CombinedOutputTo(cmd, &b)
-	if err != nil {
-		return "", errors.Wrapf(err, "running command: %s\n output: %s", cmd, b.Bytes())
+	if cmd.Stderr == nil {
+		var se bytes.Buffer
+		errb = io.MultiWriter(&se, &rr.Stderr)
+	} else {
+		errb = io.MultiWriter(cmd.Stderr, &rr.Stderr)
 	}
-	return b.String(), nil
 
+	cmd.Stdout = outb
+	cmd.Stderr = errb
+
+	start := time.Now()
+	err := cmd.Run()
+	elapsed := time.Since(start)
+	if err == nil {
+		// Reduce log spam
+		if elapsed > (1 * time.Second) {
+			glog.Infof("(ExecRunner) Done: %v: (%s)", rr.Command(), elapsed)
+		}
+	} else {
+		if exitError, ok := err.(*exec.ExitError); ok {
+			rr.ExitCode = exitError.ExitCode()
+		}
+		glog.Infof("(ExecRunner) Non-zero exit: %v: %v (%s)\n%s", rr.Command(), err, elapsed, rr.Output())
+		err = errors.Wrapf(err, "command failed: %s\nstdout: %s\nstderr: %s", rr.Command(), rr.Stdout.String(), rr.Stderr.String())
+	}
+	return rr, err
 }
 
 // Copy copies a file and its permissions

@@ -46,7 +46,7 @@ var (
 	]`)
 )
 
-func Test_parseStatusAndReturnIp(t *testing.T) {
+func TestParseStatusAndReturnIp(t *testing.T) {
 	type args struct {
 		mac      string
 		statuses []byte
