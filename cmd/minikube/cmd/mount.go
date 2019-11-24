@@ -18,18 +18,15 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/danieljoos/wincred"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"golang.org/x/crypto/ssh/terminal"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	pkghyperv "k8s.io/minikube/pkg/minikube/drivers/hyperv"
+	"k8s.io/minikube/pkg/minikube/mount"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/third_party/go9p/ufs"
 	"net"
@@ -57,7 +54,6 @@ var gid string
 var mSize int
 var options []string
 var mode uint
-var shareName = "minikube"
 
 // supportedFilesystems is a map of filesystem types to not warn against.
 var supportedFilesystems = map[string]bool{nineP: true, cifs: true}
@@ -208,14 +204,32 @@ var mountCmd = &cobra.Command{
 			wg.Wait()
 		} else if cfg.Type == cifs {
 			if host.Driver.DriverName() == constants.DriverHyperv {
-				var shareName = "minikube"
-				out.T(out.Notice, "Trying to start the mounting.")
-				if err := pkghyperv.ConfigureHostMount(shareName,hostPath); err == nil {
-					if err := enableCifsShare(shareName,vmPath,runner); err != nil {
-						exit.WithError("Mount failed %v", err)
-					}
-				} else {
-					exit.WithError("Mount failed %v", err)
+				cfg := &mount.MountConfig{
+					Type:    				mountType,
+					UID:     				uid,
+					GID:     				gid,
+					VmDestinationPath:		vmPath,
+					HostPath:				hostPath,
+					Version: 				mountVersion,
+					Mode:    				os.FileMode(mode),
+					Options: 				map[string]string{},
+				}
+
+				cifsMounter, err := mount.New(*cfg)
+				if err != nil {
+					exit.WithError("mount new", err)
+				}
+				err = cifsMounter.Unmount(runner)
+				if err != nil {
+					exit.WithError("cifs unmount ", err)
+				}
+				err = cifsMounter.Share()
+				if err != nil {
+					exit.WithError("host path share", err)
+				}
+				err = cifsMounter.Mount(runner)
+				if err != nil {
+					exit.WithError("cifs mount ", err)
 				}
 				out.T(out.Notice,"Mounting is complete!")
 			} else {
@@ -250,46 +264,4 @@ func getPort() (int, error) {
 	}
 	defer l.Close()
 	return l.Addr().(*net.TCPAddr).Port, nil
-}
-
-func enableCifsShare(hostShareName string, vmDestinationPath string, runner command.Runner) (error) {
-	// Ensure that the current user is administrator because creating a SMB Share requires Administrator privileges.
-	_ , err := pkghyperv.IsWindowsAdministrator()
-	if err != nil {
-		return err
-	}
-
-	hostname, _ := os.Hostname()
-	user, err := pkghyperv.GetCurrentWindowsUser()
-	if err != nil {
-		return err
-	}
-	user = strings.Replace(user,(hostname + "\\"), "",1)
-
-	// Check if the Credential exists in the credential store.
-	var credentialName = "minikube"
-	var password = ""
-	cred, err := wincred.GetGenericCredential(credentialName)
-	if err == nil {
-		out.T(out.Notice,"Credential {{.credential}} was found in the Windows Credential Store. Using that...",out.V{"credential":credentialName})
-		password = string(cred.CredentialBlob)
-	} else {
-		out.T(out.Enabling,"Please Type in the password for the user - [{{.username}}]",out.V{"username":user})
-		inputPassword, _ := terminal.ReadPassword(int(os.Stdin.Fd()))
-
-		cred := wincred.NewGenericCredential(credentialName)
-		cred.CredentialBlob = []byte(inputPassword)
-		wincrederr := cred.Write()
-		if wincrederr != nil {
-			return wincrederr
-		}
-		password = string(inputPassword)
-	}
-	mountCmd := fmt.Sprintf("sudo mkdir -p %s && sudo mount.cifs //%s/%s %s -o username=%s,password=%s,domain=%s",vmDestinationPath, hostname, shareName, vmDestinationPath, user, password, hostname)
-	err = cluster.MountCifs(runner, vmDestinationPath, mountCmd)
-	if err != nil {
-		out.ErrT(out.FailureType, "Failed mounting: {{.error}}", out.V{"error": err})
-		return err
-	}
-	return nil
 }

@@ -21,9 +21,9 @@ package hyperv
 import (
 	"bufio"
 	"bytes"
-	"errors"
+	"fmt"
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/exit"
+	"github.com/pkg/errors"
 	"os/exec"
 	"strings"
 )
@@ -31,40 +31,44 @@ import (
 var powershell string
 
 var (
-	ErrPowerShellNotFound = errors.New("Powershell was not found in the path")
-	ErrNotAdministrator   = errors.New("Hyper-v commands have to be run as an Administrator")
-	ErrNotInstalled       = errors.New("Hyper-V PowerShell Module is not available")
+	ErrPowerShellNotFound 			= 	errors.New("Powershell was not found in the path")
+	ErrNotWindowsAdministrator   	= 	errors.New("Command has to run as Administrator")
+	ErrNotHyperVAdministrator		=	errors.New("Hyper-V Commands need to be run either as an Administrator or as a member of the group of Hyper-V Administrators")
+	ErrModuleNotFound       		=	errors.New("")
 )
 
-func init() {
+func PowershellCmdOut(args ...string) (string, error) {
+
+	// Check if PowerShell is available or not.
 	var err error
 	powershell, err = exec.LookPath("powershell.exe")
 	if err != nil {
-		exit.WithError("%v", ErrPowerShellNotFound)
+		return "", ErrPowerShellNotFound
 	}
-}
 
-func powershellCmdOut(args ...string) (string, error) {
 	args = append([]string{"-NoProfile", "-NonInteractive"}, args...)
 	cmd := exec.Command(powershell, args...)
-	glog.Infof("[executing ==>] : %v %v", powershell, strings.Join(args, " "))
+	glog.Infof("[executing] : %v", cmd.Args)
 	var stdout bytes.Buffer
 	var stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
-	err := cmd.Run()
+	err = cmd.Run()
 	glog.Infof("[stdout =====>] : %s", stdout.String())
 	glog.Infof("[stderr =====>] : %s", stderr.String())
 	return stdout.String(), err
 }
 
-func powershellCmd(args ...string) error {
-	_, err := powershellCmdOut(args...)
+// The first argument which is passed to this function must be the fully qualified module followed by the command.
+// For example - "SmbShare\\New-SmbShare" or "Hyper-V\\New-VM"
+func PowershellCmd(args ...string) error {
+	checkPowerShellModule(args[0])
+	_, err := PowershellCmdOut(args...)
 	return err
 }
 
-func parseLines(stdout string) []string {
-	resp := []string{}
+func ParseLines(stdout string) []string {
+	var resp []string
 
 	s := bufio.NewScanner(strings.NewReader(stdout))
 	for s.Scan() {
@@ -74,64 +78,64 @@ func parseLines(stdout string) []string {
 	return resp
 }
 
-func hypervAvailable() error {
-	stdout, err := powershellCmdOut("@(Get-Module -ListAvailable hyper-v).Name | Get-Unique")
+// This module is used to check if the PowerShell module mentioned in the command is available or not.
+func checkPowerShellModule(powerShellModule string) error {
+	moduleCheckCmd := fmt.Sprintf("@(Get-Module -ListAvailable %s).Name | Get-Unique", powerShellModule)
+	stdout, err := PowershellCmdOut(moduleCheckCmd)
+
 	if err != nil {
 		return err
 	}
-
-	resp := parseLines(stdout)
-	if resp[0] != "Hyper-V" {
-		return ErrNotInstalled
+	var resp = ParseLines(stdout)
+	if resp[0] != powerShellModule {
+		errMessage := fmt.Sprintf("The requested PowerShell module - [%v] is not available", powerShellModule)
+		return errors.New(errMessage)
+	} else {
+		return nil
 	}
-
-	return nil
 }
 
-func IsAdministrator() (bool, error) {
-	hypervAdmin := IsHypervAdministrator()
-
-	if hypervAdmin {
-		return true, nil
-	}
-
-	windowsAdmin, err := IsWindowsAdministrator()
-
+func IsHyperVAdministrator() error {
+	stdout, err := PowershellCmdOut(`@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("S-1-5-32-578")`)
 	if err != nil {
-		return false, err
+		return errors.Wrap(err,"hyper-v administrator")
 	}
 
-	return windowsAdmin, nil
+	resp := ParseLines(stdout)
+	if resp[0] == "True" {
+		return nil
+	} else {
+		return ErrNotHyperVAdministrator
+	}
 }
 
-func IsHypervAdministrator() bool {
-	stdout, err := powershellCmdOut(`@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole("S-1-5-32-578")`)
+func IsWindowsAdministrator() error {
+	stdout, err := PowershellCmdOut(`@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")`)
 	if err != nil {
-		glog.Errorf("windows administrator check - %v", err)
-		return false
+		return errors.Wrap(err,"current user role")
 	}
 
-	resp := parseLines(stdout)
-	return resp[0] == "True"
-}
-
-func IsWindowsAdministrator() (bool, error) {
-	stdout, err := powershellCmdOut(`@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")`)
-	if err != nil {
-		return false, err
+	resp := ParseLines(stdout)
+	if resp[0] == "True" {
+		return nil
+	} else {
+		return ErrNotWindowsAdministrator
 	}
-
-	resp := parseLines(stdout)
-	return resp[0] == "True", nil
 }
 
-// This function is used to get the full name of the current user trying to run. It will be DOMAIN\Username or MACHINE_NAME\Username
+/* This function is used to get the full name of the current user trying to run. It will be DOMAIN\Username or MACHINE_NAME\Username
+	The function which comes with Golang i.e. user.Current() returns multiple things and need to be parsed multiple times. For example,
+	it returned this string -- [&{S-1-5-21-3668668534-1506658371-4068906332-1001 S-1-5-21-3668668534-1506658371-4068906332-1001 DESKTOP\blue John Doe C:\Users\blue}]
+	We only need the machine name and the user name. It returns the User SID, Machine Name, Username, User Complete Name, User Profile Path
+
+	This function returns MachineName/Username which is what we require.
+*/
 // TODO - Check if CIFS shares can be used by people who have domain accounts and are local admins on their machines.
-func GetCurrentWindowsUser() (string, error) {
-	stdout, err := powershellCmdOut(`@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).Identities.Name`)
+func CurrentWindowsUser() (string, error) {
+	stdout, err := PowershellCmdOut(`@([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).Identities.Name`)
 	if err != nil {
 		return "", err
 	}
-	response := parseLines(stdout)
+	response := ParseLines(stdout)
 	return response[0], nil
 }

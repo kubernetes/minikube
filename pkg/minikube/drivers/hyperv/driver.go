@@ -52,32 +52,32 @@ func createHypervHost(config cfg.MachineConfig) interface{} {
 	return d
 }
 
-func ConfigureHostMount(shareName string, hostPath string) error  {
-	// Ensure that the current user is administrator because creating a SMB Share requires Administrator privileges.
-	_ , err := IsWindowsAdministrator()
-	if err != nil {
-		return err
-	}
-
-	// Check if Name of the Share already exists or not.
-	if err := powershellCmd("SmbShare\\Get-SmbShare","-Name",shareName); err == nil {
-		//log.Debugf("The share with share name %v already exists. Trying to delete it.", shareName)
-		if err := powershellCmd("SmbShare\\Remove-SmbShare", "-Name", shareName, "-Force"); err != nil {
-			return err
-		}
-		//log.Debugf("The share with share name %v has been deleted", shareName)
-	}
-
-	// Get the current user so that we can assign full access permissions to only that user.
-	// TODO - Check if we can use another user.
-	user, err := GetCurrentWindowsUser()
-	if err != nil {
-		return err
-	}
-	// out.T(out.Notice,"Current User -- [{{.user}}]",out.V{"user":user})
-	//log.Info("Trying to enable share for CIFS Mounting.")
-	if err := powershellCmd("SmbShare\\New-SmbShare", "-Name", shareName, "-Path", hostPath , "-FullAccess", user, "-Temporary"); err != nil {
-		return err
-	}
-	return nil
-}
+//func ConfigureHostMount(shareName string, hostPath string) error  {
+//	// Ensure that the current user is administrator because creating a SMB Share requires Administrator privileges.
+//	_ , err := IsWindowsAdministrator()
+//	if err != nil {
+//		return err
+//	}
+//
+//	// Check if Name of the Share already exists or not.
+//	if err := powershellCmd("SmbShare\\Get-SmbShare","-Name",shareName); err == nil {
+//		//log.Debugf("The share with share name %v already exists. Trying to delete it.", shareName)
+//		if err := powershellCmd("SmbShare\\Remove-SmbShare", "-Name", shareName, "-Force"); err != nil {
+//			return err
+//		}
+//		//log.Debugf("The share with share name %v has been deleted", shareName)
+//	}
+//
+//	// Get the current user so that we can assign full access permissions to only that user.
+//	// TODO - Check if we can use another user.
+//	user, err := CurrentWindowsUser()
+//	if err != nil {
+//		return err
+//	}
+//	// out.T(out.Notice,"Current User -- [{{.user}}]",out.V{"user":user})
+//	//log.Info("Trying to enable share for CIFS Mounting.")
+//	if err := powershellCmd("SmbShare\\New-SmbShare", "-Name", shareName, "-Path", hostPath , "-FullAccess", user, "-Temporary"); err != nil {
+//		return err
+//	}
+//	return nil
+//}
