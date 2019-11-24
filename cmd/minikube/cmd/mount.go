@@ -18,6 +18,14 @@ package cmd
 
 import (
 	"fmt"
+	"net"
+	"os"
+	"os/signal"
+	"strconv"
+	"strings"
+	"sync"
+	"syscall"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -29,13 +37,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/mount"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/third_party/go9p/ufs"
-	"net"
-	"os"
-	"os/signal"
-	"strconv"
-	"strings"
-	"sync"
-	"syscall"
 )
 
 const (
@@ -213,14 +214,14 @@ var mountCmd = &cobra.Command{
 		} else if cfg.Type == cifs {
 			if host.Driver.DriverName() == driver.HyperV {
 				cfg := &mount.Config{
-					Type:    				mountType,
-					UID:     				uid,
-					GID:     				gid,
-					VmDestinationPath:		vmPath,
-					HostPath:				hostPath,
-					Version: 				mountVersion,
-					Mode:    				os.FileMode(mode),
-					Options: 				map[string]string{},
+					Type:              mountType,
+					UID:               uid,
+					GID:               gid,
+					VMDestinationPath: vmPath,
+					HostPath:          hostPath,
+					Version:           mountVersion,
+					Mode:              os.FileMode(mode),
+					Options:           map[string]string{},
 				}
 
 				cifsMounter, err := mount.New(*cfg)
@@ -239,7 +240,7 @@ var mountCmd = &cobra.Command{
 				if err != nil {
 					exit.WithError("cifs mount ", err)
 				}
-				out.T(out.Notice,"Mounting is complete!")
+				out.T(out.Notice, "Mounting is complete!")
 			} else {
 				out.T(out.Embarrassed, "CIFS Mounts are currently only supported on {{.driver}} on Windows.", out.V{"driver": driver.HyperV})
 			}

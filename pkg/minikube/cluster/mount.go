@@ -24,6 +24,8 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/minikube/pkg/minikube/mount"
+
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -135,17 +137,11 @@ func mntCmd(source string, target string, c *MountConfig) string {
 	return fmt.Sprintf("sudo mount -t %s -o %s %s %s", c.Type, strings.Join(opts, ","), source, target)
 }
 
-// umountCmd returns a command for unmounting
-func umountCmd(target string) string {
-	// grep because findmnt will also display the parent!
-	return fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target)
-}
-
 // Unmount unmounts a path
 func Unmount(r mountRunner, target string) error {
 	// grep because findmnt will also display the parent!
-	cmd := umountCmd(target)
-	c := exec.Command("/bin/bash", "-c",cmd)
+	cmd := mount.UmountCmd(target)
+	c := exec.Command("/bin/bash", "-c", cmd)
 	if _, err := r.RunCmd(c); err != nil {
 		return errors.Wrap(err, "unmount")
 	}

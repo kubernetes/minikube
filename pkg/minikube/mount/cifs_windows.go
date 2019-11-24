@@ -101,7 +101,7 @@ func (m *Cifs) Mount(r mountRunner) error {
 		}
 	}
 
-	mountCmd := fmt.Sprintf("sudo mkdir -p %s && sudo mount.cifs //%s/%s %s -o username=%s,password=%s,domain=%s",m.VmDestinationPath, hostname, m.HostShareName, m.VmDestinationPath, username, mountPassword , domain)
+	mountCmd := fmt.Sprintf("sudo mkdir -p %s && sudo mount.cifs //%s/%s %s -o username=%s,password=%s,domain=%s",m.VMDestinationPath, hostname, m.HostShareName, m.VMDestinationPath, username, mountPassword , domain)
 	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c",mountCmd))
 	if err != nil {
 		errMsg := fmt.Sprintf("cifs mount. %s failed: err=%s, output: %q",mountCmd, err, rr.Output())
@@ -113,7 +113,7 @@ func (m *Cifs) Mount(r mountRunner) error {
 
 func (m *Cifs) Unmount(r mountRunner) error {
 	// Unmount the minikube destination path
-	cmd := umountCmd(m.VmDestinationPath)
+	cmd := UmountCmd(m.VMDestinationPath)
 	glog.Infof("Will run: %s", cmd)
 	rr, err := r.RunCmd(exec.Command("/bin/bash", "-c",cmd))
 	glog.Infof("unmount force err=%v, out=%s", err, rr.Output())

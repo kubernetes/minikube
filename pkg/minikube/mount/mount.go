@@ -18,16 +18,16 @@ package mount
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
-	"os/exec"
-	"os"
 )
 
 var (
-	ErrNotImplemented 	=	errors.New("This type of Mount is not available on this system")
+	ErrNotImplemented = errors.New("This type of Mount is not available on this system")
 )
-
 
 // MountManager is the common interface which is used for Mounting across various operating systems
 type Manager interface {
@@ -43,7 +43,6 @@ type Manager interface {
 
 	// Unmount is used to destroy the link between minikube and the host
 	Unmount(runner mountRunner) error
-
 }
 
 // CommandRunner is the subset of command.Runner this package consumes
@@ -68,7 +67,7 @@ type Config struct {
 	// Path on the Host Machine to Mount
 	HostPath string
 	// The path on minikube where the Share would be mounted
-	VmDestinationPath string
+	VMDestinationPath string
 	// Version is the 9P protocol version. Valid options: 9p2000, 9p200.u, 9p2000.L
 	Version string
 	// Mode is the file permissions to set the mount to (octals)
@@ -87,7 +86,7 @@ type Cifs struct {
 	// Path on the Host Machine to Mount
 	HostPath string
 	// The path on minikube where the Share would be mounted
-	VmDestinationPath string
+	VMDestinationPath string
 	// NotImplemented -- Version is the SMB protocol version. Valid options:
 	Version string
 	// NotImplemented -- Mode is the file permissions to set the mount to (octals)
@@ -95,7 +94,6 @@ type Cifs struct {
 	// NotImplemented -- Extra mount options. See https://linux.die.net/man/8/mount.cifs
 	Options map[string]string
 }
-
 
 func New(m Config) (Manager, error) {
 	switch m.Type {
@@ -106,7 +104,7 @@ func New(m Config) (Manager, error) {
 			GID:               m.GID,
 			HostShareName:     shareName,
 			HostPath:          m.HostPath,
-			VmDestinationPath: m.VmDestinationPath,
+			VMDestinationPath: m.VMDestinationPath,
 			Version:           m.Version,
 			Mode:              m.Mode,
 			Options:           m.Options,
@@ -117,7 +115,7 @@ func New(m Config) (Manager, error) {
 }
 
 // umountCmd returns a command for unmounting
-func umountCmd(target string) string {
+func UmountCmd(target string) string {
 	// grep because findmnt will also display the parent!
 	return fmt.Sprintf("[ \"x$(findmnt -T %s | grep %s)\" != \"x\" ] && sudo umount -f %s || echo ", target, target, target)
 }
