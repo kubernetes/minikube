@@ -1,17 +1,17 @@
 package mount
 
-func (m *Cifs) Share(config MountConfig) error {
-	return MountNotImplementedError
+func (m *Cifs) Share() error {
+	return ErrNotImplemented
 }
 
-func (m *Cifs) Unshare(config MountConfig) error {
-	return MountNotImplementedError
+func (m *Cifs) Unshare() error {
+	return ErrNotImplemented
 }
 
-func (m *Cifs) Mount(r mountRunner, config MountConfig) error {
-	return MountNotImplementedError
+func (m *Cifs) Mount(r mountRunner) error {
+	return ErrNotImplemented
 }
 
-func (m *Cifs) Unmount(r mountRunner, config MountConfig) error {
-	return MountNotImplementedError
+func (m *Cifs) Unmount(r mountRunner) error {
+	return ErrNotImplemented
 }

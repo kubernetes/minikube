@@ -204,7 +204,7 @@ var mountCmd = &cobra.Command{
 			wg.Wait()
 		} else if cfg.Type == cifs {
 			if host.Driver.DriverName() == constants.DriverHyperv {
-				cfg := &mount.MountConfig{
+				cfg := &mount.Config{
 					Type:    				mountType,
 					UID:     				uid,
 					GID:     				gid,

@@ -1,5 +1,21 @@
 // +build windows
 
+/*
+Copyright 2019 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package mount
 
 import (
@@ -16,27 +32,7 @@ import (
 
 var credentialName = "minikube"
 
-
-type WindowsCifs struct {
-	// NotImplemented -- UID is the User ID which this path will be mounted as
-	UID string
-	// NotImplemented -- GID is the Group ID which this path will be mounted as
-	GID string
-	// Name of the Share
-	HostShareName string
-	// Path on the Host Machine to Mount
-	HostPath string
-	// The path on minikube where the Share would be mounted
-	VmDestinationPath string
-	// NotImplemented -- Version is the SMB protocol version. Valid options:
-	Version string
-	// NotImplemented -- Mode is the file permissions to set the mount to (octals)
-	Mode os.FileMode
-	// NotImplemented -- Extra mount options. See https://linux.die.net/man/8/mount.cifs
-	Options map[string]string
-}
-
-func (m *WindowsCifs) Share() error {
+func (m *Cifs) Share() error {
 	// Ensure that the current user is administrator because creating a SMB Share requires Administrator privileges.
 	err := hyperv.IsWindowsAdministrator()
 	if err != nil {
@@ -51,8 +47,6 @@ func (m *WindowsCifs) Share() error {
 			return errors.Wrap(err, "remove smb share")
 		}
 		glog.Infof("The share with share name %v has been deleted", m.HostShareName)
-	} else {
-		return errors.Wrap(err, "get smb share")
 	}
 
 	// Get the current user so that we can assign full access permissions to only that user.
@@ -68,7 +62,7 @@ func (m *WindowsCifs) Share() error {
 	return nil
 }
 
-func (m *WindowsCifs) Unshare() error {
+func (m *Cifs) Unshare() error {
 
 	// Ensure that the current user is administrator because creating a SMB Share requires Administrator privileges.
 	err := hyperv.IsWindowsAdministrator()
@@ -82,7 +76,7 @@ func (m *WindowsCifs) Unshare() error {
 	return nil
 }
 
-func (m *WindowsCifs) Mount(r mountRunner) error {
+func (m *Cifs) Mount(r mountRunner) error {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return errors.Wrap(err, "get hostname")
@@ -94,8 +88,8 @@ func (m *WindowsCifs) Mount(r mountRunner) error {
 
 	// We need the Domain Name of the current user and the User Name. This is used while connecting to the Share from Linux.
 	stringSplitResult := strings.Split(user,"\\")
-	username := stringSplitResult[0]
-	domain := stringSplitResult[1]
+	domain := stringSplitResult[0]
+	username := stringSplitResult[1]
 
 	// Only ask the user for the password if it is not found in the Windows Credential Store
 	mountPassword,err := getMountPassword()
@@ -116,7 +110,7 @@ func (m *WindowsCifs) Mount(r mountRunner) error {
 	return nil
 }
 
-func (m *WindowsCifs) Unmount(r mountRunner) error {
+func (m *Cifs) Unmount(r mountRunner) error {
 	// Unmount the minikube destination path
 	cmd := umountCmd(m.VmDestinationPath)
 	glog.Infof("Will run: %s", cmd)

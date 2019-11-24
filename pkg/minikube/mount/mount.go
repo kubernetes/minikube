@@ -22,11 +22,13 @@ import (
 	"os"
 )
 
-var MountNotImplementedError = errors.New("This type of Mount is not available on this system")
+var (
+	ErrNotImplemented 	=	errors.New("This type of Mount is not available on this system")
+)
 
 
 // MountManager is the common interface which is used for Mounting across various operating systems
-type MountManager interface {
+type Manager interface {
 
 	// Share is used to share the folder on the host.
 	Share() error
@@ -54,7 +56,7 @@ type mountRunner interface {
 }
 
 // MountConfig defines the options available to the Mount command
-type MountConfig struct {
+type Config struct {
 	// Type is the filesystem type (Typically 9p)
 	Type string
 	// UID is the User ID which this path will be mounted as
@@ -73,11 +75,31 @@ type MountConfig struct {
 	Options map[string]string
 }
 
-func New(m MountConfig) (MountManager, error) {
+type Cifs struct {
+	// NotImplemented -- UID is the User ID which this path will be mounted as
+	UID string
+	// NotImplemented -- GID is the Group ID which this path will be mounted as
+	GID string
+	// Name of the Share
+	HostShareName string
+	// Path on the Host Machine to Mount
+	HostPath string
+	// The path on minikube where the Share would be mounted
+	VmDestinationPath string
+	// NotImplemented -- Version is the SMB protocol version. Valid options:
+	Version string
+	// NotImplemented -- Mode is the file permissions to set the mount to (octals)
+	Mode os.FileMode
+	// NotImplemented -- Extra mount options. See https://linux.die.net/man/8/mount.cifs
+	Options map[string]string
+}
+
+
+func New(m Config) (Manager, error) {
 	switch m.Type {
 	case "cifs":
 		var shareName = "minikube"
-		return &WindowsCifs{
+		return &Cifs{
 			UID:               m.UID,
 			GID:               m.GID,
 			HostShareName:     shareName,
@@ -88,7 +110,7 @@ func New(m MountConfig) (MountManager, error) {
 			Options:           m.Options,
 		}, nil
 	default:
-		return nil, MountNotImplementedError
+		return nil, ErrNotImplemented
 	}
 }
 

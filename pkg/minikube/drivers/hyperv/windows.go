@@ -1,7 +1,7 @@
 // +build windows
 
 /*
-Copyright 2018 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ package hyperv
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"os/exec"
@@ -34,7 +33,6 @@ var (
 	ErrPowerShellNotFound 			= 	errors.New("Powershell was not found in the path")
 	ErrNotWindowsAdministrator   	= 	errors.New("Command has to run as Administrator")
 	ErrNotHyperVAdministrator		=	errors.New("Hyper-V Commands need to be run either as an Administrator or as a member of the group of Hyper-V Administrators")
-	ErrModuleNotFound       		=	errors.New("")
 )
 
 func PowershellCmdOut(args ...string) (string, error) {
@@ -62,7 +60,6 @@ func PowershellCmdOut(args ...string) (string, error) {
 // The first argument which is passed to this function must be the fully qualified module followed by the command.
 // For example - "SmbShare\\New-SmbShare" or "Hyper-V\\New-VM"
 func PowershellCmd(args ...string) error {
-	checkPowerShellModule(args[0])
 	_, err := PowershellCmdOut(args...)
 	return err
 }
@@ -76,23 +73,6 @@ func ParseLines(stdout string) []string {
 	}
 
 	return resp
-}
-
-// This module is used to check if the PowerShell module mentioned in the command is available or not.
-func checkPowerShellModule(powerShellModule string) error {
-	moduleCheckCmd := fmt.Sprintf("@(Get-Module -ListAvailable %s).Name | Get-Unique", powerShellModule)
-	stdout, err := PowershellCmdOut(moduleCheckCmd)
-
-	if err != nil {
-		return err
-	}
-	var resp = ParseLines(stdout)
-	if resp[0] != powerShellModule {
-		errMessage := fmt.Sprintf("The requested PowerShell module - [%v] is not available", powerShellModule)
-		return errors.New(errMessage)
-	} else {
-		return nil
-	}
 }
 
 func IsHyperVAdministrator() error {
