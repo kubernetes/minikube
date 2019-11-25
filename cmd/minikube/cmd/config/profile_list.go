@@ -112,7 +112,7 @@ var printProfilesJSON = func() {
 
 	var body = map[string]interface{}{}
 
-	if err == nil {
+	if err == nil || os.IsNotExist(err) {
 		body["valid"] = valid
 		body["invalid"] = invalid
 		jsonString, _ := json.Marshal(body)
