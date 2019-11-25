@@ -51,7 +51,7 @@ var settings = []Setting{
 	{
 		name:        "container-runtime",
 		set:         SetString,
-		validations: []setFn{IsContainerdRuntime},
+		validations: []setFn{IsValidRuntime},
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
