@@ -121,6 +121,8 @@ const (
 	minimumCPUS           = 2
 	minimumDiskSize       = "2000mb"
 	autoUpdate            = "auto-update-drivers"
+	hostOnlyNicType       = "host-only-nic-type"
+	natNicType            = "nat-nic-type"
 )
 
 var (
@@ -208,6 +210,8 @@ func initDriverFlags() {
 	startCmd.Flags().Bool(dnsProxy, false, "Enable proxy for NAT DNS requests (virtualbox driver only)")
 	startCmd.Flags().Bool(hostDNSResolver, true, "Enable host resolver for NAT DNS requests (virtualbox driver only)")
 	startCmd.Flags().Bool(noVTXCheck, false, "Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)")
+	startCmd.Flags().String(hostOnlyNicType, "virtio", "NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)")
+	startCmd.Flags().String(natNicType, "virtio", "NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only)")
 
 	// hyperkit
 	startCmd.Flags().StringSlice(vsockPorts, []string{}, "List of guest VSock ports that should be exposed as sockets on the host (hyperkit driver only)")
@@ -912,6 +916,8 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		NoVTXCheck:          viper.GetBool(noVTXCheck),
 		DNSProxy:            viper.GetBool(dnsProxy),
 		HostDNSResolver:     viper.GetBool(hostDNSResolver),
+		HostOnlyNicType:     viper.GetString(hostOnlyNicType),
+		NatNicType:          viper.GetString(natNicType),
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			NodePort:               viper.GetInt(apiServerPort),
