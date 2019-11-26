@@ -328,6 +328,12 @@ func CacheImage(image, dst string) error {
 
 	glog.Infoln("OPENING: ", dstPath)
 	f, err := ioutil.TempFile(filepath.Dir(dstPath), filepath.Base(dstPath)+".*.tmp")
+	defer func() {
+		err := os.Remove(f.Name())
+		if err != nil {
+			glog.Infof("Failed to clean up the temp file %s : %v", f.Name(), err)
+		}
+	}()
 	if err != nil {
 		return err
 	}
