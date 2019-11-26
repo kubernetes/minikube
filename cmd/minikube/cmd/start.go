@@ -379,6 +379,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 }
 
+// cache and load the images that user added to profile
 func cacheUserImages(c *cfg.MachineConfig) {
 	if err := machine.CacheAndLoadImages(c.CachedImages); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
@@ -403,6 +404,7 @@ func enableAddons() {
 	}
 }
 
+// displayVersion displays minikube version and platform
 func displayVersion(version string) {
 	prefix := ""
 	if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
@@ -475,12 +477,12 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, c *cfg.MachineConfig) {
 
 }
 
-func startMachine(config *cfg.MachineConfig) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(c *cfg.MachineConfig) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
-	host, preExists = startHost(m, *config)
+	host, preExists = startHost(m, *c)
 	runner, err = machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
@@ -493,8 +495,8 @@ func startMachine(config *cfg.MachineConfig) (runner command.Runner, preExists b
 		out.ErrT(out.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
 	// Save IP to configuration file for subsequent use
-	config.KubernetesConfig.NodeIP = ip
-	if err := saveConfig(config); err != nil {
+	c.KubernetesConfig.NodeIP = ip
+	if err := saveConfig(c); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
@@ -1261,6 +1263,6 @@ func configureMounts() {
 }
 
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterCfg *cfg.MachineConfig) error {
-	return cfg.CreateProfile(viper.GetString(cfg.MachineProfile), clusterCfg)
+func saveConfig(c *cfg.MachineConfig) error {
+	return cfg.CreateProfile(viper.GetString(cfg.MachineProfile), c)
 }
