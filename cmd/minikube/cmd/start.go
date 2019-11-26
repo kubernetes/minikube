@@ -361,9 +361,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// enable addons with start command
 	enableAddons()
 
-	if err = loadCachedImagesInConfigFile(); err != nil {
-		out.T(out.FailureType, "Unable to load cached images from config file.")
-	}
+	cacheUserImages(&config)
 
 	// special ops for none , like change minikube directory.
 	if driverName == driver.None {
@@ -378,6 +376,12 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	if err := showKubectlInfo(kubeconfig, k8sVersion, config.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
+	}
+}
+
+func cacheUserImages(c *cfg.MachineConfig) {
+	if err := machine.CacheAndLoadImages(c.CachedImages); err != nil {
+		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}
 }
 
