@@ -20,9 +20,13 @@ import (
 	"os"
 	"text/template"
 
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
+	cfg "k8s.io/minikube/pkg/minikube/config"
+
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 const defaultCacheListFormat = "{{.CacheImage}}\n"
@@ -40,11 +44,27 @@ var listCacheCmd = &cobra.Command{
 	Short: "List all available images from the local cache.",
 	Long:  "List all available images from the local cache.",
 	Run: func(cmd *cobra.Command, args []string) {
-		images, err := cmdConfig.ListConfigMap(cacheImageConfigKey)
-		if err != nil {
-			exit.WithError("Failed to get image map", err)
+		config, err := cfg.Load()
+		if err != nil && !os.IsNotExist(err) {
+			exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 		}
-		if err := cacheList(images); err != nil {
+
+		imagsInOldConfig, err := cmdConfig.ListConfigMap(cacheImageConfigKey)
+		if err != nil {
+			glog.Info("no old config found for cache")
+		}
+
+		if len(imagsInOldConfig) > 0 { // TODO handle migration automaticly
+			out.WarningT(`Warning:
+	Images {{.imgs}} were cached using older version minikube.
+	Please consider re-caching them again using "minikube cache add" commmand.			
+	Caches are now per-profile.`, out.V{"imgs": imagsInOldConfig})
+		}
+		var imgs []string
+		for k := range config.CachedImages {
+			imgs = append(imgs, k)
+		}
+		if err := cacheList(imgs); err != nil {
 			exit.WithError("Failed to list cached images", err)
 		}
 	},

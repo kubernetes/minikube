@@ -52,7 +52,13 @@ var addCacheCmd = &cobra.Command{
 			exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 		}
 
-		config.CachedImages = append(config.CachedImages, args...)
+		if config.CachedImages == nil {
+			config.CachedImages = make(map[string]string)
+		}
+		for _, img := range args {
+			config.CachedImages[img] = "loaded"
+
+		}
 		if err = cfg.CreateProfile(config.Name, config); err != nil {
 			exit.WithCodeT(exit.Data, "Unable to save config: {{.error}}", out.V{"error": err})
 		}
@@ -68,6 +74,9 @@ var deleteCacheCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Delete images from cache/images directory
 		if err := machine.DeleteFromImageCacheDir(args); err != nil {
+			if os.IsNotExist(err) {
+				exit.WithCodeT(exit.Data, "Couldn't find image {{.container_images}} in cache", out.V{"container_images": args})
+			}
 			exit.WithError("Failed to delete images", err)
 		}
 
@@ -76,19 +85,9 @@ var deleteCacheCmd = &cobra.Command{
 			exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 		}
 
-		updatedList := []string{}
-		for _, img := range config.CachedImages {
-			toAdd := true
-			for _, toDel := range args {
-				if img == toDel {
-					toAdd = false
-				}
-			}
-			if toAdd {
-				updatedList = append(updatedList, img)
-			}
+		for _, img := range args {
+			delete(config.CachedImages, img)
 		}
-		config.CachedImages = updatedList
 
 		if err = cfg.CreateProfile(config.Name, config); err != nil {
 			exit.WithError("Failed to delete images from config", err)

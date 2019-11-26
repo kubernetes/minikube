@@ -40,10 +40,10 @@ type MachineConfig struct {
 	DiskSize            int
 	VMDriver            string
 	ContainerRuntime    string
-	CachedImages        []string // images that user added by `cache add`
-	HyperkitVpnKitSock  string   // Only used by the Hyperkit driver
-	HyperkitVSockPorts  []string // Only used by the Hyperkit driver
-	DockerEnv           []string // Each entry is formatted as KEY=VALUE.
+	CachedImages        map[string]string // images that user added by `cache add` key is image name, value could be hash
+	HyperkitVpnKitSock  string            // Only used by the Hyperkit driver
+	HyperkitVSockPorts  []string          // Only used by the Hyperkit driver
+	DockerEnv           []string          // Each entry is formatted as KEY=VALUE.
 	InsecureRegistry    []string
 	RegistryMirror      []string
 	HostOnlyCIDR        string // Only used by the virtualbox driver

@@ -381,8 +381,12 @@ func runStart(cmd *cobra.Command, args []string) {
 
 // cache and load the images that user added to profile
 func cacheUserImages(c *cfg.MachineConfig) {
-	if err := machine.CacheAndLoadImages(c.CachedImages); err != nil {
-		out.T(out.FailureType, "Unable to load cached images from config file.")
+	var imgs []string
+	for k := range c.CachedImages {
+		imgs = append(imgs, k)
+	}
+	if err := machine.CacheAndLoadImages(imgs); err != nil {
+		out.T(out.FailureType, "Unable to load cached images.")
 	}
 }
 
@@ -468,8 +472,11 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, c *cfg.MachineConfig) {
 		exit.WithError("Failed to cache binaries", err)
 	}
 	waitCacheImages(cacheGroup)
-
-	if err := machine.CacheImages(c.CachedImages, constants.ImageCacheDir); err != nil {
+	var imgs []string
+	for k := range c.CachedImages {
+		imgs = append(imgs, k)
+	}
+	if err := machine.CacheImages(imgs, constants.ImageCacheDir); err != nil {
 		exit.WithError("Failed to cache images", err)
 	}
 	out.T(out.Check, "Download complete!")
