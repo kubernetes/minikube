@@ -35,8 +35,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
+	"k8s.io/minikube/pkg/minikube/localpath"
+
 	"github.com/elazarl/goproxy"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/otiai10/copy"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
@@ -59,6 +64,7 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
+			{"CopySyncFile", setupFileSync},            // Set file for the file sync test case
 			{"StartWithProxy", validateStartWithProxy}, // Set everything else up for success
 			{"KubeContext", validateKubeContext},       // Racy: must come immediately after "minikube start"
 			{"KubectlGetPods", validateKubectlGetPods}, // Make sure apiserver is up
@@ -96,6 +102,7 @@ func TestFunctional(t *testing.T) {
 			{"TunnelCmd", validateTunnelCmd},
 			{"SSHCmd", validateSSHCmd},
 			{"MySQL", validateMySQL},
+			{"FileSync", validateFileSync},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -570,6 +577,37 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	}
 	if err = retry.Expo(mysql, 5*time.Second, 180*time.Second); err != nil {
 		t.Errorf("mysql failing: %v", err)
+	}
+}
+
+// Copy extra file into minikube home folder for file sync test
+func setupFileSync(ctx context.Context, t *testing.T, profile string) {
+	// 1. copy random file to MINIKUBE_HOME/files/etc
+	f := filepath.Join(localpath.MiniPath(), "/files/etc/sync.test")
+	err := copy.Copy("./testdata/sync.test", f)
+	if err != nil {
+		t.Fatalf("copy: %v", err)
+	}
+}
+
+// validateFileSync to check existence of the test file
+func validateFileSync(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("skipping: ssh unsupported by none")
+	}
+	// check file existence
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/sync.test"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	expected, err := ioutil.ReadFile("./testdata/sync.test")
+	if err != nil {
+		t.Errorf("test file not found: %v", err)
+	}
+
+	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
+		t.Errorf("/etc/sync.test content mismatch (-want +got):\n%s", diff)
 	}
 }
 
