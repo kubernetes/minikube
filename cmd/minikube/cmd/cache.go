@@ -17,10 +17,13 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
-	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
+	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // cacheImageConfigKey is the config field name used to store which images we have previously cached
@@ -43,10 +46,17 @@ var addCacheCmd = &cobra.Command{
 		if err := machine.CacheAndLoadImages(args); err != nil {
 			exit.WithError("Failed to cache and load images", err)
 		}
-		// Add images to config file
-		if err := cmdConfig.AddToConfigMap(cacheImageConfigKey, args); err != nil {
-			exit.WithError("Failed to update config", err)
+
+		config, err := cfg.Load()
+		if err != nil && !os.IsNotExist(err) {
+			exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 		}
+
+		config.CachedImages = append(config.CachedImages, args...)
+		if err = cfg.CreateProfile(config.Name, config); err != nil {
+			exit.WithCodeT(exit.Data, "Unable to save config: {{.error}}", out.V{"error": err})
+		}
+
 	},
 }
 
@@ -56,14 +66,34 @@ var deleteCacheCmd = &cobra.Command{
 	Short: "Delete an image from the local cache.",
 	Long:  "Delete an image from the local cache.",
 	Run: func(cmd *cobra.Command, args []string) {
-		// Delete images from config file
-		if err := cmdConfig.DeleteFromConfigMap(cacheImageConfigKey, args); err != nil {
-			exit.WithError("Failed to delete images from config", err)
-		}
 		// Delete images from cache/images directory
 		if err := machine.DeleteFromImageCacheDir(args); err != nil {
 			exit.WithError("Failed to delete images", err)
 		}
+
+		config, err := cfg.Load()
+		if err != nil && !os.IsNotExist(err) {
+			exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
+		}
+
+		updatedList := []string{}
+		for _, img := range config.CachedImages {
+			toAdd := true
+			for _, toDel := range args {
+				if img == toDel {
+					toAdd = false
+				}
+			}
+			if toAdd {
+				updatedList = append(updatedList, img)
+			}
+		}
+		config.CachedImages = updatedList
+
+		if err = cfg.CreateProfile(config.Name, config); err != nil {
+			exit.WithError("Failed to delete images from config", err)
+		}
+
 	},
 }
 
