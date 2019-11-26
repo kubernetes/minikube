@@ -54,11 +54,11 @@ var listCacheCmd = &cobra.Command{
 			glog.Info("no old config found for cache")
 		}
 
-		if len(imagsInOldConfig) > 0 { // TODO handle migration automaticly
+		if len(imagsInOldConfig) > 0 { // TODO handle migration automatically
 			out.WarningT(`Warning:
-	Images {{.imgs}} were cached using older version minikube.
-	Please consider re-caching them again using "minikube cache add" commmand.			
-	Caches are now per-profile.`, out.V{"imgs": imagsInOldConfig})
+	- Images {{.imgs}} were cached using older version minikube.
+	- Please consider re-caching them again using "minikube cache add" command.		
+	- Caches are now per-profile.`, out.V{"imgs": imagsInOldConfig})
 		}
 		var imgs []string
 		for k := range config.CachedImages {
