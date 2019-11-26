@@ -1,0 +1,18 @@
+[Unit]
+Description=CRI-O Auto Update Script
+Before=crio.service
+RequiresMountsFor=/var/lib/containers
+
+[Service]
+EnvironmentFile=-/etc/sysconfig/crio
+EnvironmentFile=-/etc/sysconfig/crio.minikube
+EnvironmentFile=/var/run/minikube/env
+ExecStart=/usr/bin/crio \
+          $CRIO_OPTIONS \
+          $CRIO_MINIKUBE_OPTIONS \
+		  wipe
+
+Type=oneshot
+
+[Install]
+WantedBy=multi-user.target
