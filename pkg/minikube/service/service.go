@@ -29,7 +29,6 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
-	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	core "k8s.io/api/core/v1"
@@ -120,7 +119,7 @@ type URLs []SvcURL
 // GetServiceURLs returns a SvcURL object for every service in a particular namespace.
 // Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
-	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
+	host, err := cluster.CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +155,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 // GetServiceURLsForService returns a SvcUrl object for a service in a namespace. Supports optional formatting.
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) (SvcURL, error) {
-	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
+	host, err := cluster.CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
 	if err != nil {
 		return SvcURL{}, errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -265,9 +264,11 @@ func PrintServiceList(writer io.Writer, data [][]string) {
 	table.Render()
 }
 
-// WaitAndMaybeOpenService waits for a service, and opens it when running
-func WaitAndMaybeOpenService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
-	wait int, interval int) error {
+// WaitForService waits for a service, and return the urls when available
+func WaitForService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
+	wait int, interval int) ([]string, error) {
+
+	var urlList []string
 	// Convert "Amount of time to wait" and "interval of each check" to attempts
 	if interval == 0 {
 		interval = 1
@@ -275,12 +276,12 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 	chkSVC := func() error { return CheckService(namespace, service) }
 
 	if err := retry.Expo(chkSVC, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return errors.Wrapf(err, "Service %s was not found in %q namespace. You may select another namespace by using 'minikube service %s -n <namespace>", service, namespace, service)
+		return urlList, errors.Wrapf(err, "Service %s was not found in %q namespace. You may select another namespace by using 'minikube service %s -n <namespace>", service, namespace, service)
 	}
 
 	serviceURL, err := GetServiceURLsForService(api, namespace, service, urlTemplate)
 	if err != nil {
-		return errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
+		return urlList, errors.Wrap(err, "Check that minikube is running and that you have specified the correct namespace")
 	}
 
 	if !urlMode {
@@ -295,22 +296,14 @@ func WaitAndMaybeOpenService(api libmachine.API, namespace string, service strin
 
 	if len(serviceURL.URLs) == 0 {
 		out.T(out.Sad, "service {{.namespace_name}}/{{.service_name}} has no node port", out.V{"namespace_name": namespace, "service_name": service})
-		return nil
+		return urlList, nil
 	}
 
 	for _, bareURLString := range serviceURL.URLs {
-		urlString, isHTTPSchemedURL := OptionallyHTTPSFormattedURLString(bareURLString, https)
-
-		if urlMode || !isHTTPSchemedURL {
-			out.T(out.Empty, urlString)
-		} else {
-			out.T(out.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": service})
-			if err := browser.OpenURL(urlString); err != nil {
-				out.ErrT(out.Empty, "browser failed to open url: {{.error}}", out.V{"error": err})
-			}
-		}
+		url, _ := OptionallyHTTPSFormattedURLString(bareURLString, https)
+		urlList = append(urlList, url)
 	}
-	return nil
+	return urlList, nil
 }
 
 // GetServiceListByLabel returns a ServiceList by label

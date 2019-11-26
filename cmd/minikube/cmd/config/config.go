@@ -51,7 +51,7 @@ var settings = []Setting{
 	{
 		name:        "container-runtime",
 		set:         SetString,
-		validations: []setFn{IsContainerdRuntime},
+		validations: []setFn{IsValidRuntime},
 		callbacks:   []setFn{RequiresRestartMsg},
 	},
 	{
@@ -160,12 +160,6 @@ var settings = []Setting{
 		callbacks:   []setFn{EnableOrDisableStorageClasses},
 	},
 	{
-		name:        "heapster",
-		set:         SetBool,
-		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableAddon},
-	},
-	{
 		name:        "efk",
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
@@ -200,12 +194,6 @@ var settings = []Setting{
 		set:         SetBool,
 		validations: []setFn{IsValidAddon},
 		callbacks:   []setFn{EnableOrDisableAddon},
-	},
-	{
-		name:        "default-storageclass",
-		set:         SetBool,
-		validations: []setFn{IsValidAddon},
-		callbacks:   []setFn{EnableOrDisableStorageClasses},
 	},
 	{
 		name:        "storage-provisioner",

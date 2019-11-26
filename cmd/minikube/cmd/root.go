@@ -235,9 +235,11 @@ func initConfig() {
 	configPath := localpath.ConfigFile
 	viper.SetConfigFile(configPath)
 	viper.SetConfigType("json")
-	err := viper.ReadInConfig()
-	if err != nil {
-		glog.Warningf("Error reading config file at %s: %v", configPath, err)
+	if err := viper.ReadInConfig(); err != nil {
+		// This config file is optional, so don't emit errors if missing
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			glog.Warningf("Error reading config file at %s: %v", configPath, err)
+		}
 	}
 	setupViper()
 }

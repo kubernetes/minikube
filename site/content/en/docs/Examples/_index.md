@@ -18,11 +18,11 @@ Access the Kubernetes Dashboard running within the minikube cluster:
 
 Once started, you can interact with your cluster using `kubectl`, just like any other Kubernetes cluster. For instance, starting a server:
 
-`kubectl run hello-minikube --image=k8s.gcr.io/echoserver:1.4 --port=8080`
+`kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4`
 
 Exposing a service as a NodePort
 
-`kubectl expose deployment hello-minikube --type=NodePort`
+`kubectl expose deployment hello-minikube --type=NodePort --port=8080`
 
 minikube makes it easy to open this exposed endpoint in your browser:
 
@@ -39,3 +39,7 @@ Stop your local cluster:
 Delete your local cluster:
 
 `minikube delete`
+
+Delete all local clusters and profiles
+
+`minikube delete --all`

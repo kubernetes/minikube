@@ -54,8 +54,8 @@ func TestListProfiles(t *testing.T) {
 		if val[tt.index].Name != tt.expectName {
 			t.Errorf("expected %s got %v", tt.expectName, val[tt.index].Name)
 		}
-		if val[tt.index].Config.MachineConfig.VMDriver != tt.vmDriver {
-			t.Errorf("expected %s got %v", tt.vmDriver, val[tt.index].Config.MachineConfig.VMDriver)
+		if val[tt.index].Config[0].VMDriver != tt.vmDriver {
+			t.Errorf("expected %s got %v", tt.vmDriver, val[tt.index].Config[0].VMDriver)
 		}
 
 	}
@@ -164,15 +164,15 @@ func TestCreateProfile(t *testing.T) {
 
 	var testCases = []struct {
 		name      string
-		cfg       *Config
+		cfg       *MachineConfig
 		expectErr bool
 	}{
-		{"p_empty_config", &Config{}, false},
-		{"p_partial_config", &Config{KubernetesConfig: KubernetesConfig{
+		{"p_empty_config", &MachineConfig{}, false},
+		{"p_partial_config", &MachineConfig{KubernetesConfig: KubernetesConfig{
 			ShouldLoadCachedImages: false}}, false},
-		{"p_partial_config2", &Config{MachineConfig: MachineConfig{
-			KeepContext: false}, KubernetesConfig: KubernetesConfig{
-			ShouldLoadCachedImages: false}}, false},
+		{"p_partial_config2", &MachineConfig{
+			KeepContext: false, KubernetesConfig: KubernetesConfig{
+				ShouldLoadCachedImages: false}}, false},
 	}
 	for _, tc := range testCases {
 		n := tc.name // capturing  loop variable

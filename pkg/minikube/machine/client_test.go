@@ -27,9 +27,10 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers/plugin/localbinary"
-	"k8s.io/minikube/pkg/minikube/constants"
-	_ "k8s.io/minikube/pkg/minikube/drivers/virtualbox"
+
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
 )
 
 const vboxConfig = `
@@ -77,12 +78,12 @@ func TestLocalClientNewHost(t *testing.T) {
 	}{
 		{
 			description: "host vbox correct",
-			driver:      constants.DriverVirtualbox,
+			driver:      driver.VirtualBox,
 			rawDriver:   []byte(vboxConfig),
 		},
 		{
 			description: "host vbox incorrect",
-			driver:      constants.DriverVirtualbox,
+			driver:      driver.VirtualBox,
 			rawDriver:   []byte("?"),
 			err:         true,
 		},
@@ -138,7 +139,7 @@ func TestRunDriver(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	os.Setenv(localbinary.PluginEnvKey, localbinary.PluginEnvVal)
-	os.Setenv(localbinary.PluginEnvDriverName, constants.DriverVirtualbox)
+	os.Setenv(localbinary.PluginEnvDriverName, driver.VirtualBox)
 
 	// Capture stdout and reset it later.
 	old := os.Stdout

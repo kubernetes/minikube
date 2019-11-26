@@ -19,7 +19,7 @@ set -eu -o pipefail
 TESTSUITE="${TESTSUITE:-all}" # if env variable not set run all the tests
 exitcode=0
 
-if [[ "$TESTSUITE" = "lint" ]] || [[ "$TESTSUITE" = "all" ]]
+if [[ "$TESTSUITE" = "lint" ]] || [[ "$TESTSUITE" = "all" ]] || [[ "$TESTSUITE" = "lintall" ]]
 then
     echo "= make lint ============================================================="
     make -s lint-ci && echo ok || ((exitcode += 4))
@@ -30,12 +30,14 @@ fi
 
 
 
-if [[ "$TESTSUITE" = "boilerplate" ]] || [[ "$TESTSUITE" = "all" ]]
+if [[ "$TESTSUITE" = "boilerplate" ]] || [[ "$TESTSUITE" = "all" ]] || [[ "$TESTSUITE" = "lintall" ]]
 then
     echo "= boilerplate ==========================================================="
-    readonly PYTHON=$(type -P python || echo docker run --rm -it -v $(pwd):/minikube -w /minikube python python)
-    readonly BDIR="./hack/boilerplate"
-    missing="$($PYTHON ${BDIR}/boilerplate.py --rootdir . --boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/' || true)"
+    readonly ROOT_DIR=$(pwd)
+    readonly BDIR="${ROOT_DIR}/hack/boilerplate"
+    pushd . >/dev/null
+    cd ${BDIR}
+    missing="$(go run boilerplate.go -rootdir ${ROOT_DIR} -boilerplate-dir ${BDIR} | egrep -v '/assets.go|/translations.go|/site/themes/|/site/node_modules|\./out|/hugo/' || true)"
     if [[ -n "${missing}" ]]; then
         echo "boilerplate missing: $missing"
         echo "consider running: ${BDIR}/fix.sh"
@@ -43,11 +45,12 @@ then
     else
         echo "ok"
     fi
+    popd >/dev/null
 fi
 
 
 if [[ "$TESTSUITE" = "unittest" ]] || [[ "$TESTSUITE" = "all" ]]
-then 
+then
     echo "= schema_check =========================================================="
     go run deploy/minikube/schema_check.go >/dev/null && echo ok || ((exitcode += 16))
 

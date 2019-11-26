@@ -35,16 +35,23 @@ func (p *Profile) IsValid() bool {
 	if p.Config == nil {
 		return false
 	}
-	if p.Config.MachineConfig.VMDriver == "" {
+	if len(p.Config) == 0 {
 		return false
 	}
-	if p.Config.KubernetesConfig.KubernetesVersion == "" {
+	// This will become a loop for multinode
+	if p.Config[0] == nil {
+		return false
+	}
+	if p.Config[0].VMDriver == "" {
+		return false
+	}
+	if p.Config[0].KubernetesConfig.KubernetesVersion == "" {
 		return false
 	}
 	return true
 }
 
-// check if the profile is an internal keywords
+// ProfileNameInReservedKeywords checks if the profile is an internal keywords
 func ProfileNameInReservedKeywords(name string) bool {
 	for _, v := range keywords {
 		if strings.EqualFold(v, name) {
@@ -68,12 +75,12 @@ func ProfileExists(name string, miniHome ...string) bool {
 
 // CreateEmptyProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func CreateEmptyProfile(name string, miniHome ...string) error {
-	cfg := &Config{}
+	cfg := &MachineConfig{}
 	return CreateProfile(name, cfg, miniHome...)
 }
 
 // CreateProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func CreateProfile(name string, cfg *Config, miniHome ...string) error {
+func CreateProfile(name string, cfg *MachineConfig, miniHome ...string) error {
 	data, err := json.MarshalIndent(cfg, "", "    ")
 	if err != nil {
 		return err
@@ -153,7 +160,7 @@ func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
 	p := &Profile{
 		Name:   name,
-		Config: cfg,
+		Config: []*MachineConfig{cfg},
 	}
 	return p, err
 }

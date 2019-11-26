@@ -17,8 +17,11 @@ limitations under the License.
 package config
 
 import (
+	"fmt"
 	"os"
 	"text/template"
+
+	"github.com/pkg/browser"
 
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -95,8 +98,19 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 		}
 		for i := range serviceList.Items {
 			svc := serviceList.Items[i].ObjectMeta.Name
-			if err := service.WaitAndMaybeOpenService(api, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
+			var urlString []string
+
+			if urlString, err = service.WaitForService(api, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
 				exit.WithCodeT(exit.Unavailable, "Wait failed: {{.error}}", out.V{"error": err})
+			}
+
+			if len(urlString) != 0 {
+				out.T(out.Celebrate, "Opening kubernetes service  {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+				for _, url := range urlString {
+					if err := browser.OpenURL(url); err != nil {
+						exit.WithError(fmt.Sprintf("browser failed to open url %s", url), err)
+					}
+				}
 			}
 		}
 	},

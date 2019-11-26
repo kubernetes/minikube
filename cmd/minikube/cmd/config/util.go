@@ -137,7 +137,12 @@ func EnableOrDisableAddon(name string, val string) error {
 		return nil
 	}
 
-	host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
+	cfg, err := config.Load()
+	if err != nil && !os.IsNotExist(err) {
+		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
+	}
+
+	host, err := cluster.CheckIfHostExistsAndLoad(api, cfg.Name)
 	if err != nil {
 		return errors.Wrap(err, "getting host")
 	}
@@ -145,11 +150,6 @@ func EnableOrDisableAddon(name string, val string) error {
 	cmd, err := machine.CommandRunner(host)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
-	}
-
-	cfg, err := config.Load()
-	if err != nil && !os.IsNotExist(err) {
-		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
 	data := assets.GenerateTemplateData(cfg.KubernetesConfig)

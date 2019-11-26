@@ -8,12 +8,15 @@ reviewers:
   - medyagh
   - josedonizetti
   - blueelvis
+  - priyawadhwa
 approvers:
   - tstromberg
   - afbjorklund
   - sharifelgamal
   - RA489
   - medyagh
+  - josedonizetti
+  - priyawadhwa
 emeritus_approvers:
   - dlorenc
   - luxas

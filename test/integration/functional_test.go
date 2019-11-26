@@ -30,6 +30,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -60,6 +61,7 @@ func TestFunctional(t *testing.T) {
 		}{
 			{"StartWithProxy", validateStartWithProxy}, // Set everything else up for success
 			{"KubeContext", validateKubeContext},       // Racy: must come immediately after "minikube start"
+			{"KubectlGetPods", validateKubectlGetPods}, // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},             // Caches images needed for subsequent tests because of proxy
 		}
 		for _, tc := range tests {
@@ -84,14 +86,16 @@ func TestFunctional(t *testing.T) {
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DNS", validateDNS},
+			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
 			{"MountCmd", validateMountCmd},
 			{"ProfileCmd", validateProfileCmd},
-			{"ServicesCmd", validateServicesCmd},
+			{"ServiceCmd", validateServiceCmd},
 			{"AddonsCmd", validateAddonsCmd},
 			{"PersistentVolumeClaim", validatePersistentVolumeClaim},
 			{"TunnelCmd", validateTunnelCmd},
 			{"SSHCmd", validateSSHCmd},
+			{"MySQL", validateMySQL},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -108,7 +112,9 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("Failed to set up the test proxy: %s", err)
 	}
-	startArgs := append([]string{"start", "-p", profile, "--wait=false"}, StartArgs()...)
+
+	// Use more memory so that we may reliably fit MySQL and nginx
+	startArgs := append([]string{"start", "-p", profile, "--wait=true", "--memory", "2500MB"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -141,11 +147,25 @@ func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateKubectlGetPods asserts that `kubectl get pod -A` returns non-zero content
+func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	if rr.Stderr.String() != "" {
+		t.Errorf("%s: got unexpected stderr: %s", rr.Command(), rr.Stderr)
+	}
+	if !strings.Contains(rr.Stdout.String(), "kube-system") {
+		t.Errorf("%s = %q, want *kube-system*", rr.Command(), rr.Stdout)
+	}
+}
+
 // validateAddonManager asserts that the kube-addon-manager pod is deployed properly
 func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
 	// If --wait=false, this may take a couple of minutes
-	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 3*time.Minute); err != nil {
-		t.Errorf("wait: %v", err)
+	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 5*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
 	}
 }
 
@@ -175,6 +195,46 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 	}
 }
 
+func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	// Custom format
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-f", "host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubeconfig:{{.Kubeconfig}}"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	match, _ := regexp.MatchString(`host:([A-z]+),kublet:([A-z]+),apiserver:([A-z]+),kubeconfig:([A-z]+)`, rr.Stdout.String())
+	if !match {
+		t.Errorf("%s failed: %v. Output for custom format did not match", rr.Args, err)
+	}
+
+	// Json output
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-o", "json"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	var jsonObject map[string]interface{}
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	if _, ok := jsonObject["Host"]; !ok {
+		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "Host")
+	}
+	if _, ok := jsonObject["Kubelet"]; !ok {
+		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "Kubelet")
+	}
+	if _, ok := jsonObject["APIServer"]; !ok {
+		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "APIServer")
+	}
+	if _, ok := jsonObject["Kubeconfig"]; !ok {
+		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "Kubeconfig")
+	}
+}
+
 // validateDashboardCmd asserts that the dashboard command works
 func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
@@ -189,7 +249,10 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	start := time.Now()
 	s, err := ReadLineWithTimeout(ss.Stdout, 300*time.Second)
 	if err != nil {
-		t.Fatalf("failed to read url within %s: %v\n", time.Since(start), err)
+		if runtime.GOOS == "windows" {
+			t.Skipf("failed to read url within %s: %v\noutput: %q\n", time.Since(start), err, s)
+		}
+		t.Fatalf("failed to read url within %s: %v\noutput: %q\n", time.Since(start), err, s)
 	}
 
 	u, err := url.Parse(strings.TrimSpace(s))
@@ -217,7 +280,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 3*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 5*time.Minute)
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}
@@ -243,7 +306,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cache unsupported by none")
 	}
-	for _, img := range []string{"busybox", "busybox:1.28.4-glibc"} {
+	for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "mysql:5.6", "gcr.io/hello-minikube-zero-install/hello-node"} {
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Args, err)
@@ -342,13 +405,77 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 }
 
 // validateServiceCmd asserts basic "service" command functionality
-func validateServicesCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
+func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=gcr.io/hello-minikube-zero-install/hello-node"))
+	if err != nil {
+		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
+	}
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
+	if err != nil {
+		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
+	}
+
+	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 5*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	if !strings.Contains(rr.Stdout.String(), "kubernetes") {
-		t.Errorf("service list got %q, wanted *kubernetes*", rr.Stdout.String())
+	if !strings.Contains(rr.Stdout.String(), "hello-node") {
+		t.Errorf("service list got %q, wanted *hello-node*", rr.Stdout.String())
+	}
+
+	// Test --https --url mode
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+	if rr.Stderr.String() != "" {
+		t.Errorf("unexpected stderr output: %s", rr.Stderr)
+	}
+
+	endpoint := strings.TrimSpace(rr.Stdout.String())
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", endpoint, err)
+	}
+	if u.Scheme != "https" {
+		t.Errorf("got scheme: %q, expected: %q", u.Scheme, "https")
+	}
+
+	// Test --format=IP
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	if strings.TrimSpace(rr.Stdout.String()) != u.Hostname() {
+		t.Errorf("%s = %q, wanted %q", rr.Args, rr.Stdout.String(), u.Hostname())
+	}
+
+	// Test a regular URLminikube
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	endpoint = strings.TrimSpace(rr.Stdout.String())
+	u, err = url.Parse(endpoint)
+	if err != nil {
+		t.Fatalf("failed to parse %q: %v", endpoint, err)
+	}
+	if u.Scheme != "http" {
+		t.Fatalf("got scheme: %q, expected: %q", u.Scheme, "http")
+	}
+
+	t.Logf("url: %s", endpoint)
+	resp, err := retryablehttp.Get(endpoint)
+	if err != nil {
+		t.Fatalf("get failed: %v\nresp: %v", err, resp)
+	}
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("%s = status code %d, want %d", u, resp.StatusCode, http.StatusOK)
 	}
 }
 
@@ -421,6 +548,28 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	if rr.Stdout.String() != want {
 		t.Errorf("%v = %q, want = %q", rr.Args, rr.Stdout.String(), want)
+	}
+}
+
+// validateMySQL validates a minimalist MySQL deployment
+func validateMySQL(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+
+	names, err := PodWait(ctx, t, profile, "default", "app=mysql", 5*time.Minute)
+	if err != nil {
+		t.Fatalf("podwait: %v", err)
+	}
+
+	// Retry, as mysqld first comes up without users configured. Scan for names in case of a reschedule.
+	mysql := func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
+		return err
+	}
+	if err = retry.Expo(mysql, 5*time.Second, 180*time.Second); err != nil {
+		t.Errorf("mysql failing: %v", err)
 	}
 }
 

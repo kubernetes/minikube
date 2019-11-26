@@ -10,7 +10,7 @@ To run all tests from the minikube root directory:
 
 Run a single test on an active cluster:
 
-`make integration -e TEST_ARGS="-test.v -test.run TestFunctional/parallel/MountCmd --profile=minikube --cleanup=false"`
+`make integration -e TEST_ARGS="-test.run TestFunctional/parallel/MountCmd --profile=minikube --cleanup=false"`
 
 WARNING: For this to work repeatedly, the test must be written so that it cleans up after itself.
 

@@ -17,7 +17,7 @@ weight: 2
 If the [Brew Package Manager](https://brew.sh/) is installed, use it to download and install minikube:
 
 ```shell
-brew cask install minikube
+brew install minikube
 ```
 
 {{% /tab %}}
@@ -40,8 +40,8 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin
 If the [Brew Package Manager](https://brew.sh/) is installed, use it to download and upgrade minikube:
 
 ```shell
-rm /usr/local/bin/minikube
-brew cask reinstall minikube
+brew update
+brew upgrade minikube
 ```
 
 {{% /tab %}}
