@@ -306,7 +306,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cache unsupported by none")
 	}
-	for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "k8s.gcr.io/echoserver:1.4"} {
+	for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "k8s.gcr.io/pause:latest"} {
 		_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 		if err != nil {
 			t.Errorf("failed to add %q to cache", img)
@@ -330,8 +330,8 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Errorf("cache list failed: %v", err)
 	}
-	if !strings.Contains(rr.Output(), "k8s.gcr.io/echoserver:1.4") {
-		t.Errorf("cache list did not include k8s.gcr.io/echoserver:1.4")
+	if !strings.Contains(rr.Output(), "k8s.gcr.io/pause") {
+		t.Errorf("cache list did not include k8s.gcr.io/pause")
 	}
 	if strings.Contains(rr.Output(), "busybox:1.28.4-glibc") {
 		t.Errorf("cache list should not include busybox:1.28.4-glibc")
