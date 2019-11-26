@@ -79,6 +79,8 @@ This step uses the git tag to publish new binaries to GCS and create a github re
 
 After job completion, click "Console Output" to verify that the release completed without errors. This is typically where one will see brew automation fail, for instance.
 
+**Note: If you are releasing a beta, you are done when you get here.**
+
 ## Check releases.json
 
 This file is used for auto-update notifications, but is not active until releases.json is copied to GCS.
@@ -98,7 +100,7 @@ These are downstream packages that are being maintained by others and how to upg
 | Package Manager | URL                                                                       | TODO                                                                                                                                                                        |
 | --------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Arch Linux AUR  | <https://aur.archlinux.org/packages/minikube-bin/>                        | "Flag as package out-of-date"                                                                                                                                               |
-| Brew Cask       | <https://github.com/Homebrew/homebrew-cask/blob/master/Casks/minikube.rb> | The release job creates a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256, double check that it's created. |
+| Brew Cask       | <https://github.com/Homebrew/homebrew-cask/tree/master/Casks> | The release job creates a new PR in [Homebrew/homebrew-cask](https://github.com/Homebrew/homebrew-cask) with an updated version and SHA256, double check that it's created. |
 
 WARNING: The Brew cask automation is error-prone. please ensure that a PR was created.
 
@@ -108,7 +110,7 @@ Verify release checksums by running `make check-release`
 
 ## Update docs
 
-If there are major changes, please send a PR to update <https://kubernetes.io/docs/setup/minikube/>
+If there are major changes, please send a PR to update <https://kubernetes.io/docs/setup/learning-environment/minikube/>
 
 ## Announce
 

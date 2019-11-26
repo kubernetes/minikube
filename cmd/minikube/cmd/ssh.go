@@ -25,7 +25,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -42,11 +42,15 @@ var sshCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
+		cc, err := config.Load()
+		if err != nil {
+			exit.WithError("Error getting config", err)
+		}
+		host, err := cluster.CheckIfHostExistsAndLoad(api, cc.Name)
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
-		if host.Driver.DriverName() == constants.DriverNone {
+		if host.Driver.DriverName() == driver.None {
 			exit.UsageT("'none' driver does not support 'minikube ssh' command")
 		}
 		if viper.GetBool(nativeSSH) {

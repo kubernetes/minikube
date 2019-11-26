@@ -56,7 +56,7 @@ var vmProblems = map[string]match{
 		Issues: []int{1926, 4206},
 	},
 	"HYPERKIT_NOT_FOUND": {
-		Regexp:         re(`Driver "hyperkit" not found. Do you have the plugin binary .* accessible in your PATH?`),
+		Regexp:         re(`Driver "hyperkit" not found.`),
 		Advice:         "Please install the minikube hyperkit VM driver, or select an alternative --vm-driver",
 		URL:            "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperkit/",
 		HideCreateLink: true,

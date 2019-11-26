@@ -58,7 +58,7 @@ var logsCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		h, err := api.Load(config.GetMachineName())
+		h, err := api.Load(cfg.Name)
 		if err != nil {
 			exit.WithError("api load", err)
 		}

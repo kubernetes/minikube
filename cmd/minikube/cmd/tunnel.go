@@ -76,7 +76,11 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		done, err := manager.StartTunnel(ctx, config.GetMachineName(), api, config.DefaultLoader, clientset.CoreV1())
+		cc, err := config.Load()
+		if err != nil {
+			exit.WithError("Error getting config", err)
+		}
+		done, err := manager.StartTunnel(ctx, cc.Name, api, config.DefaultLoader, clientset.CoreV1())
 		if err != nil {
 			exit.WithError("error starting tunnel", err)
 		}

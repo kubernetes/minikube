@@ -9,7 +9,7 @@ theme = ["docsy"]
 enableGitInfo = true
 
 # Language settings
-contentDir = "content/en" 
+contentDir = "content/en"
 defaultContentLanguage = "en"
 defaultContentLanguageInSubdir = false
 # Useful when translating.
@@ -32,6 +32,30 @@ pygmentsStyle = "tango"
 # Configure how URLs look like per section.
 [permalinks]
 blog = "/:section/:year/:month/:day/:slug/"
+
+[module]
+  [[module.mounts]]
+    source = "../deploy/addons/gvisor/"
+    target = "content/gvisor/"
+  [[module.mounts]]
+    source = "../deploy/addons/helm-tiller/"
+    target = "content/helm-tiller/"
+  [[module.mounts]]
+    source = "../deploy/addons/ingress-dns/"
+    target = "content/ingress-dns/"
+  [[module.mounts]]
+    source = "../deploy/addons/storage-provisioner-gluster/"
+    target = "content/storage-provisioner-gluster/"
+  [[module.mounts]]
+    source = "../deploy/addons/layouts/"
+    target = "layouts"
+
+  [[module.mounts]]
+    source = "content/en"
+    target = "content"
+  [[module.mounts]]
+    source = "layouts"
+    target = "layouts"
 
 ## Configuration for BlackFriday markdown parser: https://github.com/russross/blackfriday
 [blackfriday]
@@ -68,7 +92,7 @@ weight = 1
 [params]
 copyright = "The Kubernetes Authors -- "
 # The latest release of minikube
-latest_release = "1.4.0"
+latest_release = "1.5.2"
 
 privacy_policy = ""
 

@@ -68,7 +68,7 @@ var printProfilesTable = func() {
 		exit.UsageT("No minikube profile was found. You can create one using `minikube start`.")
 	}
 	for _, p := range validProfiles {
-		validData = append(validData, []string{p.Name, p.Config.MachineConfig.VMDriver, p.Config.KubernetesConfig.NodeIP, strconv.Itoa(p.Config.KubernetesConfig.NodePort), p.Config.KubernetesConfig.KubernetesVersion})
+		validData = append(validData, []string{p.Name, p.Config[0].VMDriver, p.Config[0].KubernetesConfig.NodeIP, strconv.Itoa(p.Config[0].KubernetesConfig.NodePort), p.Config[0].KubernetesConfig.KubernetesVersion})
 	}
 
 	table.AppendBulk(validData)
@@ -112,7 +112,7 @@ var printProfilesJSON = func() {
 
 	var body = map[string]interface{}{}
 
-	if err == nil {
+	if err == nil || os.IsNotExist(err) {
 		body["valid"] = valid
 		body["invalid"] = invalid
 		jsonString, _ := json.Marshal(body)

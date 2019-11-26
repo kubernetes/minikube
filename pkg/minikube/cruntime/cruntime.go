@@ -19,16 +19,17 @@ package cruntime
 
 import (
 	"fmt"
+	"os/exec"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
-	Run(string) error
-	CombinedOutput(string) (string, error)
+	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
 }
 
 // Manager is a common interface for container runtimes
@@ -130,11 +131,14 @@ func disableOthers(me Manager, cr CommandRunner) error {
 // enableIPForwarding configures IP forwarding, which is handled normally by Docker
 // Context: https://github.com/kubernetes/kubeadm/issues/1062
 func enableIPForwarding(cr CommandRunner) error {
-	if err := cr.Run("sudo modprobe br_netfilter"); err != nil {
+	c := exec.Command("sudo", "modprobe", "br_netfilter")
+	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "br_netfilter")
 	}
-	if err := cr.Run("sudo sh -c \"echo 1 > /proc/sys/net/ipv4/ip_forward\""); err != nil {
-		return errors.Wrap(err, "ip_forward")
+
+	c = exec.Command("sudo", "sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward")
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "ip_forward")
 	}
 	return nil
 }

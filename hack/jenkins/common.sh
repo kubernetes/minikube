@@ -23,8 +23,6 @@
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
-# PARALLEL_COUNT: number of tests to run in parallel
-
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
@@ -41,21 +39,6 @@ echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
-
-readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]" | cut -d" " -f3)
-if [[ "${LOAD}" -gt 2 ]]; then
-  echo ""
-  echo "********************** LOAD WARNING ********************************"
-  echo "Load average is very high (${LOAD}), which may cause failures. Top:"
-  if [[ "$(uname)" == "Darwin" ]]; then
-    # Two samples, macOS does not calculate CPU usage on the first one
-    top -l 2 -o cpu -n 5 | tail -n 15
-  else
-    top -b -n1 | head -n 15
-  fi
-  echo "********************** LOAD WARNING ********************************"
-  echo ""
-fi
 
 case "${VM_DRIVER}" in
   kvm2)
@@ -159,13 +142,17 @@ if type -P virsh; then
 fi
 
 if type -P vboxmanage; then
+  killall VBoxHeadless || true
+  sleep 1
+  killall -9 VBoxHeadless || true
+
   for guid in $(vboxmanage list vms | grep -Eo '\{[a-zA-Z0-9-]+\}'); do
     echo "- Removing stale VirtualBox VM: $guid"
     vboxmanage startvm "${guid}" --type emergencystop || true
     vboxmanage unregistervm "${guid}" || true
   done
 
-  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ printf $2 }')
+  ifaces=$(vboxmanage list hostonlyifs | grep -E "^Name:" | awk '{ print $2 }')
   for if in $ifaces; do
     vboxmanage hostonlyif remove "${if}" || true
   done
@@ -245,22 +232,42 @@ mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
 export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
-# Build the gvisor image. This will be copied into minikube and loaded by ctr.
-# Used by TestContainerd for Gvisor Test.
-# TODO: move this to integration test setup.
+
+# Build the gvisor image so that we can integration test changes to pkg/gvisor
 chmod +x ./testdata/gvisor-addon
 # skipping gvisor mac because ofg https://github.com/kubernetes/minikube/issues/5137
 if [ "$(uname)" != "Darwin" ]; then
-  docker build -t gcr.io/k8s-minikube/gvisor-addon:latest -f testdata/gvisor-addon-Dockerfile ./testdata
+  # Should match GVISOR_IMAGE_VERSION in Makefile
+  docker build -t gcr.io/k8s-minikube/gvisor-addon:2 -f testdata/gvisor-addon-Dockerfile ./testdata
+fi
+
+readonly LOAD=$(uptime | egrep -o "load average.*: [0-9]+" | cut -d" " -f3)
+if [[ "${LOAD}" -gt 2 ]]; then
+  echo ""
+  echo "********************** LOAD WARNING ********************************"
+  echo "Load average is very high (${LOAD}), which may cause failures. Top:"
+  if [[ "$(uname)" == "Darwin" ]]; then
+    # Two samples, macOS does not calculate CPU usage on the first one
+    top -l 2 -o cpu -n 5 | tail -n 15
+  else
+    top -b -n1 | head -n 15
+  fi
+  echo "********************** LOAD WARNING ********************************"
+  echo "Sleeping 30s to see if load goes down ...."
+  sleep 30
+  uptime
 fi
 
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
+set -x
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
-  -test.timeout=60m \
-  -test.parallel=${PARALLEL_COUNT} \
+  -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
+  -test.timeout=70m \
+  ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 
@@ -282,11 +289,43 @@ ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
 rmdir "${TEST_HOME}"
 echo ">> ${TEST_HOME} completed at $(date)"
 
-if [[ "${MINIKUBE_LOCATION}" != "master" ]]; then
-  readonly target_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
-  curl -s "https://api.github.com/repos/kubernetes/minikube/statuses/${COMMIT}?access_token=$access_token" \
-  -H "Content-Type: application/json" \
-  -X POST \
-  -d "{\"state\": \"$status\", \"description\": \"Jenkins\", \"target_url\": \"$target_url\", \"context\": \"${JOB_NAME}\"}"
+if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
+  exit $result
 fi
+
+# retry_github_status provides reliable github status updates
+function retry_github_status() {
+  local commit=$1
+  local context=$2
+  local state=$3
+  local token=$4
+  local target=$5
+
+   # Retry in case we hit our GitHub API quota or fail other ways.
+  local attempt=0
+  local timeout=2
+  local code=-1
+
+  while [[ "${attempt}" -lt 8 ]]; do
+    local out=$(mktemp)
+    code=$(curl -o "${out}" -s --write-out "%{http_code}" -L \
+      "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}?access_token=${token}" \
+      -H "Content-Type: application/json" \
+      -X POST \
+      -d "{\"state\": \"${state}\", \"description\": \"Jenkins\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
+
+    # 2xx HTTP codes
+    if [[ "${code}" =~ ^2 ]]; then
+      break
+    fi
+
+    cat "${out}" && rm -f "${out}"
+    echo "HTTP code ${code}! Retrying in ${timeout} .."
+    sleep "${timeout}"
+    attempt=$(( attempt + 1 ))
+    timeout=$(( timeout * 2 ))
+  done
+}
+
+retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
 exit $result
