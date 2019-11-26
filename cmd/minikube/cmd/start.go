@@ -328,7 +328,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
-	beginCacheImages(&cacheGroup, config.KubernetesConfig.ImageRepository, k8sVersion)
+	beginCacheImages(&cacheGroup, &config)
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
@@ -337,7 +337,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// exits here in case of --download-only option.
-	handleDownloadOnly(&cacheGroup, k8sVersion)
+	handleDownloadOnly(&cacheGroup, &config)
 	mRunner, preExists, machineAPI, host := startMachine(&config)
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
@@ -457,16 +457,17 @@ func setupKubeconfig(h *host.Host, c *cfg.MachineConfig, clusterName string) (*k
 	return kcs, nil
 }
 
-func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
+func handleDownloadOnly(cacheGroup *errgroup.Group, c *cfg.MachineConfig) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool(downloadOnly) {
 		return
 	}
-	if err := doCacheBinaries(k8sVersion); err != nil {
+	if err := doCacheBinaries(c.KubernetesConfig.KubernetesVersion); err != nil {
 		exit.WithError("Failed to cache binaries", err)
 	}
 	waitCacheImages(cacheGroup)
-	if err := CacheImagesInConfigFile(); err != nil {
+
+	if err := machine.CacheImages(c.CachedImages, constants.ImageCacheDir); err != nil {
 		exit.WithError("Failed to cache images", err)
 	}
 	out.T(out.Check, "Download complete!")
@@ -825,13 +826,13 @@ func doCacheBinaries(k8sVersion string) error {
 }
 
 // beginCacheImages caches Docker images in the background
-func beginCacheImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
+func beginCacheImages(g *errgroup.Group, c *cfg.MachineConfig) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
 
 	g.Go(func() error {
-		return machine.CacheImagesForBootstrapper(imageRepository, k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+		return machine.CacheImagesForBootstrapper(c.KubernetesConfig.ImageRepository, c.KubernetesConfig.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper))
 	})
 }
 
