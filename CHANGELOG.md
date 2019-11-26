@@ -1,5 +1,30 @@
 # Release Notes
 
+## Version 1.6.0-beta.1 - 2019-11-26
+
+* cri-o v1.16.0 [#5970](https://github.com/kubernetes/minikube/pull/5970)
+* Update default k8s version to 1.17.0-rc.1 [#5973](https://github.com/kubernetes/minikube/pull/5973)
+* Update crictl to v1.16.1 [#5972](https://github.com/kubernetes/minikube/pull/5972)
+* Update docker to v19.03.5 [#5914](https://github.com/kubernetes/minikube/pull/5914)
+* Fix profile list for non existenting folder  [#5955](https://github.com/kubernetes/minikube/pull/5955)
+* Upgrade podman to 1.6.3 [#5971](https://github.com/kubernetes/minikube/pull/5971)
+* Fix validation of container-runtime config [#5964](https://github.com/kubernetes/minikube/pull/5964)
+* Add option for virtualbox users to set nat-nic-type  [#5960](https://github.com/kubernetes/minikube/pull/5960)
+* Upgrade buildroot minor version to 2019.02.7 [#5967](https://github.com/kubernetes/minikube/pull/5967)
+* dashboard: Update to latest images (2.0.0-beta6) [#5934](https://github.com/kubernetes/minikube/pull/5934)
+
+Huge thank you for this release towards our contributors: 
+- Adam Crowder
+- Anders F Björklund
+- David Newman
+- Harsimran Singh Maan
+- Kenta Iso
+- Medya Ghazizadeh
+- Reuven Harrison
+- Sharif Elgamal
+- Thomas Stromberg
+- yuxiaobo
+
 ## Version 1.6.0-beta.0 - 2019-11-15
 
 * Update DefaultKubernetesVersion to v1.17.0-beta.1 to prepare for betas [#5925](https://github.com/kubernetes/minikube/pull/5925)
@@ -29,7 +54,6 @@ Huge thank you for this release towards our contributors:
 - Sharif Elgamal
 - Steffen Gransow
 - Thomas Strömberg
-
 
 ## Version 1.5.2 - 2019-10-31 (Happy Halloween!)
 
