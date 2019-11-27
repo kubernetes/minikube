@@ -630,7 +630,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 
 // UpdateCluster updates the cluster
 func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
-	images := images.CachedImages(cfg.KubernetesConfig.KubernetesVersion, cfg.KubernetesConfig.KubernetesVersion)
+	images := images.CachedImages(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
 		if err := machine.LoadImages(&cfg, k.c, images, constants.ImageCacheDir); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
