@@ -77,11 +77,6 @@ func NewDriver(hostName, storePath string) *Driver {
 	}
 }
 
-// PreCreateCheck is called to enforce pre-creation steps
-func (d *Driver) PreCreateCheck() error {
-	return d.verifyRootPermissions()
-}
-
 // verifyRootPermissions is called before any step which needs root access
 func (d *Driver) verifyRootPermissions() error {
 	exe, err := os.Executable()
