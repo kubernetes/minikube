@@ -17,7 +17,6 @@ limitations under the License.
 package machine
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -141,7 +140,6 @@ func CacheAndLoadImages(images []string) error {
 			continue // try next machine
 		}
 		if status == state.Running.String() { // the not running hosts will load on next start
-			fmt.Println("got a running", pName)
 			h, err := api.Load(pName)
 			if err != nil {
 				return err
@@ -154,7 +152,6 @@ func CacheAndLoadImages(images []string) error {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("inside CacheAndLoadImages, \n images %+v \n ", images)
 			err = LoadImages(c, cr, images, constants.ImageCacheDir)
 			if err != nil {
 				glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
