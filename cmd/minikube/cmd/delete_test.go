@@ -117,7 +117,7 @@ func TestDeleteProfile(t *testing.T) {
 				t.Errorf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 			}
 
-			pathToMachine := machine.MachinePath(profile.Name, localpath.MiniPath())
+			pathToMachine := machine.Path(profile.Name, localpath.MiniPath())
 			if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 				t.Errorf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 			}
