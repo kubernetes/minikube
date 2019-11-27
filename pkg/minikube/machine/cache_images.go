@@ -17,6 +17,7 @@ limitations under the License.
 package machine
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -94,15 +95,10 @@ func CacheImages(images []string, cacheDir string) error {
 }
 
 // LoadImages loads previously cached images into the container runtime
-func LoadImages(cmd command.Runner, images []string, cacheDir string) error {
+func LoadImages(cc *config.MachineConfig, cmd command.Runner, images []string, cacheDir string) error {
 	glog.Infof("LoadImages start: %s", images)
 	defer glog.Infof("LoadImages end")
 	var g errgroup.Group
-	// Load profile cluster config from file
-	cc, err := config.Load()
-	if err != nil && !os.IsNotExist(err) {
-		glog.Errorln("Error loading profile config: ", err)
-	}
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
@@ -145,6 +141,7 @@ func CacheAndLoadImages(images []string) error {
 			continue // try next machine
 		}
 		if status == state.Running.String() { // the not running hosts will load on next start
+			fmt.Println("got a running", pName)
 			h, err := api.Load(pName)
 			if err != nil {
 				return err
@@ -153,7 +150,12 @@ func CacheAndLoadImages(images []string) error {
 			if err != nil {
 				return err
 			}
-			err = LoadImages(cr, images, constants.ImageCacheDir)
+			c, err := config.Load(pName)
+			if err != nil {
+				return err
+			}
+			fmt.Printf("inside CacheAndLoadImages, \n images %+v \n ", images)
+			err = LoadImages(c, cr, images, constants.ImageCacheDir)
 			if err != nil {
 				glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
 			}

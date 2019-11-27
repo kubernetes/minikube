@@ -124,8 +124,11 @@ func encode(w io.Writer, m MinikubeConfig) error {
 }
 
 // Load loads the kubernetes and machine config for the current machine
-func Load() (*MachineConfig, error) {
+func Load(profile ...string) (*MachineConfig, error) {
 	machine := viper.GetString(MachineProfile)
+	if len(profile) > 0 {
+		machine = profile[0]
+	}
 	return DefaultLoader.LoadConfigFromFile(machine)
 }
 
