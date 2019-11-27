@@ -331,6 +331,12 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
+	defer func() { // clean up temp files
+		err := os.Remove(f.Name())
+		if err != nil {
+			glog.Infof("Failed to clean up the temp file %s : %v", f.Name(), err)
+		}
+	}()
 	tag, err := name.NewTag(image, name.WeakValidation)
 	if err != nil {
 		return err
