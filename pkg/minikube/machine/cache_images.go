@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -38,6 +39,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -95,7 +97,6 @@ func CacheImages(images []string, cacheDir string) error {
 func LoadImages(cmd command.Runner, images []string, cacheDir string) error {
 	glog.Infof("LoadImages start: %s", images)
 	defer glog.Infof("LoadImages end")
-
 	var g errgroup.Group
 	// Load profile cluster config from file
 	cc, err := config.Load()
@@ -121,7 +122,7 @@ func LoadImages(cmd command.Runner, images []string, cacheDir string) error {
 	return nil
 }
 
-// CacheAndLoadImages caches and loads images
+// CacheAndLoadImages caches and loads images to all profiles
 func CacheAndLoadImages(images []string) error {
 	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
 		return err
@@ -131,20 +132,34 @@ func CacheAndLoadImages(images []string) error {
 		return err
 	}
 	defer api.Close()
-	cc, err := config.Load()
+	profiles, _, err := config.ListProfiles() // need to load image to all profiles
 	if err != nil {
-		return err
+		return errors.Wrap(err, "list profiles")
 	}
-	h, err := api.Load(cc.Name)
-	if err != nil {
-		return err
+	for _, p := range profiles { // adding images to all the profiles
+		pName := p.Name // capture the loop variable
+		status, err := cluster.GetHostStatus(api, pName)
+		if err != nil {
+			glog.Warningf("skipping loading cache for profile %s", pName)
+			glog.Errorf("error getting status for %s: %v", pName, err)
+			continue // try next machine
+		}
+		if status == state.Running.String() { // the not running hosts will load on next start
+			h, err := api.Load(pName)
+			if err != nil {
+				return err
+			}
+			cr, err := CommandRunner(h)
+			if err != nil {
+				return err
+			}
+			err = LoadImages(cr, images, constants.ImageCacheDir)
+			if err != nil {
+				glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+			}
+		}
 	}
-
-	runner, err := CommandRunner(h)
-	if err != nil {
-		return err
-	}
-	return LoadImages(runner, images, constants.ImageCacheDir)
+	return err
 }
 
 // # ParseReference cannot have a : in the directory path

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"io/ioutil"
@@ -23,8 +23,8 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 // Machine contains information about a machine
@@ -85,12 +85,12 @@ func ListMachines(miniHome ...string) (validMachines []*Machine, inValidMachines
 
 // LoadMachine loads a machine or throws an error if the machine could not be loadedG
 func LoadMachine(name string) (*Machine, error) {
-	api, err := machine.NewAPIClient()
+	api, err := NewAPIClient()
 	if err != nil {
 		return nil, err
 	}
 
-	h, err := CheckIfHostExistsAndLoad(api, name)
+	h, err := cluster.CheckIfHostExistsAndLoad(api, name)
 	if err != nil {
 		return nil, err
 	}
