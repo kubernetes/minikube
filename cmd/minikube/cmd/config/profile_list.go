@@ -23,10 +23,13 @@ import (
 	"strconv"
 	"strings"
 
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 
+	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
 )
@@ -58,7 +61,7 @@ var printProfilesTable = func() {
 	var validData [][]string
 
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Profile", "VM Driver", "NodeIP", "Node Port", "Kubernetes Version"})
+	table.SetHeader([]string{"Profile", "VM Driver", "NodeIP", "Node Port", "Kubernetes Version", "Status"})
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
@@ -67,8 +70,18 @@ var printProfilesTable = func() {
 	if len(validProfiles) == 0 || err != nil {
 		exit.UsageT("No minikube profile was found. You can create one using `minikube start`.")
 	}
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		glog.Infof("failed to get machine api client %v", err)
+	}
+	defer api.Close()
+
 	for _, p := range validProfiles {
-		validData = append(validData, []string{p.Name, p.Config[0].VMDriver, p.Config[0].KubernetesConfig.NodeIP, strconv.Itoa(p.Config[0].KubernetesConfig.NodePort), p.Config[0].KubernetesConfig.KubernetesVersion})
+		p.Status, err = cluster.GetHostStatus(api, p.Name)
+		if err != nil {
+			glog.Infof("error getting host status for %v", err)
+		}
+		validData = append(validData, []string{p.Name, p.Config[0].VMDriver, p.Config[0].KubernetesConfig.NodeIP, strconv.Itoa(p.Config[0].KubernetesConfig.NodePort), p.Config[0].KubernetesConfig.KubernetesVersion, p.Status})
 	}
 
 	table.AppendBulk(validData)
@@ -93,7 +106,20 @@ var printProfilesTable = func() {
 }
 
 var printProfilesJSON = func() {
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		glog.Infof("failed to get machine api client %v", err)
+	}
+	defer api.Close()
+
 	validProfiles, invalidProfiles, err := config.ListProfiles()
+	for _, v := range validProfiles {
+		status, err := cluster.GetHostStatus(api, v.Name)
+		if err != nil {
+			glog.Infof("error getting host status for  %v", err)
+		}
+		v.Status = status
+	}
 
 	var valid []*config.Profile
 	var invalid []*config.Profile
