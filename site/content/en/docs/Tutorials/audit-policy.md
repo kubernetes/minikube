@@ -10,8 +10,7 @@ description: >
 ## Overview
 
 [Auditing](https://kubernetes.io/docs/tasks/debug-application-cluster/audit/) is not enabled in minikube by default.
-This tutorial shows how to provide an [Audit Policy](https://kubernetes.io/docs/tasks/debug-application-cluster/audit/#audit-policy) file
-to the minikube API server on startup.
+This tutorial shows how to provide an [Audit Policy](https://kubernetes.io/docs/tasks/debug-application-cluster/audit/#audit-policy) file to the minikube API server on startup.
 
 ## Tutorial
 
@@ -35,8 +34,6 @@ minikube start \
 kubectl logs kube-apiserver-minikube -n  kube-system | grep audit.k8s.io/v1
 ```
 
-Putting the file into the `~/.minikube/files/` directory triggers the [file sync mechanism](https://minikube.sigs.k8s.io/docs/tasks/sync/) to copy the `audit-policy.yaml` file
-from the host onto the minikube node. When the API server container starts I'll mount the `/etc/ssl/certs` directory from the minikube node and can thus read the audit policy file. 
+The [Audit Policy](https://kubernetes.io/docs/tasks/debug-application-cluster/audit/#audit-policy) used in this tutorial is very minimal and quite verbose. As a next step you might want to finetune the `audit-policy.yaml` file. To get the changes applied you need to stop and start minikube. Restarting minikube triggers the [file sync mechanism](https://minikube.sigs.k8s.io/docs/tasks/sync/) that copies the yaml file onto the minikube node and causes the API server to read the changed policy file.
 
-You most likely want to tune the [Audit Policy](https://kubernetes.io/docs/tasks/debug-application-cluster/audit/#audit-policy) next as the one used in this tutorial is quite verbose.
-To use a new file you need to stop and start minikube.
+Note: Currently there is no dedicated directory to store the `audit-policy.yaml` file in `~/.minikube/`. Using the `~/.minikube/files/etc/ssl/certs` directory is a workaround! This workaround works like this: By putting the file into a sub-directory of `~/.minikube/files/`, the [file sync mechanism](https://minikube.sigs.k8s.io/docs/tasks/sync/) gets triggered and copies the `audit-policy.yaml` file from the host onto the minikube node. When the API server container gets started by `kubeadm` I'll mount the `/etc/ssl/certs` directory from the minikube node into the container. This is the reason why the `audit-policy.yaml` file has to be stored in the ssl certs directory: It's one of the directories that get mounted from the minikube node into the container.
