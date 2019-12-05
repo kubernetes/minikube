@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -172,6 +173,11 @@ func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
 	return false, nil
 }
 
+func isAddonManagerEnabled() (bool, error) {
+	addonManager := assets.Addons["addon-manager"]
+	return addonManager.IsEnabled()
+}
+
 func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
 	var err error
 
@@ -208,7 +214,17 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 			}
 		}
 	}
-	return nil
+	// If addon manager is enabled, return as it will handle this.
+	// If not, reconcile addons ourselves.
+
+	enabled, err := isAddonManagerEnabled()
+	if err != nil {
+		return errors.Wrapf(err, "checking if addon manager is enabled")
+	}
+	if enabled {
+		return nil
+	}
+	return addons.ReconcileAddons(cmd)
 }
 
 // EnableOrDisableStorageClasses enables or disables storage classes
