@@ -151,6 +151,13 @@ var vmProblems = map[string]match{
 		Issues:         []int{4498},
 		HideCreateLink: true,
 	},
+	"NON_DOCKER_RUNTIME_EXIT_5": {
+		Regexp:         re(`sudo systemctl start docker: exit status 5`),
+		Advice:         "Docker is the only supported container runtime for none. Ensure that docker is installed",
+		URL:            "https://minikube.sigs.k8s.io/docs/reference/drivers/none",
+		Issues:         []int{5532},
+		HideCreateLink: true,
+	},
 
 	// VirtualBox
 	"VBOX_BLOCKED": {
