@@ -62,9 +62,9 @@ func TestSetupCerts(t *testing.T) {
 		certStorePath := path.Join(SSLCertStoreDir, dst)
 		certNameHash := "abcdef"
 		remoteCertHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", certNameHash))
-		cmdMap[fmt.Sprintf("sudo ln -s '%s' '%s'", certFile, certStorePath)] = "1"
-		cmdMap[fmt.Sprintf("openssl x509 -hash -noout -in '%s'", certFile)] = certNameHash
-		cmdMap[fmt.Sprintf("sudo ln -s '%s' '%s'", certStorePath, remoteCertHashLink)] = "1"
+		cmdMap[fmt.Sprintf("sudo ln -s %s %s", certFile, certStorePath)] = "1"
+		cmdMap[fmt.Sprintf("openssl x509 -hash -noout -in %s", certFile)] = certNameHash
+		cmdMap[fmt.Sprintf("sudo ln -s %s %s", certStorePath, remoteCertHashLink)] = "1"
 	}
 	f := command.NewFakeCommandRunner()
 	f.SetCommandToOutput(cmdMap)

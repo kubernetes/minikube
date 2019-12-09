@@ -8,6 +8,7 @@ reviewers:
   - medyagh
   - josedonizetti
   - blueelvis
+  - priyawadhwa
 approvers:
   - tstromberg
   - afbjorklund
@@ -15,6 +16,7 @@ approvers:
   - RA489
   - medyagh
   - josedonizetti
+  - priyawadhwa
 emeritus_approvers:
   - dlorenc
   - luxas

@@ -19,21 +19,29 @@ set -uf -o pipefail
 
 PATH=/usr/local/bin:/sbin:/usr/local/sbin:$PATH
 
-exit_if_jenkins() {
-  jenkins=$(pgrep java)
-  if [[ "$jenkins" -- "" ]]; then
-    echo "no java, no jenkins"
-    return 0
+# cleanup shared between Linux and macOS
+function check_jenkins() {
+  jenkins_pid="$(pidof java)"
+  if [[ "${jenkins_pid}" = "" ]]; then
+          return
   fi
-  pstree $jenkins | grep -v java && echo "jenkins is running..." && exit 1
+  pstree "${jenkins_pid}" \
+        | egrep -i 'bash|integration|e2e|minikube' \
+        && echo "tests are is running on pid ${jenkins_pid} ..." \
+        && exit 1
 }
 
-exit_if_jenkins
-echo "waiting to see if any jobs are coming in..."
-sleep 15
-exit_if_jenkins
-echo "doing it"
+check_jenkins
+logger "cleanup_and_reboot running - may shutdown in 60 seconds"
+echo "cleanup_and_reboot running - may shutdown in 60 seconds" | wall
+sleep 10
+check_jenkins
+logger "cleanup_and_reboot is happening!"
+
+# kill jenkins to avoid an incoming request
 killall java
-sudo rm -Rf ~jenkins/.minikube || echo "could not delete minikube"
-sudo rm -Rf ~/jenkins/minikube-integration/* || true
+
+# macOS specific cleanup
+sudo rm /var/db/dhcpd_leases || echo "could not clear dhcpd leases"
+sudo softwareupdate -i -a -R
 sudo reboot

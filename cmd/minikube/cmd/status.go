@@ -40,6 +40,7 @@ import (
 var statusFormat string
 var output string
 
+// KubeconfigStatus represents the kubeconfig status
 var KubeconfigStatus = struct {
 	Configured    string
 	Misconfigured string
@@ -87,7 +88,9 @@ var statusCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		hostSt, err := cluster.GetHostStatus(api)
+		machineName := viper.GetString(config.MachineProfile)
+
+		hostSt, err := cluster.GetHostStatus(api, machineName)
 		if err != nil {
 			exit.WithError("Error getting host status", err)
 		}
@@ -109,12 +112,12 @@ var statusCmd = &cobra.Command{
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ip, err := cluster.GetHostDriverIP(api, config.GetMachineName())
+			ip, err := cluster.GetHostDriverIP(api, machineName)
 			if err != nil {
 				glog.Errorln("Error host driver ip status:", err)
 			}
 
-			apiserverPort, err := kubeconfig.Port(config.GetMachineName())
+			apiserverPort, err := kubeconfig.Port(machineName)
 			if err != nil {
 				// Fallback to presuming default apiserver port
 				apiserverPort = constants.APIServerPort
@@ -127,7 +130,7 @@ var statusCmd = &cobra.Command{
 				returnCode |= clusterNotRunningStatusFlag
 			}
 
-			ks, err := kubeconfig.IsClusterInConfig(ip, config.GetMachineName())
+			ks, err := kubeconfig.IsClusterInConfig(ip, machineName)
 			if err != nil {
 				glog.Errorln("Error kubeconfig status:", err)
 			}

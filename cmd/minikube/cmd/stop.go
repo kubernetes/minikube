@@ -76,8 +76,7 @@ func runStop(cmd *cobra.Command, args []string) {
 		out.T(out.WarningType, "Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	machineName := pkg_config.GetMachineName()
-	err = kubeconfig.UnsetCurrentContext(machineName, constants.KubeconfigPath)
+	err = kubeconfig.UnsetCurrentContext(profile, constants.KubeconfigPath)
 	if err != nil {
 		exit.WithError("update config", err)
 	}

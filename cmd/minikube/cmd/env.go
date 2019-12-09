@@ -33,6 +33,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -171,7 +172,7 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 	}
 
 	if noProxy {
-		host, err := api.Load(config.GetMachineName())
+		host, err := api.Load(viper.GetString(config.MachineProfile))
 		if err != nil {
 			return nil, errors.Wrap(err, "Error getting IP")
 		}
@@ -339,14 +340,18 @@ var dockerEnvCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
+		cc, err := config.Load()
+		if err != nil {
+			exit.WithError("Error getting config", err)
+		}
+		host, err := cluster.CheckIfHostExistsAndLoad(api, cc.Name)
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
 		if host.Driver.DriverName() == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
 		}
-		hostSt, err := cluster.GetHostStatus(api)
+		hostSt, err := cluster.GetHostStatus(api, cc.Name)
 		if err != nil {
 			exit.WithError("Error getting host status", err)
 		}

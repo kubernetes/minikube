@@ -20,11 +20,13 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"os/exec"
 	"path"
 	"strings"
 	"text/template"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -124,17 +126,17 @@ func (r *Containerd) Style() out.StyleEnum {
 
 // Version retrieves the current version of this runtime
 func (r *Containerd) Version() (string, error) {
-	ver, err := r.Runner.CombinedOutput("containerd --version")
+	c := exec.Command("containerd", "--version")
+	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
-		return "", err
+		return "", errors.Wrapf(err, "containerd check version.")
 	}
-
 	// containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39
-	words := strings.Split(ver, " ")
+	words := strings.Split(rr.Stdout.String(), " ")
 	if len(words) >= 4 && words[0] == "containerd" {
 		return strings.Replace(words[2], "v", "", 1), nil
 	}
-	return "", fmt.Errorf("unknown version: %q", ver)
+	return "", fmt.Errorf("unknown version: %q", rr.Stdout.String())
 }
 
 // SocketPath returns the path to the socket file for containerd
@@ -152,13 +154,18 @@ func (r *Containerd) DefaultCNI() bool {
 
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
-	err := r.Runner.Run("systemctl is-active --quiet service containerd")
+	c := exec.Command("systemctl", "is-active", "--quiet", "service", "containerd")
+	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Containerd) Available() error {
-	return r.Runner.Run("command -v containerd")
+	c := exec.Command("which", "containerd")
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "check containerd availability.")
+	}
+	return nil
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
@@ -174,7 +181,11 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersi
 	if err := t.Execute(&b, opts); err != nil {
 		return err
 	}
-	return cr.Run(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | base64 -d | sudo tee %s", path.Dir(cPath), base64.StdEncoding.EncodeToString(b.Bytes()), cPath))
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "generate containerd cfg.")
+	}
+	return nil
 }
 
 // Enable idempotently enables containerd on a host
@@ -194,18 +205,30 @@ func (r *Containerd) Enable(disOthers bool) error {
 		return err
 	}
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
-	return r.Runner.Run("sudo systemctl restart containerd")
+	c := exec.Command("sudo", "systemctl", "restart", "containerd")
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "restart containerd")
+	}
+	return nil
 }
 
 // Disable idempotently disables containerd on a host
 func (r *Containerd) Disable() error {
-	return r.Runner.Run("sudo systemctl stop containerd")
+	c := exec.Command("sudo", "systemctl", "stop", "containerd")
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "stop containerd")
+	}
+	return nil
 }
 
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
-	return r.Runner.Run(fmt.Sprintf("sudo ctr -n=k8s.io images import %s", path))
+	c := exec.Command("sudo", "ctr", "-n=k8s.io", "images", "import", path)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "ctr images import")
+	}
+	return nil
 }
 
 // KubeletOptions returns kubelet options for a containerd

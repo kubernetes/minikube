@@ -42,7 +42,11 @@ var sshCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		host, err := cluster.CheckIfHostExistsAndLoad(api, config.GetMachineName())
+		cc, err := config.Load()
+		if err != nil {
+			exit.WithError("Error getting config", err)
+		}
+		host, err := cluster.CheckIfHostExistsAndLoad(api, cc.Name)
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}

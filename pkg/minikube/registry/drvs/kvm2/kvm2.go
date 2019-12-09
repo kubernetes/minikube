@@ -65,7 +65,7 @@ type kvmDriver struct {
 }
 
 func configure(mc config.MachineConfig) interface{} {
-	name := config.GetMachineName()
+	name := mc.Name
 	return kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
