@@ -26,7 +26,6 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -40,8 +39,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
 
-	"github.com/juju/clock"
 	"github.com/juju/mutex"
 )
 
@@ -61,26 +60,23 @@ var (
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
 func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
+
+	localPath := localpath.MiniPath()
+	glog.Infof("Setting up %s for IP: %s\n", localPath, k8s.NodeIP)
+
 	// WARNING: This function was not designed for multiple profiles, so it is VERY racey:
 	//
 	// It updates a shared certificate file and uploads it to the apiserver before launch.
 	//
 	// If another process updates the shared certificate, it's invalid.
 	// TODO: Instead of racey manipulation of a shared certificate, use per-profile certs
-	spec := mutex.Spec{
-		Name:  "setupCerts",
-		Clock: clock.WallClock,
-		Delay: 15 * time.Second,
-	}
+	spec := lock.UserMutexSpec(filepath.Join(localPath, "certs"))
 	glog.Infof("acquiring lock: %+v", spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
 	}
 	defer releaser.Release()
-
-	localPath := localpath.MiniPath()
-	glog.Infof("Setting up %s for IP: %s\n", localPath, k8s.NodeIP)
 
 	if err := generateCerts(k8s); err != nil {
 		return errors.Wrap(err, "Error generating certs")
