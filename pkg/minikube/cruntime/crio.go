@@ -119,6 +119,20 @@ func (r *CRIO) Disable() error {
 	return nil
 }
 
+// ImageExists checks if an image exists
+func (r *CRIO) ImageExists(name string, sha string) bool {
+	// expected output looks like [NAME@sha256:SHA]
+	c := exec.Command("sudo", "podman", "inspect", "--format='{{.Id}}'", name)
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return false
+	}
+	if !strings.Contains(rr.Output(), sha) {
+		return false
+	}
+	return true
+}
+
 // LoadImage loads an image into this runtime
 func (r *CRIO) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
