@@ -84,7 +84,6 @@ func (api *MockAPI) NewHost(drvName string, rawDriver []byte) (*host.Host, error
 		},
 	}
 
-	// HACK: Make future calls to config.GetMachineName() work properly.
 	api.Logf("MockAPI.NewHost: Setting profile=%q", h.Name)
 	viper.Set("profile", h.Name)
 

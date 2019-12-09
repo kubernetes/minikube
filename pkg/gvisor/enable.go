@@ -39,7 +39,7 @@ const (
 	containerdConfigTomlPath       = "/etc/containerd/config.toml"
 	storedContainerdConfigTomlPath = "/tmp/config.toml"
 	gvisorContainerdShimURL        = "https://github.com/google/gvisor-containerd-shim/releases/download/v0.0.3/containerd-shim-runsc-v1.linux-amd64"
-	gvisorURL                      = "https://storage.googleapis.com/gvisor/releases/nightly/2019-01-14/runsc"
+	gvisorURL                      = "https://storage.googleapis.com/gvisor/releases/nightly/2019-11-27/runsc"
 )
 
 // Enable follows these steps for enabling gvisor in minikube:

@@ -17,7 +17,7 @@ limitations under the License.
 package vmpath
 
 const (
-	// GuestAddonsDir is the default path of the addons configration
+	// GuestAddonsDir is the default path of the addons configuration
 	GuestAddonsDir = "/etc/kubernetes/addons"
 	// GuestManifestsDir is where the kubelet should look for static Pod manifests
 	GuestManifestsDir = "/etc/kubernetes/manifests"

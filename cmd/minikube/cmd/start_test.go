@@ -71,7 +71,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
 			// ignored proxy should not be in config
-			for _, v := range config.MachineConfig.DockerEnv {
+			for _, v := range config.DockerEnv {
 				if v == test.proxy && test.proxyIgnored {
 					t.Fatalf("Value %v not expected in dockerEnv but occurred", v)
 				}

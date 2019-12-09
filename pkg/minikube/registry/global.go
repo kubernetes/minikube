@@ -18,6 +18,7 @@ package registry
 
 import (
 	"os"
+	"sort"
 
 	"github.com/golang/glog"
 )
@@ -53,8 +54,8 @@ func Driver(name string) DriverDef {
 	return globalRegistry.Driver(name)
 }
 
-// Installed returns a list of installed drivers in the global registry
-func Installed() []DriverState {
+// Available returns a list of available drivers in the global registry
+func Available() []DriverState {
 	sts := []DriverState{}
 	glog.Infof("Querying for installed drivers using PATH=%s", os.Getenv("PATH"))
 
@@ -66,12 +67,18 @@ func Installed() []DriverState {
 		s := d.Status()
 		glog.Infof("%s priority: %d, state: %+v", d.Name, d.Priority, s)
 
-		if !s.Installed {
-			glog.Infof("%q not installed: %v", d.Name, s.Error)
-			continue
+		priority := d.Priority
+		if !s.Healthy {
+			priority = Unhealthy
 		}
-		sts = append(sts, DriverState{Name: d.Name, Priority: d.Priority, State: s})
+
+		sts = append(sts, DriverState{Name: d.Name, Priority: priority, State: s})
 	}
+
+	// Descending priority for predictability
+	sort.Slice(sts, func(i, j int) bool {
+		return sts[i].Priority > sts[j].Priority
+	})
 	return sts
 }
 

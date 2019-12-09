@@ -21,7 +21,9 @@ import (
 	"testing"
 
 	"github.com/docker/machine/libmachine/host"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
@@ -46,8 +48,8 @@ func (f FakeNoProxyGetter) GetNoProxyVar() (string, string) {
 var defaultAPI = &tests.MockAPI{
 	FakeStore: tests.FakeStore{
 		Hosts: map[string]*host.Host{
-			config.GetMachineName(): {
-				Name:   config.GetMachineName(),
+			constants.DefaultMachineName: {
+				Name:   constants.DefaultMachineName,
 				Driver: &tests.MockDriver{},
 			},
 		},
@@ -232,6 +234,7 @@ func TestShellCfgSet(t *testing.T) {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
 
+			viper.Set(config.MachineProfile, constants.DefaultMachineName)
 			defaultShellDetector = &FakeShellDetector{test.shell}
 			defaultNoProxyGetter = &FakeNoProxyGetter{test.noProxyVar, test.noProxyValue}
 			noProxy = test.noProxyFlag
@@ -241,7 +244,7 @@ func TestShellCfgSet(t *testing.T) {
 				t.Errorf("Shell cfgs differ: expected %+v, \n\n got %+v", test.expectedShellCfg, shellCfg)
 			}
 			if err != nil && !test.shouldErr {
-				t.Errorf("Test should have failed but didn't return error: %s, error: %v", test.description, err)
+				t.Errorf("Unexpected error occurred: %s, error: %v", test.description, err)
 			}
 			if err == nil && test.shouldErr {
 				t.Errorf("Test didn't return error but should have: %s", test.description)

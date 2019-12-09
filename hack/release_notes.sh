@@ -34,7 +34,10 @@ if ! [[ -x "${DIR}/release-notes" ]]; then
   install_release_notes_helper
 fi
 
-"${DIR}/release-notes" kubernetes minikube
+git pull git@github.com:kubernetes/minikube master --tags
+recent=$(git describe --abbrev=0)
+
+"${DIR}/release-notes" kubernetes minikube --since $recent
 
 echo "Huge thank you for this release towards our contributors: "
-git log "$(git describe  --abbrev=0)".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'
+git log "$recent".. --format="%aN" --reverse | sort | uniq | awk '{printf "- %s\n", $0 }'

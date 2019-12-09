@@ -23,6 +23,7 @@ import (
 	"io"
 	"os"
 	"path"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -36,6 +37,7 @@ type CopyableFile interface {
 	GetTargetDir() string
 	GetTargetName() string
 	GetPermissions() string
+	GetModTime() (time.Time, error)
 }
 
 // BaseAsset is the base asset class
@@ -64,6 +66,11 @@ func (b *BaseAsset) GetTargetName() string {
 // GetPermissions returns permissions
 func (b *BaseAsset) GetPermissions() string {
 	return b.Permissions
+}
+
+// GetModTime returns mod time
+func (b *BaseAsset) GetModTime() (time.Time, error) {
+	return time.Time{}, nil
 }
 
 // FileAsset is an asset using a file
@@ -102,6 +109,12 @@ func (f *FileAsset) GetLength() (flen int) {
 		return 0
 	}
 	return int(fi.Size())
+}
+
+// GetModTime returns modification time of the file
+func (f *FileAsset) GetModTime() (time.Time, error) {
+	fi, err := os.Stat(f.AssetName)
+	return fi.ModTime(), err
 }
 
 func (f *FileAsset) Read(p []byte) (int, error) {

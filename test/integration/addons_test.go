@@ -36,13 +36,13 @@ import (
 
 // TestAddons tests addons that require no special environment -- in parallel
 func TestAddons(t *testing.T) {
-	MaybeSlowParallel(t)
-
+	MaybeParallel(t)
+	WaitForStartSlot(t)
 	profile := UniqueProfileName("addons")
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1", "--addons=ingress", "--addons=registry"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1", "--addons=ingress", "--addons=registry", "--addons=metrics-server"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -56,6 +56,7 @@ func TestAddons(t *testing.T) {
 		}{
 			{"Registry", validateRegistryAddon},
 			{"Ingress", validateIngressAddon},
+			{"MetricsServer", validateMetricsServerAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -107,7 +108,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", 4*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, time.Minute*10); err != nil {
@@ -204,6 +205,48 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "registry", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+}
+
+func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile string) {
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("kubernetes client: %v", client)
+	}
+
+	start := time.Now()
+	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "metrics-server", 6*time.Minute); err != nil {
+		t.Errorf("waiting for metrics-server deployment to stabilize: %v", err)
+	}
+	t.Logf("metrics-server stabilized in %s", time.Since(start))
+
+	if _, err := PodWait(ctx, t, profile, "kube-system", "k8s-app=metrics-server", 6*time.Minute); err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+
+	want := "CPU(cores)"
+	checkMetricsServer := func() error {
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "top", "pods", "-n", "kube-system"))
+		if err != nil {
+			return err
+		}
+		if rr.Stderr.String() != "" {
+			t.Logf("%v: unexpected stderr: %s", rr.Args, rr.Stderr)
+		}
+		if !strings.Contains(rr.Stdout.String(), want) {
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Args, rr.Stdout, want)
+		}
+		return nil
+	}
+
+	// metrics-server takes some time to be able to collect metrics
+	if err := retry.Expo(checkMetricsServer, time.Minute, 5*time.Minute); err != nil {
+		t.Errorf(err.Error())
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "metrics-server", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

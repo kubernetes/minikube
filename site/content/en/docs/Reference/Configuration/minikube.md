@@ -77,7 +77,6 @@ Configurable fields:
  * dashboard
  * addon-manager
  * default-storageclass
- * heapster
  * efk
  * ingress
  * registry

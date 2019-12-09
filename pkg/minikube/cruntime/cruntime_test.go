@@ -17,12 +17,16 @@ limitations under the License.
 package cruntime
 
 import (
+	"bytes"
 	"fmt"
+	"os/exec"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/command"
 )
 
 func TestName(t *testing.T) {
@@ -110,38 +114,47 @@ func NewFakeRunner(t *testing.T) *FakeRunner {
 	}
 }
 
-// Run a fake command!
-func (f *FakeRunner) CombinedOutput(cmd string) (string, error) {
-	f.cmds = append(f.cmds, cmd)
-
-	root := false
-	args := strings.Split(cmd, " ")
-	bin, args := args[0], args[1:]
-	f.t.Logf("bin=%s args=%v", bin, args)
-	if bin == "sudo" {
-		root = true
-		bin, args = args[0], args[1:]
+func buffer(s string, err error) (*command.RunResult, error) {
+	rr := &command.RunResult{}
+	if err != nil {
+		return rr, err
 	}
-	switch bin {
-	case "systemctl":
-		return f.systemctl(args, root)
-	case "docker":
-		return f.docker(args, root)
-	case "crictl":
-		return f.crictl(args, root)
-	case "crio":
-		return f.crio(args, root)
-	case "containerd":
-		return f.containerd(args, root)
-	default:
-		return "", nil
+	var buf bytes.Buffer
+	_, err = buf.WriteString(s)
+	if err != nil {
+		return rr, errors.Wrap(err, "Writing outStr to FakeRunner's buffer")
 	}
+	rr.Stdout = buf
+	rr.Stderr = buf
+	return rr, err
 }
 
 // Run a fake command!
-func (f *FakeRunner) Run(cmd string) error {
-	_, err := f.CombinedOutput(cmd)
-	return err
+func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
+	xargs := cmd.Args
+	f.cmds = append(f.cmds, xargs...)
+	root := false
+	bin, args := xargs[0], xargs[1:]
+	f.t.Logf("bin=%s args=%v", bin, args)
+	if bin == "sudo" {
+		root = true
+		bin, args = xargs[1], xargs[2:]
+	}
+	switch bin {
+	case "systemctl":
+		return buffer(f.systemctl(args, root))
+	case "docker":
+		return buffer(f.docker(args, root))
+	case "crictl":
+		return buffer(f.crictl(args, root))
+	case "crio":
+		return buffer(f.crio(args, root))
+	case "containerd":
+		return buffer(f.containerd(args, root))
+	default:
+		rr := &command.RunResult{}
+		return rr, nil
+	}
 }
 
 // docker is a fake implementation of docker
@@ -150,7 +163,7 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 	case "ps":
 		// ps -a --filter="name=apiserver" --format="{{.ID}}"
 		if args[1] == "-a" && strings.HasPrefix(args[2], "--filter") {
-			filter := strings.Split(args[2], `"`)[1]
+			filter := strings.Split(args[2], `r=`)[1]
 			fname := strings.Split(filter, "=")[1]
 			ids := []string{}
 			f.t.Logf("fake docker: Looking for containers matching %q", fname)
@@ -163,7 +176,8 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 			return strings.Join(ids, "\n"), nil
 		}
 	case "stop":
-		for _, id := range args[1:] {
+		ids := strings.Split(args[1], " ")
+		for _, id := range ids {
 			f.t.Logf("fake docker: Stopping id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
@@ -181,16 +195,16 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 
 		}
 	case "version":
+
 		if args[1] == "--format" && args[2] == "'{{.Server.Version}}'" {
 			return "18.06.2-ce", nil
 		}
-
 	}
 	return "", nil
 }
 
 // crio is a fake implementation of crio
-func (f *FakeRunner) crio(args []string, _ bool) (string, error) {
+func (f *FakeRunner) crio(args []string, _ bool) (string, error) { //nolint (result 1 (error) is always nil)
 	if args[0] == "--version" {
 		return "crio version 1.13.0", nil
 	}
@@ -201,6 +215,9 @@ func (f *FakeRunner) crio(args []string, _ bool) (string, error) {
 func (f *FakeRunner) containerd(args []string, _ bool) (string, error) {
 	if args[0] == "--version" {
 		return "containerd github.com/containerd/containerd v1.2.0 c4446665cb9c30056f4998ed953e6d4ff22c7c39", nil
+	}
+	if args[0] != "--version" { // doing this to suppress lint "result 1 (error) is always nil"
+		return "", fmt.Errorf("unknown args[0]")
 	}
 	return "", nil
 }
@@ -253,7 +270,7 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 }
 
 // systemctl is a fake implementation of systemctl
-func (f *FakeRunner) systemctl(args []string, root bool) (string, error) {
+func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // nolint result 0 (string) is always ""
 	action := args[0]
 	svcs := args[1:]
 	out := ""
@@ -263,6 +280,7 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) {
 		if arg == "service" {
 			svcs = args[i+1:]
 		}
+
 	}
 
 	for _, svc := range svcs {
@@ -314,8 +332,7 @@ func TestVersion(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
-			runner := NewFakeRunner(t)
-			r, err := New(Config{Type: tc.runtime, Runner: runner})
+			r, err := New(Config{Type: tc.runtime, Runner: NewFakeRunner(t)})
 			if err != nil {
 				t.Fatalf("New(%s): %v", tc.runtime, err)
 			}
@@ -344,9 +361,9 @@ func TestDisable(t *testing.T) {
 		runtime string
 		want    []string
 	}{
-		{"docker", []string{"sudo systemctl stop docker docker.socket"}},
-		{"crio", []string{"sudo systemctl stop crio"}},
-		{"containerd", []string{"sudo systemctl stop containerd"}},
+		{"docker", []string{"sudo", "systemctl", "stop", "docker", "docker.socket"}},
+		{"crio", []string{"sudo", "systemctl", "stop", "crio"}},
+		{"containerd", []string{"sudo", "systemctl", "stop", "containerd"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
