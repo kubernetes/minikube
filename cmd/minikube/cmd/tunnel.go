@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -76,11 +77,11 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		cc, err := config.Load()
+		cfg, err := config.Load(viper.GetString(config.MachineProfile))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		done, err := manager.StartTunnel(ctx, cc.Name, api, config.DefaultLoader, clientset.CoreV1())
+		done, err := manager.StartTunnel(ctx, cfg.Name, api, config.DefaultLoader, clientset.CoreV1())
 		if err != nil {
 			exit.WithError("error starting tunnel", err)
 		}

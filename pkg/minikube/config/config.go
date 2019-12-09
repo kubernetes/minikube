@@ -24,7 +24,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -124,12 +123,8 @@ func encode(w io.Writer, m MinikubeConfig) error {
 }
 
 // Load loads the kubernetes and machine config for the current machine
-func Load(profile ...string) (*MachineConfig, error) {
-	machine := viper.GetString(MachineProfile)
-	if len(profile) > 0 {
-		machine = profile[0]
-	}
-	return DefaultLoader.LoadConfigFromFile(machine)
+func Load(profile string) (*MachineConfig, error) {
+	return DefaultLoader.LoadConfigFromFile(profile)
 }
 
 // Loader loads the kubernetes and machine config based on the machine profile name
