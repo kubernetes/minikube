@@ -26,6 +26,7 @@ import (
 // Profile represents a minikube profile
 type Profile struct {
 	Name   string
+	Status string // running, stopped
 	Config []*MachineConfig
 }
 
@@ -61,6 +62,8 @@ type MachineConfig struct {
 	DNSProxy            bool   // Only used by virtualbox
 	HostDNSResolver     bool   // Only used by virtualbox
 	KubernetesConfig    KubernetesConfig
+	HostOnlyNicType     string // Only used by virtualbox
+	NatNicType          string // Only used by virtualbox
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
