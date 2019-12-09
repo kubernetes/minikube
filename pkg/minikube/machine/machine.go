@@ -119,12 +119,3 @@ func machineDirs(miniHome ...string) (dirs []string, err error) {
 	}
 	return dirs, err
 }
-
-// Path returns the Minikube machine path of a machine
-func Path(machine string, miniHome ...string) string {
-	miniPath := localpath.MiniPath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "machines", machine)
-}

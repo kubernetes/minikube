@@ -262,7 +262,7 @@ func deleteInvalidProfile(profile *pkg_config.Profile) []error {
 		}
 	}
 
-	pathToMachine := machine.Path(profile.Name, localpath.MiniPath())
+	pathToMachine := localpath.MachinePath(profile.Name, localpath.MiniPath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		err := os.RemoveAll(pathToMachine)
 		if err != nil {
