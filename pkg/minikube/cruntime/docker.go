@@ -102,6 +102,20 @@ func (r *Docker) Disable() error {
 	return nil
 }
 
+// ImageExists checks if an image exists
+func (r *Docker) ImageExists(name string, sha string) bool {
+	// expected output looks like [SHA_ALGO:SHA]
+	c := exec.Command("docker", "inspect", "--format='{{.Id}}'", name)
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return false
+	}
+	if !strings.Contains(rr.Output(), sha) {
+		return false
+	}
+	return true
+}
+
 // LoadImage loads an image into this runtime
 func (r *Docker) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)

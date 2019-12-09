@@ -94,18 +94,16 @@ func CacheImages(images []string, cacheDir string) error {
 }
 
 // LoadImages loads previously cached images into the container runtime
-func LoadImages(cc *config.MachineConfig, cmd command.Runner, images []string, cacheDir string) error {
+func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string, cacheDir string) error {
 	glog.Infof("LoadImages start: %s", images)
 	defer glog.Infof("LoadImages end")
 	var g errgroup.Group
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
-			src := filepath.Join(cacheDir, image)
-			src = sanitizeCacheDir(src)
-			if err := transferAndLoadImage(cmd, cc.KubernetesConfig, src); err != nil {
-				glog.Warningf("Failed to load %s: %v", src, err)
-				return errors.Wrapf(err, "loading image %s", src)
+			if err := transferAndLoadImage(runner, cc.KubernetesConfig, image, cacheDir); err != nil {
+				glog.Warningf("Failed to load %s: %v", image, err)
+				return errors.Wrapf(err, "loading image %s", image)
 			}
 			return nil
 		})
@@ -225,7 +223,34 @@ func getWindowsVolumeNameCmd(d string) (string, error) {
 }
 
 // transferAndLoadImage transfers and loads a single image from the cache
-func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src string) error {
+func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, imgName string, cacheDir string) error {
+	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+
+	ref, err := name.ParseReference(imgName, name.WeakValidation)
+	if err != nil {
+		return errors.Wrap(err, "image name reference")
+	}
+
+	img, err := retrieveImage(ref)
+	if err != nil {
+		return errors.Wrap(err, "fetching image")
+	}
+
+	m, err := img.Manifest() //image hash
+	if err != nil {
+		glog.Infof("error retrieving image manifest for %s to check if it already exists: %v", imgName, err)
+	} else {
+		hash := m.Config.Digest.Hex
+		if r.ImageExists(imgName, hash) {
+			glog.Infof("skipping re-loading image %q because sha %q already exists ", imgName, hash)
+			return nil
+		}
+	}
+	src := filepath.Join(cacheDir, imgName)
+	src = sanitizeCacheDir(src)
 	glog.Infof("Loading image from cache: %s", src)
 	filename := filepath.Base(src)
 	if _, err := os.Stat(src); err != nil {
@@ -240,10 +265,6 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, src st
 		return errors.Wrap(err, "transferring cached image")
 	}
 
-	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
-	if err != nil {
-		return errors.Wrap(err, "runtime")
-	}
 	loadImageLock.Lock()
 	defer loadImageLock.Unlock()
 
