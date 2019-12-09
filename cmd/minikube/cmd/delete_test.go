@@ -28,7 +28,6 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 // except returns a list of strings, minus the excluded ones
@@ -117,7 +116,7 @@ func TestDeleteProfile(t *testing.T) {
 				t.Errorf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 			}
 
-			pathToMachine := machine.Path(profile.Name, localpath.MiniPath())
+			pathToMachine := localpath.MachinePath(profile.Name, localpath.MiniPath())
 			if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 				t.Errorf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 			}
