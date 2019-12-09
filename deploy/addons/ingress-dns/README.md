@@ -95,7 +95,7 @@ TODO
 
 ### Add the test ingress
 ```bash
-kubectl apply -f https://github.com/kubernetes/minikube/blob/master/deploy/addons/ingress-dns/example/example.yaml
+kubectl apply -f https://raw.githubusercontent.com/kubernetes/minikube/master/deploy/addons/ingress-dns/example/example.yaml
 ```
 Note: Minimum Kubernetes version for example ingress is 1.14.7
 
