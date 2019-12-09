@@ -105,7 +105,7 @@ func CreateProfile(name string, cfg *MachineConfig, miniHome ...string) error {
 	}
 	defer os.Remove(tf.Name())
 
-	if err = lock.WriteFile(tf.Name(), data, 0600); err != nil {
+	if err = ioutil.WriteFile(tf.Name(), data, 0600); err != nil {
 		return err
 	}
 

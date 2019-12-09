@@ -20,8 +20,8 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strconv"
+	"os/user"
+	"regexp"
 	"strings"
 	"time"
 
@@ -31,15 +31,17 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	// nonString is characters to strip from lock names
+	nonString = regexp.MustCompile(`[\W_]+`)
+	// forceID is a user id for consistent testing
+	forceID = ""
+)
+
 // WriteFile decorates ioutil.WriteFile with a file lock and retry
 func WriteFile(filename string, data []byte, perm os.FileMode) error {
-	spec := mutex.Spec{
-		Name:  getMutexName(filename),
-		Clock: clock.WallClock,
-		Delay: 13 * time.Second,
-	}
-	glog.Infof("attempting to write to file %q with filemode %v", filename, perm)
-
+	spec := UserMutexSpec(filename)
+	glog.Infof("acquiring lock for %s: %+v", filename, spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "error acquiring lock for %s", filename)
@@ -50,34 +52,39 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	if err = ioutil.WriteFile(filename, data, perm); err != nil {
 		return errors.Wrapf(err, "error writing file %s", filename)
 	}
-
 	return err
 }
 
-func getMutexName(filename string) string {
-	// Make the mutex name the file name and its parent directory
-	dir, name := filepath.Split(filename)
-
-	// Replace underscores and periods with dashes, the only valid punctuation for mutex name
-	name = strings.ReplaceAll(name, ".", "-")
-	name = strings.ReplaceAll(name, "_", "-")
-
-	p := strings.ReplaceAll(filepath.Base(dir), ".", "-")
-	p = strings.ReplaceAll(p, "_", "-")
-	mutexName := fmt.Sprintf("%s-%s", p, strings.ReplaceAll(name, ".", "-"))
-
-	// Check if name starts with an int and prepend a string instead
-	if _, err := strconv.Atoi(mutexName[:1]); err == nil {
-		mutexName = "m" + mutexName
-	}
-	// There's an arbitrary hard max on mutex name at 40.
-	if len(mutexName) > 40 {
-		mutexName = mutexName[:40]
+// UserMutexSpec returns a mutex spec that will not collide with other users
+func UserMutexSpec(path string) mutex.Spec {
+	id := forceID
+	if forceID == "" {
+		u, err := user.Current()
+		if err == nil {
+			id = u.Uid
+		}
 	}
 
-	// Make sure name doesn't start or end with punctuation
-	mutexName = strings.TrimPrefix(mutexName, "-")
-	mutexName = strings.TrimSuffix(mutexName, "-")
+	s := mutex.Spec{
+		Name:  getMutexNameForPath(fmt.Sprintf("%s-%s", path, id)),
+		Clock: clock.WallClock,
+		// Poll the lock twice a second
+		Delay: 500 * time.Millisecond,
+		// panic after a minute instead of locking infinitely
+		Timeout: 60 * time.Second,
+	}
+	return s
+}
 
-	return mutexName
+func getMutexNameForPath(path string) string {
+	// juju requires that names match ^[a-zA-Z][a-zA-Z0-9-]*$", and be under 40 chars long.
+	n := strings.Trim(nonString.ReplaceAllString(path, "-"), "-")
+	// we need to always guarantee an alphanumeric prefix
+	prefix := "m"
+
+	// Prefer the last 40 chars, as paths tend get more specific toward the end
+	if len(n) >= 40 {
+		return prefix + n[len(n)-39:]
+	}
+	return prefix + n
 }
