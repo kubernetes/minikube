@@ -187,8 +187,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		return DeletionError{Err: delErr, Errtype: Fatal}
 	}
 	defer api.Close()
-
-	cc, err := pkg_config.Load()
+	cc, err := pkg_config.Load(profile.Name)
 	if err != nil && !os.IsNotExist(err) {
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
 		return DeletionError{Err: delErr, Errtype: MissingProfile}
