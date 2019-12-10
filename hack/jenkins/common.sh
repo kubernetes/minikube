@@ -271,11 +271,6 @@ ${SUDO_PREFIX}${E2E_BIN} \
 set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
-e2e_end_time="$(date -u +%s)"
-elapsed=$(($e2e_end_time-$e2e_start_time))
-elapsed=$(bc <<< "scale=2;$elapsed/60")
-description="Finished in ${elapsed} minute(s)."
-echo $description
 
 if [[ $result -eq 0 ]]; then
   status="success"
@@ -284,6 +279,13 @@ else
   status="failure"
   echo "minikube: FAIL"
 fi
+
+e2e_end_time="$(date -u +%s)"
+elapsed=$(($e2e_end_time-$e2e_start_time))
+elapsed=$(bc <<< "scale=2;$elapsed/60")
+description="completed with ${status} in ${elapsed} minute(s)."
+echo $description
+
 
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
