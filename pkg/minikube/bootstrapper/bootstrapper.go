@@ -64,12 +64,11 @@ func GetCachedBinaryList(bootstrapper string) []string {
 }
 
 // GetCachedImageList returns the list of images for a version
-func GetCachedImageList(imageRepository string, version string, bootstrapper string) []string {
+func GetCachedImageList(imageRepository string, version string, bootstrapper string) ([]string, error) {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		images := images.CachedImages(imageRepository, version)
-		return images
+		return images.Kubeadm(imageRepository, version)
 	default:
-		return []string{}
+		return []string{}, nil
 	}
 }

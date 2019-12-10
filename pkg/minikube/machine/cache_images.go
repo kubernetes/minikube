@@ -55,7 +55,10 @@ var loadImageLock sync.Mutex
 
 // CacheImagesForBootstrapper will cache images for a bootstrapper
 func CacheImagesForBootstrapper(imageRepository string, version string, clusterBootstrapper string) error {
-	images := bootstrapper.GetCachedImageList(imageRepository, version, clusterBootstrapper)
+	images, err := bootstrapper.GetCachedImageList(imageRepository, version, clusterBootstrapper)
+	if err != nil {
+		return errors.Wrap(err, "cached images list")
+	}
 
 	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)

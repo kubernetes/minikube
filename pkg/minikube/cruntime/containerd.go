@@ -175,7 +175,7 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersi
 	if err != nil {
 		return err
 	}
-	pauseImage := images.PauseImage(imageRepository, k8sVersion)
+	pauseImage := images.Pause(imageRepository)
 	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: pauseImage}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {

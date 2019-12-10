@@ -673,7 +673,7 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	}
 
 	checkRepository := func(repo string) error {
-		pauseImage := images.PauseImage(repo, k8sVersion)
+		pauseImage := images.Pause(repo)
 		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
 		if err != nil {
 			return err
@@ -1108,7 +1108,7 @@ func tryRegistry(r command.Runner) {
 
 	repo := viper.GetString(imageRepository)
 	if repo == "" {
-		repo = images.DefaultImageRepo
+		repo = images.DefaultKubernetesRepo
 	}
 
 	opts = append(opts, fmt.Sprintf("https://%s/", repo))
