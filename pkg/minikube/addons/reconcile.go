@@ -17,10 +17,14 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 var kubectlPruneWhitelist = []string{
@@ -45,18 +49,44 @@ var kubectlPruneWhitelist = []string{
 // ReconcileAddons runs kubectl apply -f on the addons directory
 // to reconcile addons state
 func ReconcileAddons(cmd command.Runner) error {
-	if _, err := cmd.RunCmd(kubectlCommand()); err != nil {
-		glog.Warningf("reconciling addons failed: %v", err)
+	reconcileCmd, err := kubectlCommand()
+	if err != nil {
+		return err
 	}
+	fmt.Println("running", reconcileCmd)
+	rr, err := cmd.RunCmd(reconcileCmd)
+	if err != nil {
+		glog.Warningf("reconciling addons failed: %v", err)
+		return err
+	}
+	fmt.Println(rr.Stdout.String())
 	return nil
 }
 
-func kubectlCommand() *exec.Cmd {
-	args := []string{"apply", "-f", "/etc/kubernetes/addons", "-l", "kubernetes.io/cluster-service!=true,addonmanager.kubernetes.io/mode=Reconcile", "--prune=true"}
+func kubectlCommand() (*exec.Cmd, error) {
+	kubectlBinary, err := kubectlPath()
+	if err != nil {
+		return nil, err
+	}
+	args := []string{"KUBECONFIG=/var/lib/minikube/kubeconfig", kubectlBinary, "apply", "-f", "/etc/kubernetes/addons", "-l", "kubernetes.io/cluster-service!=true,addonmanager.kubernetes.io/mode=Reconcile", "--prune=true"}
 	for _, k := range kubectlPruneWhitelist {
 		args = append(args, []string{"--prune-whitelist", k}...)
 	}
 	args = append(args, "--recursive")
-	cmd := exec.Command("kubectl", args...)
-	return cmd
+	cmd := exec.Command("sudo", args...)
+	cmd.Env = append(os.Environ(), "KUBECONFIG=/var/lib/minikube/kubeconfig")
+	return cmd, nil
+}
+
+func kubectlPath() (string, error) {
+	cc, err := config.Load()
+	if err != nil && !os.IsNotExist(err) {
+		return "", err
+	}
+	version := constants.DefaultKubernetesVersion
+	if cc != nil {
+		version = cc.KubernetesConfig.KubernetesVersion
+	}
+	path := fmt.Sprintf("/var/lib/minikube/binaries/%s/kubectl", version)
+	return path, nil
 }

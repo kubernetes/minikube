@@ -85,7 +85,7 @@ var ImageRepositories = map[string][]string{
 }
 
 // KubeadmBinaries are Kubernetes release binaries required for kubeadm
-var KubeadmBinaries = []string{"kubelet", "kubeadm"}
+var KubeadmBinaries = []string{"kubelet", "kubeadm", "kubectl"}
 
 // ImageCacheDir is the path to the image cache directory
 var ImageCacheDir = localpath.MakeMiniPath("cache", "images")
