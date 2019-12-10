@@ -40,7 +40,7 @@ func Auxiliary(mirror string) []string {
 	}
 }
 
-// Pause returns the image name for the pause image
+// Pause returns the image name for thoß… pause image
 func Pause(mirror string) string {
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
