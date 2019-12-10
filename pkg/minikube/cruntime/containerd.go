@@ -221,6 +221,15 @@ func (r *Containerd) Disable() error {
 	return nil
 }
 
+// ImageExists checks if an image exists, expected input format
+func (r *Containerd) ImageExists(name string, sha string) bool {
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images check | grep %s | grep %s", name, sha))
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return false
+	}
+	return true
+}
+
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)

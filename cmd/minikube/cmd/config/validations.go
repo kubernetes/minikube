@@ -26,6 +26,7 @@ import (
 
 	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -158,7 +159,7 @@ func IsValidRuntime(name string, runtime string) error {
 
 // IsContainerdRuntime is a validator which returns an error if the current runtime is not containerd
 func IsContainerdRuntime(_, _ string) error {
-	config, err := config.Load()
+	config, err := config.Load(viper.GetString(config.MachineProfile))
 	if err != nil {
 		return fmt.Errorf("config.Load: %v", err)
 	}
