@@ -98,9 +98,33 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 	glog.Infof("LoadImages start: %s", images)
 	defer glog.Infof("LoadImages end")
 	var g errgroup.Group
+	cr, err := cruntime.New(cruntime.Config{Type: cc.ContainerRuntime, Runner: runner})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
+			ref, err := name.ParseReference(image, name.WeakValidation)
+			if err != nil {
+				return errors.Wrap(err, "image name reference")
+			}
+
+			img, err := retrieveImage(ref)
+			if err != nil {
+				return errors.Wrap(err, "fetching image")
+			}
+			cf, _ := img.ConfigName()
+			hash := cf.Hex
+			if err != nil {
+				glog.Infof("error retrieving image manifest for %s to check if it already exists: %v", image, err)
+			} else {
+				if cr.ImageExists(image, hash) {
+					glog.Infof("skipping re-loading image %q because sha %q already exists ", image, hash)
+					return nil
+				}
+			}
 			if err := transferAndLoadImage(runner, cc.KubernetesConfig, image, cacheDir); err != nil {
 				glog.Warningf("Failed to load %s: %v", image, err)
 				return errors.Wrapf(err, "loading image %s", image)
@@ -227,27 +251,6 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, imgNam
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: cr})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
-	}
-
-	ref, err := name.ParseReference(imgName, name.WeakValidation)
-	if err != nil {
-		return errors.Wrap(err, "image name reference")
-	}
-
-	img, err := retrieveImage(ref)
-	if err != nil {
-		return errors.Wrap(err, "fetching image")
-	}
-
-	m, err := img.Manifest() //image hash
-	if err != nil {
-		glog.Infof("error retrieving image manifest for %s to check if it already exists: %v", imgName, err)
-	} else {
-		hash := m.Config.Digest.Hex
-		if r.ImageExists(imgName, hash) {
-			glog.Infof("skipping re-loading image %q because sha %q already exists ", imgName, hash)
-			return nil
-		}
 	}
 	src := filepath.Join(cacheDir, imgName)
 	src = sanitizeCacheDir(src)
