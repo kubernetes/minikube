@@ -280,9 +280,12 @@ else
   echo "minikube: FAIL"
 fi
 
+## caclucate the time took to finish running e2e binary test.
 e2e_end_time="$(date -u +%s)"
 elapsed=$(($e2e_end_time-$e2e_start_time))
-elapsed=$(bc <<< "scale=2;$elapsed/60")
+min=$(($elapsed/60))
+sec=$(tail -c 3 <<< $((${elapsed}00/60)))
+elapsed=$min.$sec
 description="completed with ${status} in ${elapsed} minute(s)."
 echo $description
 
