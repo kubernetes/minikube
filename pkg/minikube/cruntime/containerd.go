@@ -169,7 +169,7 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
-func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string) error {
 	cPath := containerdConfigFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
@@ -198,7 +198,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
