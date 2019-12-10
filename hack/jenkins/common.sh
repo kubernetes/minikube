@@ -272,7 +272,7 @@ set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
 e2e_end_time="$(date -u +%s)"
-elapsed=$(($end_time-$start_time))
+elapsed=$(($e2e_end_time-$e2e_start_time))
 elapsed=$(bc <<< "scale=2;$elapsed/60")
 description="Finished in ${elapsed} minute(s)."
 echo $description
