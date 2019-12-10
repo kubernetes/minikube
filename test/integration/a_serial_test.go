@@ -67,7 +67,11 @@ func TestDownloadOnly(t *testing.T) {
 					t.Errorf("%s failed: %v", args, err)
 				}
 
-				imgs := images.CachedImages("", v)
+				imgs, err := images.Kubeadm("", v)
+				if err != nil {
+					t.Errorf("kubeadm images: %v", v)
+				}
+
 				for _, img := range imgs {
 					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
 					fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
