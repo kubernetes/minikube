@@ -115,15 +115,13 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 			if err != nil {
 				return errors.Wrap(err, "fetching image")
 			}
-			cf, _ := img.ConfigName()
+			cf, err := img.ConfigName()
 			hash := cf.Hex
 			if err != nil {
 				glog.Infof("error retrieving image manifest for %s to check if it already exists: %v", image, err)
-			} else {
-				if cr.ImageExists(image, hash) {
-					glog.Infof("skipping re-loading image %q because sha %q already exists ", image, hash)
-					return nil
-				}
+			} else if cr.ImageExists(image, hash) {
+				glog.Infof("skipping re-loading image %q because sha %q already exists ", image, hash)
+				return nil
 			}
 			if err := transferAndLoadImage(runner, cc.KubernetesConfig, image, cacheDir); err != nil {
 				glog.Warningf("Failed to load %s: %v", image, err)
