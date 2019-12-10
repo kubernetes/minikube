@@ -646,7 +646,7 @@ func validateDriver(name string, existing *cfg.MachineConfig) {
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
 
-func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
+func selectImageRepository(mirrorCountry string) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
 	glog.Infof("selecting image repository for country %s ...", mirrorCountry)
@@ -674,7 +674,7 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	}
 
 	checkRepository := func(repo string) error {
-		pauseImage := images.PauseImage(repo, k8sVersion)
+		pauseImage := images.Pause(repo)
 		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
 		if err != nil {
 			return err
@@ -867,7 +867,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	repository := viper.GetString(imageRepository)
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
 	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
-		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, k8sVersion)
+		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry)
 		if err != nil {
 			exit.WithError("Failed to check main repository and mirrors for images for images", err)
 		}
@@ -1109,7 +1109,7 @@ func tryRegistry(r command.Runner) {
 
 	repo := viper.GetString(imageRepository)
 	if repo == "" {
-		repo = images.DefaultImageRepo
+		repo = images.DefaultKubernetesRepo
 	}
 
 	opts = append(opts, fmt.Sprintf("https://%s/", repo))
