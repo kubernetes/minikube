@@ -308,17 +308,51 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateCacheCmd asserts basic "ssh" command functionality
+// validateCacheCmd tests functionality of cache command (cache add, delete, list)
 func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cache unsupported by none")
 	}
-	for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "mysql:5.6", "gcr.io/hello-minikube-zero-install/hello-node"} {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
-		if err != nil {
-			t.Errorf("%s failed: %v", rr.Args, err)
-		}
-	}
+	t.Run("cache", func(t *testing.T) {
+		t.Run("add", func(t *testing.T) {
+			for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "k8s.gcr.io/pause:latest"} {
+				_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
+				if err != nil {
+					t.Errorf("Failed to cache image %q", img)
+				}
+			}
+		})
+		t.Run("delete", func(t *testing.T) {
+			_, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "busybox:1.28.4-glibc"))
+			if err != nil {
+				t.Errorf("failed to delete image busybox:1.28.4-glibc from cache: %v", err)
+			}
+		})
+
+		t.Run("list", func(t *testing.T) {
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "list"))
+			if err != nil {
+				t.Errorf("cache list failed: %v", err)
+			}
+			if !strings.Contains(rr.Output(), "k8s.gcr.io/pause") {
+				t.Errorf("cache list did not include k8s.gcr.io/pause")
+			}
+			if strings.Contains(rr.Output(), "busybox:1.28.4-glibc") {
+				t.Errorf("cache list should not include busybox:1.28.4-glibc")
+			}
+		})
+
+		t.Run("verify cache inside node", func(t *testing.T) {
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
+			if err != nil {
+				t.Errorf("failed to get docker images through ssh %v", err)
+			}
+			if !strings.Contains(rr.Output(), "1.28.4-glibc") {
+				t.Errorf("expected '1.28.4-glibc' to be in the output: %s", rr.Output())
+			}
+
+		})
+	})
 }
 
 // validateConfigCmd asserts basic "config" command functionality
