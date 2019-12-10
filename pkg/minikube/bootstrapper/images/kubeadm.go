@@ -47,13 +47,13 @@ func Kubeadm(mirror string, version string) ([]string, error) {
 
 // componentImage returns a Kubernetes component image to pull
 func componentImage(name string, v semver.Version, mirror string) string {
-	hasTag := false
+	needsArchSuffix := false
 	ancient := semver.MustParseRange("<1.12.0")
 	if ancient(v) {
-		hasTag = true
+		needsArchSuffix = true
 	}
 
-	return fmt.Sprintf("%sv%s", path.Join(KubernetesRepo(mirror), name+ArchTag(hasTag)), v)
+	return fmt.Sprintf("%sv%s", path.Join(KubernetesRepo(mirror), name+ArchTag(needsArchSuffix)), v)
 }
 
 // coreDNS returns the images used for CoreDNS
@@ -78,6 +78,12 @@ func coreDNS(v semver.Version, mirror string) string {
 
 // etcd returns the image used for etcd
 func etcd(v semver.Version, mirror string) string {
+	needsArchSuffix := false
+	ancient := semver.MustParseRange("<1.12.0")
+	if ancient(v) {
+		needsArchSuffix = true
+	}
+
 	// Should match `DefaultEtcdVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
 	ev := "3.4.3-0"
@@ -91,5 +97,5 @@ func etcd(v semver.Version, mirror string) string {
 	case 11:
 		ev = "3.2.18"
 	}
-	return path.Join(KubernetesRepo(mirror), "etcd"+ArchTag(false)+ev)
+	return path.Join(KubernetesRepo(mirror), "etcd"+ArchTag(needsArchSuffix)+ev)
 }
