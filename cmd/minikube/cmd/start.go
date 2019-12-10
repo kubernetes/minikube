@@ -645,7 +645,7 @@ func validateDriver(name string, existing *cfg.MachineConfig) {
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
 
-func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
+func selectImageRepository(mirrorCountry string) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
 	glog.Infof("selecting image repository for country %s ...", mirrorCountry)
@@ -866,7 +866,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	repository := viper.GetString(imageRepository)
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
 	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
-		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, k8sVersion)
+		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry)
 		if err != nil {
 			exit.WithError("Failed to check main repository and mirrors for images for images", err)
 		}

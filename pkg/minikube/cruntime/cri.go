@@ -407,7 +407,7 @@ image-endpoint: unix://{{.Socket}}
 }
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
-func generateCRIOConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
+func generateCRIOConfig(cr CommandRunner, imageRepository string) error {
 	cPath := crioConfigFile
 	t, err := template.New("crio.conf").Parse(crioConfigTemplate)
 	if err != nil {
