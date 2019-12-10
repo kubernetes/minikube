@@ -214,7 +214,7 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 			}
 		}
 	}
-	// If addon manager is enabled, return as it will handle this.
+	// If addon manager is enabled, return as it will handle whatever changes have been made.
 	// If not, reconcile addons ourselves.
 	enabled, err := isAddonManagerEnabled()
 	if err != nil {

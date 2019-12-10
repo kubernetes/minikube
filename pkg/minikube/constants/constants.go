@@ -91,6 +91,7 @@ const (
 	// KubectlBinary is the name of the kubectl binary installed in minikube
 	KubectlBinary = "kubectl"
 	// KubectlBinaryVersion is the version of kubectl installed in minikube
+	// it's set to v1.13.2 to match the kubectl version in the addon manager image
 	KubectlBinaryVersion = "v1.13.2"
 )
 
