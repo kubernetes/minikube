@@ -51,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -287,7 +288,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	existing, err := cfg.Load()
+	existing, err := cfg.Load(viper.GetString(config.MachineProfile))
 	if err != nil && !os.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
@@ -352,7 +353,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// setup kubeadm (must come after setupKubeconfig)
-	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
+	bs := setupKubeAdm(machineAPI, config)
 
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
@@ -729,7 +730,7 @@ func validateUser(drvName string) {
 	if !useForce {
 		os.Exit(exit.Permissions)
 	}
-	_, err = cfg.Load()
+	_, err = cfg.Load(viper.GetString(config.MachineProfile))
 	if err == nil || !os.IsNotExist(err) {
 		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
 	}
@@ -1188,7 +1189,7 @@ func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Bootstrapper {
+func setupKubeAdm(mAPI libmachine.API, config cfg.MachineConfig) bootstrapper.Bootstrapper {
 	bs, err := getClusterBootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
@@ -1197,10 +1198,10 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
-	if err := bs.UpdateCluster(kc); err != nil {
+	if err := bs.UpdateCluster(config); err != nil {
 		exit.WithError("Failed to update cluster", err)
 	}
-	if err := bs.SetupCerts(kc); err != nil {
+	if err := bs.SetupCerts(config.KubernetesConfig); err != nil {
 		exit.WithError("Failed to setup certs", err)
 	}
 	return bs

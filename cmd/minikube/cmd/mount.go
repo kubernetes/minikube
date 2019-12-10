@@ -29,6 +29,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -102,7 +103,7 @@ var mountCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		cc, err := config.Load()
+		cc, err := config.Load(viper.GetString(config.MachineProfile))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
