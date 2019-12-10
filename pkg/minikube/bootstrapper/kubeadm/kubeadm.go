@@ -817,15 +817,20 @@ func invokeKubeadm(version string) string {
 // transferBinaries transfers all required Kubernetes binaries
 func transferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 	var g errgroup.Group
-	for _, name := range constants.KubeadmBinaries {
+	kubernetesBinaries := append(constants.KubeadmBinaries, constants.KubectlBinary)
+	for _, name := range kubernetesBinaries {
 		name := name
 		g.Go(func() error {
-			src, err := machine.CacheBinary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)
+			version := cfg.KubernetesVersion
+			if name == constants.KubectlBinary {
+				version = constants.KubectlBinaryVersion
+			}
+			src, err := machine.CacheBinary(name, version, "linux", runtime.GOARCH)
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", name)
 			}
 
-			dst := path.Join(binRoot(cfg.KubernetesVersion), name)
+			dst := path.Join(binRoot(version), name)
 			if err := machine.CopyBinary(c, src, dst); err != nil {
 				return errors.Wrapf(err, "copybinary %s -> %s", src, dst)
 			}
