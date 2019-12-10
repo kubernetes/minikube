@@ -343,13 +343,12 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		})
 
 		t.Run("verify cache inside node", func(t *testing.T) {
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "docker", "images"))
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
 			if err != nil {
 				t.Errorf("failed to get docker images through ssh %v", err)
 			}
-
-			if !strings.Contains(rr.Output(), "busybox:1.28.4-glibc") {
-				t.Errorf("expected busybox:1.28.4-glibc to be loaded by docker inside minikube node. but got %s", rr.Output())
+			if !strings.Contains(rr.Output(), "1.28.4-glibc") {
+				t.Errorf("expected '1.28.4-glibc' to be in the output: %s", rr.Output())
 			}
 
 		})
