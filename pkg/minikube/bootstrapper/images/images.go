@@ -145,6 +145,8 @@ func CachedImages(imageRepositoryStr string, kubernetesVersionStr string) []stri
 
 	images = append(images, []string{
 		imageRepository + "kube-addon-manager" + ArchTag(false) + "v9.0.2",
+		// This must match deploy/addons/dashboard/dashboard-dp.yaml
+		"kubernetesui/dashboard:v2.0.0-beta8",
 		minikubeRepository + "storage-provisioner" + ArchTag(false) + "v1.8.1",
 	}...)
 
