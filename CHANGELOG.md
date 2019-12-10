@@ -10,12 +10,11 @@
 * Make Kubernetes version sticky for a cluster instead of auto-upgrading [#5798](https://github.com/kubernetes/minikube/pull/5798)
 * Don't use bash as the entrypoint for docker [#5818](https://github.com/kubernetes/minikube/pull/5818)
 * Make lock names uid and path specific to avoid conflicts [#5912](https://github.com/kubernetes/minikube/pull/5912)
-* Remove depreacted annotation storageclass.beta.kubernetes.io [#5954](https://github.com/kubernetes/minikube/pull/5954)
+* Remove deprecated annotation storageclass.beta.kubernetes.io [#5954](https://github.com/kubernetes/minikube/pull/5954)
 * show status in profile list [#5988](https://github.com/kubernetes/minikube/pull/5988)
 * Use newer gvisor version [#6000](https://github.com/kubernetes/minikube/pull/6000)
 * Adds dm-crypt support [#5739](https://github.com/kubernetes/minikube/pull/5739)
 * Add performance analysis packages to minikube ISO [#5942](https://github.com/kubernetes/minikube/pull/5942)
-* typo: Fix typo in err_map key [#6010](https://github.com/kubernetes/minikube/pull/6010)
 
 Thanks goes out to the merry band of Kubernetes contributors that made this release possible:
 
