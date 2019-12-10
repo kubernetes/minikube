@@ -34,19 +34,9 @@ Edit the minikube `Makefile`, updating the version number values at the top:
 * `VERSION_MAJOR`, `VERSION_MINOR`, `VERSION_BUILD` as necessary
 * `ISO_VERSION` - defaults to MAJOR.MINOR.0 - update if point release requires a new ISO to be built.
 
-Make sure the integration tests run against this PR, once the new ISO is built.
+Make sure the integration tests run against this PR, once the new ISO is built. 
 
-## Ad-Hoc testing of other platforms
-
-If there are supported platforms which do not have functioning Jenkins workers (Windows), you may use the following to build a sanity check:
-
-```shell
-env BUILD_IN_DOCKER=y make cross checksum
-```
-
-## Send out Makefile PR
-
-Once submitted, HEAD will use the new ISO. Please pay attention to test failures, as this is our integration test across platforms. If there are known acceptable failures, please add a PR comment linking to the appropriate issue.
+You can merge this change at any time before the release, but often the Makefile change is merged the next step: Release notes.
 
 ## Update Release Notes
 
@@ -56,7 +46,15 @@ Run the following script to update the release notes:
 hack/release_notes.sh
 ```
 
-Merge the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/minikube/pull/3175) as an example. Then get the PR submitted.
+You'll need to massage the input in two ways:
+
+- Remove documentation changes, as they do not ship with the release
+- Remove changes which are not user-facing, such as internal refactors
+- Sort the changes so that the ones which impact users the most come first
+- Remove bots from the contributor list
+- De-dup names from the contributor list
+
+Merge the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/minikube/pull/3175) as an example. 
 
 ## Tag the Release
 
