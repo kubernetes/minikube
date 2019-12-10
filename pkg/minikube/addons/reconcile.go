@@ -23,7 +23,6 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -53,21 +52,16 @@ func ReconcileAddons(cmd command.Runner) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("running", reconcileCmd)
-	rr, err := cmd.RunCmd(reconcileCmd)
+	_, err = cmd.RunCmd(reconcileCmd)
 	if err != nil {
 		glog.Warningf("reconciling addons failed: %v", err)
 		return err
 	}
-	fmt.Println(rr.Stdout.String())
 	return nil
 }
 
 func kubectlCommand() (*exec.Cmd, error) {
-	kubectlBinary, err := kubectlPath()
-	if err != nil {
-		return nil, err
-	}
+	kubectlBinary := fmt.Sprintf("/var/lib/minikube/binaries/%s/%s", constants.KubectlBinaryVersion, constants.KubectlBinary)
 	args := []string{"KUBECONFIG=/var/lib/minikube/kubeconfig", kubectlBinary, "apply", "-f", "/etc/kubernetes/addons", "-l", "kubernetes.io/cluster-service!=true,addonmanager.kubernetes.io/mode=Reconcile", "--prune=true"}
 	for _, k := range kubectlPruneWhitelist {
 		args = append(args, []string{"--prune-whitelist", k}...)
@@ -76,17 +70,4 @@ func kubectlCommand() (*exec.Cmd, error) {
 	cmd := exec.Command("sudo", args...)
 	cmd.Env = append(os.Environ(), "KUBECONFIG=/var/lib/minikube/kubeconfig")
 	return cmd, nil
-}
-
-func kubectlPath() (string, error) {
-	cc, err := config.Load()
-	if err != nil && !os.IsNotExist(err) {
-		return "", err
-	}
-	version := constants.DefaultKubernetesVersion
-	if cc != nil {
-		version = cc.KubernetesConfig.KubernetesVersion
-	}
-	path := fmt.Sprintf("/var/lib/minikube/binaries/%s/kubectl", version)
-	return path, nil
 }

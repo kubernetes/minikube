@@ -193,7 +193,6 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 			} else {
 				addonFile = addon
 			}
-			fmt.Println("trying to copy", addonFile)
 			if err := cmd.Copy(addonFile); err != nil {
 				return errors.Wrapf(err, "enabling addon %s", addon.AssetName)
 			}
@@ -210,7 +209,6 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 			} else {
 				addonFile = addon
 			}
-			fmt.Println("trying to remove", addonFile)
 			if err := cmd.Remove(addonFile); err != nil {
 				return errors.Wrapf(err, "disabling addon %s", addon.AssetName)
 			}

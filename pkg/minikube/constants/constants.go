@@ -85,7 +85,14 @@ var ImageRepositories = map[string][]string{
 }
 
 // KubeadmBinaries are Kubernetes release binaries required for kubeadm
-var KubeadmBinaries = []string{"kubelet", "kubeadm", "kubectl"}
+var KubeadmBinaries = []string{"kubelet", "kubeadm"}
+
+const (
+	// KubectlBinary is the name of the kubectl binary installed in minikube
+	KubectlBinary = "kubectl"
+	// KubectlBinaryVersion is the version of kubectl installed in minikube
+	KubectlBinaryVersion = "v1.13.2"
+)
 
 // ImageCacheDir is the path to the image cache directory
 var ImageCacheDir = localpath.MakeMiniPath("cache", "images")
