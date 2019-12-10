@@ -18,7 +18,6 @@ package addons
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 
 	"github.com/golang/glog"
@@ -26,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+// taken from https://github.com/kubernetes/kubernetes/blob/master/cluster/addons/addon-manager/kube-addons.sh
 var kubectlPruneWhitelist = []string{
 	"core/v1/ConfigMap",
 	"core/v1/Endpoints",
@@ -48,26 +48,22 @@ var kubectlPruneWhitelist = []string{
 // ReconcileAddons runs kubectl apply -f on the addons directory
 // to reconcile addons state
 func ReconcileAddons(cmd command.Runner) error {
-	reconcileCmd, err := kubectlCommand()
-	if err != nil {
-		return err
-	}
-	_, err = cmd.RunCmd(reconcileCmd)
-	if err != nil {
+	if _, err := cmd.RunCmd(kubectlCommand()); err != nil {
 		glog.Warningf("reconciling addons failed: %v", err)
 		return err
 	}
 	return nil
 }
 
-func kubectlCommand() (*exec.Cmd, error) {
+func kubectlCommand() *exec.Cmd {
 	kubectlBinary := fmt.Sprintf("/var/lib/minikube/binaries/%s/%s", constants.KubectlBinaryVersion, constants.KubectlBinary)
+
 	args := []string{"KUBECONFIG=/var/lib/minikube/kubeconfig", kubectlBinary, "apply", "-f", "/etc/kubernetes/addons", "-l", "kubernetes.io/cluster-service!=true,addonmanager.kubernetes.io/mode=Reconcile", "--prune=true"}
 	for _, k := range kubectlPruneWhitelist {
 		args = append(args, []string{"--prune-whitelist", k}...)
 	}
 	args = append(args, "--recursive")
+
 	cmd := exec.Command("sudo", args...)
-	cmd.Env = append(os.Environ(), "KUBECONFIG=/var/lib/minikube/kubeconfig")
-	return cmd, nil
+	return cmd
 }

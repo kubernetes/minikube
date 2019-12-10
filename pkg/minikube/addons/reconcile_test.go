@@ -17,9 +17,16 @@ limitations under the License.
 package addons
 
 import (
+	"strings"
 	"testing"
 )
 
 func TestKubectlCommand(t *testing.T) {
+	expected := "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.13.2/kubectl apply -f /etc/kubernetes/addons -l kubernetes.io/cluster-service!=true,addonmanager.kubernetes.io/mode=Reconcile --prune=true --prune-whitelist core/v1/ConfigMap --prune-whitelist core/v1/Endpoints --prune-whitelist core/v1/Namespace --prune-whitelist core/v1/PersistentVolumeClaim --prune-whitelist core/v1/PersistentVolume --prune-whitelist core/v1/Pod --prune-whitelist core/v1/ReplicationController --prune-whitelist core/v1/Secret --prune-whitelist core/v1/Service --prune-whitelist batch/v1/Job --prune-whitelist batch/v1beta1/CronJob --prune-whitelist apps/v1/DaemonSet --prune-whitelist apps/v1/Deployment --prune-whitelist apps/v1/ReplicaSet --prune-whitelist apps/v1/StatefulSet --prune-whitelist extensions/v1beta1/Ingress --recursive"
+	kc := kubectlCommand()
+	actual := strings.Join(kc.Args, " ")
 
+	if actual != expected {
+		t.Fatalf("expected does not match actual\nExpected: %s\nActual: %s", expected, actual)
+	}
 }
