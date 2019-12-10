@@ -223,7 +223,7 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 	if enabled {
 		return nil
 	}
-	return addons.ReconcileAddons(cmd)
+	return addons.Reconcile(cmd)
 }
 
 // EnableOrDisableStorageClasses enables or disables storage classes

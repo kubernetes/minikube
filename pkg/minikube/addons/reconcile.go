@@ -17,8 +17,8 @@ limitations under the License.
 package addons
 
 import (
-	"fmt"
 	"os/exec"
+	"path"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -45,9 +45,9 @@ var kubectlPruneWhitelist = []string{
 	"extensions/v1beta1/Ingress",
 }
 
-// ReconcileAddons runs kubectl apply -f on the addons directory
+// Reconcile runs kubectl apply -f on the addons directory
 // to reconcile addons state
-func ReconcileAddons(cmd command.Runner) error {
+func Reconcile(cmd command.Runner) error {
 	if _, err := cmd.RunCmd(kubectlCommand()); err != nil {
 		glog.Warningf("reconciling addons failed: %v", err)
 		return err
@@ -56,8 +56,10 @@ func ReconcileAddons(cmd command.Runner) error {
 }
 
 func kubectlCommand() *exec.Cmd {
-	kubectlBinary := fmt.Sprintf("/var/lib/minikube/binaries/%s/%s", constants.KubectlBinaryVersion, constants.KubectlBinary)
+	kubectlBinary := path.Join("/var/lib/minikube/binaries", constants.KubectlBinaryVersion, constants.KubectlBinary)
 
+	// prune will delete any existing objects with the label specified by "-l" which don't appear in /etc/kubernetes/addons
+	// this is how we delete disabled addons
 	args := []string{"KUBECONFIG=/var/lib/minikube/kubeconfig", kubectlBinary, "apply", "-f", "/etc/kubernetes/addons", "-l", "kubernetes.io/cluster-service!=true,addonmanager.kubernetes.io/mode=Reconcile", "--prune=true"}
 	for _, k := range kubectlPruneWhitelist {
 		args = append(args, []string{"--prune-whitelist", k}...)
