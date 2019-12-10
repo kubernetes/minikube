@@ -39,8 +39,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/pause:3.1",
 			"k8s.gcr.io/kube-addon-manager:v9.0.2",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"docker.io/kubernetesui/dashboard:v2.0.0-beta8",
-			"docker.io/kubernetesui/metrics-scraper:v1.0.2",
+			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 		{"v1.16.1", "mirror.k8s.io", []string{
 			"mirror.k8s.io/kube-proxy:v1.16.1",
@@ -65,8 +65,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/pause:3.1",
 			"k8s.gcr.io/kube-addon-manager:v9.0.2",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"docker.io/kubernetesui/dashboard:v2.0.0-beta8",
-			"docker.io/kubernetesui/metrics-scraper:v1.0.2",
+			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 		{"v1.14.0", "", []string{
 			"k8s.gcr.io/kube-proxy:v1.14.0",
@@ -78,8 +78,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/pause:3.1",
 			"k8s.gcr.io/kube-addon-manager:v9.0.2",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"docker.io/kubernetesui/dashboard:v2.0.0-beta8",
-			"docker.io/kubernetesui/metrics-scraper:v1.0.2",
+			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 		{"v1.13.0", "", []string{
 			"k8s.gcr.io/kube-proxy:v1.13.0",
@@ -91,8 +91,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/pause:3.1",
 			"k8s.gcr.io/kube-addon-manager:v9.0.2",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"docker.io/kubernetesui/dashboard:v2.0.0-beta8",
-			"docker.io/kubernetesui/metrics-scraper:v1.0.2",
+			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 		{"v1.12.0", "", []string{
 			"k8s.gcr.io/kube-proxy:v1.12.0",
@@ -104,8 +104,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/pause:3.1",
 			"k8s.gcr.io/kube-addon-manager:v9.0.2",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"docker.io/kubernetesui/dashboard:v2.0.0-beta8",
-			"docker.io/kubernetesui/metrics-scraper:v1.0.2",
+			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 		{"v1.11.10", "", []string{
 			"k8s.gcr.io/kube-proxy-amd64:v1.11.10",
@@ -117,8 +117,8 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/pause:3.1",
 			"k8s.gcr.io/kube-addon-manager:v9.0.2",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"docker.io/kubernetesui/dashboard:v2.0.0-beta8",
-			"docker.io/kubernetesui/metrics-scraper:v1.0.2",
+			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 	}
 	for _, tc := range tests {

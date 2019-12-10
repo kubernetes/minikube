@@ -156,12 +156,16 @@ func TestStartStop(t *testing.T) {
 					Tags []string `json:"repoTags"`
 				}{}
 				err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
+				if err != nil {
+					t.Errorf("images unmarshal: %v", err)
+				}
 				gotImages := []string{}
 				for _, img := range jv["images"] {
 					for _, i := range img.Tags {
 						// Ignore non-Kubernetes images
 						if !strings.Contains(i, "ingress") && !strings.Contains(i, "busybox") {
-							gotImages = append(gotImages, i)
+							// Remove docker.io for naming consistency between container runtimes
+							gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
 						}
 					}
 				}
