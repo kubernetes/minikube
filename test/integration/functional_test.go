@@ -366,11 +366,10 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			if err == nil {
 				t.Errorf("expected the image be deleted and get  error but got nil error ! cmd: %q", rr.Command())
 			}
-
 			// minikube cache reload.
 			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "reload"))
 			if err != nil {
-				t.Errorf("failed to cache reload %v", rr.Command(), err)
+				t.Errorf("expected %q to run successfully but got error %v", rr.Command(), err)
 			}
 			// make sure 'cache reload' brought back the manually deleted image.
 			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "inspecti", img))
