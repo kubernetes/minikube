@@ -412,20 +412,12 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 	glog.Infof("retrieving image: %+v", ref)
 	img, err := daemon.Image(ref)
 	if err == nil {
-<<<<<<< HEAD
 		glog.Infof("found %s locally: %+v", ref.Name(), img)
 		return img, nil
 	}
 	// reference does not exist in the local daemon
 	if err != nil {
 		glog.Infof("daemon lookup for %+v: %v", ref, err)
-||||||| constructed merge base
-		glog.Infof("found %s locally; caching", ref.Name())
-		return img, err
-=======
-		glog.Infof("found image %s locally;", ref.Name())
-		return img, err
->>>>>>> improve logging
 	}
 
 	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
