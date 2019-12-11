@@ -3,11 +3,11 @@
 ## Version 1.6.0 - 2019-12-10
 
 * Update default k8s version to v1.17.0 [#6042](https://github.com/kubernetes/minikube/pull/6042)
+* Make Kubernetes version sticky for a cluster instead of auto-upgrading [#5798](https://github.com/kubernetes/minikube/pull/5798)
 * cache add: load images to all profiles & skip previously cached images [#5987](https://github.com/kubernetes/minikube/pull/5987)
+* Update dashboard to 2.0.0b8 and pre-cache it again [#6039](https://github.com/kubernetes/minikube/pull/6039)
 * Pre-cache the latest kube-addon-manager [#5935](https://github.com/kubernetes/minikube/pull/5935)
 * Add sch_netem kernel module for network emulation [#6038](https://github.com/kubernetes/minikube/pull/6038)
-* Update dashboard to 2.0.0b8 and pre-cache it again [#6039](https://github.com/kubernetes/minikube/pull/6039)
-* Make Kubernetes version sticky for a cluster instead of auto-upgrading [#5798](https://github.com/kubernetes/minikube/pull/5798)
 * Don't use bash as the entrypoint for docker [#5818](https://github.com/kubernetes/minikube/pull/5818)
 * Make lock names uid and path specific to avoid conflicts [#5912](https://github.com/kubernetes/minikube/pull/5912)
 * Remove deprecated annotation storageclass.beta.kubernetes.io [#5954](https://github.com/kubernetes/minikube/pull/5954)
