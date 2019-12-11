@@ -70,7 +70,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	//
 	// If another process updates the shared certificate, it's invalid.
 	// TODO: Instead of racey manipulation of a shared certificate, use per-profile certs
-	spec := lock.UserMutexSpec(filepath.Join(localPath, "certs"))
+	spec := lock.PathMutexSpec(filepath.Join(localPath, "certs"))
 	glog.Infof("acquiring lock: %+v", spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {

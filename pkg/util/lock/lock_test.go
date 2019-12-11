@@ -66,7 +66,7 @@ func TestUserMutexSpec(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			got := pathSpec(tc.path)
+			got := PathMutexSpec(tc.path)
 			if len(got.Name) != 40 {
 				t.Errorf("%s is not 40 chars long", got.Name)
 			}

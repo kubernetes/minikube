@@ -36,7 +36,7 @@ var (
 
 // WriteFile decorates ioutil.WriteFile with a file lock and retry
 func WriteFile(filename string, data []byte, perm os.FileMode) error {
-	spec := pathSpec(filename)
+	spec := PathMutexSpec(filename)
 	glog.Infof("WriteFile acquiring %s: %+v", filename, spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
@@ -51,8 +51,8 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	return err
 }
 
-// pathSpec returns a mutex spec for a path
-func pathSpec(path string) mutex.Spec {
+// PathMutexSpec returns a mutex spec for a path
+func PathMutexSpec(path string) mutex.Spec {
 	s := mutex.Spec{
 		Name:  fmt.Sprintf("mk%x", sha1.Sum([]byte(path)))[0:40],
 		Clock: clock.WallClock,
