@@ -76,7 +76,10 @@ var reloadCacheCmd = &cobra.Command{
 	Short: "reload cached images.",
 	Long:  "reloads the cached images specificed by user in the config file.",
 	Run: func(cmd *cobra.Command, args []string) {
-		cacheAndLoadImagesInConfig()
+		err := cacheAndLoadImagesInConfig()
+		if err != nil {
+			exit.WithError("Failed to reload cached images", err)
+		}
 	},
 }
 
