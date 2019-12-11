@@ -95,6 +95,7 @@ func TestApplyStyle(t *testing.T) {
 		styleEnum   StyleEnum
 		format      string
 		useColor    bool
+		useIcons    bool
 	}{
 		{
 			expected:    fmt.Sprintf("%sbar", lowBullet),
@@ -117,10 +118,18 @@ func TestApplyStyle(t *testing.T) {
 			useColor:    true,
 			format:      "foo",
 		},
+		{
+			expected:    fmt.Sprintf("%c  foo", styles[Ready].Icon),
+			description: "format foo, ready style, icons on",
+			styleEnum:   Ready,
+			useColor:    true,
+			useIcons:    true,
+			format:      "foo",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			rawGot := applyStyle(test.styleEnum, test.useColor, test.format)
+			rawGot := applyStyle(test.styleEnum, test.useColor, test.useIcons, test.format)
 			got := strings.TrimSpace(rawGot)
 			if got != test.expected {
 				t.Errorf("Expected '%v' but got '%v'", test.expected, got)
@@ -137,6 +146,7 @@ func TestApplyTemplateFormating(t *testing.T) {
 		styleEnum   StyleEnum
 		format      string
 		useColor    bool
+		useIcons    bool
 		a           []V
 	}{
 		{
@@ -174,10 +184,18 @@ func TestApplyTemplateFormating(t *testing.T) {
 			useColor:    true,
 			format:      "{{ a }}",
 		},
+		{
+			expected:    fmt.Sprintf("%c  foo", styles[Ready].Icon),
+			description: "format foo, ready style, icons on",
+			styleEnum:   Ready,
+			useColor:    true,
+			useIcons:    true,
+			format:      "foo",
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			rawGot := applyTemplateFormatting(test.styleEnum, test.useColor, test.format, test.a...)
+			rawGot := applyTemplateFormatting(test.styleEnum, test.useColor, test.useIcons, test.format, test.a...)
 			got := strings.TrimSpace(rawGot)
 			if got != test.expected {
 				t.Errorf("Expected '%v' but got '%v'", test.expected, got)

@@ -42,6 +42,8 @@ type style struct {
 	Prefix string
 	// LowPrefix is the 7-bit compatible prefix we fallback to for less-awesome terminals
 	LowPrefix string
+	// Icon is an alternative icon
+	Icon rune
 	// OmitNewline omits a newline at the end of a message.
 	OmitNewline bool
 }
@@ -50,69 +52,69 @@ type style struct {
 // For consistency, ensure that emojis added render with the same width across platforms.
 var styles = map[StyleEnum]style{
 	Empty:         {Prefix: "", LowPrefix: ""},
-	Happy:         {Prefix: "😄  "},
-	SuccessType:   {Prefix: "✅  "},
-	FailureType:   {Prefix: "❌  "},
-	Conflict:      {Prefix: "💥  ", LowPrefix: lowWarning},
-	FatalType:     {Prefix: "💣  ", LowPrefix: lowError},
-	Notice:        {Prefix: "📌  "},
-	Ready:         {Prefix: "🏄  "},
-	Running:       {Prefix: "🏃  "},
-	Provisioning:  {Prefix: "🌱  "},
-	Restarting:    {Prefix: "🔄  "},
-	Reconfiguring: {Prefix: "📯  "},
-	Stopping:      {Prefix: "✋  "},
-	Stopped:       {Prefix: "🛑  "},
-	WarningType:   {Prefix: "⚠️  ", LowPrefix: lowWarning},
-	Waiting:       {Prefix: "⌛  "},
-	Usage:         {Prefix: "💡  "},
-	Launch:        {Prefix: "🚀  "},
-	Sad:           {Prefix: "😿  "},
-	ThumbsUp:      {Prefix: "👍  "},
+	Happy:         {Prefix: "😄  ", Icon: ''},
+	SuccessType:   {Prefix: "✅  ", Icon: ''},
+	FailureType:   {Prefix: "❌  ", Icon: ''},
+	Conflict:      {Prefix: "💥  ", Icon: '', LowPrefix: lowWarning},
+	FatalType:     {Prefix: "💣  ", Icon: 'ﮏ', LowPrefix: lowError},
+	Notice:        {Prefix: "📌  ", Icon: ''},
+	Ready:         {Prefix: "🏄  ", Icon: ''},
+	Running:       {Prefix: "🏃  ", Icon: 'ﰌ'},
+	Provisioning:  {Prefix: "🌱  ", Icon: ''},
+	Restarting:    {Prefix: "🔄  ", Icon: 'ﰇ'},
+	Reconfiguring: {Prefix: "📯  ", Icon: ''},
+	Stopping:      {Prefix: "✋  ", Icon: 'ﭥ'},
+	Stopped:       {Prefix: "🛑  ", Icon: 'ﭦ'},
+	WarningType:   {Prefix: "⚠️  ", Icon: '', LowPrefix: lowWarning},
+	Waiting:       {Prefix: "⌛  ", Icon: ''},
+	Usage:         {Prefix: "💡  ", Icon: ''},
+	Launch:        {Prefix: "🚀  ", Icon: ''},
+	Sad:           {Prefix: "😿  ", Icon: ''},
+	ThumbsUp:      {Prefix: "👍  ", Icon: ''},
 	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	Command:       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	LogEntry:      {Prefix: "    "},                         // Indent
-	Crushed:       {Prefix: "💔  "},
-	URL:           {Prefix: "👉  ", LowPrefix: lowIndent},
-	Documentation: {Prefix: "📘  "},
-	Issues:        {Prefix: "⁉️   "},
+	Crushed:       {Prefix: "💔  ", Icon: ''},
+	URL:           {Prefix: "👉  ", Icon: '', LowPrefix: lowIndent},
+	Documentation: {Prefix: "📘  ", Icon: ''},
+	Issues:        {Prefix: "⁉️   ", Icon: ''},
 	Issue:         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
-	Check:         {Prefix: "✅  "},
-	Celebration:   {Prefix: "🎉  "},
-	Workaround:    {Prefix: "👉  ", LowPrefix: lowIndent},
-	Sparkle:       {Prefix: "✨  "},
+	Check:         {Prefix: "✅  ", Icon: ''},
+	Celebration:   {Prefix: "🎉  ", Icon: '六'},
+	Workaround:    {Prefix: "👉  ", Icon: '', LowPrefix: lowIndent},
+	Sparkle:       {Prefix: "✨  ", Icon: ''},
 
 	// Specialized purpose styles
-	ISODownload:      {Prefix: "💿  "},
-	FileDownload:     {Prefix: "💾  "},
-	Caching:          {Prefix: "🤹  "},
-	StartingVM:       {Prefix: "🔥  "},
-	StartingNone:     {Prefix: "🤹  "},
-	Provisioner:      {Prefix: "ℹ️   "},
-	Resetting:        {Prefix: "🔄  "},
-	DeletingHost:     {Prefix: "🔥  "},
-	Copying:          {Prefix: "✨  "},
-	Connectivity:     {Prefix: "📶  "},
-	Internet:         {Prefix: "🌐  "},
-	Mounting:         {Prefix: "📁  "},
-	Celebrate:        {Prefix: "🎉  "},
-	ContainerRuntime: {Prefix: "🎁  "},
-	Docker:           {Prefix: "🐳  "},
-	CRIO:             {Prefix: "🎁  "}, // This should be a snow-flake, but the emoji has a strange width on macOS
-	Containerd:       {Prefix: "📦  "},
-	Permissions:      {Prefix: "🔑  "},
-	Enabling:         {Prefix: "🔌  "},
-	Shutdown:         {Prefix: "🛑  "},
-	Pulling:          {Prefix: "🚜  "},
-	Verifying:        {Prefix: "🤔  "},
-	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},
-	Kubectl:          {Prefix: "💗  "},
-	Meh:              {Prefix: "🙄  ", LowPrefix: lowWarning},
-	Embarrassed:      {Prefix: "🤦  ", LowPrefix: lowWarning},
-	Tip:              {Prefix: "💡  "},
-	Unmount:          {Prefix: "🔥  "},
-	MountOptions:     {Prefix: "💾  "},
-	Fileserver:       {Prefix: "🚀  ", OmitNewline: true},
+	ISODownload:      {Prefix: "💿  ", Icon: '﫭'},
+	FileDownload:     {Prefix: "💾  ", Icon: ''},
+	Caching:          {Prefix: "🤹  ", Icon: ''},
+	StartingVM:       {Prefix: "🔥  ", Icon: ''},
+	StartingNone:     {Prefix: "🤹  ", Icon: ''},
+	Provisioner:      {Prefix: "ℹ️   ", Icon: ''},
+	Resetting:        {Prefix: "🔄  ", Icon: 'ﮦ'},
+	DeletingHost:     {Prefix: "🔥  ", Icon: ''},
+	Copying:          {Prefix: "✨  ", Icon: ''},
+	Connectivity:     {Prefix: "📶  ", Icon: ''},
+	Internet:         {Prefix: "🌐  ", Icon: ''},
+	Mounting:         {Prefix: "📁  ", Icon: ''},
+	Celebrate:        {Prefix: "🎉  ", Icon: '六'},
+	ContainerRuntime: {Prefix: "🎁  ", Icon: ''},
+	Docker:           {Prefix: "🐳  ", Icon: ''},
+	CRIO:             {Prefix: "🎁  ", Icon: 'ﰕ'}, // This should be a snow-flake, but the emoji has a strange width on macOS
+	Containerd:       {Prefix: "📦  ", Icon: ''},
+	Permissions:      {Prefix: "🔑  ", Icon: '廬'},
+	Enabling:         {Prefix: "🔌  ", Icon: ''},
+	Shutdown:         {Prefix: "🛑  ", Icon: ''},
+	Pulling:          {Prefix: "🚜  ", Icon: ''},
+	Verifying:        {Prefix: "🤔  ", Icon: ''},
+	VerifyingNoLine:  {Prefix: "🤔  ", Icon: '', OmitNewline: true},
+	Kubectl:          {Prefix: "💗  ", Icon: ''},
+	Meh:              {Prefix: "🙄  ", Icon: '', LowPrefix: lowWarning},
+	Embarrassed:      {Prefix: "🤦  ", Icon: 'ﮙ', LowPrefix: lowWarning},
+	Tip:              {Prefix: "💡  ", Icon: 'ﯦ'},
+	Unmount:          {Prefix: "🔥  ", Icon: ''},
+	MountOptions:     {Prefix: "💾  ", Icon: ''},
+	Fileserver:       {Prefix: "🚀  ", Icon: '歷', OmitNewline: true},
 }
 
 // Add a prefix to a string
@@ -136,7 +138,7 @@ func lowPrefix(s style) string {
 }
 
 // applyStyle translates the given string if necessary then adds any appropriate style prefix.
-func applyStyle(style StyleEnum, useColor bool, format string) string {
+func applyStyle(style StyleEnum, useColor bool, useIcons bool, format string) string {
 	format = translate.T(format)
 
 	s, ok := styles[style]
@@ -148,18 +150,20 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 	if !ok {
 		return format
 	}
-
 	if !useColor {
 		return applyPrefix(lowPrefix(s), format)
+	}
+	if useIcons && s.Icon != 0 {
+		return applyPrefix(string(s.Icon)+"  ", format)
 	}
 	return applyPrefix(s.Prefix, format)
 }
 
-func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...V) string {
+func applyTemplateFormatting(style StyleEnum, useColor bool, useIcons bool, format string, a ...V) string {
 	if a == nil {
 		a = []V{{}}
 	}
-	format = applyStyle(style, useColor, format)
+	format = applyStyle(style, useColor, useIcons, format)
 
 	var buf bytes.Buffer
 	t, err := template.New(format).Parse(format)

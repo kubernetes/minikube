@@ -47,8 +47,12 @@ var (
 	errFile fdWriter
 	// useColor is whether or not color output should be used, updated by Set*Writer.
 	useColor = false
+	// useIcons is whether to use icons instead of emojis, updated by Set*Writer.
+	useIcons = false
 	// OverrideEnv is the environment variable used to override color/emoji usage
 	OverrideEnv = "MINIKUBE_IN_STYLE"
+	// NerdFontsEnv s the environment variable used to use icons instead of emojis
+	NerdFontsEnv = "MINIKUBE_NERD_FONTS"
 )
 
 // fdWriter is the subset of file.File that implements io.Writer and Fd()
@@ -62,7 +66,7 @@ type V map[string]interface{}
 
 // T writes a stylized and templated message to stdout
 func T(style StyleEnum, format string, a ...V) {
-	outStyled := applyTemplateFormatting(style, useColor, format, a...)
+	outStyled := applyTemplateFormatting(style, useColor, useIcons, format, a...)
 	String(outStyled)
 }
 
@@ -85,7 +89,7 @@ func Ln(format string, a ...interface{}) {
 
 // ErrT writes a stylized and templated error message to stderr
 func ErrT(style StyleEnum, format string, a ...V) {
-	errStyled := applyTemplateFormatting(style, useColor, format, a...)
+	errStyled := applyTemplateFormatting(style, useColor, useIcons, format, a...)
 	Err(errStyled)
 }
 
@@ -138,6 +142,7 @@ func SetErrFile(w fdWriter) {
 	glog.Infof("Setting ErrFile to fd %d...", w.Fd())
 	errFile = w
 	useColor = wantsColor(w.Fd())
+	useIcons = wantsIcons()
 }
 
 // wantsColor determines if the user might want colorized output.
@@ -171,4 +176,16 @@ func wantsColor(fd uintptr) bool {
 	isT := isatty.IsTerminal(fd)
 	glog.Infof("isatty.IsTerminal(%d) = %v\n", fd, isT)
 	return isT
+}
+
+// wantsIcons determines if the user might want icons instead.
+func wantsIcons() bool {
+	val := os.Getenv(NerdFontsEnv)
+	if val != "" {
+		icons, err := strconv.ParseBool(val)
+		if err == nil {
+			return icons
+		}
+	}
+	return false
 }
