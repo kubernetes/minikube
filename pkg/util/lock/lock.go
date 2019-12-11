@@ -29,11 +29,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	// forceID is a user id for consistent testing
-	forceID = ""
-)
-
 // WriteFile decorates ioutil.WriteFile with a file lock and retry
 func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	spec := PathMutexSpec(filename)
