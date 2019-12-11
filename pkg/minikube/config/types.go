@@ -61,32 +61,45 @@ type MachineConfig struct {
 	NoVTXCheck          bool   // Only used by virtualbox
 	DNSProxy            bool   // Only used by virtualbox
 	HostDNSResolver     bool   // Only used by virtualbox
-	KubernetesConfig    KubernetesConfig
 	HostOnlyNicType     string // Only used by virtualbox
 	NatNicType          string // Only used by virtualbox
+	KubernetesConfig    KubernetesConfig
+	Nodes               []Node
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
-	KubernetesVersion string
-	NodeIP            string
-	NodePort          int
-	NodeName          string
-	APIServerName     string
-	APIServerNames    []string
-	APIServerIPs      []net.IP
-	DNSDomain         string
-	ContainerRuntime  string
-	CRISocket         string
-	NetworkPlugin     string
-	FeatureGates      string
-	ServiceCIDR       string
-	ImageRepository   string
-	ExtraOptions      ExtraOptionSlice
+	NodePort         int
+	APIServerName    string
+	APIServerNames   []string
+	APIServerIPs     []net.IP
+	DNSDomain        string
+	ContainerRuntime string
+	CRISocket        string
+	NetworkPlugin    string
+	FeatureGates     string
+	ServiceCIDR      string
+	ImageRepository  string
+	ExtraOptions     ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool
 }
+
+// Node contains information about specific nodes in a cluster
+type Node struct {
+	Name              string
+	IP                string
+	KubernetesVersion string
+	Type              NodeType
+}
+
+type NodeType int
+
+const (
+	Master NodeType = iota
+	Worker
+)
 
 // VersionedExtraOption holds information on flags to apply to a specific range
 // of versions
