@@ -119,7 +119,7 @@ func PopulateFromSettings(cfg *Settings, apiCfg *api.Config) error {
 // activeContext is true when minikube is the CurrentContext
 // If no CurrentContext is set, the given name will be used.
 func Update(kcs *Settings) error {
-	spec := lock.UserMutexSpec(filepath.Join(kcs.filePath(), "settings.Update"))
+	spec := lock.PathMutexSpec(filepath.Join(kcs.filePath(), "settings.Update"))
 	glog.Infof("acquiring lock: %+v", spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
