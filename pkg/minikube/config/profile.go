@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -45,10 +46,24 @@ func (p *Profile) IsValid() bool {
 	if p.Config[0].VMDriver == "" {
 		return false
 	}
-	if p.Config[0].KubernetesConfig.KubernetesVersion == "" {
+	n, err := p.Config[0].GetMasterNode()
+	if err != nil {
+		return false
+	}
+	if n.KubernetesVersion == "" {
 		return false
 	}
 	return true
+}
+
+func GetMasterNode(cc MachineConfig) (Node, error) {
+	for _, n := range cc.Nodes {
+		if n.Type == Master {
+			return n, nil
+		}
+	}
+
+	return Node{}, errors.New("could not find master node")
 }
 
 // ProfileNameInReservedKeywords checks if the profile is an internal keywords
