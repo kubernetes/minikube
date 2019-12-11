@@ -24,45 +24,46 @@ func TestUserMutexSpec(t *testing.T) {
 	var tests = []struct {
 		description string
 		path        string
-		expected    string
 	}{
 		{
 			description: "standard",
 			path:        "/foo/bar",
-			expected:    "mfoo-bar-test",
 		},
 		{
 			description: "deep directory",
 			path:        "/foo/bar/baz/bat",
-			expected:    "mfoo-bar-baz-bat-test",
 		},
 		{
 			description: "underscores",
 			path:        "/foo_bar/baz",
-			expected:    "mfoo-bar-baz-test",
 		},
 		{
 			description: "starts with number",
 			path:        "/foo/2bar/baz",
-			expected:    "mfoo-2bar-baz-test",
 		},
 		{
 			description: "starts with punctuation",
 			path:        "/.foo/bar",
-			expected:    "mfoo-bar-test",
 		},
 		{
 			description: "long filename",
 			path:        "/very-very-very-very-very-very-very-very-long/bar",
-			expected:    "m-very-very-very-very-very-long-bar-test",
+		},
+		{
+			description: "Windows kubeconfig",
+			path:        `C:\Users\admin/.kube/config`,
+		},
+		{
+			description: "Windows json",
+			path:        `C:\Users\admin\.minikube\profiles\containerd-20191210T212325.7356633-8584\config.json`,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
 			got := UserMutexSpec(tc.path)
-			if got.Name != tc.expected {
-				t.Errorf("%s mutex name = %q, expected %q", tc.path, got.Name, tc.expected)
+			if len(got.Name) > 40 {
+				t.Errorf("%s mutex name is too long", got.Name)
 			}
 		})
 	}
