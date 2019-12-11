@@ -360,7 +360,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// enable addons with start command
 	enableAddons()
 
-	if err = loadCachedImagesInConfigFile(); err != nil {
+	if err = cacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}
 
