@@ -17,12 +17,12 @@ limitations under the License.
 package lock
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/user"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -78,13 +78,5 @@ func UserMutexSpec(path string) mutex.Spec {
 
 func getMutexNameForPath(path string) string {
 	// juju requires that names match ^[a-zA-Z][a-zA-Z0-9-]*$", and be under 40 chars long.
-	n := strings.Trim(nonString.ReplaceAllString(path, "-"), "-")
-	// we need to always guarantee an alphanumeric prefix
-	prefix := "m"
-
-	// Prefer the last 40 chars, as paths tend get more specific toward the end
-	if len(n) >= 40 {
-		return prefix + n[len(n)-39:]
-	}
-	return prefix + n
+	return fmt.Sprintf("m%x", md5.Sum([]byte(path)))
 }
