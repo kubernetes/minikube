@@ -84,7 +84,7 @@ func CacheImagesToTar(images []string, cacheDir string) error {
 			dst = sanitizeCacheDir(dst)
 			if err := cacheImageToTarFile(image, dst); err != nil {
 				glog.Errorf("CacheImage %s -> %s failed: %v", image, dst, err)
-				return errors.Wrapf(err, "caching image %s", dst)
+				return errors.Wrapf(err, "caching image %q", dst)
 			}
 			glog.Infof("CacheImage %s -> %s succeeded", image, dst)
 			return nil
@@ -365,14 +365,13 @@ func cacheImageToTarFile(image, dst string) error {
 
 	ref, err := name.ParseReference(image, name.WeakValidation)
 	if err != nil {
-		return errors.Wrap(err, "creating docker image name")
+		return errors.Wrapf(err, "parsing image ref name for %s", image)
 	}
 
 	img, err := retrieveImage(ref)
 	if err != nil {
 		glog.Warningf("unable to retrieve image: %v", err)
 	}
-
 	glog.Infoln("OPENING: ", dstPath)
 	f, err := ioutil.TempFile(filepath.Dir(dstPath), filepath.Base(dstPath)+".*.tmp")
 	if err != nil {
