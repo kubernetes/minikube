@@ -63,26 +63,26 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 		return errors.Wrap(err, "cached images list")
 	}
 
-	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
+	if err := CacheImagesToHostDisk(images, constants.ImageCacheDir); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
 	}
 
 	return nil
 }
 
-// CacheImages will cache images on the host
+// CacheImagesToHostDisk will cache images on the host
 //
 // The cache directory currently caches images using the imagename_tag
 // For example, k8s.gcr.io/kube-addon-manager:v6.5 would be
 // stored at $CACHE_DIR/k8s.gcr.io/kube-addon-manager_v6.5
-func CacheImages(images []string, cacheDir string) error {
+func CacheImagesToHostDisk(images []string, cacheDir string) error {
 	var g errgroup.Group
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
 			dst := filepath.Join(cacheDir, image)
 			dst = sanitizeCacheDir(dst)
-			if err := CacheImage(image, dst); err != nil {
+			if err := cacheImage(image, dst); err != nil {
 				glog.Errorf("CacheImage %s -> %s failed: %v", image, dst, err)
 				return errors.Wrapf(err, "caching image %s", dst)
 			}
@@ -150,7 +150,7 @@ func needsTransfer(image string, cr cruntime.Manager) error {
 
 // CacheAndLoadImages caches and loads images to all profiles
 func CacheAndLoadImages(images []string) error {
-	if err := CacheImages(images, constants.ImageCacheDir); err != nil {
+	if err := CacheImagesToHostDisk(images, constants.ImageCacheDir); err != nil {
 		return err
 	}
 	api, err := NewAPIClient()
@@ -341,8 +341,8 @@ func getDstPath(dst string) (string, error) {
 	return dst, nil
 }
 
-// CacheImage caches an image
-func CacheImage(image, dst string) error {
+// cacheImage caches an image
+func cacheImage(image, dst string) error {
 	start := time.Now()
 	glog.Infof("CacheImage: %s -> %s", image, dst)
 	defer func() {
