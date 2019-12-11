@@ -63,19 +63,19 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 		return errors.Wrap(err, "cached images list")
 	}
 
-	if err := CacheImagesToHostDisk(images, constants.ImageCacheDir); err != nil {
+	if err := CacheImagesToTar(images, constants.ImageCacheDir); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
 	}
 
 	return nil
 }
 
-// CacheImagesToHostDisk will cache images on the host
+// CacheImagesToTar will cache images on the host
 //
 // The cache directory currently caches images using the imagename_tag
 // For example, k8s.gcr.io/kube-addon-manager:v6.5 would be
 // stored at $CACHE_DIR/k8s.gcr.io/kube-addon-manager_v6.5
-func CacheImagesToHostDisk(images []string, cacheDir string) error {
+func CacheImagesToTar(images []string, cacheDir string) error {
 	var g errgroup.Group
 	for _, image := range images {
 		image := image
@@ -150,7 +150,7 @@ func needsTransfer(image string, cr cruntime.Manager) error {
 
 // CacheAndLoadImages caches and loads images to all profiles
 func CacheAndLoadImages(images []string) error {
-	if err := CacheImagesToHostDisk(images, constants.ImageCacheDir); err != nil {
+	if err := CacheImagesToTar(images, constants.ImageCacheDir); err != nil {
 		return err
 	}
 	api, err := NewAPIClient()
