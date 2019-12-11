@@ -148,35 +148,37 @@ func TestStartStop(t *testing.T) {
 				}
 
 				// Make sure that kubeadm did not need to pull in additional images
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
-				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
-				}
-				jv := map[string][]struct {
-					Tags []string `json:"repoTags"`
-				}{}
-				err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
-				if err != nil {
-					t.Errorf("images unmarshal: %v", err)
-				}
-				gotImages := []string{}
-				for _, img := range jv["images"] {
-					for _, i := range img.Tags {
-						// Ignore non-Kubernetes images
-						if !strings.Contains(i, "ingress") && !strings.Contains(i, "busybox") {
-							// Remove docker.io for naming consistency between container runtimes
-							gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
+				if !NoneDriver() {
+					rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
+					if err != nil {
+						t.Errorf("%s failed: %v", rr.Args, err)
+					}
+					jv := map[string][]struct {
+						Tags []string `json:"repoTags"`
+					}{}
+					err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
+					if err != nil {
+						t.Errorf("images unmarshal: %v", err)
+					}
+					gotImages := []string{}
+					for _, img := range jv["images"] {
+						for _, i := range img.Tags {
+							// Ignore non-Kubernetes images
+							if !strings.Contains(i, "ingress") && !strings.Contains(i, "busybox") {
+								// Remove docker.io for naming consistency between container runtimes
+								gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
+							}
 						}
 					}
-				}
-				want, err := images.Kubeadm("", tc.version)
-				if err != nil {
-					t.Errorf("kubeadm images: %v", tc.version)
-				}
-				sort.Strings(want)
-				sort.Strings(gotImages)
-				if diff := cmp.Diff(want, gotImages); diff != "" {
-					t.Errorf("%s images mismatch (-want +got):\n%s", tc.version, diff)
+					want, err := images.Kubeadm("", tc.version)
+					if err != nil {
+						t.Errorf("kubeadm images: %v", tc.version)
+					}
+					sort.Strings(want)
+					sort.Strings(gotImages)
+					if diff := cmp.Diff(want, gotImages); diff != "" {
+						t.Errorf("%s images mismatch (-want +got):\n%s", tc.version, diff)
+					}
 				}
 
 				if strings.Contains(tc.name, "cni") {
