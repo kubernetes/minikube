@@ -1,5 +1,11 @@
 # Release Notes
 
+## Version 1.6.1  - 2019-12-11
+
+A special bugfix release to fix a Windows regression:
+
+* lock names: Remove uid suffix & hash entire path [#6059](https://github.com/kubernetes/minikube/pull/6059)
+
 ## Version 1.6.0 - 2019-12-10
 
 * Update default k8s version to v1.17.0 [#6042](https://github.com/kubernetes/minikube/pull/6042)
