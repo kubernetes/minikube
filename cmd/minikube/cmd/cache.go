@@ -85,8 +85,9 @@ func imagesInConfigFile() ([]string, error) {
 	return []string{}, nil
 }
 
-// cacheImagesInConfigFile caches the images currently in the config file (minikube start)
-func cacheImagesInConfigFile() error {
+// saveImagesToTarFromConfig saves images to tar in cache which specified in config file.
+// currently only used by download-only option
+func saveImagesToTarFromConfig() error {
 	images, err := imagesInConfigFile()
 	if err != nil {
 		return err

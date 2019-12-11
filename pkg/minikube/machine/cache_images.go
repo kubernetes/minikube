@@ -82,7 +82,7 @@ func CacheImagesToHostDisk(images []string, cacheDir string) error {
 		g.Go(func() error {
 			dst := filepath.Join(cacheDir, image)
 			dst = sanitizeCacheDir(dst)
-			if err := cacheImage(image, dst); err != nil {
+			if err := cacheImageToTarFile(image, dst); err != nil {
 				glog.Errorf("CacheImage %s -> %s failed: %v", image, dst, err)
 				return errors.Wrapf(err, "caching image %s", dst)
 			}
@@ -162,7 +162,7 @@ func CacheAndLoadImages(images []string) error {
 	if err != nil {
 		return errors.Wrap(err, "list profiles")
 	}
-	for _, p := range profiles { // adding images to all the profiles
+	for _, p := range profiles { // loading images to all running profiles
 		pName := p.Name // capture the loop variable
 		status, err := cluster.GetHostStatus(api, pName)
 		if err != nil {
@@ -341,8 +341,8 @@ func getDstPath(dst string) (string, error) {
 	return dst, nil
 }
 
-// cacheImage caches an image
-func cacheImage(image, dst string) error {
+// cacheImageToTarFile caches an image
+func cacheImageToTarFile(image, dst string) error {
 	start := time.Now()
 	glog.Infof("CacheImage: %s -> %s", image, dst)
 	defer func() {
