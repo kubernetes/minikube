@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/user"
 	"time"
 
 	"github.com/golang/glog"
@@ -37,7 +36,7 @@ var (
 
 // WriteFile decorates ioutil.WriteFile with a file lock and retry
 func WriteFile(filename string, data []byte, perm os.FileMode) error {
-	spec := UserMutexSpec(filename)
+	spec := pathSpec(filename)
 	glog.Infof("WriteFile acquiring %s: %+v", filename, spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
@@ -52,18 +51,10 @@ func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	return err
 }
 
-// UserMutexSpec returns a mutex spec that will not collide with other users
-func UserMutexSpec(path string) mutex.Spec {
-	id := forceID
-	if forceID == "" {
-		u, err := user.Current()
-		if err == nil {
-			id = u.Uid
-		}
-	}
-	name := getMutexNameForPath(fmt.Sprintf("%s-%s", path, id))
+// pathSpec returns a mutex spec for a path
+func pathSpec(path string) mutex.Spec {
 	s := mutex.Spec{
-		Name:  name,
+		Name:  fmt.Sprintf("mk%x", sha1.Sum([]byte(path)))[0:40],
 		Clock: clock.WallClock,
 		// Poll the lock twice a second
 		Delay: 500 * time.Millisecond,
@@ -71,10 +62,4 @@ func UserMutexSpec(path string) mutex.Spec {
 		Timeout: 60 * time.Second,
 	}
 	return s
-}
-
-func getMutexNameForPath(path string) string {
-	// juju requires that names match ^[a-zA-Z][a-zA-Z0-9-]*$", and be under 40 chars long.
-	name := fmt.Sprintf("mk%x", sha1.Sum([]byte(path)))
-	return name[0:40]
 }
