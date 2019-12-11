@@ -1,5 +1,38 @@
 # Release Notes
 
+## Version 1.6.0 - 2019-12-10
+
+* Update default k8s version to v1.17.0 [#6042](https://github.com/kubernetes/minikube/pull/6042)
+* Make Kubernetes version sticky for a cluster instead of auto-upgrading [#5798](https://github.com/kubernetes/minikube/pull/5798)
+* cache add: load images to all profiles & skip previously cached images [#5987](https://github.com/kubernetes/minikube/pull/5987)
+* Update dashboard to 2.0.0b8 and pre-cache it again [#6039](https://github.com/kubernetes/minikube/pull/6039)
+* Pre-cache the latest kube-addon-manager [#5935](https://github.com/kubernetes/minikube/pull/5935)
+* Add sch_netem kernel module for network emulation [#6038](https://github.com/kubernetes/minikube/pull/6038)
+* Don't use bash as the entrypoint for docker [#5818](https://github.com/kubernetes/minikube/pull/5818)
+* Make lock names uid and path specific to avoid conflicts [#5912](https://github.com/kubernetes/minikube/pull/5912)
+* Remove deprecated annotation storageclass.beta.kubernetes.io [#5954](https://github.com/kubernetes/minikube/pull/5954)
+* show status in profile list [#5988](https://github.com/kubernetes/minikube/pull/5988)
+* Use newer gvisor version [#6000](https://github.com/kubernetes/minikube/pull/6000)
+* Adds dm-crypt support [#5739](https://github.com/kubernetes/minikube/pull/5739)
+* Add performance analysis packages to minikube ISO [#5942](https://github.com/kubernetes/minikube/pull/5942)
+
+Thanks goes out to the merry band of Kubernetes contributors that made this release possible:
+
+- Anders F Björklund
+- Anukul Sangwan
+- Guilherme Pellizzetti
+- Jan Ahrens
+- Karuppiah Natarajan
+- Laura-Marie Henning
+- Medya Ghazizadeh
+- Nanik T
+- Olivier Lemasle
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- Vasyl Purchel
+- Wietse Muizelaar
+
 ## Version 1.6.0-beta.1 - 2019-11-26
 
 * cri-o v1.16.0 [#5970](https://github.com/kubernetes/minikube/pull/5970)
