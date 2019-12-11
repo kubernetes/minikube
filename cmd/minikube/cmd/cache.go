@@ -95,7 +95,7 @@ func saveImagesToTarFromConfig() error {
 	if len(images) == 0 {
 		return nil
 	}
-	return machine.CacheImagesToHostDisk(images, constants.ImageCacheDir)
+	return machine.CacheImagesToTar(images, constants.ImageCacheDir)
 }
 
 // loadCachedImagesInConfigFile loads the images currently in the config file (minikube start)
