@@ -461,8 +461,8 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 		exit.WithError("Failed to cache binaries", err)
 	}
 	waitCacheRequiredImages(cacheGroup)
-	if err := cacheImagesInConfigFile(); err != nil {
-		exit.WithError("Failed to cache images", err)
+	if err := saveImagesToTarFromConfig(); err != nil {
+		exit.WithError("Failed to cache images to tar", err)
 	}
 	out.T(out.Check, "Download complete!")
 	os.Exit(0)
