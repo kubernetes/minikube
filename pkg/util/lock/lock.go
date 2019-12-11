@@ -17,12 +17,11 @@ limitations under the License.
 package lock
 
 import (
-	"crypto/md5"
+	"crypto/sha1"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"os/user"
-	"regexp"
 	"time"
 
 	"github.com/golang/glog"
@@ -32,8 +31,6 @@ import (
 )
 
 var (
-	// nonString is characters to strip from lock names
-	nonString = regexp.MustCompile(`[\W_]+`)
 	// forceID is a user id for consistent testing
 	forceID = ""
 )
@@ -64,9 +61,10 @@ func UserMutexSpec(path string) mutex.Spec {
 			id = u.Uid
 		}
 	}
-
+	name := getMutexNameForPath(fmt.Sprintf("%s-%s", path, id))
+	glog.Infof("mutex name for %s: %s", path, name)
 	s := mutex.Spec{
-		Name:  getMutexNameForPath(fmt.Sprintf("%s-%s", path, id)),
+		Name:  name,
 		Clock: clock.WallClock,
 		// Poll the lock twice a second
 		Delay: 500 * time.Millisecond,
@@ -78,5 +76,6 @@ func UserMutexSpec(path string) mutex.Spec {
 
 func getMutexNameForPath(path string) string {
 	// juju requires that names match ^[a-zA-Z][a-zA-Z0-9-]*$", and be under 40 chars long.
-	return fmt.Sprintf("m%x", md5.Sum([]byte(path)))
+	name := fmt.Sprintf("mk%x", sha1.Sum([]byte(path)))
+	return name[0:40]
 }
