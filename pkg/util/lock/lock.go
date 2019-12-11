@@ -38,16 +38,16 @@ var (
 // WriteFile decorates ioutil.WriteFile with a file lock and retry
 func WriteFile(filename string, data []byte, perm os.FileMode) error {
 	spec := UserMutexSpec(filename)
-	glog.Infof("acquiring lock for %s: %+v", filename, spec)
+	glog.Infof("WriteFile acquiring %s: %+v", filename, spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
-		return errors.Wrapf(err, "error acquiring lock for %s", filename)
+		return errors.Wrapf(err, "failed to acquire lock for %s: %+v", filename, spec)
 	}
 
 	defer releaser.Release()
 
 	if err = ioutil.WriteFile(filename, data, perm); err != nil {
-		return errors.Wrapf(err, "error writing file %s", filename)
+		return errors.Wrapf(err, "writefile failed for %s", filename)
 	}
 	return err
 }
@@ -62,7 +62,6 @@ func UserMutexSpec(path string) mutex.Spec {
 		}
 	}
 	name := getMutexNameForPath(fmt.Sprintf("%s-%s", path, id))
-	glog.Infof("mutex name for %s: %s", path, name)
 	s := mutex.Spec{
 		Name:  name,
 		Clock: clock.WallClock,
