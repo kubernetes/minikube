@@ -70,6 +70,16 @@ var deleteCacheCmd = &cobra.Command{
 	},
 }
 
+// reloadCacheCmd represents the cache reload command
+var reloadCacheCmd = &cobra.Command{
+	Use:   "reload",
+	Short: "reload cached images.",
+	Long:  "reloads the cached images specificed by user in the config file.",
+	Run: func(cmd *cobra.Command, args []string) {
+		cacheAndLoadImagesInConfig()
+	},
+}
+
 func imagesInConfigFile() ([]string, error) {
 	configFile, err := config.ReadConfig(localpath.ConfigFile)
 	if err != nil {
@@ -98,8 +108,9 @@ func saveImagesToTarFromConfig() error {
 	return machine.CacheImagesToTar(images, constants.ImageCacheDir)
 }
 
-// loadCachedImagesInConfigFile loads the images currently in the config file (minikube start)
-func loadCachedImagesInConfigFile() error {
+// cacheAndLoadImagesInConfig loads the images currently in the config file
+// called by 'start' and 'cache reload' commands.
+func cacheAndLoadImagesInConfig() error {
 	images, err := imagesInConfigFile()
 	if err != nil {
 		return err
@@ -113,4 +124,5 @@ func loadCachedImagesInConfigFile() error {
 func init() {
 	cacheCmd.AddCommand(addCacheCmd)
 	cacheCmd.AddCommand(deleteCacheCmd)
+	cacheCmd.AddCommand(reloadCacheCmd)
 }
