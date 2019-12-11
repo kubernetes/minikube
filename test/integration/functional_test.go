@@ -357,7 +357,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Run("cache reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
 			img := "busybox:latest"
 			// deleting image inside minikube node manually
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "rmi", img))
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img)) // for some reason crictl rmi doesn't work
 			if err != nil {
 				t.Errorf("failed to delete inside the node %q : %v", rr.Command(), err)
 			}
