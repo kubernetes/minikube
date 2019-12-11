@@ -16,14 +16,17 @@ limitations under the License.
 
 package lock
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/juju/mutex"
+)
 
 func TestUserMutexSpec(t *testing.T) {
-	forceID = "test"
-
 	var tests = []struct {
 		description string
 		path        string
+		expected    string
 	}{
 		{
 			description: "standard",
@@ -59,12 +62,22 @@ func TestUserMutexSpec(t *testing.T) {
 		},
 	}
 
+	seen := map[string]string{}
+
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			got := UserMutexSpec(tc.path)
+			got := pathSpec(tc.path)
 			if len(got.Name) != 40 {
 				t.Errorf("%s is not 40 chars long", got.Name)
 			}
+			if seen[got.Name] != "" {
+				t.Fatalf("lock name collision between %s and %s", tc.path, seen[got.Name])
+			}
+			m, err := mutex.Acquire(got)
+			if err != nil {
+				t.Errorf("acquire for spec %+v failed: %v", got, err)
+			}
+			m.Release()
 		})
 	}
 }
