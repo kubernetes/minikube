@@ -85,9 +85,11 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
-		err = proxy.ExcludeIP(cc.KubernetesConfig.NodeIP) // to be used for http get calls
-		if err != nil {
-			glog.Errorf("Error excluding IP from proxy: %s", err)
+		for _, n := range cc.Nodes {
+			err = proxy.ExcludeIP(n.IP) // to be used for http get calls
+			if err != nil {
+				glog.Errorf("Error excluding IP from proxy: %s", err)
+			}
 		}
 
 		kubectl, err := exec.LookPath("kubectl")

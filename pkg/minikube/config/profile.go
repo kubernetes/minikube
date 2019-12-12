@@ -36,26 +36,21 @@ func (p *Profile) IsValid() bool {
 	if p.Config == nil {
 		return false
 	}
-	if len(p.Config) == 0 {
+	if p.Config == nil {
 		return false
 	}
-	// This will become a loop for multinode
-	if p.Config[0] == nil {
+	if p.Config.VMDriver == "" {
 		return false
 	}
-	if p.Config[0].VMDriver == "" {
-		return false
-	}
-	n, err := p.Config[0].GetMasterNode()
-	if err != nil {
-		return false
-	}
-	if n.KubernetesVersion == "" {
-		return false
+	for _, n := range p.Config.Nodes {
+		if n.KubernetesVersion == "" {
+			return false
+		}
 	}
 	return true
 }
 
+// GetMasterNode gets the node specific config for the control plane
 func GetMasterNode(cc MachineConfig) (Node, error) {
 	for _, n := range cc.Nodes {
 		if n.Type == Master {

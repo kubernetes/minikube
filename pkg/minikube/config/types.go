@@ -27,7 +27,7 @@ import (
 type Profile struct {
 	Name   string
 	Status string // running, stopped
-	Config []*MachineConfig
+	Config *MachineConfig
 }
 
 // MachineConfig contains the parameters used to start a cluster.
