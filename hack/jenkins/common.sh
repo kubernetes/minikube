@@ -26,6 +26,10 @@
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
+readonly TEST_OUT="${TEST_HOME}/test.out"
+readonly JSON_OUT="${TEST_HOME}/test.json"
+readonly HTML_OUT="${TEST_HOME}/test.html"
+
 echo ">> Starting at $(date)"
 echo ""
 echo "arch:      ${OS_ARCH}"
@@ -39,6 +43,7 @@ echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
+
 
 case "${VM_DRIVER}" in
   kvm2)
@@ -267,7 +272,7 @@ ${SUDO_PREFIX}${E2E_BIN} \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
   -test.timeout=70m \
   ${EXTRA_TEST_ARGS} \
-  -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+  -binary="${MINIKUBE_BIN}" | tee "${TEST_OUT}" && result=$? || result=$?
 set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
@@ -288,6 +293,14 @@ sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 description="completed with ${status} in ${elapsed} minute(s)."
 echo $description
+
+
+# Generate well-formed test output
+"${GO_BIN}" tool test2json < "${TEST_OUT}" > "${JSON_OUT}"
+go get -u github.com/medyagh/goprettyorgohome
+goprettyorgohome -in "${JSON_OUT}" -out "${HTML_OUT}"
+gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
+gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 
 
 echo ">> Cleaning up after ourselves ..."
