@@ -296,7 +296,7 @@ echo $description
 
 
 # Generate well-formed test output
-"${GO_BIN}" tool test2json < "${TEST_OUT}" > "${JSON_OUT}"
+go tool test2json < "${TEST_OUT}" > "${JSON_OUT}"
 go get -u github.com/medyagh/goprettyorgohome
 goprettyorgohome -in "${JSON_OUT}" -out "${HTML_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
