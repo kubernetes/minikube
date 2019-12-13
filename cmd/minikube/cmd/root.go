@@ -187,6 +187,7 @@ func init() {
 				configCmd.AddonsCmd,
 				configCmd.ConfigCmd,
 				configCmd.ProfileCmd,
+				configCmd.NodeCmd,
 				updateContextCmd,
 			},
 		},

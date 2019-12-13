@@ -59,10 +59,10 @@ var (
 )
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
-func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
+func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) error {
 
 	localPath := localpath.MiniPath()
-	glog.Infof("Setting up %s for IP: %s\n", localPath, k8s.NodeIP)
+	glog.Infof("Setting up %s for IP: %s\n", localPath, n.IP)
 
 	// WARNING: This function was not designed for multiple profiles, so it is VERY racey:
 	//
@@ -78,7 +78,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	}
 	defer releaser.Release()
 
-	if err := generateCerts(k8s); err != nil {
+	if err := generateCerts(k8s, n); err != nil {
 		return errors.Wrap(err, "Error generating certs")
 	}
 	copyableFiles := []assets.CopyableFile{}
@@ -109,8 +109,8 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	}
 
 	kcs := &kubeconfig.Settings{
-		ClusterName:          k8s.NodeName,
-		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
+		ClusterName:          n.Name,
+		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", n.Port),
 		ClientCertificate:    path.Join(vmpath.GuestCertsDir, "apiserver.crt"),
 		ClientKey:            path.Join(vmpath.GuestCertsDir, "apiserver.key"),
 		CertificateAuthority: path.Join(vmpath.GuestCertsDir, "ca.crt"),
@@ -143,7 +143,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 	return nil
 }
 
-func generateCerts(k8s config.KubernetesConfig) error {
+func generateCerts(k8s config.KubernetesConfig, n config.Node) error {
 	serviceIP, err := util.GetServiceClusterIP(k8s.ServiceCIDR)
 	if err != nil {
 		return errors.Wrap(err, "getting service cluster ip")
@@ -175,7 +175,7 @@ func generateCerts(k8s config.KubernetesConfig) error {
 
 	apiServerIPs := append(
 		k8s.APIServerIPs,
-		[]net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP("10.0.0.1")}...)
+		[]net.IP{net.ParseIP(n.IP), serviceIP, net.ParseIP("10.0.0.1")}...)
 	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName)
 	apiServerAlternateNames := append(
 		apiServerNames,

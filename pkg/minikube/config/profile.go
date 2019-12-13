@@ -170,7 +170,7 @@ func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
 	p := &Profile{
 		Name:   name,
-		Config: []*MachineConfig{cfg},
+		Config: cfg,
 	}
 	return p, err
 }

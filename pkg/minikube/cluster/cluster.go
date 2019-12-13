@@ -45,7 +45,6 @@ import (
 	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/minikube/config"
-	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -80,33 +79,33 @@ func init() {
 }
 
 // CacheISO downloads and caches ISO.
-func CacheISO(config cfg.MachineConfig) error {
-	if driver.BareMetal(config.VMDriver) {
+func CacheISO(cfg config.MachineConfig) error {
+	if driver.BareMetal(cfg.VMDriver) {
 		return nil
 	}
-	return config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO)
+	return cfg.Downloader.CacheMinikubeISOFromURL(cfg.MinikubeISO)
 }
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	exists, err := api.Exists(config.Name)
+func StartHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error) {
+	exists, err := api.Exists(cfg.Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "exists: %s", config.Name)
+		return nil, errors.Wrapf(err, "exists: %s", cfg.Name)
 	}
 	if !exists {
 		glog.Infoln("Machine does not exist... provisioning new machine")
-		glog.Infof("Provisioning machine with config: %+v", config)
-		return createHost(api, config)
+		glog.Infof("Provisioning machine with config: %+v", cfg)
+		return createHost(api, cfg)
 	}
 
 	glog.Infoln("Skipping create...Using existing machine configuration")
 
-	h, err := api.Load(config.Name)
+	h, err := api.Load(cfg.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
 
-	if exists && config.Name == constants.DefaultMachineName {
+	if exists && cfg.Name == constants.DefaultMachineName {
 		out.T(out.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 
@@ -117,9 +116,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": config.VMDriver, "profile_name": config.Name})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": cfg.VMDriver, "profile_name": cfg.Name})
 	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": config.VMDriver, "profile_name": config.Name})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": cfg.VMDriver, "profile_name": cfg.Name})
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -128,7 +127,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		}
 	}
 
-	e := engineOptions(config)
+	e := engineOptions(cfg)
 	glog.Infof("engine options: %+v", e)
 
 	out.T(out.Waiting, "Waiting for the host to be provisioned ...")
