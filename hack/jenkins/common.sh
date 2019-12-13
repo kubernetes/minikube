@@ -45,6 +45,12 @@ echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 
 
+# Make sure the right golang version is installed based on Makefile
+
+./hack/jenkins/installers/check_install_golang.sh 1.13.4 /usr/local
+declare -rx GOPATH=/var/lib/jenkins/go
+
+
 case "${VM_DRIVER}" in
   kvm2)
     echo "virsh:     $(virsh --version)"
