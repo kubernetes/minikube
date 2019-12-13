@@ -47,7 +47,8 @@ echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 
 # we need golang for test html binary
 # this script is copied by jenkins job config
-./check_install_golang.sh 1.13.4 /usr/local
+sudo chmod +x ./check_install_golang.sh
+sudo ./check_install_golang.sh 1.13.4 /usr/local
 
 
 case "${VM_DRIVER}" in
