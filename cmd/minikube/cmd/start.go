@@ -339,7 +339,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// exits here in case of --download-only option.
 	handleDownloadOnly(&cacheGroup, k8sVersion)
-	mRunner, preExists, machineAPI, host := startMachine(&config)
+	mRunner, preExists, machineAPI, host := startMachine(&config, &config.Nodes[0])
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(mRunner, driverName, config.KubernetesConfig)
@@ -347,7 +347,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	waitCacheImages(&cacheGroup)
 
 	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-	kubeconfig, err := setupKubeconfig(host, &config, config.Name)
+	kubeconfig, err := setupKubeconfig(host, &config.KubernetesConfig, &config.Nodes[0], config.Name)
 	if err != nil {
 		exit.WithError("Failed to setup kubeconfig", err)
 	}
@@ -426,15 +426,15 @@ func displayEnviron(env []string) {
 	}
 }
 
-func setupKubeconfig(h *host.Host, c *cfg.MachineConfig, clusterName string) (*kubeconfig.Settings, error) {
+func setupKubeconfig(h *host.Host, c *cfg.KubernetesConfig, n *cfg.Node, clusterName string) (*kubeconfig.Settings, error) {
 	addr, err := h.Driver.GetURL()
 	if err != nil {
 		exit.WithError("Failed to get driver URL", err)
 	}
 	addr = strings.Replace(addr, "tcp://", "https://", -1)
-	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
-	if c.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
+	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(n.Port), -1)
+	if c.APIServerName != constants.APIServerName {
+		addr = strings.Replace(addr, n.IP, c.APIServerName, -1)
 	}
 
 	kcs := &kubeconfig.Settings{
@@ -471,7 +471,7 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 
 }
 
-func startMachine(config *cfg.MachineConfig) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(config *cfg.MachineConfig, node *cfg.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
@@ -489,7 +489,7 @@ func startMachine(config *cfg.MachineConfig) (runner command.Runner, preExists b
 		out.ErrT(out.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
 	// Save IP to configuration file for subsequent use
-	config.KubernetesConfig.NodeIP = ip
+	node.IP = ip
 	if err := saveConfig(config); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
@@ -921,8 +921,6 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		NatNicType:          viper.GetString(natNicType),
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
-			NodePort:               viper.GetInt(apiServerPort),
-			NodeName:               constants.DefaultNodeName,
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,
 			APIServerIPs:           apiServerIPs,
@@ -936,6 +934,14 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 			ExtraOptions:           extraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,
+		},
+		Nodes: []cfg.Node{
+			cfg.Node{
+				Port:              viper.GetInt(apiServerPort),
+				KubernetesVersion: k8sVersion,
+				Name:              constants.DefaultNodeName,
+				Type:              cfg.Master,
+			},
 		},
 	}
 	return cfg, nil

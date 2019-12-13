@@ -69,19 +69,18 @@ type MachineConfig struct {
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
-	NodePort         int
-	APIServerName    string
-	APIServerNames   []string
-	APIServerIPs     []net.IP
-	DNSDomain        string
-	ContainerRuntime string
-	CRISocket        string
-	NetworkPlugin    string
-	FeatureGates     string
-	ServiceCIDR      string
-	ImageRepository  string
-	ExtraOptions     ExtraOptionSlice
-
+	APIServerName          string
+	APIServerNames         []string
+	APIServerIPs           []net.IP
+	DNSDomain              string
+	ContainerRuntime       string
+	CRISocket              string
+	NetworkPlugin          string
+	FeatureGates           string
+	ServiceCIDR            string
+	ImageRepository        string
+	ExtraOptions           ExtraOptionSlice
+	KubernetesVersion      string
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool
 }
@@ -90,14 +89,18 @@ type KubernetesConfig struct {
 type Node struct {
 	Name              string
 	IP                string
+	Port              int
 	KubernetesVersion string
 	Type              NodeType
 }
 
+// NodeType is an enum to describe the node type.
 type NodeType int
 
 const (
+	// Master is the control plane.
 	Master NodeType = iota
+	// Worker is a... worker.
 	Worker
 )
 

@@ -236,10 +236,10 @@ func (k *Bootstrapper) existingConfig() error {
 }
 
 // StartCluster starts the cluster
-func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
+func (k *Bootstrapper) StartCluster(k8s config.MachineConfig) error {
 	err := k.existingConfig()
 	if err == nil {
-		return k.restartCluster(k8s)
+		return k.restartCluster(k8s.KubernetesConfig)
 	}
 	glog.Infof("existence check: %v", err)
 
@@ -249,12 +249,12 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		glog.Infof("StartCluster complete in %s", time.Since(start))
 	}()
 
-	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := parseKubernetesVersion(k8s.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
 
-	extraFlags := createFlagsFromExtraArgs(k8s.ExtraOptions)
+	extraFlags := createFlagsFromExtraArgs(k8s.KubernetesConfig.ExtraOptions)
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime})
 	if err != nil {
 		return err
@@ -279,7 +279,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		ignore = append(ignore, "SystemVerification")
 	}
 
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", invokeKubeadm(k8s.KubernetesVersion), yamlConfigPath, extraFlags, strings.Join(ignore, ",")))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", invokeKubeadm(k8s.KubernetesConfig.KubernetesVersion), yamlConfigPath, extraFlags, strings.Join(ignore, ",")))
 	if rr, err := k.c.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "init failed. cmd: %q", rr.Command())
 	}
@@ -287,7 +287,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	glog.Infof("Configuring cluster permissions ...")
 
 	elevate := func() error {
-		client, err := k.client(k8s)
+		client, err := k.client(k8s.KubernetesConfig, k8s.Nodes[0])
 		if err != nil {
 			return err
 		}
@@ -357,13 +357,13 @@ func addAddons(files *[]assets.CopyableFile, data interface{}) error {
 }
 
 // client returns a Kubernetes client to use to speak to a kubeadm launched apiserver
-func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientset, error) {
+func (k *Bootstrapper) client(k8s config.KubernetesConfig, n config.Node) (*kubernetes.Clientset, error) {
 	config, err := kapi.ClientConfig(k.contextName)
 	if err != nil {
 		return nil, errors.Wrap(err, "client config")
 	}
 
-	endpoint := fmt.Sprintf("https://%s:%d", k8s.NodeIP, k8s.NodePort)
+	endpoint := fmt.Sprintf("https://%s:%d", n.IP, n.Port)
 	if config.Host != endpoint {
 		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
 		config.Host = endpoint
@@ -392,7 +392,7 @@ func (k *Bootstrapper) waitForAPIServerProcess(start time.Time, timeout time.Dur
 	return nil
 }
 
-func (k *Bootstrapper) waitForAPIServerHealthz(start time.Time, k8s config.KubernetesConfig, timeout time.Duration) error {
+func (k *Bootstrapper) waitForAPIServerHealthz(start time.Time, k8s config.Node, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
 	healthz := func() (bool, error) {
@@ -400,7 +400,7 @@ func (k *Bootstrapper) waitForAPIServerHealthz(start time.Time, k8s config.Kuber
 			return false, fmt.Errorf("cluster wait timed out during healthz check")
 		}
 
-		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
+		status, err := k.GetAPIServerStatus(net.ParseIP(k8s.IP), k8s.Port)
 		if err != nil {
 			glog.Warningf("status: %v", err)
 			return false, nil
