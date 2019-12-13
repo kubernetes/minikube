@@ -45,9 +45,9 @@ echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 
 
-# Make sure the right golang version is installed based on Makefile
-
-./installers/check_install_golang.sh 1.13.4 /usr/local
+# we need golang for test html binary
+# this script is copied by jenkins job config
+./check_install_golang.sh 1.13.4 /usr/local
 
 
 case "${VM_DRIVER}" in
