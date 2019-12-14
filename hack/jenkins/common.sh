@@ -271,7 +271,9 @@ ${SUDO_PREFIX}${E2E_BIN} \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
   -test.timeout=70m \
   ${EXTRA_TEST_ARGS} \
-  -binary="${MINIKUBE_BIN}" | tee "${TEST_OUT}" && result=$? || result=$?
+  -binary="${MINIKUBE_BIN}" | tee "${TEST_OUT}"
+
+result=${PIPESTATUS[0]} # capture the exit code of the first cmd in pipe.
 set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
@@ -297,6 +299,8 @@ echo $description
 echo ">> Copying html formatted logs ..."
 # Generate JSON format from test output 
 echo ">> Running go tool test2json"
+echo ">> contents of ${TEST_OUT} ..."
+cat ${TEST_OUT} || true
 docker run --mount type=bind,source=${TEST_OUT},target=/tmp/log.txt -it medyagh/gopogh:v0.0.8 sh -c "go tool test2json -t < /tmp/log.txt" > ${JSON_OUT}
 # Generate HTML human readable test output
 echo ">> Running gopogh"
