@@ -294,13 +294,20 @@ description="completed with ${status} in ${elapsed} minute(s)."
 echo $description
 
 
+echo ">> Copying html formatted logs ..."
 # Generate JSON format from test output 
+echo ">> Running go tool test2json"
 docker run --mount type=bind,source=${TEST_OUT},target=/tmp/log.txt -it medyagh/gopogh:v0.0.8 sh -c "go tool test2json -t < /tmp/log.txt" > ${JSON_OUT}
 # Generate HTML human readable test output
+echo ">> Running gopogh"
 docker run --mount type=bind,source=${JSON_OUT},target=/tmp/log.json -it medyagh/gopogh:v0.0.8 sh -c "/gopogh -in /tmp/log.json -out /tmp/log.html; cat /tmp/log.html" > ${HTML_OUT}
+gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
+gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
+echo ">> contents of ${HTML_OUT} ..."
+cat ${HTML_OUT} || true
+echo ">> contents of ${JSON_OUT} ..."
+cat ${JSON_OUT} || true
 
-gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
-gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 
 
 echo ">> Cleaning up after ourselves ..."
