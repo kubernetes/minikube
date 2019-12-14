@@ -44,13 +44,6 @@ echo "uptime:    $(uptime)"
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
 
-
-# we need golang for test html binary
-# this script is copied by jenkins job config
-sudo chmod +x ./check_install_golang.sh
-sudo ./check_install_golang.sh 1.13.4 /usr/local
-
-
 case "${VM_DRIVER}" in
   kvm2)
     echo "virsh:     $(virsh --version)"
@@ -301,10 +294,11 @@ description="completed with ${status} in ${elapsed} minute(s)."
 echo $description
 
 
-# Generate well-formed test output
-go tool test2json < "${TEST_OUT}" > "${JSON_OUT}"
-go get -u github.com/medyagh/goprettyorgohome
-goprettyorgohome -in "${JSON_OUT}" -out "${HTML_OUT}"
+# Generate JSON format from test output 
+docker run --mount type=bind,source=${TEST_OUT},target=/tmp/log.txt -it medyagh/gopogh:v0.0.8 sh -c "go tool test2json -t < /tmp/log.txt" > ${JSON_OUT}
+# Generate HTML human readable test output
+docker run --mount type=bind,source=${JSON_OUT},target=/tmp/log.json -it medyagh/gopogh:v0.0.8 sh -c "/gopogh -in /tmp/log.json -out /tmp/log.html; cat /tmp/log.html" > ${HTML_OUT}
+
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
 gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 
