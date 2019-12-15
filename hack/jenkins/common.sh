@@ -298,15 +298,7 @@ echo ">> Copying ${TEST_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/$
 gsutil -qm cp "${TEST_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}out.txt"
 echo ">> Copying html formatted logs ..."
 # Generate JSON format from test output 
-case "${OS_ARCHR}" in
-  darwin-amd64)
-    DOCKER_BIN="/usr/local/bin/docker"
-  ;;
-  linux-amd64)
-    DOCKER_BIN="docker"
-  ;;
-esac
-
+DOCKER_BIN="docker"
 echo ">> Running go tool test2json"
 touch ${JSON_OUT}
 ${DOCKER_BIN} run --mount type=bind,source="${JSON_OUT}",target=/tmp/out.json \
