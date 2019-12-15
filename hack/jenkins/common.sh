@@ -383,5 +383,5 @@ function retry_github_status() {
 
 
 
-retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" ${pubilc_log_url} "${description}"
+retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
 exit $result
