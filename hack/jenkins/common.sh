@@ -294,20 +294,25 @@ sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 description="completed with ${status} in ${elapsed} minute(s)."
 echo $description
-
-
+echo ">> Copying ${TEST_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.out"
 echo ">> Copying html formatted logs ..."
 # Generate JSON format from test output 
 echo ">> Running go tool test2json"
-docker run --mount type=bind,source="${TEST_OUT}",target=/tmp/log.txt -i medyagh/gopogh:v0.0.8 sh -c "go tool test2json -t < /tmp/log.txt" > "${JSON_OUT}"
+touch ${JSON_OUT}
+docker run --mount type=bind,source="${JSON_OUT}",target=/tmp/out.json \
+           --mount type=bind,source="${TEST_OUT}",target=/tmp/log.txt \
+           -i medyagh/gopogh:v0.0.8 \
+           sh -c "go tool test2json -t < /tmp/log.txt > /tmp/out.json" 
+
 # Generate HTML human readable test output
 echo ">> Running gopogh"
-docker run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json -i medyagh/gopogh:v0.0.8 sh -c "/gopogh -in /tmp/log.json -out /tmp/log.html; cat /tmp/log.html" > ${HTML_OUT}
+touch ${HTML_OUT}
+docker run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json \
+                --mount type=bind,source="${HTML_OUT}",target=/tmp/log.html \
+                -i medyagh/gopogh:v0.0.8 sh -c "/gopogh -in /tmp/log.json -out /tmp/log.html"
 echo ">> Copying ${HTML_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
 gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
-echo ">> contents of ${HTML_OUT} ..."
-cat ${HTML_OUT} || true
 echo ">> contents of ${JSON_OUT} ..."
 cat ${JSON_OUT} || true
 
@@ -320,7 +325,11 @@ cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
-rmdir "${TEST_HOME}"
+${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
+${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
+${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
+rmdir "${TEST_HOME}" || true
+${SUDO_PREFIX} rm -rf "${TEST_HOME}" || true
 echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
