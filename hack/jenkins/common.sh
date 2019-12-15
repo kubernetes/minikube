@@ -271,7 +271,7 @@ ${SUDO_PREFIX}${E2E_BIN} \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
   -test.timeout=70m \
   ${EXTRA_TEST_ARGS} \
-  -binary="${MINIKUBE_BIN}" | tee "${TEST_OUT}"
+  -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
 
 result=${PIPESTATUS[0]} # capture the exit code of the first cmd in pipe.
 set +x
@@ -298,10 +298,12 @@ echo $description
 
 echo ">> Copying html formatted logs ..."
 # Generate JSON format from test output 
-echo ">> Running go tool test2json"
-echo ">> contents of ${TEST_OUT} ..."
+echo ">> Contents of ${TEST_OUT}:"
+echo $(cat ${TEST_OUT})
+echo ">> Contents of ${TEST_OUT} again:"
 cat ${TEST_OUT} || true
-docker run --mount type=bind,source=${TEST_OUT},target=/tmp/log.txt -it medyagh/gopogh:v0.0.8 sh -c "go tool test2json -t < /tmp/log.txt" > ${JSON_OUT}
+echo ">> Running go tool test2json"
+docker run --mount type=bind,source="${TEST_OUT}",target=/tmp/log.txt -it medyagh/gopogh:v0.0.8 sh -c "go tool test2json -t < /tmp/log.txt" > "${JSON_OUT}"
 # Generate HTML human readable test output
 echo ">> Running gopogh"
 docker run --mount type=bind,source=${JSON_OUT},target=/tmp/log.json -it medyagh/gopogh:v0.0.8 sh -c "/gopogh -in /tmp/log.json -out /tmp/log.html; cat /tmp/log.html" > ${HTML_OUT}
