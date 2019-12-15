@@ -303,7 +303,7 @@ case "${OS_ARCHR}" in
     DOCKER_BIN="/usr/local/bin/docker"
   ;;
   linux-amd64)
-    DOCKER_BIN="/usr/bin/docker"
+    DOCKER_BIN="docker"
   ;;
 esac
 
