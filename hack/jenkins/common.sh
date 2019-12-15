@@ -295,6 +295,7 @@ elapsed=$min.$sec
 description="completed with ${status} in ${elapsed} minute(s)."
 echo $description
 echo ">> Copying ${TEST_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.out"
+gsutil -qm cp "${TEST_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.out"
 echo ">> Copying html formatted logs ..."
 # Generate JSON format from test output 
 echo ">> Running go tool test2json"
