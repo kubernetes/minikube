@@ -26,7 +26,7 @@
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
-readonly TEST_OUT="${TEST_HOME}/test.out"
+readonly TEST_OUT="${TEST_HOME}/testout.txt"
 readonly JSON_OUT="${TEST_HOME}/test.json"
 readonly HTML_OUT="${TEST_HOME}/test.html"
 
@@ -294,30 +294,40 @@ sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 description="completed with ${status} in ${elapsed} minute(s)."
 echo $description
-echo ">> Copying ${TEST_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.out"
-gsutil -qm cp "${TEST_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.out"
+echo ">> Copying ${TEST_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}out.txt"
+gsutil -qm cp "${TEST_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}out.txt"
 echo ">> Copying html formatted logs ..."
 # Generate JSON format from test output 
+case "${OS_ARCHR}" in
+  darwin-amd64)
+    DOCKER_BIN="/usr/local/bin/docker"
+  ;;
+  linux-amd64)
+    DOCKER_BIN="/usr/bin/docker"
+  ;;
+esac
+
 echo ">> Running go tool test2json"
 touch ${JSON_OUT}
-docker run --mount type=bind,source="${JSON_OUT}",target=/tmp/out.json \
+${DOCKER_BIN} run --mount type=bind,source="${JSON_OUT}",target=/tmp/out.json \
            --mount type=bind,source="${TEST_OUT}",target=/tmp/log.txt \
            -i medyagh/gopogh:v0.0.8 \
-           sh -c "go tool test2json -t < /tmp/log.txt > /tmp/out.json" 
+           sh -c "go tool test2json -t < /tmp/log.txt > /tmp/out.json" || true
 
 # Generate HTML human readable test output
 echo ">> Running gopogh"
 touch ${HTML_OUT}
-docker run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json \
+${DOCKER_BIN} run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json \
                 --mount type=bind,source="${HTML_OUT}",target=/tmp/log.html \
-                -i medyagh/gopogh:v0.0.8 sh -c "/gopogh -in /tmp/log.json -out /tmp/log.html"
+                -i medyagh/gopogh:v0.0.8 sh -c "/gopogh -in /tmp/log.json -out /tmp/log.html" || true
 echo ">> Copying ${HTML_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
 gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
-echo ">> contents of ${JSON_OUT} ..."
-cat ${JSON_OUT} || true
 
-
+public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
+if [[ $(wc -l <${HTML_OUT}) -ge 3 ]] # if HTML generation was succesfull (would fail if docker is not installed)
+  public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
+fi
 
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
@@ -330,7 +340,6 @@ ${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
 ${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
 ${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
 rmdir "${TEST_HOME}" || true
-${SUDO_PREFIX} rm -rf "${TEST_HOME}" || true
 echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
@@ -374,5 +383,5 @@ function retry_github_status() {
 
 
 
-retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt" "${description}"
+retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" ${pubilc_log_url} "${description}"
 exit $result
