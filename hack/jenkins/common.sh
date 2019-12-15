@@ -325,7 +325,7 @@ gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JO
 gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 
 public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
-if [[ $(wc -l <${HTML_OUT}) -ge 3 ]] # if HTML generation was succesfull (would fail if docker is not installed)
+if [[ $(wc -l <${HTML_OUT}) -ge 3 ]]; then # if HTML generation was succesfull (would fail if docker is not installed)
   public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 fi
 
