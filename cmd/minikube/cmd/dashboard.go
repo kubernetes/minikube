@@ -32,9 +32,11 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -57,7 +59,7 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cc, err := pkg_config.Load()
+		cc, err := pkg_config.Load(viper.GetString(config.MachineProfile))
 		if err != nil && !os.IsNotExist(err) {
 			exit.WithError("Error loading profile config", err)
 		}

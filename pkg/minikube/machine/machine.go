@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"io/ioutil"
@@ -23,8 +23,8 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 // Machine contains information about a machine
@@ -60,15 +60,15 @@ func (h *Machine) IsValid() bool {
 	return true
 }
 
-// ListMachines return all valid and invalid machines
+// List return all valid and invalid machines
 // If a machine is valid or invalid is determined by the cluster.IsValid function
-func ListMachines(miniHome ...string) (validMachines []*Machine, inValidMachines []*Machine, err error) {
+func List(miniHome ...string) (validMachines []*Machine, inValidMachines []*Machine, err error) {
 	pDirs, err := machineDirs(miniHome...)
 	if err != nil {
 		return nil, nil, err
 	}
 	for _, n := range pDirs {
-		p, err := LoadMachine(n)
+		p, err := Load(n)
 		if err != nil {
 			glog.Infof("%s not valid: %v", n, err)
 			inValidMachines = append(inValidMachines, p)
@@ -83,14 +83,14 @@ func ListMachines(miniHome ...string) (validMachines []*Machine, inValidMachines
 	return validMachines, inValidMachines, nil
 }
 
-// LoadMachine loads a machine or throws an error if the machine could not be loadedG
-func LoadMachine(name string) (*Machine, error) {
-	api, err := machine.NewAPIClient()
+// Load loads a machine or throws an error if the machine could not be loadedG
+func Load(name string) (*Machine, error) {
+	api, err := NewAPIClient()
 	if err != nil {
 		return nil, err
 	}
 
-	h, err := CheckIfHostExistsAndLoad(api, name)
+	h, err := cluster.CheckIfHostExistsAndLoad(api, name)
 	if err != nil {
 		return nil, err
 	}
@@ -118,13 +118,4 @@ func machineDirs(miniHome ...string) (dirs []string, err error) {
 		}
 	}
 	return dirs, err
-}
-
-// MachinePath returns the Minikube machine path of a machine
-func MachinePath(machine string, miniHome ...string) string {
-	miniPath := localpath.MiniPath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	return filepath.Join(miniPath, "machines", machine)
 }

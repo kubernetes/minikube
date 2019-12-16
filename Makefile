@@ -15,12 +15,12 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 6
-VERSION_BUILD ?= 0-beta.1
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v1.6.0-beta.1
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
@@ -117,7 +117,7 @@ HYPERKIT_LDFLAGS := -X k8s.io/minikube/pkg/drivers/hyperkit.version=$(VERSION) -
 
 # $(call DOCKER, image, command)
 define DOCKER
-	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --entrypoint /bin/bash $(1) -c '$(2)'
+	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 --user $(shell id -u):$(shell id -g) -w /app -v $(PWD):/app -v $(GOPATH):/go --init $(1) /bin/bash -c '$(2)'
 endef
 
 ifeq ($(BUILD_IN_DOCKER),y)
@@ -435,7 +435,10 @@ out/minikube-installer.exe: out/minikube-windows-amd64.exe
 
 out/docker-machine-driver-hyperkit:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make $@)
+	docker run --rm -e GOCACHE=/app/.cache -e IN_DOCKER=1 \
+		--user $(shell id -u):$(shell id -g) -w /app \
+		-v $(PWD):/app -v $(GOPATH):/go --init --entrypoint "" \
+		$(HYPERKIT_BUILD_IMAGE) /bin/bash -c 'CC=o64-clang CXX=o64-clang++ /usr/bin/make $@'
 else
 	GOOS=darwin CGO_ENABLED=1 go build \
 		-ldflags="$(HYPERKIT_LDFLAGS)"   \
@@ -444,7 +447,7 @@ endif
 
 hyperkit_in_docker:
 	rm -f out/docker-machine-driver-hyperkit
-	$(call DOCKER,$(HYPERKIT_BUILD_IMAGE),CC=o64-clang CXX=o64-clang++ /usr/bin/make out/docker-machine-driver-hyperkit)
+	$(MAKE) MINIKUBE_BUILD_IN_DOCKER=y out/docker-machine-driver-hyperkit
 
 .PHONY: install-hyperkit-driver
 install-hyperkit-driver: out/docker-machine-driver-hyperkit ## Install hyperkit to local machine
@@ -581,7 +584,11 @@ site: site/themes/docsy/assets/vendor/bootstrap/package.js out/hugo/hugo ## Serv
 
 .PHONY: out/mkcmp
 out/mkcmp:
-	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/main.go
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/mkcmp/main.go
+
+.PHONY: out/performance-monitor
+out/performance-monitor:
+	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/monitor/monitor.go
 
 .PHONY: help
 help:

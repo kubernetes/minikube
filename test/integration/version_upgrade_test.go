@@ -18,6 +18,7 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -28,6 +29,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/util/retry"
 
@@ -66,13 +68,13 @@ func TestVersionUpgrade(t *testing.T) {
 
 	args := append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr := &RunResult{}
-	releaseStart := func() error {
+	r := func() error {
 		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
 		return err
 	}
 
 	// Retry to allow flakiness for the previous release
-	if err := retry.Expo(releaseStart, 1*time.Second, 30*time.Minute, 3); err != nil {
+	if err := retry.Expo(r, 1*time.Second, 30*time.Minute, 3); err != nil {
 		t.Fatalf("release start failed: %v", err)
 	}
 
@@ -95,5 +97,35 @@ func TestVersionUpgrade(t *testing.T) {
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	s, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "version", "--output=json"))
+	if err != nil {
+		t.Fatalf("error running kubectl: %v", err)
+	}
+	cv := struct {
+		ServerVersion struct {
+			GitVersion string `json:"gitVersion"`
+		} `json:"serverVersion"`
+	}{}
+	err = json.Unmarshal(s.Stdout.Bytes(), &cv)
+
+	if err != nil {
+		t.Fatalf("error traversing json output: %v", err)
+	}
+
+	if cv.ServerVersion.GitVersion != constants.NewestKubernetesVersion {
+		t.Fatalf("expected server version %s is not the same with latest version %s", cv.ServerVersion.GitVersion, constants.NewestKubernetesVersion)
+	}
+
+	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	rr = &RunResult{}
+	r = func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
+		return err
+	}
+
+	if err := retry.Expo(r, 1*time.Second, 30*time.Minute, 3); err == nil {
+		t.Fatalf("downgrading kubernetes should not be allowed: %v", err)
 	}
 }
