@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"io/ioutil"
@@ -51,7 +51,7 @@ func TestListMachines(t *testing.T) {
 	files, _ := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
 	numberOfMachineDirs := len(files)
 
-	validMachines, inValidMachines, err := ListMachines()
+	validMachines, inValidMachines, err := List()
 
 	if err != nil {
 		t.Error(err)

@@ -400,7 +400,7 @@ var osProblems = map[string]match{
 
 // stateProblems are issues relating to local state
 var stateProblems = map[string]match{
-	"MACHINE_DOES_NOT_EXST": {
+	"MACHINE_DOES_NOT_EXIST": {
 		Regexp:         re(`Error getting state for host: machine does not exist`),
 		Advice:         "Run 'minikube delete' to delete the stale VM",
 		Issues:         []int{3864},

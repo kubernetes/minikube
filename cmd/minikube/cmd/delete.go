@@ -163,7 +163,7 @@ func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 		err := deleteProfile(profile)
 
 		if err != nil {
-			mm, loadErr := cluster.LoadMachine(profile.Name)
+			mm, loadErr := machine.Load(profile.Name)
 
 			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
 				invalidProfileDeletionErrs := deleteInvalidProfile(profile)
@@ -187,8 +187,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		return DeletionError{Err: delErr, Errtype: Fatal}
 	}
 	defer api.Close()
-
-	cc, err := pkg_config.Load()
+	cc, err := pkg_config.Load(profile.Name)
 	if err != nil && !os.IsNotExist(err) {
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
 		return DeletionError{Err: delErr, Errtype: MissingProfile}
@@ -263,7 +262,7 @@ func deleteInvalidProfile(profile *pkg_config.Profile) []error {
 		}
 	}
 
-	pathToMachine := cluster.MachinePath(profile.Name, localpath.MiniPath())
+	pathToMachine := localpath.MachinePath(profile.Name, localpath.MiniPath())
 	if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 		err := os.RemoveAll(pathToMachine)
 		if err != nil {

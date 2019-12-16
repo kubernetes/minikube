@@ -596,7 +596,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 		extraOpts["node-ip"] = k8s.NodeIP
 	}
 
-	pauseImage := images.PauseImage(k8s.ImageRepository, k8s.KubernetesVersion)
+	pauseImage := images.Pause(k8s.ImageRepository)
 	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
 		extraOpts["pod-infra-container-image"] = pauseImage
 	}
@@ -629,33 +629,37 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 }
 
 // UpdateCluster updates the cluster
-func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
-	images := images.CachedImages(cfg.ImageRepository, cfg.KubernetesVersion)
-	if cfg.ShouldLoadCachedImages {
-		if err := machine.LoadImages(k.c, images, constants.ImageCacheDir); err != nil {
+func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
+	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "kubeadm images")
+	}
+
+	if cfg.KubernetesConfig.ShouldLoadCachedImages {
+		if err := machine.LoadImages(&cfg, k.c, images, constants.ImageCacheDir); err != nil {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}
-	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.CRISocket})
+	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.KubernetesConfig.CRISocket})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
-	kubeadmCfg, err := generateConfig(cfg, r)
+	kubeadmCfg, err := generateConfig(cfg.KubernetesConfig, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
-	kubeletCfg, err := NewKubeletConfig(cfg, r)
+	kubeletCfg, err := NewKubeletConfig(cfg.KubernetesConfig, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}
 
-	kubeletService, err := NewKubeletService(cfg)
+	kubeletService, err := NewKubeletService(cfg.KubernetesConfig)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet service")
 	}
 
-	glog.Infof("kubelet %s config:\n%s", cfg.KubernetesVersion, kubeletCfg)
+	glog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
 
 	stopCmd := exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")
 	// stop kubelet to avoid "Text File Busy" error
@@ -663,11 +667,11 @@ func (k *Bootstrapper) UpdateCluster(cfg config.KubernetesConfig) error {
 		glog.Warningf("unable to stop kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
 	}
 
-	if err := transferBinaries(cfg, k.c); err != nil {
+	if err := transferBinaries(cfg.KubernetesConfig, k.c); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
-	files := configFiles(cfg, kubeadmCfg, kubeletCfg, kubeletService)
-	if err := addAddons(&files, assets.GenerateTemplateData(cfg)); err != nil {
+	files := configFiles(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService)
+	if err := addAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
 		return errors.Wrap(err, "adding addons")
 	}
 	for _, f := range files {

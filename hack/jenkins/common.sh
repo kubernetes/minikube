@@ -258,6 +258,7 @@ if [[ "${LOAD}" -gt 2 ]]; then
   uptime
 fi
 
+e2e_start_time="$(date -u +%s)"
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 set -x
@@ -278,6 +279,16 @@ else
   status="failure"
   echo "minikube: FAIL"
 fi
+
+## caclucate the time took to finish running e2e binary test.
+e2e_end_time="$(date -u +%s)"
+elapsed=$(($e2e_end_time-$e2e_start_time))
+min=$(($elapsed/60))
+sec=$(tail -c 3 <<< $((${elapsed}00/60)))
+elapsed=$min.$sec
+description="completed with ${status} in ${elapsed} minute(s)."
+echo $description
+
 
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
@@ -300,6 +311,7 @@ function retry_github_status() {
   local state=$3
   local token=$4
   local target=$5
+  local desc=$6
 
    # Retry in case we hit our GitHub API quota or fail other ways.
   local attempt=0
@@ -312,7 +324,7 @@ function retry_github_status() {
       "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}?access_token=${token}" \
       -H "Content-Type: application/json" \
       -X POST \
-      -d "{\"state\": \"${state}\", \"description\": \"Jenkins\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
+      -d "{\"state\": \"${state}\", \"description\": \"Jenkins: ${desc}\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
 
     # 2xx HTTP codes
     if [[ "${code}" =~ ^2 ]]; then
@@ -327,5 +339,7 @@ function retry_github_status() {
   done
 }
 
-retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
+
+
+retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt" "${description}"
 exit $result

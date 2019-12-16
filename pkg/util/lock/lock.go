@@ -17,12 +17,10 @@ limitations under the License.
 package lock
 
 import (
+	"crypto/sha1"
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/golang/glog"
@@ -33,51 +31,30 @@ import (
 
 // WriteFile decorates ioutil.WriteFile with a file lock and retry
 func WriteFile(filename string, data []byte, perm os.FileMode) error {
-	spec := mutex.Spec{
-		Name:  getMutexName(filename),
-		Clock: clock.WallClock,
-		Delay: 13 * time.Second,
-	}
-	glog.Infof("attempting to write to file %q with filemode %v", filename, perm)
-
+	spec := PathMutexSpec(filename)
+	glog.Infof("WriteFile acquiring %s: %+v", filename, spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
-		return errors.Wrapf(err, "error acquiring lock for %s", filename)
+		return errors.Wrapf(err, "failed to acquire lock for %s: %+v", filename, spec)
 	}
 
 	defer releaser.Release()
 
 	if err = ioutil.WriteFile(filename, data, perm); err != nil {
-		return errors.Wrapf(err, "error writing file %s", filename)
+		return errors.Wrapf(err, "writefile failed for %s", filename)
 	}
-
 	return err
 }
 
-func getMutexName(filename string) string {
-	// Make the mutex name the file name and its parent directory
-	dir, name := filepath.Split(filename)
-
-	// Replace underscores and periods with dashes, the only valid punctuation for mutex name
-	name = strings.ReplaceAll(name, ".", "-")
-	name = strings.ReplaceAll(name, "_", "-")
-
-	p := strings.ReplaceAll(filepath.Base(dir), ".", "-")
-	p = strings.ReplaceAll(p, "_", "-")
-	mutexName := fmt.Sprintf("%s-%s", p, strings.ReplaceAll(name, ".", "-"))
-
-	// Check if name starts with an int and prepend a string instead
-	if _, err := strconv.Atoi(mutexName[:1]); err == nil {
-		mutexName = "m" + mutexName
+// PathMutexSpec returns a mutex spec for a path
+func PathMutexSpec(path string) mutex.Spec {
+	s := mutex.Spec{
+		Name:  fmt.Sprintf("mk%x", sha1.Sum([]byte(path)))[0:40],
+		Clock: clock.WallClock,
+		// Poll the lock twice a second
+		Delay: 500 * time.Millisecond,
+		// panic after a minute instead of locking infinitely
+		Timeout: 60 * time.Second,
 	}
-	// There's an arbitrary hard max on mutex name at 40.
-	if len(mutexName) > 40 {
-		mutexName = mutexName[:40]
-	}
-
-	// Make sure name doesn't start or end with punctuation
-	mutexName = strings.TrimPrefix(mutexName, "-")
-	mutexName = strings.TrimSuffix(mutexName, "-")
-
-	return mutexName
+	return s
 }
