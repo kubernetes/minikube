@@ -57,7 +57,7 @@ const (
 func GetCachedBinaryList(bootstrapper string) []string {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		return constants.KubeadmBinaries
+		return constants.KubernetesReleaseBinaries
 	default:
 		return []string{}
 	}

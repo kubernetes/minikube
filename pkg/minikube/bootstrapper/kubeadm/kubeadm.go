@@ -249,7 +249,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		glog.Infof("StartCluster complete in %s", time.Since(start))
 	}()
 
-	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -481,7 +481,7 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 		glog.Infof("restartCluster took %s", time.Since(start))
 	}()
 
-	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -534,7 +534,7 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
-	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -553,7 +553,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 // PullImages downloads images that will be used by Kubernetes
 func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
-	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -576,7 +576,7 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig) error {
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
 func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, error) {
-	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -707,7 +707,7 @@ func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version se
 
 // generateConfig generates the kubeadm.yaml file
 func generateConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, error) {
-	version, err := parseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -821,20 +821,15 @@ func invokeKubeadm(version string) string {
 // transferBinaries transfers all required Kubernetes binaries
 func transferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 	var g errgroup.Group
-	kubernetesBinaries := append(constants.KubeadmBinaries, constants.KubectlBinary)
-	for _, name := range kubernetesBinaries {
+	for _, name := range constants.KubernetesReleaseBinaries {
 		name := name
 		g.Go(func() error {
-			version := cfg.KubernetesVersion
-			if name == constants.KubectlBinary {
-				version = constants.KubectlBinaryVersion
-			}
-			src, err := machine.CacheBinary(name, version, "linux", runtime.GOARCH)
+			src, err := machine.CacheBinary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", name)
 			}
 
-			dst := path.Join(binRoot(version), name)
+			dst := path.Join(binRoot(cfg.KubernetesVersion), name)
 			if err := machine.CopyBinary(c, src, dst); err != nil {
 				return errors.Wrapf(err, "copybinary %s -> %s", src, dst)
 			}
