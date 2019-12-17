@@ -86,11 +86,11 @@ func ProfileExists(name string, miniHome ...string) bool {
 // CreateEmptyProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func CreateEmptyProfile(name string, miniHome ...string) error {
 	cfg := &MachineConfig{}
-	return CreateProfile(name, cfg, miniHome...)
+	return SaveProfile(name, cfg, miniHome...)
 }
 
-// CreateProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func CreateProfile(name string, cfg *MachineConfig, miniHome ...string) error {
+// SaveProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
+func SaveProfile(name string, cfg *MachineConfig, miniHome ...string) error {
 	data, err := json.MarshalIndent(cfg, "", "    ")
 	if err != nil {
 		return err

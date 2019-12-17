@@ -353,7 +353,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// setup kubeadm (must come after setupKubeconfig)
-	bs := setupKubeAdm(machineAPI, config)
+	bs := setupKubeAdm(machineAPI, mRunner, config)
 
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
@@ -1195,7 +1195,7 @@ func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, config cfg.MachineConfig) bootstrapper.Bootstrapper {
+func setupKubeAdm(mAPI libmachine.API, cr command.Runner, config cfg.MachineConfig, node cfg.Node) bootstrapper.Bootstrapper {
 	bs, err := getClusterBootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
@@ -1207,7 +1207,7 @@ func setupKubeAdm(mAPI libmachine.API, config cfg.MachineConfig) bootstrapper.Bo
 	if err := bs.UpdateCluster(config); err != nil {
 		exit.WithError("Failed to update cluster", err)
 	}
-	if err := bs.SetupCerts(config.KubernetesConfig); err != nil {
+	if err := bs.SetupCerts(cr, config.KubernetesConfig, node); err != nil {
 		exit.WithError("Failed to setup certs", err)
 	}
 	return bs
@@ -1276,5 +1276,5 @@ func configureMounts() {
 
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func saveConfig(clusterCfg *cfg.MachineConfig) error {
-	return cfg.CreateProfile(viper.GetString(cfg.MachineProfile), clusterCfg)
+	return cfg.SaveProfile(viper.GetString(cfg.MachineProfile), clusterCfg)
 }
