@@ -17,6 +17,7 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -60,12 +61,7 @@ func Reconcile(cmd command.Runner) error {
 	}
 
 	for _, p := range validProfiles {
-		v, err := kubernetesVersion(p.Name)
-		if err != nil {
-			glog.Warningf("error getting kubernetes version, skipping profile %s: %v", p.Name, err)
-			continue
-		}
-		c, err := kubectlCommand(v)
+		c, err := kubectlCommand(p.Name)
 		if err != nil {
 			return err
 		}
@@ -77,8 +73,12 @@ func Reconcile(cmd command.Runner) error {
 	return nil
 }
 
-func kubectlCommand(version string) (*exec.Cmd, error) {
-	kubectlBinary, err := kubectlBinaryPath(version)
+func kubectlCommand(profile string) (*exec.Cmd, error) {
+	kubectlBinary, err := kubectlBinaryPath(profile)
+	if err != nil {
+		return nil, err
+	}
+	v, err := kubernetesVersion(profile)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +90,7 @@ func kubectlCommand(version string) (*exec.Cmd, error) {
 	}
 	args = append(args, "--recursive")
 
-	if ok, err := appendNamespaceFlag(version); err == nil && ok {
+	if ok, err := appendNamespaceFlag(v); err == nil && ok {
 		args = append(args, "--namespace=kube-system")
 	}
 
@@ -122,14 +122,11 @@ func appendNamespaceFlag(version string) (bool, error) {
 
 func kubectlBinaryPath(profile string) (string, error) {
 	// TODO: get this for all profiles and run in each one
-	cc, err := config.Load(profile)
-	if err != nil && !os.IsNotExist(err) {
+	v, err := kubernetesVersion(profile)
+	if err != nil {
 		return "", err
 	}
-	version := constants.DefaultKubernetesVersion
-	if cc != nil {
-		version = cc.KubernetesConfig.KubernetesVersion
-	}
-	p := path.Join("/var/lib/minikube/binaries", version, "kubectl")
+	fmt.Printf("got version %s for profile %s\n", v, profile)
+	p := path.Join("/var/lib/minikube/binaries", v, "kubectl")
 	return p, nil
 }
