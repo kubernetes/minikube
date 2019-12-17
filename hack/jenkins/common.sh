@@ -29,6 +29,7 @@ readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$
 readonly TEST_OUT="${TEST_HOME}/testout.txt"
 readonly JSON_OUT="${TEST_HOME}/test.json"
 readonly HTML_OUT="${TEST_HOME}/test.html"
+export PATH=$PATH:"/usr/local/bin/"
 
 echo ">> Starting at $(date)"
 echo ""
@@ -309,9 +310,14 @@ ${DOCKER_BIN} run --mount type=bind,source="${JSON_OUT}",target=/tmp/out.json \
 # Generate HTML human readable test output
 echo ">> Running gopogh"
 touch ${HTML_OUT}
+
 ${DOCKER_BIN} run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json \
                 --mount type=bind,source="${HTML_OUT}",target=/tmp/log.html \
-                -i medyagh/gopogh:v0.0.8 sh -c "/gopogh -in /tmp/log.json -out /tmp/log.html" || true
+                -i medyagh/gopogh:v0.0.12 sh -c \
+                "/gopogh -in /tmp/log.json -out /tmp/log.html \ 
+                -name ${JOB_NAME} -pr ${6096}
+                --repo github.com/kubernetes/minikube/   -details ${COMMIT}"
+                || true
 echo ">> Copying ${HTML_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
 gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
