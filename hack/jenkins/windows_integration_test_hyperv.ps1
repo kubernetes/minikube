@@ -18,12 +18,32 @@ gsutil.cmd -m cp gs://minikube-builds/$env:MINIKUBE_LOCATION/e2e-windows-amd64.e
 gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 
 ./out/minikube-windows-amd64.exe delete
-
-out/e2e-windows-amd64.exe --expected-default-driver=hyperv -minikube-start-args="--vm-driver=hyperv --hyperv-virtual-switch=primary-virtual-switch" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=65m
+out/e2e-windows-amd64.exe --expected-default-driver=hyperv -minikube-start-args="--vm-driver=hyperv --hyperv-virtual-switch=primary-virtual-switch" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=65m  > /out/test.out 2>&1
 $env:result=$lastexitcode
 # If the last exit code was 0->success, x>0->error
 If($env:result -eq 0){$env:status="success"}
 Else {$env:status="failure"}
+
+type nul > out/test.json
+# generate json output using go tool test2json
+docker run --mount type=bind,source=out/test.json,target=/tmp/out.json \
+           --mount type=bind,source=out/test.out,target=/tmp/log.txt \
+           -i medyagh/gopogh:v0.0.13 \
+           sh -c "go tool test2json -t < /tmp/log.txt > /tmp/out.json" || VER>NUL
+
+type nul > out/test.html # touch 
+# genearte html report
+docker run --rm --mount type=bind,source=test.json,target=/tmp/log.json \
+                --mount type=bind,source="out/test.html",target=/tmp/log.html \
+                -i medyagh/gopogh:v0.0.13 sh -c \
+                "/gopogh -in /tmp/log.json -out /tmp/log.html \ 
+                -name $env:JOB_NAME -pr $env:MINIKUBE_LOCATION \
+                -repo github.com/kubernetes/minikube/  -details $env:COMMIT" || VER>NUL
+
+gsutil -qm cp ./out/test.json "gs://minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:JOB_NAME.json" || VER>NUL
+gsutil -qm cp ./out/test.html "gs://minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:JOB_NAME.html" || VER>NUL
+                
+
 
 $env:target_url="https://storage.googleapis.com/minikube-builds/logs/$env:MINIKUBE_LOCATION/Hyper-V_Windows.txt"
 $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins`", `"target_url`": `"$env:target_url`", `"context`": `"Hyper-V_Windows`"}"
