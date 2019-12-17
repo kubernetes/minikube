@@ -16,10 +16,16 @@ limitations under the License.
 
 package config
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/exit"
+)
 
 var NodeCmd = &cobra.Command{
 	Use:   "node",
 	Short: "Node operations",
 	Long:  "Operations on nodes",
+	Run: func(cmd *cobra.Command, args []string) {
+		exit.UsageT("Usage: minikube node [add|start|stop|delete]")
+	},
 }
