@@ -26,19 +26,11 @@ Else {$env:status="failure"}
 
 type nul > out/test.json
 # generate json output using go tool test2json
-docker run --mount type=bind,source=out/test.json,target=/tmp/out.json \
-           --mount type=bind,source=out/test.out,target=/tmp/log.txt \
-           -i medyagh/gopogh:v0.0.13 \
-           sh -c "go tool test2json -t < /tmp/log.txt > /tmp/out.json" || VER>NUL
+docker run --mount type=bind,source=out/test.json,target=/tmp/out.json --mount type=bind,source=out/test.out,target=/tmp/log.txt -i medyagh/gopogh:v0.0.13 sh -c "go tool test2json -t < /tmp/log.txt > /tmp/out.json" || VER>NUL
 
 type nul > out/test.html # touch 
 # genearte html report
-docker run --rm --mount type=bind,source=test.json,target=/tmp/log.json \
-                --mount type=bind,source="out/test.html",target=/tmp/log.html \
-                -i medyagh/gopogh:v0.0.13 sh -c \
-                "/gopogh -in /tmp/log.json -out /tmp/log.html \ 
-                -name $env:JOB_NAME -pr $env:MINIKUBE_LOCATION \
-                -repo github.com/kubernetes/minikube/  -details $env:COMMIT" || VER>NUL
+docker run --rm --mount type=bind,source=test.json,target=/tmp/log.json --mount type=bind,source="out/test.html",target=/tmp/log.html -i medyagh/gopogh:v0.0.13 sh -c "/gopogh -in /tmp/log.json -out /tmp/log.html -name $env:JOB_NAME -pr $env:MINIKUBE_LOCATION -repo github.com/kubernetes/minikube/  -details $env:COMMIT" || VER>NUL
 
 gsutil -qm cp ./out/test.json "gs://minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:JOB_NAME.json" || VER>NUL
 gsutil -qm cp ./out/test.html "gs://minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:JOB_NAME.html" || VER>NUL
