@@ -316,7 +316,7 @@ ${DOCKER_BIN} run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json
                 -i medyagh/gopogh:v0.0.12 sh -c \
                 "/gopogh -in /tmp/log.json -out /tmp/log.html \ 
                 -name ${JOB_NAME} -pr ${6096}
-                --repo github.com/kubernetes/minikube/   -details ${COMMIT}"
+                -repo github.com/kubernetes/minikube/  -details ${COMMIT}"
                 || true
 echo ">> Copying ${HTML_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
