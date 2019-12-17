@@ -305,7 +305,7 @@ echo ">> Running go tool test2json"
 touch ${JSON_OUT}
 ${DOCKER_BIN} run --mount type=bind,source="${JSON_OUT}",target=/tmp/out.json \
            --mount type=bind,source="${TEST_OUT}",target=/tmp/log.txt \
-           -i medyagh/gopogh:v0.0.12 \
+           -i medyagh/gopogh:v0.0.13 \
            sh -c "go tool test2json -t < /tmp/log.txt > /tmp/out.json" || true
 
 # Generate HTML human readable test output
@@ -314,7 +314,7 @@ touch ${HTML_OUT}
 
 ${DOCKER_BIN} run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json \
                 --mount type=bind,source="${HTML_OUT}",target=/tmp/log.html \
-                -i medyagh/gopogh:v0.0.12 sh -c \
+                -i medyagh/gopogh:v0.0.13 sh -c \
                 "/gopogh -in /tmp/log.json -out /tmp/log.html \ 
                 -name ${JOB_NAME} -pr ${MINIKUBE_LOCATION} \
                 -repo github.com/kubernetes/minikube/  -details ${COMMIT}" || true
