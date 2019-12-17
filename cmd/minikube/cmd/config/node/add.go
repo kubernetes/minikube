@@ -18,16 +18,18 @@ package config
 
 import "github.com/spf13/cobra"
 
-var nodeDeleteCmd = &cobra.Command{
-	Use:   "delete",
-	Short: "Deletes a node from a cluster.",
-	Long:  "Deletes a node from a cluster.",
+var name string
+
+var nodeAddCmd = &cobra.Command{
+	Use:   "add",
+	Short: "Adds a node to the given cluster.",
+	Long:  "Adds a node to the given cluster config, without starting it.",
 	Run: func(cmd *cobra.Command, args []string) {
 
 	},
 }
 
 func init() {
-	nodeDeleteCmd.Flags().StringVar(&name, "name", "", "The name of the node to delete.")
-	NodeCmd.AddCommand(nodeDeleteCmd)
+	nodeAddCmd.Flags().StringVar(&name, "name", "", "The name of the node to add. Defaults to a variation of the profile name.")
+	NodeCmd.AddCommand(nodeAddCmd)
 }
