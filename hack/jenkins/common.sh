@@ -26,9 +26,6 @@
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
-readonly TEST_OUT="${TEST_HOME}/testout.txt"
-readonly JSON_OUT="${TEST_HOME}/test.json"
-readonly HTML_OUT="${TEST_HOME}/test.html"
 export PATH=$PATH:"/usr/local/bin/"
 
 echo ">> Starting at $(date)"
@@ -263,6 +260,10 @@ if [[ "${LOAD}" -gt 2 ]]; then
   uptime
 fi
 
+readonly TEST_OUT="${TEST_HOME}/testout.txt"
+readonly JSON_OUT="${TEST_HOME}/test.json"
+readonly HTML_OUT="${TEST_HOME}/test.html"
+
 e2e_start_time="$(date -u +%s)"
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
@@ -304,7 +305,7 @@ echo ">> Running go tool test2json"
 touch ${JSON_OUT}
 ${DOCKER_BIN} run --mount type=bind,source="${JSON_OUT}",target=/tmp/out.json \
            --mount type=bind,source="${TEST_OUT}",target=/tmp/log.txt \
-           -i medyagh/gopogh:v0.0.8 \
+           -i medyagh/gopogh:v0.0.12 \
            sh -c "go tool test2json -t < /tmp/log.txt > /tmp/out.json" || true
 
 # Generate HTML human readable test output
@@ -315,9 +316,9 @@ ${DOCKER_BIN} run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json
                 --mount type=bind,source="${HTML_OUT}",target=/tmp/log.html \
                 -i medyagh/gopogh:v0.0.12 sh -c \
                 "/gopogh -in /tmp/log.json -out /tmp/log.html \ 
-                -name ${JOB_NAME} -pr ${6096}
-                -repo github.com/kubernetes/minikube/  -details ${COMMIT}"
-                || true
+                -name ${JOB_NAME} -pr ${MINIKUBE_LOCATION} \
+                -repo github.com/kubernetes/minikube/  -details ${COMMIT}" || true
+                
 echo ">> Copying ${HTML_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
 gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
