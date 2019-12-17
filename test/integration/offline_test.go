@@ -44,11 +44,13 @@ func TestOffline(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--wait=true", "--container-runtime", runtime})
+				startArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--wait=true", "--container-runtime", runtime}
+				startArgs = append(startArgs, StartArgs()...)
 				c := exec.CommandContext(ctx, Target(), startArgs...)
 				env := os.Environ()
 				env = append(env, "HTTP_PROXYS=172.1.1.1")
 				env = append(env, "DOCKER_HOST=172.1.1.1")
+				c.Env = env
 				rr, err := Run(t, c)
 				if err != nil {
 					// Fatal so that we may collect logs before stop/delete steps
