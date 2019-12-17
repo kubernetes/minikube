@@ -268,6 +268,8 @@ e2e_start_time="$(date -u +%s)"
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 set -x
+rm ${TEST_OUT} || true # clean up build-reruns
+touch ${TEST_OUT}
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
@@ -302,6 +304,7 @@ echo ">> Copying html formatted logs ..."
 # Generate JSON format from test output 
 DOCKER_BIN="docker"
 echo ">> Running go tool test2json"
+rm ${JSON_OUT} || true # clean up build-reruns
 touch ${JSON_OUT}
 ${DOCKER_BIN} run --mount type=bind,source="${JSON_OUT}",target=/tmp/out.json \
            --mount type=bind,source="${TEST_OUT}",target=/tmp/log.txt \
@@ -310,14 +313,13 @@ ${DOCKER_BIN} run --mount type=bind,source="${JSON_OUT}",target=/tmp/out.json \
 
 # Generate HTML human readable test output
 echo ">> Running gopogh"
+rm ${HTML_OUT} || true # clean up build-reruns
 touch ${HTML_OUT}
 
 ${DOCKER_BIN} run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json \
                 --mount type=bind,source="${HTML_OUT}",target=/tmp/log.html \
                 -i medyagh/gopogh:v0.0.13 sh -c \
-                "/gopogh -in /tmp/log.json -out /tmp/log.html \ 
-                -name ${JOB_NAME} -pr ${MINIKUBE_LOCATION} \
-                -repo github.com/kubernetes/minikube/  -details ${COMMIT}" || true
+                "/gopogh -in /tmp/log.json -out /tmp/log.html -name ${JOB_NAME} -pr ${MINIKUBE_LOCATION} -repo github.com/kubernetes/minikube/  -details ${COMMIT}" || true
                 
 echo ">> Copying ${HTML_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
