@@ -41,6 +41,8 @@ echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
+echo "go:        $(/usr/local/go/bin/go version || true)"
+
 
 case "${VM_DRIVER}" in
   kvm2)
@@ -298,35 +300,40 @@ sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 description="completed with ${status} in ${elapsed} minute(s)."
 echo $description
+
 echo ">> Copying ${TEST_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}out.txt"
 gsutil -qm cp "${TEST_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}out.txt"
-echo ">> Copying html formatted logs ..."
-# Generate JSON format from test output 
-DOCKER_BIN="docker"
-echo ">> Running go tool test2json"
+
+
+echo ">> Attmpting to convert test logs to json"
 rm ${JSON_OUT} || true # clean up build-reruns
 touch ${JSON_OUT}
-${DOCKER_BIN} run --mount type=bind,source="${JSON_OUT}",target=/tmp/out.json \
-           --mount type=bind,source="${TEST_OUT}",target=/tmp/log.txt \
-           -i medyagh/gopogh:v0.0.13 \
-           sh -c "go tool test2json -t < /tmp/log.txt > /tmp/out.json" || true
+PATH=$PATH:"/usr/local/go/bin/" # for gopath
+# Generate JSON output
+go tool test2json -t < ${TEST_OUT} > ${JSON_OUT}
+RESULT=$?
+if [ $RESULT -eq 0 ]; then
+        # Generate HTML human readable test output
+      echo ">> Running gopogh"
+      rm ${HTML_OUT} || true # clean up build-reruns
+      touch ${HTML_OUT}
 
-# Generate HTML human readable test output
-echo ">> Running gopogh"
-rm ${HTML_OUT} || true # clean up build-reruns
-touch ${HTML_OUT}
 
-${DOCKER_BIN} run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json \
-                --mount type=bind,source="${HTML_OUT}",target=/tmp/log.html \
-                -i medyagh/gopogh:v0.0.13 sh -c \
-                "/gopogh -in /tmp/log.json -out /tmp/log.html -name ${JOB_NAME} -pr ${MINIKUBE_LOCATION} -repo github.com/kubernetes/minikube/  -details ${COMMIT}" || true
+      
+      ${DOCKER_BIN} run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json \
+                      --mount type=bind,source="${HTML_OUT}",target=/tmp/log.html \
+                      -i medyagh/gopogh:v0.0.13 sh -c \
+                      "/gopogh -in /tmp/log.json -out /tmp/log.html -name ${JOB_NAME} -pr ${MINIKUBE_LOCATION} -repo github.com/kubernetes/minikube/  -details ${COMMIT}" || true
+      echo ">> Copying ${HTML_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
+      gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
+      gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
+else
+  echo "go tool test2json is not installed, will skip generating HTML report output."
+fi
                 
-echo ">> Copying ${HTML_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
-gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
-gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 
 public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
-if [[ $(wc -l <${HTML_OUT}) -ge 3 ]]; then # if HTML generation was succesfull (would fail if docker is not installed)
+if [[ $(wc -l <${HTML_OUT}) -ge 1 ]]; then # if HTML generation was succesfull (would fail if docker is not installed)
   public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 fi
 
