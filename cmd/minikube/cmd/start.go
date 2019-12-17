@@ -105,6 +105,7 @@ const (
 	disableDriverMounts   = "disable-driver-mounts"
 	addons                = "addons"
 	cacheImages           = "cache-images"
+	useLocalCachedImages  = "use-local-cached-images"
 	uuid                  = "uuid"
 	vpnkitSock            = "hyperkit-vpnkit-sock"
 	vsockPorts            = "hyperkit-vsock-ports"
@@ -163,6 +164,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --vm-driver=none.")
+	startCmd.Flags().Bool(useLocalCachedImages, false, "If true, use local cached docker images without pulling them from remote. Always false with --vm-driver=none.")
 	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso.")
 	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
@@ -935,6 +937,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 			ImageRepository:        repository,
 			ExtraOptions:           extraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
+			UseLocalCachedImages:   viper.GetBool(useLocalCachedImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,
 		},
 	}
@@ -969,6 +972,11 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) error {
 	if !cmd.Flags().Changed(cacheImages) {
 		viper.Set(cacheImages, hints.CacheImages)
 	}
+
+	if !cmd.Flags().Changed(useLocalCachedImages) {
+		viper.Set(useLocalCachedImages, hints.UseLocalCachedImages)
+	}
+
 	return nil
 }
 

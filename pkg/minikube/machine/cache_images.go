@@ -109,22 +109,23 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
-			ref, err := name.ParseReference(image, name.WeakValidation)
-			if err != nil {
-				return errors.Wrap(err, "image name reference")
-			}
-
-			img, err := retrieveImage(ref)
-			if err != nil {
-				return errors.Wrap(err, "fetching image")
-			}
-			cf, err := img.ConfigName()
-			hash := cf.Hex
-			if err != nil {
-				glog.Infof("error retrieving image manifest for %s to check if it already exists: %v", image, err)
-			} else if cr.ImageExists(image, hash) {
-				glog.Infof("skipping re-loading image %q because sha %q already exists ", image, hash)
-				return nil
+			if !cc.KubernetesConfig.UseLocalCachedImages {
+				ref, err := name.ParseReference(image, name.WeakValidation)
+				if err != nil {
+					return errors.Wrap(err, "image name reference")
+				}
+				img, err := retrieveImage(ref)
+				if err != nil {
+					return errors.Wrap(err, "fetching image")
+				}
+				cf, err := img.ConfigName()
+				hash := cf.Hex
+				if err != nil {
+					glog.Infof("error retrieving image manifest for %s to check if it already exists: %v", image, err)
+				} else if cr.ImageExists(image, hash) {
+					glog.Infof("skipping re-loading image %q because sha %q already exists ", image, hash)
+					return nil
+				}
 			}
 			if err := transferAndLoadImage(runner, cc.KubernetesConfig, image, cacheDir); err != nil {
 				glog.Warningf("Failed to load %s: %v", image, err)

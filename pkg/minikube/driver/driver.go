@@ -73,14 +73,15 @@ func BareMetal(name string) bool {
 
 // FlagHints are hints for what default options should be used for this driver
 type FlagHints struct {
-	ExtraOptions string
-	CacheImages  bool
+	ExtraOptions         string
+	CacheImages          bool
+	UseLocalCachedImages bool
 }
 
 // FlagDefaults returns suggested defaults based on a driver
 func FlagDefaults(name string) FlagHints {
 	if name != None {
-		return FlagHints{CacheImages: true}
+		return FlagHints{CacheImages: true, UseLocalCachedImages: false}
 	}
 
 	extraOpts := ""
@@ -88,8 +89,9 @@ func FlagDefaults(name string) FlagHints {
 		extraOpts = fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
 	}
 	return FlagHints{
-		ExtraOptions: extraOpts,
-		CacheImages:  false,
+		ExtraOptions:         extraOpts,
+		CacheImages:          false,
+		UseLocalCachedImages: false,
 	}
 }
 
