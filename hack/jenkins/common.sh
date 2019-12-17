@@ -292,7 +292,7 @@ echo $description
 
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
-${SUDO_PREFIX}${MINIKUBE_BIN} delete >/dev/null 2>/dev/null || true
+${SUDO_PREFIX}${MINIKUBE_BIN} delete --all >/dev/null 2>/dev/null || true
 cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
