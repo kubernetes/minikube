@@ -84,16 +84,9 @@ var ImageRepositories = map[string][]string{
 	"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
 }
 
-// KubeadmBinaries are Kubernetes release binaries required for kubeadm
-var KubeadmBinaries = []string{"kubelet", "kubeadm"}
-
-const (
-	// KubectlBinary is the name of the kubectl binary installed in minikube
-	KubectlBinary = "kubectl"
-	// KubectlBinaryVersion is the version of kubectl installed in minikube
-	// it's set to v1.13.2 to match the kubectl version in the addon manager image
-	KubectlBinaryVersion = "v1.13.2"
-)
+// KubernetesReleaseBinaries are Kubernetes release binaries required for
+// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)
+var KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
 
 // ImageCacheDir is the path to the image cache directory
 var ImageCacheDir = localpath.MakeMiniPath("cache", "images")
