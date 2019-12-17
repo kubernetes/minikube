@@ -16,7 +16,12 @@ limitations under the License.
 
 package config
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/exit"
+)
 
 var name string
 
@@ -26,6 +31,11 @@ var nodeAddCmd = &cobra.Command{
 	Long:  "Adds a node to the given cluster config, without starting it.",
 	Run: func(cmd *cobra.Command, args []string) {
 
+		profile := viper.GetString(config.MachineProfile)
+		cc, err := config.Load(profile)
+		if err != nil {
+			exit.WithError(err)
+		}
 	},
 }
 

@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -43,7 +44,7 @@ type Bootstrapper interface {
 	WaitForCluster(config.KubernetesConfig, time.Duration) error
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(LogOptions) map[string]string
-	SetupCerts(cfg config.KubernetesConfig) error
+	SetupCerts(command.Runner, config.KubernetesConfig, config.Node) error
 	GetKubeletStatus() (string, error)
 	GetAPIServerStatus(net.IP, int) (string, error)
 }

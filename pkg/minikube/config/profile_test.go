@@ -176,7 +176,7 @@ func TestCreateProfile(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		n := tc.name // capturing  loop variable
-		gotErr := CreateProfile(n, tc.cfg, miniDir)
+		gotErr := SaveProfile(n, tc.cfg, miniDir)
 		if gotErr != nil && tc.expectErr == false {
 			t.Errorf("expected CreateEmptyProfile not to error but got err=%v", gotErr)
 		}
