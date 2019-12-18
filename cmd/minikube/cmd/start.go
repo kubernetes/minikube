@@ -315,6 +315,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to generate config", err)
 	}
 
+	fmt.Println("Got here")
 	if !driver.BareMetal(driverName) {
 		if err := cluster.CacheISO(config); err != nil {
 			exit.WithError("Failed to cache ISO", err)
