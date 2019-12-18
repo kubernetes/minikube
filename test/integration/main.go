@@ -35,7 +35,7 @@ var cleanup = flag.Bool("cleanup", true, "cleanup failed test run")
 var enableGvisor = flag.Bool("gvisor", false, "run gvisor integration test (slow)")
 
 // Ensure that multiple calls to startMachine do not collide with one another
-var startOffset = flag.Duration("start-offset", 45*time.Second, "how much time to offset between cluster starts")
+var startOffset = flag.Duration("start-offset", 50*time.Second, "how much time to offset between cluster starts")
 var postMortemLogs = flag.Bool("postmortem-logs", true, "show logs after a failed test run")
 
 // Paths to files - normally set for CI

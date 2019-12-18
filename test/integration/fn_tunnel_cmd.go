@@ -71,7 +71,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", 2*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", 4*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 

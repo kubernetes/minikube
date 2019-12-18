@@ -164,10 +164,15 @@ func TestStartStop(t *testing.T) {
 					gotImages := []string{}
 					for _, img := range jv["images"] {
 						for _, i := range img.Tags {
-							// Ignore non-Kubernetes images
-							if !strings.Contains(i, "ingress") && !strings.Contains(i, "busybox") {
-								// Remove docker.io for naming consistency between container runtimes
-								gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
+							// Ignore images deployed by addons
+							if strings.Contains(i, "k8s.gcr.io") || strings.Contains(i, "kubernetesui") || strings.Contains(i, "k8s-minikube") {
+								// May be pulled in by an unrelated addon
+								if !strings.Contains(i, "pause:latest") {
+									// Remove docker.io for naming consistency between container runtimes
+									gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
+								}
+							} else {
+								t.Logf("Found unexpected foreign image (not fatal): %s", i)
 							}
 						}
 					}
@@ -184,7 +189,7 @@ func TestStartStop(t *testing.T) {
 
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute); err != nil {
 					t.Fatalf("wait: %v", err)
 				}
 
