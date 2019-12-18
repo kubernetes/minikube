@@ -90,7 +90,7 @@ func (d *Driver) Create() error {
 
 	_, err := node.CreateNode(params)
 	if err != nil {
-		return errors.Wrap(err, "create kic from spec")
+		return errors.Wrap(err, "create kic node")
 	}
 	return nil
 }

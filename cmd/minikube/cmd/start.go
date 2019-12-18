@@ -315,8 +315,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to generate config", err)
 	}
 
-	fmt.Println("Got here")
-	if !driver.BareMetal(driverName) {
+	if !driver.BareMetal(driverName) && !driver.IsKIC(driverName) {
 		if err := cluster.CacheISO(config); err != nil {
 			exit.WithError("Failed to cache ISO", err)
 		}
@@ -341,6 +340,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// exits here in case of --download-only option.
 	handleDownloadOnly(&cacheGroup, k8sVersion)
 	mRunner, preExists, machineAPI, host := startMachine(&config)
+	fmt.Println("After startMachine &config")
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(mRunner, driverName, config.KubernetesConfig)
@@ -478,12 +478,16 @@ func startMachine(config *cfg.MachineConfig) (runner command.Runner, preExists b
 		exit.WithError("Failed to get machine client", err)
 	}
 	host, preExists = startHost(m, *config)
+	fmt.Println("after startHost(m, *config)")
 	runner, err = machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
 	}
+	fmt.Println("after machine.CommandRunner(host)")
 
 	ip := validateNetwork(host, runner)
+	fmt.Println("after validateNetwork")
+
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
@@ -977,6 +981,12 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) error {
 		glog.Infof("auto set container runtime to %s for kic driver.", hints.ContainerRuntime)
 
 	}
+	if !cmd.Flags().Changed("bootstrapper") && hints.Bootstrapper != "" {
+		viper.Set(cmdcfg.Bootstrapper, hints.Bootstrapper)
+		glog.Infof("auto set bootstrapper to %s for kic driver.", hints.Bootstrapper)
+
+	}
+
 	return nil
 }
 

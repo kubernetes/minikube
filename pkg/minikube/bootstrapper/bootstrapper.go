@@ -51,6 +51,7 @@ type Bootstrapper interface {
 const (
 	// BootstrapperTypeKubeadm is the kubeadm bootstrapper type
 	BootstrapperTypeKubeadm = "kubeadm"
+	BootstrapperTypeKICBS   = "kicbs"
 )
 
 // GetCachedBinaryList returns the list of binaries
@@ -68,6 +69,8 @@ func GetCachedImageList(imageRepository string, version string, bootstrapper str
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
 		return images.Kubeadm(imageRepository, version)
+	case BootstrapperTypeKICBS:
+		return []string{"alpine"}, nil // for testing purpose just caching alpine for kicbs
 	default:
 		return []string{}, nil
 	}
