@@ -25,6 +25,7 @@ var supportedDrivers = []string{
 	VMwareFusion,
 	HyperKit,
 	VMware,
+	KicDocker,
 }
 
 func VBoxManagePath() string {
