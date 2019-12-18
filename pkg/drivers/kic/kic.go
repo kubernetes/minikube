@@ -24,8 +24,8 @@ import (
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/node"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/pkg/drivers/kic/cri"
 )
 
 // https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
@@ -78,9 +78,9 @@ func (d *Driver) Create() error {
 		CPUs:              strconv.Itoa(d.CPU),           //TODO: change kic to take int
 		Memory:            strconv.Itoa(d.Memory) + "mb", // TODO: change kic to take int
 		Role:              "control-plane",
-		ExtraMounts:       []cri.Mount{},
-		ExtraPortMappings: []cri.PortMapping{},
-		APIServerAddress:  "127.0.0.1", // MEDYA:TODO make configurable
+		ExtraMounts:       []oci.Mount{},
+		ExtraPortMappings: []oci.PortMapping{},
+		APIServerAddress:  "127.0.0.1", // medyagh:TODO make configurable
 		APIServerPort:     d.APIServerPort,
 		IPv6:              false, // MEDYA:TODO add proxy envs here
 	}
