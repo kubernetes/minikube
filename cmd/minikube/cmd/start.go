@@ -969,6 +969,13 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) error {
 	if !cmd.Flags().Changed(cacheImages) {
 		viper.Set(cacheImages, hints.CacheImages)
 	}
+
+	// currently only used for kic
+	if !cmd.Flags().Changed(containerRuntime) && hints.ContainerRuntime != "" {
+		viper.Set(containerRuntime, hints.ContainerRuntime)
+		glog.Infof("auto set container runtime to %s for kic driver.", hints.ContainerRuntime)
+
+	}
 	return nil
 }
 
