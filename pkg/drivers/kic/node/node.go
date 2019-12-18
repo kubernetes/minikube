@@ -34,7 +34,7 @@ import (
 const (
 	// Docker default bridge network is named "bridge" (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
 	DefaultNetwork  = "bridge"
-	ClusterLabelKey = "io.x-k8s.kind.cluster" // ClusterLabelKey is applied to each node docker container for identification
+	ClusterLabelKey = "io.x-k8s.kic.cluster" // ClusterLabelKey is applied to each node docker container for identification
 	NodeRoleKey     = "io.k8s.sigs.kic.role"
 	DefaultOci      = "docker"
 )
@@ -156,10 +156,12 @@ type CreateParams struct {
 	Memory       string
 	Envs         map[string]string
 	ExtraArgs    []string
+	OCIBinary    string
 }
 
-// todo use a struct for this
-func CreateNode(p CreateParams, cmder command.Runner) (*Node, error) {
+// CreateNode creates a new container node
+func CreateNode(p CreateParams) (*Node, error) {
+	cmder := command.NewKICRunner(p.Name, p.OCIBinary)
 	runArgs := []string{
 		fmt.Sprintf("--cpus=%s", p.Cpus),
 		fmt.Sprintf("--memory=%s", p.Memory),

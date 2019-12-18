@@ -35,13 +35,10 @@ import (
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
-	URL           string
-	exec          command.Runner
-	OciBinary     string
-	ImageSha      string
-	CPU           int
-	Memory        int
-	APIServerPort int32
+	URL        string
+	exec       command.Runner
+	NodeConfig Config
+	OCIBinary  string // docker,podman
 }
 
 // Config is configuration for the kic driver
@@ -50,9 +47,12 @@ type Config struct {
 	CPU           int
 	Memory        int
 	StorePath     string
-	OciBinary     string // oci tool to use (docker, podman,...)
+	OCIBinary     string // oci tool to use (docker, podman,...)
 	ImageDigest   string // image name with sha to use for the node
 	APIServerPort int32  // port to connect to forward from container to user's machine
+	Mounts        []oci.Mount
+	PortMappings  []oci.PortMapping
+	Envs          map[string]string // key,value of envinronment variables passed to the node
 }
 
 // NewDriver returns a fully configured Kic driver
@@ -62,33 +62,33 @@ func NewDriver(c Config) *Driver {
 			MachineName: c.MachineName,
 			StorePath:   c.StorePath,
 		},
-		exec:          command.NewKICRunner(c.MachineName, c.OciBinary),
-		OciBinary:     c.OciBinary,
-		ImageSha:      c.ImageDigest,
-		CPU:           c.CPU,
-		Memory:        c.Memory,
-		APIServerPort: c.APIServerPort,
+		exec:       command.NewKICRunner(c.MachineName, c.OCIBinary),
+		NodeConfig: c,
 	}
 	return d
 }
 
 // Create a host using the driver's config
 func (d *Driver) Create() error {
-	ks := &node.Spec{ // kic spec
-		Profile:           d.MachineName,
-		Name:              d.MachineName,
-		Image:             d.ImageSha,
-		CPUs:              strconv.Itoa(d.CPU),           //TODO: change kic to take int
-		Memory:            strconv.Itoa(d.Memory) + "mb", // TODO: change kic to take int
-		Role:              "control-plane",
-		ExtraMounts:       []oci.Mount{},
-		ExtraPortMappings: []oci.PortMapping{},
-		APIServerAddress:  "127.0.0.1", // medyagh:TODO make configurable
-		APIServerPort:     d.APIServerPort,
-		IPv6:              false, // MEDYA:TODO add proxy envs here
+	params := node.CreateParams{ // TODO:medyagh simplify this to have less overla
+		Name:         d.NodeConfig.MachineName,
+		Image:        d.NodeConfig.ImageDigest,
+		ClusterLabel: node.ClusterLabelKey + "=" + d.MachineName,
+		Cpus:         strconv.Itoa(d.NodeConfig.CPU),
+		Memory:       strconv.Itoa(d.NodeConfig.Memory) + "mb",
+		Envs:         d.NodeConfig.Envs,
+		ExtraArgs:    []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
+		OCIBinary:    d.NodeConfig.OCIBinary,
 	}
 
-	err := ks.Create(command.NewKICRunner(d.MachineName, d.OciBinary))
+	// control plane specific options
+	params.PortMappings = append(params.PortMappings, oci.PortMapping{
+		ListenAddress: "127.0.0.1",
+		HostPort:      d.NodeConfig.APIServerPort,
+		ContainerPort: 6443,
+	})
+
+	_, err := node.CreateNode(params)
 	if err != nil {
 		return errors.Wrap(err, "create kic from spec")
 	}
@@ -97,7 +97,7 @@ func (d *Driver) Create() error {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	if d.OciBinary == "podman" {
+	if d.NodeConfig.OCIBinary == "podman" {
 		return "podman"
 	}
 	return "docker"
@@ -130,7 +130,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	cmd := exec.Command(d.OciBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
+	cmd := exec.Command(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
 	out, err := cmd.CombinedOutput()
 	o := strings.Trim(string(out), "\n")
 	if err != nil {
@@ -157,7 +157,7 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	cmd := exec.Command(d.OciBinary, "kill", d.MachineName)
+	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "killing kic node %s", d.MachineName)
 	}
@@ -169,7 +169,7 @@ func (d *Driver) Remove() error {
 	if _, err := d.nodeID(d.MachineName); err != nil {
 		return errors.Wrapf(err, "not found node %s", d.MachineName)
 	}
-	cmd := exec.Command(d.OciBinary, "rm", "-f", "-v", d.MachineName)
+	cmd := exec.Command(d.NodeConfig.OCIBinary, "rm", "-f", "-v", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "error removing node %s", d.MachineName)
 	}
@@ -204,7 +204,7 @@ func (d *Driver) Restart() error {
 
 // Unpause a kic container
 func (d *Driver) Unpause() error {
-	cmd := exec.Command(d.OciBinary, "pause", d.MachineName)
+	cmd := exec.Command(d.NodeConfig.OCIBinary, "pause", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "unpausing %s", d.MachineName)
 	}
@@ -219,7 +219,7 @@ func (d *Driver) Start() error {
 		return errors.Wrap(err, "get kic state")
 	}
 	if s == state.Stopped {
-		cmd := exec.Command(d.OciBinary, "start", d.MachineName)
+		cmd := exec.Command(d.NodeConfig.OCIBinary, "start", d.MachineName)
 		if err := cmd.Run(); err != nil {
 			return errors.Wrapf(err, "starting a stopped kic node %s", d.MachineName)
 		}
@@ -230,7 +230,7 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
-	cmd := exec.Command(d.OciBinary, "stop", d.MachineName)
+	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)
 	}
@@ -244,7 +244,7 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 
 // looks up for a container node by name, will return error if not found.
 func (d *Driver) nodeID(nameOrID string) (string, error) {
-	cmd := exec.Command(d.OciBinary, "inspect", "-f", "{{.Id}}", nameOrID)
+	cmd := exec.Command(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.Id}}", nameOrID)
 	id, err := cmd.CombinedOutput()
 	if err != nil {
 		id = []byte{}

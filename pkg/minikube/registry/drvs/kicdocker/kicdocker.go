@@ -42,18 +42,18 @@ func init() {
 }
 
 func configure(mc config.MachineConfig) interface{} {
-	imgSha, err := kic.ImageForVersion(mc.KubernetesConfig.KubernetesVersion)
+	img, err := kic.ImageForVersion(mc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
-		glog.Errorf("Failed to getting image name for %s: imgesha:%s", imgSha, mc.KubernetesConfig.KubernetesVersion)
+		glog.Errorf("err to getting kic image for %s: imgesha:%s", img, mc.KubernetesConfig.KubernetesVersion)
 	}
 	return kic.NewDriver(kic.Config{
 		MachineName:   mc.Name,
 		StorePath:     localpath.MiniPath(),
-		ImageSha:      imgSha,
+		ImageDigest:   img,
 		CPU:           mc.CPUs,
 		Memory:        mc.Memory,
 		APIServerPort: mc.NodeBindPort,
-		OciBinary:     "docker",
+		OCIBinary:     "docker",
 	})
 
 }
