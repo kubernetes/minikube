@@ -171,7 +171,7 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 // validateAddonManager asserts that the kube-addon-manager pod is deployed properly
 func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
 	// If --wait=false, this may take a couple of minutes
-	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 5*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 10*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 }
@@ -456,7 +456,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 5*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 10*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -599,7 +599,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "app=mysql", 5*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "app=mysql", 10*time.Minute)
 	if err != nil {
 		t.Fatalf("podwait: %v", err)
 	}
