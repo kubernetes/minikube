@@ -74,7 +74,7 @@ var deleteCacheCmd = &cobra.Command{
 var reloadCacheCmd = &cobra.Command{
 	Use:   "reload",
 	Short: "reload cached images.",
-	Long:  "reloads the cached images specificed by user in the config file.",
+	Long:  "reloads images previously added using the 'cache add' subcommand",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := cacheAndLoadImagesInConfig()
 		if err != nil {
