@@ -15,30 +15,22 @@ package oci
 
 import (
 	"os"
-	"os/exec"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
 
 	"bufio"
 	"bytes"
-	"os/exec"
 
 	"github.com/pkg/errors"
 
-	"bufio"
-	"bytes"
 	"fmt"
 	"net"
 	"os/exec"
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/drives/kic/cri"
-
 	"github.com/cenkalti/backoff"
-	"github.com/pkg/errors"
 )
 
 // can be podman
@@ -201,7 +193,7 @@ https://github.com/kubernetes/kubernetes/blob/07a5488b2a8f67add543da72e8819407d8
 // is a comma-separated list of the following strings:
 // 'ro', if the path is read only
 // 'Z', if the volume requires SELinux relabeling
-func generateMountBindings(mounts ...cri.Mount) []string {
+func generateMountBindings(mounts ...Mount) []string {
 	result := make([]string, 0, len(mounts))
 	for _, m := range mounts {
 		bind := fmt.Sprintf("%s:%s", m.HostPath, m.ContainerPath)
@@ -217,11 +209,11 @@ func generateMountBindings(mounts ...cri.Mount) []string {
 			attrs = append(attrs, "Z")
 		}
 		switch m.Propagation {
-		case cri.MountPropagationNone:
+		case MountPropagationNone:
 			// noop, private is default
-		case cri.MountPropagationBidirectional:
+		case MountPropagationBidirectional:
 			attrs = append(attrs, "rshared")
-		case cri.MountPropagationHostToContainer:
+		case MountPropagationHostToContainer:
 			attrs = append(attrs, "rslave")
 		default:
 			// Falls back to "private"
@@ -285,7 +277,7 @@ func UsernsRemap() bool {
 	return false
 }
 
-func generatePortMappings(portMappings ...cri.PortMapping) []string {
+func generatePortMappings(portMappings ...PortMapping) []string {
 	result := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {
 		var hostPortBinding string
@@ -325,8 +317,8 @@ type CreateOpt func(*createOpts) *createOpts
 type createOpts struct {
 	RunArgs       []string
 	ContainerArgs []string
-	Mounts        []cri.Mount
-	PortMappings  []cri.PortMapping
+	Mounts        []Mount
+	PortMappings  []PortMapping
 }
 
 // CreateContainer creates a container with "docker/podman run"
@@ -382,7 +374,7 @@ func WithRunArgs(args ...string) CreateOpt {
 }
 
 // WithMounts sets the container mounts
-func WithMounts(mounts []cri.Mount) CreateOpt {
+func WithMounts(mounts []Mount) CreateOpt {
 	return func(r *createOpts) *createOpts {
 		r.Mounts = mounts
 		return r
@@ -390,7 +382,7 @@ func WithMounts(mounts []cri.Mount) CreateOpt {
 }
 
 // WithPortMappings sets the container port mappings to the host
-func WithPortMappings(portMappings []cri.PortMapping) CreateOpt {
+func WithPortMappings(portMappings []PortMapping) CreateOpt {
 	return func(r *createOpts) *createOpts {
 		r.PortMappings = portMappings
 		return r
@@ -398,16 +390,15 @@ func WithPortMappings(portMappings []cri.PortMapping) CreateOpt {
 }
 
 // Copy copies a local asset into the container
-func Copy(ociBinary string, ociID string, asset assets.CopyAsset) error {
-	if _, err := os.Stat(asset.AssetName); os.IsNotExist(err) {
-		return errors.Wrapf(err, "error source %s does not exist", asset.AssetName)
+func Copy(ociBinary string, ociID string, asset assets.CopyableFile) error {
+	if _, err := os.Stat(asset.GetAssetName()); os.IsNotExist(err) {
+		return errors.Wrapf(err, "error source %s does not exist", asset.GetAssetName())
 	}
-
-	destination := fmt.Sprintf("%s:%s", ociID, asset.TargetPath())
-	cmd := exec.Command(ociBinary, "cp", asset.AssetName, destination)
+	destination := fmt.Sprintf("%s:%s", ociID, asset.GetTargetDir())
+	cmd := exec.Command(ociBinary, "cp", asset.GetAssetName(), destination)
 	err := cmd.Run()
 	if err != nil {
-		return errors.Wrapf(err, "error copying %s into node", asset.AssetName)
+		return errors.Wrapf(err, "error copying %s into node", asset.GetAssetName())
 	}
 	return nil
 }

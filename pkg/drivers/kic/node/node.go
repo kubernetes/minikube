@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine/state"
-	"k8s.io/minikube/pkg/drivers/kic/cri"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -113,12 +112,13 @@ func (n *Node) LoadImageArchive(image io.Reader) error {
 }
 
 // Copy copies a local asset into the node
-func (n *Node) Copy(ociBinary string, asset assets.CopyAsset) error {
+func (n *Node) Copy(ociBinary string, asset assets.CopyableFile) error {
 	if err := oci.Copy(ociBinary, n.name, asset); err != nil {
 		return errors.Wrap(err, "failed to copy file/folder")
 	}
 
-	cmd := exec.Command("chmod", asset.Permissions, asset.TargetPath())
+	// TODO: medya verify add tests
+	cmd := exec.Command("chmod", asset.GetPermissions(), asset.GetTargetName())
 	if _, err := n.R.RunCmd(cmd); err != nil {
 		return errors.Wrap(err, "failed to chmod file permissions")
 	}
@@ -150,8 +150,8 @@ type CreateParams struct {
 	Image        string // container image to use to create the node.
 	ClusterLabel string
 	Role         string // currently only role supported is control-plane
-	Mounts       []cri.Mount
-	PortMappings []cri.PortMapping
+	Mounts       []oci.Mount
+	PortMappings []oci.PortMapping
 	Cpus         string
 	Memory       string
 	Envs         map[string]string

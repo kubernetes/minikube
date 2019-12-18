@@ -24,7 +24,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/drivers/kic/cri"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 )
 
@@ -37,8 +37,8 @@ type Spec struct {
 	Image             string // for example  4000mb based on https://docs.docker.com/config/containers/resource_constraints/
 	CPUs              string // for example 2
 	Memory            string
-	ExtraMounts       []cri.Mount
-	ExtraPortMappings []cri.PortMapping
+	ExtraMounts       []oci.Mount
+	ExtraPortMappings []oci.PortMapping
 	APIServerPort     int32
 	APIServerAddress  string
 	IPv6              bool
@@ -60,7 +60,7 @@ func (d *Spec) Create(cmder command.Runner) (node *Node, err error) {
 
 	switch d.Role {
 	case "control-plane":
-		params.PortMappings = append(params.PortMappings, cri.PortMapping{
+		params.PortMappings = append(params.PortMappings, oci.PortMapping{
 			ListenAddress: d.APIServerAddress,
 			HostPort:      d.APIServerPort,
 			ContainerPort: 6443,

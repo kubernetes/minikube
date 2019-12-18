@@ -127,24 +127,24 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 		fc := make([]byte, f.GetLength()) // Read  asset file into a []byte
 		if _, err := f.Read(fc); err != nil {
 			return errors.Wrap(err, "can't copy non-existing file")
-		} else { // we have a MemoryAsset, will write to disk before copying
-			tmpFile, err := ioutil.TempFile(os.TempDir(), "tmpf-memory-asset")
-			if err != nil {
-				return errors.Wrap(err, "creating temporary file")
-			}
-			//  clean up the temp file
-			defer os.Remove(tmpFile.Name())
-			if _, err = tmpFile.Write(fc); err != nil {
-				return errors.Wrap(err, "write to temporary file")
-			}
+		} // we have a MemoryAsset, will write to disk before copying
 
-			// Close the file
-			if err := tmpFile.Close(); err != nil {
-				return errors.Wrap(err, "close temporary file")
-			}
-			assetName = tmpFile.Name()
-
+		tmpFile, err := ioutil.TempFile(os.TempDir(), "tmpf-memory-asset")
+		if err != nil {
+			return errors.Wrap(err, "creating temporary file")
 		}
+		//  clean up the temp file
+		defer os.Remove(tmpFile.Name())
+		if _, err = tmpFile.Write(fc); err != nil {
+			return errors.Wrap(err, "write to temporary file")
+		}
+
+		// Close the file
+		if err := tmpFile.Close(); err != nil {
+			return errors.Wrap(err, "close temporary file")
+		}
+		assetName = tmpFile.Name()
+
 	}
 	// based of format of "docker cp containerName:destination"
 	destination := fmt.Sprintf("%s:%s/%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
