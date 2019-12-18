@@ -45,7 +45,7 @@ type Spec struct {
 	Envs              map[string]string // environment variables to be passsed to passed to create nodes
 }
 
-func (d *Spec) Create(cmder command.Runner) (node *Node, err error) {
+func (d *Spec) Create(cmder command.Runner) (err error) {
 	params := CreateParams{
 		Name:         d.Name,
 		Image:        d.Image,
@@ -65,22 +65,17 @@ func (d *Spec) Create(cmder command.Runner) (node *Node, err error) {
 			HostPort:      d.APIServerPort,
 			ContainerPort: 6443,
 		})
-		node, err = CreateNode(
+		_, err = CreateNode(
 			params,
 			cmder,
 		)
 		if err != nil {
-			return node, err
+			return err
 		}
-
-		// stores the port mapping into the node internal state
-		node.cache.set(func(cache *nodeCache) {
-			cache.ports = map[int32]int32{6443: d.APIServerPort}
-		})
-		return node, nil
+		return nil
 
 	default:
-		return nil, fmt.Errorf("unknown node role: %s", d.Role)
+		return fmt.Errorf("unknown node role: %s", d.Role)
 	}
 }
 
