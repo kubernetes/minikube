@@ -107,7 +107,8 @@ func TestStartStop(t *testing.T) {
 						t.Fatalf("%s failed: %v", rr.Args, err)
 					}
 
-					names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute)
+					// 8 minutes, because 4 is not enough for images to pull in all cases.
+					names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 8*time.Minute)
 					if err != nil {
 						t.Fatalf("wait: %v", err)
 					}
