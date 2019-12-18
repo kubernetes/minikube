@@ -317,13 +317,7 @@ if [ $RESULT -eq 0 ]; then
       echo ">> Running gopogh"
       rm ${HTML_OUT} || true # clean up build-reruns
       touch ${HTML_OUT}
-
-
-      
-      ${DOCKER_BIN} run --rm --mount type=bind,source=${JSON_OUT},target=/tmp/log.json \
-                      --mount type=bind,source="${HTML_OUT}",target=/tmp/log.html \
-                      -i medyagh/gopogh:v0.0.13 sh -c \
-                      "/gopogh -in /tmp/log.json -out /tmp/log.html -name ${JOB_NAME} -pr ${MINIKUBE_LOCATION} -repo github.com/kubernetes/minikube/  -details ${COMMIT}" || true
+      gopogh -in ${JSON_OUT} -out ${HTML_OUT} -name ${JOB_NAME} -pr ${MINIKUBE_LOCATION} -repo github.com/kubernetes/minikube/  -details ${COMMIT} || true
       echo ">> Copying ${HTML_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
       gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
       gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
@@ -333,7 +327,7 @@ fi
                 
 
 public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
-if [[ $(wc -l <${HTML_OUT}) -ge 1 ]]; then # if HTML generation was succesfull (would fail if docker is not installed)
+if [[ $(wc -l <${HTML_OUT}) -ge 1 ]]; then # if HTML generation was succesfull (would fail if gopogh is not installed)
   public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
 fi
 
