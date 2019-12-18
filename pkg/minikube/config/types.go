@@ -64,6 +64,7 @@ type MachineConfig struct {
 	KubernetesConfig    KubernetesConfig
 	HostOnlyNicType     string // Only used by virtualbox
 	NatNicType          string // Only used by virtualbox
+	Addons              map[string]bool
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

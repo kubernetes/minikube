@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -68,9 +69,18 @@ func ProfileExists(name string, miniHome ...string) bool {
 		miniPath = miniHome[0]
 	}
 
-	p := profileFilePath(name, miniPath)
+	p := ProfileFilePath(name, miniPath)
 	_, err := os.Stat(p)
 	return err == nil
+}
+
+// CurrentProfile returns the name of the current profile
+func CurrentProfile() string {
+	profile := viper.GetString(MachineProfile)
+	if profile != "" {
+		return profile
+	}
+	return "minikube"
 }
 
 // CreateEmptyProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
@@ -85,7 +95,7 @@ func CreateProfile(name string, cfg *MachineConfig, miniHome ...string) error {
 	if err != nil {
 		return err
 	}
-	path := profileFilePath(name, miniHome...)
+	path := ProfileFilePath(name, miniHome...)
 	glog.Infof("Saving config to %s ...", path)
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
@@ -181,8 +191,8 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 	return dirs, err
 }
 
-// profileFilePath returns the Minikube profile config file
-func profileFilePath(profile string, miniHome ...string) string {
+// ProfileFilePath returns the Minikube profile config file
+func ProfileFilePath(profile string, miniHome ...string) string {
 	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
 		miniPath = miniHome[0]

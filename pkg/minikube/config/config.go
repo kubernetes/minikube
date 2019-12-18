@@ -140,7 +140,7 @@ var DefaultLoader Loader = &simpleConfigLoader{}
 func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*MachineConfig, error) {
 	var cc MachineConfig
 	// Move to profile package
-	path := profileFilePath(profileName, miniHome...)
+	path := ProfileFilePath(profileName, miniHome...)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err
