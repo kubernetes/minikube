@@ -25,7 +25,6 @@ import (
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/command"
 )
 
 // Spec describes a node to create purely from the container aspect
@@ -43,40 +42,6 @@ type Spec struct {
 	APIServerAddress  string
 	IPv6              bool
 	Envs              map[string]string // environment variables to be passsed to passed to create nodes
-}
-
-func (d *Spec) Create(cmder command.Runner) (err error) {
-	params := CreateParams{
-		Name:         d.Name,
-		Image:        d.Image,
-		ClusterLabel: ClusterLabelKey + "=" + d.Profile,
-		Mounts:       d.ExtraMounts,
-		PortMappings: d.ExtraPortMappings,
-		Cpus:         d.CPUs,
-		Memory:       d.Memory,
-		Envs:         d.Envs,
-		ExtraArgs:    []string{"--expose", fmt.Sprintf("%d", d.APIServerPort)},
-	}
-
-	switch d.Role {
-	case "control-plane":
-		params.PortMappings = append(params.PortMappings, oci.PortMapping{
-			ListenAddress: d.APIServerAddress,
-			HostPort:      d.APIServerPort,
-			ContainerPort: 6443,
-		})
-		_, err = CreateNode(
-			params,
-			cmder,
-		)
-		if err != nil {
-			return err
-		}
-		return nil
-
-	default:
-		return fmt.Errorf("unknown node role: %s", d.Role)
-	}
 }
 
 // ListNodes lists all the nodes (containers) created by kic on the system
