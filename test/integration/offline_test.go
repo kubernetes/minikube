@@ -48,8 +48,10 @@ func TestOffline(t *testing.T) {
 				startArgs = append(startArgs, StartArgs()...)
 				c := exec.CommandContext(ctx, Target(), startArgs...)
 				env := os.Environ()
-				env = append(env, "HTTP_PROXYS=172.1.1.1")
-				env = append(env, "DOCKER_HOST=172.1.1.1")
+				// RFC1918 address that unlikely to host working a proxy server
+				env = append(env, "HTTP_PROXY=172.16.1.1:1")
+				env = append(env, "HTTP_PROXYS=172.16.1.1:1")
+				env = append(env, "DOCKER_HOST=172.16.1.1:1")
 				c.Env = env
 				rr, err := Run(t, c)
 				if err != nil {
