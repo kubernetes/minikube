@@ -28,6 +28,7 @@ var supportedDrivers = []string{
 	KVM2,
 	VMware,
 	None,
+	KicDocker,
 }
 
 // VBoxManagePath returns the path to the VBoxManage command

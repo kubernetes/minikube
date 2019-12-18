@@ -26,6 +26,8 @@ import (
 )
 
 const (
+	// Kubernetes in container using docker driver
+	KicDocker = "docker"
 	// Mock driver
 	Mock = "mock"
 	// None driver
