@@ -78,46 +78,46 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		args,
 		cmd.Args...,
 	)
-	cmd2 := exec.Command(k.ociBin, args...)
-	cmd2.Stdin = cmd.Stdin
-	cmd2.Stdout = cmd.Stdout
-	cmd2.Stderr = cmd.Stderr
-	cmd2.Env = cmd.Env
+	oc := exec.Command(k.ociBin, args...)
+	oc.Stdin = cmd.Stdin
+	oc.Stdout = cmd.Stdout
+	oc.Stderr = cmd.Stderr
+	oc.Env = cmd.Env
 
 	rr := &RunResult{Args: cmd.Args}
 
 	var outb, errb io.Writer
-	if cmd2.Stdout == nil {
+	if oc.Stdout == nil {
 		var so bytes.Buffer
 		outb = io.MultiWriter(&so, &rr.Stdout)
 	} else {
-		outb = io.MultiWriter(cmd2.Stdout, &rr.Stdout)
+		outb = io.MultiWriter(oc.Stdout, &rr.Stdout)
 	}
 
-	if cmd2.Stderr == nil {
+	if oc.Stderr == nil {
 		var se bytes.Buffer
 		errb = io.MultiWriter(&se, &rr.Stderr)
 	} else {
-		errb = io.MultiWriter(cmd2.Stderr, &rr.Stderr)
+		errb = io.MultiWriter(oc.Stderr, &rr.Stderr)
 	}
 
-	cmd2.Stdout = outb
-	cmd2.Stderr = errb
+	oc.Stdout = outb
+	oc.Stderr = errb
 
 	start := time.Now()
 
-	err := cmd2.Run()
+	err := oc.Run()
 	elapsed := time.Since(start)
 	if err == nil {
 		// Reduce log spam
 		if elapsed > (1 * time.Second) {
-			glog.Infof("(kicRunner) Done: %v: (%s)", cmd2.Args, elapsed)
+			glog.Infof("Done: %v: (%s)", oc.Args, elapsed)
 		}
 	} else {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
 		}
-		err = errors.Wrapf(err, "command failed: %s", cmd2.Args)
+		err = errors.Wrapf(err, "command failed: %s", oc.Args)
 	}
 	return rr, err
 
