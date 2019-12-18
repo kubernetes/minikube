@@ -173,6 +173,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
 func ensureSyncedGuestClock(h hostRunner) error {
+	fmt.Println("Inside ensureSyncedGuestClock")
 	d, err := guestClockDelta(h, time.Now())
 	if err != nil {
 		glog.Warningf("Unable to measure system clock delta: %v", err)
@@ -426,15 +427,19 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	if !driver.BareMetal(config.VMDriver) {
-		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
-	} else {
+	if driver.BareMetal(config.VMDriver) {
 		info, err := getHostInfo()
 		if err == nil {
 			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
+	} else if driver.IsKIC(config.VMDriver) {
+		info, err := getHostInfo() // TODO medyagh: get docker-machine info for non linux
+		if err == nil {
+			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": config.Memory, "host_memory_size": info.Memory})
+		}
+	} else {
+		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
 	}
-
 	def := registry.Driver(config.VMDriver)
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", config.VMDriver)
@@ -460,7 +465,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "create")
 	}
 
-	if !driver.BareMetal(config.VMDriver) {
+	if !driver.BareMetal(config.VMDriver) && !driver.IsKIC(config.VMDriver) {
 		showRemoteOsRelease(h.Driver)
 		// Ensure that even new VM's have proper time synchronization up front
 		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
@@ -468,9 +473,8 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 			return h, err
 		}
 	} else {
-		showLocalOsRelease()
+		showLocalOsRelease() // TODO:medyagh for kic show docker or podman version
 	}
-
 	if err := api.Save(h); err != nil {
 		return nil, errors.Wrap(err, "save")
 	}

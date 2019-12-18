@@ -478,12 +478,10 @@ func startMachine(config *cfg.MachineConfig) (runner command.Runner, preExists b
 		exit.WithError("Failed to get machine client", err)
 	}
 	host, preExists = startHost(m, *config)
-	fmt.Println("after startHost(m, *config)")
 	runner, err = machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
 	}
-	fmt.Println("after machine.CommandRunner(host)")
 
 	ip := validateNetwork(host, runner)
 	fmt.Println("after validateNetwork")
@@ -1069,7 +1067,7 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 		}
 	}
 
-	if !driver.BareMetal(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
 		trySSH(h, ip)
 	}
 

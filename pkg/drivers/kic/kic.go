@@ -277,6 +277,6 @@ func ImageForVersion(ver string) (string, error) {
 	case "v1.16.2":
 		return "medyagh/kic:v1.16.2@sha256:3374a30971bf5b0011441a227fa56ef990b76125b36ca0ab8316a3c7e4f137a3", nil
 	default:
-		return "medyagh/kic:v1.16.2@sha256:3374a30971bf5b0011441a227fa56ef990b76125b36ca0ab8316a3c7e4f137a3", fmt.Errorf("not supported version, using default version")
+		return "medyagh/kic:v1.16.2@sha256:3374a30971bf5b0011441a227fa56ef990b76125b36ca0ab8316a3c7e4f137a3", nil
 	}
 }
