@@ -57,13 +57,13 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 			"-i", // interactive so we can supply input
 		)
 	}
-	// if the command is hooked up to the processes's output we want a tty
+	// if the command is hooked to another processes's output we want a tty
 	if isTerminal(cmd.Stderr) || isTerminal(cmd.Stdout) {
 		args = append(args,
 			"-t",
 		)
 	}
-	// set env
+
 	for _, env := range cmd.Env {
 		args = append(args, "-e", env)
 	}

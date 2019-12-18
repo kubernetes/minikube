@@ -51,7 +51,7 @@ type Config struct {
 	Memory        int
 	StorePath     string
 	OciBinary     string // oci tool to use (docker, podman,...)
-	ImageSha      string // image name with sha to use for the node
+	ImageDigest   string // image name with sha to use for the node
 	APIServerPort int32  // port to connect to forward from container to user's machine
 }
 
@@ -64,7 +64,7 @@ func NewDriver(c Config) *Driver {
 		},
 		exec:          command.NewKICRunner(c.MachineName, c.OciBinary),
 		OciBinary:     c.OciBinary,
-		ImageSha:      c.ImageSha,
+		ImageSha:      c.ImageDigest,
 		CPU:           c.CPU,
 		Memory:        c.Memory,
 		APIServerPort: c.APIServerPort,
@@ -88,7 +88,7 @@ func (d *Driver) Create() error {
 		IPv6:              false, // MEDYA:TODO add proxy envs here
 	}
 
-	_, err := ks.Create(command.NewKICRunner(d.MachineName, d.OciBinary))
+	err := ks.Create(command.NewKICRunner(d.MachineName, d.OciBinary))
 	if err != nil {
 		return errors.Wrap(err, "create kic from spec")
 	}
