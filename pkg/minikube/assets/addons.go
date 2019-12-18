@@ -22,7 +22,6 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strconv"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -54,15 +53,14 @@ func (a *Addon) Name() string {
 	return a.addonName
 }
 
-// IsEnabled checks if an Addon is enabled
+// IsEnabled checks if an Addon is enabled for the current profile
 func (a *Addon) IsEnabled() (bool, error) {
-	addonStatusText, err := config.Get(a.addonName)
+	fmt.Printf("Checking if addon %s is enabled for profile %s", a.Name(), config.CurrentProfile())
+	config, err := config.Load(config.ProfileFilePath(config.CurrentProfile()))
 	if err == nil {
-		addonStatus, err := strconv.ParseBool(addonStatusText)
-		if err != nil {
-			return false, err
+		if status, ok := config.Addons[a.Name()]; ok {
+			return status, nil
 		}
-		return addonStatus, nil
 	}
 	return a.enabled, nil
 }
