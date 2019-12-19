@@ -69,7 +69,7 @@ const ()
 var expectedArtifacts = []string{
 	"/var/lib/kubelet/kubeadm-flags.env",
 	"/var/lib/kubelet/config.yaml",
-	etcdDataDir(),
+	bsutil.EtcdDataDir(),
 }
 
 // yamlConfigPath is the path to the kubeadm configuration
@@ -162,11 +162,6 @@ func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string 
 	}
 }
 
-// etcdDataDir is where etcd data is stored.
-func etcdDataDir() string {
-	return path.Join(vmpath.GuestPersistentDir, "etcd")
-}
-
 // createCompatSymlinks creates compatibility symlinks to transition running services to new directory structures
 func (k *Bootstrapper) createCompatSymlinks() error {
 	legacyEtcd := "/data/minikube"
@@ -177,7 +172,7 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 	}
 	glog.Infof("Found %s, creating compatibility symlinks ...", legacyEtcd)
 
-	c := exec.Command("sudo", "ln", "-s", legacyEtcd, etcdDataDir())
+	c := exec.Command("sudo", "ln", "-s", legacyEtcd, bsutil.EtcdDataDir())
 	if rr, err := k.c.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "create symlink failed: %s", rr.Command())
 	}
@@ -218,7 +213,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	ignore := []string{
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestManifestsDir, "/", "-", -1)),
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestPersistentDir, "/", "-", -1)),
-		fmt.Sprintf("DirAvailable-%s", strings.Replace(etcdDataDir(), "/", "-", -1)),
+		fmt.Sprintf("DirAvailable-%s", strings.Replace(bsutil.EtcdDataDir(), "/", "-", -1)),
 		"FileAvailable--etc-kubernetes-manifests-kube-scheduler.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
@@ -570,7 +565,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
-	files := configFiles(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService)
+	files := configFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService)
 	if err := addAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
 		return errors.Wrap(err, "adding addons")
 	}
@@ -586,8 +581,8 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	return nil
 }
 
-// configFiles returns configuration file assets
-func configFiles(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte) []assets.CopyableFile {
+// configFileAssets returns configuration file assets
+func configFileAssets(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte) []assets.CopyableFile {
 	fs := []assets.CopyableFile{
 		assets.NewMemoryAssetTarget(kubeadm, yamlConfigPath, "0640"),
 		assets.NewMemoryAssetTarget(kubelet, kubeletSystemdConfFile, "0644"),

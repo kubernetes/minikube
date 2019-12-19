@@ -33,8 +33,8 @@ const (
 	KubeadmConfigParam = iota
 )
 
-// ComponentExtraArgs holds extra args for a component
-type ComponentExtraArgs struct {
+// componentExtraArgs holds extra args for a component
+type componentExtraArgs struct {
 	Component string
 	Options   map[string]string
 }
@@ -71,6 +71,21 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 	},
 }
 
+// CreateFlagsFromExtraArgs converts kubeadm extra args into flags to be supplied from the command linne
+func CreateFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
+	kubeadmExtraOpts := extraOptions.AsMap().Get(Kubeadm)
+
+	// kubeadm allows only a small set of parameters to be supplied from the command line when the --config param
+	// is specified, here we remove those that are not allowed
+	for opt := range kubeadmExtraOpts {
+		if !config.ContainsParam(KubeadmExtraArgsWhitelist[KubeadmCmdParam], opt) {
+			// kubeadmExtraOpts is a copy so safe to delete
+			delete(kubeadmExtraOpts, opt)
+		}
+	}
+	return convertToFlags(kubeadmExtraOpts)
+}
+
 // extraConfigForComponent generates a map of flagname-value pairs for a k8s
 // component.
 func extraConfigForComponent(component string, opts config.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
@@ -91,21 +106,6 @@ func extraConfigForComponent(component string, opts config.ExtraOptionSlice, ver
 	return versionedOpts, nil
 }
 
-// CreateFlagsFromExtraArgs converts kubeadm extra args into flags to be supplied from the command linne
-func CreateFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
-	kubeadmExtraOpts := extraOptions.AsMap().Get(Kubeadm)
-
-	// kubeadm allows only a small set of parameters to be supplied from the command line when the --config param
-	// is specified, here we remove those that are not allowed
-	for opt := range kubeadmExtraOpts {
-		if !config.ContainsParam(KubeadmExtraArgsWhitelist[KubeadmCmdParam], opt) {
-			// kubeadmExtraOpts is a copy so safe to delete
-			delete(kubeadmExtraOpts, opt)
-		}
-	}
-	return convertToFlags(kubeadmExtraOpts)
-}
-
 // defaultOptionsForComponentAndVersion returns the default option for a component and version
 func defaultOptionsForComponentAndVersion(component string, version semver.Version) (map[string]string, error) {
 	versionedOpts := map[string]string{}
@@ -123,8 +123,8 @@ func defaultOptionsForComponentAndVersion(component string, version semver.Versi
 }
 
 // newComponentExtraArgs creates a new ComponentExtraArgs
-func newComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
-	var kubeadmExtraArgs []ComponentExtraArgs
+func newComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version, featureGates string) ([]componentExtraArgs, error) {
+	var kubeadmExtraArgs []componentExtraArgs
 	for _, extraOpt := range opts {
 		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
 			return nil, fmt.Errorf("unknown component %q. valid components are: %v", componentToKubeadmConfigKey, componentToKubeadmConfigKey)
@@ -150,7 +150,7 @@ func newComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version,
 			extraConfig["feature-gates"] = featureGates
 		}
 		if len(extraConfig) > 0 {
-			kubeadmExtraArgs = append(kubeadmExtraArgs, ComponentExtraArgs{
+			kubeadmExtraArgs = append(kubeadmExtraArgs, componentExtraArgs{
 				Component: kubeadmComponentKey,
 				Options:   extraConfig,
 			})
@@ -161,7 +161,7 @@ func newComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version,
 }
 
 // createExtraComponentConfig generates a map of component to extra args for all of the components except kubeadm
-func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version semver.Version, componentFeatureArgs string) ([]ComponentExtraArgs, error) {
+func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version semver.Version, componentFeatureArgs string) ([]componentExtraArgs, error) {
 	extraArgsSlice, err := newComponentExtraArgs(extraOptions, version, componentFeatureArgs)
 	if err != nil {
 		return nil, err
