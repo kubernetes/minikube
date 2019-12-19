@@ -102,6 +102,6 @@ func displayError(msg string, err error) {
 	out.ErrT(out.Empty, "")
 	out.FatalT("{{.msg}}: {{.err}}", out.V{"msg": translate.T(msg), "err": err})
 	out.ErrT(out.Empty, "")
-	out.ErrT(out.Sad, "minikube is exiting due to an error. If this message is not helpful, please open an issue:")
+	out.ErrT(out.Sad, "minikube is exiting due to an error. If the above message is not useful, open an issue:")
 	out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 }
