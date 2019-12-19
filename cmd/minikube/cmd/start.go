@@ -1061,7 +1061,7 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 }
 
 func trySSH(h *host.Host, ip string) {
-	sshAddr := fmt.Sprintf("%s:22", ip)
+	sshAddr := net.JoinHostPort(ip, "22")
 
 	dial := func() (err error) {
 		d := net.Dialer{Timeout: 3 * time.Second}
