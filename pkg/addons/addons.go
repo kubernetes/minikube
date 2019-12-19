@@ -36,9 +36,14 @@ import (
 const defaultStorageClassProvisioner = "standard"
 
 func Set(name, value, profile string) error {
-	a, valid := addonIsValid(name)
+	a, valid := isAddonValid(name)
 	if !valid {
 		return errors.Errorf("%s is not a valid addon", name)
+	}
+
+	// Run any additional validations for this property
+	if err := run(name, value, profile, a.validations); err != nil {
+		return err
 	}
 
 	// Set the value

@@ -55,9 +55,9 @@ func (a *Addon) Name() string {
 
 // IsEnabled checks if an Addon is enabled for the current profile
 func (a *Addon) IsEnabled() (bool, error) {
-	config, err := config.Load(config.CurrentProfile())
+	c, err := config.Load(config.CurrentProfile())
 	if err == nil {
-		if status, ok := config.Addons[a.Name()]; ok {
+		if status, ok := c.Addons[a.Name()]; ok {
 			return status, nil
 		}
 	}

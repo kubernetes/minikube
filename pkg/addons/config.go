@@ -22,9 +22,10 @@ type setFn func(string, string, string) error
 
 // Addon represents an addon
 type Addon struct {
-	name      string
-	set       func(*config.MachineConfig, string, string) error
-	callbacks []setFn
+	name        string
+	set         func(*config.MachineConfig, string, string) error
+	validations []setFn
+	callbacks   []setFn
 }
 
 // Addons is a list of all addons
@@ -56,9 +57,10 @@ var Addons = []*Addon{
 		callbacks: []setFn{EnableOrDisableAddon},
 	},
 	{
-		name:      "gvisor",
-		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		name:        "gvisor",
+		set:         SetBool,
+		validations: []setFn{IsContainerdRuntime},
+		callbacks:   []setFn{EnableOrDisableAddon},
 	},
 	{
 		name:      "helm-tiller",
