@@ -26,7 +26,7 @@
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
-export PATH=$PATH:"/usr/local/bin/"
+export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/"
 
 echo ">> Starting at $(date)"
 echo ""
@@ -41,7 +41,7 @@ echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
-echo "go:        $(/usr/local/go/bin/go version || true)"
+echo "go:        $(go version || true)"
 
 
 case "${VM_DRIVER}" in
@@ -270,8 +270,8 @@ e2e_start_time="$(date -u +%s)"
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 set -x
-rm ${TEST_OUT} || true # clean up build-reruns
-touch ${TEST_OUT}
+rm "${TEST_OUT}" || true # clean up build-reruns
+touch "${TEST_OUT}"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
@@ -301,35 +301,31 @@ elapsed=$min.$sec
 description="completed with ${status} in ${elapsed} minute(s)."
 echo $description
 
-echo ">> Copying ${TEST_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}out.txt"
-gsutil -qm cp "${TEST_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}out.txt"
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}"
+echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
+gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
 
 
 echo ">> Attmpting to convert test logs to json"
-rm ${JSON_OUT} || true # clean up build-reruns
-touch ${JSON_OUT}
-PATH=$PATH:"/usr/local/go/bin/" # for gopath
+rm "${JSON_OUT}" || true # clean up build-reruns
+touch "${JSON_OUT}"
+
 # Generate JSON output
-go tool test2json -t < ${TEST_OUT} > ${JSON_OUT}
+go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}"
 RESULT=$?
 if [ $RESULT -eq 0 ]; then
         # Generate HTML human readable test output
       echo ">> Running gopogh"
-      rm ${HTML_OUT} || true # clean up build-reruns
-      touch ${HTML_OUT}
-      gopogh -in ${JSON_OUT} -out ${HTML_OUT} -name ${JOB_NAME} -pr ${MINIKUBE_LOCATION} -repo github.com/kubernetes/minikube/  -details ${COMMIT} || true
-      echo ">> Copying ${HTML_OUT} to gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
-      gsutil -qm cp "${JSON_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.json"
-      gsutil -qm cp "${HTML_OUT}" "gs://minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
+      rm "${HTML_OUT}" || true # clean up build-reruns
+      touch "${HTML_OUT}"
+      gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}" || true
+      echo ">> Copying ${HTML_OUT} to ${JOB_GS_BUCKET}.html"
+      gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GS_BUCKET}.json"
+      gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GS_BUCKET}.html"
 else
-  echo "go tool test2json is not installed, will skip generating HTML report output."
+  echo "failed to go tool test2json. Skpping HTML report output."
 fi
                 
-
-public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
-if [[ $(wc -l <${HTML_OUT}) -ge 1 ]]; then # if HTML generation was succesfull (would fail if gopogh is not installed)
-  public_log_url="https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.html"
-fi
 
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
@@ -384,6 +380,10 @@ function retry_github_status() {
 }
 
 
+public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
+if [[ $(wc -l <"${HTML_OUT}") -ge 1 ]]; then # if HTML generation was succesfull (would fail if gopogh is not installed)
+  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
+fi
 
 retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
 exit $result
