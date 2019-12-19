@@ -33,10 +33,4 @@ EXPECTED_DEFAULT_DRIVER="kvm2"
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 
-## download and install gopogh
-wget -O gopogh https://github.com/medyagh/gopogh/releases/download/v0.0.14/gopogh-linux-amd64 || echo "Failed to download gopogh"
-sudo install gopogh /usr/local/bin/ || echo "Failed to install Gopogh"
-
-
-# Download files and set permissions
 source ./common.sh
