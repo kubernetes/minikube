@@ -121,7 +121,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
 
-	extraOpts, err := ExtraConfigForComponent(Kubelet, k8s.ExtraOptions, version)
+	extraOpts, err := extraConfigForComponent(Kubelet, k8s.ExtraOptions, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating extra configuration for kubelet")
 	}

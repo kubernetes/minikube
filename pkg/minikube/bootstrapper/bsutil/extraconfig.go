@@ -71,9 +71,9 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 	},
 }
 
-// ExtraConfigForComponent generates a map of flagname-value pairs for a k8s
+// extraConfigForComponent generates a map of flagname-value pairs for a k8s
 // component.
-func ExtraConfigForComponent(component string, opts config.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
+func extraConfigForComponent(component string, opts config.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
 	versionedOpts, err := defaultOptionsForComponentAndVersion(component, version)
 	if err != nil {
 		return nil, errors.Wrapf(err, "setting version specific options for %s", component)
@@ -142,7 +142,7 @@ func newComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version,
 		if kubeadmComponentKey == "" {
 			continue
 		}
-		extraConfig, err := ExtraConfigForComponent(component, opts, version)
+		extraConfig, err := extraConfigForComponent(component, opts, version)
 		if err != nil {
 			return nil, errors.Wrapf(err, "getting kubeadm extra args for %s", component)
 		}

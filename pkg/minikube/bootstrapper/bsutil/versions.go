@@ -22,7 +22,6 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-	"k8s.io/kubernetes/cmd/kubeadm/app/features"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -40,15 +39,16 @@ func ParseKubernetesVersion(version string) (semver.Version, error) {
 	return v, nil
 }
 
-// Supports indicates whether a feature name is supported on the
-// feature gates for kubeadm
-func Supports(featureName string) bool {
-	for k := range features.InitFeatureGates {
-		if featureName == k {
-			return true
-		}
+// versionIsBetween checks if a version is between (or including) two given versions
+func versionIsBetween(version, gte, lte semver.Version) bool {
+	if gte.NE(semver.Version{}) && !version.GTE(gte) {
+		return false
 	}
-	return false
+	if lte.NE(semver.Version{}) && !version.LTE(lte) {
+		return false
+	}
+
+	return true
 }
 
 var versionSpecificOpts = []config.VersionedExtraOption{
@@ -123,16 +123,4 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 		},
 		LessThanOrEqual: semver.MustParse("1.11.1000"),
 	},
-}
-
-// versionIsBetween checks if a version is between (or including) two given versions
-func versionIsBetween(version, gte, lte semver.Version) bool {
-	if gte.NE(semver.Version{}) && !version.GTE(gte) {
-		return false
-	}
-	if lte.NE(semver.Version{}) && !version.LTE(lte) {
-		return false
-	}
-
-	return true
 }
