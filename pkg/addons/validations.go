@@ -45,7 +45,7 @@ func IsValidAddon(name, val, profile string) error {
 
 // IsContainerdRuntime is a validator which returns an error if the current runtime is not containerd
 func IsContainerdRuntime(_, _, profile string) error {
-	config, err := config.Load(config.ProfileFilePath(profile))
+	config, err := config.Load(profile)
 	if err != nil {
 		return fmt.Errorf("config.Load: %v", err)
 	}

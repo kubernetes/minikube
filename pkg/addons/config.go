@@ -23,13 +23,13 @@ type setFn func(string, string, string) error
 // Addon represents an addon
 type Addon struct {
 	name        string
-	set         func(config.MachineConfig, string, string) error
-	setMap      func(config.MachineConfig, string, map[string]interface{}) error
+	set         func(*config.MachineConfig, string, string) error
 	validations []setFn
 	callbacks   []setFn
 }
 
-var Addons = []Addon{
+// Addons is a list of all addons
+var Addons = []*Addon{
 	{
 		name:        "addon-manager",
 		set:         SetBool,

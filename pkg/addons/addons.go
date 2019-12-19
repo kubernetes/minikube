@@ -17,6 +17,7 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
@@ -35,11 +36,67 @@ import (
 // defaultStorageClassProvisioner is the name of the default storage class provisioner
 const defaultStorageClassProvisioner = "standard"
 
+func Set(name, value, profile string) error {
+	a, valid := addonIsValid(name)
+	if !valid {
+		return errors.Errorf("%s is not a valid addon", name)
+	}
+	// Validate the new value
+	if err := run(name, value, profile, a.validations); err != nil {
+		return err
+	}
+
+	// Set the value
+	c, err := config.Load(profile)
+	if err != nil {
+		return err
+	}
+
+	if err := a.set(c, name, value); err != nil {
+		return err
+	}
+
+	// Run any callbacks for this property
+	if err := run(name, value, profile, a.callbacks); err != nil {
+		return err
+	}
+
+	// Write the value
+	return config.Write(profile, c)
+}
+
+// Runs all the validation or callback functions and collects errors
+func run(name, value, profile string, fns []setFn) error {
+	var errors []error
+	for _, fn := range fns {
+		err := fn(name, value, profile)
+		if err != nil {
+			errors = append(errors, err)
+		}
+	}
+	if len(errors) > 0 {
+		return fmt.Errorf("%v", errors)
+	}
+	return nil
+}
+
+func addonIsValid(name string) (*Addon, bool) {
+	for _, a := range Addons {
+		if a.name == name {
+			return a, true
+		}
+	}
+	return nil, false
+}
+
 // SetBool sets a bool value
-func SetBool(m config.MachineConfig, name string, val string) error {
+func SetBool(m *config.MachineConfig, name string, val string) error {
 	b, err := strconv.ParseBool(val)
 	if err != nil {
 		return err
+	}
+	if m.Addons == nil {
+		m.Addons = map[string]bool{}
 	}
 	m.Addons[name] = b
 	return nil
