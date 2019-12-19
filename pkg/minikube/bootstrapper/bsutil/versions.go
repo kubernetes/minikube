@@ -17,9 +17,7 @@ limitations under the License.
 package bsutil
 
 import (
-	"fmt"
 	"path"
-	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
@@ -40,38 +38,6 @@ func ParseKubernetesVersion(version string) (semver.Version, error) {
 	}
 
 	return v, nil
-}
-
-// parseFeatureArgs parses feature args into extra args
-func parseFeatureArgs(featureGates string) (map[string]bool, string, error) {
-	kubeadmFeatureArgs := map[string]bool{}
-	componentFeatureArgs := ""
-	for _, s := range strings.Split(featureGates, ",") {
-		if len(s) == 0 {
-			continue
-		}
-
-		fg := strings.SplitN(s, "=", 2)
-		if len(fg) != 2 {
-			return nil, "", fmt.Errorf("missing value for key \"%v\"", s)
-		}
-
-		k := strings.TrimSpace(fg[0])
-		v := strings.TrimSpace(fg[1])
-
-		if !Supports(k) {
-			componentFeatureArgs = fmt.Sprintf("%s%s,", componentFeatureArgs, s)
-			continue
-		}
-
-		boolValue, err := strconv.ParseBool(v)
-		if err != nil {
-			return nil, "", errors.Wrapf(err, "failed to convert bool value \"%v\"", v)
-		}
-		kubeadmFeatureArgs[k] = boolValue
-	}
-	componentFeatureArgs = strings.TrimRight(componentFeatureArgs, ",")
-	return kubeadmFeatureArgs, componentFeatureArgs, nil
 }
 
 // Supports indicates whether a feature name is supported on the
@@ -159,8 +125,8 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 	},
 }
 
-// VersionIsBetween checks if a version is between (or including) two given versions
-func VersionIsBetween(version, gte, lte semver.Version) bool {
+// versionIsBetween checks if a version is between (or including) two given versions
+func versionIsBetween(version, gte, lte semver.Version) bool {
 	if gte.NE(semver.Version{}) && !version.GTE(gte) {
 		return false
 	}
@@ -169,20 +135,4 @@ func VersionIsBetween(version, gte, lte semver.Version) bool {
 	}
 
 	return true
-}
-
-// DefaultOptionsForComponentAndVersion returns the default option for a component and version
-func DefaultOptionsForComponentAndVersion(component string, version semver.Version) (map[string]string, error) {
-	versionedOpts := map[string]string{}
-	for _, opts := range versionSpecificOpts {
-		if opts.Option.Component == component {
-			if VersionIsBetween(version, opts.GreaterThanOrEqual, opts.LessThanOrEqual) {
-				if val, ok := versionedOpts[opts.Option.Key]; ok {
-					return nil, fmt.Errorf("flag %s=%q already set %s=%q", opts.Option.Key, opts.Option.Value, opts.Option.Key, val)
-				}
-				versionedOpts[opts.Option.Key] = opts.Option.Value
-			}
-		}
-	}
-	return versionedOpts, nil
 }

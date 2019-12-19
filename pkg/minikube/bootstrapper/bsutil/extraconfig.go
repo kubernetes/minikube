@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 )
@@ -70,6 +71,57 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 	},
 }
 
+// ExtraConfigForComponent generates a map of flagname-value pairs for a k8s
+// component.
+func ExtraConfigForComponent(component string, opts config.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
+	versionedOpts, err := defaultOptionsForComponentAndVersion(component, version)
+	if err != nil {
+		return nil, errors.Wrapf(err, "setting version specific options for %s", component)
+	}
+
+	for _, opt := range opts {
+		if opt.Component == component {
+			if val, ok := versionedOpts[opt.Key]; ok {
+				glog.Infof("Overwriting default %s=%s with user provided %s=%s for component %s", opt.Key, val, opt.Key, opt.Value, component)
+			}
+			versionedOpts[opt.Key] = opt.Value
+		}
+	}
+
+	return versionedOpts, nil
+}
+
+// CreateFlagsFromExtraArgs converts kubeadm extra args into flags to be supplied from the command linne
+func CreateFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
+	kubeadmExtraOpts := extraOptions.AsMap().Get(Kubeadm)
+
+	// kubeadm allows only a small set of parameters to be supplied from the command line when the --config param
+	// is specified, here we remove those that are not allowed
+	for opt := range kubeadmExtraOpts {
+		if !config.ContainsParam(KubeadmExtraArgsWhitelist[KubeadmCmdParam], opt) {
+			// kubeadmExtraOpts is a copy so safe to delete
+			delete(kubeadmExtraOpts, opt)
+		}
+	}
+	return convertToFlags(kubeadmExtraOpts)
+}
+
+// defaultOptionsForComponentAndVersion returns the default option for a component and version
+func defaultOptionsForComponentAndVersion(component string, version semver.Version) (map[string]string, error) {
+	versionedOpts := map[string]string{}
+	for _, opts := range versionSpecificOpts {
+		if opts.Option.Component == component {
+			if versionIsBetween(version, opts.GreaterThanOrEqual, opts.LessThanOrEqual) {
+				if val, ok := versionedOpts[opts.Option.Key]; ok {
+					return nil, fmt.Errorf("flag %s=%q already set %s=%q", opts.Option.Key, opts.Option.Value, opts.Option.Key, val)
+				}
+				versionedOpts[opts.Option.Key] = opts.Option.Value
+			}
+		}
+	}
+	return versionedOpts, nil
+}
+
 // newComponentExtraArgs creates a new ComponentExtraArgs
 func newComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
 	var kubeadmExtraArgs []ComponentExtraArgs
@@ -106,21 +158,6 @@ func newComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version,
 	}
 
 	return kubeadmExtraArgs, nil
-}
-
-// CreateFlagsFromExtraArgs converts kubeadm extra args into flags to be supplied from the command linne
-func CreateFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
-	kubeadmExtraOpts := extraOptions.AsMap().Get(Kubeadm)
-
-	// kubeadm allows only a small set of parameters to be supplied from the command line when the --config param
-	// is specified, here we remove those that are not allowed
-	for opt := range kubeadmExtraOpts {
-		if !config.ContainsParam(KubeadmExtraArgsWhitelist[KubeadmCmdParam], opt) {
-			// kubeadmExtraOpts is a copy so safe to delete
-			delete(kubeadmExtraOpts, opt)
-		}
-	}
-	return convertToFlags(kubeadmExtraOpts)
 }
 
 // createExtraComponentConfig generates a map of component to extra args for all of the components except kubeadm

@@ -23,7 +23,6 @@ import (
 	"path"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/template"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -188,26 +187,6 @@ const (
 	Scheduler         = "scheduler"
 	ControllerManager = "controller-manager"
 )
-
-// ExtraConfigForComponent generates a map of flagname-value pairs for a k8s
-// component.
-func ExtraConfigForComponent(component string, opts config.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
-	versionedOpts, err := DefaultOptionsForComponentAndVersion(component, version)
-	if err != nil {
-		return nil, errors.Wrapf(err, "setting version specific options for %s", component)
-	}
-
-	for _, opt := range opts {
-		if opt.Component == component {
-			if val, ok := versionedOpts[opt.Key]; ok {
-				glog.Infof("Overwriting default %s=%s with user provided %s=%s for component %s", opt.Key, val, opt.Key, opt.Value, component)
-			}
-			versionedOpts[opt.Key] = opt.Value
-		}
-	}
-
-	return versionedOpts, nil
-}
 
 // binRoot returns the persistent path binaries are stored in
 func binRoot(version string) string {
