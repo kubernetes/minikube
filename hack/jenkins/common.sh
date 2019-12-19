@@ -26,7 +26,8 @@
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
-export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/"
+export GOPATH="$HOME/go"
+export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 echo ">> Starting at $(date)"
 echo ""
