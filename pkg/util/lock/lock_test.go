@@ -16,9 +16,13 @@ limitations under the License.
 
 package lock
 
-import "testing"
+import (
+	"testing"
 
-func TestGetMutexName(t *testing.T) {
+	"github.com/juju/mutex"
+)
+
+func TestUserMutexSpec(t *testing.T) {
 	var tests = []struct {
 		description string
 		path        string
@@ -27,41 +31,53 @@ func TestGetMutexName(t *testing.T) {
 		{
 			description: "standard",
 			path:        "/foo/bar",
-			expected:    "foo-bar",
 		},
 		{
 			description: "deep directory",
 			path:        "/foo/bar/baz/bat",
-			expected:    "baz-bat",
 		},
 		{
 			description: "underscores",
 			path:        "/foo_bar/baz",
-			expected:    "foo-bar-baz",
 		},
 		{
 			description: "starts with number",
 			path:        "/foo/2bar/baz",
-			expected:    "m2bar-baz",
 		},
 		{
 			description: "starts with punctuation",
 			path:        "/.foo/bar",
-			expected:    "foo-bar",
 		},
 		{
 			description: "long filename",
 			path:        "/very-very-very-very-very-very-very-very-long/bar",
-			expected:    "very-very-very-very-very-very-very-very",
+		},
+		{
+			description: "Windows kubeconfig",
+			path:        `C:\Users\admin/.kube/config`,
+		},
+		{
+			description: "Windows json",
+			path:        `C:\Users\admin\.minikube\profiles\containerd-20191210T212325.7356633-8584\config.json`,
 		},
 	}
 
+	seen := map[string]string{}
+
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			got := getMutexName(tc.path)
-			if got != tc.expected {
-				t.Errorf("Unexpected mutex name for path %s. got: %s, expected: %s", tc.path, got, tc.expected)
+			got := PathMutexSpec(tc.path)
+			if len(got.Name) != 40 {
+				t.Errorf("%s is not 40 chars long", got.Name)
 			}
+			if seen[got.Name] != "" {
+				t.Fatalf("lock name collision between %s and %s", tc.path, seen[got.Name])
+			}
+			m, err := mutex.Acquire(got)
+			if err != nil {
+				t.Errorf("acquire for spec %+v failed: %v", got, err)
+			}
+			m.Release()
 		})
 	}
 }

@@ -38,7 +38,7 @@ type Bootstrapper interface {
 	// PullImages pulls images necessary for a cluster. Success should not be required.
 	PullImages(config.KubernetesConfig) error
 	StartCluster(config.KubernetesConfig) error
-	UpdateCluster(config.KubernetesConfig) error
+	UpdateCluster(config.MachineConfig) error
 	DeleteCluster(config.KubernetesConfig) error
 	WaitForCluster(config.KubernetesConfig, time.Duration) error
 	// LogCommands returns a map of log type to a command which will display that log.
@@ -64,12 +64,11 @@ func GetCachedBinaryList(bootstrapper string) []string {
 }
 
 // GetCachedImageList returns the list of images for a version
-func GetCachedImageList(imageRepository string, version string, bootstrapper string) []string {
+func GetCachedImageList(imageRepository string, version string, bootstrapper string) ([]string, error) {
 	switch bootstrapper {
 	case BootstrapperTypeKubeadm:
-		images := images.CachedImages(imageRepository, version)
-		return images
+		return images.Kubeadm(imageRepository, version)
 	default:
-		return []string{}
+		return []string{}, nil
 	}
 }

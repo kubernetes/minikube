@@ -51,6 +51,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -180,7 +181,7 @@ func initMinikubeFlags() {
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
 func initKubernetesFlags() {
-	startCmd.Flags().String(kubernetesVersion, constants.DefaultKubernetesVersion, "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
+	startCmd.Flags().String(kubernetesVersion, "", "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
 	startCmd.Flags().Var(&extraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
@@ -287,7 +288,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	existing, err := cfg.Load()
+	existing, err := cfg.Load(viper.GetString(config.MachineProfile))
 	if err != nil && !os.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
@@ -352,7 +353,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// setup kubeadm (must come after setupKubeconfig)
-	bs := setupKubeAdm(machineAPI, config.KubernetesConfig)
+	bs := setupKubeAdm(machineAPI, config)
 
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
@@ -645,7 +646,7 @@ func validateDriver(name string, existing *cfg.MachineConfig) {
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
 
-func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, string, error) {
+func selectImageRepository(mirrorCountry string) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
 	glog.Infof("selecting image repository for country %s ...", mirrorCountry)
@@ -673,7 +674,7 @@ func selectImageRepository(mirrorCountry string, k8sVersion string) (bool, strin
 	}
 
 	checkRepository := func(repo string) error {
-		pauseImage := images.PauseImage(repo, k8sVersion)
+		pauseImage := images.Pause(repo)
 		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
 		if err != nil {
 			return err
@@ -729,7 +730,7 @@ func validateUser(drvName string) {
 	if !useForce {
 		os.Exit(exit.Permissions)
 	}
-	_, err = cfg.Load()
+	_, err = cfg.Load(viper.GetString(config.MachineProfile))
 	if err == nil || !os.IsNotExist(err) {
 		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
 	}
@@ -866,7 +867,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	repository := viper.GetString(imageRepository)
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
 	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
-		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, k8sVersion)
+		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry)
 		if err != nil {
 			exit.WithError("Failed to check main repository and mirrors for images for images", err)
 		}
@@ -1108,7 +1109,7 @@ func tryRegistry(r command.Runner) {
 
 	repo := viper.GetString(imageRepository)
 	if repo == "" {
-		repo = images.DefaultImageRepo
+		repo = images.DefaultKubernetesRepo
 	}
 
 	opts = append(opts, fmt.Sprintf("https://%s/", repo))
@@ -1120,15 +1121,20 @@ func tryRegistry(r command.Runner) {
 
 // getKubernetesVersion ensures that the requested version is reasonable
 func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
-	rawVersion := viper.GetString(kubernetesVersion)
+	paramVersion := viper.GetString(kubernetesVersion)
 	isUpgrade := false
-	if rawVersion == "" {
-		rawVersion = constants.DefaultKubernetesVersion
+
+	if paramVersion == "" { // if the user did not specify any version then ...
+		if old != nil { // .. use the old version from config
+			paramVersion = old.KubernetesConfig.KubernetesVersion
+		} else { // .. otherwise use the default version
+			paramVersion = constants.DefaultKubernetesVersion
+		}
 	}
 
-	nvs, err := semver.Make(strings.TrimPrefix(rawVersion, version.VersionPrefix))
+	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
 	if err != nil {
-		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": rawVersion, "error": err})
+		exit.WithCodeT(exit.Data, `Unable to parse "{{.kubernetes_version}}": {{.error}}`, out.V{"kubernetes_version": paramVersion, "error": err})
 	}
 	nv := version.VersionPrefix + nvs.String()
 
@@ -1139,6 +1145,10 @@ func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	if err != nil {
 		exit.WithCodeT(exit.Data, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
+	}
+	defaultVersion, err := semver.Make(strings.TrimPrefix(constants.DefaultKubernetesVersion, version.VersionPrefix))
+	if err != nil {
+		exit.WithCodeT(exit.Data, "Unable to parse default Kubernetes version from constants: {{.error}}", out.V{"error": err})
 	}
 
 	if nvs.LT(oldestVersion) {
@@ -1168,15 +1178,18 @@ func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 * Reuse the existing cluster with Kubernetes v{{.old}} or newer: Run "minikube start {{.profile}} --kubernetes-version={{.old}}"`, out.V{"new": nvs, "old": ovs, "profile": profileArg})
 
 	}
+	if defaultVersion.GT(nvs) {
+		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
+	}
+
 	if nvs.GT(ovs) {
-		out.T(out.ThumbsUp, "Upgrading from Kubernetes {{.old}} to {{.new}}", out.V{"old": ovs, "new": nvs})
 		isUpgrade = true
 	}
 	return nv, isUpgrade
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Bootstrapper {
+func setupKubeAdm(mAPI libmachine.API, config cfg.MachineConfig) bootstrapper.Bootstrapper {
 	bs, err := getClusterBootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
@@ -1185,10 +1198,10 @@ func setupKubeAdm(mAPI libmachine.API, kc cfg.KubernetesConfig) bootstrapper.Boo
 		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
-	if err := bs.UpdateCluster(kc); err != nil {
+	if err := bs.UpdateCluster(config); err != nil {
 		exit.WithError("Failed to update cluster", err)
 	}
-	if err := bs.SetupCerts(kc); err != nil {
+	if err := bs.SetupCerts(config.KubernetesConfig); err != nil {
 		exit.WithError("Failed to setup certs", err)
 	}
 	return bs
