@@ -10,6 +10,9 @@ description: >
 
 * Announce release intent on #minikube
 * Pause merge requests so that they are not accidentally left out of the ISO or release notes
+* Two minikube repos checked out locally:
+  * Your personal fork
+  * Upstream  
 
 ## Build a new ISO
 
@@ -40,19 +43,23 @@ You can merge this change at any time before the release, but often the Makefile
 
 ## Update Release Notes
 
-Run the following script to update the release notes:
+Run the following script from your local upstream repo copy to generate updated release notes:
 
 ```shell
 hack/release_notes.sh
 ```
 
-You'll need to massage the input in two ways:
+Paste the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/minikube/pull/3175) as an example. 
 
-- Remove documentation changes, as they do not ship with the release
-- Remove changes which are not user-facing, such as internal refactors
-- Sort the changes so that the ones which impact users the most come first
+You'll need to massage the output in a few key ways:
+
+- The changelog should only contain user facing change. This means removing PR's for:
+  - Documentation
+  - Low-risk refactors
+  - Test-only changes 
+- Sort the changes so that the ones users will want to know about the most appear first
 - Remove bots from the contributor list
-- De-dup names from the contributor list
+- Remove duplicated similar names from the contributor list
 
 Merge the output into CHANGELOG.md. See [PR#3175](https://github.com/kubernetes/minikube/pull/3175) as an example. 
 
