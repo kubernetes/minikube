@@ -17,7 +17,6 @@ limitations under the License.
 package bsutil
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/blang/semver"
@@ -100,49 +99,5 @@ func TestParseKubernetesVersion(t *testing.T) {
 	}
 	if version.NE(semver.MustParse("1.8.0-alpha.5")) {
 		t.Errorf("Expected: %s, Actual:%s", "1.8.0-alpha.5", version)
-	}
-}
-
-func TestParseFeatureArgs(t *testing.T) {
-	tests := []struct {
-		description                  string
-		featureGates                 string
-		expectedKubeadmFeatureArgs   map[string]bool
-		expectedComponentFeatureArgs string
-	}{
-		{
-			description:  "CoreDNS enabled",
-			featureGates: "CoreDNS=true",
-			expectedKubeadmFeatureArgs: map[string]bool{
-				"CoreDNS": true,
-			},
-			expectedComponentFeatureArgs: "",
-		},
-		{
-			description:  "CoreDNS disabled",
-			featureGates: "CoreDNS=false",
-			expectedKubeadmFeatureArgs: map[string]bool{
-				"CoreDNS": false,
-			},
-			expectedComponentFeatureArgs: "",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			kubeadm, component, err := parseFeatureArgs(test.featureGates)
-
-			if err != nil {
-				t.Fatalf("Error parsing feature args: %v", err)
-			}
-
-			if !reflect.DeepEqual(kubeadm, test.expectedKubeadmFeatureArgs) {
-				t.Errorf("Kubeadm Actual: %v, Expected: %v", kubeadm, test.expectedKubeadmFeatureArgs)
-			}
-
-			if !reflect.DeepEqual(component, test.expectedComponentFeatureArgs) {
-				t.Errorf("Component Actual: %v, Expected: %v", component, test.expectedComponentFeatureArgs)
-			}
-		})
 	}
 }
