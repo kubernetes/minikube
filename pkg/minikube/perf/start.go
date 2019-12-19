@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package performance
+package perf
 
 import (
 	"context"
@@ -28,14 +28,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
+const (
+	// runs is the number of times each binary will be timed for 'minikube start'
 	runs = 1
+)
+
+var (
 	// For testing
 	collectTimeMinikubeStart = timeMinikubeStart
 )
 
 // CompareMinikubeStart compares the time to run `minikube start` between two minikube binaries
-func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary) error {
+func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []string) error {
 	durations, err := collectTimes(ctx, binaries)
 	if err != nil {
 		return err
@@ -45,7 +49,7 @@ func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary
 	return nil
 }
 
-func collectTimes(ctx context.Context, binaries []*Binary) ([][]float64, error) {
+func collectTimes(ctx context.Context, binaries []string) ([][]float64, error) {
 	durations := make([][]float64, len(binaries))
 	for i := range durations {
 		durations[i] = make([]float64, runs)
@@ -56,7 +60,7 @@ func collectTimes(ctx context.Context, binaries []*Binary) ([][]float64, error) 
 		for index, binary := range binaries {
 			duration, err := collectTimeMinikubeStart(ctx, binary)
 			if err != nil {
-				return nil, errors.Wrapf(err, "timing run %d with %s", r, binary.path)
+				return nil, errors.Wrapf(err, "timing run %d with %s", r, binary)
 			}
 			durations[index][r] = duration
 		}
@@ -65,22 +69,22 @@ func collectTimes(ctx context.Context, binaries []*Binary) ([][]float64, error) 
 	return durations, nil
 }
 
-func average(array []float64) float64 {
+func average(nums []float64) float64 {
 	total := float64(0)
-	for _, a := range array {
+	for _, a := range nums {
 		total += a
 	}
-	return total / float64(len(array))
+	return total / float64(len(nums))
 }
 
 // timeMinikubeStart returns the time it takes to execute `minikube start`
 // It deletes the VM after `minikube start`.
-func timeMinikubeStart(ctx context.Context, binary *Binary) (float64, error) {
-	startCmd := exec.CommandContext(ctx, binary.path, "start")
+func timeMinikubeStart(ctx context.Context, binary string) (float64, error) {
+	startCmd := exec.CommandContext(ctx, binary, "start")
 	startCmd.Stdout = os.Stdout
 	startCmd.Stderr = os.Stderr
 
-	deleteCmd := exec.CommandContext(ctx, binary.path, "delete")
+	deleteCmd := exec.CommandContext(ctx, binary, "delete")
 	defer func() {
 		if err := deleteCmd.Run(); err != nil {
 			log.Printf("error deleting minikube: %v", err)
@@ -93,6 +97,6 @@ func timeMinikubeStart(ctx context.Context, binary *Binary) (float64, error) {
 		return 0, errors.Wrap(err, "starting minikube")
 	}
 
-	startDuration := time.Since(start).Seconds()
-	return startDuration, nil
+	s := time.Since(start).Seconds()
+	return s, nil
 }
