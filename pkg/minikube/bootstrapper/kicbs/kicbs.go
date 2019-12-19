@@ -51,6 +51,11 @@ func NewKICBSBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 	return &Bootstrapper{c: runner, contextName: name}, nil
 }
 
+// UpdateCluster updates the cluster
+func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
+	return fmt.Errorf("the UpdateCluster is not implemented in kicbs yet")
+}
+
 func (k *Bootstrapper) PullImages(config.KubernetesConfig) error {
 	return fmt.Errorf("the PullImages is not implemented in kicbs yet")
 }
@@ -58,10 +63,6 @@ func (k *Bootstrapper) StartCluster(config.KubernetesConfig) error {
 	return fmt.Errorf("the StartCluster is not implemented in kicbs yet")
 }
 
-// UpdateCluster generated kubeadm.yaml and other configs and loads the imags
-func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
-	return nil
-}
 func (k *Bootstrapper) DeleteCluster(config.KubernetesConfig) error {
 	return fmt.Errorf("the DeleteCluster is not implemented in kicbs yet")
 }

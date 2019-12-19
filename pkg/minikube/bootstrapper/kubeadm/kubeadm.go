@@ -25,7 +25,7 @@ import (
 	"net/http"
 
 	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
-	"path"
+
 	"strings"
 	"time"
 
@@ -54,16 +54,6 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// enum to differentiate kubeadm command line parameters from kubeadm config file parameters (see the
-// KubeadmExtraArgsWhitelist variable below for more info)
-const (
-	defaultCNIConfigPath   = "/etc/cni/net.d/k8s.conf"
-	kubeletServiceFile     = "/lib/systemd/system/kubelet.service"
-	kubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
-)
-
-const ()
-
 // remote artifacts that must exist for minikube to function properly. The sign of a previously working installation.
 // NOTE: /etc is not persistent across restarts, so don't bother checking there
 var expectedArtifacts = []string{
@@ -71,9 +61,6 @@ var expectedArtifacts = []string{
 	"/var/lib/kubelet/config.yaml",
 	bsutil.EtcdDataDir(),
 }
-
-// yamlConfigPath is the path to the kubeadm configuration
-var yamlConfigPath = path.Join(vmpath.GuestEphemeralDir, "kubeadm.yaml")
 
 // SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
 var SkipAdditionalPreflights = map[string][]string{}
@@ -229,7 +216,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		ignore = append(ignore, "SystemVerification")
 	}
 
-	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), yamlConfigPath, extraFlags, strings.Join(ignore, ",")))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	if rr, err := k.c.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "init failed. cmd: %q", rr.Command())
 	}
@@ -449,10 +436,10 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 
 	baseCmd := fmt.Sprintf("%s %s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), phase)
 	cmds := []string{
-		fmt.Sprintf("%s phase certs all --config %s", baseCmd, yamlConfigPath),
-		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, yamlConfigPath),
-		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, yamlConfigPath),
-		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, yamlConfigPath),
+		fmt.Sprintf("%s phase certs all --config %s", baseCmd, bsutil.KubeadmYamlPath),
+		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, bsutil.KubeadmYamlPath),
+		fmt.Sprintf("%s phase %s all --config %s", baseCmd, controlPlane, bsutil.KubeadmYamlPath),
+		fmt.Sprintf("%s phase etcd local --config %s", baseCmd, bsutil.KubeadmYamlPath),
 	}
 
 	// Run commands one at a time so that it is easier to root cause failures.
@@ -472,7 +459,7 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// Explicitly re-enable kubeadm addons (proxy, coredns) so that they will check for IP or configuration changes.
-	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, yamlConfigPath))); err != nil {
+	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, bsutil.KubeadmYamlPath))); err != nil {
 		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q", rr.Command()))
 	}
 
@@ -511,7 +498,7 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 		return fmt.Errorf("pull command is not supported by kubeadm v%s", version)
 	}
 
-	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s config images pull --config %s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), yamlConfigPath)))
+	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s config images pull --config %s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath)))
 	if err != nil {
 		return errors.Wrapf(err, "running cmd: %q", rr.Command())
 	}
@@ -565,7 +552,13 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
-	files := configFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService)
+
+	var cniFile []byte = nil
+	if cfg.KubernetesConfig.EnableDefaultCNI {
+		cniFile = []byte(defaultCNIConfig)
+	}
+	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
+
 	if err := addAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
 		return errors.Wrap(err, "adding addons")
 	}
@@ -579,20 +572,4 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 		return errors.Wrap(err, "starting kubelet")
 	}
 	return nil
-}
-
-// configFileAssets returns configuration file assets
-func configFileAssets(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte) []assets.CopyableFile {
-	fs := []assets.CopyableFile{
-		assets.NewMemoryAssetTarget(kubeadm, yamlConfigPath, "0640"),
-		assets.NewMemoryAssetTarget(kubelet, kubeletSystemdConfFile, "0644"),
-		assets.NewMemoryAssetTarget(kubeletSvc, kubeletServiceFile, "0644"),
-	}
-	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
-	// start a Pod in the case a user hasn't manually installed any CNI plugin
-	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
-	if cfg.EnableDefaultCNI {
-		fs = append(fs, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), defaultCNIConfigPath, "0644"))
-	}
-	return fs
 }
