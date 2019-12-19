@@ -182,24 +182,22 @@ func (d *Driver) Restart() error {
 	if err != nil {
 		return errors.Wrap(err, "get kic state")
 	}
-	if s == state.Paused {
+	switch s {
+	case state.Paused:
 		return d.Unpause()
-	}
-	if s == state.Stopped {
+	case state.Stopped:
 		return d.Start()
-	}
-	if s == state.Running {
+	case state.Running, state.Error:
 		if err = d.Stop(); err != nil {
-			return fmt.Errorf("restarting a running kic node at stop phase %v", err)
+			return fmt.Errorf("restarting a kic stop phase %v", err)
 		}
 		if err = d.Start(); err != nil {
-			return fmt.Errorf("restarting a running kic node at start phase %v", err)
+			return fmt.Errorf("restarting a kic start phase %v", err)
 		}
 		return nil
 	}
 
-	// TODO:medyagh handle Stopping/Starting... states
-	return fmt.Errorf("restarted not implemented for kic yet")
+	return fmt.Errorf("restarted not implemented for kic state %s yet", s)
 }
 
 // Unpause a kic container
