@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package bsutil
+package template
 
 import (
 	"fmt"
@@ -22,8 +22,8 @@ import (
 	"text/template"
 )
 
-// ConfigTmplV1Alpha1 is for Kubernetes v1.11
-var ConfigTmplV1Alpha1 = template.Must(template.New("configTmpl-v1alpha1").Funcs(template.FuncMap{
+// KubeAdmConfigTmplV1Alpha1 is for Kubernetes v1.11
+var KubeAdmConfigTmplV1Alpha1 = template.Must(template.New("configTmpl-v1alpha1").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
@@ -47,8 +47,8 @@ nodeName: {{.NodeName}}
   {{$i}}: {{$val}}{{end}}
 {{end}}`))
 
-// ConfigTmplV1Alpha3 is for Kubernetes v1.12
-var ConfigTmplV1Alpha3 = template.Must(template.New("configTmpl-v1alpha3").Funcs(template.FuncMap{
+// KubeAdmConfigTmplV1Alpha3 is for Kubernetes v1.12
+var KubeAdmConfigTmplV1Alpha3 = template.Must(template.New("configTmpl-v1alpha3").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1alpha3
 kind: InitConfiguration
@@ -96,8 +96,8 @@ evictionHard:
   imagefs.available: "0%"
 `))
 
-// ConfigTmplV1Beta1 is for Kubernetes v1.13+
-var ConfigTmplV1Beta1 = template.Must(template.New("configTmpl-v1beta1").Funcs(template.FuncMap{
+// KubeAdmConfigTmplV1Beta1 is for Kubernetes v1.13+
+var KubeAdmConfigTmplV1Beta1 = template.Must(template.New("configTmpl-v1beta1").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
@@ -149,33 +149,6 @@ evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
-`))
-
-// KubeletSystemdTemplate hosts the override kubelet flags, written to kubeletSystemdConfFile
-var KubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`[Unit]
-{{if or (eq .ContainerRuntime "cri-o") (eq .ContainerRuntime "cri")}}Wants=crio.service{{else if eq .ContainerRuntime "containerd"}}Wants=containerd.service{{else}}Wants=docker.socket{{end}}
-
-[Service]
-ExecStart=
-ExecStart={{.KubeletPath}}{{if .ExtraOptions}} {{.ExtraOptions}}{{end}}
-
-[Install]
-`))
-
-// kubeletServiceTemplate is the base kubelet systemd template, written to kubeletServiceFile
-var kubeletServiceTemplate = template.Must(template.New("kubeletServiceTemplate").Parse(`[Unit]
-Description=kubelet: The Kubernetes Node Agent
-Documentation=http://kubernetes.io/docs/
-
-[Service]
-ExecStart={{.KubeletPath}}
-Restart=always
-StartLimitInterval=0
-# Tuned for local dev: faster than upstream default (10s), but slower than systemd default (100ms)
-RestartSec=600ms
-
-[Install]
-WantedBy=multi-user.target
 `))
 
 // printMapInOrder sorts the keys and prints the map in order, combining key

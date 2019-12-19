@@ -25,6 +25,7 @@ import (
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/template"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -98,13 +99,13 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 
 	opts.NoTaintMaster = true
 	b := bytes.Buffer{}
-	configTmpl := ConfigTmplV1Alpha1
+	configTmpl := template.KubeAdmConfigTmplV1Alpha1
 	if version.GTE(semver.MustParse("1.12.0")) {
-		configTmpl = ConfigTmplV1Alpha3
+		configTmpl = template.KubeAdmConfigTmplV1Alpha3
 	}
 	// v1beta1 works in v1.13, but isn't required until v1.14.
 	if version.GTE(semver.MustParse("1.14.0-alpha.0")) {
-		configTmpl = ConfigTmplV1Beta1
+		configTmpl = template.KubeAdmConfigTmplV1Beta1
 	}
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
@@ -161,7 +162,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 		ContainerRuntime: k8s.ContainerRuntime,
 		KubeletPath:      path.Join(binRoot(k8s.KubernetesVersion), "kubelet"),
 	}
-	if err := KubeletSystemdTemplate.Execute(&b, opts); err != nil {
+	if err := template.KubeletSystemdTemplate.Execute(&b, opts); err != nil {
 		return nil, err
 	}
 
@@ -172,7 +173,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 	var b bytes.Buffer
 	opts := struct{ KubeletPath string }{KubeletPath: path.Join(binRoot(cfg.KubernetesVersion), "kubelet")}
-	if err := kubeletServiceTemplate.Execute(&b, opts); err != nil {
+	if err := template.KubeletServiceTemplate.Execute(&b, opts); err != nil {
 		return nil, errors.Wrap(err, "template execute")
 	}
 	return b.Bytes(), nil
