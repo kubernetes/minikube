@@ -39,10 +39,4 @@ install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "F
 echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
 crontab -l
 
-## download and install gopogh
-wget -O gopogh https://github.com/medyagh/gopogh/releases/download/v0.0.14/gopogh-linux-amd64 || echo "Failed to download gopogh"
-sudo install gopogh /usr/local/bin/ || echo "Failed to install Gopogh"
-
-
-# Download files and set permissions
 source common.sh
