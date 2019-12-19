@@ -304,10 +304,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateFlags(cmd, driverName)
 	validateUser(driverName)
 
-	// No need to install a driver in download-only mode
-	if !viper.GetBool(downloadOnly) {
-		updateDriver(driverName)
-	}
+	// Download & update the driver, even in --download-only mode
+	updateDriver(driverName)
 
 	k8sVersion, isUpgrade := getKubernetesVersion(existing)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
