@@ -36,12 +36,9 @@ import (
 	"github.com/cenkalti/backoff"
 )
 
-// can be podman
-const DefaultOCI = "docker"
-
 // Stop stops a container
-func Stop(ociID string) error {
-	cmd := exec.Command(DefaultOCI, "stop", ociID)
+func Stop(ociBinary, ociID string) error {
+	cmd := exec.Command(ociBinary, "stop", ociID)
 	err := cmd.Run()
 	if err != nil {
 		return errors.Wrapf(err, "error stop node %s", ociID)
@@ -110,9 +107,9 @@ func Pause(ociBinary string, ociID string) error {
 }
 
 // Inspect return low-level information on containers
-func Inspect(containerNameOrID, format string) ([]string, error) {
+func Inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
 
-	cmd := exec.Command(DefaultOCI, "inspect",
+	cmd := exec.Command(ociBinary, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
 	var buff bytes.Buffer
@@ -233,8 +230,8 @@ func generateMountBindings(mounts ...Mount) []string {
 }
 
 // PullIfNotPresent pulls docker image if not present back off exponentially
-func PullIfNotPresent(image string, forceUpdate bool, maxWait time.Duration) error {
-	cmd := exec.Command(DefaultOCI, "inspect", "--type=image", image)
+func PullIfNotPresent(ociBinary string, image string, forceUpdate bool, maxWait time.Duration) error {
+	cmd := exec.Command(ociBinary, "inspect", "--type=image", image)
 	err := cmd.Run()
 	if err == nil && !forceUpdate {
 		return nil // if presents locally and not force
@@ -242,14 +239,14 @@ func PullIfNotPresent(image string, forceUpdate bool, maxWait time.Duration) err
 	b := backoff.NewExponentialBackOff()
 	b.MaxElapsedTime = maxWait
 	f := func() error {
-		return pull(image)
+		return pull(ociBinary, image)
 	}
 	return backoff.Retry(f, b)
 }
 
 // Pull pulls an image, retrying up to retries times
-func pull(image string) error {
-	cmd := exec.Command(DefaultOCI, "pull", image)
+func pull(ociBinary string, image string) error {
+	cmd := exec.Command(ociBinary, "pull", image)
 	err := cmd.Run()
 	if err != nil {
 		return fmt.Errorf("error pull image %s : %v", image, err)
@@ -258,8 +255,8 @@ func pull(image string) error {
 }
 
 // UsernsRemap checks if userns-remap is enabled in dockerd
-func UsernsRemap() bool {
-	cmd := exec.Command(DefaultOCI, "info", "--format", "'{{json .SecurityOptions}}'")
+func UsernsRemap(ociBinary string) bool {
+	cmd := exec.Command(ociBinary, "info", "--format", "'{{json .SecurityOptions}}'")
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff

@@ -105,7 +105,7 @@ func (d *Driver) DriverName() string {
 
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
-	node, err := node.Find(d.MachineName, d.exec)
+	node, err := node.Find(d.OCIBinary, d.MachineName, d.exec)
 	if err != nil {
 		return "", fmt.Errorf("ip not found for nil node")
 	}

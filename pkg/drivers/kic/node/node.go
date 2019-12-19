@@ -34,15 +34,15 @@ const (
 	DefaultNetwork  = "bridge"
 	ClusterLabelKey = "io.x-k8s.kic.cluster" // ClusterLabelKey is applied to each node docker container for identification
 	NodeRoleKey     = "io.k8s.sigs.kic.role"
-	DefaultOci      = "docker"
 )
 
 // Node represents a handle to a kic node
 // This struct must be created by one of: CreateControlPlane
 type Node struct {
 	// must be one of docker container ID or name
-	name string
-	r    command.Runner // Runner
+	name      string
+	r         command.Runner // Runner
+	ociBinary string
 }
 
 type CreateParams struct {
@@ -95,13 +95,13 @@ func CreateNode(p CreateParams) (*Node, error) {
 	// adds node specific args
 	runArgs = append(runArgs, p.ExtraArgs...)
 
-	if oci.UsernsRemap() {
+	if oci.UsernsRemap(p.OCIBinary) {
 		// We need this argument in order to make this command work
 		// in systems that have userns-remap enabled on the docker daemon
 		runArgs = append(runArgs, "--userns=host")
 	}
 
-	_, err := oci.CreateContainer(DefaultOci,
+	_, err := oci.CreateContainer(p.OCIBinary,
 		p.Image,
 		oci.WithRunArgs(runArgs...),
 		oci.WithMounts(p.Mounts),
@@ -113,7 +113,7 @@ func CreateNode(p CreateParams) (*Node, error) {
 	}
 
 	// we should return a handle so the caller can clean it up
-	node, err := Find(p.Name, cmder)
+	node, err := Find(p.OCIBinary, p.Name, cmder)
 	if err != nil {
 		return node, errors.Wrap(err, "find node")
 	}
@@ -122,8 +122,8 @@ func CreateNode(p CreateParams) (*Node, error) {
 }
 
 // Find finds a node
-func Find(name string, cmder command.Runner) (*Node, error) {
-	_, err := oci.Inspect(name, "{{.Id}}")
+func Find(ociBinary string, name string, cmder command.Runner) (*Node, error) {
+	_, err := oci.Inspect(ociBinary, name, "{{.Id}}")
 	if err != nil {
 		return nil, fmt.Errorf("can't find node %v", err)
 	}
@@ -160,7 +160,7 @@ func (n *Node) WriteFile(dest, content string, perm string) error {
 // IP returns the IP address of the node
 func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
 	// retrieve the IP address of the node using docker inspect
-	lines, err := oci.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
+	lines, err := oci.Inspect(n.ociBinary, n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
 		return "", "", errors.Wrap(err, "node ips")
 	}
@@ -169,7 +169,7 @@ func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
 	}
 	ips := strings.Split(lines[0], ",")
 	if len(ips) != 2 {
-		return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
+		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
 	}
 	return ips[0], ips[1], nil
 }
@@ -189,5 +189,5 @@ func (n *Node) Copy(ociBinary string, asset assets.CopyableFile) error {
 
 // Remove removes the node
 func (n *Node) Remove() error {
-	return oci.Remove(DefaultOci, n.name)
+	return oci.Remove(n.ociBinary, n.name)
 }
