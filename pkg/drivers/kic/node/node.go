@@ -44,16 +44,14 @@ const (
 type Node struct {
 	// must be one of docker container ID or name
 	name string
-	// cached node info etc.
-	cache *nodeCache
-	R     command.Runner // Runner
+	r    command.Runner // Runner
 }
 
 // WriteFile writes content to dest on the node
 func (n *Node) WriteFile(dest, content string, perm string) error {
 	// create destination directory
 	cmd := exec.Command("mkdir", "-p", filepath.Dir(dest))
-	rr, err := n.R.RunCmd(cmd)
+	rr, err := n.r.RunCmd(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "failed to create directory %s cmd: %v output:%q", cmd.Args, dest, rr.Output())
 	}
@@ -61,12 +59,12 @@ func (n *Node) WriteFile(dest, content string, perm string) error {
 	cmd = exec.Command("cp", "/dev/stdin", dest)
 	cmd.Stdin = strings.NewReader(content)
 
-	if rr, err := n.R.RunCmd(cmd); err != nil {
+	if rr, err := n.r.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "failed to run: cp /dev/stdin %s cmd: %v output:%q", dest, cmd.Args, rr.Output())
 	}
 
 	cmd = exec.Command("chmod", perm, dest)
-	_, err = n.R.RunCmd(cmd)
+	_, err = n.r.RunCmd(cmd)
 	if err != nil {
 		return errors.Wrapf(err, "failed to run: chmod %s %s", perm, dest)
 	}
@@ -75,15 +73,10 @@ func (n *Node) WriteFile(dest, content string, perm string) error {
 
 // IP returns the IP address of the node
 func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
-	// use the cached version first
-	cachedIPv4, cachedIPv6 := n.cache.IP()
-	if cachedIPv4 != "" && cachedIPv6 != "" {
-		return cachedIPv4, cachedIPv6, nil
-	}
 	// retrieve the IP address of the node using docker inspect
 	lines, err := oci.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
-		return "", "", errors.Wrap(err, "failed to get container details")
+		return "", "", errors.Wrap(err, "node ips")
 	}
 	if len(lines) != 1 {
 		return "", "", errors.Errorf("file should only be one line, got %d lines", len(lines))
@@ -92,10 +85,6 @@ func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
 	if len(ips) != 2 {
 		return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
 	}
-	n.cache.set(func(cache *nodeCache) {
-		cache.ipv4 = ips[0]
-		cache.ipv6 = ips[1]
-	})
 	return ips[0], ips[1], nil
 }
 
@@ -105,7 +94,7 @@ func (n *Node) LoadImageArchive(image io.Reader) error {
 		"ctr", "--namespace=k8s.io", "images", "import", "-",
 	)
 	cmd.Stdin = image
-	if _, err := n.R.RunCmd(cmd); err != nil {
+	if _, err := n.r.RunCmd(cmd); err != nil {
 		return errors.Wrap(err, "failed to load image")
 	}
 	return nil
@@ -119,7 +108,7 @@ func (n *Node) Copy(ociBinary string, asset assets.CopyableFile) error {
 
 	// TODO: medya verify add tests
 	cmd := exec.Command("chmod", asset.GetPermissions(), asset.GetTargetName())
-	if _, err := n.R.RunCmd(cmd); err != nil {
+	if _, err := n.r.RunCmd(cmd); err != nil {
 		return errors.Wrap(err, "failed to chmod file permissions")
 	}
 	return nil
@@ -228,8 +217,7 @@ func Find(name string, cmder command.Runner) (*Node, error) {
 		return nil, fmt.Errorf("can't find node %v", err)
 	}
 	return &Node{
-		name:  name,
-		cache: &nodeCache{},
-		R:     cmder,
+		name: name,
+		r:    cmder,
 	}, nil
 }
