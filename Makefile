@@ -60,7 +60,8 @@ GOLINT_GOGC ?= 100
 GOLINT_OPTIONS = --timeout 4m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
 	  --enable goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
-	  --exclude 'variable on range scope.*in function literal|ifElseChain'
+	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
+	  --skip-files "pkg/minikube/translate/translations.go|pkg/minikube/assets/assets.go"
 
 # Major version of gvisor image. Increment when there are breaking changes.
 GVISOR_IMAGE_VERSION ?= 2
