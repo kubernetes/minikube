@@ -24,6 +24,7 @@ import (
 	"runtime"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -55,7 +56,7 @@ func (a *Addon) Name() string {
 
 // IsEnabled checks if an Addon is enabled for the current profile
 func (a *Addon) IsEnabled() (bool, error) {
-	c, err := config.Load(config.CurrentProfile())
+	c, err := config.Load(viper.GetString(config.MachineProfile))
 	if err == nil {
 		if status, ok := c.Addons[a.Name()]; ok {
 			return status, nil

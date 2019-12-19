@@ -112,7 +112,6 @@ func enableOrDisableAddon(name, val, profile string) error {
 		return nil
 	}
 
-	// TODO(r2d4): config package should not reference API, pull this out
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return errors.Wrap(err, "machine client")

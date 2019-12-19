@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -72,15 +71,6 @@ func ProfileExists(name string, miniHome ...string) bool {
 	p := profileFilePath(name, miniPath)
 	_, err := os.Stat(p)
 	return err == nil
-}
-
-// CurrentProfile returns the name of the current profile
-func CurrentProfile() string {
-	profile := viper.GetString(MachineProfile)
-	if profile != "" {
-		return profile
-	}
-	return "minikube"
 }
 
 // CreateEmptyProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
