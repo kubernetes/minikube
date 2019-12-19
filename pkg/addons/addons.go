@@ -93,8 +93,8 @@ func SetBool(m *config.MachineConfig, name string, val string) error {
 	return nil
 }
 
-// EnableOrDisableAddon updates addon status executing any commands necessary
-func EnableOrDisableAddon(name, val, profile string) error {
+// enableOrDisableAddon updates addon status executing any commands necessary
+func enableOrDisableAddon(name, val, profile string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -199,8 +199,8 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 	return nil
 }
 
-// EnableOrDisableStorageClasses enables or disables storage classes
-func EnableOrDisableStorageClasses(name, val, profile string) error {
+// enableOrDisableStorageClasses enables or disables storage classes
+func enableOrDisableStorageClasses(name, val, profile string) error {
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrap(err, "Error parsing boolean")
@@ -229,5 +229,5 @@ func EnableOrDisableStorageClasses(name, val, profile string) error {
 		}
 	}
 
-	return EnableOrDisableAddon(name, val, profile)
+	return enableOrDisableAddon(name, val, profile)
 }
