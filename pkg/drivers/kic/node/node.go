@@ -45,22 +45,22 @@ type Node struct {
 	ociBinary string
 }
 
-type CreateParams struct {
-	Name         string // used for container name and hostname
-	Image        string // container image to use to create the node.
-	ClusterLabel string
-	Role         string // currently only role supported is control-plane
-	Mounts       []oci.Mount
-	PortMappings []oci.PortMapping
-	CPUs         string
-	Memory       string
-	Envs         map[string]string
-	ExtraArgs    []string
-	OCIBinary    string
+type CreateConfig struct {
+	Name         string            // used for container name and hostname
+	Image        string            // container image to use to create the node.
+	ClusterLabel string            // label the containers we create using minikube so we can clean up
+	Role         string            // currently only role supported is control-plane
+	Mounts       []oci.Mount       // volume mounts
+	PortMappings []oci.PortMapping // ports to map to container from host
+	CPUs         string            // number of cpu cores assign to container
+	Memory       string            // memory (mbs) to assign to the container
+	Envs         map[string]string // environment variables to pass to the container
+	ExtraArgs    []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
+	OCIBinary    string            // docker or podman
 }
 
 // CreateNode creates a new container node
-func CreateNode(p CreateParams) (*Node, error) {
+func CreateNode(p CreateConfig) (*Node, error) {
 	cmder := command.NewKICRunner(p.Name, p.OCIBinary)
 	runArgs := []string{
 		fmt.Sprintf("--cpus=%s", p.CPUs),
