@@ -57,8 +57,63 @@ func (k *Bootstrapper) PullImages(config.KubernetesConfig) error {
 func (k *Bootstrapper) StartCluster(config.KubernetesConfig) error {
 	return fmt.Errorf("the StartCluster is not implemented in kicbs yet")
 }
-func (k *Bootstrapper) UpdateCluster(config.MachineConfig) error {
-	return fmt.Errorf("the UpdateCluster is not implemented in kicbs yet")
+
+// UpdateCluster generated kubeadm.yaml and other configs and loads the imags
+func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
+	// images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
+	// if err != nil {
+	// 	return errors.Wrap(err, "kubeadm images")
+	// }
+
+	// if cfg.KubernetesConfig.ShouldLoadCachedImages {
+	// 	if err := machine.LoadImages(&cfg, k.c, images, constants.ImageCacheDir); err != nil {
+	// 		out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
+	// 	}
+	// }
+	// r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.KubernetesConfig.CRISocket})
+	// if err != nil {
+	// 	return errors.Wrap(err, "runtime")
+	// }
+	// kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg.KubernetesConfig, r)
+	// if err != nil {
+	// 	return errors.Wrap(err, "generating kubeadm cfg")
+	// }
+
+	// kubeletCfg, err := NewKubeletConfig(cfg.KubernetesConfig, r)
+	// if err != nil {
+	// 	return errors.Wrap(err, "generating kubelet config")
+	// }
+
+	// kubeletService, err := NewKubeletService(cfg.KubernetesConfig)
+	// if err != nil {
+	// 	return errors.Wrap(err, "generating kubelet service")
+	// }
+
+	// glog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
+
+	// stopCmd := exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")
+	// // stop kubelet to avoid "Text File Busy" error
+	// if rr, err := k.c.RunCmd(stopCmd); err != nil {
+	// 	glog.Warningf("unable to stop kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
+	// }
+
+	// if err := transferBinaries(cfg.KubernetesConfig, k.c); err != nil {
+	// 	return errors.Wrap(err, "downloading binaries")
+	// }
+	// files := configFiles(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService)
+	// if err := addAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
+	// 	return errors.Wrap(err, "adding addons")
+	// }
+	// for _, f := range files {
+	// 	if err := k.c.Copy(f); err != nil {
+	// 		return errors.Wrapf(err, "copy")
+	// 	}
+	// }
+
+	// if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl start kubelet")); err != nil {
+	// 	return errors.Wrap(err, "starting kubelet")
+	// }
+	return nil
 }
 func (k *Bootstrapper) DeleteCluster(config.KubernetesConfig) error {
 	return fmt.Errorf("the DeleteCluster is not implemented in kicbs yet")

@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubeadm
+package bsutil
 
 import (
 	"reflect"
@@ -94,7 +94,7 @@ func TestVersionIsBetween(t *testing.T) {
 }
 
 func TestParseKubernetesVersion(t *testing.T) {
-	version, err := parseKubernetesVersion("v1.8.0-alpha.5")
+	version, err := ParseKubernetesVersion("v1.8.0-alpha.5")
 	if err != nil {
 		t.Fatalf("Error parsing version: %v", err)
 	}
@@ -130,7 +130,7 @@ func TestParseFeatureArgs(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			kubeadm, component, err := ParseFeatureArgs(test.featureGates)
+			kubeadm, component, err := parseFeatureArgs(test.featureGates)
 
 			if err != nil {
 				t.Fatalf("Error parsing feature args: %v", err)

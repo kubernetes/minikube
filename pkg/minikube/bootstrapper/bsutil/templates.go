@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubeadm
+package bsutil
 
 import (
 	"fmt"
@@ -22,8 +22,8 @@ import (
 	"text/template"
 )
 
-// configTmplV1Alpha1 is for Kubernetes v1.11
-var configTmplV1Alpha1 = template.Must(template.New("configTmpl-v1alpha1").Funcs(template.FuncMap{
+// ConfigTmplV1Alpha1 is for Kubernetes v1.11
+var ConfigTmplV1Alpha1 = template.Must(template.New("configTmpl-v1alpha1").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration
@@ -47,8 +47,8 @@ nodeName: {{.NodeName}}
   {{$i}}: {{$val}}{{end}}
 {{end}}`))
 
-// configTmplV1Alpha3 is for Kubernetes v1.12
-var configTmplV1Alpha3 = template.Must(template.New("configTmpl-v1alpha3").Funcs(template.FuncMap{
+// ConfigTmplV1Alpha3 is for Kubernetes v1.12
+var ConfigTmplV1Alpha3 = template.Must(template.New("configTmpl-v1alpha3").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1alpha3
 kind: InitConfiguration
@@ -96,8 +96,8 @@ evictionHard:
   imagefs.available: "0%"
 `))
 
-// configTmplV1Beta1 is for Kubernetes v1.13+
-var configTmplV1Beta1 = template.Must(template.New("configTmpl-v1beta1").Funcs(template.FuncMap{
+// ConfigTmplV1Beta1 is for Kubernetes v1.13+
+var ConfigTmplV1Beta1 = template.Must(template.New("configTmpl-v1beta1").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
@@ -151,8 +151,8 @@ evictionHard:
   imagefs.available: "0%"
 `))
 
-// kubeletSystemdTemplate hosts the override kubelet flags, written to kubeletSystemdConfFile
-var kubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`[Unit]
+// KubeletSystemdTemplate hosts the override kubelet flags, written to kubeletSystemdConfFile
+var KubeletSystemdTemplate = template.Must(template.New("kubeletSystemdTemplate").Parse(`[Unit]
 {{if or (eq .ContainerRuntime "cri-o") (eq .ContainerRuntime "cri")}}Wants=crio.service{{else if eq .ContainerRuntime "containerd"}}Wants=containerd.service{{else}}Wants=docker.socket{{end}}
 
 [Service]
