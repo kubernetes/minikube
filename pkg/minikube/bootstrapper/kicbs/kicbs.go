@@ -20,15 +20,22 @@ package kicbs
 import (
 	"fmt"
 	"net"
+	"os/exec"
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // Bootstrapper is a bootstrapper using kicbs
@@ -53,7 +60,66 @@ func NewKICBSBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 
 // UpdateCluster updates the cluster
 func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
-	return fmt.Errorf("the UpdateCluster is not implemented in kicbs yet")
+	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "kubeadm images")
+	}
+
+	if cfg.KubernetesConfig.ShouldLoadCachedImages {
+		if err := machine.LoadImages(&cfg, k.c, images, constants.ImageCacheDir); err != nil {
+			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
+		}
+	}
+	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.KubernetesConfig.CRISocket})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg.KubernetesConfig, r)
+	if err != nil {
+		return errors.Wrap(err, "generating kubeadm cfg")
+	}
+
+	kubeletCfg, err := bsutil.NewKubeletConfig(cfg.KubernetesConfig, r)
+	if err != nil {
+		return errors.Wrap(err, "generating kubelet config")
+	}
+
+	kubeletService, err := bsutil.NewKubeletService(cfg.KubernetesConfig)
+	if err != nil {
+		return errors.Wrap(err, "generating kubelet service")
+	}
+
+	glog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
+
+	stopCmd := exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")
+	// stop kubelet to avoid "Text File Busy" error
+	if rr, err := k.c.RunCmd(stopCmd); err != nil {
+		glog.Warningf("unable to stop kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
+	}
+
+	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
+		return errors.Wrap(err, "downloading binaries")
+	}
+
+	var cniFile []byte = nil
+	if cfg.KubernetesConfig.EnableDefaultCNI {
+		cniFile = []byte(defaultCNIConfig)
+	}
+	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
+
+	// if err := addAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
+	// 	return errors.Wrap(err, "adding addons")
+	// }
+	for _, f := range files {
+		if err := k.c.Copy(f); err != nil {
+			return errors.Wrapf(err, "copy")
+		}
+	}
+
+	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl start kubelet")); err != nil {
+		return errors.Wrap(err, "starting kubelet")
+	}
+	return nil
 }
 
 func (k *Bootstrapper) PullImages(config.KubernetesConfig) error {
