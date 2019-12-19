@@ -74,7 +74,7 @@ func (d *Driver) Create() error {
 		Name:         d.NodeConfig.MachineName,
 		Image:        d.NodeConfig.ImageDigest,
 		ClusterLabel: node.ClusterLabelKey + "=" + d.MachineName,
-		Cpus:         strconv.Itoa(d.NodeConfig.CPU),
+		CPUs:         strconv.Itoa(d.NodeConfig.CPU),
 		Memory:       strconv.Itoa(d.NodeConfig.Memory) + "mb",
 		Envs:         d.NodeConfig.Envs,
 		ExtraArgs:    []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
