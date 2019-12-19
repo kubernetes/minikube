@@ -22,7 +22,6 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -40,10 +39,6 @@ func Set(name, value, profile string) error {
 	a, valid := addonIsValid(name)
 	if !valid {
 		return errors.Errorf("%s is not a valid addon", name)
-	}
-	// Validate the new value
-	if err := run(name, value, profile, a.validations); err != nil {
-		return err
 	}
 
 	// Set the value
@@ -78,15 +73,6 @@ func run(name, value, profile string, fns []setFn) error {
 		return fmt.Errorf("%v", errors)
 	}
 	return nil
-}
-
-func addonIsValid(name string) (*Addon, bool) {
-	for _, a := range Addons {
-		if a.name == name {
-			return a, true
-		}
-	}
-	return nil, false
 }
 
 // SetBool sets a bool value
@@ -134,7 +120,7 @@ func EnableOrDisableAddon(name, val, profile string) error {
 		return nil
 	}
 
-	cfg, err := config.Load(viper.GetString(config.MachineProfile))
+	cfg, err := config.Load(profile)
 	if err != nil && !os.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}

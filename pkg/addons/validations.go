@@ -19,8 +19,6 @@ package addons
 import (
 	"fmt"
 
-	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
@@ -34,14 +32,6 @@ minikube stop
 and then start minikube again with the following flags:
 
 minikube start --container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock`
-
-// IsValidAddon checks if a string is a valid addon
-func IsValidAddon(name, val, profile string) error {
-	if _, ok := assets.Addons[name]; ok {
-		return nil
-	}
-	return errors.Errorf("Cannot enable/disable invalid addon %s", name)
-}
 
 // IsContainerdRuntime is a validator which returns an error if the current runtime is not containerd
 func IsContainerdRuntime(_, _, profile string) error {
@@ -58,4 +48,15 @@ func IsContainerdRuntime(_, _, profile string) error {
 		return fmt.Errorf(containerdOnlyAddonMsg)
 	}
 	return nil
+}
+
+// addonIsValid returns the addon, true if it is valid
+// otherwise returns nil, false
+func addonIsValid(name string) (*Addon, bool) {
+	for _, a := range Addons {
+		if a.name == name {
+			return a, true
+		}
+	}
+	return nil, false
 }

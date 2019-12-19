@@ -165,7 +165,6 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *MachineConfig, miniHome ...string) error {
 	// Move to profile package
 	path := ProfileFilePath(profileName, miniHome...)
-
 	contents, err := json.MarshalIndent(cc, "", "	")
 	if err != nil {
 		return err
