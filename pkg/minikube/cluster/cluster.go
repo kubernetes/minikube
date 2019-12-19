@@ -173,7 +173,6 @@ func configureHost(h *host.Host, e *engine.Options) error {
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
 func ensureSyncedGuestClock(h hostRunner) error {
-	fmt.Println("Inside ensureSyncedGuestClock")
 	d, err := guestClockDelta(h, time.Now())
 	if err != nil {
 		glog.Warningf("Unable to measure system clock delta: %v", err)

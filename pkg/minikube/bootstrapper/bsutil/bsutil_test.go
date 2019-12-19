@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubeadm
+package bsutil
 
 import (
 	"fmt"
@@ -241,7 +241,7 @@ as v1.11 yaml file is very different compared to v1.12+.
 This test case has only 1 thing to test and that is the
 nnetworking/dnsDomain value
 */
-func TestGenerateConfigDNS(t *testing.T) {
+func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 	versions := []string{"v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
 	tests := []struct {
 		name      string
@@ -264,7 +264,7 @@ func TestGenerateConfigDNS(t *testing.T) {
 				cfg.NodeName = "mk"
 				cfg.KubernetesVersion = version + ".0"
 
-				got, err := generateConfig(cfg, runtime)
+				got, err := GenerateKubeadmYAML(cfg, runtime)
 				if err != nil && !tc.shouldErr {
 					t.Fatalf("got unexpected error generating config: %v", err)
 				}
@@ -296,7 +296,7 @@ func TestGenerateConfigDNS(t *testing.T) {
 	}
 }
 
-func TestGenerateConfig(t *testing.T) {
+func TestGenerateKubeadmYAML(t *testing.T) {
 	extraOpts := getExtraOpts()
 	extraOptsPodCidr := getExtraOptsPodCidr()
 	versions, err := recentReleases()
@@ -332,7 +332,7 @@ func TestGenerateConfig(t *testing.T) {
 				cfg.NodeName = "mk"
 				cfg.KubernetesVersion = version + ".0"
 
-				got, err := generateConfig(cfg, runtime)
+				got, err := GenerateKubeadmYAML(cfg, runtime)
 				if err != nil && !tc.shouldErr {
 					t.Fatalf("got unexpected error generating config: %v", err)
 				}

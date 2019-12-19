@@ -14,17 +14,15 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubeadm
+package bsutil
 
 import (
 	"fmt"
 	"path"
-	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/kubernetes/cmd/kubeadm/app/features"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -33,92 +31,19 @@ import (
 	"k8s.io/minikube/pkg/util"
 )
 
-// These are the components that can be configured
-// through the "extra-config"
-const (
-	Kubelet           = "kubelet"
-	Kubeadm           = "kubeadm"
-	Apiserver         = "apiserver"
-	Scheduler         = "scheduler"
-	ControllerManager = "controller-manager"
-)
-
-// ExtraConfigForComponent generates a map of flagname-value pairs for a k8s
-// component.
-func ExtraConfigForComponent(component string, opts config.ExtraOptionSlice, version semver.Version) (map[string]string, error) {
-	versionedOpts, err := DefaultOptionsForComponentAndVersion(component, version)
+// ParseKubernetesVersion parses the kubernetes version
+func ParseKubernetesVersion(version string) (semver.Version, error) {
+	// Strip leading 'v' prefix from version for semver parsing
+	v, err := semver.Make(version[1:])
 	if err != nil {
-		return nil, errors.Wrapf(err, "setting version specific options for %s", component)
+		return semver.Version{}, errors.Wrap(err, "invalid version, must begin with 'v'")
 	}
 
-	for _, opt := range opts {
-		if opt.Component == component {
-			if val, ok := versionedOpts[opt.Key]; ok {
-				glog.Infof("Overwriting default %s=%s with user provided %s=%s for component %s", opt.Key, val, opt.Key, opt.Value, component)
-			}
-			versionedOpts[opt.Key] = opt.Value
-		}
-	}
-
-	return versionedOpts, nil
+	return v, nil
 }
 
-// ComponentExtraArgs holds extra args for a component
-type ComponentExtraArgs struct {
-	Component string
-	Options   map[string]string
-}
-
-// mapping of component to the section name in kubeadm.
-var componentToKubeadmConfigKey = map[string]string{
-	Apiserver:         "apiServer",
-	ControllerManager: "controllerManager",
-	Scheduler:         "scheduler",
-	Kubeadm:           "kubeadm",
-	// The Kubelet is not configured in kubeadm, only in systemd.
-	Kubelet: "",
-}
-
-// NewComponentExtraArgs creates a new ComponentExtraArgs
-func NewComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
-	var kubeadmExtraArgs []ComponentExtraArgs
-	for _, extraOpt := range opts {
-		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
-			return nil, fmt.Errorf("unknown component %q. valid components are: %v", componentToKubeadmConfigKey, componentToKubeadmConfigKey)
-		}
-	}
-
-	keys := []string{}
-	for k := range componentToKubeadmConfigKey {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-
-	for _, component := range keys {
-		kubeadmComponentKey := componentToKubeadmConfigKey[component]
-		if kubeadmComponentKey == "" {
-			continue
-		}
-		extraConfig, err := ExtraConfigForComponent(component, opts, version)
-		if err != nil {
-			return nil, errors.Wrapf(err, "getting kubeadm extra args for %s", component)
-		}
-		if featureGates != "" {
-			extraConfig["feature-gates"] = featureGates
-		}
-		if len(extraConfig) > 0 {
-			kubeadmExtraArgs = append(kubeadmExtraArgs, ComponentExtraArgs{
-				Component: kubeadmComponentKey,
-				Options:   extraConfig,
-			})
-		}
-	}
-
-	return kubeadmExtraArgs, nil
-}
-
-// ParseFeatureArgs parses feature args into extra args
-func ParseFeatureArgs(featureGates string) (map[string]bool, string, error) {
+// parseFeatureArgs parses feature args into extra args
+func parseFeatureArgs(featureGates string) (map[string]bool, string, error) {
 	kubeadmFeatureArgs := map[string]bool{}
 	componentFeatureArgs := ""
 	for _, s := range strings.Split(featureGates, ",") {
@@ -158,30 +83,6 @@ func Supports(featureName string) bool {
 		}
 	}
 	return false
-}
-
-// parseKubernetesVersion parses the kubernetes version
-func parseKubernetesVersion(version string) (semver.Version, error) {
-	// Strip leading 'v' prefix from version for semver parsing
-	v, err := semver.Make(version[1:])
-	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "invalid version, must begin with 'v'")
-	}
-
-	return v, nil
-}
-
-func convertToFlags(opts map[string]string) string {
-	var flags []string
-	var keys []string
-	for k := range opts {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		flags = append(flags, fmt.Sprintf("--%s=%s", k, opts[k]))
-	}
-	return strings.Join(flags, " ")
 }
 
 var versionSpecificOpts = []config.VersionedExtraOption{
