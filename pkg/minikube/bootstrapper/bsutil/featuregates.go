@@ -16,3 +16,43 @@ limitations under the License.
 
 // bsutil package will eventually be renamed to kubeadm package after getting rid of older one
 package bsutil
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+
+	"github.com/pkg/errors"
+)
+
+// parseFeatureArgs parses feature args into extra args
+func parseFeatureArgs(featureGates string) (map[string]bool, string, error) {
+	kubeadmFeatureArgs := map[string]bool{}
+	componentFeatureArgs := ""
+	for _, s := range strings.Split(featureGates, ",") {
+		if len(s) == 0 {
+			continue
+		}
+
+		fg := strings.SplitN(s, "=", 2)
+		if len(fg) != 2 {
+			return nil, "", fmt.Errorf("missing value for key \"%v\"", s)
+		}
+
+		k := strings.TrimSpace(fg[0])
+		v := strings.TrimSpace(fg[1])
+
+		if !Supports(k) {
+			componentFeatureArgs = fmt.Sprintf("%s%s,", componentFeatureArgs, s)
+			continue
+		}
+
+		boolValue, err := strconv.ParseBool(v)
+		if err != nil {
+			return nil, "", errors.Wrapf(err, "failed to convert bool value \"%v\"", v)
+		}
+		kubeadmFeatureArgs[k] = boolValue
+	}
+	componentFeatureArgs = strings.TrimRight(componentFeatureArgs, ",")
+	return kubeadmFeatureArgs, componentFeatureArgs, nil
+}

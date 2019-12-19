@@ -85,7 +85,7 @@ func TestVersionIsBetween(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			t.Parallel()
-			between := VersionIsBetween(test.ver, test.gte, test.lte)
+			between := versionIsBetween(test.ver, test.gte, test.lte)
 			if between != test.expected {
 				t.Errorf("Expected: %t, Actual: %t", test.expected, between)
 			}
