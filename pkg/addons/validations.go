@@ -50,9 +50,9 @@ func IsContainerdRuntime(_, _, profile string) error {
 	return nil
 }
 
-// addonIsValid returns the addon, true if it is valid
+// isAddonValid returns the addon, true if it is valid
 // otherwise returns nil, false
-func addonIsValid(name string) (*Addon, bool) {
+func isAddonValid(name string) (*Addon, bool) {
 	for _, a := range Addons {
 		if a.name == name {
 			return a, true

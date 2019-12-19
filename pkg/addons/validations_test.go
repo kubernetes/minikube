@@ -16,3 +16,30 @@ limitations under the License.
 
 package addons
 
+import "testing"
+
+func TestIsAddonValid(t *testing.T) {
+	tests := []struct {
+		description string
+		name        string
+		isValid     bool
+	}{
+		{
+			description: "valid addon",
+			name:        "gvisor",
+			isValid:     true,
+		}, {
+			description: "invalid addon",
+			name:        "invalid",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			_, valid := isAddonValid(test.name)
+			if test.isValid != valid {
+				t.Fatalf("expected: %t\nactual:%t\n", test.isValid, valid)
+			}
+		})
+	}
+}

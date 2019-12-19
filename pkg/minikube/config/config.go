@@ -145,7 +145,7 @@ var DefaultLoader Loader = &simpleConfigLoader{}
 func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*MachineConfig, error) {
 	var cc MachineConfig
 	// Move to profile package
-	path := ProfileFilePath(profileName, miniHome...)
+	path := profileFilePath(profileName, miniHome...)
 
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		return nil, err
@@ -164,7 +164,7 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 
 func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *MachineConfig, miniHome ...string) error {
 	// Move to profile package
-	path := ProfileFilePath(profileName, miniHome...)
+	path := profileFilePath(profileName, miniHome...)
 	contents, err := json.MarshalIndent(cc, "", "	")
 	if err != nil {
 		return err
