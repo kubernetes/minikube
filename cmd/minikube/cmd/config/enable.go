@@ -18,6 +18,8 @@ package config
 
 import (
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -32,7 +34,7 @@ var addonsEnableCmd = &cobra.Command{
 		}
 
 		addon := args[0]
-		err := Set(addon, "true")
+		err := addons.Set(addon, "true", config.CurrentProfile())
 		if err != nil {
 			exit.WithError("enable failed", err)
 		}
