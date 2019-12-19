@@ -392,7 +392,7 @@ func updateDriver(driverName string) {
 
 func enableAddons() {
 	for _, a := range addonList {
-		err := pkgaddons.Set(a, "true", viper.GetString(config.MachineProfile)) 
+		err := pkgaddons.Set(a, "true", viper.GetString(config.MachineProfile))
 		if err != nil {
 			exit.WithError("addon enable failed", err)
 		}
