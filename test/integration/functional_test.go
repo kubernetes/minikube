@@ -35,8 +35,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-cmp/cmp"
+
+	"k8s.io/minikube/pkg/minikube/localpath"
+
 	"github.com/elazarl/goproxy"
 	"github.com/hashicorp/go-retryablehttp"
+	"github.com/otiai10/copy"
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
@@ -59,6 +64,7 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
+			{"CopySyncFile", setupFileSync},            // Set file for the file sync test case
 			{"StartWithProxy", validateStartWithProxy}, // Set everything else up for success
 			{"KubeContext", validateKubeContext},       // Racy: must come immediately after "minikube start"
 			{"KubectlGetPods", validateKubectlGetPods}, // Make sure apiserver is up
@@ -96,6 +102,8 @@ func TestFunctional(t *testing.T) {
 			{"TunnelCmd", validateTunnelCmd},
 			{"SSHCmd", validateSSHCmd},
 			{"MySQL", validateMySQL},
+			{"FileSync", validateFileSync},
+			{"UpdateContextCmd", validateUpdateContextCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -301,17 +309,51 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateCacheCmd asserts basic "ssh" command functionality
+// validateCacheCmd tests functionality of cache command (cache add, delete, list)
 func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: cache unsupported by none")
 	}
-	for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "mysql:5.6", "gcr.io/hello-minikube-zero-install/hello-node"} {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
-		if err != nil {
-			t.Errorf("%s failed: %v", rr.Args, err)
-		}
-	}
+	t.Run("cache", func(t *testing.T) {
+		t.Run("add", func(t *testing.T) {
+			for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "k8s.gcr.io/pause:latest"} {
+				_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
+				if err != nil {
+					t.Errorf("Failed to cache image %q", img)
+				}
+			}
+		})
+		t.Run("delete", func(t *testing.T) {
+			_, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "busybox:1.28.4-glibc"))
+			if err != nil {
+				t.Errorf("failed to delete image busybox:1.28.4-glibc from cache: %v", err)
+			}
+		})
+
+		t.Run("list", func(t *testing.T) {
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "list"))
+			if err != nil {
+				t.Errorf("cache list failed: %v", err)
+			}
+			if !strings.Contains(rr.Output(), "k8s.gcr.io/pause") {
+				t.Errorf("cache list did not include k8s.gcr.io/pause")
+			}
+			if strings.Contains(rr.Output(), "busybox:1.28.4-glibc") {
+				t.Errorf("cache list should not include busybox:1.28.4-glibc")
+			}
+		})
+
+		t.Run("verify cache inside node", func(t *testing.T) {
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
+			if err != nil {
+				t.Errorf("failed to get docker images through ssh %v", err)
+			}
+			if !strings.Contains(rr.Output(), "1.28.4-glibc") {
+				t.Errorf("expected '1.28.4-glibc' to be in the output: %s", rr.Output())
+			}
+
+		})
+	})
 }
 
 // validateConfigCmd asserts basic "config" command functionality
@@ -570,6 +612,50 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	}
 	if err = retry.Expo(mysql, 5*time.Second, 180*time.Second); err != nil {
 		t.Errorf("mysql failing: %v", err)
+	}
+}
+
+// Copy extra file into minikube home folder for file sync test
+func setupFileSync(ctx context.Context, t *testing.T, profile string) {
+	// 1. copy random file to MINIKUBE_HOME/files/etc
+	f := filepath.Join(localpath.MiniPath(), "/files/etc/sync.test")
+	err := copy.Copy("./testdata/sync.test", f)
+	if err != nil {
+		t.Fatalf("copy: %v", err)
+	}
+}
+
+// validateFileSync to check existence of the test file
+func validateFileSync(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("skipping: ssh unsupported by none")
+	}
+	// check file existence
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/sync.test"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	expected, err := ioutil.ReadFile("./testdata/sync.test")
+	if err != nil {
+		t.Errorf("test file not found: %v", err)
+	}
+
+	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
+		t.Errorf("/etc/sync.test content mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// validateUpdateContextCmd asserts basic "update-context" command functionality
+func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	want := []byte("IP was already correctly configured")
+	if !bytes.Contains(rr.Stdout.Bytes(), want) {
+		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 	}
 }
 

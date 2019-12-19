@@ -8,7 +8,7 @@ metadata:
     kubernetes.io/minikube-addons: storage-provisioner-gluster
     addonmanager.kubernetes.io/mode: EnsureExists
   annotations:
-    storageclass.beta.kubernetes.io/is-default-class: "true"
+    storageclass.kubernetes.io/is-default-class: "true"
 provisioner: gluster.org/glusterfile
 reclaimPolicy: Delete
 parameters:

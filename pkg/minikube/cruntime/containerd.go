@@ -169,13 +169,13 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
-func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string) error {
 	cPath := containerdConfigFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
 		return err
 	}
-	pauseImage := images.PauseImage(imageRepository, k8sVersion)
+	pauseImage := images.Pause(imageRepository)
 	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: pauseImage}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
@@ -198,7 +198,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
@@ -219,6 +219,15 @@ func (r *Containerd) Disable() error {
 		return errors.Wrapf(err, "stop containerd")
 	}
 	return nil
+}
+
+// ImageExists checks if an image exists, expected input format
+func (r *Containerd) ImageExists(name string, sha string) bool {
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images check | grep %s | grep %s", name, sha))
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return false
+	}
+	return true
 }
 
 // LoadImage loads an image into this runtime

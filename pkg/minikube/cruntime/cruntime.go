@@ -59,6 +59,9 @@ type Manager interface {
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
 
+	// ImageExists takes image name and image sha checks if an it exists
+	ImageExists(string, string) bool
+
 	// ListContainers returns a list of managed by this container runtime
 	ListContainers(string) ([]string, error)
 	// KillContainers removes containers based on ID

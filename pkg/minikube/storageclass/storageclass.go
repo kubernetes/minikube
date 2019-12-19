@@ -29,7 +29,7 @@ import (
 
 func annotateDefaultStorageClass(storage storagev1.StorageV1Interface, class *v1.StorageClass, enable bool) error {
 	isDefault := strconv.FormatBool(enable)
-	metav1.SetMetaDataAnnotation(&class.ObjectMeta, "storageclass.beta.kubernetes.io/is-default-class", isDefault)
+	metav1.SetMetaDataAnnotation(&class.ObjectMeta, "storageclass.kubernetes.io/is-default-class", isDefault)
 	_, err := storage.StorageClasses().Update(class)
 
 	return err

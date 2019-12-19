@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -137,7 +138,7 @@ func EnableOrDisableAddon(name string, val string) error {
 		return nil
 	}
 
-	cfg, err := config.Load()
+	cfg, err := config.Load(viper.GetString(config.MachineProfile))
 	if err != nil && !os.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
