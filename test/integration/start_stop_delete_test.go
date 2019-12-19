@@ -207,11 +207,12 @@ func TestStartStop(t *testing.T) {
 }
 
 // defaultImage returns true if this image is expected in a default minikube install
-func defaultImage(name string) {
+func defaultImage(name string) bool {
 	if strings.Contains(name, ":latest") {
 		return false
 	}
-	if strings.Contains(i, "k8s.gcr.io") || strings.Contains(i, "kubernetesui") || strings.Contains(i, "storage-provisioner") {
+	if strings.Contains(name, "k8s.gcr.io") || strings.Contains(name, "kubernetesui") || strings.Contains(name, "storage-provisioner") {
 		return true
 	}
+	return false
 }
