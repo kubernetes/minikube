@@ -27,7 +27,7 @@ Else {$env:status="failure"}
 type nul > out/test.json
 # generate json output using go tool test2json
 go tool test2json -t < ./out/test.out > ./out/test.json || VER>NUL
-go get -u "github.com/medyagh/gopogh@v0.0.15"
+GO111MODULE="on" go get -u "github.com/medyagh/gopogh@v0.0.15"
 
 type nul > out/test.html # touch 
 # Generate html report 

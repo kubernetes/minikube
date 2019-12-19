@@ -312,18 +312,18 @@ rm "${JSON_OUT}" || true # clean up build-reruns
 touch "${JSON_OUT}"
 
 # Generate JSON output
-echo ">> Runnin go test2json"
+echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 echo ">> Installing gopogh"
-go get -u github.com/medyagh/gopogh@v0.0.15 || true
+GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.15 || true
 echo ">> Running gopogh"
 rm "${HTML_OUT}" || true # clean up build-reruns
 touch "${HTML_OUT}"
 gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}" || true
-echo ">> Copying ${JSON_OUT} to ${JOB_GS_BUCKET}.json"
-gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GS_BUCKET}.json"
-echo ">> Copying ${HTML_OUT} to ${JOB_GS_BUCKET}.html"
-gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GS_BUCKET}.html"
+echo ">> uploading ${JSON_OUT} to ${JOB_GCS_BUCKET}.json"
+gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
+echo ">> uploading ${HTML_OUT} to ${JOB_GCS_BUCKET}.html"
+gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 
 
 echo ">> Cleaning up after ourselves ..."
