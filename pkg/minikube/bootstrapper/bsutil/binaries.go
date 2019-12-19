@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 // TransferBinaries transfers all required Kubernetes binaries
@@ -48,4 +49,9 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 		})
 	}
 	return g.Wait()
+}
+
+// binRoot returns the persistent path binaries are stored in
+func binRoot(version string) string {
+	return path.Join(vmpath.GuestPersistentDir, "binaries", version)
 }

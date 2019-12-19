@@ -25,7 +25,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/template"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -72,7 +71,7 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		DNSDomain         string
 		CRISocket         string
 		ImageRepository   string
-		ExtraArgs         []ComponentExtraArgs
+		ExtraArgs         []componentExtraArgs
 		FeatureArgs       map[string]bool
 		NoTaintMaster     bool
 	}{
@@ -82,7 +81,7 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
-		EtcdDataDir:       etcdDataDir(),
+		EtcdDataDir:       EtcdDataDir(),
 		NodeName:          k8s.NodeName,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
@@ -113,71 +112,6 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 	return b.Bytes(), nil
 }
 
-// NewKubeletConfig generates a new systemd unit containing a configured kubelet
-// based on the options present in the KubernetesConfig.
-func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, error) {
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
-	if err != nil {
-		return nil, errors.Wrap(err, "parsing kubernetes version")
-	}
-
-	extraOpts, err := extraConfigForComponent(Kubelet, k8s.ExtraOptions, version)
-	if err != nil {
-		return nil, errors.Wrap(err, "generating extra configuration for kubelet")
-	}
-
-	for k, v := range r.KubeletOptions() {
-		extraOpts[k] = v
-	}
-	if k8s.NetworkPlugin != "" {
-		extraOpts["network-plugin"] = k8s.NetworkPlugin
-	}
-	if _, ok := extraOpts["node-ip"]; !ok {
-		extraOpts["node-ip"] = k8s.NodeIP
-	}
-
-	pauseImage := images.Pause(k8s.ImageRepository)
-	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
-		extraOpts["pod-infra-container-image"] = pauseImage
-	}
-
-	// parses a map of the feature gates for kubelet
-	_, kubeletFeatureArgs, err := parseFeatureArgs(k8s.FeatureGates)
-	if err != nil {
-		return nil, errors.Wrap(err, "parses feature gate config for kubelet")
-	}
-
-	if kubeletFeatureArgs != "" {
-		extraOpts["feature-gates"] = kubeletFeatureArgs
-	}
-
-	b := bytes.Buffer{}
-	opts := struct {
-		ExtraOptions     string
-		ContainerRuntime string
-		KubeletPath      string
-	}{
-		ExtraOptions:     convertToFlags(extraOpts),
-		ContainerRuntime: k8s.ContainerRuntime,
-		KubeletPath:      path.Join(binRoot(k8s.KubernetesVersion), "kubelet"),
-	}
-	if err := template.KubeletSystemdTemplate.Execute(&b, opts); err != nil {
-		return nil, err
-	}
-
-	return b.Bytes(), nil
-}
-
-// NewKubeletService returns a generated systemd unit file for the kubelet
-func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
-	var b bytes.Buffer
-	opts := struct{ KubeletPath string }{KubeletPath: path.Join(binRoot(cfg.KubernetesVersion), "kubelet")}
-	if err := template.KubeletServiceTemplate.Execute(&b, opts); err != nil {
-		return nil, errors.Wrap(err, "template execute")
-	}
-	return b.Bytes(), nil
-}
-
 // These are the components that can be configured
 // through the "extra-config"
 const (
@@ -188,17 +122,12 @@ const (
 	ControllerManager = "controller-manager"
 )
 
-// binRoot returns the persistent path binaries are stored in
-func binRoot(version string) string {
-	return path.Join(vmpath.GuestPersistentDir, "binaries", version)
-}
-
 // InvokeKubeadm returns the invocation command for Kubeadm
 func InvokeKubeadm(version string) string {
 	return fmt.Sprintf("sudo env PATH=%s:$PATH kubeadm", binRoot(version))
 }
 
-// etcdDataDir is where etcd data is stored.
-func etcdDataDir() string {
+// EtcdDataDir is where etcd data is stored.
+func EtcdDataDir() string {
 	return path.Join(vmpath.GuestPersistentDir, "etcd")
 }
