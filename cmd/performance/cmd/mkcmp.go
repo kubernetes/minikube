@@ -23,7 +23,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/performance"
+	"k8s.io/minikube/pkg/minikube/perf"
 )
 
 var rootCmd = &cobra.Command{
@@ -35,11 +35,7 @@ var rootCmd = &cobra.Command{
 		return validateArgs(args)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		binaries, err := performance.Binaries(args)
-		if err != nil {
-			return err
-		}
-		return performance.CompareMinikubeStart(context.Background(), os.Stdout, binaries)
+		return perf.CompareMinikubeStart(context.Background(), os.Stdout, args)
 	},
 }
 
