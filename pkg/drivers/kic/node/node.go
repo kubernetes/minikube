@@ -18,12 +18,10 @@ package node
 
 import (
 	"fmt"
-	"io"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -47,93 +45,6 @@ type Node struct {
 	r    command.Runner // Runner
 }
 
-// WriteFile writes content to dest on the node
-func (n *Node) WriteFile(dest, content string, perm string) error {
-	// create destination directory
-	cmd := exec.Command("mkdir", "-p", filepath.Dir(dest))
-	rr, err := n.r.RunCmd(cmd)
-	if err != nil {
-		return errors.Wrapf(err, "failed to create directory %s cmd: %v output:%q", cmd.Args, dest, rr.Output())
-	}
-
-	cmd = exec.Command("cp", "/dev/stdin", dest)
-	cmd.Stdin = strings.NewReader(content)
-
-	if rr, err := n.r.RunCmd(cmd); err != nil {
-		return errors.Wrapf(err, "failed to run: cp /dev/stdin %s cmd: %v output:%q", dest, cmd.Args, rr.Output())
-	}
-
-	cmd = exec.Command("chmod", perm, dest)
-	_, err = n.r.RunCmd(cmd)
-	if err != nil {
-		return errors.Wrapf(err, "failed to run: chmod %s %s", perm, dest)
-	}
-	return nil
-}
-
-// IP returns the IP address of the node
-func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
-	// retrieve the IP address of the node using docker inspect
-	lines, err := oci.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
-	if err != nil {
-		return "", "", errors.Wrap(err, "node ips")
-	}
-	if len(lines) != 1 {
-		return "", "", errors.Errorf("file should only be one line, got %d lines", len(lines))
-	}
-	ips := strings.Split(lines[0], ",")
-	if len(ips) != 2 {
-		return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
-	}
-	return ips[0], ips[1], nil
-}
-
-// LoadImageArchive loads an image from archive into the node
-func (n *Node) LoadImageArchive(image io.Reader) error {
-	cmd := exec.Command(
-		"ctr", "--namespace=k8s.io", "images", "import", "-",
-	)
-	cmd.Stdin = image
-	if _, err := n.r.RunCmd(cmd); err != nil {
-		return errors.Wrap(err, "failed to load image")
-	}
-	return nil
-}
-
-// Copy copies a local asset into the node
-func (n *Node) Copy(ociBinary string, asset assets.CopyableFile) error {
-	if err := oci.Copy(ociBinary, n.name, asset); err != nil {
-		return errors.Wrap(err, "failed to copy file/folder")
-	}
-
-	// TODO: medya verify add tests
-	cmd := exec.Command("chmod", asset.GetPermissions(), asset.GetTargetName())
-	if _, err := n.r.RunCmd(cmd); err != nil {
-		return errors.Wrap(err, "failed to chmod file permissions")
-	}
-	return nil
-}
-
-// Status gets status for node
-func (n *Node) Status() (state.State, error) {
-	return oci.Status(DefaultOci, n.name)
-}
-
-// Pause pauses all process in the node
-func (n *Node) Pause() error {
-	return oci.Pause(DefaultOci, n.name)
-}
-
-// Stop stops the node
-func (n *Node) Stop() error {
-	return oci.Stop(n.name)
-}
-
-// Remove removes the node
-func (n *Node) Remove() error {
-	return oci.Remove(DefaultOci, n.name)
-}
-
 type CreateParams struct {
 	Name         string // used for container name and hostname
 	Image        string // container image to use to create the node.
@@ -141,7 +52,7 @@ type CreateParams struct {
 	Role         string // currently only role supported is control-plane
 	Mounts       []oci.Mount
 	PortMappings []oci.PortMapping
-	Cpus         string
+	CPUs         string
 	Memory       string
 	Envs         map[string]string
 	ExtraArgs    []string
@@ -152,7 +63,7 @@ type CreateParams struct {
 func CreateNode(p CreateParams) (*Node, error) {
 	cmder := command.NewKICRunner(p.Name, p.OCIBinary)
 	runArgs := []string{
-		fmt.Sprintf("--cpus=%s", p.Cpus),
+		fmt.Sprintf("--cpus=%s", p.CPUs),
 		fmt.Sprintf("--memory=%s", p.Memory),
 		"-d", // run the container detached
 		"-t", // allocate a tty for entrypoint logs
@@ -220,4 +131,63 @@ func Find(name string, cmder command.Runner) (*Node, error) {
 		name: name,
 		r:    cmder,
 	}, nil
+}
+
+// WriteFile writes content to dest on the node
+func (n *Node) WriteFile(dest, content string, perm string) error {
+	// create destination directory
+	cmd := exec.Command("mkdir", "-p", filepath.Dir(dest))
+	rr, err := n.r.RunCmd(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "failed to create directory %s cmd: %v output:%q", cmd.Args, dest, rr.Output())
+	}
+
+	cmd = exec.Command("cp", "/dev/stdin", dest)
+	cmd.Stdin = strings.NewReader(content)
+
+	if rr, err := n.r.RunCmd(cmd); err != nil {
+		return errors.Wrapf(err, "failed to run: cp /dev/stdin %s cmd: %v output:%q", dest, cmd.Args, rr.Output())
+	}
+
+	cmd = exec.Command("chmod", perm, dest)
+	_, err = n.r.RunCmd(cmd)
+	if err != nil {
+		return errors.Wrapf(err, "failed to run: chmod %s %s", perm, dest)
+	}
+	return nil
+}
+
+// IP returns the IP address of the node
+func (n *Node) IP() (ipv4 string, ipv6 string, err error) {
+	// retrieve the IP address of the node using docker inspect
+	lines, err := oci.Inspect(n.name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
+	if err != nil {
+		return "", "", errors.Wrap(err, "node ips")
+	}
+	if len(lines) != 1 {
+		return "", "", errors.Errorf("file should only be one line, got %d lines", len(lines))
+	}
+	ips := strings.Split(lines[0], ",")
+	if len(ips) != 2 {
+		return "", "", errors.Errorf("container addresses should have 2 values, got %d values", len(ips))
+	}
+	return ips[0], ips[1], nil
+}
+
+// Copy copies a local asset into the node
+func (n *Node) Copy(ociBinary string, asset assets.CopyableFile) error {
+	if err := oci.Copy(ociBinary, n.name, asset); err != nil {
+		return errors.Wrap(err, "failed to copy file/folder")
+	}
+
+	cmd := exec.Command("chmod", asset.GetPermissions(), asset.GetTargetName())
+	if _, err := n.r.RunCmd(cmd); err != nil {
+		return errors.Wrap(err, "failed to chmod file permissions")
+	}
+	return nil
+}
+
+// Remove removes the node
+func (n *Node) Remove() error {
+	return oci.Remove(DefaultOci, n.name)
 }
