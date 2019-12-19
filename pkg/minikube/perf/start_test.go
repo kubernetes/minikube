@@ -23,9 +23,9 @@ import (
 	"testing"
 )
 
-func mockCollectTimeMinikubeStart(durations []float64) func(ctx context.Context, binary *Binary) (float64, error) {
+func mockCollectTimeMinikubeStart(durations []float64) func(ctx context.Context, binary string) (float64, error) {
 	index := 0
-	return func(context.Context, *Binary) (float64, error) {
+	return func(context.Context, string) (float64, error) {
 		duration := durations[index]
 		index++
 		return duration, nil
@@ -52,7 +52,7 @@ func TestCompareMinikubeStartOutput(t *testing.T) {
 			defer func() { collectTimeMinikubeStart = originalCollectTimes }()
 
 			buf := bytes.NewBuffer([]byte{})
-			err := CompareMinikubeStart(context.Background(), buf, []*Binary{{}, {}})
+			err := CompareMinikubeStart(context.Background(), buf, []string{"", ""})
 			if err != nil {
 				t.Fatalf("error comparing minikube start: %v", err)
 			}
@@ -69,16 +69,14 @@ func TestCollectTimes(t *testing.T) {
 	tests := []struct {
 		description string
 		durations   []float64
-		runs        int
 		expected    [][]float64
 	}{
 		{
-			description: "two runs",
-			durations:   []float64{1, 2, 3, 4},
-			runs:        2,
+			description: "test collect time",
+			durations:   []float64{1, 2},
 			expected: [][]float64{
-				{1, 3},
-				{2, 4},
+				{1},
+				{2},
 			},
 		},
 	}
@@ -89,8 +87,7 @@ func TestCollectTimes(t *testing.T) {
 			collectTimeMinikubeStart = mockCollectTimeMinikubeStart(test.durations)
 			defer func() { collectTimeMinikubeStart = originalCollectTimes }()
 
-			runs = test.runs
-			actual, err := collectTimes(context.Background(), []*Binary{{}, {}})
+			actual, err := collectTimes(context.Background(), []string{"", ""})
 			if err != nil {
 				t.Fatalf("error collecting times: %v", err)
 			}
