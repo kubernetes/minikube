@@ -379,8 +379,8 @@ function retry_github_status() {
 }
 
 
-public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
-if [[ $(wc -l <"${HTML_OUT}") -ge 1 ]]; then # if HTML generation was succesfull (would fail if gopogh is not installed)
+public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}out.txt"
+if [ `wc -l ${HTML_OUT} | awk '{print $1}'` -ge "2" ]; then  # if HTML generation was succesfull (would fail if gopogh is not installed)
   public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
 fi
 
