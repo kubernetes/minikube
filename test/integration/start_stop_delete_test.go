@@ -164,15 +164,11 @@ func TestStartStop(t *testing.T) {
 					gotImages := []string{}
 					for _, img := range jv["images"] {
 						for _, i := range img.Tags {
-							// Ignore images deployed by addons
-							if strings.Contains(i, "k8s.gcr.io") || strings.Contains(i, "kubernetesui") || strings.Contains(i, "k8s-minikube") {
-								// May be pulled in by an unrelated addon
-								if !strings.Contains(i, "pause:latest") {
-									// Remove docker.io for naming consistency between container runtimes
-									gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
-								}
+							if defaultImage(i) {
+								// Remove docker.io for naming consistency between container runtimes
+								gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
 							} else {
-								t.Logf("Found unexpected foreign image (not fatal): %s", i)
+								t.Logf("Found non-minikube image: %s", i)
 							}
 						}
 					}
@@ -208,4 +204,14 @@ func TestStartStop(t *testing.T) {
 			})
 		}
 	})
+}
+
+// defaultImage returns true if this image is expected in a default minikube install
+func defaultImage(name string) {
+	if strings.Contains(name, ":latest") {
+		return false
+	}
+	if strings.Contains(i, "k8s.gcr.io") || strings.Contains(i, "kubernetesui") || strings.Contains(i, "storage-provisioner") {
+		return true
+	}
 }
