@@ -41,18 +41,18 @@ type Driver struct {
 	OCIBinary  string // docker,podman
 }
 
-// Config is configuration for the kic driver
+// Config is configuration for the kic driver used by registry
 type Config struct {
-	MachineName   string
-	CPU           int
-	Memory        int
-	StorePath     string
-	OCIBinary     string // oci tool to use (docker, podman,...)
-	ImageDigest   string // image name with sha to use for the node
-	APIServerPort int32  // port to connect to forward from container to user's machine
-	Mounts        []oci.Mount
-	PortMappings  []oci.PortMapping
-	Envs          map[string]string // key,value of envinronment variables passed to the node
+	MachineName   string            // maps to the container name being created
+	CPU           int               // Number of CPU cores assigned to the container
+	Memory        int               // max memory in MB
+	StorePath     string            // lib machine store path
+	OCIBinary     string            // oci tool to use (docker, podman,...)
+	ImageDigest   string            // image name with sha to use for the node
+	APIServerPort int32             // port to connect to forward from container to user's machine
+	Mounts        []oci.Mount       // mounts
+	PortMappings  []oci.PortMapping // container port mappings
+	Envs          map[string]string // key,value of environment variables passed to the node
 }
 
 // NewDriver returns a fully configured Kic driver
