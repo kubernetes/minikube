@@ -70,8 +70,8 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 	},
 }
 
-// NewComponentExtraArgs creates a new ComponentExtraArgs
-func NewComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
+// newComponentExtraArgs creates a new ComponentExtraArgs
+func newComponentExtraArgs(opts config.ExtraOptionSlice, version semver.Version, featureGates string) ([]ComponentExtraArgs, error) {
 	var kubeadmExtraArgs []ComponentExtraArgs
 	for _, extraOpt := range opts {
 		if _, ok := componentToKubeadmConfigKey[extraOpt.Component]; !ok {
@@ -125,7 +125,7 @@ func CreateFlagsFromExtraArgs(extraOptions config.ExtraOptionSlice) string {
 
 // createExtraComponentConfig generates a map of component to extra args for all of the components except kubeadm
 func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version semver.Version, componentFeatureArgs string) ([]ComponentExtraArgs, error) {
-	extraArgsSlice, err := NewComponentExtraArgs(extraOptions, version, componentFeatureArgs)
+	extraArgsSlice, err := newComponentExtraArgs(extraOptions, version, componentFeatureArgs)
 	if err != nil {
 		return nil, err
 	}
