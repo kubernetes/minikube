@@ -18,6 +18,7 @@ package config
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -34,7 +35,7 @@ var addonsEnableCmd = &cobra.Command{
 		}
 
 		addon := args[0]
-		err := addons.Set(addon, "true", config.CurrentProfile())
+		err := addons.Set(addon, "true", viper.GetString(config.MachineProfile))
 		if err != nil {
 			exit.WithError("enable failed", err)
 		}
