@@ -33,49 +33,49 @@ var Addons = []*Addon{
 	{
 		name:      "addon-manager",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "dashboard",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 
 	{
 		name:      "default-storageclass",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableStorageClasses},
+		callbacks: []setFn{enableOrDisableStorageClasses},
 	},
 	{
 		name:      "efk",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "freshpod",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:        "gvisor",
 		set:         SetBool,
 		validations: []setFn{IsContainerdRuntime},
-		callbacks:   []setFn{EnableOrDisableAddon},
+		callbacks:   []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "helm-tiller",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "ingress",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "ingress-dns",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name: "logviewer",
@@ -84,37 +84,37 @@ var Addons = []*Addon{
 	{
 		name:      "metrics-server",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "nvidia-driver-installer",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "nvidia-gpu-device-plugin",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 
 	{
 		name:      "registry",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "registry-creds",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "storage-provisioner",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableAddon},
+		callbacks: []setFn{enableOrDisableAddon},
 	},
 	{
 		name:      "storage-provisioner-gluster",
 		set:       SetBool,
-		callbacks: []setFn{EnableOrDisableStorageClasses},
+		callbacks: []setFn{enableOrDisableStorageClasses},
 	},
 }
