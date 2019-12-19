@@ -465,16 +465,17 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "create")
 	}
 
-	if !driver.BareMetal(config.VMDriver) && !driver.IsKIC(config.VMDriver) {
+	if driver.BareMetal(config.VMDriver) {
+		showLocalOsRelease()
+	} else if !driver.BareMetal(config.VMDriver) && !driver.IsKIC(config.VMDriver) {
 		showRemoteOsRelease(h.Driver)
 		// Ensure that even new VM's have proper time synchronization up front
 		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
 		if err := ensureSyncedGuestClock(h); err != nil {
 			return h, err
 		}
-	} else {
-		showLocalOsRelease() // TODO:medyagh for kic show docker or podman version
-	}
+	} // TODO:medyagh add show-os release for kic
+
 	if err := api.Save(h); err != nil {
 		return nil, errors.Wrap(err, "save")
 	}

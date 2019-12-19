@@ -340,7 +340,6 @@ func runStart(cmd *cobra.Command, args []string) {
 	// exits here in case of --download-only option.
 	handleDownloadOnly(&cacheGroup, k8sVersion)
 	mRunner, preExists, machineAPI, host := startMachine(&config)
-	fmt.Println("After startMachine &config")
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(mRunner, driverName, config.KubernetesConfig)
@@ -484,7 +483,6 @@ func startMachine(config *cfg.MachineConfig) (runner command.Runner, preExists b
 	}
 
 	ip := validateNetwork(host, runner)
-	fmt.Println("after validateNetwork")
 
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)

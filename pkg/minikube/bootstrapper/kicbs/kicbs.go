@@ -18,39 +18,63 @@ limitations under the License.
 package kicbs
 
 import (
+	"fmt"
 	"net"
 	"time"
 
+	"github.com/docker/machine/libmachine"
+	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
-func PullImages(config.KubernetesConfig) error {
+// Bootstrapper is a bootstrapper using kicbs
+type Bootstrapper struct {
+	c           command.Runner
+	contextName string
+}
 
-	return nil
+// NewKICBSBootstrapper creates a new kicbs.Bootstrapper
+func NewKICBSBootstrapper(api libmachine.API) (*Bootstrapper, error) {
+	name := viper.GetString(config.MachineProfile)
+	h, err := api.Load(name)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting api client")
+	}
+	runner, err := machine.CommandRunner(h)
+	if err != nil {
+		return nil, errors.Wrap(err, "command runner")
+	}
+	return &Bootstrapper{c: runner, contextName: name}, nil
 }
-func StartCluster(config.KubernetesConfig) error {
 
-	return nil
+func (k *Bootstrapper) PullImages(config.KubernetesConfig) error {
+	return fmt.Errorf("the PullImages is not implemented in kicbs yet")
 }
-func UpdateCluster(config.MachineConfig) error {
-	return nil
+func (k *Bootstrapper) StartCluster(config.KubernetesConfig) error {
+	return fmt.Errorf("the StartCluster is not implemented in kicbs yet")
 }
-func DeleteCluster(config.KubernetesConfig) error {
-	return nil
+func (k *Bootstrapper) UpdateCluster(config.MachineConfig) error {
+	return fmt.Errorf("the UpdateCluster is not implemented in kicbs yet")
 }
-func WaitForCluster(config.KubernetesConfig, time.Duration) error {
-	return nil
+func (k *Bootstrapper) DeleteCluster(config.KubernetesConfig) error {
+	return fmt.Errorf("the DeleteCluster is not implemented in kicbs yet")
 }
-func LogCommands(bootstrapper.LogOptions) map[string]string {
-	return nil
+func (k *Bootstrapper) WaitForCluster(config.KubernetesConfig, time.Duration) error {
+	return fmt.Errorf("the WaitForCluster is not implemented in kicbs yet")
 }
-func SetupCerts(cfg config.KubernetesConfig) error {
-	return nil
+func (k *Bootstrapper) LogCommands(bootstrapper.LogOptions) map[string]string {
+	return map[string]string{}
 }
-func GetKubeletStatus() (string, error) {
-	return "", nil
+func (k *Bootstrapper) SetupCerts(cfg config.KubernetesConfig) error {
+	return fmt.Errorf("the SetupCerts is not implemented in kicbs yet")
 }
-func GetAPIServerStatus(net.IP, int) (string, error) {
-	return "", nil
+func (k *Bootstrapper) GetKubeletStatus() (string, error) {
+	return "", fmt.Errorf("the GetKubeletStatus is not implemented in kicbs yet")
+}
+func (k *Bootstrapper) GetAPIServerStatus(net.IP, int) (string, error) {
+	return "", fmt.Errorf("the GetAPIServerStatus is not implemented in kicbs yet")
 }
