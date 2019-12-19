@@ -29,7 +29,7 @@ type nul > out/test.json
 go tool test2json -t < ./out/test.out > ./out/test.json || VER>NUL
 
 type nul > out/test.html # touch 
-# genearte html report
+# Generate html report 
 gopogh -in ./out/test.json  -out ./out/test.html -name $env:JOB_NAME -pr $env:MINIKUBE_LOCATION -repo github.com/kubernetes/minikube/  -details $env:COMMIT || VER>NUL
 gsutil -qm cp ./out/test.json "gs://minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:JOB_NAME.json" || VER>NUL
 gsutil -qm cp ./out/test.html "gs://minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:JOB_NAME.html" || VER>NUL
