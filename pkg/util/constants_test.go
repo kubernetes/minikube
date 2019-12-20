@@ -45,3 +45,29 @@ func TestGetServiceClusterIP(t *testing.T) {
 		}
 	}
 }
+
+func TestGetDNSIP(t *testing.T) {
+	testData := []struct {
+		serviceCIRD string
+		expectedIP  string
+		err         bool
+	}{
+		{"1111.0.0.1/12", "", true},
+		{"10.96.0.0/24", "10.96.0.10", false},
+	}
+
+	for _, tt := range testData {
+		ip, err := GetDNSIP(tt.serviceCIRD)
+		if err != nil && !tt.err {
+			t.Fatalf("GetDNSIP() err = %v", err)
+		}
+		if err == nil && tt.err {
+			t.Fatalf("GetDNSIP() should have returned error, but didn't")
+		}
+		if err == nil {
+			if ip.String() != tt.expectedIP {
+				t.Fatalf("Expected '%s' but got '%s'", tt.expectedIP, ip.String())
+			}
+		}
+	}
+}
