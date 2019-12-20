@@ -321,7 +321,7 @@ touch "${JSON_OUT}"
 echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 echo ">> Installing gopogh"
-GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.15 || true
+GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.16 || true
 echo ">> Running gopogh"
 if test -f "${HTML_OUT}"; then
     rm "${HTML_OUT}" || true # clean up previous runs of same build
