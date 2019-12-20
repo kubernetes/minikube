@@ -1,6 +1,5 @@
 # Release Notes
 
-A special bugfix release to fix minikube working offline:
 
 ## Version 1.6.2  - 2019-12-19
 
