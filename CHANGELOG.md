@@ -1,5 +1,30 @@
 # Release Notes
 
+A special bugfix release to fix minikube working offline:
+
+## Version 1.6.2  - 2019-12-19
+
+* Offline: always transfer image if lookup fails, always download drivers [#6111](https://github.com/kubernetes/minikube/pull/6111)
+* Update ingress-dns addon [#6091](https://github.com/kubernetes/minikube/pull/6091)
+* Fix update-context to use KUBECONFIG when the env is set [#6090](https://github.com/kubernetes/minikube/pull/6090)
+* Fixed IPv6 format for SSH [#6110](https://github.com/kubernetes/minikube/pull/6110)
+* Add hyperkit version check whether user's hyperkit is newer [#5833](https://github.com/kubernetes/minikube/pull/5833)
+* start: Remove create/delete retry loop [#6129](https://github.com/kubernetes/minikube/pull/6129)
+* Change error text to encourage better issue reports [#6121](https://github.com/kubernetes/minikube/pull/6121)
+
+Huge thank you for this release towards our contributors: 
+- Anukul Sangwan
+- Aresforchina
+- Curtis Carter
+- Kenta Iso
+- Medya Ghazizadeh
+- Sharif Elgamal
+- Thomas Strömberg
+- Zhou Hao
+- priyawadhwa
+- tstromberg
+
+
 ## Version 1.6.1  - 2019-12-11
 
 A special bugfix release to fix a Windows regression:
