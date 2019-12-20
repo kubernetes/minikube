@@ -268,15 +268,15 @@ func getClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 	var b bootstrapper.Bootstrapper
 	var err error
 	switch bootstrapperName {
-	case bootstrapper.BootstrapperTypeKubeadm:
-		b, err = kubeadm.NewKubeadmBootstrapper(api)
+	case bootstrapper.Kubeadm:
+		b, err = kubeadm.NewBootstrapper(api)
 		if err != nil {
-			return nil, errors.Wrap(err, "getting kubeadm bootstrapper")
+			return nil, errors.Wrap(err, "getting a new kubeadm bootstrapper")
 		}
-	case bootstrapper.BootstrapperTypeKICBS:
-		b, err = kicbs.NewKICBSBootstrapper(api)
+	case bootstrapper.KIC:
+		b, err = kicbs.NewBootstrapper(api)
 		if err != nil {
-			return nil, errors.Wrap(err, "getting kicbs bootstrapper")
+			return nil, errors.Wrap(err, "getting a new kic bootstrapper")
 		}
 
 	default:

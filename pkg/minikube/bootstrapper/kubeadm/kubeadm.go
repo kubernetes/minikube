@@ -71,8 +71,8 @@ type Bootstrapper struct {
 	contextName string
 }
 
-// NewKubeadmBootstrapper creates a new kubeadm.Bootstrapper
-func NewKubeadmBootstrapper(api libmachine.API) (*Bootstrapper, error) {
+// NewBootstrapper creates a new kubeadm.Bootstrapper
+func NewBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 	name := viper.GetString(config.MachineProfile)
 	h, err := api.Load(name)
 	if err != nil {
