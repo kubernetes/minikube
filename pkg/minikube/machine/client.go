@@ -153,7 +153,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 	if driver.BareMetal(h.Driver.DriverName()) {
 		return &command.ExecRunner{}, nil
 	}
-	if h.Driver.DriverName() == driver.KicDocker {
+	if h.Driver.DriverName() == driver.Docker {
 		return command.NewKICRunner(h.Name, "docker"), nil
 	}
 	client, err := sshutil.NewSSHClient(h.Driver)
