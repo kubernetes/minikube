@@ -94,7 +94,7 @@ func FlagDefaults(name string) FlagHints {
 		// only for kic, till other run-times are available we auto-set containerd.
 		if name == KicDocker {
 			fh.ContainerRuntime = "containerd"
-			fh.Bootstrapper = bootstrapper.BootstrapperTypeKICBS
+			fh.Bootstrapper = bootstrapper.KIC
 		}
 		return fh
 	}

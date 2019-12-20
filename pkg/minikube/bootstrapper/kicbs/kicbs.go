@@ -44,8 +44,8 @@ type Bootstrapper struct {
 	contextName string
 }
 
-// NewKICBSBootstrapper creates a new kicbs.Bootstrapper
-func NewKICBSBootstrapper(api libmachine.API) (*Bootstrapper, error) {
+// NewBootstrapper creates a new kicbs.Bootstrapper
+func NewBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 	name := viper.GetString(config.MachineProfile)
 	h, err := api.Load(name)
 	if err != nil {
@@ -103,7 +103,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 
 	var cniFile []byte = nil
 	if cfg.KubernetesConfig.EnableDefaultCNI {
-		cniFile = []byte(defaultCNIConfig)
+		cniFile = []byte(defaultCNIManifest)
 	}
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
 
