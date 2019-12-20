@@ -107,21 +107,6 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 		return errors.Wrap(err, "runtime")
 	}
 
-<<<<<<< HEAD
-||||||| constructed merge base
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		glog.Infof("error retrieving oci daemon client %v", err)
-		return err
-	}
-
-=======
-	cli, err := client.NewEnvClient()
-	if err != nil {
-		return errors.Wrap(err, "getting image daemon NewEnvClient")
-	}
-
->>>>>>> resolve code reviews
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
