@@ -65,3 +65,30 @@ func TestParseFeatureArgs(t *testing.T) {
 		})
 	}
 }
+
+func TestSupport(t *testing.T) {
+
+	tests := []struct {
+		name     string
+		expected bool
+	}{
+		{
+			name:     "CoreDNS",
+			expected: true,
+		},
+		{
+			name:     "Life is Beautiful !",
+			expected: false,
+		},
+		{
+			name:     "",
+			expected: false,
+		},
+	}
+	for _, tc := range tests {
+		if supportedFG(tc.name) != tc.expected {
+			t.Errorf("expected supportedFG(%s) to be %t ! ", tc.name, tc.expected)
+		}
+	}
+
+}
