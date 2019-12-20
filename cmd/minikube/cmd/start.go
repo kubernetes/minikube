@@ -1131,6 +1131,12 @@ func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 		} else { // .. otherwise use the default version
 			paramVersion = constants.DefaultKubernetesVersion
 		}
+	} else if paramVersion == "stable" || paramVersion == "latest" {
+			if paramVersion == "stable" {
+				paramVersion = constants.DefaultKubernetesVersion
+			} else {
+				paramVersion = constants.NewestKubernetesVersion
+			}
 	}
 
 	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
