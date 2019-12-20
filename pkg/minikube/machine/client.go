@@ -153,6 +153,9 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 	if driver.BareMetal(h.Driver.DriverName()) {
 		return &command.ExecRunner{}, nil
 	}
+	if h.Driver.DriverName() == driver.Docker {
+		return command.NewKICRunner(h.Name, "docker"), nil
+	}
 	client, err := sshutil.NewSSHClient(h.Driver)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
@@ -204,7 +207,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"provisioning",
 			func() error {
-				if driver.BareMetal(h.Driver.DriverName()) {
+				if driver.BareMetal(h.Driver.DriverName()) || driver.IsKIC(h.Driver.DriverName()) {
 					return nil
 				}
 				pv := provision.NewBuildrootProvisioner(h.Driver)

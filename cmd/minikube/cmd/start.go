@@ -48,8 +48,8 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	pkgaddons "k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -187,7 +187,7 @@ func initKubernetesFlags() {
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
-		Valid kubeadm parameters: `+fmt.Sprintf("%s, %s", strings.Join(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], ", "), strings.Join(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], ",")))
+		Valid kubeadm parameters: `+fmt.Sprintf("%s, %s", strings.Join(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmCmdParam], ", "), strings.Join(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmConfigParam], ",")))
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
 	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
 	startCmd.Flags().Int(apiServerPort, constants.APIServerPort, "The apiserver listening port")
@@ -314,7 +314,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to generate config", err)
 	}
 
-	if !driver.BareMetal(driverName) {
+	if !driver.BareMetal(driverName) && !driver.IsKIC(driverName) {
 		if err := cluster.CacheISO(config); err != nil {
 			exit.WithError("Failed to cache ISO", err)
 		}
@@ -482,6 +482,7 @@ func startMachine(config *cfg.MachineConfig) (runner command.Runner, preExists b
 	}
 
 	ip := validateNetwork(host, runner)
+
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
@@ -787,9 +788,9 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
-	for param := range extraOptions.AsMap().Get(kubeadm.Kubeadm) {
-		if !cfg.ContainsParam(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmCmdParam], param) &&
-			!cfg.ContainsParam(kubeadm.KubeadmExtraArgsWhitelist[kubeadm.KubeadmConfigParam], param) {
+	for param := range extraOptions.AsMap().Get(bsutil.Kubeadm) {
+		if !cfg.ContainsParam(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmCmdParam], param) &&
+			!cfg.ContainsParam(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmConfigParam], param) {
 			exit.UsageT("Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config", out.V{"parameter_name": param})
 		}
 	}
@@ -968,6 +969,19 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) error {
 	if !cmd.Flags().Changed(cacheImages) {
 		viper.Set(cacheImages, hints.CacheImages)
 	}
+
+	// currently only used for kic
+	if !cmd.Flags().Changed(containerRuntime) && hints.ContainerRuntime != "" {
+		viper.Set(containerRuntime, hints.ContainerRuntime)
+		glog.Infof("auto set container runtime to %s for kic driver.", hints.ContainerRuntime)
+
+	}
+	if !cmd.Flags().Changed("bootstrapper") && hints.Bootstrapper != "" {
+		viper.Set(cmdcfg.Bootstrapper, hints.Bootstrapper)
+		glog.Infof("auto set bootstrapper to %s for kic driver.", hints.Bootstrapper)
+
+	}
+
 	return nil
 }
 
@@ -1007,20 +1021,9 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 		exit.WithError("Failed to check if machine exists", err)
 	}
 
-	var host *host.Host
-	start := func() (err error) {
-		host, err = cluster.StartHost(api, mc)
-		if err != nil {
-			out.T(out.Resetting, "Retriable failure: {{.error}}", out.V{"error": err})
-			if derr := cluster.DeleteHost(api, mc.Name); derr != nil {
-				glog.Warningf("DeleteHost: %v", derr)
-			}
-		}
-		return err
-	}
-
-	if err = retry.Expo(start, 5*time.Second, 3*time.Minute, 3); err != nil {
-		exit.WithError("Unable to start VM", err)
+	host, err := cluster.StartHost(api, mc)
+	if err != nil {
+		exit.WithError("Unable to start VM. Please investigate and run 'minikube delete' if possible", err)
 	}
 	return host, exists
 }
@@ -1050,7 +1053,7 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 		}
 	}
 
-	if !driver.BareMetal(h.Driver.DriverName()) {
+	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
 		trySSH(h, ip)
 	}
 
@@ -1092,7 +1095,7 @@ Suggested workarounds:
 
 func tryLookup(r command.Runner) {
 	// DNS check
-	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
+	if rr, err := r.RunCmd(exec.Command("nslookup", "-querytype=ns", "kubernetes.io")); err != nil {
 		glog.Warningf("%s failed: %v", rr.Args, err)
 		out.WarningT("VM may be unable to resolve external DNS records")
 	}
