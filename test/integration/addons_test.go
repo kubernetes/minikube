@@ -95,7 +95,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", 6*time.Minute); err != nil {
 		t.Errorf("waiting for ingress-controller deployment to stabilize: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=nginx-ingress-controller", 8*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=nginx-ingress-controller", 12*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -155,7 +155,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	if _, err := PodWait(ctx, t, profile, "kube-system", "actual-registry=true", 6*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "kube-system", "registry-proxy=true", 6*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "registry-proxy=true", 10*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
