@@ -89,11 +89,11 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 	}{
 		{
 			version:             "v1.16.0",
-			clusterBootstrapper: bootstrapper.BootstrapperTypeKubeadm,
+			clusterBootstrapper: bootstrapper.Kubeadm,
 		},
 		{
 			version:             "invalid version",
-			clusterBootstrapper: bootstrapper.BootstrapperTypeKubeadm,
+			clusterBootstrapper: bootstrapper.Kubeadm,
 			err:                 true,
 		},
 	}

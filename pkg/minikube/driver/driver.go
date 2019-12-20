@@ -22,10 +22,13 @@ import (
 	"sort"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 const (
+	// Docker is Kubernetes in container using docker driver
+	Docker = "docker"
 	// Mock driver
 	Mock = "mock"
 	// None driver
@@ -66,6 +69,11 @@ func Supported(name string) bool {
 	return false
 }
 
+// IsKIC checks if the driver is a kubernetes in continer
+func IsKIC(name string) bool {
+	return name == Docker
+}
+
 // BareMetal returns if this driver is unisolated
 func BareMetal(name string) bool {
 	return name == None || name == Mock
@@ -73,14 +81,22 @@ func BareMetal(name string) bool {
 
 // FlagHints are hints for what default options should be used for this driver
 type FlagHints struct {
-	ExtraOptions string
-	CacheImages  bool
+	ExtraOptions     string
+	CacheImages      bool
+	ContainerRuntime string
+	Bootstrapper     string
 }
 
 // FlagDefaults returns suggested defaults based on a driver
 func FlagDefaults(name string) FlagHints {
 	if name != None {
-		return FlagHints{CacheImages: true}
+		fh := FlagHints{CacheImages: true}
+		// only for kic, till other run-times are available we auto-set containerd.
+		if name == Docker {
+			fh.ContainerRuntime = "containerd"
+			fh.Bootstrapper = bootstrapper.KIC
+		}
+		return fh
 	}
 
 	extraOpts := ""
