@@ -334,6 +334,10 @@ gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 
+public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
+if grep -q html "$HTML_OUT"; then
+  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
+fi
 
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
@@ -388,10 +392,6 @@ function retry_github_status() {
 }
 
 
-public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
-if grep -q html "$HTML_OUT"; then
-  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
-fi
 
 retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
 exit $result
