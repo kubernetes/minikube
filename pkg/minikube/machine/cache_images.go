@@ -17,6 +17,7 @@ limitations under the License.
 package machine
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -28,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -107,10 +109,16 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 		return errors.Wrap(err, "runtime")
 	}
 
+	imgClient, err := client.NewEnvClient() // image client
+	if err != nil {
+		glog.Infof("couldn't get a local image daemon which might be ok: %v", err)
+		imgClient = nil
+	}
+
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
-			err := needsTransfer(image, cr)
+			err := needsTransfer(imgClient, image, cr)
 			if err == nil {
 				return nil
 			}
@@ -126,26 +134,58 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 }
 
 // needsTransfer returns an error if an image needs to be retransfered
-func needsTransfer(image string, cr cruntime.Manager) error {
-	ref, err := name.ParseReference(image, name.WeakValidation)
+func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager) error {
+	imgHex := ""
+	if imgClient != nil { // if possible try to get img digest from Client lib which is 4s faster.
+		imgHex = imgDigestByDaemonClient(imgClient, imgName)
+		if imgHex != "" {
+			if !cr.ImageExists(imgName, imgHex) {
+				return fmt.Errorf("%q does not exist at hash %q in container runtime", imgName, imgHex)
+			}
+			return nil
+		}
+	}
+	// if not found with method above try go-container lib (which is 4s slower)
+	imgHex = imgDigestByLib(imgName)
+	if imgHex == "" {
+		return fmt.Errorf("got empty img digest %q for %s", imgHex, imgName)
+	}
+	if !cr.ImageExists(imgName, imgHex) {
+		return fmt.Errorf("%q does not exist at hash %q in container runtime", imgName, imgHex)
+	}
+	return nil
+}
+
+// uses client by docker lib
+func imgDigestByDaemonClient(imgClient *client.Client, imgName string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	img, _, err := imgClient.ImageInspectWithRaw(ctx, imgName)
+	if err != nil && !client.IsErrImageNotFound(err) {
+		glog.Infof("couldn't find image digest %s from local daemon: %v ", imgName, err)
+		return ""
+	}
+	return img.ID
+}
+
+// gets image digest sha256: uses go-containerregistry lib which is 4s slower per lookup https://github.com/google/go-containerregistry/issues/627
+func imgDigestByLib(imgName string) string {
+	ref, err := name.ParseReference(imgName, name.WeakValidation)
 	if err != nil {
-		return errors.Wrap(err, "parse ref")
+		glog.Infof("error parsing image name %s ref %v ", imgName, err)
 	}
 
 	img, err := retrieveImage(ref)
 	if err != nil {
-		return errors.Wrap(err, "retrieve")
+		glog.Infof("error retrieve Image %s ref %v ", imgName, err)
 	}
 
 	cf, err := img.ConfigName()
 	if err != nil {
-		return errors.Wrap(err, "image hash")
+		glog.Infof("error getting Image config name %s %v ", imgName, err)
+		return cf.Hex
 	}
-
-	if !cr.ImageExists(image, cf.Hex) {
-		return fmt.Errorf("%q does not exist at hash %q in container runtime", image, cf.Hex)
-	}
-	return nil
+	return cf.Hex
 }
 
 // CacheAndLoadImages caches and loads images to all profiles
