@@ -271,7 +271,10 @@ e2e_start_time="$(date -u +%s)"
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 set -x
-rm "${TEST_OUT}" || true # clean up build-reruns
+
+if test -f "${TEST_OUT}"; then
+  rm "${TEST_OUT}" || true # clean up previous runs of same build
+fi
 touch "${TEST_OUT}"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
@@ -308,7 +311,10 @@ gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
 
 
 echo ">> Attmpting to convert test logs to json"
-rm "${JSON_OUT}" || true # clean up build-reruns
+if test -f "${JSON_OUT}"; then
+  rm "${JSON_OUT}" || true # clean up previous runs of same build
+fi
+
 touch "${JSON_OUT}"
 
 # Generate JSON output
@@ -317,12 +323,15 @@ go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 echo ">> Installing gopogh"
 GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.15 || true
 echo ">> Running gopogh"
-rm "${HTML_OUT}" || true # clean up build-reruns
+if test -f "${HTML_OUT}"; then
+    rm "${HTML_OUT}" || true # clean up previous runs of same build
+fi
+
 touch "${HTML_OUT}"
 gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}" || true
-echo ">> uploading ${JSON_OUT} to ${JOB_GCS_BUCKET}.json"
+echo ">> uploading ${JSON_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
-echo ">> uploading ${HTML_OUT} to ${JOB_GCS_BUCKET}.html"
+echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 
 
@@ -379,8 +388,8 @@ function retry_github_status() {
 }
 
 
-public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}out.txt"
-if [ `wc -l ${HTML_OUT} | awk '{print $1}'` -ge "2" ]; then  # if HTML generation was succesfull (would fail if gopogh is not installed)
+public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
+if grep -q html "$HTML_OUT"; then
   public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
 fi
 
