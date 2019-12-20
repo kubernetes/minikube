@@ -40,7 +40,7 @@ type Problem struct {
 	// Issues are a list of related issues to this problem
 	Issues []int
 	// Hide the new issue link: it isn't our problem, and we won't be able to suggest additional assistance.
-	HideCreateLink bool
+	ShowIssueLink bool
 }
 
 // match maps a regular expression to problem metadata.
@@ -50,9 +50,9 @@ type match struct {
 	URL    string
 	Issues []int
 	// GOOS is what platforms this problem may be specific to, when disambiguation is necessary.
-	GOOS string
+	GOOS []string
 	// Hide the new issue link: it isn't our problem, and we won't be able to suggest additional assistance.
-	HideCreateLink bool
+	ShowIssueLink bool
 }
 
 // Display problem metadata to the console
@@ -76,7 +76,7 @@ func (p *Problem) Display() {
 }
 
 // FromError returns a known problem from an error on an OS
-func FromError(err error, os string) *Problem {
+func FromError(err error, goos string) *Problem {
 	maps := []map[string]match{
 		osProblems,
 		vmProblems,
@@ -84,22 +84,49 @@ func FromError(err error, os string) *Problem {
 		deployProblems,
 		stateProblems,
 	}
+
+	var osMatch *Problem
+	var genericMatch *Problem
+
 	for _, m := range maps {
-		for k, v := range m {
-			if v.GOOS != "" && v.GOOS != os {
+		for id, match := range m {
+			if !match.Regexp.MatchString(err.Error()) {
 				continue
 			}
-			if v.Regexp.MatchString(err.Error()) {
-				return &Problem{
-					Err:            err,
-					Advice:         v.Advice,
-					URL:            v.URL,
-					ID:             k,
-					Issues:         v.Issues,
-					HideCreateLink: v.HideCreateLink,
+
+			// Does this match require an OS matchup?
+			if len(match.GOOS) > 0 {
+				foundOS := false
+				for _, o := range match.GOOS {
+					if o == goos {
+						foundOS = true
+					}
 				}
+				if !foundOS {
+					continue
+				}
+			}
+
+			p := &Problem{
+				Err:           err,
+				Advice:        match.Advice,
+				URL:           match.URL,
+				ID:            id,
+				Issues:        match.Issues,
+				ShowIssueLink: match.ShowIssueLink,
+			}
+
+			if len(match.GOOS) > 0 {
+				osMatch = p
+			} else {
+				genericMatch = p
 			}
 		}
 	}
-	return nil
+
+	// Prioritize operating-system specific matches over general ones
+	if osMatch != nil {
+		return osMatch
+	}
+	return genericMatch
 }
