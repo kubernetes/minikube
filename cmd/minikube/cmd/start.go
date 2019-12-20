@@ -1006,20 +1006,9 @@ func startHost(api libmachine.API, mc cfg.MachineConfig) (*host.Host, bool) {
 		exit.WithError("Failed to check if machine exists", err)
 	}
 
-	var host *host.Host
-	start := func() (err error) {
-		host, err = cluster.StartHost(api, mc)
-		if err != nil {
-			out.T(out.Resetting, "Retriable failure: {{.error}}", out.V{"error": err})
-			if derr := cluster.DeleteHost(api, mc.Name); derr != nil {
-				glog.Warningf("DeleteHost: %v", derr)
-			}
-		}
-		return err
-	}
-
-	if err = retry.Expo(start, 5*time.Second, 3*time.Minute, 3); err != nil {
-		exit.WithError("Unable to start VM", err)
+	host, err := cluster.StartHost(api, mc)
+	if err != nil {
+		exit.WithError("Unable to start VM. Please investigate and run 'minikube delete' if possible", err)
 	}
 	return host, exists
 }
