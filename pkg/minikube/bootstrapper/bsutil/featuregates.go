@@ -26,9 +26,8 @@ import (
 	"k8s.io/kubernetes/cmd/kubeadm/app/features"
 )
 
-// supports indicates whether a feature name is supported on the
-// feature gates for kubeadm
-func supports(featureName string) bool {
+// supportedFG indicates whether a feature name is supported by the bootstrapper
+func supportedFG(featureName string) bool {
 	for k := range features.InitFeatureGates {
 		if featureName == k {
 			return true
@@ -54,7 +53,7 @@ func parseFeatureArgs(featureGates string) (map[string]bool, string, error) {
 		k := strings.TrimSpace(fg[0])
 		v := strings.TrimSpace(fg[1])
 
-		if !supports(k) {
+		if !supportedFG(k) {
 			componentFeatureArgs = fmt.Sprintf("%s%s,", componentFeatureArgs, s)
 			continue
 		}

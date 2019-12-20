@@ -223,6 +223,7 @@ func (d *Driver) Start() error {
 		}
 		return nil
 	}
+	// TODO:medyagh maybe make it idempotent
 	return fmt.Errorf("cant start a not-stopped (%s) kic node", s)
 }
 
