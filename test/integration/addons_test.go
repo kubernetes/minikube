@@ -36,7 +36,6 @@ import (
 
 // TestAddons tests addons that require no special environment -- in parallel
 func TestAddons(t *testing.T) {
-	MaybeParallel(t)
 	WaitForStartSlot(t)
 	profile := UniqueProfileName("addons")
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
@@ -61,7 +60,6 @@ func TestAddons(t *testing.T) {
 		for _, tc := range tests {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
-				MaybeParallel(t)
 				tc.validator(ctx, t, profile)
 			})
 		}
