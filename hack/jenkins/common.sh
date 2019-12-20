@@ -302,8 +302,6 @@ elapsed=$(($e2e_end_time-$e2e_start_time))
 min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
-description="completed with ${status} in ${elapsed} minute(s)."
-echo $description
 
 JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}"
 echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
@@ -328,7 +326,13 @@ if test -f "${HTML_OUT}"; then
 fi
 
 touch "${HTML_OUT}"
-gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}" || true
+pessimistic_status=$(gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+description="completed with ${status} in ${elapsed} minute(s)."
+if [ "$status" = "Failure" ]; then
+  description="completed with ${pessimistic_status} in ${elapsed} minute(s)."
+fi
+echo $description
+
 echo ">> uploading ${JSON_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 echo ">> uploading ${HTML_OUT}"
