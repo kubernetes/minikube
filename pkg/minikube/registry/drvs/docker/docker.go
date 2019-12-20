@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kicdocker
+package docker
 
 import (
 	"fmt"
@@ -31,7 +31,7 @@ import (
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
-		Name:     driver.KicDocker,
+		Name:     driver.Docker,
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{}) },
 		Status:   status,

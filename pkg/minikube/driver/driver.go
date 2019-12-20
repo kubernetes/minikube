@@ -27,8 +27,8 @@ import (
 )
 
 const (
-	// Kubernetes in container using docker driver
-	KicDocker = "docker"
+	// Docker is Kubernetes in container using docker driver
+	Docker = "docker"
 	// Mock driver
 	Mock = "mock"
 	// None driver
@@ -71,7 +71,7 @@ func Supported(name string) bool {
 
 // IsKIC checks if the driver is a kubernetes in continer
 func IsKIC(name string) bool {
-	return name == KicDocker
+	return name == Docker
 }
 
 // BareMetal returns if this driver is unisolated
@@ -92,7 +92,7 @@ func FlagDefaults(name string) FlagHints {
 	if name != None {
 		fh := FlagHints{CacheImages: true}
 		// only for kic, till other run-times are available we auto-set containerd.
-		if name == KicDocker {
+		if name == Docker {
 			fh.ContainerRuntime = "containerd"
 			fh.Bootstrapper = bootstrapper.KIC
 		}
