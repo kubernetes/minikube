@@ -103,6 +103,7 @@ func TestFunctional(t *testing.T) {
 			{"SSHCmd", validateSSHCmd},
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
+			{"UpdateContextCmd", validateUpdateContextCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -642,6 +643,19 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 
 	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
 		t.Errorf("/etc/sync.test content mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// validateUpdateContextCmd asserts basic "update-context" command functionality
+func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	want := []byte("IP was already correctly configured")
+	if !bytes.Contains(rr.Stdout.Bytes(), want) {
+		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 	}
 }
 

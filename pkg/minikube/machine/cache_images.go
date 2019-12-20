@@ -17,6 +17,7 @@ limitations under the License.
 package machine
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -109,34 +110,41 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
-			ref, err := name.ParseReference(image, name.WeakValidation)
-			if err != nil {
-				return errors.Wrap(err, "image name reference")
-			}
-
-			img, err := retrieveImage(ref)
-			if err != nil {
-				return errors.Wrap(err, "fetching image")
-			}
-			cf, err := img.ConfigName()
-			hash := cf.Hex
-			if err != nil {
-				glog.Infof("error retrieving image manifest for %s to check if it already exists: %v", image, err)
-			} else if cr.ImageExists(image, hash) {
-				glog.Infof("skipping re-loading image %q because sha %q already exists ", image, hash)
+			err := needsTransfer(image, cr)
+			if err == nil {
 				return nil
 			}
-			if err := transferAndLoadImage(runner, cc.KubernetesConfig, image, cacheDir); err != nil {
-				glog.Warningf("Failed to load %s: %v", image, err)
-				return errors.Wrapf(err, "loading image %s", image)
-			}
-			return nil
+			glog.Infof("%q needs transfer: %v", image, err)
+			return transferAndLoadImage(runner, cc.KubernetesConfig, image, cacheDir)
 		})
 	}
 	if err := g.Wait(); err != nil {
 		return errors.Wrap(err, "loading cached images")
 	}
-	glog.Infoln("Successfully loaded all cached images.")
+	glog.Infoln("Successfully loaded all cached images")
+	return nil
+}
+
+// needsTransfer returns an error if an image needs to be retransfered
+func needsTransfer(image string, cr cruntime.Manager) error {
+	ref, err := name.ParseReference(image, name.WeakValidation)
+	if err != nil {
+		return errors.Wrap(err, "parse ref")
+	}
+
+	img, err := retrieveImage(ref)
+	if err != nil {
+		return errors.Wrap(err, "retrieve")
+	}
+
+	cf, err := img.ConfigName()
+	if err != nil {
+		return errors.Wrap(err, "image hash")
+	}
+
+	if !cr.ImageExists(image, cf.Hex) {
+		return fmt.Errorf("%q does not exist at hash %q in container runtime", image, cf.Hex)
+	}
 	return nil
 }
 
@@ -277,7 +285,7 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, imgNam
 		return errors.Wrapf(err, "%s load %s", r.Name(), dst)
 	}
 
-	glog.Infof("Successfully loaded image %s from cache", src)
+	glog.Infof("Transferred and loaded %s from cache", src)
 	return nil
 }
 
@@ -362,7 +370,7 @@ func CacheImage(image, dst string) error {
 
 	img, err := retrieveImage(ref)
 	if err != nil {
-		return errors.Wrap(err, "fetching image")
+		glog.Warningf("unable to retrieve image: %v", err)
 	}
 
 	glog.Infoln("OPENING: ", dstPath)
@@ -370,27 +378,31 @@ func CacheImage(image, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer func() { // clean up temp files
-		err := os.Remove(f.Name())
-		if err != nil {
-			glog.Infof("Failed to clean up the temp file %s : %v", f.Name(), err)
+	defer func() {
+		// If we left behind a temp file, remove it.
+		_, err := os.Stat(f.Name())
+		if err == nil {
+			os.Remove(f.Name())
+			if err != nil {
+				glog.Warningf("Failed to clean up the temp file %s: %v", f.Name(), err)
+			}
 		}
 	}()
 	tag, err := name.NewTag(image, name.WeakValidation)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "newtag")
 	}
 	err = tarball.Write(tag, img, &tarball.WriteOptions{}, f)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "write")
 	}
 	err = f.Close()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "close")
 	}
 	err = os.Rename(f.Name(), dstPath)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "rename")
 	}
 	glog.Infof("%s exists", dst)
 	return nil
@@ -400,18 +412,20 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 	glog.Infof("retrieving image: %+v", ref)
 	img, err := daemon.Image(ref)
 	if err == nil {
-		glog.Infof("found %s locally; caching", ref.Name())
-		return img, err
+		glog.Infof("found %s locally: %+v", ref.Name(), img)
+		return img, nil
 	}
-	glog.Infof("daemon image for %+v: %v", img, err)
+	// reference does not exist in the local daemon
+	if err != nil {
+		glog.Infof("daemon lookup for %+v: %v", ref, err)
+	}
+
 	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
 	if err == nil {
-		return img, err
+		return img, nil
 	}
-	glog.Warningf("failed authn download for %+v (trying anon): %+v", ref, err)
+
+	glog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
 	img, err = remote.Image(ref)
-	if err != nil {
-		glog.Warningf("failed anon download for %+v: %+v", ref, err)
-	}
 	return img, err
 }
