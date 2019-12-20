@@ -328,7 +328,7 @@ fi
 touch "${HTML_OUT}"
 pessimistic_status=$(gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
 description="completed with ${status} in ${elapsed} minute(s)."
-if [ "$status" = "Failure" ]; then
+if [ "$status" = "failure" ]; then
   description="completed with ${pessimistic_status} in ${elapsed} minute(s)."
 fi
 echo $description
