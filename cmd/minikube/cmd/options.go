@@ -34,7 +34,7 @@ var optionsCmd = &cobra.Command{
 	Run:   runOptions,
 }
 
-// runOptions handles the executes the flow of "minikube stop"
+// runOptions handles the executes the flow of "minikube options"
 func runOptions(cmd *cobra.Command, args []string) {
 	out.String("The following options can be passed to any command:\n\n")
 	for _, flagName := range viperWhiteList {
