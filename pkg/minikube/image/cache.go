@@ -44,12 +44,12 @@ func DeleteFromCacheDir(images []string) error {
 	return cleanImageCacheDir()
 }
 
-// CacheImagesToTar will cache images on the host
+// SaveToDir will cache images on the host
 //
 // The cache directory currently caches images using the imagename_tag
 // For example, k8s.gcr.io/kube-addon-manager:v6.5 would be
 // stored at $CACHE_DIR/k8s.gcr.io/kube-addon-manager_v6.5
-func CacheImagesToTar(images []string, cacheDir string) error {
+func SaveToDir(images []string, cacheDir string) error {
 	var g errgroup.Group
 	for _, image := range images {
 		image := image
@@ -57,26 +57,25 @@ func CacheImagesToTar(images []string, cacheDir string) error {
 			dst := filepath.Join(cacheDir, image)
 			dst = localpath.SanitizeCacheDir(dst)
 			if err := saveToTarFile(image, dst); err != nil {
-				glog.Errorf("CacheImage %s -> %s failed: %v", image, dst, err)
+				glog.Errorf("save image to file %q -> %q failed: %v", image, dst, err)
 				return errors.Wrapf(err, "caching image %q", dst)
 			}
-			glog.Infof("CacheImage %s -> %s succeeded", image, dst)
+			glog.Infof("save to tar file %s -> %s succeeded", image, dst)
 			return nil
 		})
 	}
 	if err := g.Wait(); err != nil {
 		return errors.Wrap(err, "caching images")
 	}
-	glog.Infoln("Successfully cached all images.")
+	glog.Infoln("Successfully saved all images to host disk.")
 	return nil
 }
 
 // saveToTarFile caches an image
 func saveToTarFile(image, dst string) error {
 	start := time.Now()
-	glog.Infof("CacheImage: %s -> %s", image, dst)
 	defer func() {
-		glog.Infof("CacheImage: %s -> %s completed in %s", image, dst, time.Since(start))
+		glog.Infof("cache image %q -> %s to local destination -> %q", image, dst, time.Since(start))
 	}()
 
 	if _, err := os.Stat(dst); err == nil {
