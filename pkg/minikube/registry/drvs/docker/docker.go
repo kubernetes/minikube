@@ -23,6 +23,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -33,7 +34,7 @@ func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Docker,
 		Config:   configure,
-		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{}) },
+		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
 		Priority: registry.Discouraged, // experimental
 	}); err != nil {
@@ -53,7 +54,7 @@ func configure(mc config.MachineConfig) interface{} {
 		CPU:           mc.CPUs,
 		Memory:        mc.Memory,
 		APIServerPort: mc.NodeBindPort,
-		OCIBinary:     "docker",
+		OCIBinary:     oci.Docker,
 	})
 
 }

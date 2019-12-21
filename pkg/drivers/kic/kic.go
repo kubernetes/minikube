@@ -64,6 +64,7 @@ func NewDriver(c Config) *Driver {
 		},
 		exec:       command.NewKICRunner(c.MachineName, c.OCIBinary),
 		NodeConfig: c,
+		OCIBinary:  c.OCIBinary,
 	}
 	return d
 }
