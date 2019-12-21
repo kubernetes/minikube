@@ -33,8 +33,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// DigestByLocalDaemon uses client by docker lib
-func DigestByLocalDaemon(imgClient *client.Client, imgName string) string {
+// DigestByDockerLib uses client by docker lib to return image digest
+// img.ID in as same as image digest
+func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 	img, _, err := imgClient.ImageInspectWithRaw(ctx, imgName)
@@ -45,9 +46,9 @@ func DigestByLocalDaemon(imgClient *client.Client, imgName string) string {
 	return img.ID
 }
 
-// DigestByRetrieve gets image digest uses go-containerregistry lib
+// DigestByGoLib gets image digest uses go-containerregistry lib
 // which is 4s slower thabn local daemon per lookup https://github.com/google/go-containerregistry/issues/627
-func DigestByRetrieve(imgName string) string {
+func DigestByGoLib(imgName string) string {
 	ref, err := name.ParseReference(imgName, name.WeakValidation)
 	if err != nil {
 		glog.Infof("error parsing image name %s ref %v ", imgName, err)

@@ -110,9 +110,9 @@ func saveToTarFile(image, dst string) error {
 		// If we left behind a temp file, remove it.
 		_, err := os.Stat(f.Name())
 		if err == nil {
-			os.Remove(f.Name())
+			err = os.Remove(f.Name())
 			if err != nil {
-				glog.Warningf("Failed to clean up the temp file %s: %v", f.Name(), err)
+				glog.Warningf("failed to clean up the temp file %s: %v", f.Name(), err)
 			}
 		}
 	}()

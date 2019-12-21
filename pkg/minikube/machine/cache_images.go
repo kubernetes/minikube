@@ -98,7 +98,7 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager) error {
 	imgDgst := ""         // for instance sha256:7c92a2c6bbcb6b6beff92d0a940779769c2477b807c202954c537e2e0deb9bed
 	if imgClient != nil { // if possible try to get img digest from Client lib which is 4s faster.
-		imgDgst = image.DigestByLocalDaemon(imgClient, imgName)
+		imgDgst = image.DigestByDockerLib(imgClient, imgName)
 		if imgDgst != "" {
 			if !cr.ImageExists(imgName, imgDgst) {
 				return fmt.Errorf("%q does not exist at hash %q in container runtime", imgName, imgDgst)
@@ -107,7 +107,7 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 		}
 	}
 	// if not found with method above try go-container lib (which is 4s slower)
-	imgDgst = image.DigestByRetrieve(imgName)
+	imgDgst = image.DigestByGoLib(imgName)
 	if imgDgst == "" {
 		return fmt.Errorf("got empty img digest %q for %s", imgDgst, imgName)
 	}

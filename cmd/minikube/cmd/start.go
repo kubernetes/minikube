@@ -820,7 +820,7 @@ func doCacheBinaries(k8sVersion string) error {
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 }
 
-// beginCacheRequiredImages caches images required for kuberntes version in the background
+// beginCacheRequiredImages caches images required for kubernetes version in the background
 func beginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
 	if !viper.GetBool(cacheImages) {
 		return
