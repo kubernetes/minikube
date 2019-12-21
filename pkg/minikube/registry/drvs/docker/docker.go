@@ -41,7 +41,7 @@ func init() {
 	}
 }
 
-func configure(mc config.MachineConfig) interface{} {
+func configure(mc config.MachineConfig) (interface{}, error) {
 	img, err := kic.ImageForVersion(mc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		glog.Errorf("err to getting kic image for %s: imgesha:%s", img, mc.KubernetesConfig.KubernetesVersion)
@@ -54,7 +54,7 @@ func configure(mc config.MachineConfig) interface{} {
 		Memory:        mc.Memory,
 		APIServerPort: mc.NodeBindPort,
 		OCIBinary:     "docker",
-	})
+	}), nil
 
 }
 

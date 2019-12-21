@@ -443,7 +443,11 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", config.VMDriver)
 	}
-	dd := def.Config(config)
+	dd, err := def.Config(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "config")
+	}
+
 	data, err := json.Marshal(dd)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal")
