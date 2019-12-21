@@ -53,7 +53,7 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 		return errors.Wrap(err, "cached images list")
 	}
 
-	if err := image.CacheImagesToTar(images, constants.ImageCacheDir); err != nil {
+	if err := image.SaveToDir(images, constants.ImageCacheDir); err != nil {
 		return errors.Wrapf(err, "Caching images for %s", clusterBootstrapper)
 	}
 
@@ -119,7 +119,7 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 
 // CacheAndLoadImages caches and loads images to all profiles
 func CacheAndLoadImages(images []string) error {
-	if err := image.CacheImagesToTar(images, constants.ImageCacheDir); err != nil {
+	if err := image.SaveToDir(images, constants.ImageCacheDir); err != nil {
 		return err
 	}
 	api, err := NewAPIClient()

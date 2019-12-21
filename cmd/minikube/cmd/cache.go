@@ -109,7 +109,7 @@ func saveImagesToTarFromConfig() error {
 	if len(images) == 0 {
 		return nil
 	}
-	return image.CacheImagesToTar(images, constants.ImageCacheDir)
+	return image.SaveToDir(images, constants.ImageCacheDir)
 }
 
 // cacheAndLoadImagesInConfig loads the images currently in the config file
