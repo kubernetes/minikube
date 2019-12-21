@@ -302,8 +302,6 @@ elapsed=$(($e2e_end_time-$e2e_start_time))
 min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
-description="completed with ${status} in ${elapsed} minute(s)."
-echo $description
 
 JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}"
 echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
@@ -321,14 +319,20 @@ touch "${JSON_OUT}"
 echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 echo ">> Installing gopogh"
-GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.16 || true
+GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.17 || true
 echo ">> Running gopogh"
 if test -f "${HTML_OUT}"; then
     rm "${HTML_OUT}" || true # clean up previous runs of same build
 fi
 
 touch "${HTML_OUT}"
-gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}" || true
+pessimistic_status=$(gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+description="completed with ${status} in ${elapsed} minute(s)."
+if [ "$status" = "failure" ]; then
+  description="completed with ${pessimistic_status} in ${elapsed} minute(s)."
+fi
+echo $description
+
 echo ">> uploading ${JSON_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 echo ">> uploading ${HTML_OUT}"
