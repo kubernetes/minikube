@@ -31,7 +31,24 @@ func Kubeadm(mirror string, version string) ([]string, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "semver")
 	}
+	imgs := essentials(mirror, v)
+	imgs = append(imgs, Auxiliary(mirror)...)
+	return imgs, nil
+}
 
+// KIC returns a list of images necessary to bootstrap kic
+// it is same as vm-kubeadm minus auxulary
+func KIC(mirror string, version string) ([]string, error) {
+	v, err := semver.Make(strings.TrimPrefix(version, "v"))
+	if err != nil {
+		return nil, errors.Wrap(err, "semver")
+	}
+	imgs := essentials(mirror, v)
+	return imgs, nil
+}
+
+// essentials returns minimum essentials list of images for a version of kubernetes.
+func essentials(mirror string, v semver.Version) []string {
 	imgs := []string{
 		componentImage("kube-proxy", v, mirror),
 		componentImage("kube-scheduler", v, mirror),
@@ -41,8 +58,7 @@ func Kubeadm(mirror string, version string) ([]string, error) {
 		etcd(v, mirror),
 		Pause(mirror),
 	}
-	imgs = append(imgs, Auxiliary(mirror)...)
-	return imgs, nil
+	return imgs
 }
 
 // componentImage returns a Kubernetes component image to pull
