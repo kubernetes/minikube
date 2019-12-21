@@ -54,9 +54,9 @@ var dirs = [...]string{
 }
 
 var viperWhiteList = []string{
-	"v",
 	"alsologtostderr",
 	"log_dir",
+	"v",
 }
 
 // RootCmd represents the base command when called without any subcommands
@@ -214,6 +214,7 @@ func init() {
 				logsCmd,
 				updateCheckCmd,
 				versionCmd,
+				optionsCmd,
 			},
 		},
 	}
