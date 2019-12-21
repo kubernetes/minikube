@@ -108,7 +108,6 @@ func Pause(ociBinary string, ociID string) error {
 
 // Inspect return low-level information on containers
 func Inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
-
 	cmd := exec.Command(ociBinary, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
@@ -121,7 +120,6 @@ func Inspect(ociBinary string, containerNameOrID, format string) ([]string, erro
 	for scanner.Scan() {
 		lines = append(lines, scanner.Text())
 	}
-	fmt.Printf("lines %+v err %v", lines, err)
 	return lines, err
 }
 
