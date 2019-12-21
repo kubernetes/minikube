@@ -22,6 +22,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -64,7 +65,7 @@ var deleteCacheCmd = &cobra.Command{
 			exit.WithError("Failed to delete images from config", err)
 		}
 		// Delete images from cache/images directory
-		if err := machine.DeleteFromImageCacheDir(args); err != nil {
+		if err := image.DeleteFromImageCacheDir(args); err != nil {
 			exit.WithError("Failed to delete images", err)
 		}
 	},
@@ -108,7 +109,7 @@ func saveImagesToTarFromConfig() error {
 	if len(images) == 0 {
 		return nil
 	}
-	return machine.CacheImagesToTar(images, constants.ImageCacheDir)
+	return image.CacheImagesToTar(images, constants.ImageCacheDir)
 }
 
 // cacheAndLoadImagesInConfig loads the images currently in the config file
