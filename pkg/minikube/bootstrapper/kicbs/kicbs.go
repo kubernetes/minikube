@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// bootstrapper for kic
+// Package kicbs is a kubeadm-flavor bootstrapper for kic
 package kicbs
 
 import (
@@ -122,6 +122,11 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	return nil
 }
 
+// SetupCerts generates the certs the cluster
+func (k *Bootstrapper) SetupCerts(cfg config.KubernetesConfig) error {
+	return bootstrapper.SetupCerts(k.c, cfg)
+}
+
 func (k *Bootstrapper) PullImages(config.KubernetesConfig) error {
 	return fmt.Errorf("the PullImages is not implemented in kicbs yet")
 }
@@ -138,9 +143,7 @@ func (k *Bootstrapper) WaitForCluster(config.KubernetesConfig, time.Duration) er
 func (k *Bootstrapper) LogCommands(bootstrapper.LogOptions) map[string]string {
 	return map[string]string{}
 }
-func (k *Bootstrapper) SetupCerts(cfg config.KubernetesConfig) error {
-	return fmt.Errorf("the SetupCerts is not implemented in kicbs yet")
-}
+
 func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 	return "", fmt.Errorf("the GetKubeletStatus is not implemented in kicbs yet")
 }
