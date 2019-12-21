@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -60,9 +61,9 @@ func NewBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 
 // UpdateCluster updates the cluster
 func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
-	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
+	images, err := images.KIC(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
-		return errors.Wrap(err, "kubeadm images")
+		return errors.Wrap(err, "kic images")
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
@@ -127,9 +128,23 @@ func (k *Bootstrapper) SetupCerts(cfg config.KubernetesConfig) error {
 	return bootstrapper.SetupCerts(k.c, cfg)
 }
 
-func (k *Bootstrapper) PullImages(config.KubernetesConfig) error {
-	return fmt.Errorf("the PullImages is not implemented in kicbs yet")
+// PullImages downloads images that will be used by Kubernetes
+func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
+	version, err := bsutil.ParseKubernetesVersion(k8s.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing kubernetes version")
+	}
+	if version.LT(semver.MustParse("1.11.0")) {
+		return fmt.Errorf("pull command is not supported by kubeadm v%s", version)
+	}
+
+	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s config images pull --config %s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath)))
+	if err != nil {
+		return errors.Wrapf(err, "running cmd: %q", rr.Command())
+	}
+	return nil
 }
+
 func (k *Bootstrapper) StartCluster(config.KubernetesConfig) error {
 	return fmt.Errorf("the StartCluster is not implemented in kicbs yet")
 }
