@@ -49,10 +49,10 @@ var configTestCases = []configTestCase{
     "vm-driver": "test-driver"
 }`,
 		config: map[string]interface{}{
-			"vm-driver":                 "test-driver",
-			"cpus":                      4,
-			"disk-size":                 "20g",
-			"v":                         5,
+			"vm-driver": "test-driver",
+			"cpus":      4,
+			"disk-size": "20g",
+			"v":         5,
 			"show-libmachine-logs":      true,
 			"log_dir":                   "/etc/hosts",
 			"ReminderWaitPeriodInHours": 99,
