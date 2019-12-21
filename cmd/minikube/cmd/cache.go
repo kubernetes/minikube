@@ -65,7 +65,7 @@ var deleteCacheCmd = &cobra.Command{
 			exit.WithError("Failed to delete images from config", err)
 		}
 		// Delete images from cache/images directory
-		if err := image.DeleteFromImageCacheDir(args); err != nil {
+		if err := image.DeleteFromCacheDir(args); err != nil {
 			exit.WithError("Failed to delete images", err)
 		}
 	},

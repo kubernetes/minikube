@@ -1,3 +1,19 @@
+/*
+Copyright 2016 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package image
 
 import (
@@ -15,7 +31,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // DigestByLocalDaemon uses client by docker lib
@@ -73,19 +88,6 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 	glog.Warningf("authn lookup for %+v (trying anon): %+v", ref, err)
 	img, err = remote.Image(ref)
 	return img, err
-}
-
-// DeleteFromImageCacheDir deletes images from the cache
-func DeleteFromImageCacheDir(images []string) error {
-	for _, image := range images {
-		path := filepath.Join(constants.ImageCacheDir, image)
-		path = localpath.SanitizeCacheDir(path)
-		glog.Infoln("Deleting image in cache at ", path)
-		if err := os.Remove(path); err != nil {
-			return err
-		}
-	}
-	return cleanImageCacheDir()
 }
 
 func cleanImageCacheDir() error {
