@@ -199,7 +199,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	if rr, err := k.c.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "init failed. cmd: %q", rr.Command())
+		return errors.Wrapf(err, "init failed. cmd: %q output: %q", rr.Command(), rr.Output())
 	}
 
 	glog.Infof("Configuring cluster permissions ...")
