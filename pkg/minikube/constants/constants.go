@@ -35,8 +35,6 @@ const (
 	ClusterDNSDomain = "cluster.local"
 	// DefaultServiceCIDR is The CIDR to be used for service cluster IPs
 	DefaultServiceCIDR = "10.96.0.0/12"
-	// DefaultPodCIDR is The CIDR to be used for pods inside the node.
-	DefaultPodCIDR = "10.244.0.0/16"
 )
 
 // DefaultMinipath is the default Minikube path (under the home directory)

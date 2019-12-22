@@ -32,7 +32,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
+// DefaultPodCIDR is The CIDR to be used for pods inside the node.
+const DefaultPodCIDR = "10.244.0.0/16"
+
+// Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver

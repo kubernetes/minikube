@@ -16,6 +16,7 @@ limitations under the License.
 
 package template
 
+import "text/template"
 
 // KubeAdmConfigTmplV1Alpha3 is for Kubernetes v1.12
 var KubeAdmConfigTmplV1Alpha3 = template.Must(template.New("configTmpl-v1alpha3").Funcs(template.FuncMap{

@@ -22,6 +22,7 @@ import (
 	"sort"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
@@ -95,17 +96,20 @@ func FlagDefaults(name string) FlagHints {
 		if name == Docker {
 			fh.ContainerRuntime = "containerd"
 			fh.Bootstrapper = bootstrapper.KIC
+			fh.ExtraOptions = fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR)
 		}
 		return fh
 	}
 
-	extraOpts := ""
 	if _, err := os.Stat(systemdResolvConf); err == nil {
-		extraOpts = fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
+		extraOpts := fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
+		return FlagHints{
+			ExtraOptions: extraOpts,
+			CacheImages:  false,
+		}
 	}
 	return FlagHints{
-		ExtraOptions: extraOpts,
-		CacheImages:  false,
+		CacheImages: false,
 	}
 }
 

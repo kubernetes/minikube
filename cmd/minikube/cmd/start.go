@@ -100,7 +100,6 @@ const (
 	apiServerPort         = "apiserver-port"
 	dnsDomain             = "dns-domain"
 	serviceCIDR           = "service-cluster-ip-range"
-	podsubnetCIDR         = "pod-subnet-ip-range"
 	imageRepository       = "image-repository"
 	imageMirrorCountry    = "image-mirror-country"
 	mountString           = "mount-string"
@@ -238,7 +237,6 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
 	startCmd.Flags().String(imageMirrorCountry, "", "Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn.")
 	startCmd.Flags().String(serviceCIDR, constants.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
-	startCmd.Flags().String(podsubnetCIDR, constants.DefaultPodCIDR, "The CIDR to be used for cluster's pod subnet.")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 }
@@ -959,7 +957,6 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 			CRISocket:              viper.GetString(criSocket),
 			NetworkPlugin:          selectedNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
-			PodSubnetCIDR:          viper.GetString(podsubnetCIDR),
 			ImageRepository:        repository,
 			ExtraOptions:           extraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),

@@ -29,7 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util"
 )
 
 // Container runtimes
@@ -76,7 +75,7 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		NoTaintMaster     bool
 	}{
 		CertDir:           vmpath.GuestCertsDir,
-		ServiceCIDR:       util.DefaultServiceCIDR,
+		ServiceCIDR:       constants.DefaultServiceCIDR,
 		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
 		AdvertiseAddress:  k8s.NodeIP,
 		APIServerPort:     nodePort,
