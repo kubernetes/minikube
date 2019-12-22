@@ -434,7 +434,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	}
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
 
-	if err := addAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
+	if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
 		return errors.Wrap(err, "adding addons")
 	}
 	for _, f := range files {
