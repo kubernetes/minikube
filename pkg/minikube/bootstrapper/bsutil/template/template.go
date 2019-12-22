@@ -151,6 +151,56 @@ evictionHard:
   imagefs.available: "0%"
 `))
 
+// KubeAdmConfigTmplV1Beta2 is for Kubernetes v1.17+
+var KubeAdmConfigTmplV1Beta2 = template.Must(template.New("configTmpl-v1beta2").Funcs(template.FuncMap{
+	"printMapInOrder": printMapInOrder,
+}).Parse(`apiVersion: kubeadm.k8s.io/v1beta2
+bootstrapTokens:
+ - groups:
+    - system:bootstrappers:kubeadm:default-node-token
+   ttl: 24h0m0s
+   usages:
+    - signing
+    - authentication
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: {{.AdvertiseAddress}}
+  bindPort: {{.APIServerPort}}
+nodeRegistration:
+  criSocket: {{if .CRISocket}}{{.CRISocket}}{{else}}/var/run/dockershim.sock{{end}}
+  name: {{.NodeName}}
+  taints: []
+---
+{{ if .ImageRepository}}imageRepository: {{.ImageRepository}}
+{{end}}{{range .ExtraArgs}}{{.Component}}:
+  extraArgs:
+{{- range $i, $val := printMapInOrder .Options ": " }}
+    {{$val}}
+{{- end}}
+{{end -}}
+{{if .FeatureArgs}}featureGates:
+{{range $i, $val := .FeatureArgs}}{{$i}}: {{$val}}
+{{end -}}{{end -}}
+  timeoutForControlPlane: 4m0s
+apiVersion: kubeadm.k8s.io/v1beta2
+certificatesDir: {{.CertDir}}
+clusterName: kubernetes
+controlPlaneEndpoint: localhost:{{.APIServerPort}}
+controllerManager: {}
+dns:
+  type: CoreDNS
+etcd:
+  local:
+    dataDir: {{.EtcdDataDir}}
+imageRepository: k8s.gcr.io
+kind: ClusterConfiguration
+kubernetesVersion: {{.KubernetesVersion}}
+networking:
+  dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
+  serviceSubnet: {{.ServiceCIDR}}
+scheduler: {}
+`))
+
 // printMapInOrder sorts the keys and prints the map in order, combining key
 // value pairs with the separator character
 //
