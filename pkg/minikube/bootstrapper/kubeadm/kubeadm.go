@@ -236,7 +236,7 @@ func (k *Bootstrapper) adjustResourceLimits() error {
 	return nil
 }
 
-// client returns a Kubernetes client to use to speak to a kubeadm launched apiserver
+// client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
 func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientset, error) {
 	if k.k8sClient != nil {
 		return k.k8sClient, nil
