@@ -186,6 +186,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		"FileAvailable--etc-kubernetes-manifests-kube-apiserver.yaml",
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
 		"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
+		"FileContent--proc-sys-net-bridge-bridge-nf-call-iptables", // for kic only
 		"Port-10250", // For "none" users who already have a kubelet online
 		"Swap",       // For "none" users who have swap configured
 	}
@@ -196,6 +197,16 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
 		ignore = append(ignore, "SystemVerification")
 	}
+
+	// TODO:medyagh delete this temp work arround
+	rr, err := k.c.RunCmd(exec.Command("rm", "-f", "/usr/bin/kubeadm"))
+	fmt.Printf("Deleting kics kubeadm %s %v", rr.Output(), err)
+	rr, err = k.c.RunCmd(exec.Command("rm", "-f", "/usr/bin/kubelet"))
+	fmt.Printf("Deleting kics kubelet %s %v", rr.Output(), err)
+	// rr, err = k.c.RunCmd(exec.Command("chmod", "+x", path.Join(vmpath.GuestPersistentDir, "binaries", k8s.KubernetesVersion, "kubeadm")))
+	// fmt.Printf("chmoding kics kubeadm %s %v", rr.Output(), err)
+	// rr, err = k.c.RunCmd(exec.Command("chmod", "+x", path.Join(vmpath.GuestPersistentDir, "binaries", k8s.KubernetesVersion, "kubelet")))
+	// fmt.Printf("chmoding kics kubelet %s %v", rr.Output(), err)
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	if rr, err := k.c.RunCmd(c); err != nil {
