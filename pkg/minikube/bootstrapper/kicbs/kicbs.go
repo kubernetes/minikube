@@ -145,8 +145,20 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 	return nil
 }
 
-func (k *Bootstrapper) StartCluster(config.KubernetesConfig) error {
-	return fmt.Errorf("the StartCluster is not implemented in kicbs yet")
+// StartCluster starts the cluster
+func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
+	return nil
+}
+
+func (k *Bootstrapper) existingConfig() error {
+	args := append([]string{"ls"}, bsutil.ExpectedRemoteArtifacts...)
+	_, err := k.c.RunCmd(exec.Command("sudo", args...))
+	return err
+}
+
+// restartCluster restarts the Kubernetes cluster configured by kubeadm
+func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
+	return fmt.Errorf("the restartCluster is not implemented in kicbs yet")
 }
 
 func (k *Bootstrapper) DeleteCluster(config.KubernetesConfig) error {

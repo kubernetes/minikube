@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kubeadm
+package bsutil
 
 import (
 	"net"
@@ -32,9 +32,9 @@ const (
 	rbacName = "minikube-rbac"
 )
 
-// elevateKubeSystemPrivileges gives the kube-system service account
+// ElevateKubeSystemPrivileges gives the kube-system service account
 // cluster admin privileges to work with RBAC.
-func elevateKubeSystemPrivileges(client kubernetes.Interface) error {
+func ElevateKubeSystemPrivileges(client kubernetes.Interface) error {
 	start := time.Now()
 	clusterRoleBinding := &rbac.ClusterRoleBinding{
 		ObjectMeta: meta.ObjectMeta{
