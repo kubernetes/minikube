@@ -985,30 +985,31 @@ func setDockerProxy() {
 }
 
 // autoSetDriverOptions sets the options needed for specific vm-driver automatically.
-func autoSetDriverOptions(cmd *cobra.Command, drvName string) error {
+func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
+	err = nil
 	hints := driver.FlagDefaults(drvName)
 	if !cmd.Flags().Changed("extra-config") && hints.ExtraOptions != "" {
-		return extraOptions.Set(hints.ExtraOptions)
+		glog.Infof("auto setting extra-config to %q.", hints.ExtraOptions)
+		err = extraOptions.Set(hints.ExtraOptions)
 	}
 
 	if !cmd.Flags().Changed(cacheImages) {
 		viper.Set(cacheImages, hints.CacheImages)
 	}
 
-	// only for kic docker
+	// currently set containerd for kic
 	if !cmd.Flags().Changed(containerRuntime) && hints.ContainerRuntime != "" {
 		viper.Set(containerRuntime, hints.ContainerRuntime)
-		glog.Infof("auto set %s to %s.", containerRuntime, hints.ContainerRuntime)
-
+		glog.Infof("auto set %s to %q.", containerRuntime, hints.ContainerRuntime)
 	}
 
 	if !cmd.Flags().Changed(cmdcfg.Bootstrapper) && hints.Bootstrapper != "" {
 		viper.Set(cmdcfg.Bootstrapper, hints.Bootstrapper)
-		glog.Infof("auto set bootstrapper to %s for kic driver.", hints.Bootstrapper)
+		glog.Infof("auto set %s to %q.", cmdcfg.Bootstrapper, hints.Bootstrapper)
 
 	}
 
-	return nil
+	return err
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver

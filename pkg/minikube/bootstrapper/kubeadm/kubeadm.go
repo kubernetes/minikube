@@ -266,7 +266,7 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 	if err := verify.APIServerProcess(k.c, start, timeout); err != nil {
 		return err
 	}
-	if err := verify.APIServerHealthz(start, k8s, timeout); err != nil {
+	if err := verify.APIServerIsRunning(start, k8s.NodeIP, k8s.NodePort, timeout); err != nil {
 		return err
 	}
 
