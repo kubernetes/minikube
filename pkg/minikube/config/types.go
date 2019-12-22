@@ -88,6 +88,7 @@ type KubernetesConfig struct {
 	NetworkPlugin     string
 	FeatureGates      string
 	ServiceCIDR       string
+	PodSubnetCIDR     string
 	ImageRepository   string
 	ExtraOptions      ExtraOptionSlice
 

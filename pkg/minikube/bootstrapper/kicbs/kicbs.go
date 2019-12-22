@@ -32,7 +32,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/kapi"
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/verify"
@@ -98,6 +97,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 		return errors.Wrap(err, "generating kubelet service")
 	}
 
+	// TODO:medyagh remove this one
+	delStuff := exec.Command("rm", "-f", "/kind/systemd/")
+	if rr, err := k.c.RunCmd(delStuff); err != nil {
+		glog.Warningf("unable to del crap kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
+	}
+
 	glog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
 
 	stopCmd := exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")
@@ -115,9 +120,9 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
 
-	if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
-		return errors.Wrap(err, "adding addons")
-	}
+	// if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
+	// 	return errors.Wrap(err, "adding addons")
+	// }
 	for _, f := range files {
 		if err := k.c.Copy(f); err != nil {
 			return errors.Wrapf(err, "copy")
@@ -199,19 +204,26 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	// TODO:medyagh delete this temp work arround
 	rr, err := k.c.RunCmd(exec.Command("rm", "-f", "/usr/bin/kubeadm"))
-	fmt.Printf("Deleting kics kubeadm %s %v", rr.Output(), err)
+	fmt.Printf("Deleting kics kubeadm %s %v \n ", rr.Output(), err)
 	rr, err = k.c.RunCmd(exec.Command("rm", "-f", "/usr/bin/kubelet"))
-	fmt.Printf("Deleting kics kubelet %s %v", rr.Output(), err)
+	fmt.Printf("Deleting kics kubelet %s %v \n", rr.Output(), err)
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	if rr, err := k.c.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "init failed. cmd: %q output: %q", rr.Command(), rr.Output())
 	}
+
+	glog.Infof("removing master taint")
+	if err := k.removeMasterTaint(); err != nil {
+		return errors.Wrap(err, "remove master taint")
+	}
+
+	glog.Infof("applying kic overlay network")
 	if err := k.applyOverlayNetwork(); err != nil {
 		return errors.Wrap(err, "applying kic overlay network")
 	}
 
-	glog.Infof("Skipping Configuring cluster permissions ...")
+	glog.Infof("Skipping Configuring cluster permissions for kic...")
 
 	// elevate := func() error {
 	// 	client, err := k.client(k8s)
@@ -300,12 +312,29 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 	return nil
 }
 
+// WaitForCluster blocks until the cluster appears to be healthy
+func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
+	start := time.Now()
+	out.T(out.Waiting, "Waiting for cluster to come online ...")
+	if err := verify.APIServerProcess(k.c, start, timeout); err != nil {
+		return err
+	}
+	if err := verify.APIServerHealthz(start, k8s, timeout); err != nil {
+		return err
+	}
+
+	c, err := k.client(k8s)
+	if err != nil {
+		return errors.Wrap(err, "get k8s client")
+	}
+
+	return verify.SystemPods(c, start, k8s, timeout)
+}
+
 func (k *Bootstrapper) DeleteCluster(config.KubernetesConfig) error {
 	return fmt.Errorf("the DeleteCluster is not implemented in kicbs yet")
 }
-func (k *Bootstrapper) WaitForCluster(config.KubernetesConfig, time.Duration) error {
-	return fmt.Errorf("the WaitForCluster is not implemented in kicbs yet")
-}
+
 func (k *Bootstrapper) LogCommands(bootstrapper.LogOptions) map[string]string {
 	return map[string]string{}
 }
@@ -372,6 +401,21 @@ func (k *Bootstrapper) applyOverlayNetwork() error {
 	)
 	if rr, err := k.c.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
+	}
+	return nil
+}
+
+// removeMasterTaint so pods can be scheduled on the master node
+func (k *Bootstrapper) removeMasterTaint() error {
+	// if we are only provisioning one node, remove the master taint
+	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
+	cmd := exec.Command(
+		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
+		"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
+	)
+
+	if rr, err := k.c.RunCmd(cmd); err != nil {
+		return errors.Wrapf(err, "output: %s", rr.Output())
 	}
 	return nil
 }
