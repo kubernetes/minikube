@@ -52,7 +52,7 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
-	// In case of no port assigned, use util.APIServerPort
+	// In case of no port assigned, use default
 	nodePort := k8s.NodePort
 	if nodePort <= 0 {
 		nodePort = constants.APIServerPort

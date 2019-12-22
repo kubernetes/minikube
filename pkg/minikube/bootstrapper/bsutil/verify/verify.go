@@ -93,7 +93,8 @@ func SystemPods(client *kubernetes.Clientset, start time.Time, k8s config.Kubern
 	return nil
 }
 
-func APIServerHealthz(start time.Time, k8s config.KubernetesConfig, timeout time.Duration) error {
+// APIServerIsRunning waits for api server status to be running
+func APIServerIsRunning(start time.Time, ip string, port int, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
 	healthz := func() (bool, error) {
@@ -101,7 +102,7 @@ func APIServerHealthz(start time.Time, k8s config.KubernetesConfig, timeout time
 			return false, fmt.Errorf("cluster wait timed out during healthz check")
 		}
 
-		status, err := APIServerStatus(net.ParseIP(k8s.NodeIP), k8s.NodePort)
+		status, err := APIServerStatus(net.ParseIP(ip), port)
 		if err != nil {
 			glog.Warningf("status: %v", err)
 			return false, nil
@@ -119,8 +120,9 @@ func APIServerHealthz(start time.Time, k8s config.KubernetesConfig, timeout time
 	return nil
 }
 
+// APIServerStatus hits the /healthz endpoint and returns libmachine style state.State
 func APIServerStatus(ip net.IP, apiserverPort int) (string, error) {
-	url := fmt.Sprintf("https://%s:%d/healthz", ip, apiserverPort)
+	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(ip.String(), fmt.Sprint(apiserverPort)))
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
 		Proxy:           nil, // To avoid connectiv issue if http(s)_proxy is set.

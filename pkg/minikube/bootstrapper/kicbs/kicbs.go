@@ -213,15 +213,15 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrapf(err, "init failed. cmd: %q output: %q", rr.Command(), rr.Output())
 	}
 
-	glog.Infof("removing master taint")
-	if err := k.removeMasterTaint(); err != nil {
-		return errors.Wrap(err, "remove master taint")
-	}
-
 	glog.Infof("applying kic overlay network")
 	if err := k.applyOverlayNetwork(); err != nil {
 		return errors.Wrap(err, "applying kic overlay network")
 	}
+
+	// glog.Infof("removing master taint")
+	// if err := k.removeMasterTaint(); err != nil {
+	// 	return errors.Wrap(err, "remove master taint")
+	// }
 
 	glog.Infof("Skipping Configuring cluster permissions for kic...")
 
@@ -317,18 +317,22 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
 	if err := verify.APIServerProcess(k.c, start, timeout); err != nil {
-		return err
+		return errors.Wrap(err, "wait for api proc")
 	}
-	if err := verify.APIServerHealthz(start, k8s, timeout); err != nil {
-		return err
-	}
-
 	c, err := k.client(k8s)
 	if err != nil {
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	return verify.SystemPods(c, start, k8s, timeout)
+	if err := verify.SystemPods(c, start, k8s, timeout); err != nil {
+		return errors.Wrap(err, "wait for system pods")
+	}
+
+	if err := verify.APIServerIsRunning(start, k8s.NodeIP, k8s.NodePort, timeout); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (k *Bootstrapper) DeleteCluster(config.KubernetesConfig) error {
