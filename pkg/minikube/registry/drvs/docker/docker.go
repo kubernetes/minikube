@@ -48,13 +48,13 @@ func configure(mc config.MachineConfig) interface{} {
 		glog.Errorf("err to getting kic image for %s: imgesha:%s", img, mc.KubernetesConfig.KubernetesVersion)
 	}
 	return kic.NewDriver(kic.Config{
-		MachineName:   mc.Name,
-		StorePath:     localpath.MiniPath(),
-		ImageDigest:   img,
-		CPU:           mc.CPUs,
-		Memory:        mc.Memory,
-		APIServerPort: mc.NodeBindPort,
-		OCIBinary:     oci.Docker,
+		MachineName:  mc.Name,
+		StorePath:    localpath.MiniPath(),
+		ImageDigest:  img,
+		CPU:          mc.CPUs,
+		Memory:       mc.Memory,
+		HostBindPort: mc.KubernetesConfig.HostBindPort,
+		OCIBinary:    oci.Docker,
 	})
 
 }

@@ -64,8 +64,13 @@ type MachineConfig struct {
 	KubernetesConfig    KubernetesConfig
 	HostOnlyNicType     string // Only used by virtualbox
 	NatNicType          string // Only used by virtualbox
+<<<<<<< HEAD
 	Addons              map[string]bool
 	NodeBindPort        int32 // Only used by kic
+||||||| constructed merge base
+	NodeBindPort        int32  // Only used by kic
+=======
+>>>>>>> add flag for kic host binding port
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
@@ -88,6 +93,8 @@ type KubernetesConfig struct {
 
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool
+	HostBindPort           int32 // Only used by kic to bind container port to host
+
 }
 
 // VersionedExtraOption holds information on flags to apply to a specific range
