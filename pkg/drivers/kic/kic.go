@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/node"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
@@ -86,7 +87,7 @@ func (d *Driver) Create() error {
 	params.PortMappings = append(params.PortMappings, oci.PortMapping{
 		ListenAddress: "127.0.0.1",
 		HostPort:      d.NodeConfig.HostBindPort,
-		ContainerPort: 6443,
+		ContainerPort: constants.APIServerPort,
 	})
 
 	_, err := node.CreateNode(params)

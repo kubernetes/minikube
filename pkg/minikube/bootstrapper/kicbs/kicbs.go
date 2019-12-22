@@ -43,7 +43,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Bootstrapper is a bootstrapper using kicbs
@@ -111,9 +110,8 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	}
 
 	var cniFile []byte = nil
-	if cfg.KubernetesConfig.EnableDefaultCNI {
-		cniFile = []byte(defaultCNIManifest)
-	}
+	cniFile = []byte(defaultCNIManifest)
+
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
 
 	// if err := addAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
@@ -203,29 +201,28 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	fmt.Printf("Deleting kics kubeadm %s %v", rr.Output(), err)
 	rr, err = k.c.RunCmd(exec.Command("rm", "-f", "/usr/bin/kubelet"))
 	fmt.Printf("Deleting kics kubelet %s %v", rr.Output(), err)
-	// rr, err = k.c.RunCmd(exec.Command("chmod", "+x", path.Join(vmpath.GuestPersistentDir, "binaries", k8s.KubernetesVersion, "kubeadm")))
-	// fmt.Printf("chmoding kics kubeadm %s %v", rr.Output(), err)
-	// rr, err = k.c.RunCmd(exec.Command("chmod", "+x", path.Join(vmpath.GuestPersistentDir, "binaries", k8s.KubernetesVersion, "kubelet")))
-	// fmt.Printf("chmoding kics kubelet %s %v", rr.Output(), err)
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	if rr, err := k.c.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "init failed. cmd: %q output: %q", rr.Command(), rr.Output())
 	}
-
-	glog.Infof("Configuring cluster permissions ...")
-
-	elevate := func() error {
-		client, err := k.client(k8s)
-		if err != nil {
-			return err
-		}
-		return bsutil.ElevateKubeSystemPrivileges(client)
+	if err := k.applyOverlayNetwork(); err != nil {
+		return errors.Wrap(err, "applying kic overlay network")
 	}
 
-	if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
-		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
-	}
+	glog.Infof("Skipping Configuring cluster permissions ...")
+
+	// elevate := func() error {
+	// 	client, err := k.client(k8s)
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// 	return bsutil.ElevateKubeSystemPrivileges(client)
+	// }
+
+	// if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
+	// 	return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
+	// }
 
 	if err := k.adjustResourceLimits(); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
@@ -331,7 +328,8 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 		return nil, errors.Wrap(err, "client config")
 	}
 
-	endpoint := fmt.Sprintf("https://%s:%d", k8s.NodeIP, k8s.NodePort)
+	// TODO:medyagh maybe for liux machines we could use container ip
+	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(k8s.HostBindPort)))
 	if config.Host != endpoint {
 		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
 		config.Host = endpoint
@@ -362,5 +360,17 @@ func (k *Bootstrapper) adjustResourceLimits() error {
 		return errors.Wrap(err, fmt.Sprintf("oom_adj adjust"))
 	}
 
+	return nil
+}
+
+// applyOverlayNetwork applies the CNI plugin needed to make kic work
+func (k *Bootstrapper) applyOverlayNetwork() error {
+	cmd := exec.Command(
+		"kubectl", "create", "--kubeconfig=/etc/kubernetes/admin.conf",
+		"-f", bsutil.DefaultCNIConfigPath,
+	)
+	if rr, err := k.c.RunCmd(cmd); err != nil {
+		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
+	}
 	return nil
 }
