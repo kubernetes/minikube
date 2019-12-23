@@ -98,12 +98,6 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 		return errors.Wrap(err, "generating kubelet service")
 	}
 
-	// TODO:medyagh remove this one
-	delStuff := exec.Command("rm", "-f", "/kind/systemd/")
-	if rr, err := k.c.RunCmd(delStuff); err != nil {
-		glog.Warningf("unable to del crap kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
-	}
-
 	glog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
 
 	stopCmd := exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")
@@ -203,11 +197,6 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
 		ignore = append(ignore, "SystemVerification")
 	}
-	// TODO:medyagh delete this temp work arround
-	rr, err := k.c.RunCmd(exec.Command("rm", "-f", "/usr/bin/kubeadm"))
-	fmt.Printf("Deleting kics kubeadm %s %v \n ", rr.Output(), err)
-	rr, err = k.c.RunCmd(exec.Command("rm", "-f", "/usr/bin/kubelet"))
-	fmt.Printf("Deleting kics kubelet %s %v \n", rr.Output(), err)
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	glog.Infof("starting kubeadm init")
