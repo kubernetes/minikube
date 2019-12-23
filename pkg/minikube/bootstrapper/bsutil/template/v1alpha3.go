@@ -49,6 +49,7 @@ kind: ClusterConfiguration
 {{end -}}
 certificatesDir: {{.CertDir}}
 clusterName: kubernetes
+apiServerCertSANs: ["127.0.0.1", "localhost", "{{.AdvertiseAddress}}"]
 controlPlaneEndpoint: localhost:{{.APIServerPort}}
 etcd:
   local:

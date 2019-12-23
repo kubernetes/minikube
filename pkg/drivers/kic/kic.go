@@ -35,6 +35,9 @@ import (
 // DefaultPodCIDR is The CIDR to be used for pods inside the node.
 const DefaultPodCIDR = "10.244.0.0/16"
 
+// DefaultBindIPV4 is The default ip the container will bind to.
+const DefaultBindIPV4 = "127.0.0.1"
+
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
 type Driver struct {
 	*drivers.BaseDriver
