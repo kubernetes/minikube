@@ -434,12 +434,18 @@ func displayEnviron(env []string) {
 }
 
 func setupKubeconfig(h *host.Host, c *cfg.MachineConfig, clusterName string) (*kubeconfig.Settings, error) {
-	addr, err := h.Driver.GetURL()
-	if err != nil {
-		exit.WithError("Failed to get driver URL", err)
+	addr := ""
+	if driver.IsKIC(h.DriverName) {
+		addr = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(c.KubernetesConfig.HostBindPort)))
+	} else {
+		addr, err := h.Driver.GetURL()
+		if err != nil {
+			exit.WithError("Failed to get driver URL", err)
+		}
+		addr = strings.Replace(addr, "tcp://", "https://", -1)
+		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
 	}
-	addr = strings.Replace(addr, "tcp://", "https://", -1)
-	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
+
 	if c.KubernetesConfig.APIServerName != constants.APIServerName {
 		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
 	}

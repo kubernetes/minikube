@@ -24,7 +24,7 @@ var KubeAdmConfigTmplV1Beta1 = template.Must(template.New("configTmpl-v1beta1").
 }).Parse(`apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
 localAPIEndpoint:
-  advertiseAddress: {{.AdvertiseAddress}}
+  advertiseAddress:  {{.AdvertiseAddress}}
   bindPort: {{.APIServerPort}}
 bootstrapTokens:
   - groups:
@@ -52,8 +52,6 @@ kind: ClusterConfiguration
 {{end -}}{{end -}}
 certificatesDir: {{.CertDir}}
 clusterName: kubernetes
-apiServer:
-  certSANs: ["127.0.0.1", "localhost", "{{.AdvertiseAddress}}"]
 controlPlaneEndpoint: localhost:{{.APIServerPort}}
 dns:
   type: CoreDNS
