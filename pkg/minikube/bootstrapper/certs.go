@@ -111,7 +111,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 
 	kcs := &kubeconfig.Settings{
 		ClusterName:          k8s.NodeName,
-		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
+		ClusterServerAddress: fmt.Sprintf("https://%s", net.JoinHostPort("localhost", fmt.Sprint(k8s.NodePort))),
 		ClientCertificate:    path.Join(vmpath.GuestCertsDir, "apiserver.crt"),
 		ClientKey:            path.Join(vmpath.GuestCertsDir, "apiserver.key"),
 		CertificateAuthority: path.Join(vmpath.GuestCertsDir, "ca.crt"),
@@ -176,7 +176,7 @@ func generateCerts(k8s config.KubernetesConfig) error {
 
 	apiServerIPs := append(
 		k8s.APIServerIPs,
-		[]net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP(kic.DefaultBindIPV4), net.ParseIP("10.0.0.1")}...)
+		[]net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP(kic.DefaultBindIPV4), net.ParseIP("10.0.0.1"), net.ParseIP("localhost")}...)
 	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName)
 	apiServerAlternateNames := append(
 		apiServerNames,
