@@ -314,7 +314,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return err
 	}
 
-	config, err := config.Load()
+	config, err := config.Load(p.Driver.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "getting cluster config")
 	}
@@ -330,7 +330,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return err
 	}
 
-	if config.MachineConfig.ContainerRuntime == "" {
+	if config.ContainerRuntime == "" {
 
 		if err := p.Service("docker", serviceaction.Enable); err != nil {
 			return err

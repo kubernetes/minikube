@@ -21,6 +21,7 @@ import (
 	"flag"
 	"fmt"
 	"io/ioutil"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kicbs"
 	"math"
 	"net"
 	"os/exec"
@@ -90,9 +91,9 @@ func CacheISO(config cfg.MachineConfig) error {
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	exists, err := api.Exists(cfg.GetMachineName())
+	exists, err := api.Exists(config.Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "exists: %s", cfg.GetMachineName())
+		return nil, errors.Wrapf(err, "exists: %s", config.Name)
 	}
 	if !exists {
 		glog.Infoln("Machine does not exist... provisioning new machine")
@@ -102,12 +103,12 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 
 	glog.Infoln("Skipping create...Using existing machine configuration")
 
-	h, err := api.Load(cfg.GetMachineName())
+	h, err := api.Load(config.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
 
-	if exists && cfg.GetMachineName() == constants.DefaultMachineName {
+	if exists && config.Name == constants.DefaultMachineName {
 		out.T(out.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 
@@ -118,9 +119,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": config.VMDriver, "profile_name": cfg.GetMachineName()})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": config.VMDriver, "profile_name": config.Name})
 	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": config.VMDriver, "profile_name": cfg.GetMachineName()})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": config.VMDriver, "profile_name": config.Name})
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -232,7 +233,7 @@ func trySSHPowerOff(h *host.Host) error {
 		return nil
 	}
 
-	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": cfg.GetMachineName()})
+	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
 	out, err := h.RunSSHCommand("sudo poweroff")
 	// poweroff always results in an error, since the host disconnects.
 	glog.Infof("poweroff result: out=%s, err=%v", out, err)
@@ -241,12 +242,13 @@ func trySSHPowerOff(h *host.Host) error {
 
 // StopHost stops the host VM, saving state to disk.
 func StopHost(api libmachine.API) error {
-	host, err := api.Load(cfg.GetMachineName())
+	machineName := viper.GetString(cfg.MachineProfile)
+	host, err := api.Load(machineName)
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
 
-	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
+	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
 	if host.DriverName == driver.HyperV {
 		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
 		if err := trySSHPowerOff(host); err != nil {
@@ -259,23 +261,23 @@ func StopHost(api libmachine.API) error {
 		if ok && alreadyInStateError.State == state.Stopped {
 			return nil
 		}
-		return &retry.RetriableError{Err: errors.Wrapf(err, "Stop: %s", cfg.GetMachineName())}
+		return &retry.RetriableError{Err: errors.Wrapf(err, "Stop: %s", machineName)}
 	}
 	return nil
 }
 
 // DeleteHost deletes the host VM.
-func DeleteHost(api libmachine.API) error {
-	host, err := api.Load(cfg.GetMachineName())
+func DeleteHost(api libmachine.API, machineName string) error {
+	host, err := api.Load(machineName)
 	if err != nil {
 		return errors.Wrap(err, "load")
 	}
 
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
-	status, err := GetHostStatus(api)
+	status, err := GetHostStatus(api, machineName)
 	if err != nil {
 		// Warn, but proceed
-		out.WarningT("Unable to get the status of the {{.name}} cluster.", out.V{"name": cfg.GetMachineName()})
+		out.WarningT("Unable to get the status of the {{.name}} cluster.", out.V{"name": machineName})
 	}
 
 	if status == state.None.String() {
@@ -290,27 +292,27 @@ func DeleteHost(api libmachine.API) error {
 		out.T(out.DeletingHost, "Successfully powered off Hyper-V. minikube driver -- {{.driver}}", out.V{"driver": host.Driver.DriverName()})
 	}
 
-	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": cfg.GetMachineName(), "driver_name": host.DriverName})
+	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
 	if err := host.Driver.Remove(); err != nil {
 		return errors.Wrap(err, "host remove")
 	}
-	if err := api.Remove(cfg.GetMachineName()); err != nil {
+	if err := api.Remove(machineName); err != nil {
 		return errors.Wrap(err, "api remove")
 	}
 	return nil
 }
 
 // GetHostStatus gets the status of the host VM.
-func GetHostStatus(api libmachine.API) (string, error) {
-	exists, err := api.Exists(cfg.GetMachineName())
+func GetHostStatus(api libmachine.API, machineName string) (string, error) {
+	exists, err := api.Exists(machineName)
 	if err != nil {
-		return "", errors.Wrapf(err, "%s exists", cfg.GetMachineName())
+		return "", errors.Wrapf(err, "%s exists", machineName)
 	}
 	if !exists {
 		return state.None.String(), nil
 	}
 
-	host, err := api.Load(cfg.GetMachineName())
+	host, err := api.Load(machineName)
 	if err != nil {
 		return "", errors.Wrapf(err, "load")
 	}
@@ -426,15 +428,19 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	if !driver.BareMetal(config.VMDriver) {
-		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
-	} else {
+	if driver.BareMetal(config.VMDriver) {
 		info, err := getHostInfo()
 		if err == nil {
 			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
+	} else if driver.IsKIC(config.VMDriver) {
+		info, err := getHostInfo() // TODO medyagh: get docker-machine info for non linux
+		if err == nil {
+			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": config.Memory, "host_memory_size": info.Memory})
+		}
+	} else {
+		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
 	}
-
 	def := registry.Driver(config.VMDriver)
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", config.VMDriver)
@@ -460,16 +466,16 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "create")
 	}
 
-	if !driver.BareMetal(config.VMDriver) {
+	if driver.BareMetal(config.VMDriver) {
+		showLocalOsRelease()
+	} else if !driver.BareMetal(config.VMDriver) && !driver.IsKIC(config.VMDriver) {
 		showRemoteOsRelease(h.Driver)
 		// Ensure that even new VM's have proper time synchronization up front
 		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
 		if err := ensureSyncedGuestClock(h); err != nil {
 			return h, err
 		}
-	} else {
-		showLocalOsRelease()
-	}
+	} // TODO:medyagh add show-os release for kic
 
 	if err := api.Save(h); err != nil {
 		return nil, errors.Wrap(err, "save")
@@ -479,7 +485,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
 func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	host, err := CheckIfHostExistsAndLoad(api, cfg.GetMachineName())
+	host, err := CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking that api exists and loading it")
 	}
@@ -575,7 +581,7 @@ func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Hos
 
 // CreateSSHShell creates a new SSH shell / client
 func CreateSSHShell(api libmachine.API, args []string) error {
-	machineName := cfg.GetMachineName()
+	machineName := viper.GetString(config.MachineProfile)
 	host, err := CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return errors.Wrap(err, "host exists and load")
@@ -600,7 +606,7 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 // IsMinikubeRunning checks that minikube has a status available and that
 // the status is `Running`
 func IsMinikubeRunning(api libmachine.API) bool {
-	s, err := GetHostStatus(api)
+	s, err := GetHostStatus(api, viper.GetString(config.MachineProfile))
 	if err != nil {
 		return false
 	}
@@ -615,11 +621,17 @@ func Bootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Boo
 	var b bootstrapper.Bootstrapper
 	var err error
 	switch bootstrapperName {
-	case bootstrapper.BootstrapperTypeKubeadm:
-		b, err = kubeadm.NewKubeadmBootstrapper(api)
+	case bootstrapper.Kubeadm:
+		b, err = kubeadm.NewBootstrapper(api)
 		if err != nil {
-			return nil, errors.Wrap(err, "getting kubeadm bootstrapper")
+			return nil, errors.Wrap(err, "getting a new kubeadm bootstrapper")
 		}
+	case bootstrapper.KIC:
+		b, err = kicbs.NewBootstrapper(api)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting a new kic bootstrapper")
+		}
+
 	default:
 		return nil, fmt.Errorf("unknown bootstrapper: %s", bootstrapperName)
 	}

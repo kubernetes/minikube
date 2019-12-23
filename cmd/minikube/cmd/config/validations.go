@@ -26,6 +26,7 @@ import (
 
 	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -147,9 +148,18 @@ func IsValidAddon(name string, val string) error {
 	return errors.Errorf("Cannot enable/disable invalid addon %s", name)
 }
 
+// IsValidRuntime checks if a string is a valid runtime
+func IsValidRuntime(name string, runtime string) error {
+	_, err := cruntime.New(cruntime.Config{Type: runtime})
+	if err != nil {
+		return fmt.Errorf("invalid runtime: %v", err)
+	}
+	return nil
+}
+
 // IsContainerdRuntime is a validator which returns an error if the current runtime is not containerd
 func IsContainerdRuntime(_, _ string) error {
-	config, err := config.Load()
+	config, err := config.Load(viper.GetString(config.MachineProfile))
 	if err != nil {
 		return fmt.Errorf("config.Load: %v", err)
 	}

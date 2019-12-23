@@ -18,12 +18,17 @@ package localpath
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
+	"strings"
 
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/client-go/util/homedir"
 )
 
-// MinikubeHome is the name of the minikube home directory variable.
+// MinikubeHome is the name of the minikube home directory environment variable.
 const MinikubeHome = "MINIKUBE_HOME"
 
 // ConfigFile is the path of the config file
@@ -46,3 +51,91 @@ func MakeMiniPath(fileName ...string) string {
 	args = append(args, fileName...)
 	return filepath.Join(args...)
 }
+
+// MachinePath returns the Minikube machine path of a machine
+func MachinePath(machine string, miniHome ...string) string {
+	miniPath := MiniPath()
+	if len(miniHome) > 0 {
+		miniPath = miniHome[0]
+	}
+	return filepath.Join(miniPath, "machines", machine)
+}
+
+// SanitizeCacheDir
+// # ParseReference cannot have a : in the directory path
+func SanitizeCacheDir(image string) string {
+	if runtime.GOOS == "windows" && hasWindowsDriveLetter(image) {
+		// not sanitize Windows drive letter.
+		s := image[:2] + strings.Replace(image[2:], ":", "_", -1)
+		glog.Infof("windows sanitize: %s -> %s", image, s)
+		return s
+	}
+	return strings.Replace(image, ":", "_", -1)
+}
+
+func hasWindowsDriveLetter(s string) bool {
+	if len(s) < 3 {
+		return false
+	}
+
+	drive := s[:3]
+	for _, b := range "CDEFGHIJKLMNOPQRSTUVWXYZABcdefghijklmnopqrstuvwxyzab" {
+		if d := string(b) + ":"; drive == d+`\` || drive == d+`/` {
+			return true
+		}
+	}
+
+	return false
+}
+
+// DstPath returns an os specific
+func DstPath(dst string) (string, error) {
+	if runtime.GOOS == "windows" && hasWindowsDriveLetter(dst) {
+		// ParseReference does not support a Windows drive letter.
+		// Therefore, will replace the drive letter to a volume name.
+		var err error
+		if dst, err = replaceWinDriveLetterToVolumeName(dst); err != nil {
+			return "", errors.Wrap(err, "parsing docker archive dst ref: replace a Win drive letter to a volume name")
+		}
+	}
+	return dst, nil
+}
+
+// Replace a drive letter to a volume name.
+func replaceWinDriveLetterToVolumeName(s string) (string, error) {
+	vname, err := getWindowsVolumeName(s[:1])
+	if err != nil {
+		return "", err
+	}
+	path := vname + s[3:]
+
+	return path, nil
+}
+
+func getWindowsVolumeNameCmd(d string) (string, error) {
+	cmd := exec.Command("wmic", "volume", "where", "DriveLetter = '"+d+":'", "get", "DeviceID")
+
+	stdout, err := cmd.Output()
+	if err != nil {
+		return "", err
+	}
+
+	outs := strings.Split(strings.Replace(string(stdout), "\r", "", -1), "\n")
+
+	var vname string
+	for _, l := range outs {
+		s := strings.TrimSpace(l)
+		if strings.HasPrefix(s, `\\?\Volume{`) && strings.HasSuffix(s, `}\`) {
+			vname = s
+			break
+		}
+	}
+
+	if vname == "" {
+		return "", errors.New("failed to get a volume GUID")
+	}
+
+	return vname, nil
+}
+
+var getWindowsVolumeName = getWindowsVolumeNameCmd

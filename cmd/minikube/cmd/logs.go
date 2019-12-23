@@ -48,7 +48,7 @@ var logsCmd = &cobra.Command{
 	Short: "Gets the logs of the running instance, used for debugging minikube, not user code.",
 	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg, err := config.Load()
+		cfg, err := config.Load(viper.GetString(config.MachineProfile))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
@@ -59,7 +59,7 @@ var logsCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		h, err := api.Load(config.GetMachineName())
+		h, err := api.Load(cfg.Name)
 		if err != nil {
 			exit.WithError("api load", err)
 		}

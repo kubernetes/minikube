@@ -26,7 +26,6 @@ import (
 	"github.com/otiai10/copy"
 	"github.com/spf13/viper"
 
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
@@ -117,7 +116,7 @@ func TestDeleteProfile(t *testing.T) {
 				t.Errorf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 			}
 
-			pathToMachine := cluster.MachinePath(profile.Name, localpath.MiniPath())
+			pathToMachine := localpath.MachinePath(profile.Name, localpath.MiniPath())
 			if _, err := os.Stat(pathToMachine); !os.IsNotExist(err) {
 				t.Errorf("Profile folder of profile \"%s\" was not deleted", profile.Name)
 			}

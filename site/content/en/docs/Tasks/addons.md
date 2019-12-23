@@ -11,7 +11,6 @@ minikube has a set of built-in addons that, when enabled, can be used within Kub
 ## Available addons
 
 * [Kubernetes Dashboard](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/dashboard)
-* [Heapster](https://github.com/kubernetes/heapster): [Troubleshooting Guide](https://github.com/kubernetes/heapster/blob/master/docs/influxdb.md) Note:You will need to login to Grafana as admin/admin in order to access the console
 * [EFK](https://github.com/kubernetes/kubernetes/tree/master/cluster/addons/fluentd-elasticsearch)
 * [Registry](https://github.com/kubernetes/minikube/tree/master/deploy/addons/registry)
 * [Registry Credentials](https://github.com/upmc-enterprises/registry-creds)
@@ -39,7 +38,6 @@ Example output:
 - freshpod: disabled
 - addon-manager: enabled
 - dashboard: enabled
-- heapster: disabled
 - efk: disabled
 - ingress: disabled
 - default-storageclass: enabled

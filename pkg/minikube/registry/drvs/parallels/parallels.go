@@ -45,7 +45,7 @@ func init() {
 }
 
 func configure(config cfg.MachineConfig) interface{} {
-	d := parallels.NewDriver(cfg.GetMachineName(), localpath.MiniPath()).(*parallels.Driver)
+	d := parallels.NewDriver(config.Name, localpath.MiniPath()).(*parallels.Driver)
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.Memory = config.Memory
 	d.CPU = config.CPUs

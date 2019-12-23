@@ -17,7 +17,10 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -39,12 +42,18 @@ var updateContextCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		machineName := config.GetMachineName()
+		machineName := viper.GetString(config.MachineProfile)
 		ip, err := cluster.GetHostDriverIP(api, machineName)
 		if err != nil {
 			exit.WithError("Error host driver ip status", err)
 		}
-		updated, err := kubeconfig.UpdateIP(ip, machineName, constants.KubeconfigPath)
+		updated := false
+		kubeConfigPath := os.Getenv("KUBECONFIG")
+		if kubeConfigPath == "" {
+			updated, err = kubeconfig.UpdateIP(ip, machineName, constants.KubeconfigPath)
+		} else {
+			updated, err = kubeconfig.UpdateIP(ip, machineName, kubeConfigPath)
+		}
 		if err != nil {
 			exit.WithError("update config", err)
 		}

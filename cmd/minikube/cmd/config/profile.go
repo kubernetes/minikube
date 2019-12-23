@@ -76,13 +76,13 @@ var ProfileCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Setting profile failed", err)
 		}
-		cc, err := pkgConfig.Load()
+		cc, err := pkgConfig.Load(profile)
 		// might err when loading older version of cfg file that doesn't have KeepContext field
 		if err != nil && !os.IsNotExist(err) {
 			out.ErrT(out.Sad, `Error loading profile config: {{.error}}`, out.V{"error": err})
 		}
 		if err == nil {
-			if cc.MachineConfig.KeepContext {
+			if cc.KeepContext {
 				out.SuccessT("Skipped switching kubectl context for {{.profile_name}} because --keep-context was set.", out.V{"profile_name": profile})
 				out.SuccessT("To connect to this cluster, use: kubectl --context={{.profile_name}}", out.V{"profile_name": profile})
 			} else {

@@ -98,7 +98,7 @@ func (r *CRIO) Enable(disOthers bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
+	if err := generateCRIOConfig(r.Runner, r.ImageRepository); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
@@ -117,6 +117,20 @@ func (r *CRIO) Disable() error {
 		return errors.Wrapf(err, "disable crio.")
 	}
 	return nil
+}
+
+// ImageExists checks if an image exists
+func (r *CRIO) ImageExists(name string, sha string) bool {
+	// expected output looks like [NAME@sha256:SHA]
+	c := exec.Command("sudo", "podman", "inspect", "--format='{{.Id}}'", name)
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return false
+	}
+	if !strings.Contains(rr.Output(), sha) {
+		return false
+	}
+	return true
 }
 
 // LoadImage loads an image into this runtime

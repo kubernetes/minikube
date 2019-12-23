@@ -32,9 +32,11 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -57,7 +59,7 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cc, err := pkg_config.Load()
+		cc, err := pkg_config.Load(viper.GetString(config.MachineProfile))
 		if err != nil && !os.IsNotExist(err) {
 			exit.WithError("Error loading profile config", err)
 		}
@@ -74,10 +76,10 @@ var dashboardCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 
-		if _, err = api.Load(pkg_config.GetMachineName()); err != nil {
+		if _, err = api.Load(cc.Name); err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
-				exit.WithCodeT(exit.Unavailable, "{{.name}} cluster does not exist", out.V{"name": pkg_config.GetMachineName()})
+				exit.WithCodeT(exit.Unavailable, "{{.name}} cluster does not exist", out.V{"name": cc.Name})
 			default:
 				exit.WithError("Error getting cluster", err)
 			}
@@ -119,7 +121,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		out.ErrT(out.Launch, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy(kubectl)
+		p, hostPort, err := kubectlProxy(kubectl, cc.Name)
 		if err != nil {
 			exit.WithError("kubectl proxy", err)
 		}
@@ -153,11 +155,10 @@ var dashboardCmd = &cobra.Command{
 }
 
 // kubectlProxy runs "kubectl proxy", returning host:port
-func kubectlProxy(path string) (*exec.Cmd, string, error) {
+func kubectlProxy(path string, machineName string) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
-	// pkg_config.GetMachineName() respects the -p (profile) flag
 
-	cmd := exec.Command(path, "--context", pkg_config.GetMachineName(), "proxy", "--port=0")
+	cmd := exec.Command(path, "--context", machineName, "proxy", "--port=0")
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {

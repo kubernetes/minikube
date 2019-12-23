@@ -22,10 +22,13 @@ import (
 	"sort"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
 const (
+	// Docker is Kubernetes in container using docker driver
+	Docker = "docker"
 	// Mock driver
 	Mock = "mock"
 	// None driver
@@ -66,6 +69,11 @@ func Supported(name string) bool {
 	return false
 }
 
+// IsKIC checks if the driver is a kubernetes in continer
+func IsKIC(name string) bool {
+	return name == Docker
+}
+
 // BareMetal returns if this driver is unisolated
 func BareMetal(name string) bool {
 	return name == None || name == Mock
@@ -73,14 +81,22 @@ func BareMetal(name string) bool {
 
 // FlagHints are hints for what default options should be used for this driver
 type FlagHints struct {
-	ExtraOptions string
-	CacheImages  bool
+	ExtraOptions     string
+	CacheImages      bool
+	ContainerRuntime string
+	Bootstrapper     string
 }
 
 // FlagDefaults returns suggested defaults based on a driver
 func FlagDefaults(name string) FlagHints {
 	if name != None {
-		return FlagHints{CacheImages: true}
+		fh := FlagHints{CacheImages: true}
+		// only for kic, till other run-times are available we auto-set containerd.
+		if name == Docker {
+			fh.ContainerRuntime = "containerd"
+			fh.Bootstrapper = bootstrapper.KIC
+		}
+		return fh
 	}
 
 	extraOpts := ""
@@ -95,14 +111,7 @@ func FlagDefaults(name string) FlagHints {
 
 // Choices returns a list of drivers which are possible on this system
 func Choices() []registry.DriverState {
-	options := []registry.DriverState{}
-	for _, ds := range registry.Installed() {
-		if !ds.State.Healthy {
-			glog.Warningf("%q is installed, but unhealthy: %v", ds.Name, ds.State.Error)
-			continue
-		}
-		options = append(options, ds)
-	}
+	options := registry.Available()
 
 	// Descending priority for predictability and appearance
 	sort.Slice(options, func(i, j int) bool {
@@ -112,9 +121,25 @@ func Choices() []registry.DriverState {
 }
 
 // Choose returns a suggested driver from a set of options
-func Choose(options []registry.DriverState) (registry.DriverState, []registry.DriverState) {
+func Choose(requested string, options []registry.DriverState) (registry.DriverState, []registry.DriverState) {
+	glog.Infof("requested: %q", requested)
 	pick := registry.DriverState{}
 	for _, ds := range options {
+		if ds.Name == requested {
+			glog.Infof("choosing %q because it was requested", ds.Name)
+			pick = ds
+			continue
+		}
+
+		if !ds.State.Installed {
+			continue
+		}
+
+		if !ds.State.Healthy {
+			glog.Infof("not recommending %q due to health: %v", ds.Name, ds.State.Error)
+			continue
+		}
+
 		if ds.Priority <= registry.Discouraged {
 			glog.Infof("not recommending %q due to priority: %d", ds.Name, ds.Priority)
 			continue
@@ -128,6 +153,9 @@ func Choose(options []registry.DriverState) (registry.DriverState, []registry.Dr
 	alternates := []registry.DriverState{}
 	for _, ds := range options {
 		if ds != pick {
+			if !ds.State.Healthy || !ds.State.Installed {
+				continue
+			}
 			alternates = append(alternates, ds)
 		}
 	}
