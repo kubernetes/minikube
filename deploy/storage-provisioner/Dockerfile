@@ -13,5 +13,5 @@
 # limitations under the License.
 
 FROM scratch
-COPY out/storage-provisioner storage-provisioner
+COPY out/storage-provisioner /storage-provisioner
 CMD ["/storage-provisioner"]
