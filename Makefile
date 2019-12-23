@@ -84,7 +84,7 @@ STORAGE_PROVISIONER_TAG := v1.8.1
 
 # Set the version information for the Kubernetes servers
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT)
-PROVISIONER_LDFLAGS := "$(MINIKUBE_LDFLAGS) -s -w"
+PROVISIONER_LDFLAGS := "$(MINIKUBE_LDFLAGS) -s -w -extldflags '-static'"
 
 MINIKUBEFILES := ./cmd/minikube/
 HYPERKIT_FILES := ./cmd/drivers/hyperkit
