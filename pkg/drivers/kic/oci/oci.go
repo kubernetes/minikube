@@ -358,7 +358,7 @@ func CreateContainer(ociBinary string, image string, opts ...CreateOpt) ([]strin
 	// 125
 
 	if err != nil {
-		return output, errors.Wrapf(err, "CreateContainer %v ", args)
+		return output, errors.Wrapf(err, "args: %v  output: %s ", args, output)
 	}
 	return output, nil
 }

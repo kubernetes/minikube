@@ -591,6 +591,12 @@ out/mkcmp:
 out/performance-monitor:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/monitor/monitor.go
 
+
+.PHONY: build-kic-image
+build-kic-image:
+	docker rmi -f medyagh/kicbase:v0.0.1-snapshot || true
+	docker build -f ./hack/kic.Dockerfile -t medyagh/kicbase:v0.0.1-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
+
 .PHONY: help
 help:
 	@printf "\033[1mAvailable targets for minikube ${VERSION}\033[21m\n"
