@@ -32,7 +32,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/config"
 )
 
 // APIServerProcess waits for api server to be healthy returns error if it doesn't
@@ -57,8 +56,8 @@ func APIServerProcess(runner command.Runner, start time.Time, timeout time.Durat
 }
 
 // SystemPods verifies essential pods for running kurnetes is running
-func SystemPods(client *kubernetes.Clientset, start time.Time, k8s config.KubernetesConfig, timeout time.Duration) error {
-	glog.Infof("waiting for kube-system pods to appear ...")
+func SystemPods(client *kubernetes.Clientset, start time.Time, ip string, port int, timeout time.Duration) error {
+	glog.Infof("waiting for kube-system pods to appear %s...", net.JoinHostPort(ip, fmt.Sprint(port)))
 	pStart := time.Now()
 	podStart := time.Time{}
 	podList := func() (bool, error) {
@@ -67,12 +66,15 @@ func SystemPods(client *kubernetes.Clientset, start time.Time, k8s config.Kubern
 		}
 		// Wait for any system pod, as waiting for apiserver may block until etcd
 		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+		fmt.Printf("\nitems: %+v err: %v\n", pods.Items, err)
 		if len(pods.Items) < 2 {
+			fmt.Printf("\nLength of pods is <2: items: %+v err: %v\n", pods.Items, err)
 			podStart = time.Time{}
 			return false, nil
 		}
 		if err != nil {
 			podStart = time.Time{}
+			fmt.Printf("PodList Err: %v", err)
 			return false, nil
 		}
 		if podStart.IsZero() {

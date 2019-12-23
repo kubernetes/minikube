@@ -31,6 +31,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
@@ -159,6 +160,7 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
+	k8s.NodeIP = kic.DefaultBindIPV4
 	err := k.existingConfig()
 	if err == nil {
 		return k.restartCluster(k8s)
@@ -297,7 +299,7 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "getting k8s client")
 	}
 
-	if err := verify.SystemPods(client, time.Now(), k8s, kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := verify.SystemPods(client, time.Now(), k8s.NodeIP, k8s.NodePort, kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
 	}
 
@@ -319,17 +321,18 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 	if err := verify.APIServerProcess(k.c, start, timeout); err != nil {
 		return errors.Wrap(err, "wait for api proc")
 	}
-	c, err := k.client(k8s)
+
+	if err := verify.APIServerIsRunning(start, "127.0.0.1", int(k8s.HostBindPort), timeout); err != nil {
+		return err
+	}
+
+	c, err := k.client(k8s) // getting kubernetes client before polling.
 	if err != nil {
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := verify.SystemPods(c, start, k8s, timeout); err != nil {
+	if err := verify.SystemPods(c, start, "127.0.0.1", int(k8s.HostBindPort), timeout); err != nil {
 		return errors.Wrap(err, "wait for system pods")
-	}
-
-	if err := verify.APIServerIsRunning(start, k8s.NodeIP, k8s.NodePort, timeout); err != nil {
-		return err
 	}
 
 	return nil
