@@ -43,7 +43,7 @@ func init() {
 }
 
 func configure(mc config.MachineConfig) interface{} {
-	img, err := kic.ImageForVersion(mc.KubernetesConfig.KubernetesVersion)
+	img, err := kic.BaseImage()
 	if err != nil {
 		glog.Errorf("err to getting kic image for %s: imgesha:%s", img, mc.KubernetesConfig.KubernetesVersion)
 	}

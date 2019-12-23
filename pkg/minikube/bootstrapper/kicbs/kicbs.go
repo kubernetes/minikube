@@ -203,7 +203,6 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
 		ignore = append(ignore, "SystemVerification")
 	}
-
 	// TODO:medyagh delete this temp work arround
 	rr, err := k.c.RunCmd(exec.Command("rm", "-f", "/usr/bin/kubeadm"))
 	fmt.Printf("Deleting kics kubeadm %s %v \n ", rr.Output(), err)
@@ -211,6 +210,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	fmt.Printf("Deleting kics kubelet %s %v \n", rr.Output(), err)
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
+	glog.Infof("starting kubeadm init")
 	if rr, err := k.c.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "init failed. cmd: %q output: %q", rr.Command(), rr.Output())
 	}
@@ -353,7 +353,6 @@ func (k *Bootstrapper) GetAPIServerStatus(net.IP, int) (string, error) {
 	return "", fmt.Errorf("the GetAPIServerStatus is not implemented in kicbs yet")
 }
 
-// TODO:medyagh use the kapi package for this
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
 func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientset, error) {
 	if k.k8sClient != nil {
@@ -365,7 +364,6 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 		return nil, errors.Wrap(err, "client config")
 	}
 
-	// TODO:medyagh maybe for liux machines we could use container ip
 	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(k8s.HostBindPort)))
 	if config.Host != endpoint {
 		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
