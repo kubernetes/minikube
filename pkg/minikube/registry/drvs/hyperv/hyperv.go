@@ -53,8 +53,8 @@ func configure(config cfg.MachineConfig) (interface{}, error) {
 	d := hyperv.NewDriver(config.Name, localpath.MiniPath())
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.VSwitch = config.HypervVirtualSwitch
-	if d.VSwitch == "" {
-		switchName, err := chooseSwitch("")
+	if d.VSwitch == "" && config.HypervUseExternalSwitch {
+		switchName, err := chooseSwitch(config.HypervExternalAdapter)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to choose switch for Hyper-V driver")
 		}
