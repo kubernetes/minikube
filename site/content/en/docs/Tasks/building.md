@@ -30,7 +30,7 @@ So you need to use `minikube ssh`, and you will also make sure to run the comman
 sudo -E podman build
 ```
 
-For more information on the `podman build` command, read the [Podman documentation](https://github.com/containers/libpod/blob/master/docs/podman-build.1.md) (podman.io).
+For more information on the `podman build` command, read the [Podman documentation](https://github.com/containers/libpod/blob/master/docs/source/markdown/podman-build.1.md) (podman.io).
 
 ## Build context
 
