@@ -190,6 +190,22 @@ var Addons = map[string]*Addon{
 			"0640",
 			true),
 	}, false, "ingress"),
+	"istio-provisioner": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/istio-provisioner/istio-operator.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"istio-operator.yaml",
+			"0640",
+			true),
+	}, true, "istio-provisioner"),
+	"istio": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/istio/istio-default-profile.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"istio-default-profile.yaml",
+			"0640",
+			false),
+	}, false, "istio"),
 	"metrics-server": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-apiservice.yaml.tmpl",
