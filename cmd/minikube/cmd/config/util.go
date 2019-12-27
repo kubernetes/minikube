@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/storageclass"
+	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // defaultStorageClassProvisioner is the name of the default storage class provisioner
@@ -123,6 +124,16 @@ func EnableOrDisableAddon(name string, val string) error {
 	//if addon is already enabled or disabled, do nothing
 	if alreadySet {
 		return nil
+	}
+
+	if name == "istio" && enable {
+		minMem := 8192
+		minCpus := 4
+		memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString("memory"))
+		cpuCount := viper.GetInt("cpus")
+		if memorySizeMB < minMem || cpuCount < minCpus {
+			out.WarningT("Enable istio needs {{.minMem}} MB of memory and {{.minCpus}} CPUs.", out.V{"minMem": minMem, "minCpus": minCpus})
+		}
 	}
 
 	// TODO(r2d4): config package should not reference API, pull this out
