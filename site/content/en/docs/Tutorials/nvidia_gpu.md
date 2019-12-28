@@ -93,7 +93,7 @@ to expose GPUs with `--vm-driver=kvm2`. Please don't mix these instructions.
 
 - Install NVIDIA's device plugin:
   ```shell
-  kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.10/nvidia-device-plugin.yml
+  kubectl create -f https://github.com/NVIDIA/k8s-device-plugin/blob/master/nvidia-device-plugin.yml
   ```
 
 ## Why does minikube not support NVIDIA GPUs on macOS?
