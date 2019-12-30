@@ -350,13 +350,6 @@ func CreateContainer(ociBinary string, image string, opts ...CreateOpt) ([]strin
 	for scanner.Scan() {
 		output = append(output, scanner.Text())
 	}
-	// TODO : check for exist status 125 that means it alread exists, we can re-start it
-	// example error:
-	// $ docker run --cpus=2 --memory=2000m -d -t --privileged --security-opt seccomp=unconfined --tmpfs /tmp --tmpfs /run -v /lib/modules:/lib/modules:ro --hostname p1control-plane --name p1control-plane --label io.k8s.sigs.kic.clusterp1 --label io.k8s.sigs.kic.role=control-plane --expose 50182 --publish=127.0.0.1:50182:6443 medyagh/kic:v1.15.0@sha256:1f03b3168ffe8ab43ce170a5729e31b0d53fb3a1af88e1ad1bdf4626fad8a91c
-	//		 docker: Error response from daemon: Conflict. The container name "/p1control-plane" is already in use by container "0204dcf3ca51c874b6c7dac989beae9d98dd44af53e0a17312f4d3480c1f6191". You have to remove (or rename) that container to be able to reuse that name.
-	// 		 See 'docker run --help'.
-	// $ echo $?
-	// 125
 
 	if err != nil {
 		return output, errors.Wrapf(err, "CreateContainer %v ", args)
