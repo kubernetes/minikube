@@ -41,6 +41,9 @@ blog = "/:section/:year/:month/:day/:slug/"
     source = "../deploy/addons/helm-tiller/"
     target = "content/helm-tiller/"
   [[module.mounts]]
+    source = "../deploy/addons/istio/"
+    target = "content/istio/"
+  [[module.mounts]]
     source = "../deploy/addons/ingress-dns/"
     target = "content/ingress-dns/"
   [[module.mounts]]
