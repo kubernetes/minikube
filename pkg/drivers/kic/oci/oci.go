@@ -47,7 +47,7 @@ func Stop(ociBinary, ociID string) error {
 	return nil
 }
 
-// Status stops a container
+// Status returns the status of the container
 func Status(ociBinary string, ociID string) (state.State, error) {
 	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.State.Status}}", ociID)
 	out, err := cmd.CombinedOutput()
@@ -65,7 +65,7 @@ func Status(ociBinary string, ociID string) (state.State, error) {
 	}
 
 	if err != nil {
-		return state.Error, errors.Wrapf(err, "error stop node %s", ociID)
+		return state.Error, errors.Wrapf(err, "error getting node %s status", ociID)
 	}
 	return s, nil
 }
