@@ -229,6 +229,13 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
+	s, err := d.GetState()
+	if err != nil {
+		return errors.Wrap(err, "get kic state")
+	}
+	if s == state.Stopped {
+		return fmt.Errorf("kic node %s is already stopped", d.MachineName)
+	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)
