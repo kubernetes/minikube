@@ -328,7 +328,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
-	beginCacheImages(&cacheGroup, config.KubernetesConfig.ImageRepository, k8sVersion)
+	beginCacheRequiredImages(&cacheGroup, config.KubernetesConfig.ImageRepository, k8sVersion)
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
@@ -343,7 +343,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(mRunner, driverName, config.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
-	waitCacheImages(&cacheGroup)
+	waitCacheRequiredImages(&cacheGroup)
 
 	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
 	kubeconfig, err := setupKubeconfig(host, &config, config.Name)
@@ -361,7 +361,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// enable addons with start command
 	enableAddons()
 
-	if err = loadCachedImagesInConfigFile(); err != nil {
+	if err = cacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}
 
@@ -461,9 +461,9 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 	if err := doCacheBinaries(k8sVersion); err != nil {
 		exit.WithError("Failed to cache binaries", err)
 	}
-	waitCacheImages(cacheGroup)
-	if err := CacheImagesInConfigFile(); err != nil {
-		exit.WithError("Failed to cache images", err)
+	waitCacheRequiredImages(cacheGroup)
+	if err := saveImagesToTarFromConfig(); err != nil {
+		exit.WithError("Failed to cache images to tar", err)
 	}
 	out.T(out.Check, "Download complete!")
 	os.Exit(0)
@@ -821,8 +821,8 @@ func doCacheBinaries(k8sVersion string) error {
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 }
 
-// beginCacheImages caches Docker images in the background
-func beginCacheImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
+// beginCacheRequiredImages caches images required for kubernetes version in the background
+func beginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
@@ -832,8 +832,8 @@ func beginCacheImages(g *errgroup.Group, imageRepository string, k8sVersion stri
 	})
 }
 
-// waitCacheImages blocks until the image cache jobs complete
-func waitCacheImages(g *errgroup.Group) {
+// waitCacheRequiredImages blocks until the required images are all cached.
+func waitCacheRequiredImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
