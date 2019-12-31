@@ -202,7 +202,7 @@ func (d *Driver) Restart() error {
 
 // Unpause a kic container
 func (d *Driver) Unpause() error {
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "pause", d.MachineName)
+	cmd := exec.Command(d.NodeConfig.OCIBinary, "unpause", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "unpausing %s", d.MachineName)
 	}
