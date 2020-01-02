@@ -202,11 +202,18 @@ func (d *Driver) Restart() error {
 
 // Unpause a kic container
 func (d *Driver) Unpause() error {
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "unpause", d.MachineName)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "unpausing %s", d.MachineName)
+	s, err := d.GetState()
+	if err != nil {
+		return errors.Wrap(err, "get kic state")
 	}
-	return nil
+	if s == state.Paused {
+		cmd := exec.Command(d.NodeConfig.OCIBinary, "unpause", d.MachineName)
+		if err := cmd.Run(); err != nil {
+			return errors.Wrapf(err, "unpausing %s", d.MachineName)
+		}
+		return nil
+	}
+	return fmt.Errorf("cant unpause a not-paused (%s) kic node", s)
 }
 
 // Start a _stopped_ kic container
