@@ -890,11 +890,19 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 
 	kubeNodeName := viper.GetString(nodeName)
 	if kubeNodeName == "" {
-		machineName := viper.GetString(cfg.MachineProfile)
-		if machineName != constants.DefaultMachineName {
-			kubeNodeName = fmt.Sprintf("%s-%s", constants.DefaultNodeName, machineName)
-		} else {
-			kubeNodeName = constants.DefaultNodeName
+		if drvName == driver.None {
+			// set the node name the same as host name for none driver
+			hostname, _ := os.Hostname()
+			kubeNodeName = hostname
+		}
+
+		if kubeNodeName == "" {
+			machineName := viper.GetString(cfg.MachineProfile)
+			if machineName != constants.DefaultMachineName {
+				kubeNodeName = fmt.Sprintf("%s-%s", constants.DefaultNodeName, machineName)
+			} else {
+				kubeNodeName = constants.DefaultNodeName
+			}
 		}
 	}
 
