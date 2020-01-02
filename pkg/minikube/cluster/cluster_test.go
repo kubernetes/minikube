@@ -42,8 +42,8 @@ type MockDownloader struct{}
 func (d MockDownloader) GetISOFileURI(isoURL string) string          { return "" }
 func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return nil }
 
-func createMockDriverHost(c config.MachineConfig) interface{} {
-	return nil
+func createMockDriverHost(c config.MachineConfig) (interface{}, error) {
+	return nil, nil
 }
 
 func RegisterMockDriver(t *testing.T) {
