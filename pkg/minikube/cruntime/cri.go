@@ -331,8 +331,9 @@ plugin_dirs = [
 `
 )
 
-// getCommandPath returns the absolute path of a command
-func getCommandPath(cr CommandRunner, cmd string) string {
+// getCrictlPath returns the absolute path of crictl
+func getCrictlPath(cr CommandRunner) string {
+	cmd := "crictl"
 	rr, err := cr.RunCmd(exec.Command("which", cmd))
 	if err != nil {
 		return cmd
@@ -345,7 +346,7 @@ func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
 	var err error
 	var rr *command.RunResult
 	state := "Running"
-	crictl := getCommandPath(cr, "crictl")
+	crictl := getCrictlPath(cr)
 	if filter != "" {
 		c := exec.Command("sudo", crictl, "ps", "-a", fmt.Sprintf("--name=%s", filter), fmt.Sprintf("--state=%s", state), "--quiet")
 		rr, err = cr.RunCmd(c)
@@ -371,7 +372,7 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 	}
 	glog.Infof("Killing containers: %s", ids)
 
-	crictl := getCommandPath(cr, "crictl")
+	crictl := getCrictlPath(cr)
 	args := append([]string{crictl, "rm"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
@@ -387,7 +388,7 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 	}
 	glog.Infof("Stopping containers: %s", ids)
 
-	crictl := getCommandPath(cr, "crictl")
+	crictl := getCrictlPath(cr)
 	args := append([]string{crictl, "rm"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
@@ -442,7 +443,7 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string) error {
 
 // criContainerLogCmd returns the command to retrieve the log for a container based on ID
 func criContainerLogCmd(cr CommandRunner, id string, len int, follow bool) string {
-	crictl := getCommandPath(cr, "crictl")
+	crictl := getCrictlPath(cr)
 	var cmd strings.Builder
 	cmd.WriteString("sudo ")
 	cmd.WriteString(crictl)
