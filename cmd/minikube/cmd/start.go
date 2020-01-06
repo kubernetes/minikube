@@ -313,11 +313,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Failed to generate config", err)
 	}
 
-	if !driver.BareMetal(driverName) && !driver.IsKIC(driverName) {
-		if err := cluster.CacheISO(config); err != nil {
-			exit.WithError("Failed to cache ISO", err)
-		}
-	}
+	cacheISO(&config, driverName)
 
 	if viper.GetBool(nativeSSH) {
 		ssh.SetDefaultClient(ssh.Native)
@@ -386,6 +382,14 @@ func updateDriver(driverName string) {
 		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
 	} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
 		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
+	}
+}
+
+func cacheISO(config *cfg.MachineConfig, driverName string) {
+	if !driver.BareMetal(driverName) && !driver.IsKIC(driverName) {
+		if err := cluster.CacheISO(*config); err != nil {
+			exit.WithError("Failed to cache ISO", err)
+		}
 	}
 }
 
@@ -704,7 +708,7 @@ func minikubeCmd() string {
 	return "minikube"
 }
 
-// validerUser validates minikube is run by the recommended user (privileged or regular)
+// validateUser validates minikube is run by the recommended user (privileged or regular)
 func validateUser(drvName string) {
 	u, err := user.Current()
 	if err != nil {
@@ -738,13 +742,16 @@ func validateUser(drvName string) {
 	}
 }
 
-// validateFlags validates the supplied flags against known bad combinations
-func validateFlags(cmd *cobra.Command, drvName string) {
+// validateDiskSize validates the disk size matches the minimum recommended
+func validateDiskSize() {
 	diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
 	if diskSizeMB < pkgutil.CalculateSizeInMB(minimumDiskSize) && !viper.GetBool(force) {
 		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumDiskSize)})
 	}
+}
 
+// validateMemorySize validates the memory size matches the minimum recommended
+func validateMemorySize() {
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 	if memorySizeMB < pkgutil.CalculateSizeInMB(minimumMemorySize) && !viper.GetBool(force) {
 		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumMemorySize)})
@@ -753,8 +760,32 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		out.T(out.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default_memorysize}}MB. Beware that minikube might not work correctly or crash unexpectedly.",
 			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(defaultMemorySize)})
 	}
+}
 
+// validateCPUCount validates the cpu count matches the minimum recommended
+func validateCPUCount(local bool) {
 	var cpuCount int
+	if local {
+		// Uses the gopsutil cpu package to count the number of physical cpu cores
+		ci, err := cpu.Counts(false)
+		if err != nil {
+			glog.Warningf("Unable to get CPU info: %v", err)
+		} else {
+			cpuCount = ci
+		}
+	} else {
+		cpuCount = viper.GetInt(cpus)
+	}
+	if cpuCount < minimumCPUS && !viper.GetBool(force) {
+		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
+	}
+}
+
+// validateFlags validates the supplied flags against known bad combinations
+func validateFlags(cmd *cobra.Command, drvName string) {
+	validateDiskSize()
+	validateMemorySize()
+
 	if driver.BareMetal(drvName) {
 		if viper.GetString(cfg.MachineProfile) != constants.DefaultMachineName {
 			exit.WithCodeT(exit.Config, "The 'none' driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
@@ -771,20 +802,9 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		if runtime != "docker" {
 			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
 		}
+	}
 
-		// Uses the gopsutil cpu package to count the number of physical cpu cores
-		ci, err := cpu.Counts(false)
-		if err != nil {
-			glog.Warningf("Unable to get CPU info: %v", err)
-		} else {
-			cpuCount = ci
-		}
-	} else {
-		cpuCount = viper.GetInt(cpus)
-	}
-	if cpuCount < minimumCPUS && !viper.GetBool(force) {
-		exit.UsageT("Requested cpu count {{.requested_cpus}} is less than the minimum allowed of {{.minimum_cpus}}", out.V{"requested_cpus": cpuCount, "minimum_cpus": minimumCPUS})
-	}
+	validateCPUCount(driver.BareMetal(drvName))
 
 	// check that kubeadm extra args contain only whitelisted parameters
 	for param := range extraOptions.AsMap().Get(bsutil.Kubeadm) {
