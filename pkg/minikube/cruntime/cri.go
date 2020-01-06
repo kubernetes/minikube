@@ -331,16 +331,26 @@ plugin_dirs = [
 `
 )
 
+// getCommandPath returns the absolute path of a command
+func getCommandPath(cr CommandRunner, cmd string) string {
+	rr, err := cr.RunCmd(exec.Command("which", cmd))
+	if err != nil {
+		return cmd
+	}
+	return strings.Split(rr.Stdout.String(), "\n")[0]
+}
+
 // listCRIContainers returns a list of containers using crictl
 func listCRIContainers(cr CommandRunner, filter string) ([]string, error) {
 	var err error
 	var rr *command.RunResult
 	state := "Running"
+	crictl := getCommandPath(cr, "crictl")
 	if filter != "" {
-		c := exec.Command("sudo", "crictl", "ps", "-a", fmt.Sprintf("--name=%s", filter), fmt.Sprintf("--state=%s", state), "--quiet")
+		c := exec.Command("sudo", crictl, "ps", "-a", fmt.Sprintf("--name=%s", filter), fmt.Sprintf("--state=%s", state), "--quiet")
 		rr, err = cr.RunCmd(c)
 	} else {
-		rr, err = cr.RunCmd(exec.Command("sudo", "crictl", "ps", "-a", fmt.Sprintf("--state=%s", state), "--quiet"))
+		rr, err = cr.RunCmd(exec.Command("sudo", crictl, "ps", "-a", fmt.Sprintf("--state=%s", state), "--quiet"))
 	}
 	if err != nil {
 		return nil, err
@@ -361,7 +371,8 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 	}
 	glog.Infof("Killing containers: %s", ids)
 
-	args := append([]string{"crictl", "rm"}, ids...)
+	crictl := getCommandPath(cr, "crictl")
+	args := append([]string{crictl, "rm"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "kill cri containers.")
@@ -375,7 +386,9 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 		return nil
 	}
 	glog.Infof("Stopping containers: %s", ids)
-	args := append([]string{"crictl", "rm"}, ids...)
+
+	crictl := getCommandPath(cr, "crictl")
+	args := append([]string{crictl, "rm"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "stop cri containers")
@@ -428,9 +441,12 @@ func generateCRIOConfig(cr CommandRunner, imageRepository string) error {
 }
 
 // criContainerLogCmd returns the command to retrieve the log for a container based on ID
-func criContainerLogCmd(id string, len int, follow bool) string {
+func criContainerLogCmd(cr CommandRunner, id string, len int, follow bool) string {
+	crictl := getCommandPath(cr, "crictl")
 	var cmd strings.Builder
-	cmd.WriteString("sudo crictl logs ")
+	cmd.WriteString("sudo ")
+	cmd.WriteString(crictl)
+	cmd.WriteString(" logs ")
 	if len > 0 {
 		cmd.WriteString(fmt.Sprintf("--tail %d ", len))
 	}

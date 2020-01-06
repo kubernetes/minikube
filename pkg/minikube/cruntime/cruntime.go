@@ -105,7 +105,7 @@ func New(c Config) (Manager, error) {
 // ContainerStatusCommand works across container runtimes with good formatting
 func ContainerStatusCommand() string {
 	// Fallback to 'docker ps' if it fails (none driver)
-	return "sudo crictl ps -a || sudo docker ps -a"
+	return "sudo `which crictl || echo crictl` ps -a || sudo docker ps -a"
 }
 
 // disableOthers disables all other runtimes except for me.
