@@ -45,22 +45,22 @@ func Set(name, value, profile string) error {
 
 	// Run any additional validations for this property
 	if err := run(name, value, profile, a.validations); err != nil {
-		return err
+		return errors.Wrap(err, "running validations")
 	}
 
 	// Set the value
 	c, err := config.Load(profile)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "loading profile")
 	}
 
 	if err := a.set(c, name, value); err != nil {
-		return err
+		return errors.Wrap(err, "setting new value of addon")
 	}
 
 	// Run any callbacks for this property
 	if err := run(name, value, profile, a.callbacks); err != nil {
-		return err
+		return errors.Wrap(err, "running callbacks")
 	}
 
 	// Write the value
@@ -175,37 +175,24 @@ func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
 func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
 	var err error
 
-	if enable {
-		for _, addon := range addon.Assets {
-			var addonFile assets.CopyableFile
-			if addon.IsTemplate() {
-				addonFile, err = addon.Evaluate(data)
-				if err != nil {
-					return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
-				}
+	updateFile := cmd.Copy
+	if !enable {
+		updateFile = cmd.Remove
+	}
 
-			} else {
-				addonFile = addon
+	for _, addon := range addon.Assets {
+		var addonFile assets.CopyableFile
+		if addon.IsTemplate() {
+			addonFile, err = addon.Evaluate(data)
+			if err != nil {
+				return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
 			}
-			if err := cmd.Copy(addonFile); err != nil {
-				return errors.Wrapf(err, "enabling addon %s", addon.AssetName)
-			}
+
+		} else {
+			addonFile = addon
 		}
-	} else {
-		for _, addon := range addon.Assets {
-			var addonFile assets.CopyableFile
-			if addon.IsTemplate() {
-				addonFile, err = addon.Evaluate(data)
-				if err != nil {
-					return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
-				}
-
-			} else {
-				addonFile = addon
-			}
-			if err := cmd.Remove(addonFile); err != nil {
-				return errors.Wrapf(err, "disabling addon %s", addon.AssetName)
-			}
+		if err := updateFile(addonFile); err != nil {
+			return errors.Wrapf(err, "updating addon %s", addon.AssetName)
 		}
 	}
 	return nil
