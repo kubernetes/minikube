@@ -14,12 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package template
+package ktmpl
 
 import "text/template"
 
-// KubeAdmConfigTmplV1Alpha1 is for Kubernetes v1.11
-var KubeAdmConfigTmplV1Alpha1 = template.Must(template.New("configTmpl-v1alpha1").Funcs(template.FuncMap{
+// V1Alpha1 is for Kubernetes v1.11
+var V1Alpha1 = template.Must(template.New("configTmpl-v1alpha1").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1alpha1
 kind: MasterConfiguration

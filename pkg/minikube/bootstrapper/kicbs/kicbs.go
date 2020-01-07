@@ -110,8 +110,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 		return errors.Wrap(err, "downloading binaries")
 	}
 
-	var cniFile []byte = nil
-	cniFile = []byte(defaultCNIManifest)
+	cniFile := []byte(defaultCNIManifest)
 
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
 
@@ -119,6 +118,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	// if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
 	// 	return errors.Wrap(err, "adding addons")
 	// }
+
 	for _, f := range files {
 		if err := k.c.Copy(f); err != nil {
 			return errors.Wrapf(err, "copy")
@@ -379,21 +379,6 @@ func (k *Bootstrapper) applyOverlayNetwork() error {
 	)
 	if rr, err := k.c.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
-	}
-	return nil
-}
-
-// removeMasterTaint so pods can be scheduled on the master node
-func (k *Bootstrapper) removeMasterTaint() error {
-	// if we are only provisioning one node, remove the master taint
-	// https://kubernetes.io/docs/setup/independent/create-cluster-kubeadm/#master-isolation
-	cmd := exec.Command(
-		"kubectl", "--kubeconfig=/etc/kubernetes/admin.conf",
-		"taint", "nodes", "--all", "node-role.kubernetes.io/master-",
-	)
-
-	if rr, err := k.c.RunCmd(cmd); err != nil {
-		return errors.Wrapf(err, "output: %s", rr.Output())
 	}
 	return nil
 }
