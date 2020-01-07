@@ -592,8 +592,8 @@ out/performance-monitor:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/monitor/monitor.go
 
 
-.PHONY: build-kic-image
-build-kic-image:
+.PHONY: kic-image
+kic-image: ## builds the image used for kic (kubernets in container) locally.
 	docker rmi -f medyagh/kicbase:v0.0.1-snapshot || true
 	docker build -f ./hack/kic.Dockerfile -t medyagh/kicbase:v0.0.1-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
 
