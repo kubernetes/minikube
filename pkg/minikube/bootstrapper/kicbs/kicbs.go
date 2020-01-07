@@ -115,6 +115,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
 
+	// TODO: add addons for kic later
 	// if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
 	// 	return errors.Wrap(err, "adding addons")
 	// }
@@ -209,24 +210,7 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "applying kic overlay network")
 	}
 
-	// glog.Infof("removing master taint")
-	// if err := k.removeMasterTaint(); err != nil {
-	// 	return errors.Wrap(err, "remove master taint")
-	// }
-
 	glog.Infof("Skipping Configuring cluster permissions for kic...")
-
-	// elevate := func() error {
-	// 	client, err := k.client(k8s)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	return bsutil.ElevateKubeSystemPrivileges(client)
-	// }
-
-	// if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
-	// 	return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
-	// }
 
 	if err := k.adjustResourceLimits(); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
