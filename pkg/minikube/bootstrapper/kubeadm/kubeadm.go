@@ -26,6 +26,7 @@ import (
 
 	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
 
+	"strconv"
 	"strings"
 	"time"
 
@@ -105,7 +106,7 @@ func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 
 // GetAPIServerStatus returns the api-server status
 func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string, error) {
-	url := fmt.Sprintf("https://%s:%d/healthz", ip, apiserverPort)
+	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(ip.String(), strconv.Itoa(apiserverPort)))
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
 		Proxy:           nil, // To avoid connectiv issue if http(s)_proxy is set.
@@ -300,7 +301,7 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 		return nil, errors.Wrap(err, "client config")
 	}
 
-	endpoint := fmt.Sprintf("https://%s:%d", k8s.NodeIP, k8s.NodePort)
+	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(k8s.NodeIP, strconv.Itoa(k8s.NodePort)))
 	if config.Host != endpoint {
 		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
 		config.Host = endpoint
