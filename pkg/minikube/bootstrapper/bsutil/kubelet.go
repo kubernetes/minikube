@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// bsutil package will eventually be renamed to kubeadm package after getting rid of older one
+// Package bsutil will eventually be renamed to kubeadm package after getting rid of older one
 package bsutil
 
 import (
