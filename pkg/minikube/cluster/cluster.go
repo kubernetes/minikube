@@ -419,13 +419,8 @@ func showRemoteOsRelease(driver drivers.Driver) {
 	glog.Infof("Provisioned with %s", osReleaseInfo.PrettyName)
 }
 
-func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	if config.VMDriver == driver.VMwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
-		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
-			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
-			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
-			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
-	}
+// showHostInfo shows host information
+func showHostInfo(config cfg.MachineConfig) {
 	if driver.BareMetal(config.VMDriver) {
 		info, err := getHostInfo()
 		if err == nil {
@@ -439,6 +434,16 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	} else {
 		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
 	}
+}
+
+func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
+	if config.VMDriver == driver.VMwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
+			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
+			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
+			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
+	}
+	showHostInfo(config)
 	def := registry.Driver(config.VMDriver)
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", config.VMDriver)
