@@ -22,7 +22,7 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/template"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -76,7 +76,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 		ContainerRuntime: k8s.ContainerRuntime,
 		KubeletPath:      path.Join(binRoot(k8s.KubernetesVersion), "kubelet"),
 	}
-	if err := template.KubeletSystemdTemplate.Execute(&b, opts); err != nil {
+	if err := ktmpl.KubeletSystemdTemplate.Execute(&b, opts); err != nil {
 		return nil, err
 	}
 
@@ -87,7 +87,7 @@ func NewKubeletConfig(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, 
 func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 	var b bytes.Buffer
 	opts := struct{ KubeletPath string }{KubeletPath: path.Join(binRoot(cfg.KubernetesVersion), "kubelet")}
-	if err := template.KubeletServiceTemplate.Execute(&b, opts); err != nil {
+	if err := ktmpl.KubeletServiceTemplate.Execute(&b, opts); err != nil {
 		return nil, errors.Wrap(err, "template execute")
 	}
 	return b.Bytes(), nil

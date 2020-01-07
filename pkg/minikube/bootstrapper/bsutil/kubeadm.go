@@ -24,7 +24,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/template"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -96,13 +96,13 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 
 	opts.NoTaintMaster = true
 	b := bytes.Buffer{}
-	configTmpl := template.KubeAdmConfigTmplV1Alpha1
+	configTmpl := ktmpl.V1Alpha1
 	if version.GTE(semver.MustParse("1.12.0")) {
-		configTmpl = template.KubeAdmConfigTmplV1Alpha3
+		configTmpl = ktmpl.V1Alpha3
 	}
 	// v1beta1 works in v1.13, but isn't required until v1.14.
 	if version.GTE(semver.MustParse("1.14.0-alpha.0")) {
-		configTmpl = template.KubeAdmConfigTmplV1Beta1
+		configTmpl = ktmpl.V1Beta1
 	}
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
