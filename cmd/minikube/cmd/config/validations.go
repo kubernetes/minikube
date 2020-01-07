@@ -25,24 +25,10 @@ import (
 	"strings"
 
 	units "github.com/docker/go-units"
-	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 )
-
-// containerdOnlyMsg is the message shown when a containerd-only addon is enabled
-const containerdOnlyAddonMsg = `
-This addon can only be enabled with the containerd runtime backend. To enable this backend, please first stop minikube with:
-
-minikube stop
-
-and then start minikube again with the following flags:
-
-minikube start --container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock`
 
 // IsValidDriver checks if a driver is supported
 func IsValidDriver(string, name string) error {
@@ -140,36 +126,11 @@ func IsValidPath(name string, path string) error {
 	return nil
 }
 
-// IsValidAddon checks if a string is a valid addon
-func IsValidAddon(name string, val string) error {
-	if _, ok := assets.Addons[name]; ok {
-		return nil
-	}
-	return errors.Errorf("Cannot enable/disable invalid addon %s", name)
-}
-
 // IsValidRuntime checks if a string is a valid runtime
 func IsValidRuntime(name string, runtime string) error {
 	_, err := cruntime.New(cruntime.Config{Type: runtime})
 	if err != nil {
 		return fmt.Errorf("invalid runtime: %v", err)
-	}
-	return nil
-}
-
-// IsContainerdRuntime is a validator which returns an error if the current runtime is not containerd
-func IsContainerdRuntime(_, _ string) error {
-	config, err := config.Load(viper.GetString(config.MachineProfile))
-	if err != nil {
-		return fmt.Errorf("config.Load: %v", err)
-	}
-	r, err := cruntime.New(cruntime.Config{Type: config.KubernetesConfig.ContainerRuntime})
-	if err != nil {
-		return err
-	}
-	_, ok := r.(*cruntime.Containerd)
-	if !ok {
-		return fmt.Errorf(containerdOnlyAddonMsg)
 	}
 	return nil
 }
