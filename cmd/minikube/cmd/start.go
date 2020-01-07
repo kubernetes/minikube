@@ -46,6 +46,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	pkgaddons "k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -391,7 +392,7 @@ func updateDriver(driverName string) {
 
 func enableAddons() {
 	for _, a := range addonList {
-		err := cmdcfg.Set(a, "true")
+		err := pkgaddons.Set(a, "true", viper.GetString(config.MachineProfile))
 		if err != nil {
 			exit.WithError("addon enable failed", err)
 		}
