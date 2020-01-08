@@ -52,7 +52,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 // remote artifacts that must exist for minikube to function properly. The sign of a previously working installation.
@@ -220,20 +219,6 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	if rr, err := k.c.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "init failed. cmd: %q", rr.Command())
-	}
-
-	glog.Infof("Configuring cluster permissions ...")
-
-	elevate := func() error {
-		client, err := k.client(k8s)
-		if err != nil {
-			return err
-		}
-		return elevateKubeSystemPrivileges(client)
-	}
-
-	if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
-		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
 
 	if err := k.adjustResourceLimits(); err != nil {
