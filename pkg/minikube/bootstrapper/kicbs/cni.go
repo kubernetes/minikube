@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-//Package kicbs bootstrapper for kic
+// Package kicbs bootstrapper for kic
 package kicbs
 
 const defaultCNIManifest = `

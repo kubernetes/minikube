@@ -138,15 +138,9 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 	return nil
 }
 
-func (k *Bootstrapper) existingConfig() error {
-	args := append([]string{"ls"}, bsutil.ExpectedRemoteArtifacts...)
-	_, err := k.c.RunCmd(exec.Command("sudo", args...))
-	return err
-}
-
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
-	err := k.existingConfig()
+	err := bsutil.ExistingConfig(k.c)
 	if err == nil {
 		return k.restartCluster(k8s)
 	}
@@ -207,30 +201,8 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 	}
 
-	if err := k.adjustResourceLimits(); err != nil {
+	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
-	}
-
-	return nil
-}
-
-// adjustResourceLimits makes fine adjustments to pod resources that aren't possible via kubeadm config.
-func (k *Bootstrapper) adjustResourceLimits() error {
-	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "cat /proc/$(pgrep kube-apiserver)/oom_adj"))
-	if err != nil {
-		return errors.Wrapf(err, "oom_adj check cmd %s. ", rr.Command())
-	}
-	glog.Infof("apiserver oom_adj: %s", rr.Stdout.String())
-	// oom_adj is already a negative number
-	if strings.HasPrefix(rr.Stdout.String(), "-") {
-		return nil
-	}
-	glog.Infof("adjusting apiserver oom_adj to -10")
-
-	// Prevent the apiserver from OOM'ing before other pods, as it is our gateway into the cluster.
-	// It'd be preferable to do this via Kubernetes, but kubeadm doesn't have a way to set pod QoS.
-	if _, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj")); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("oom_adj adjust"))
 	}
 
 	return nil
@@ -338,7 +310,7 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q", rr.Command()))
 	}
 
-	if err := k.adjustResourceLimits(); err != nil {
+	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
 	return nil
