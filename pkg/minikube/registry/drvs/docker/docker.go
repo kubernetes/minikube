@@ -21,7 +21,6 @@ import (
 	"os/exec"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -43,14 +42,10 @@ func init() {
 }
 
 func configure(mc config.MachineConfig) interface{} {
-	img, err := kic.BaseImage()
-	if err != nil {
-		glog.Errorf("err to getting kic image for %s: imgesha:%s", img, mc.KubernetesConfig.KubernetesVersion)
-	}
 	return kic.NewDriver(kic.Config{
 		MachineName:  mc.Name,
 		StorePath:    localpath.MiniPath(),
-		ImageDigest:  img,
+		ImageDigest:  kic.BaseImage,
 		CPU:          mc.CPUs,
 		Memory:       mc.Memory,
 		HostBindPort: mc.KubernetesConfig.HostBindPort,
