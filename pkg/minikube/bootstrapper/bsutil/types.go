@@ -20,9 +20,9 @@ package bsutil
 // SkipAdditionalPreflights are additional preflights we skip depending on the runtime in use.
 var SkipAdditionalPreflights = map[string][]string{}
 
-// ExpectedRemoteArtifacts remote artifacts that must exist for minikube to function properly. The sign of a previously working installation.
+// expectedRemoteArtifacts remote artifacts that must exist for minikube to function properly. The sign of a previously working installation.
 // NOTE: /etc is not persistent across restarts, so don't bother checking there
-var ExpectedRemoteArtifacts = []string{
+var expectedRemoteArtifacts = []string{
 	"/var/lib/kubelet/kubeadm-flags.env",
 	"/var/lib/kubelet/config.yaml",
 	EtcdDataDir(),

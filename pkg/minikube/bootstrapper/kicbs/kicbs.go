@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package kicbs is a kubeadm-flavor bootstrapper for kic
+// Package kicbs bootstrapper for kic
 package kicbs
 
 import (
@@ -156,7 +156,7 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	k8s.NodeIP = kic.DefaultBindIPV4
-	err := k.existingConfig()
+	err := bsutil.ExistingConfig(k.c)
 	if err == nil {
 		return k.restartCluster(k8s)
 	}
@@ -202,17 +202,11 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 
 	glog.Infof("Skipping Configuring cluster permissions for kic...")
 
-	if err := k.adjustResourceLimits(); err != nil {
+	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
 
 	return nil
-}
-
-func (k *Bootstrapper) existingConfig() error {
-	args := append([]string{"ls"}, bsutil.ExpectedRemoteArtifacts...)
-	_, err := k.c.RunCmd(exec.Command("sudo", args...))
-	return err
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
@@ -271,7 +265,7 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q", rr.Command()))
 	}
 
-	if err := k.adjustResourceLimits(); err != nil {
+	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
 	return nil
@@ -337,28 +331,6 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 		k.k8sClient = c
 	}
 	return c, err
-}
-
-// adjustResourceLimits makes fine adjustments to pod resources that aren't possible via kubeadm config.
-func (k *Bootstrapper) adjustResourceLimits() error {
-	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "cat /proc/$(pgrep kube-apiserver)/oom_adj"))
-	if err != nil {
-		return errors.Wrapf(err, "oom_adj check cmd %s. ", rr.Command())
-	}
-	glog.Infof("apiserver oom_adj: %s", rr.Stdout.String())
-	// oom_adj is already a negative number
-	if strings.HasPrefix(rr.Stdout.String(), "-") {
-		return nil
-	}
-	glog.Infof("adjusting apiserver oom_adj to -10")
-
-	// Prevent the apiserver from OOM'ing before other pods, as it is our gateway into the cluster.
-	// It'd be preferable to do this via Kubernetes, but kubeadm doesn't have a way to set pod QoS.
-	if _, err = k.c.RunCmd(exec.Command("/bin/bash", "-c", "echo -10 | sudo tee /proc/$(pgrep kube-apiserver)/oom_adj")); err != nil {
-		return errors.Wrap(err, fmt.Sprintf("oom_adj adjust"))
-	}
-
-	return nil
 }
 
 // applyOverlayNetwork applies the CNI plugin needed to make kic work
