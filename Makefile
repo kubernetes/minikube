@@ -483,6 +483,13 @@ else
 	docker build -t $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile-$(GOARCH) .
 endif
 
+.PHONY: kic-base-image
+kic-base-image: ## builds the base image used for kic.
+	docker rmi -f $(REGISTRY)/kicbase:v0.0.1-snapshot || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.1-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
+
+
+
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
 ifeq ($(GOARCH),amd64)
@@ -591,11 +598,6 @@ out/mkcmp:
 out/performance-monitor:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/monitor/monitor.go
 
-
-.PHONY: kic-image
-kic-image: ## builds the image used for kic (kubernets in container) locally.
-	docker rmi -f medyagh/kicbase:v0.0.1-snapshot || true
-	docker build -f ./hack/kic.Dockerfile -t medyagh/kicbase:v0.0.1-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
 
 .PHONY: help
 help:
