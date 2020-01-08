@@ -98,7 +98,6 @@ func FlagDefaults(name string) FlagHints {
 			fh.ContainerRuntime = "containerd"
 			fh.Bootstrapper = bootstrapper.KIC
 			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR))
-			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubelet.fail-swap-on=false"))
 		}
 		return fh
 	}

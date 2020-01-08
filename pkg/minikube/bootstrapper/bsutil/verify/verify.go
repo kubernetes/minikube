@@ -66,15 +66,12 @@ func SystemPods(client *kubernetes.Clientset, start time.Time, ip string, port i
 		}
 		// Wait for any system pod, as waiting for apiserver may block until etcd
 		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
-		fmt.Printf("\nitems: %+v err: %v\n", pods.Items, err)
 		if len(pods.Items) < 2 {
-			fmt.Printf("\nLength of pods is <2: items: %+v err: %v\n", pods.Items, err)
 			podStart = time.Time{}
 			return false, nil
 		}
 		if err != nil {
 			podStart = time.Time{}
-			fmt.Printf("PodList Err: %v", err)
 			return false, nil
 		}
 		if podStart.IsZero() {
