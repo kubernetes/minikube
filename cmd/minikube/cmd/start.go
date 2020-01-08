@@ -994,9 +994,14 @@ func setDockerProxy() {
 func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	err = nil
 	hints := driver.FlagDefaults(drvName)
-	if !cmd.Flags().Changed("extra-config") && hints.ExtraOptions != "" {
-		glog.Infof("auto setting extra-config to %q.", hints.ExtraOptions)
-		err = extraOptions.Set(hints.ExtraOptions)
+	if !cmd.Flags().Changed("extra-config") && len(hints.ExtraOptions) > 0 {
+		for _, eo := range hints.ExtraOptions {
+			glog.Infof("auto setting extra-config to %q.", eo)
+			err = extraOptions.Set(eo)
+			if err != nil {
+				err = errors.Wrapf(err, "setting extra option %s", eo)
+			}
+		}
 	}
 
 	if !cmd.Flags().Changed(cacheImages) {

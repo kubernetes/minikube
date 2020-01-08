@@ -261,5 +261,5 @@ func (d *Driver) nodeID(nameOrID string) (string, error) {
 
 // BaseImage returns the image used to spin up containers. in the future might pin down nodes per version
 func BaseImage() (string, error) {
-	return "medyagh/kicbase:v0.0.1-snapshot@sha256:fdd103eae33f92673fb13da81104b67576b43ab2affc7855deda596878215a61", nil
+	return "gcr.io/k8s-minikube/kicbase@sha256:c4ad2938877d2ae0d5b7248a5e7182ff58c0603165c3bedfe9d503e2d380a0db", nil
 }
