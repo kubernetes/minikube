@@ -435,10 +435,11 @@ func displayEnviron(env []string) {
 
 func setupKubeconfig(h *host.Host, c *cfg.MachineConfig, clusterName string) (*kubeconfig.Settings, error) {
 	addr := ""
+	var err error
 	if driver.IsKIC(h.DriverName) {
 		addr = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(c.KubernetesConfig.HostBindPort)))
 	} else {
-		addr, err := h.Driver.GetURL()
+		addr, err = h.Driver.GetURL()
 		if err != nil {
 			exit.WithError("Failed to get driver URL", err)
 		}
@@ -449,7 +450,6 @@ func setupKubeconfig(h *host.Host, c *cfg.MachineConfig, clusterName string) (*k
 	if c.KubernetesConfig.APIServerName != constants.APIServerName {
 		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
 	}
-
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
 		ClusterServerAddress: addr,
@@ -1008,7 +1008,6 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 		viper.Set(cacheImages, hints.CacheImages)
 	}
 
-	// currently set containerd for kic
 	if !cmd.Flags().Changed(containerRuntime) && hints.ContainerRuntime != "" {
 		viper.Set(containerRuntime, hints.ContainerRuntime)
 		glog.Infof("auto set %s to %q.", containerRuntime, hints.ContainerRuntime)

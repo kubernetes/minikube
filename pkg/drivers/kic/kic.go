@@ -35,7 +35,7 @@ import (
 // DefaultPodCIDR is The CIDR to be used for pods inside the node.
 const DefaultPodCIDR = "10.244.0.0/16"
 
-// DefaultBindIPV4 is The default ip the container will bind to.
+// DefaultBindIPV4 is The default IP the container will bind to.
 const DefaultBindIPV4 = "127.0.0.1"
 
 // BaseImage is the base image is used to spin up kic containers
@@ -56,7 +56,7 @@ type Config struct {
 	MachineName  string            // maps to the container name being created
 	CPU          int               // Number of CPU cores assigned to the container
 	Memory       int               // max memory in MB
-	StorePath    string            // lib machine store path
+	StorePath    string            // libmachine store path
 	OCIBinary    string            // oci tool to use (docker, podman,...)
 	ImageDigest  string            // image name with sha to use for the node
 	HostBindPort int32             // port to connect to forward from container to user's machine
