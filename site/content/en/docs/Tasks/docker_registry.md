@@ -23,6 +23,12 @@ Enable minikube registry addon:
 minikube addons enable registry
 ```
 
+Use the docker deamon inside Minikube:
+
+```shell
+eval $(minikube docker-env)
+```
+
 Build docker image and tag it appropriately:
 
 ```shell
