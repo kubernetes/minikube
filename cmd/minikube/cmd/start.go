@@ -194,7 +194,6 @@ func initKubernetesFlags() {
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().String(nodeName, "", "The node name")
 }
 
 // initDriverFlags inits the commandline flags for vm drivers
@@ -888,22 +887,15 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
-	kubeNodeName := viper.GetString(nodeName)
-	if kubeNodeName == "" {
-		if drvName == driver.None {
-			// set the node name the same as host name for none driver
-			hostname, _ := os.Hostname()
-			kubeNodeName = hostname
-		}
+	var kubeNodeName string
+	if drvName == driver.None {
+		// set the node name the same as host name for none driver
+		hostname, _ := os.Hostname()
+		kubeNodeName = hostname
+	}
 
-		if kubeNodeName == "" {
-			machineName := viper.GetString(cfg.MachineProfile)
-			if machineName != constants.DefaultMachineName {
-				kubeNodeName = fmt.Sprintf("%s-%s", constants.DefaultNodeName, machineName)
-			} else {
-				kubeNodeName = constants.DefaultNodeName
-			}
-		}
+	if kubeNodeName == "" {
+		kubeNodeName = viper.GetString(cfg.MachineProfile)
 	}
 
 	cfg := cfg.MachineConfig{
