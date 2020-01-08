@@ -24,7 +24,7 @@ var V1Beta1 = template.Must(template.New("configTmpl-v1beta1").Funcs(template.Fu
 }).Parse(`apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
 localAPIEndpoint:
-  advertiseAddress:  {{.AdvertiseAddress}}
+  advertiseAddress: {{.AdvertiseAddress}}
   bindPort: {{.APIServerPort}}
 bootstrapTokens:
   - groups:
