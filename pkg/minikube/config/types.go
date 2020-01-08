@@ -64,7 +64,8 @@ type MachineConfig struct {
 	KubernetesConfig    KubernetesConfig
 	HostOnlyNicType     string // Only used by virtualbox
 	NatNicType          string // Only used by virtualbox
-	NodeBindPort        int32  // Only used by kic
+	Addons              map[string]bool
+	NodeBindPort        int32 // Only used by kic
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.

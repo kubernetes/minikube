@@ -61,8 +61,7 @@ func MachinePath(machine string, miniHome ...string) string {
 	return filepath.Join(miniPath, "machines", machine)
 }
 
-// SanitizeCacheDir
-// # ParseReference cannot have a : in the directory path
+// SanitizeCacheDir returns a path without special characters
 func SanitizeCacheDir(image string) string {
 	if runtime.GOOS == "windows" && hasWindowsDriveLetter(image) {
 		// not sanitize Windows drive letter.
@@ -70,6 +69,7 @@ func SanitizeCacheDir(image string) string {
 		glog.Infof("windows sanitize: %s -> %s", image, s)
 		return s
 	}
+	// ParseReference cannot have a : in the directory path
 	return strings.Replace(image, ":", "_", -1)
 }
 

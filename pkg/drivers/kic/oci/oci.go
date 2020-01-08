@@ -53,7 +53,7 @@ func Status(ociBinary string, ociID string) (state.State, error) {
 	out, err := cmd.CombinedOutput()
 	o := strings.Trim(string(out), "\n")
 	s := state.Error
-	if o == "running" { // TODO: parse all kind of states
+	if o == "running" {
 		s = state.Running
 	}
 	if o == "exited" {
@@ -62,6 +62,9 @@ func Status(ociBinary string, ociID string) (state.State, error) {
 
 	if o == "paused" {
 		s = state.Paused
+	}
+	if o == "restaring" {
+		s = state.Starting
 	}
 
 	if err != nil {

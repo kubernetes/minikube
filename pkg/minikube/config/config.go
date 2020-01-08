@@ -127,9 +127,14 @@ func Load(profile string) (*MachineConfig, error) {
 	return DefaultLoader.LoadConfigFromFile(profile)
 }
 
+func Write(profile string, cc *MachineConfig) error {
+	return DefaultLoader.WriteConfigToFile(profile, cc)
+}
+
 // Loader loads the kubernetes and machine config based on the machine profile name
 type Loader interface {
 	LoadConfigFromFile(profile string, miniHome ...string) (*MachineConfig, error)
+	WriteConfigToFile(profileName string, cc *MachineConfig, miniHome ...string) error
 }
 
 type simpleConfigLoader struct{}
@@ -155,4 +160,14 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 		return nil, err
 	}
 	return &cc, nil
+}
+
+func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *MachineConfig, miniHome ...string) error {
+	// Move to profile package
+	path := profileFilePath(profileName, miniHome...)
+	contents, err := json.MarshalIndent(cc, "", "	")
+	if err != nil {
+		return err
+	}
+	return ioutil.WriteFile(path, contents, 0644)
 }
