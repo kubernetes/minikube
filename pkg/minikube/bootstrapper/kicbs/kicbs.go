@@ -168,11 +168,6 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		glog.Infof("StartCluster complete in %s", time.Since(start))
 	}()
 
-	version, err := bsutil.ParseKubernetesVersion(k8s.KubernetesVersion)
-	if err != nil {
-		return errors.Wrap(err, "parsing kubernetes version")
-	}
-
 	extraFlags := bsutil.CreateFlagsFromExtraArgs(k8s.ExtraOptions)
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime})
 	if err != nil {
@@ -188,16 +183,11 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		"FileAvailable--etc-kubernetes-manifests-kube-controller-manager.yaml",
 		"FileAvailable--etc-kubernetes-manifests-etcd.yaml",
 		"FileContent--proc-sys-net-bridge-bridge-nf-call-iptables", // for kic only
-		"Port-10250", // For "none" users who already have a kubelet online
-		"Swap",       // For "none" users who have swap configured
+		"Port-10250",         // For "none" users who already have a kubelet online
+		"Swap",               // For "none" users who have swap configured
+		"SystemVerification", // For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
 	}
 	ignore = append(ignore, bsutil.SkipAdditionalPreflights[r.Name()]...)
-
-	// Allow older kubeadm versions to function with newer Docker releases.
-	if version.LT(semver.MustParse("1.13.0")) {
-		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
-		ignore = append(ignore, "SystemVerification")
-	}
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	glog.Infof("starting kubeadm init")
