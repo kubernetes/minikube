@@ -96,7 +96,6 @@ const (
 	keepContext           = "keep-context"
 	createMount           = "mount"
 	featureGates          = "feature-gates"
-	nodeName              = "node-name"
 	apiServerName         = "apiserver-name"
 	apiServerPort         = "apiserver-port"
 	dnsDomain             = "dns-domain"
