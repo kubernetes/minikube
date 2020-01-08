@@ -38,6 +38,9 @@ const DefaultPodCIDR = "10.244.0.0/16"
 // DefaultBindIPV4 is The default ip the container will bind to.
 const DefaultBindIPV4 = "127.0.0.1"
 
+// BaseImage is the base image is used to spin up kic containers
+const BaseImage = "gcr.io/k8s-minikube/kicbase:v0.0.1@sha256:c4ad2938877d2ae0d5b7248a5e7182ff58c0603165c3bedfe9d503e2d380a0db"
+
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
 type Driver struct {
 	*drivers.BaseDriver
@@ -257,9 +260,4 @@ func (d *Driver) nodeID(nameOrID string) (string, error) {
 		id = []byte{}
 	}
 	return string(id), err
-}
-
-// BaseImage returns the image used to spin up containers. in the future might pin down nodes per version
-func BaseImage() (string, error) {
-	return "gcr.io/k8s-minikube/kicbase@sha256:c4ad2938877d2ae0d5b7248a5e7182ff58c0603165c3bedfe9d503e2d380a0db", nil
 }
