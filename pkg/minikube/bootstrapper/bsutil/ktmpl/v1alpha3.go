@@ -57,7 +57,7 @@ etcd:
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
-  podSubnet: "{{.PodSubnet}}"
+  podSubnet: "{{ .PodSubnet }}"
   serviceSubnet: {{.ServiceCIDR}}
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1

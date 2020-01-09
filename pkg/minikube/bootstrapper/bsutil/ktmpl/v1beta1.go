@@ -52,6 +52,8 @@ kind: ClusterConfiguration
 {{end -}}{{end -}}
 certificatesDir: {{.CertDir}}
 clusterName: kubernetes
+apiServer:
+  certSANs: ["127.0.0.1", "localhost", "{{.AdvertiseAddress}}"]
 controlPlaneEndpoint: localhost:{{.APIServerPort}}
 dns:
   type: CoreDNS
@@ -61,7 +63,7 @@ etcd:
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
-  podSubnet: "{{.PodSubnet}}"
+  podSubnet: "{{.PodSubnet }}"
   serviceSubnet: {{.ServiceCIDR}}
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1

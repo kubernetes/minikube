@@ -28,7 +28,7 @@ etcd:
 kubernetesVersion: v1.12.0
 networking:
   dnsDomain: cluster.local
-  podSubnet: ""
+  podSubnet: 192.168.32.0/20
   serviceSubnet: 10.96.0.0/12
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1

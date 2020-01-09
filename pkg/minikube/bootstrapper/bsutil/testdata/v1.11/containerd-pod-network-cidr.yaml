@@ -9,9 +9,11 @@ kubernetesVersion: v1.11.0
 certificatesDir: /var/lib/minikube/certs
 networking:
   serviceSubnet: 10.96.0.0/12
+  podSubnet: 192.168.32.0/20
 etcd:
   dataDir: /var/lib/minikube/etcd
 nodeName: mk
+apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 criSocket: /run/containerd/containerd.sock
 apiServerExtraArgs:
   enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
