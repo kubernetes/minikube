@@ -279,7 +279,7 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 		return errors.Wrap(err, "wait for api proc")
 	}
 
-	if err := verify.APIServerIsRunning(start, "127.0.0.1", int(k8s.NodePort), timeout); err != nil {
+	if err := verify.APIServerIsRunning(start, "127.0.0.1", k8s.NodePort, timeout); err != nil {
 		return err
 	}
 
@@ -288,7 +288,7 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := verify.SystemPods(c, start, "127.0.0.1", int(k8s.NodePort), timeout); err != nil {
+	if err := verify.SystemPods(c, start, "127.0.0.1", k8s.NodePort, timeout); err != nil {
 		return errors.Wrap(err, "wait for system pods")
 	}
 
