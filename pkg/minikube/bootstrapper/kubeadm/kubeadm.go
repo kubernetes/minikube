@@ -141,7 +141,7 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	err := bsutil.ExistingConfig(k.c)
-	if err == nil {
+	if err == nil { // if there is an existing cluster don't reconfigure it
 		return k.restartCluster(k8s)
 	}
 	glog.Infof("existence check: %v", err)
