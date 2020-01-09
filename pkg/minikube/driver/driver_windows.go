@@ -32,7 +32,10 @@ var supportedDrivers = []string{
 	VMwareFusion,
 	HyperV,
 	VMware,
+	Docker,
 }
+
+// TODO: medyagh add same check for kic docker
 
 func VBoxManagePath() string {
 	cmd := "VBoxManage"
