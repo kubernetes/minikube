@@ -84,4 +84,5 @@ const (
 	Empty
 	Workaround
 	Sparkle
+	DryRun
 )
