@@ -31,8 +31,7 @@ api:
 kubernetesVersion: {{.KubernetesVersion}}
 certificatesDir: {{.CertDir}}
 networking:
-  serviceSubnet: {{.ServiceCIDR}}{{if ne .PodSubnet ""}}
-    podSubnet: {{.PodSubnet}}{{end}}
+  serviceSubnet: {{.ServiceCIDR}}
 etcd:
   dataDir: {{.EtcdDataDir}}
 nodeName: {{.NodeName}}
