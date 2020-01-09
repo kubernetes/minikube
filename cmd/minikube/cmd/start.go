@@ -947,6 +947,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			NodePort:               viper.GetInt(apiServerPort),
+			ClusterName:            viper.GetString(cfg.MachineProfile),
 			NodeName:               kubeNodeName,
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,

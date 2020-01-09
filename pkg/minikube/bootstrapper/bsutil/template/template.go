@@ -77,7 +77,7 @@ kind: ClusterConfiguration
   {{$i}}: {{$val}}{{end}}
 {{end -}}
 certificatesDir: {{.CertDir}}
-clusterName: kubernetes
+clusterName: {{.ClusterName}}
 controlPlaneEndpoint: localhost:{{.APIServerPort}}
 etcd:
   local:
@@ -129,7 +129,7 @@ kind: ClusterConfiguration
 {{range $i, $val := .FeatureArgs}}{{$i}}: {{$val}}
 {{end -}}{{end -}}
 certificatesDir: {{.CertDir}}
-clusterName: kubernetes
+clusterName: {{.ClusterName}}
 controlPlaneEndpoint: localhost:{{.APIServerPort}}
 dns:
   type: CoreDNS

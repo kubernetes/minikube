@@ -121,6 +121,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 				cfg := tc.cfg
 				cfg.NodeIP = "1.1.1.1"
 				cfg.NodeName = "mk"
+				cfg.ClusterName = "kubernetes"
 				cfg.KubernetesVersion = version + ".0"
 
 				got, err := GenerateKubeadmYAML(cfg, runtime)
@@ -189,6 +190,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 				cfg := tc.cfg
 				cfg.NodeIP = "1.1.1.1"
 				cfg.NodeName = "mk"
+				cfg.ClusterName = "kubernetes"
 				cfg.KubernetesVersion = version + ".0"
 
 				got, err := GenerateKubeadmYAML(cfg, runtime)

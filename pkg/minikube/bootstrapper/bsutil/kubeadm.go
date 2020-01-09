@@ -67,6 +67,7 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		APIServerPort     int
 		KubernetesVersion string
 		EtcdDataDir       string
+		ClusterName       string
 		NodeName          string
 		DNSDomain         string
 		CRISocket         string
@@ -82,6 +83,7 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
+		ClusterName:       k8s.ClusterName,
 		NodeName:          k8s.NodeName,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
