@@ -81,6 +81,12 @@ BUILD_OS := $(shell uname -s)
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 
 STORAGE_PROVISIONER_TAG := v1.8.1
+# TODO: multi-arch manifest
+ifeq ($(GOARCH),amd64)
+STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
+else
+STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
+endif
 
 # Set the version information for the Kubernetes servers
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT)
@@ -472,16 +478,19 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo ""
 	@echo "$(@) successfully built"
 
-out/storage-provisioner:
-	CGO_ENABLED=0 GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+out/storage-provisioner: out/storage-provisioner-$(GOARCH)
+	cp $< $@
+
+out/storage-provisioner-%: cmd/storage-provisioner/main.go pkg/storage/storage_provisioner.go
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
+else
+	CGO_ENABLED=0 GOOS=linux GOARCH=$* go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+endif
 
 .PHONY: storage-provisioner-image
-storage-provisioner-image: out/storage-provisioner ## Build storage-provisioner docker image
-ifeq ($(GOARCH),amd64)
-	docker build -t $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  .
-else
-	docker build -t $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile-$(GOARCH) .
-endif
+storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-provisioner docker image
+	docker build -t $(STORAGE_PROVISIONER_IMAGE) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$(GOARCH) .
 
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
@@ -492,11 +501,7 @@ kic-base-image: ## builds the base image used for kic.
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
-ifeq ($(GOARCH),amd64)
-	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
-else
-	gcloud docker -- push $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
-endif
+	gcloud docker -- push $(STORAGE_PROVISIONER_IMAGE)
 
 .PHONY: out/gvisor-addon
 out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
