@@ -30,6 +30,7 @@ import (
 func TestOffline(t *testing.T) {
 	t.Run("group", func(t *testing.T) {
 		for _, runtime := range []string{"docker", "crio", "containerd"} {
+			runtime := runtime
 			t.Run(runtime, func(t *testing.T) {
 				MaybeParallel(t)
 
