@@ -73,6 +73,7 @@ type KubernetesConfig struct {
 	KubernetesVersion string
 	NodeIP            string
 	NodePort          int
+	ClusterName       string
 	NodeName          string
 	APIServerName     string
 	APIServerNames    []string
