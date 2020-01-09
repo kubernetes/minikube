@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/assets"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
@@ -80,37 +79,6 @@ func TestSetBool(t *testing.T) {
 	}
 	if !val {
 		t.Fatalf("SetBool set wrong value")
-	}
-}
-
-func TestIsAddonAlreadySet(t *testing.T) {
-	testCases := []struct {
-		addonName string
-	}{
-		{
-			addonName: "ingress",
-		},
-
-		{
-			addonName: "registry",
-		},
-	}
-
-	for _, test := range testCases {
-		addon := assets.Addons[test.addonName]
-		addonStatus, _ := addon.IsEnabled()
-
-		alreadySet, err := isAddonAlreadySet(addon, addonStatus)
-		if !alreadySet {
-			if addonStatus {
-				t.Errorf("Did not get expected status, \n\n expected %+v already enabled", test.addonName)
-			} else {
-				t.Errorf("Did not get expected status, \n\n expected %+v already disabled", test.addonName)
-			}
-		}
-		if err != nil {
-			t.Errorf("Got unexpected error: %+v", err)
-		}
 	}
 }
 
