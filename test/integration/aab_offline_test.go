@@ -32,7 +32,6 @@ func TestOffline(t *testing.T) {
 		for _, runtime := range []string{"docker", "crio", "containerd"} {
 			t.Run(runtime, func(t *testing.T) {
 				MaybeParallel(t)
-				WaitForStartSlot(t)
 
 				if runtime != "docker" && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
