@@ -9,7 +9,6 @@ kubernetesVersion: v1.11.0
 certificatesDir: /var/lib/minikube/certs
 networking:
   serviceSubnet: 10.96.0.0/12
-  podSubnet: 192.168.32.0/20
 etcd:
   dataDir: /var/lib/minikube/etcd
 nodeName: mk
