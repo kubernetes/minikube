@@ -156,12 +156,12 @@ var KubeAdmConfigTmplV1Beta2 = template.Must(template.New("configTmpl-v1beta2").
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1beta2
 bootstrapTokens:
- - groups:
-    - system:bootstrappers:kubeadm:default-node-token
-   ttl: 24h0m0s
-   usages:
-    - signing
-    - authentication
+  - groups:
+      - system:bootstrappers:kubeadm:default-node-token
+    ttl: 24h0m0s
+    usages:
+      - signing
+      - authentication
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: {{.AdvertiseAddress}}
@@ -171,6 +171,8 @@ nodeRegistration:
   name: {{.NodeName}}
   taints: []
 ---
+apiVersion: kubeadm.k8s.io/v1beta2
+kind: ClusterConfiguration
 {{ if .ImageRepository}}imageRepository: {{.ImageRepository}}
 {{end}}{{range .ExtraArgs}}{{.Component}}:
   extraArgs:
@@ -181,8 +183,6 @@ nodeRegistration:
 {{if .FeatureArgs}}featureGates:
 {{range $i, $val := .FeatureArgs}}{{$i}}: {{$val}}
 {{end -}}{{end -}}
-  timeoutForControlPlane: 4m0s
-apiVersion: kubeadm.k8s.io/v1beta2
 certificatesDir: {{.CertDir}}
 clusterName: kubernetes
 controlPlaneEndpoint: localhost:{{.APIServerPort}}
@@ -192,13 +192,18 @@ dns:
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
-imageRepository: k8s.gcr.io
-kind: ClusterConfiguration
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
   serviceSubnet: {{.ServiceCIDR}}
-scheduler: {}
+---
+apiVersion: kubelet.config.k8s.io/v1beta2
+kind: KubeletConfiguration
+imageGCHighThresholdPercent: 100
+evictionHard:
+  nodefs.available: "0%"
+  nodefs.inodesFree: "0%"
+  imagefs.available: "0%"
 `))
 
 // printMapInOrder sorts the keys and prints the map in order, combining key
