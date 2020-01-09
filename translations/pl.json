@@ -290,7 +290,7 @@
 	"Run 'minikube delete' to delete the stale VM": "",
 	"Run kubectl": "Uruchamia kubectl",
 	"Run minikube from the C: drive.": "",
-	"Run the kubernetes client, download it if necessary.\nExamples:\nminikube kubectl -- --help\nkubectl get pods --namespace kube-system": "",
+	"Run the kubernetes client, download it if necessary.\nExamples:\nminikube kubectl -- --help\nminikube kubectl -- get pods --namespace kube-system": "",
 	"Run the minikube command as an Administrator": "",
 	"Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...": "",
 	"Set failed": "",

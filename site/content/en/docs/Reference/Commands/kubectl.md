@@ -22,7 +22,7 @@ minikube kubectl [flags]
 
 ```
 minikube kubectl -- --help
-kubectl get pods --namespace kube-system
+minikube kubectl -- get pods --namespace kube-system
 ```
 
 
