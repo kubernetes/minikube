@@ -24,6 +24,7 @@ import (
 	"math"
 	"net"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,6 +39,7 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
@@ -53,6 +55,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -89,6 +92,13 @@ func CacheISO(config cfg.MachineConfig) error {
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
+	// Prevent machine-driver boot races, as well as our own certificate race
+	releaser, err := acquireMachinesLock()
+	if err != nil {
+		return nil, errors.Wrap(err, "boot lock")
+	}
+	defer releaser.Release()
+
 	exists, err := api.Exists(config.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "exists: %s", config.Name)
@@ -137,6 +147,20 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, err
 	}
 	return h, nil
+}
+
+// acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
+func acquireMachinesLock() (mutex.Releaser, error) {
+	// NOTE: Provisioning generally completes within 60 seconds
+	spec := lock.PathMutexSpec(filepath.Join(localpath.MiniPath(), "machines"))
+	spec.Timeout = 5 * time.Minute
+
+	glog.Infof("acquiring machines lock: %+v", spec)
+	start := time.Now()
+	defer func() {
+		glog.Infof("acquired machines lock within %s", time.Since(start))
+	}()
+	return mutex.Acquire(spec)
 }
 
 // configureHost handles any post-powerup configuration required
