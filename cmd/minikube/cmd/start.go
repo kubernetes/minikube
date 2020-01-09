@@ -311,13 +311,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	if !viper.GetBool(dryRun) {
 		updateDriver(driverName)
 	}
-	
+
 	k8sVersion, isUpgrade := getKubernetesVersion(existing)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
-	
+
 	// This is about as far as we can go without overwriting config files
 	if viper.GetBool(dryRun) {
 		out.T(out.DryRun, `dry-run validation complete!`)
