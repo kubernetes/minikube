@@ -12,6 +12,7 @@ networking:
 etcd:
   dataDir: /var/lib/minikube/etcd
 nodeName: mk
+apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 apiServerExtraArgs:
   enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
   fail-no-swap: "true"
