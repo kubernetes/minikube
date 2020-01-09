@@ -88,8 +88,6 @@ type KubernetesConfig struct {
 
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool
-	HostBindPort           int32 // Only used by kic to bind container port to host
-
 }
 
 // VersionedExtraOption holds information on flags to apply to a specific range

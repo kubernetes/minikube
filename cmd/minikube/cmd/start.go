@@ -125,7 +125,6 @@ const (
 	autoUpdate            = "auto-update-drivers"
 	hostOnlyNicType       = "host-only-nic-type"
 	natNicType            = "nat-nic-type"
-	hostBindPort          = "host-bind-port"
 )
 
 var (
@@ -225,9 +224,6 @@ func initDriverFlags() {
 
 	// hyperv
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (hyperv driver only)")
-
-	// docker
-	startCmd.Flags().Int32(hostBindPort, 30013, "The port to bind kubernetes api to on the host machine. (docker driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -437,7 +433,7 @@ func setupKubeconfig(h *host.Host, c *cfg.MachineConfig, clusterName string) (*k
 	addr := ""
 	var err error
 	if driver.IsKIC(h.DriverName) {
-		addr = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(c.KubernetesConfig.HostBindPort)))
+		addr = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(c.KubernetesConfig.NodePort)))
 	} else {
 		addr, err = h.Driver.GetURL()
 		if err != nil {
@@ -951,7 +947,6 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		NatNicType:          viper.GetString(natNicType),
 		KubernetesConfig: cfg.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
-			HostBindPort:           viper.GetInt32(hostBindPort),
 			NodePort:               viper.GetInt(apiServerPort),
 			NodeName:               constants.DefaultNodeName,
 			APIServerName:          viper.GetString(apiServerName),

@@ -59,7 +59,7 @@ type Config struct {
 	StorePath    string            // libmachine store path
 	OCIBinary    string            // oci tool to use (docker, podman,...)
 	ImageDigest  string            // image name with sha to use for the node
-	HostBindPort int32             // port to connect to forward from container to user's machine
+	HostBindPort int               // port to connect to forward from container to user's machine
 	Mounts       []oci.Mount       // mounts
 	PortMappings []oci.PortMapping // container port mappings
 	Envs         map[string]string // key,value of environment variables passed to the node
@@ -95,7 +95,7 @@ func (d *Driver) Create() error {
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings, oci.PortMapping{
 		ListenAddress: "127.0.0.1",
-		HostPort:      d.NodeConfig.HostBindPort,
+		HostPort:      int32(d.NodeConfig.HostBindPort),
 		ContainerPort: constants.APIServerPort,
 	})
 

@@ -157,7 +157,7 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	k8s.NodeIP = kic.DefaultBindIPV4
 	err := bsutil.ExistingConfig(k.c)
-	if err == nil {
+	if err == nil { // if there is an existing cluster don't reconfigure it
 		return k.restartCluster(k8s)
 	}
 	glog.Infof("existence check: %v", err)
@@ -279,7 +279,7 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 		return errors.Wrap(err, "wait for api proc")
 	}
 
-	if err := verify.APIServerIsRunning(start, "127.0.0.1", int(k8s.HostBindPort), timeout); err != nil {
+	if err := verify.APIServerIsRunning(start, "127.0.0.1", int(k8s.NodePort), timeout); err != nil {
 		return err
 	}
 
@@ -288,7 +288,7 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := verify.SystemPods(c, start, "127.0.0.1", int(k8s.HostBindPort), timeout); err != nil {
+	if err := verify.SystemPods(c, start, "127.0.0.1", int(k8s.NodePort), timeout); err != nil {
 		return errors.Wrap(err, "wait for system pods")
 	}
 
@@ -321,7 +321,7 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 		return nil, errors.Wrap(err, "client config")
 	}
 
-	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(k8s.HostBindPort)))
+	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(k8s.NodePort)))
 	if config.Host != endpoint {
 		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
 		config.Host = endpoint
