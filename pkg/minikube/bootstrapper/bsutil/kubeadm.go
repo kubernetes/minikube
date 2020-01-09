@@ -106,7 +106,7 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		configTmpl = template.KubeAdmConfigTmplV1Beta1
 	}
 	// v1beta2 isn't required until v1.18.
-	if version.GTE(semver.MustParse("1.18.0-alpha.0")) {
+	if version.GTE(semver.MustParse("1.17.0")) {
 		configTmpl = template.KubeAdmConfigTmplV1Beta2
 	}
 	if err := configTmpl.Execute(&b, opts); err != nil {
