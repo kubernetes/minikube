@@ -33,7 +33,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
+	pkgaddons "k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -106,7 +106,7 @@ var dashboardCmd = &cobra.Command{
 			// Send status messages to stderr for folks re-using this output.
 			out.ErrT(out.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = configcmd.Set("dashboard", "true")
+			err = pkgaddons.Set("dashboard", "true", viper.GetString(config.MachineProfile))
 			if err != nil {
 				exit.WithError("Unable to enable dashboard", err)
 			}

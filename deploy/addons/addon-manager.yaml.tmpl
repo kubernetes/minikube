@@ -33,6 +33,8 @@ spec:
       value: "5"
     - name: ADDON_MANAGER_LEADER_ELECTION
       value: "false"
+    - name: KUBECTL_EXTRA_PRUNE_WHITELIST
+      value: install.istio.io/v1alpha2/IstioControlPlane
     imagePullPolicy: IfNotPresent
     resources:
       requests:
