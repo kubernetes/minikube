@@ -93,11 +93,15 @@ func CacheISO(config cfg.MachineConfig) error {
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
 	// Prevent machine-driver boot races, as well as our own certificate race
-	releaser, err := acquireMachinesLock()
+	releaser, err := acquireMachinesLock(config.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "boot lock")
 	}
-	defer releaser.Release()
+	start := time.Now()
+	defer func() {
+		glog.Infof("releasing machines lock for %q, held for %s", config.Name, time.Since(start))
+		releaser.Release()
+	}()
 
 	exists, err := api.Exists(config.Name)
 	if err != nil {
@@ -150,17 +154,18 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 }
 
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
-func acquireMachinesLock() (mutex.Releaser, error) {
-	// NOTE: Provisioning generally completes within 60 seconds
+func acquireMachinesLock(name string) (mutex.Releaser, error) {
 	spec := lock.PathMutexSpec(filepath.Join(localpath.MiniPath(), "machines"))
-	spec.Timeout = 5 * time.Minute
+	// NOTE: Provisioning generally completes within 60 seconds
+	spec.Timeout = 10 * time.Minute
 
-	glog.Infof("acquiring machines lock: %+v", spec)
+	glog.Infof("acquiring machines lock for %s: %+v", name, spec)
 	start := time.Now()
-	defer func() {
-		glog.Infof("acquired machines lock within %s", time.Since(start))
-	}()
-	return mutex.Acquire(spec)
+	r, err := mutex.Acquire(spec)
+	if err == nil {
+		glog.Infof("acquired machines lock for %q in %s", name, time.Since(start))
+	}
+	return r, err
 }
 
 // configureHost handles any post-powerup configuration required
