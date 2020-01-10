@@ -19,8 +19,8 @@ package images
 // DefaultKubernetesRepo is the default Kubernetes repository
 const DefaultKubernetesRepo = "k8s.gcr.io"
 
-// KubernetesRepo returns the official Kubernetes repository, or an alternate
-func KubernetesRepo(mirror string) string {
+// kubernetesRepo returns the official Kubernetes repository, or an alternate
+func kubernetesRepo(mirror string) string {
 	if mirror != "" {
 		return mirror
 	}

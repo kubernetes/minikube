@@ -29,7 +29,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 GO_VERSION ?= 1.13.4
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2019.02.7
+BUILDROOT_BRANCH ?= 2019.02.8
 REGISTRY?=gcr.io/k8s-minikube
 
 # Get git commit id
@@ -49,7 +49,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.81
+KERNEL_VERSION ?= 4.19.88
 # latest from https://github.com/golangci/golangci-lint/releases
 GOLINT_VERSION ?= v1.21.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
@@ -473,7 +473,7 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo "$(@) successfully built"
 
 out/storage-provisioner:
-	GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+	CGO_ENABLED=0 GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner ## Build storage-provisioner docker image
@@ -482,6 +482,13 @@ ifeq ($(GOARCH),amd64)
 else
 	docker build -t $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile-$(GOARCH) .
 endif
+
+.PHONY: kic-base-image
+kic-base-image: ## builds the base image used for kic.
+	docker rmi -f $(REGISTRY)/kicbase:v0.0.1-snapshot || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.1-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
+
+
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
@@ -590,6 +597,7 @@ out/mkcmp:
 .PHONY: out/performance-monitor
 out/performance-monitor:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/monitor/monitor.go
+
 
 .PHONY: help
 help:

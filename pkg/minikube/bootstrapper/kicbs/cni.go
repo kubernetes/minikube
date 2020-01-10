@@ -14,12 +14,10 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// bootstrapper for kic
+// Package kicbs bootstrapper for kic
 package kicbs
 
 const defaultCNIManifest = `
-# kindnetd networking manifest
-# would you kindly template this file
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
@@ -99,7 +97,7 @@ spec:
             fieldRef:
               fieldPath: status.podIP
         - name: POD_SUBNET
-          value: {{ .PodSubnet }}
+          value: 10.244.0.0/16
         volumeMounts:
         - name: cni-cfg
           mountPath: /etc/cni/net.d

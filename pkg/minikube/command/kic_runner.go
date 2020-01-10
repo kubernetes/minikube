@@ -23,6 +23,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"time"
 
 	"github.com/golang/glog"
@@ -67,8 +68,8 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	for _, env := range cmd.Env {
 		args = append(args, "-e", env)
 	}
-	// specify the container and command, after this everything will be
-	// args the the command in the container rather than to docker
+	// append container name to docker arguments. all subsequent args
+	// appended will be passed to the container instead of docker
 	args = append(
 		args,
 		k.nameOrID, // ... against the container
@@ -159,9 +160,9 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	if out, err := exec.Command(k.ociBin, "cp", assetName, destination).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "error copying %s into node, output: %s", f.GetAssetName(), string(out))
 	}
-
-	if _, err := k.RunCmd(exec.Command("chmod", f.GetPermissions(), f.GetTargetDir())); err != nil {
-		return errors.Wrap(err, "failed to chmod file permissions")
+	fp := path.Join(f.GetTargetDir(), f.GetTargetName())
+	if _, err := k.RunCmd(exec.Command("sudo", "chmod", f.GetPermissions(), fp)); err != nil {
+		return errors.Wrapf(err, "failed to chmod file permissions %s", fp)
 	}
 	return nil
 }

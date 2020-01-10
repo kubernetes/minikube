@@ -14,26 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package config
+package ktmpl
 
 import (
-	"testing"
-
-	"gotest.tools/assert"
-	pkgConfig "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/localpath"
+	"fmt"
+	"sort"
 )
 
-func TestEnableUnknownAddon(t *testing.T) {
-	if err := Set("InvalidAddon", "false"); err == nil {
-		t.Fatalf("Enable did not return error for unknown addon")
+// printMapInOrder sorts the keys and prints the map in order, combining key
+// value pairs with the separator character
+//
+// Note: this is not necessary, but makes testing easy
+func printMapInOrder(m map[string]string, sep string) []string {
+	if m == nil {
+		return nil
 	}
-}
-
-func TestEnableAddon(t *testing.T) {
-	if err := Set("ingress", "true"); err != nil {
-		t.Fatalf("Enable returned unexpected error: " + err.Error())
+	keys := []string{}
+	for k := range m {
+		keys = append(keys, k)
 	}
-	config, _ := pkgConfig.ReadConfig(localpath.ConfigFile)
-	assert.Equal(t, config["ingress"], true)
+	sort.Strings(keys)
+	for i, k := range keys {
+		keys[i] = fmt.Sprintf("%s%s\"%s\"", k, sep, m[k])
+	}
+	return keys
 }
