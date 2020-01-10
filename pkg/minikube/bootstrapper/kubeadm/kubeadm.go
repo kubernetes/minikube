@@ -554,7 +554,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 		return errors.Wrap(err, "downloading binaries")
 	}
 
-	var cniFile []byte = nil
+	var cniFile []byte
 	if cfg.KubernetesConfig.EnableDefaultCNI {
 		cniFile = []byte(defaultCNIConfig)
 	}
