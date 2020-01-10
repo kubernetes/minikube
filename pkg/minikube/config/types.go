@@ -81,8 +81,8 @@ type KubernetesConfig struct {
 	ContainerRuntime  string
 	CRISocket         string
 	NetworkPlugin     string
-	FeatureGates      string
-	ServiceCIDR       string
+	FeatureGates      string // https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
+	ServiceCIDR       string // the subnet which kubernetes services will be deployed to
 	ImageRepository   string
 	ExtraOptions      ExtraOptionSlice
 
