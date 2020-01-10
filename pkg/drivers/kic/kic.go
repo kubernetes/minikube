@@ -136,23 +136,20 @@ func (d *Driver) GetState() (state.State, error) {
 	if err != nil {
 		return state.Error, errors.Wrapf(err, "error stop node %s", d.MachineName)
 	}
-	if o == "running" {
+	switch o {
+	case "running":
 		return state.Running, nil
-	}
-	if o == "exited" {
+	case "exited":
 		return state.Stopped, nil
-	}
-	if o == "paused" {
+	case "paused":
 		return state.Paused, nil
-	}
-	if o == "restarting" {
+	case "restarting":
 		return state.Starting, nil
-	}
-	if o == "dead" {
+	case "dead":
 		return state.Error, nil
+	default:
+		return state.None, fmt.Errorf("unknown state")
 	}
-	return state.None, fmt.Errorf("unknown state")
-
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.

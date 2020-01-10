@@ -67,8 +67,8 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	for _, env := range cmd.Env {
 		args = append(args, "-e", env)
 	}
-	// specify the container and command, after this everything will be
-	// args the the command in the container rather than to docker
+	// append container name to docker arguments. all subsequent args
+	// appended will be passed to the container instead of docker
 	args = append(
 		args,
 		k.nameOrID, // ... against the container

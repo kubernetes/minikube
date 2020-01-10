@@ -122,11 +122,14 @@ func (s *SSHServer) handleIncomingConnection(c net.Conn) {
 
 func (s *SSHServer) handleRequest(channel ssh.Channel, req *ssh.Request) {
 	go func() {
-		if _, err := io.Copy(s.Transfers, channel); err != nil {
+		// Explicitly copy buffer contents to avoid data race
+		b := s.Transfers.Bytes()
+		if _, err := io.Copy(bytes.NewBuffer(b), channel); err != nil {
 			s.t.Errorf("copy failed: %v", err)
 		}
 		channel.Close()
 	}()
+
 	switch req.Type {
 	case "exec":
 		s.t.Logf("exec request received: %+v", req)
