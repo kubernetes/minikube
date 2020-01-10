@@ -34,6 +34,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/machine/libmachine/state"
 	"github.com/shirou/gopsutil/process"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -185,29 +186,41 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 	t.Logf("*** %s FAILED at %s", t.Name(), time.Now())
 
 	if *postMortemLogs {
-		t.Logf(">>> %s FAILED: start of post-mortem logs >>>", t.Name())
-
-		rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
-		if rerr != nil {
-			t.Logf("%s: %v", rr.Command(), rerr)
-		}
-		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
-
-		rr, err := Run(t, exec.Command("kubectl", "--context", profile, "describe", "node"))
-		if err != nil {
-			t.Logf("%s: %v", rr.Command(), err)
-		} else {
-			t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
-		}
-
-		rr, err = Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
-		if err != nil {
-			t.Logf("failed logs error: %v", err)
-		}
-		t.Logf("%s logs: %s", t.Name(), rr.Stdout)
-		t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
+		clusterLogs(t, profile)
 	}
 	Cleanup(t, profile, cancel)
+}
+
+// clusterLogs shows logs for debugging a failed cluster
+func clusterLogs(t *testing.T, profile string) {
+	st := Status(context.Background(), t, Target(), profile)
+	if st != state.Running.String() {
+		t.Logf("%q is not running, skipping log retrieval (state=%q)", profile, st)
+		return
+	}
+
+	t.Logf("<<< %s FAILED: start of post-mortem logs <<<", t.Name())
+	rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
+	if err != nil {
+		t.Logf("failed logs error: %v", err)
+		return
+	}
+	t.Logf("%s logs: %s", t.Name(), rr.Stdout)
+
+	rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
+	if rerr != nil {
+		t.Logf("%s: %v", rr.Command(), rerr)
+		return
+	}
+	t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
+
+	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "node"))
+	if err != nil {
+		t.Logf("%s: %v", rr.Command(), err)
+	} else {
+		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
+	}
+	t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
 }
 
 // podStatusMsg returns a human-readable pod status, for generating debug status
