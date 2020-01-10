@@ -14,8 +14,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// Package verify takes care of making sure a running kubernetes cluster is healthy
-package verify
+// Package kverify verifies a running kubernetes cluster is healthy
+package kverify
 
 import (
 	"crypto/tls"

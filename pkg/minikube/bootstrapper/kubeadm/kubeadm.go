@@ -40,7 +40,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/verify"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -93,7 +93,7 @@ func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 
 // GetAPIServerStatus returns the api-server status
 func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string, error) {
-	return verify.APIServerStatus(ip, apiserverPort)
+	return kverify.APIServerStatus(ip, apiserverPort)
 }
 
 // LogCommands returns a map of log type to a command which will display that log.
@@ -234,10 +234,10 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
-	if err := verify.APIServerProcess(k.c, start, timeout); err != nil {
+	if err := kverify.APIServerProcess(k.c, start, timeout); err != nil {
 		return err
 	}
-	if err := verify.APIServerIsRunning(start, k8s.NodeIP, k8s.NodePort, timeout); err != nil {
+	if err := kverify.APIServerIsRunning(start, k8s.NodeIP, k8s.NodePort, timeout); err != nil {
 		return err
 	}
 
@@ -246,7 +246,7 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	return verify.SystemPods(c, start, k8s.NodeIP, k8s.NodePort, timeout)
+	return kverify.SystemPods(c, start, k8s.NodeIP, k8s.NodePort, timeout)
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
@@ -291,7 +291,7 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// We must ensure that the apiserver is healthy before proceeding
-	if err := verify.APIServerProcess(k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.APIServerProcess(k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
@@ -300,7 +300,7 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "getting k8s client")
 	}
 
-	if err := verify.SystemPods(client, time.Now(), k8s.NodeIP, k8s.NodePort, kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.SystemPods(client, time.Now(), k8s.NodeIP, k8s.NodePort, kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
 	}
 
