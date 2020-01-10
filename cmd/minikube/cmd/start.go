@@ -226,7 +226,7 @@ func initDriverFlags() {
 
 	// hyperv
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (hyperv driver only)")
-	startCmd.Flags().String(hypervUseExternalSwitch, "", "Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)")
+	startCmd.Flags().Bool(hypervUseExternalSwitch, false, "Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)")
 	startCmd.Flags().String(hypervExternalAdapter, "", "External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)")
 }
 
