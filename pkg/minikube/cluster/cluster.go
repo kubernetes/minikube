@@ -52,7 +52,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
-	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -343,7 +342,7 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 func engineOptions(config cfg.MachineConfig) *engine.Options {
 	o := engine.Options{
 		Env:              config.DockerEnv,
-		InsecureRegistry: append([]string{pkgutil.DefaultServiceCIDR}, config.InsecureRegistry...),
+		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, config.InsecureRegistry...),
 		RegistryMirror:   config.RegistryMirror,
 		ArbitraryFlags:   config.DockerOpt,
 		InstallURL:       drivers.DefaultEngineInstallURL,
