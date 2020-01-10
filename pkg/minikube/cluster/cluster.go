@@ -372,7 +372,7 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 func engineOptions(config cfg.MachineConfig) *engine.Options {
 	o := engine.Options{
 		Env:              config.DockerEnv,
-		InsecureRegistry: append([]string{pkgutil.DefaultServiceCIDR}, config.InsecureRegistry...),
+		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, config.InsecureRegistry...),
 		RegistryMirror:   config.RegistryMirror,
 		ArbitraryFlags:   config.DockerOpt,
 		InstallURL:       drivers.DefaultEngineInstallURL,

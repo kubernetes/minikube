@@ -108,7 +108,6 @@ func Pause(ociBinary string, ociID string) error {
 
 // Inspect return low-level information on containers
 func Inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
-
 	cmd := exec.Command(ociBinary, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
@@ -352,7 +351,7 @@ func CreateContainer(ociBinary string, image string, opts ...CreateOpt) ([]strin
 	}
 
 	if err != nil {
-		return output, errors.Wrapf(err, "CreateContainer %v ", args)
+		return output, errors.Wrapf(err, "args: %v  output: %s ", args, output)
 	}
 	return output, nil
 }
