@@ -35,7 +35,7 @@ import (
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/verify"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -247,7 +247,7 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	// We must ensure that the apiserver is healthy before proceeding
-	if err := verify.APIServerProcess(k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.APIServerProcess(k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
@@ -256,7 +256,7 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "getting k8s client")
 	}
 
-	if err := verify.SystemPods(client, time.Now(), k8s.NodeIP, k8s.NodePort, kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.SystemPods(client, time.Now(), k8s.NodeIP, k8s.NodePort, kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
 	}
 
@@ -275,11 +275,11 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
-	if err := verify.APIServerProcess(k.c, start, timeout); err != nil {
+	if err := kverify.APIServerProcess(k.c, start, timeout); err != nil {
 		return errors.Wrap(err, "wait for api proc")
 	}
 
-	if err := verify.APIServerIsRunning(start, "127.0.0.1", k8s.NodePort, timeout); err != nil {
+	if err := kverify.APIServerIsRunning(start, "127.0.0.1", k8s.NodePort, timeout); err != nil {
 		return err
 	}
 
@@ -288,7 +288,7 @@ func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := verify.SystemPods(c, start, "127.0.0.1", k8s.NodePort, timeout); err != nil {
+	if err := kverify.SystemPods(c, start, "127.0.0.1", k8s.NodePort, timeout); err != nil {
 		return errors.Wrap(err, "wait for system pods")
 	}
 
