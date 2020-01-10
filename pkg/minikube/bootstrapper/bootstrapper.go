@@ -70,7 +70,7 @@ func GetCachedImageList(imageRepository string, version string, bootstrapper str
 	case Kubeadm:
 		return images.Kubeadm(imageRepository, version)
 	case KIC:
-		return []string{"alpine"}, nil // for testing purpose just caching alpine for kicbs
+		return images.KIC(imageRepository, version)
 	default:
 		return []string{}, nil
 	}

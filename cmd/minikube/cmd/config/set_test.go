@@ -24,3 +24,24 @@ func TestNotFound(t *testing.T) {
 		t.Fatalf("Set did not return error for unknown property")
 	}
 }
+
+func TestSetNotAllowed(t *testing.T) {
+	err := Set("vm-driver", "123456")
+	if err == nil || err.Error() != "[driver \"123456\" is not supported]" {
+		t.Fatalf("Set did not return error for unallowed value")
+	}
+}
+
+func TestSetOK(t *testing.T) {
+	err := Set("vm-driver", "virtualbox")
+	if err != nil {
+		t.Fatalf("Set returned error for valid property value")
+	}
+	val, err := Get("vm-driver")
+	if err != nil {
+		t.Fatalf("Get returned error for valid property")
+	}
+	if val != "virtualbox" {
+		t.Fatalf("Get returned %s, expected \"virtualbox\"", val)
+	}
+}

@@ -21,8 +21,8 @@ import (
 	"os/exec"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -33,7 +33,7 @@ func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Docker,
 		Config:   configure,
-		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{}) },
+		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
 		Priority: registry.Discouraged, // experimental
 	}); err != nil {
@@ -42,18 +42,14 @@ func init() {
 }
 
 func configure(mc config.MachineConfig) interface{} {
-	img, err := kic.ImageForVersion(mc.KubernetesConfig.KubernetesVersion)
-	if err != nil {
-		glog.Errorf("err to getting kic image for %s: imgesha:%s", img, mc.KubernetesConfig.KubernetesVersion)
-	}
 	return kic.NewDriver(kic.Config{
-		MachineName:   mc.Name,
-		StorePath:     localpath.MiniPath(),
-		ImageDigest:   img,
-		CPU:           mc.CPUs,
-		Memory:        mc.Memory,
-		APIServerPort: mc.NodeBindPort,
-		OCIBinary:     "docker",
+		MachineName:  mc.Name,
+		StorePath:    localpath.MiniPath(),
+		ImageDigest:  kic.BaseImage,
+		CPU:          mc.CPUs,
+		Memory:       mc.Memory,
+		HostBindPort: mc.KubernetesConfig.NodePort,
+		OCIBinary:    oci.Docker,
 	})
 
 }
