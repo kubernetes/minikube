@@ -20,7 +20,6 @@ package bsutil
 import (
 	"bytes"
 	"fmt"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/template"
 	"path"
 
 	"github.com/blang/semver"
