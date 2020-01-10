@@ -54,7 +54,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
-	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
 )
