@@ -188,7 +188,6 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 	}
 
 	glog.Infof("Configuring cluster permissions ...")
-	fmt.Printf("Medya dbg :\n%+v\n", k8s)
 	elevate := func() error {
 		client, err := k.client(k8s)
 		if err != nil {
