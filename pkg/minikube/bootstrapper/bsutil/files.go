@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// bsutil package will eventually be renamed to kubeadm package after getting rid of older one
+// Package bsutil will eventually be renamed to kubeadm package after getting rid of older one
 package bsutil
 
 import (
 	"path"
 
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -42,7 +43,6 @@ func ConfigFileAssets(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byt
 		assets.NewMemoryAssetTarget(kubeadm, KubeadmYamlPath, "0640"),
 		assets.NewMemoryAssetTarget(kubelet, KubeletSystemdConfFile, "0644"),
 		assets.NewMemoryAssetTarget(kubeletSvc, KubeletServiceFile, "0644"),
-		assets.NewMemoryAssetTarget(defaultCNIConfig, DefaultCNIConfigPath, "0644"),
 	}
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin
@@ -51,4 +51,34 @@ func ConfigFileAssets(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byt
 		fs = append(fs, assets.NewMemoryAssetTarget(defaultCNIConfig, DefaultCNIConfigPath, "0644"))
 	}
 	return fs
+}
+
+// AddAddons adds addons to list of files
+func AddAddons(files *[]assets.CopyableFile, data interface{}) error {
+	// add addons to file list
+	// custom addons
+	if err := assets.AddMinikubeDirAssets(files); err != nil {
+		return errors.Wrap(err, "adding minikube dir assets")
+	}
+	// bundled addons
+	for _, addonBundle := range assets.Addons {
+		if isEnabled, err := addonBundle.IsEnabled(); err == nil && isEnabled {
+			for _, addon := range addonBundle.Assets {
+				if addon.IsTemplate() {
+					addonFile, err := addon.Evaluate(data)
+					if err != nil {
+						return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
+					}
+
+					*files = append(*files, addonFile)
+				} else {
+					*files = append(*files, addon)
+				}
+			}
+		} else if err != nil {
+			return nil
+		}
+	}
+
+	return nil
 }

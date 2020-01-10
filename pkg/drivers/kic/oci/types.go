@@ -16,6 +16,11 @@ limitations under the License.
 
 package oci
 
+const (
+	Docker = "docker"
+	Podman = "podman"
+)
+
 /*
 These types are from
 https://github.com/kubernetes/kubernetes/blob/063e7ff358fdc8b0916e6f39beedc0d025734cb1/pkg/kubelet/apis/cri/runtime/v1alpha2/api.pb.go#L183
