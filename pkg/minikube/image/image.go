@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"github.com/docker/docker/client"
@@ -32,6 +33,11 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
+
+var defaultPlatform = v1.Platform{
+	Architecture: runtime.GOARCH,
+	OS:           "linux",
+}
 
 // DigestByDockerLib uses client by docker lib to return image digest
 // img.ID in as same as image digest
@@ -81,7 +87,8 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 		glog.Infof("daemon lookup for %+v: %v", ref, err)
 	}
 
-	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	platform := defaultPlatform
+	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(platform))
 	if err == nil {
 		return img, nil
 	}
