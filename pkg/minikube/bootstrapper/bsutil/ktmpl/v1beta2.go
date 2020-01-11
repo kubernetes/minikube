@@ -22,6 +22,10 @@ import "text/template"
 var V1Beta2 = template.Must(template.New("configTmpl-v1beta2").Funcs(template.FuncMap{
 	"printMapInOrder": printMapInOrder,
 }).Parse(`apiVersion: kubeadm.k8s.io/v1beta2
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: {{.AdvertiseAddress}}
+  bindPort: {{.APIServerPort}}
 bootstrapTokens:
   - groups:
       - system:bootstrappers:kubeadm:default-node-token
@@ -29,10 +33,6 @@ bootstrapTokens:
     usages:
       - signing
       - authentication
-kind: InitConfiguration
-localAPIEndpoint:
-  advertiseAddress: {{.AdvertiseAddress}}
-  bindPort: {{.APIServerPort}}
 nodeRegistration:
   criSocket: {{if .CRISocket}}{{.CRISocket}}{{else}}/var/run/dockershim.sock{{end}}
   name: {{.NodeName}}
@@ -52,6 +52,8 @@ kind: ClusterConfiguration
 {{end -}}{{end -}}
 certificatesDir: {{.CertDir}}
 clusterName: kubernetes
+apiServer:
+  certSANs: ["127.0.0.1", "localhost", "{{.AdvertiseAddress}}"]
 controlPlaneEndpoint: localhost:{{.APIServerPort}}
 controllerManager: {}
 dns:
@@ -62,6 +64,7 @@ etcd:
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
+  podSubnet: "{{.PodSubnet }}"
   serviceSubnet: {{.ServiceCIDR}}
 ---
 apiVersion: kubelet.config.k8s.io/v1beta2
