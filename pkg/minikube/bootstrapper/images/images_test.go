@@ -29,7 +29,7 @@ func TestAuxiliary(t *testing.T) {
 		"kubernetesui/dashboard:v2.0.0-beta8",
 		"kubernetesui/metrics-scraper:v1.0.2",
 	}
-	got := Auxiliary("")
+	got := auxiliary("")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("images mismatch (-want +got):\n%s", diff)
 	}
@@ -42,7 +42,7 @@ func TestAuxiliaryMirror(t *testing.T) {
 		"test.mirror/dashboard:v2.0.0-beta8",
 		"test.mirror/metrics-scraper:v1.0.2",
 	}
-	got := Auxiliary("test.mirror")
+	got := auxiliary("test.mirror")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("images mismatch (-want +got):\n%s", diff)
 	}

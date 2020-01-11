@@ -236,7 +236,7 @@ func initNetworkingFlags() {
 	startCmd.Flags().StringSliceVar(&registryMirror, "registry-mirror", nil, "Registry mirrors to pass to the Docker daemon")
 	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
 	startCmd.Flags().String(imageMirrorCountry, "", "Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn.")
-	startCmd.Flags().String(serviceCIDR, pkgutil.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
+	startCmd.Flags().String(serviceCIDR, constants.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
 	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
 	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 }
@@ -272,7 +272,11 @@ func platform() string {
 
 	// This environment is exotic, let's output a bit more.
 	if vrole == "guest" || runtime.GOARCH != "amd64" {
-		s.WriteString(fmt.Sprintf(" (%s/%s)", vsys, runtime.GOARCH))
+		if vsys != "" {
+			s.WriteString(fmt.Sprintf(" (%s/%s)", vsys, runtime.GOARCH))
+		} else {
+			s.WriteString(fmt.Sprintf(" (%s)", runtime.GOARCH))
+		}
 	}
 	return s.String()
 }
@@ -434,16 +438,22 @@ func displayEnviron(env []string) {
 }
 
 func setupKubeconfig(h *host.Host, c *cfg.MachineConfig, clusterName string) (*kubeconfig.Settings, error) {
-	addr, err := h.Driver.GetURL()
-	if err != nil {
-		exit.WithError("Failed to get driver URL", err)
+	addr := ""
+	var err error
+	if driver.IsKIC(h.DriverName) {
+		addr = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(c.KubernetesConfig.NodePort)))
+	} else {
+		addr, err = h.Driver.GetURL()
+		if err != nil {
+			exit.WithError("Failed to get driver URL", err)
+		}
+		addr = strings.Replace(addr, "tcp://", "https://", -1)
+		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
 	}
-	addr = strings.Replace(addr, "tcp://", "https://", -1)
-	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(c.KubernetesConfig.NodePort), -1)
+
 	if c.KubernetesConfig.APIServerName != constants.APIServerName {
 		addr = strings.Replace(addr, c.KubernetesConfig.NodeIP, c.KubernetesConfig.APIServerName, -1)
 	}
-
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
 		ClusterServerAddress: addr,
@@ -986,29 +996,35 @@ func setDockerProxy() {
 }
 
 // autoSetDriverOptions sets the options needed for specific vm-driver automatically.
-func autoSetDriverOptions(cmd *cobra.Command, drvName string) error {
+func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
+	err = nil
 	hints := driver.FlagDefaults(drvName)
-	if !cmd.Flags().Changed("extra-config") && hints.ExtraOptions != "" {
-		return extraOptions.Set(hints.ExtraOptions)
+	if !cmd.Flags().Changed("extra-config") && len(hints.ExtraOptions) > 0 {
+		for _, eo := range hints.ExtraOptions {
+			glog.Infof("auto setting extra-config to %q.", eo)
+			err = extraOptions.Set(eo)
+			if err != nil {
+				err = errors.Wrapf(err, "setting extra option %s", eo)
+			}
+		}
 	}
 
 	if !cmd.Flags().Changed(cacheImages) {
 		viper.Set(cacheImages, hints.CacheImages)
 	}
 
-	// currently only used for kic
 	if !cmd.Flags().Changed(containerRuntime) && hints.ContainerRuntime != "" {
 		viper.Set(containerRuntime, hints.ContainerRuntime)
-		glog.Infof("auto set container runtime to %s for kic driver.", hints.ContainerRuntime)
-
+		glog.Infof("auto set %s to %q.", containerRuntime, hints.ContainerRuntime)
 	}
-	if !cmd.Flags().Changed("bootstrapper") && hints.Bootstrapper != "" {
+
+	if !cmd.Flags().Changed(cmdcfg.Bootstrapper) && hints.Bootstrapper != "" {
 		viper.Set(cmdcfg.Bootstrapper, hints.Bootstrapper)
-		glog.Infof("auto set bootstrapper to %s for kic driver.", hints.Bootstrapper)
+		glog.Infof("auto set %s to %q.", cmdcfg.Bootstrapper, hints.Bootstrapper)
 
 	}
 
-	return nil
+	return err
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver

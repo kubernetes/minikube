@@ -24,6 +24,7 @@ import (
 	"math"
 	"net"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,6 +39,7 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
@@ -52,7 +54,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
-	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -89,6 +91,17 @@ func CacheISO(config cfg.MachineConfig) error {
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
+	// Prevent machine-driver boot races, as well as our own certificate race
+	releaser, err := acquireMachinesLock(config.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "boot lock")
+	}
+	start := time.Now()
+	defer func() {
+		glog.Infof("releasing machines lock for %q, held for %s", config.Name, time.Since(start))
+		releaser.Release()
+	}()
+
 	exists, err := api.Exists(config.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "exists: %s", config.Name)
@@ -137,6 +150,21 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		return nil, err
 	}
 	return h, nil
+}
+
+// acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
+func acquireMachinesLock(name string) (mutex.Releaser, error) {
+	spec := lock.PathMutexSpec(filepath.Join(localpath.MiniPath(), "machines"))
+	// NOTE: Provisioning generally completes within 60 seconds
+	spec.Timeout = 10 * time.Minute
+
+	glog.Infof("acquiring machines lock for %s: %+v", name, spec)
+	start := time.Now()
+	r, err := mutex.Acquire(spec)
+	if err == nil {
+		glog.Infof("acquired machines lock for %q in %s", name, time.Since(start))
+	}
+	return r, err
 }
 
 // configureHost handles any post-powerup configuration required
@@ -343,7 +371,7 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 func engineOptions(config cfg.MachineConfig) *engine.Options {
 	o := engine.Options{
 		Env:              config.DockerEnv,
-		InsecureRegistry: append([]string{pkgutil.DefaultServiceCIDR}, config.InsecureRegistry...),
+		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, config.InsecureRegistry...),
 		RegistryMirror:   config.RegistryMirror,
 		ArbitraryFlags:   config.DockerOpt,
 		InstallURL:       drivers.DefaultEngineInstallURL,

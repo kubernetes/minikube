@@ -21,6 +21,7 @@ apiServerExtraArgs:
   enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
+apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 controlPlaneEndpoint: localhost:8443
 etcd:
   local:
@@ -28,7 +29,7 @@ etcd:
 kubernetesVersion: v1.12.0
 networking:
   dnsDomain: cluster.local
-  podSubnet: 192.168.32.0/20
+  podSubnet: "192.168.32.0/20"
   serviceSubnet: 10.96.0.0/12
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1

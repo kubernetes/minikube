@@ -39,8 +39,8 @@ const (
 // Node represents a handle to a kic node
 // This struct must be created by one of: CreateControlPlane
 type Node struct {
-	// must be one of docker container ID or name
-	name      string
+	id        string         // container id
+	name      string         // container name
 	r         command.Runner // Runner
 	ociBinary string
 }
@@ -123,13 +123,15 @@ func CreateNode(p CreateConfig) (*Node, error) {
 
 // Find finds a node
 func Find(ociBinary string, name string, cmder command.Runner) (*Node, error) {
-	_, err := oci.Inspect(ociBinary, name, "{{.Id}}")
+	n, err := oci.Inspect(ociBinary, name, "{{.Id}}")
 	if err != nil {
 		return nil, fmt.Errorf("can't find node %v", err)
 	}
 	return &Node{
-		name: name,
-		r:    cmder,
+		ociBinary: ociBinary,
+		id:        n[0],
+		name:      name,
+		r:         cmder,
 	}, nil
 }
 
