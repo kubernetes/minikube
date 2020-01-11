@@ -168,3 +168,10 @@ func Choose(requested string, options []registry.DriverState) (registry.DriverSt
 func Status(name string) registry.State {
 	return registry.Status(name)
 }
+
+// SetLibvirtURI sets the URI to perform libvirt health checks against
+func SetLibvirtURI(v string) {
+	glog.Infof("Setting default libvirt URI to %s", v)
+	os.Setenv("LIBVIRT_DEFAULT_URI", v)
+
+}
