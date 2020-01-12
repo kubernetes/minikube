@@ -54,6 +54,33 @@ func TestName(t *testing.T) {
 	}
 }
 
+func TestCGroupDriver(t *testing.T) {
+	var tests = []struct {
+		runtime string
+		want    string
+	}{
+		{"docker", "cgroupfs"},
+		{"crio", "cgroupfs"},
+		{"containerd", "cgroupfs"},
+	}
+	for _, tc := range tests {
+		t.Run(tc.runtime, func(t *testing.T) {
+			r, err := New(Config{Type: tc.runtime, Runner: NewFakeRunner(t)})
+			if err != nil {
+				t.Fatalf("New(%s): %v", tc.runtime, err)
+			}
+
+			got, err := r.CGroupDriver()
+			if err != nil {
+				t.Fatalf("CGroupDriver(): %v", err)
+			}
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("CGroupDriver(%s) returned diff (-want +got):\n%s", tc.runtime, diff)
+			}
+		})
+	}
+}
+
 func TestKubeletOptions(t *testing.T) {
 	var tests = []struct {
 		runtime string
@@ -199,6 +226,12 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 		if args[1] == "--format" && args[2] == "'{{.Server.Version}}'" {
 			return "18.06.2-ce", nil
 		}
+
+	case "info":
+
+		if args[1] == "--format" && args[2] == "'{{.CgroupDriver}}'" {
+			return "cgroupfs", nil
+		}
 	}
 	return "", nil
 }
@@ -207,6 +240,9 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 func (f *FakeRunner) crio(args []string, _ bool) (string, error) { //nolint (result 1 (error) is always nil)
 	if args[0] == "--version" {
 		return "crio version 1.13.0", nil
+	}
+	if args[0] == "config" {
+		return "# Cgroup management implementation used for the runtime.\ncgroup_manager = \"cgroupfs\"\n", nil
 	}
 	return "", nil
 }
@@ -225,6 +261,15 @@ func (f *FakeRunner) containerd(args []string, _ bool) (string, error) {
 // crictl is a fake implementation of crictl
 func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 	switch cmd := args[0]; cmd {
+	case "info":
+		return `{
+		  "status": {
+		  },
+		  "config": {
+		    "systemdCgroup": false
+		  },
+		  "golang": "go1.11.13"
+		}`, nil
 	case "ps":
 		// crictl ps -a --name=apiserver --state=Running --quiet
 		if args[1] == "-a" && strings.HasPrefix(args[2], "--name") {
