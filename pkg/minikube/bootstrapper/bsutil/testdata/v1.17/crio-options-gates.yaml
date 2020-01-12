@@ -1,4 +1,4 @@
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
@@ -15,7 +15,7 @@ nodeRegistration:
   name: mk
   taints: []
 ---
-apiVersion: kubeadm.k8s.io/v1beta1
+apiVersion: kubeadm.k8s.io/v1beta2
 kind: ClusterConfiguration
 apiServer:
   extraArgs:
@@ -35,6 +35,7 @@ clusterName: kubernetes
 apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 controlPlaneEndpoint: localhost:8443
+controllerManager: {}
 dns:
   type: CoreDNS
 etcd:
@@ -46,7 +47,7 @@ networking:
   podSubnet: ""
   serviceSubnet: 10.96.0.0/12
 ---
-apiVersion: kubelet.config.k8s.io/v1beta1
+apiVersion: kubelet.config.k8s.io/v1beta2
 kind: KubeletConfiguration
 imageGCHighThresholdPercent: 100
 evictionHard:
