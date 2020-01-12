@@ -49,6 +49,8 @@ type Manager interface {
 	// Style is an associated StyleEnum for Name()
 	Style() out.StyleEnum
 
+	// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+	CGroupDriver() (string, error)
 	// KubeletOptions returns kubelet options for a runtime.
 	KubeletOptions() map[string]string
 	// SocketPath returns the path to the socket file for a given runtime
