@@ -10,7 +10,7 @@ minikube's documentation is in [Markdown](https://www.markdownguide.org/cheat-sh
 * [Hugo](https://gohugo.io)
 * [Docsy](https://www.docsy.dev)
 
-In production, the minikube website is served using [Netlify](http://netlify.com/)
+In production, the minikube website is served using [Netlify](https://netlify.com/)
 
 ## Local documentation website
 
