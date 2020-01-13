@@ -116,6 +116,7 @@ const (
 	hostDNSResolver       = "host-dns-resolver"
 	waitUntilHealthy      = "wait"
 	force                 = "force"
+	dryRun                = "dry-run"
 	interactive           = "interactive"
 	waitTimeout           = "wait-timeout"
 	nativeSSH             = "native-ssh"
@@ -158,6 +159,7 @@ func initMinikubeFlags() {
 
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
+	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does does not mutate system state")
 
 	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to the minikube VM.")
 	startCmd.Flags().String(memory, defaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
@@ -310,12 +312,20 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateUser(driverName)
 
 	// Download & update the driver, even in --download-only mode
-	updateDriver(driverName)
+	if !viper.GetBool(dryRun) {
+		updateDriver(driverName)
+	}
 
 	k8sVersion, isUpgrade := getKubernetesVersion(existing)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
+	}
+
+	// This is about as far as we can go without overwriting config files
+	if viper.GetBool(dryRun) {
+		out.T(out.DryRun, `dry-run validation complete!`)
+		return
 	}
 
 	cacheISO(&config, driverName)
@@ -767,7 +777,7 @@ func validateDiskSize() {
 func validateMemorySize() {
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 	if memorySizeMB < pkgutil.CalculateSizeInMB(minimumMemorySize) && !viper.GetBool(force) {
-		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumMemorySize)})
+		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumMemorySize)})
 	}
 	if memorySizeMB < pkgutil.CalculateSizeInMB(defaultMemorySize) && !viper.GetBool(force) {
 		out.T(out.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default_memorysize}}MB. Beware that minikube might not work correctly or crash unexpectedly.",
