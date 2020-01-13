@@ -10,7 +10,7 @@ minikube start --memory=8000mb --cpus=4
 
 To enable this addon, simply run:
 ```shell script
-minikube addons enable istio-proviioner
+minikube addons enable istio-provisioner
 minikube addons enable istio
 ```
 
@@ -27,6 +27,6 @@ If everything went well you shouldn't get any errors about istio being installed
 ### Disable istio
 To disable this addon, simply run:
 ```shell script
-minikube addons disbale istio-proviioner
+minikube addons disable istio-provisioner
 minikube addons disable istio
 ```
