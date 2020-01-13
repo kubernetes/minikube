@@ -20,13 +20,16 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-getter"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 const fileScheme = "file"
@@ -56,6 +59,18 @@ func (f DefaultDownloader) GetISOFileURI(isoURL string) string {
 
 // CacheMinikubeISOFromURL downloads the ISO, if it doesn't exist in cache
 func (f DefaultDownloader) CacheMinikubeISOFromURL(url string) error {
+	dst := f.GetISOCacheFilepath(url)
+
+	// Lock before we check for existence to avoid thundering herd issues
+	spec := lock.PathMutexSpec(dst)
+	spec.Timeout = 10 * time.Minute
+	glog.Infof("acquiring lock: %+v", spec)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
+	}
+	defer releaser.Release()
+
 	if !f.ShouldCacheMinikubeISO(url) {
 		glog.Infof("Not caching ISO, using %s", url)
 		return nil
@@ -66,7 +81,6 @@ func (f DefaultDownloader) CacheMinikubeISOFromURL(url string) error {
 		urlWithChecksum = url + "?checksum=file:" + constants.DefaultISOSHAURL
 	}
 
-	dst := f.GetISOCacheFilepath(url)
 	// Predictable temp destination so that resume can function
 	tmpDst := dst + ".download"
 

@@ -29,6 +29,7 @@ schedulerExtraArgs:
   scheduler-name: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
+apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 controlPlaneEndpoint: localhost:8443
 etcd:
   local:
