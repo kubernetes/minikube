@@ -548,23 +548,8 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateAddonsCmd asserts basic "addon" command functionality
 func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
-
-	// Default output
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list"))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	listLines := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-	r := regexp.MustCompile(`-\s[a-z|-]+:\s(enabled|disabled)`)
-	for _, line := range listLines {
-		match := r.MatchString(line)
-		if !match {
-			t.Errorf("Plugin output did not match expected format. Got: %s", line)
-		}
-	}
-
 	// Table output
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list"))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
