@@ -92,6 +92,7 @@ func TestFunctional(t *testing.T) {
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DNS", validateDNS},
+			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
 			{"MountCmd", validateMountCmd},
@@ -306,6 +307,32 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	want := []byte("10.96.0.1")
 	if !bytes.Contains(rr.Stdout.Bytes(), want) {
 		t.Errorf("nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
+	}
+}
+
+// validateDryRun asserts that the dry-run mode quickly exits with the right code
+func validateDryRun(ctx context.Context, t *testing.T, profile string) {
+	// dry-run mode should always be able to finish quickly
+	mctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	// Too little memory!
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB"}, StartArgs()...)
+	c := exec.CommandContext(mctx, Target(), startArgs...)
+	rr, err := Run(t, c)
+
+	wantCode := 78 // exit.Config
+	if rr.ExitCode != wantCode {
+		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+	}
+
+	dctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	startArgs = append([]string{"start", "-p", profile, "--dry-run"}, StartArgs()...)
+	c = exec.CommandContext(dctx, Target(), startArgs...)
+	rr, err = Run(t, c)
+	if rr.ExitCode != 0 || err != nil {
+		t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
 	}
 }
 
