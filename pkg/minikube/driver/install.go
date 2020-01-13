@@ -23,14 +23,17 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-getter"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // InstallOrUpdate downloads driver if it is not present, or updates it if there's a newer version
@@ -40,6 +43,17 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 	}
 
 	executable := fmt.Sprintf("docker-machine-driver-%s", name)
+
+	// Lock before we check for existence to avoid thundering herd issues
+	spec := lock.PathMutexSpec(executable)
+	spec.Timeout = 10 * time.Minute
+	glog.Infof("acquiring lock: %+v", spec)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
+	}
+	defer releaser.Release()
+
 	exists := driverExists(executable)
 	path, err := validateDriver(executable, v)
 	if !exists || (err != nil && autoUpdate) {
