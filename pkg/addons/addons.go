@@ -37,6 +37,7 @@ import (
 // defaultStorageClassProvisioner is the name of the default storage class provisioner
 const defaultStorageClassProvisioner = "standard"
 
+// Set sets a value
 func Set(name, value, profile string) error {
 	a, valid := isAddonValid(name)
 	if !valid {
