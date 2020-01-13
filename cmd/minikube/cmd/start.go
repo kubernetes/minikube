@@ -569,6 +569,8 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 func selectDriver(existing *cfg.MachineConfig) string {
 	name := viper.GetString("vm-driver")
 	glog.Infof("selectDriver: flag=%q, old=%v", name, existing)
+
+	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 	options := driver.Choices()
 	pick, alts := driver.Choose(name, options)
 
