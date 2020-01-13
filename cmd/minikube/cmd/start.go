@@ -1163,9 +1163,10 @@ func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 	isUpgrade := false
 
 	if paramVersion == "" { // if the user did not specify any version then ...
-		if old != nil { // .. use the old version from config
+		if old != nil { // .. use the old version from config (if any)
 			paramVersion = old.KubernetesConfig.KubernetesVersion
-		} else { // .. otherwise use the default version
+		}
+		if paramVersion == "" { // .. otherwise use the default version
 			paramVersion = constants.DefaultKubernetesVersion
 		}
 	}
