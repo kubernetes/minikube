@@ -11,6 +11,7 @@ description: >
 ### Overview
 
 Run the Kubernetes client, download it if necessary.
+Remember `--` after kubectl!
 
 ### Usage
 

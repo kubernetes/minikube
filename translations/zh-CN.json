@@ -327,7 +327,7 @@
 	"Run 'kubectl describe pod coredns -n kube-system' and check for a firewall or DNS conflict": "",
 	"Run 'minikube delete' to delete the stale VM, or and ensure that minikube is running as the same user you are issuing this command with": "执行 'minikube delete' 以删除过时的虚拟机，或者确保 minikube 以与您发出此命令的用户相同的用户身份运行",
 	"Run minikube from the C: drive.": "",
-	"Run the kubernetes client, download it if necessary.\nExamples:\nminikube kubectl -- --help\nminikube kubectl -- get pods --namespace kube-system": "",
+	"Run the kubernetes client, download it if necessary. Remember -- after kubectl!\n\nExamples:\nminikube kubectl -- --help\nminikube kubectl -- get pods --namespace kube-system": "",
 	"Run the minikube command as an Administrator": "",
 	"Run: 'chmod 600 $HOME/.kube/config'": "执行 'chmod 600 $HOME/.kube/config'",
 	"Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...": "",
