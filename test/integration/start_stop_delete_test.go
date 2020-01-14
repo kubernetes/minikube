@@ -78,7 +78,6 @@ func TestStartStop(t *testing.T) {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
-				WaitForStartSlot(t)
 
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
@@ -107,7 +106,8 @@ func TestStartStop(t *testing.T) {
 						t.Fatalf("%s failed: %v", rr.Args, err)
 					}
 
-					names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute)
+					// 8 minutes, because 4 is not enough for images to pull in all cases.
+					names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 8*time.Minute)
 					if err != nil {
 						t.Fatalf("wait: %v", err)
 					}
@@ -140,7 +140,6 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("status = %q; want = %q", got, state.Stopped)
 				}
 
-				WaitForStartSlot(t)
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
@@ -163,10 +162,11 @@ func TestStartStop(t *testing.T) {
 					gotImages := []string{}
 					for _, img := range jv["images"] {
 						for _, i := range img.Tags {
-							// Ignore non-Kubernetes images
-							if !strings.Contains(i, "ingress") && !strings.Contains(i, "busybox") {
+							if defaultImage(i) {
 								// Remove docker.io for naming consistency between container runtimes
 								gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
+							} else {
+								t.Logf("Found non-minikube image: %s", i)
 							}
 						}
 					}
@@ -183,7 +183,7 @@ func TestStartStop(t *testing.T) {
 
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute); err != nil {
 					t.Fatalf("wait: %v", err)
 				}
 
@@ -202,4 +202,15 @@ func TestStartStop(t *testing.T) {
 			})
 		}
 	})
+}
+
+// defaultImage returns true if this image is expected in a default minikube install
+func defaultImage(name string) bool {
+	if strings.Contains(name, ":latest") {
+		return false
+	}
+	if strings.Contains(name, "k8s.gcr.io") || strings.Contains(name, "kubernetesui") || strings.Contains(name, "storage-provisioner") {
+		return true
+	}
+	return false
 }
