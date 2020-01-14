@@ -92,6 +92,7 @@ func TestFunctional(t *testing.T) {
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DNS", validateDNS},
+			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
 			{"MountCmd", validateMountCmd},
@@ -103,6 +104,7 @@ func TestFunctional(t *testing.T) {
 			{"SSHCmd", validateSSHCmd},
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
+			{"UpdateContextCmd", validateUpdateContextCmd},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -171,7 +173,7 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 // validateAddonManager asserts that the kube-addon-manager pod is deployed properly
 func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
 	// If --wait=false, this may take a couple of minutes
-	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 5*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 10*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 }
@@ -308,6 +310,32 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// validateDryRun asserts that the dry-run mode quickly exits with the right code
+func validateDryRun(ctx context.Context, t *testing.T, profile string) {
+	// dry-run mode should always be able to finish quickly
+	mctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	// Too little memory!
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB"}, StartArgs()...)
+	c := exec.CommandContext(mctx, Target(), startArgs...)
+	rr, err := Run(t, c)
+
+	wantCode := 78 // exit.Config
+	if rr.ExitCode != wantCode {
+		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+	}
+
+	dctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	startArgs = append([]string{"start", "-p", profile, "--dry-run"}, StartArgs()...)
+	c = exec.CommandContext(dctx, Target(), startArgs...)
+	rr, err = Run(t, c)
+	if rr.ExitCode != 0 || err != nil {
+		t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
+	}
+}
+
 // validateCacheCmd tests functionality of cache command (cache add, delete, list)
 func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
@@ -322,7 +350,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				}
 			}
 		})
-		t.Run("delete", func(t *testing.T) {
+		t.Run("delete busybox:1.28.4-glibc", func(t *testing.T) {
 			_, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "busybox:1.28.4-glibc"))
 			if err != nil {
 				t.Errorf("failed to delete image busybox:1.28.4-glibc from cache: %v", err)
@@ -345,13 +373,38 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Run("verify cache inside node", func(t *testing.T) {
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
 			if err != nil {
-				t.Errorf("failed to get docker images through ssh %v", err)
+				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
 			if !strings.Contains(rr.Output(), "1.28.4-glibc") {
 				t.Errorf("expected '1.28.4-glibc' to be in the output: %s", rr.Output())
 			}
 
 		})
+
+		t.Run("cache reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
+			img := "busybox:latest"
+			// deleting image inside minikube node manually
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img)) // for some reason crictl rmi doesn't work
+			if err != nil {
+				t.Errorf("failed to delete inside the node %q : %v", rr.Command(), err)
+			}
+			// make sure the image is deleted.
+			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "inspecti", img))
+			if err == nil {
+				t.Errorf("expected the image be deleted and get  error but got nil error ! cmd: %q", rr.Command())
+			}
+			// minikube cache reload.
+			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "reload"))
+			if err != nil {
+				t.Errorf("expected %q to run successfully but got error %v", rr.Command(), err)
+			}
+			// make sure 'cache reload' brought back the manually deleted image.
+			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "inspecti", img))
+			if err != nil {
+				t.Errorf("expected to get no error for %q but got %v", rr.Command(), err)
+			}
+		})
+
 	})
 }
 
@@ -456,7 +509,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 5*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 10*time.Minute); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -522,46 +575,14 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateAddonsCmd asserts basic "addon" command functionality
 func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
-
-	// Default output
+	// Table output
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	listLines := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-	r := regexp.MustCompile(`-\s[a-z|-]+:\s(enabled|disabled)`)
-	for _, line := range listLines {
-		match := r.MatchString(line)
-		if !match {
-			t.Errorf("Plugin output did not match expected format. Got: %s", line)
-		}
-	}
-
-	// Custom format
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list", "--format", `"{{.AddonName}}":"{{.AddonStatus}}"`))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	listLines = strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-	r = regexp.MustCompile(`"[a-z|-]+":"(enabled|disabled)"`)
-	for _, line := range listLines {
-		match := r.MatchString(line)
-		if !match {
-			t.Errorf("Plugin output did not match expected custom format. Got: %s", line)
-		}
-	}
-
-	// Custom format shorthand
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list", "-f", `"{{.AddonName}}":"{{.AddonStatus}}"`))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	listLines = strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-	r = regexp.MustCompile(`"[a-z|-]+":"(enabled|disabled)"`)
-	for _, line := range listLines {
-		match := r.MatchString(line)
-		if !match {
-			t.Errorf("Plugin output did not match expected custom format. Got: %s", line)
+	for _, a := range []string{"dashboard", "ingress", "ingress-dns"} {
+		if !strings.Contains(rr.Output(), a) {
+			t.Errorf("addon list expected to include %q but didn't output: %q", a, rr.Output())
 		}
 	}
 
@@ -599,7 +620,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "app=mysql", 5*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "app=mysql", 10*time.Minute)
 	if err != nil {
 		t.Fatalf("podwait: %v", err)
 	}
@@ -642,6 +663,19 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 
 	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
 		t.Errorf("/etc/sync.test content mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// validateUpdateContextCmd asserts basic "update-context" command functionality
+func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	want := []byte("IP was already correctly configured")
+	if !bytes.Contains(rr.Stdout.Bytes(), want) {
+		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 	}
 }
 

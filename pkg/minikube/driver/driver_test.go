@@ -72,7 +72,7 @@ func TestFlagDefaults(t *testing.T) {
 
 	expected = FlagHints{
 		CacheImages:  false,
-		ExtraOptions: fmt.Sprintf("kubelet.resolv-conf=%s", tf.Name()),
+		ExtraOptions: []string{fmt.Sprintf("kubelet.resolv-conf=%s", tf.Name())},
 	}
 	systemdResolvConf = tf.Name()
 	if diff := cmp.Diff(FlagDefaults(None), expected); diff != "" {

@@ -65,22 +65,25 @@ type MachineConfig struct {
 	NatNicType          string // Only used by virtualbox
 	KubernetesConfig    KubernetesConfig
 	Nodes               []Node
+	Addons              map[string]bool
+	NodeBindPort        int32 // Only used by kic
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
-	APIServerName          string
-	APIServerNames         []string
-	APIServerIPs           []net.IP
-	DNSDomain              string
-	ContainerRuntime       string
-	CRISocket              string
-	NetworkPlugin          string
-	FeatureGates           string
-	ServiceCIDR            string
-	ImageRepository        string
-	ExtraOptions           ExtraOptionSlice
-	KubernetesVersion      string
+	KubernetesVersion string
+	APIServerName     string
+	APIServerNames    []string
+	APIServerIPs      []net.IP
+	DNSDomain         string
+	ContainerRuntime  string
+	CRISocket         string
+	NetworkPlugin     string
+	FeatureGates      string // https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
+	ServiceCIDR       string // the subnet which kubernetes services will be deployed to
+	ImageRepository   string
+	ExtraOptions      ExtraOptionSlice
+
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool
 }

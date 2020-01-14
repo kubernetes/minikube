@@ -33,6 +33,7 @@ func TestIsValidEnv(t *testing.T) {
 		{"", false},
 		{"HTTPS-PROXY", false},
 		{"NOPROXY", false},
+		{"http_proxy", true},
 	}
 	for _, tc := range testCases {
 		t.Run(tc.env, func(t *testing.T) {
