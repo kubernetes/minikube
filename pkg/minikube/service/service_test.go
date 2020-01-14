@@ -44,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/tests"
 )
 
+// Mock Kubernetes client getter - NOT THREAD SAFE
 type MockClientGetter struct {
 	servicesMap  map[string]typed_core.ServiceInterface
 	endpointsMap map[string]typed_core.EndpointsInterface
@@ -76,6 +77,7 @@ func (m *MockCoreClient) Services(namespace string) typed_core.ServiceInterface 
 	return m.servicesMap[namespace]
 }
 
+// Mock Kubernetes client - NOT THREAD SAFE
 type MockCoreClient struct {
 	fake.FakeCoreV1
 	servicesMap  map[string]typed_core.ServiceInterface
@@ -466,8 +468,6 @@ func TestGetServiceURLs(t *testing.T) {
 	for _, test := range tests {
 		test := test
 		t.Run(test.description, func(t *testing.T) {
-			t.Parallel()
-
 			K8s = &MockClientGetter{
 				servicesMap:  serviceNamespaces,
 				endpointsMap: endpointNamespaces,
@@ -536,7 +536,6 @@ func TestGetServiceURLsForService(t *testing.T) {
 	defer revertK8sClient(K8s)
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			t.Parallel()
 			K8s = &MockClientGetter{
 				servicesMap:  serviceNamespaces,
 				endpointsMap: endpointNamespaces,

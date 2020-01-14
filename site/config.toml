@@ -41,6 +41,9 @@ blog = "/:section/:year/:month/:day/:slug/"
     source = "../deploy/addons/helm-tiller/"
     target = "content/helm-tiller/"
   [[module.mounts]]
+    source = "../deploy/addons/istio/"
+    target = "content/istio/"
+  [[module.mounts]]
     source = "../deploy/addons/ingress-dns/"
     target = "content/ingress-dns/"
   [[module.mounts]]
@@ -92,7 +95,7 @@ weight = 1
 [params]
 copyright = "The Kubernetes Authors -- "
 # The latest release of minikube
-latest_release = "1.6.1"
+latest_release = "1.6.2"
 
 privacy_policy = ""
 
@@ -101,7 +104,7 @@ privacy_policy = ""
 version_menu = "Releases"
 
 # Repository configuration (URLs for in-page links to opening issues and suggesting changes)
-github_repo = "http://github.com/kubernetes/minikube"
+github_repo = "https://github.com/kubernetes/minikube"
 # An optional link to a related project repo. For example, the sibling repository where your product code lives.
 github_project_repo = ""
 
