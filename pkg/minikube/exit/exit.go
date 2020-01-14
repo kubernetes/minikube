@@ -72,7 +72,7 @@ func WithProblem(msg string, p *problem.Problem) {
 	out.ErrT(out.Empty, "")
 	out.FatalT(msg)
 	p.Display()
-	if !p.HideCreateLink {
+	if p.ShowIssueLink {
 		out.ErrT(out.Empty, "")
 		out.ErrT(out.Sad, "If the above advice does not help, please let us know: ")
 		out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
@@ -102,6 +102,6 @@ func displayError(msg string, err error) {
 	out.ErrT(out.Empty, "")
 	out.FatalT("{{.msg}}: {{.err}}", out.V{"msg": translate.T(msg), "err": err})
 	out.ErrT(out.Empty, "")
-	out.ErrT(out.Sad, "Sorry that minikube crashed. If this was unexpected, we would love to hear from you:")
+	out.ErrT(out.Sad, "minikube is exiting due to an error. If the above message is not useful, open an issue:")
 	out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 }

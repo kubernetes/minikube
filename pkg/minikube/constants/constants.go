@@ -33,6 +33,8 @@ const (
 	APIServerName = "minikubeCA"
 	// ClusterDNSDomain is the default DNS domain
 	ClusterDNSDomain = "cluster.local"
+	// DefaultServiceCIDR is The CIDR to be used for service cluster IPs
+	DefaultServiceCIDR = "10.96.0.0/12"
 )
 
 // DefaultMinipath is the default Minikube path (under the home directory)

@@ -23,6 +23,7 @@ minikube has a set of built-in addons that, when enabled, can be used within Kub
 * [storage-provisioner-gluster](../../../storage-provisioner-gluster/readme)
 * [helm-tiller](../../../helm-tiller/readme)
 * [ingress-dns](../../../ingress-dns/readme)
+* [istio](../../../istio/readme)
 
 ## Listing available addons
 
@@ -40,6 +41,8 @@ Example output:
 - dashboard: enabled
 - efk: disabled
 - ingress: disabled
+- istio: disabled
+- istio-provisioner: enabled
 - default-storageclass: enabled
 - storage-provisioner: enabled
 - storage-provisioner-gluster: disabled

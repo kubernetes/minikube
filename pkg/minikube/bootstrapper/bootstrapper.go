@@ -50,26 +50,17 @@ type Bootstrapper interface {
 }
 
 const (
-	// BootstrapperTypeKubeadm is the kubeadm bootstrapper type
-	BootstrapperTypeKubeadm = "kubeadm"
+	// Kubeadm is the kubeadm bootstrapper type
+	Kubeadm = "kubeadm"
+	KIC     = "kic"
 )
 
 // GetCachedBinaryList returns the list of binaries
 func GetCachedBinaryList(bootstrapper string) []string {
-	switch bootstrapper {
-	case BootstrapperTypeKubeadm:
-		return constants.KubeadmBinaries
-	default:
-		return []string{}
-	}
+	return constants.KubeadmBinaries
 }
 
 // GetCachedImageList returns the list of images for a version
 func GetCachedImageList(imageRepository string, version string, bootstrapper string) ([]string, error) {
-	switch bootstrapper {
-	case BootstrapperTypeKubeadm:
-		return images.Kubeadm(imageRepository, version)
-	default:
-		return []string{}, nil
-	}
+	return images.Kubeadm(imageRepository, version)
 }

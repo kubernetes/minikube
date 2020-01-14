@@ -93,7 +93,7 @@ to expose GPUs with `--vm-driver=kvm2`. Please don't mix these instructions.
 
 - Install NVIDIA's device plugin:
   ```shell
-  kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/v1.10/nvidia-device-plugin.yml
+  kubectl create -f https://raw.githubusercontent.com/NVIDIA/k8s-device-plugin/master/nvidia-device-plugin.yml
   ```
 
 ## Why does minikube not support NVIDIA GPUs on macOS?
@@ -102,7 +102,7 @@ VM drivers supported by minikube for macOS doesn't support GPU passthrough:
 
 - [mist64/xhyve#108](https://github.com/mist64/xhyve/issues/108)
 - [moby/hyperkit#159](https://github.com/moby/hyperkit/issues/159)
-- [VirtualBox docs](http://www.virtualbox.org/manual/ch09.html#pcipassthrough)
+- [VirtualBox docs](https://www.virtualbox.org/manual/ch09.html#pcipassthrough)
 
 Also:
 
@@ -119,7 +119,7 @@ Also:
 minikube supports Windows host through Hyper-V or VirtualBox.
 
 - VirtualBox doesn't support PCI passthrough for [Windows
-  host](http://www.virtualbox.org/manual/ch09.html#pcipassthrough).
+  host](https://www.virtualbox.org/manual/ch09.html#pcipassthrough).
 
 - Hyper-V supports DDA (discrete device assignment) but [only for Windows Server
   2016](https://docs.microsoft.com/en-us/windows-server/virtualization/hyper-v/plan/plan-for-deploying-devices-using-discrete-device-assignment)

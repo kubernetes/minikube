@@ -24,6 +24,7 @@ import (
 	"math"
 	"net"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -38,6 +39,7 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
@@ -51,7 +53,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
-	pkgutil "k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -88,6 +90,17 @@ func CacheISO(cfg config.MachineConfig) error {
 
 // StartHost starts a host VM.
 func StartHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error) {
+	// Prevent machine-driver boot races, as well as our own certificate race
+	releaser, err := acquireMachinesLock(cfg.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "boot lock")
+	}
+	start := time.Now()
+	defer func() {
+		glog.Infof("releasing machines lock for %q, held for %s", cfg.Name, time.Since(start))
+		releaser.Release()
+	}()
+
 	exists, err := api.Exists(cfg.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "exists: %s", cfg.Name)
@@ -136,6 +149,21 @@ func StartHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error)
 		return nil, err
 	}
 	return h, nil
+}
+
+// acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
+func acquireMachinesLock(name string) (mutex.Releaser, error) {
+	spec := lock.PathMutexSpec(filepath.Join(localpath.MiniPath(), "machines"))
+	// NOTE: Provisioning generally completes within 60 seconds
+	spec.Timeout = 10 * time.Minute
+
+	glog.Infof("acquiring machines lock for %s: %+v", name, spec)
+	start := time.Now()
+	r, err := mutex.Acquire(spec)
+	if err == nil {
+		glog.Infof("acquired machines lock for %q in %s", name, time.Since(start))
+	}
+	return r, err
 }
 
 // configureHost handles any post-powerup configuration required
@@ -339,12 +367,12 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	return ip, nil
 }
 
-func engineOptions(config cfg.MachineConfig) *engine.Options {
+func engineOptions(cfg config.MachineConfig) *engine.Options {
 	o := engine.Options{
-		Env:              config.DockerEnv,
-		InsecureRegistry: append([]string{pkgutil.DefaultServiceCIDR}, config.InsecureRegistry...),
-		RegistryMirror:   config.RegistryMirror,
-		ArbitraryFlags:   config.DockerOpt,
+		Env:              cfg.DockerEnv,
+		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, config.InsecureRegistry...),
+		RegistryMirror:   cfg.RegistryMirror,
+		ArbitraryFlags:   cfg.DockerOpt,
 		InstallURL:       drivers.DefaultEngineInstallURL,
 	}
 	return &o
@@ -418,40 +446,49 @@ func showRemoteOsRelease(driver drivers.Driver) {
 	glog.Infof("Provisioned with %s", osReleaseInfo.PrettyName)
 }
 
-func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	if config.VMDriver == driver.VMwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+// showHostInfo shows host information
+func showHostInfo(cfg config.MachineConfig) {
+	if driver.BareMetal(cfg.VMDriver) {
+		info, err := getHostInfo()
+		if err == nil {
+			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
+		}
+	} else if driver.IsKIC(cfg.VMDriver) {
+		info, err := getHostInfo() // TODO medyagh: get docker-machine info for non linux
+		if err == nil {
+			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": config.Memory, "host_memory_size": info.Memory})
+		}
+	} else {
+		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
+	}
+}
+
+func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error) {
+	if cfg.VMDriver == driver.VMwareFusion && viper.GetBool(config.ShowDriverDeprecationNotification) {
 		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	if !driver.BareMetal(config.VMDriver) {
-		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
-	} else {
-		info, err := getHostInfo()
-		if err == nil {
-			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
-		}
-	}
-
-	def := registry.Driver(config.VMDriver)
+	showHostInfo(cfg)
+	def := registry.Driver(cfg.VMDriver)
 	if def.Empty() {
-		return nil, fmt.Errorf("unsupported/missing driver: %s", config.VMDriver)
+		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.VMDriver)
 	}
-	dd := def.Config(config)
+	dd := def.Config(cfg)
 	data, err := json.Marshal(dd)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal")
 	}
 
-	h, err := api.NewHost(config.VMDriver, data)
+	h, err := api.NewHost(cfg.VMDriver, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "new host")
 	}
 
 	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
 	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
-	h.HostOptions.EngineOptions = engineOptions(config)
+	h.HostOptions.EngineOptions = engineOptions(cfg)
 
 	if err := api.Create(h); err != nil {
 		// Wait for all the logs to reach the client
@@ -459,16 +496,16 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "create")
 	}
 
-	if !driver.BareMetal(config.VMDriver) {
+	if driver.BareMetal(cfg.VMDriver) {
+		showLocalOsRelease()
+	} else if !driver.BareMetal(cfg.VMDriver) && !driver.IsKIC(cfg.VMDriver) {
 		showRemoteOsRelease(h.Driver)
 		// Ensure that even new VM's have proper time synchronization up front
 		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
 		if err := ensureSyncedGuestClock(h); err != nil {
 			return h, err
 		}
-	} else {
-		showLocalOsRelease()
-	}
+	} // TODO:medyagh add show-os release for kic
 
 	if err := api.Save(h); err != nil {
 		return nil, errors.Wrap(err, "save")

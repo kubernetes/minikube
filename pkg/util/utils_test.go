@@ -80,3 +80,22 @@ func TestConcatStrings(t *testing.T) {
 		}
 	}
 }
+
+func TestCalculateSizeInMB(t *testing.T) {
+	testData := []struct {
+		size           string
+		expectedNumber int
+	}{
+		{"1024kb", 1},
+		{"1024KB", 1},
+		{"1024mb", 1024},
+		{"1024b", 0},
+	}
+
+	for _, tt := range testData {
+		number := CalculateSizeInMB(tt.size)
+		if number != tt.expectedNumber {
+			t.Fatalf("Expected '%d'' but got '%d'", tt.expectedNumber, number)
+		}
+	}
+}

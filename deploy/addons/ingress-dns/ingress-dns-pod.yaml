@@ -79,7 +79,7 @@ spec:
   hostNetwork: true
   containers:
     - name: minikube-ingress-dns
-      image: "cryptexlabs/minikube-ingress-dns:0.2.0"
+      image: "cryptexlabs/minikube-ingress-dns:0.2.1"
       imagePullPolicy: IfNotPresent
       ports:
         - containerPort: 53
