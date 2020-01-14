@@ -17,18 +17,17 @@ limitations under the License.
 package addons
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 // taken from https://github.com/kubernetes/kubernetes/blob/master/cluster/addons/addon-manager/kube-addons.sh
@@ -51,24 +50,16 @@ var kubectlPruneWhitelist = []string{
 	"extensions/v1beta1/Ingress",
 }
 
-// Reconcile runs kubectl apply -f on the addons directory
+// reconcile runs kubectl apply -f on the addons directory
 // to reconcile addons state in all running profiles
-func Reconcile(cmd command.Runner) error {
-	validProfiles, _, err := config.ListProfiles()
-
-	if len(validProfiles) == 0 || err != nil {
-		exit.UsageT("No minikube profile was found. You can create one using `minikube start`.")
+func reconcile(cmd command.Runner, profile string) error {
+	c, err := kubectlCommand(profile)
+	if err != nil {
+		return err
 	}
-
-	for _, p := range validProfiles {
-		c, err := kubectlCommand(p.Name)
-		if err != nil {
-			return err
-		}
-		if _, err := cmd.RunCmd(c); err != nil {
-			glog.Warningf("reconciling addons failed: %v", err)
-			return err
-		}
+	if _, err := cmd.RunCmd(c); err != nil {
+		glog.Warningf("reconciling addons failed: %v", err)
+		return err
 	}
 	return nil
 }
@@ -90,7 +81,11 @@ func kubectlCommand(profile string) (*exec.Cmd, error) {
 	}
 	args = append(args, "--recursive")
 
-	if ok, err := appendNamespaceFlag(v); err == nil && ok {
+	ok, err := shouldAppendNamespaceFlag(v)
+	if err != nil {
+		return nil, errors.Wrap(err, "appending namespace flag")
+	}
+	if ok {
 		args = append(args, "--namespace=kube-system")
 	}
 
@@ -112,12 +107,12 @@ func kubernetesVersion(profile string) (string, error) {
 
 // We need to append --namespace=kube-system for Kubernetes versions >=1.17
 // so that prune works as expected. See https://github.com/kubernetes/kubernetes/pull/83084/
-func appendNamespaceFlag(version string) (bool, error) {
-	v, err := kubeadm.ParseKubernetesVersion(version)
+func shouldAppendNamespaceFlag(version string) (bool, error) {
+	v, err := bsutil.ParseKubernetesVersion(version)
 	if err != nil {
 		return false, err
 	}
-	return v.GT(semver.MustParse("1.17.0")), nil
+	return v.GTE(semver.MustParse("1.17.0")), nil
 }
 
 func kubectlBinaryPath(profile string) (string, error) {
@@ -126,7 +121,6 @@ func kubectlBinaryPath(profile string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fmt.Printf("got version %s for profile %s\n", v, profile)
 	p := path.Join("/var/lib/minikube/binaries", v, "kubectl")
 	return p, nil
 }
