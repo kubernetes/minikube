@@ -132,8 +132,8 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 }
 
 // SetupCerts generates the certs the cluster
-func (k *Bootstrapper) SetupCerts(cfg config.KubernetesConfig) error {
-	return bootstrapper.SetupCerts(k.c, cfg)
+func (k *Bootstrapper) SetupCerts(cfg config.KubernetesConfig, n config.Node) error {
+	return bootstrapper.SetupCerts(k.c, cfg, n)
 }
 
 // PullImages downloads images that will be used by Kubernetes
@@ -154,11 +154,12 @@ func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
 }
 
 // StartCluster starts the cluster
-func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
-	k8s.NodeIP = kic.DefaultBindIPV4
+func (k *Bootstrapper) StartCluster(m config.MachineConfig) error {
+	k8s := m.KubernetesConfig
+	m.Nodes[0].IP = kic.DefaultBindIPV4
 	err := bsutil.ExistingConfig(k.c)
 	if err == nil { // if there is an existing cluster don't reconfigure it
-		return k.restartCluster(k8s)
+		return k.restartCluster(m)
 	}
 	glog.Infof("existence check: %v", err)
 
@@ -210,9 +211,9 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
-func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
+func (k *Bootstrapper) restartCluster(m config.MachineConfig) error {
 	glog.Infof("restartCluster start")
-
+	k8s := m.KubernetesConfig
 	start := time.Now()
 	defer func() {
 		glog.Infof("restartCluster took %s", time.Since(start))
@@ -251,12 +252,12 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
-	client, err := k.client(k8s)
+	client, err := k.client(k8s, m.Nodes[0])
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
 	}
 
-	if err := kverify.SystemPods(client, time.Now(), k8s.NodeIP, k8s.NodePort, kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.SystemPods(client, time.Now(), m.Nodes[0].IP, m.Nodes[0].Port, kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
 	}
 
@@ -272,24 +273,26 @@ func (k *Bootstrapper) restartCluster(k8s config.KubernetesConfig) error {
 }
 
 // WaitForCluster blocks until the cluster appears to be healthy
-func (k *Bootstrapper) WaitForCluster(k8s config.KubernetesConfig, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForCluster(k8s config.MachineConfig, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
 	if err := kverify.APIServerProcess(k.c, start, timeout); err != nil {
 		return errors.Wrap(err, "wait for api proc")
 	}
 
-	if err := kverify.APIServerIsRunning(start, "127.0.0.1", k8s.NodePort, timeout); err != nil {
+	if err := kverify.APIServerIsRunning(start, "127.0.0.1", k8s.Nodes[0].Port, timeout); err != nil {
 		return err
 	}
 
-	c, err := k.client(k8s) // getting kubernetes client before polling.
+	c, err := k.client(k8s.KubernetesConfig, k8s.Nodes[0]) // getting kubernetes client before polling.
 	if err != nil {
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := kverify.SystemPods(c, start, "127.0.0.1", k8s.NodePort, timeout); err != nil {
-		return errors.Wrap(err, "wait for system pods")
+	for _, n := range k8s.Nodes {
+		if err := kverify.SystemPods(c, start, "127.0.0.1", n.Port, timeout); err != nil {
+			return errors.Wrap(err, "wait for system pods")
+		}
 	}
 
 	return nil
@@ -311,7 +314,7 @@ func (k *Bootstrapper) GetAPIServerStatus(net.IP, int) (string, error) {
 }
 
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
-func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientset, error) {
+func (k *Bootstrapper) client(k8s config.KubernetesConfig, n config.Node) (*kubernetes.Clientset, error) {
 	if k.k8sClient != nil {
 		return k.k8sClient, nil
 	}
@@ -321,7 +324,7 @@ func (k *Bootstrapper) client(k8s config.KubernetesConfig) (*kubernetes.Clientse
 		return nil, errors.Wrap(err, "client config")
 	}
 
-	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(k8s.NodePort)))
+	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(n.Port)))
 	if config.Host != endpoint {
 		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
 		config.Host = endpoint
