@@ -157,12 +157,11 @@ func (k *Bootstrapper) StartCluster(k8s config.KubernetesConfig) error {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
 
+	extraFlags := bsutil.CreateFlagsFromExtraArgs(k8s.ExtraOptions)
 	r, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime})
 	if err != nil {
 		return err
 	}
-
-	extraFlags := bsutil.CreateFlagsFromExtraArgs(k8s.ExtraOptions)
 
 	ignore := []string{
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestManifestsDir, "/", "-", -1)),
