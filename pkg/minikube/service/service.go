@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -264,19 +265,37 @@ func PrintServiceList(writer io.Writer, data [][]string) {
 	table.Render()
 }
 
+// SVCNotFoundError error type handles 'service not found' scenarios
+type SVCNotFoundError struct {
+	Err error
+}
+
+// Error method for SVCNotFoundError type
+func (t SVCNotFoundError) Error() string {
+	return "Service not found"
+}
+
 // WaitForService waits for a service, and return the urls when available
 func WaitForService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
 	wait int, interval int) ([]string, error) {
-
 	var urlList []string
 	// Convert "Amount of time to wait" and "interval of each check" to attempts
 	if interval == 0 {
 		interval = 1
 	}
+	services, err := GetServiceURLs(api, namespace, urlTemplate)
+	if err != nil {
+		return nil, err
+	}
+	searchServices := sort.Search(len(services), func(i int) bool { return services[i].Name == service })
+	if searchServices == len(services) {
+		return nil, &SVCNotFoundError{err}
+	}
+
 	chkSVC := func() error { return CheckService(namespace, service) }
 
 	if err := retry.Expo(chkSVC, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return nil, errors.New("Service not found in namespace")
+		return nil, &SVCNotFoundError{err}
 	}
 
 	serviceURL, err := GetServiceURLsForService(api, namespace, service, urlTemplate)
