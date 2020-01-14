@@ -67,7 +67,7 @@ kubectl get svc
 <pre>
  $ kc get svc
 NAME             TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)          AGE
-hello-minikube   LoadBalancer   10.96.184.178   10.96.184.178   8080:30791/TCP   40s
+hello-minikube1   LoadBalancer   10.96.184.178   10.96.184.178   8080:30791/TCP   40s
 </pre>
 
 note that without minikube tunnel, it would kubernetes would be showing external IP as <pending>.
