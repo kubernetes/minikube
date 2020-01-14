@@ -13,15 +13,15 @@ RUNC_MASTER_LICENSE_FILES = LICENSE
 
 RUNC_MASTER_DEPENDENCIES = host-go
 
-RUNC_MASTER_GOPATH = "$(@D)/Godeps/_workspace"
+RUNC_MASTER_GOPATH = $(@D)/_output
 RUNC_MASTER_MAKE_ENV = $(HOST_GO_TARGET_ENV) \
 	CGO_ENABLED=1 \
-	GOBIN="$(@D)/bin" \
+	GO111MODULE=off \
 	GOPATH="$(RUNC_MASTER_GOPATH)" \
-	PATH=$(BR_PATH)
+	GOBIN="$(RUNC_MASTER_GOPATH)/bin" \
+	PATH=$(RUNC_MASTER_GOPATH)/bin:$(BR_PATH)
 
-RUNC_MASTER_GLDFLAGS = \
-	-buildmode=pie -X main.gitCommit=$(RUNC_MASTER_VERSION)
+RUNC_MASTER_COMPILE_SRC = $(RUNC_MASTER_GOPATH)/src/github.com/opencontainers/runc
 
 ifeq ($(BR2_PACKAGE_LIBSECCOMP),y)
 RUNC_MASTER_GOTAGS += seccomp
@@ -34,13 +34,11 @@ define RUNC_MASTER_CONFIGURE_CMDS
 endef
 
 define RUNC_MASTER_BUILD_CMDS
-	cd $(@D) && $(RUNC_MASTER_MAKE_ENV) $(HOST_DIR)/usr/bin/go \
-		build -v -o $(@D)/bin/runc \
-		-tags "$(RUNC_MASTER_GOTAGS)" -ldflags "$(RUNC_MASTER_GLDFLAGS)" github.com/opencontainers/runc
+	PWD=$(RUNC_MASTER_COMPILE_SRC) $(RUNC_MASTER_MAKE_ENV) $(MAKE) $(TARGET_CONFIGURE_OPTS) -C $(@D) BUILDTAGS="$(RUNC_MASTER_GOTAGS)" COMMIT_NO=$(RUNC_MASTER_VERSION) PREFIX=/usr
 endef
 
 define RUNC_MASTER_INSTALL_TARGET_CMDS
-	$(INSTALL) -D -m 0755 $(@D)/bin/runc $(TARGET_DIR)/usr/bin/runc
+	$(INSTALL) -D -m 0755 $(@D)/runc $(TARGET_DIR)/usr/bin/runc
 endef
 
 $(eval $(generic-package))

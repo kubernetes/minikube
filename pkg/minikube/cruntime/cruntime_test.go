@@ -143,9 +143,11 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	switch bin {
 	case "systemctl":
 		return buffer(f.systemctl(args, root))
+	case "which":
+		return buffer(f.which(args, root))
 	case "docker":
 		return buffer(f.docker(args, root))
-	case "crictl":
+	case "crictl", "/usr/bin/crictl":
 		return buffer(f.crictl(args, root))
 	case "crio":
 		return buffer(f.crio(args, root))
@@ -319,6 +321,13 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 		}
 	}
 	return out, nil
+}
+
+// which is a fake implementation of which
+func (f *FakeRunner) which(args []string, root bool) (string, error) { // nolint result 0 (string) is always ""
+	command := args[0]
+	path := fmt.Sprintf("/usr/bin/%s", command)
+	return path, nil
 }
 
 func TestVersion(t *testing.T) {

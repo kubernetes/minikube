@@ -86,6 +86,10 @@ type stubConfigLoader struct {
 	e error
 }
 
+func (l *stubConfigLoader) WriteConfigToFile(profileName string, cc *config.MachineConfig, miniHome ...string) error {
+	return l.e
+}
+
 func (l *stubConfigLoader) LoadConfigFromFile(profile string, miniHome ...string) (*config.MachineConfig, error) {
 	return l.c, l.e
 }

@@ -22,9 +22,9 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
-	"strconv"
 
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -54,15 +54,13 @@ func (a *Addon) Name() string {
 	return a.addonName
 }
 
-// IsEnabled checks if an Addon is enabled
+// IsEnabled checks if an Addon is enabled for the current profile
 func (a *Addon) IsEnabled() (bool, error) {
-	addonStatusText, err := config.Get(a.addonName)
+	c, err := config.Load(viper.GetString(config.MachineProfile))
 	if err == nil {
-		addonStatus, err := strconv.ParseBool(addonStatusText)
-		if err != nil {
-			return false, err
+		if status, ok := c.Addons[a.Name()]; ok {
+			return status, nil
 		}
-		return addonStatus, nil
 	}
 	return a.enabled, nil
 }

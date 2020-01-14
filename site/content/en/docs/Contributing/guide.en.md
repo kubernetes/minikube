@@ -13,7 +13,7 @@ description: >
 
 ### License Agreement
 
-We'd love to accept your patches! Before we can take them, [please fill out either the individual or corporate Contributor License Agreement (CLA)](http://git.k8s.io/community/CLA.md)
+We'd love to accept your patches! Before we can take them, [please fill out either the individual or corporate Contributor License Agreement (CLA)](https://git.k8s.io/community/CLA.md)
 
 ### Finding issues to work on
 
@@ -33,7 +33,7 @@ Once you've discovered an issue to work on:
 
 1. Submit an issue describing your proposed change
 2. A reviewer will respond to your issue promptly.
-3. If your proposed change is accepted, and you haven't already done so, sign the [Contributor License Agreement (CLA)](http://git.k8s.io/community/CLA.md)
+3. If your proposed change is accepted, and you haven't already done so, sign the [Contributor License Agreement (CLA)](https://git.k8s.io/community/CLA.md)
 4. Fork the minikube repository, develop and test your code changes.
 5. Submit a pull request.
 
