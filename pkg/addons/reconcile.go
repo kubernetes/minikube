@@ -30,6 +30,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+var (
+	// For testing
+	k8sVersion = kubernetesVersion
+)
+
 // taken from https://github.com/kubernetes/kubernetes/blob/master/cluster/addons/addon-manager/kube-addons.sh
 var kubectlPruneWhitelist = []string{
 	"core/v1/ConfigMap",
@@ -65,14 +70,12 @@ func reconcile(cmd command.Runner, profile string) error {
 }
 
 func kubectlCommand(profile string) (*exec.Cmd, error) {
-	kubectlBinary, err := kubectlBinaryPath(profile)
+	v, err := k8sVersion(profile)
 	if err != nil {
 		return nil, err
 	}
-	v, err := kubernetesVersion(profile)
-	if err != nil {
-		return nil, err
-	}
+	kubectlBinary := kubectlBinaryPath(v)
+
 	// prune will delete any existing objects with the label specified by "-l" which don't appear in /etc/kubernetes/addons
 	// this is how we delete disabled addons
 	args := []string{"KUBECONFIG=/var/lib/minikube/kubeconfig", kubectlBinary, "apply", "-f", "/etc/kubernetes/addons", "-l", "kubernetes.io/cluster-service!=true,addonmanager.kubernetes.io/mode=Reconcile", "--prune=true"}
@@ -115,12 +118,6 @@ func shouldAppendNamespaceFlag(version string) (bool, error) {
 	return v.GTE(semver.MustParse("1.17.0")), nil
 }
 
-func kubectlBinaryPath(profile string) (string, error) {
-	// TODO: get this for all profiles and run in each one
-	v, err := kubernetesVersion(profile)
-	if err != nil {
-		return "", err
-	}
-	p := path.Join("/var/lib/minikube/binaries", v, "kubectl")
-	return p, nil
+func kubectlBinaryPath(version string) string {
+	return path.Join("/var/lib/minikube/binaries", version, "kubectl")
 }
