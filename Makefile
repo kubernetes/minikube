@@ -473,7 +473,7 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo "$(@) successfully built"
 
 out/storage-provisioner:
-	GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+	CGO_ENABLED=0 GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
 
 .PHONY: storage-provisioner-image
 storage-provisioner-image: out/storage-provisioner ## Build storage-provisioner docker image
@@ -482,6 +482,13 @@ ifeq ($(GOARCH),amd64)
 else
 	docker build -t $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile-$(GOARCH) .
 endif
+
+.PHONY: kic-base-image
+kic-base-image: ## builds the base image used for kic.
+	docker rmi -f $(REGISTRY)/kicbase:v0.0.1-snapshot || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.1-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
+
+
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
@@ -590,6 +597,7 @@ out/mkcmp:
 .PHONY: out/performance-monitor
 out/performance-monitor:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/monitor/monitor.go
+
 
 .PHONY: help
 help:

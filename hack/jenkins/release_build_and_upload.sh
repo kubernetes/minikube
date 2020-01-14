@@ -55,7 +55,11 @@ gsutil -m cp out/* "gs://$BUCKET/releases/$TAGNAME/"
 # Update "latest" release for non-beta/non-alpha builds
 if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
   echo "NOTE: ${VERSION} appears to be a non-standard release, not updating /releases/latest"
-else
-  echo "Updating latest bucket for ${VERSION} release"
-  gsutil cp -r "gs://${BUCKET}/releases/${TAGNAME}/*" "gs://${BUCKET}/releases/latest/"
+  exit 0
 fi
+
+echo "Updating Docker images ..."
+make push-gvisor-addon-image push-storage-provisioner-image
+
+echo "Updating latest bucket for ${VERSION} release ..."
+gsutil cp -r "gs://${BUCKET}/releases/${TAGNAME}/*" "gs://${BUCKET}/releases/latest/"
