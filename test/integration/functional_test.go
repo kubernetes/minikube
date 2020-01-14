@@ -169,14 +169,6 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateAddonManager asserts that the kube-addon-manager pod is deployed properly
-func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
-	// If --wait=false, this may take a couple of minutes
-	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 10*time.Minute); err != nil {
-		t.Fatalf("wait: %v", err)
-	}
-}
-
 // validateComponentHealth asserts that all Kubernetes components are healthy
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "cs", "-o=json"))
