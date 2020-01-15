@@ -57,7 +57,15 @@ var (
 
 // SupportedDrivers returns a list of supported drivers
 func SupportedDrivers() []string {
-	return supportedDrivers
+	var sd []string
+	for _, d := range supportedDrivers {
+		if registry.Driver(d).Priority == registry.Experimental {
+			sd = append(sd, d+" (experimental)")
+			continue
+		}
+		sd = append(sd, d)
+	}
+	return sd
 }
 
 // Supported returns if the driver is supported on this host.
