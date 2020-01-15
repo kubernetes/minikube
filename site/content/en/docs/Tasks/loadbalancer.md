@@ -14,7 +14,7 @@ A LoadBalancer service is the standard way to expose a service to the internet. 
 
 ## Using `minikube tunnel`
 
-Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. It will run until Ctrl-C is hit.
+Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. It will run in a separate terminal until Ctrl-C is hit.
 
 ## Example
 
@@ -70,7 +70,8 @@ NAME             TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)         
 hello-minikube1   LoadBalancer   10.96.184.178   10.96.184.178   8080:30791/TCP   40s
 </pre>
 
-note that without minikube tunnel, it would kubernetes would be showing external IP as <pending>.
+
+note that without minikube tunnel, it would kubernetes would be showing external IP as "pending".
 
 ### Try in your browser
 open in your browser (make sure there is no proxy set)
@@ -79,7 +80,7 @@ http://REPLACE_WITH_EXTERNAL_IP:8080
 ```
 
 
-Each service will get it is own external ip.
+Each service will get it's own external ip.
 
 ----
 ### DNS resolution (experimental)
