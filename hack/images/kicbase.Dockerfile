@@ -1,5 +1,5 @@
-# Uses node image built by kind as base https://github.com/kubernetes-sigs/kind
-# becuase already tested with kind, could be changed to ubuntu
+# Thanks to the node image built by kind as which is used as base https://github.com/kubernetes-sigs/kind
+# because already tested with kind, could be changed to an ubuntu-based image
 # more info https://kind.sigs.k8s.io/docs/design/node-image/
 ARG COMMIT_SHA
 FROM kindest/node:v1.16.2
