@@ -195,7 +195,7 @@ var Addons = map[string]*Addon{
 			"istio-operator.yaml",
 			"0640",
 			true),
-	}, true, "istio-provisioner"),
+	}, false, "istio-provisioner"),
 	"istio": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/istio/istio-default-profile.yaml.tmpl",
