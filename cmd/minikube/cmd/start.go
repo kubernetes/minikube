@@ -493,12 +493,12 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 
 }
 
-func startMachine(config *config.MachineConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(cfg *config.MachineConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
-	host, preExists = startHost(m, *config)
+	host, preExists = startHost(m, *cfg)
 	runner, err = machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
@@ -513,7 +513,7 @@ func startMachine(config *config.MachineConfig, node *config.Node) (runner comma
 	}
 	// Save IP to configuration file for subsequent use
 	node.IP = ip
-	if err := saveConfig(config); err != nil {
+	if err := saveConfig(cfg); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
