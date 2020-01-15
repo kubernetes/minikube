@@ -1,3 +1,4 @@
+# Uses node image built by kind as base https://github.com/kubernetes-sigs/kind
 ARG COMMIT_SHA
 FROM kindest/node:v1.16.2
 USER root
@@ -5,6 +6,7 @@ RUN apt-get update && apt-get install -y \
   sudo \
   dnsutils \
   && apt-get clean -y 
+# Remove kind related binaries and images
 RUN rm -rf \
     /var/cache/debconf/* \
     /var/lib/apt/lists/* \
