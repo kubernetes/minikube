@@ -370,7 +370,7 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 func engineOptions(cfg config.MachineConfig) *engine.Options {
 	o := engine.Options{
 		Env:              cfg.DockerEnv,
-		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, config.InsecureRegistry...),
+		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, cfg.InsecureRegistry...),
 		RegistryMirror:   cfg.RegistryMirror,
 		ArbitraryFlags:   cfg.DockerOpt,
 		InstallURL:       drivers.DefaultEngineInstallURL,
@@ -456,10 +456,10 @@ func showHostInfo(cfg config.MachineConfig) {
 	} else if driver.IsKIC(cfg.VMDriver) {
 		info, err := getHostInfo() // TODO medyagh: get docker-machine info for non linux
 		if err == nil {
-			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": config.Memory, "host_memory_size": info.Memory})
+			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": cfg.VMDriver, "number_of_cpus": cfg.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": cfg.Memory, "host_memory_size": info.Memory})
 		}
 	} else {
-		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
+		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.VMDriver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize})
 	}
 }
 

@@ -48,7 +48,7 @@ func configure(mc config.MachineConfig) interface{} {
 		ImageDigest:  kic.BaseImage,
 		CPU:          mc.CPUs,
 		Memory:       mc.Memory,
-		HostBindPort: mc.KubernetesConfig.NodePort,
+		HostBindPort: mc.Nodes[0].Port,
 		OCIBinary:    oci.Docker,
 	})
 

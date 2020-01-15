@@ -385,12 +385,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
-	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg.KubernetesConfig, r)
+	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
-	kubeletCfg, err := bsutil.NewKubeletConfig(cfg.KubernetesConfig, r)
+	kubeletCfg, err := bsutil.NewKubeletConfig(cfg, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}
