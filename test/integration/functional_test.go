@@ -87,7 +87,6 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"AddonManager", validateAddonManager},
 			{"ComponentHealth", validateComponentHealth},
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
@@ -167,14 +166,6 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 	}
 	if !strings.Contains(rr.Stdout.String(), "kube-system") {
 		t.Errorf("%s = %q, want *kube-system*", rr.Command(), rr.Stdout)
-	}
-}
-
-// validateAddonManager asserts that the kube-addon-manager pod is deployed properly
-func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
-	// If --wait=false, this may take a couple of minutes
-	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 10*time.Minute); err != nil {
-		t.Fatalf("wait: %v", err)
 	}
 }
 

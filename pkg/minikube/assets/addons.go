@@ -75,7 +75,7 @@ var Addons = map[string]*Addon{
 			"addon-manager.yaml.tmpl",
 			"0640",
 			true),
-	}, true, "addon-manager"),
+	}, false, "addon-manager"),
 	"dashboard": NewAddon([]*BinAsset{
 		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrole.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640", false),
