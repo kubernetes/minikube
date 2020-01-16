@@ -68,14 +68,6 @@ func (a *Addon) IsEnabled() (bool, error) {
 // Addons is the list of addons
 // TODO: Make dynamically loadable: move this data to a .yaml file within each addon directory
 var Addons = map[string]*Addon{
-	"addon-manager": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/addon-manager.yaml.tmpl",
-			vmpath.GuestManifestsDir,
-			"addon-manager.yaml.tmpl",
-			"0640",
-			true),
-	}, false, "addon-manager"),
 	"dashboard": NewAddon([]*BinAsset{
 		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrole.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640", false),
