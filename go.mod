@@ -2,9 +2,10 @@ module k8s.io/minikube
 
 go 1.13
 
-require github.com/google/go-containerregistry v0.0.0-20180731221751-697ee0b3d46e
-
-require k8s.io/kubernetes v1.15.2
+require (
+	github.com/google/go-containerregistry v0.0.0-20180731221751-697ee0b3d46e
+	k8s.io/kubernetes v1.15.2
+)
 
 require (
 	github.com/Parallels/docker-machine-parallels v1.3.0
