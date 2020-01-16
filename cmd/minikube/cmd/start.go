@@ -65,6 +65,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
@@ -200,7 +201,7 @@ func initKubernetesFlags() {
 
 // initDriverFlags inits the commandline flags for vm drivers
 func initDriverFlags() {
-	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.SupportedDrivers()))
+	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.DisplaySupportedDrivers()))
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
 
 	// kvm2
@@ -583,23 +584,30 @@ func selectDriver(existing *cfg.MachineConfig) string {
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 	options := driver.Choices()
 	pick, alts := driver.Choose(name, options)
+	exp := ""
+	if pick.Priority == registry.Experimental {
+		exp = "experimental"
+	}
 
 	if name != "" {
-		out.T(out.Sparkle, `Selecting '{{.driver}}' driver from user configuration (alternates: {{.alternates}})`, out.V{"driver": name, "alternates": alts})
+		out.T(out.Sparkle, `Selecting {{.experimental}} '{{.driver}}' driver from user configuration (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": name, "alternates": alts})
 		return name
 	}
 
 	// By default, the driver is whatever we used last time
 	if existing != nil {
 		pick, alts := driver.Choose(existing.VMDriver, options)
-		out.T(out.Sparkle, `Selecting '{{.driver}}' driver from existing profile (alternates: {{.alternates}})`, out.V{"driver": existing.VMDriver, "alternates": alts})
+		if pick.Priority == registry.Experimental {
+			exp = "experimental"
+		}
+		out.T(out.Sparkle, `Selecting {{.experimental}} '{{.driver}}' driver from existing profile (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": existing.VMDriver, "alternates": alts})
 		return pick.Name
 	}
 
 	if len(options) > 1 {
-		out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"driver": pick.Name, "alternates": alts})
+		out.T(out.Sparkle, `Automatically selected the {{.experimental}} '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": pick.Name, "alternates": alts})
 	} else {
-		out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver`, out.V{"driver": pick.Name})
+		out.T(out.Sparkle, `Automatically selected the {{.experimental}} '{{.driver}}' driver`, out.V{"experimental": exp, "driver": pick.Name})
 	}
 
 	if pick.Name == "" {
@@ -612,7 +620,7 @@ func selectDriver(existing *cfg.MachineConfig) string {
 func validateDriver(name string, existing *cfg.MachineConfig) {
 	glog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
-		exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+		exit.WithCodeT(exit.Unavailable, "The driver {{.experimental}} '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
 
 	st := driver.Status(name)
