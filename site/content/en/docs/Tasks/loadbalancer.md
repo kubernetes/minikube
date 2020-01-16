@@ -53,7 +53,7 @@ Status:
 
 #### Create a kubernetes deployment 
 ```
-  kubectl create deployment hello-minikube1 --image=k8s.gcr.io/echoserver:1.4
+  kubectl create deployment hello-minikube1 --image=gcr.io/google-containers/echoserver:1.8
 ```
 #### Create a kubernetes service type LoadBalancer
 ```
