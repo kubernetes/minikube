@@ -127,6 +127,17 @@ func (r *Docker) LoadImage(path string) error {
 
 }
 
+// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+func (r *Docker) CGroupDriver() (string, error) {
+	// Note: the server daemon has to be running, for this call to return successfully
+	c := exec.Command("docker", "info", "--format", "'{{.CgroupDriver}}'")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return "", err
+	}
+	return strings.Split(rr.Stdout.String(), "\n")[0], nil
+}
+
 // KubeletOptions returns kubelet options for a runtime.
 func (r *Docker) KubeletOptions() map[string]string {
 	return map[string]string{
