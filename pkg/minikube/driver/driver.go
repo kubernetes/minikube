@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -57,6 +58,11 @@ var (
 
 // SupportedDrivers returns a list of supported drivers
 func SupportedDrivers() []string {
+	return supportedDrivers
+}
+
+// DisplaySupportedDrivers returns a string with a list of supported drivers
+func DisplaySupportedDrivers() string {
 	var sd []string
 	for _, d := range supportedDrivers {
 		if registry.Driver(d).Priority == registry.Experimental {
@@ -65,7 +71,7 @@ func SupportedDrivers() []string {
 		}
 		sd = append(sd, d)
 	}
-	return sd
+	return strings.Join(sd, ", ")
 }
 
 // Supported returns if the driver is supported on this host.
