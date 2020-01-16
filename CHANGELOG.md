@@ -1,5 +1,45 @@
 # Release Notes
 
+## Version 1.7.0-beta.0 - 2020-01-15
+
+* add the ability to mark drivers as experimental  [#6326](https://github.com/kubernetes/minikube/pull/6326)
+* Use CGroupDriver function from cruntime for kubelet [#6287](https://github.com/kubernetes/minikube/pull/6287)
+* Experimental Docker support (kic) using the Kind image [#6151](https://github.com/kubernetes/minikube/pull/6151)
+* disable istio provisioner by default [#6315](https://github.com/kubernetes/minikube/pull/6315)
+* Add --dry-run option to start [#6256](https://github.com/kubernetes/minikube/pull/6256)
+* add addons for kic [#6277](https://github.com/kubernetes/minikube/pull/6277)
+* Improve "addon list" by viewing as a table  [#6274](https://github.com/kubernetes/minikube/pull/6274)
+* Handle empty k8s version in existing profile [#6292](https://github.com/kubernetes/minikube/pull/6292)
+* Disable IPv6 in the minikube VM until it can be properly supported [#6241](https://github.com/kubernetes/minikube/pull/6241)
+* Rebuild docker images for each release [#6235](https://github.com/kubernetes/minikube/pull/6235)
+* Fixes IPv6 address handling in kubeadm [#6214](https://github.com/kubernetes/minikube/pull/6214)
+* Upgrade crio to 1.16.1 [#6210](https://github.com/kubernetes/minikube/pull/6210)
+* Upgrade podman to 1.6.4 [#6208](https://github.com/kubernetes/minikube/pull/6208)
+* Enable or disable addons per profile [#6124](https://github.com/kubernetes/minikube/pull/6124)
+* Upgrade buildroot minor version [#6199](https://github.com/kubernetes/minikube/pull/6199)
+* Add systemd patch for booting on AMD Ryzen [#6183](https://github.com/kubernetes/minikube/pull/6183)
+* update zh translation [#6176](https://github.com/kubernetes/minikube/pull/6176)
+* Add istio addon for minikube [#6154](https://github.com/kubernetes/minikube/pull/6154)
+* implemented options command, fixes #5036 [#6144](https://github.com/kubernetes/minikube/pull/6144)
+
+Huge thank you for this release towards our contributors:
+- Anders Björklund
+- andylibrian
+- Dao Cong Tien
+- Dominic Yin
+- fenglixa
+- GennadySpb
+- Kenta Iso
+- Kim Bao Long
+- Medya Ghazizadeh
+- Nguyen Hai Truong
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- ttonline6
+- Zhongcheng Lao
+- Zhou Hao
+
 
 ## Version 1.6.2  - 2019-12-19
 
@@ -11,7 +51,7 @@
 * start: Remove create/delete retry loop [#6129](https://github.com/kubernetes/minikube/pull/6129)
 * Change error text to encourage better issue reports [#6121](https://github.com/kubernetes/minikube/pull/6121)
 
-Huge thank you for this release towards our contributors: 
+Huge thank you for this release towards our contributors:
 - Anukul Sangwan
 - Aresforchina
 - Curtis Carter
