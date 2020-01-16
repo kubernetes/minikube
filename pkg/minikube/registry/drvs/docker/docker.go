@@ -35,7 +35,7 @@ func init() {
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
-		Priority: registry.Discouraged, // experimental
+		Priority: registry.Experimental,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
