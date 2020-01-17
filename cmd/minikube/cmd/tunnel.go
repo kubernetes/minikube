@@ -38,7 +38,7 @@ var cleanup bool
 var tunnelCmd = &cobra.Command{
 	Use:   "tunnel",
 	Short: "tunnel makes services of type LoadBalancer accessible on localhost",
-	Long:  `tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP`,
+	Long:  `tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		RootCmd.PersistentPreRun(cmd, args)
 	},

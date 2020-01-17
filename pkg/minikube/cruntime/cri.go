@@ -18,6 +18,7 @@ package cruntime
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"os/exec"
@@ -116,6 +117,23 @@ image-endpoint: unix://{{.Socket}}
 		return errors.Wrapf(err, "Run: %q", rr.Command())
 	}
 	return nil
+}
+
+// getCRIInfo returns current information
+func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
+	args := []string{"crictl", "info"}
+	c := exec.Command("sudo", args...)
+	rr, err := cr.RunCmd(c)
+	if err != nil {
+		return nil, errors.Wrap(err, "get cri info")
+	}
+	info := rr.Stdout.String()
+	jsonMap := make(map[string]interface{})
+	err = json.Unmarshal([]byte(info), &jsonMap)
+	if err != nil {
+		return nil, err
+	}
+	return jsonMap, nil
 }
 
 // criContainerLogCmd returns the command to retrieve the log for a container based on ID
