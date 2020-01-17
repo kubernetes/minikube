@@ -42,6 +42,11 @@ func NewKubeletConfig(mc config.MachineConfig, r cruntime.Manager) ([]byte, erro
 		return nil, errors.Wrap(err, "generating extra configuration for kubelet")
 	}
 
+	cgroupDriver, err := r.CGroupDriver()
+	if err == nil {
+		extraOpts["cgroup-driver"] = cgroupDriver
+	}
+
 	for k, v := range r.KubeletOptions() {
 		extraOpts[k] = v
 	}

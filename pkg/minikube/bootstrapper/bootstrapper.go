@@ -57,7 +57,7 @@ const (
 
 // GetCachedBinaryList returns the list of binaries
 func GetCachedBinaryList(bootstrapper string) []string {
-	return constants.KubeadmBinaries
+	return constants.KubernetesReleaseBinaries
 }
 
 // GetCachedImageList returns the list of images for a version
