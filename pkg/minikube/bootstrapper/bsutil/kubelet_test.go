@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/pmezard/go-difflib/difflib"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -135,7 +136,8 @@ ExecStart=/var/lib/minikube/binaries/v1.17.0/kubelet --authorization-mode=Webhoo
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			runtime, err := cruntime.New(cruntime.Config{Type: tc.cfg.ContainerRuntime})
+			runtime, err := cruntime.New(cruntime.Config{Type: tc.cfg.ContainerRuntime,
+				Runner: command.NewFakeCommandRunner()})
 			if err != nil {
 				t.Fatalf("runtime: %v", err)
 			}

@@ -240,6 +240,29 @@ func (r *Containerd) LoadImage(path string) error {
 	return nil
 }
 
+// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+func (r *Containerd) CGroupDriver() (string, error) {
+	info, err := getCRIInfo(r.Runner)
+	if err != nil {
+		return "", err
+	}
+	if info["config"] == nil {
+		return "", errors.Wrapf(err, "missing config")
+	}
+	config, ok := info["config"].(map[string]interface{})
+	if !ok {
+		return "", errors.Wrapf(err, "config not map")
+	}
+	cgroupManager := "cgroupfs" // default
+	switch config["systemdCgroup"] {
+	case false:
+		cgroupManager = "cgroupfs"
+	case true:
+		cgroupManager = "systemd"
+	}
+	return cgroupManager, nil
+}
+
 // KubeletOptions returns kubelet options for a containerd
 func (r *Containerd) KubeletOptions() map[string]string {
 	return map[string]string{
