@@ -366,7 +366,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	bs := setupKubeAdm(machineAPI, config)
 
 	// pull images or restart cluster
-	bootstrapCluster(bs, cr, mRunner, config.KubernetesConfig, preExists, isUpgrade)
+	bootstrapCluster(bs, cr, mRunner, config, preExists, isUpgrade)
 	configureMounts()
 
 	// enable addons with start command
@@ -383,7 +383,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Skip pre-existing, because we already waited for health
 	if viper.GetBool(waitUntilHealthy) && !preExists {
-		if err := bs.WaitForCluster(config.KubernetesConfig, viper.GetDuration(waitTimeout)); err != nil {
+		if err := bs.WaitForCluster(config, viper.GetDuration(waitTimeout)); err != nil {
 			exit.WithError("Wait failed", err)
 		}
 	}
@@ -1027,6 +1027,10 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 		viper.Set(cacheImages, hints.CacheImages)
 	}
 
+	if !cmd.Flags().Changed(enableDefaultCNI) {
+		viper.Set(enableDefaultCNI, hints.EnableDefaultCNI)
+	}
+
 	if !cmd.Flags().Changed(containerRuntime) && hints.ContainerRuntime != "" {
 		viper.Set(containerRuntime, hints.ContainerRuntime)
 		glog.Infof("auto set %s to %q.", containerRuntime, hints.ContainerRuntime)
@@ -1287,16 +1291,16 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s cfg.Ku
 }
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
-func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, kc cfg.KubernetesConfig, preexisting bool, isUpgrade bool) {
+func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, c cfg.MachineConfig, preexisting bool, isUpgrade bool) {
 	if isUpgrade || !preexisting {
 		out.T(out.Pulling, "Pulling images ...")
-		if err := bs.PullImages(kc); err != nil {
+		if err := bs.PullImages(c.KubernetesConfig); err != nil {
 			out.T(out.FailureType, "Unable to pull images, which may be OK: {{.error}}", out.V{"error": err})
 		}
 	}
 
 	out.T(out.Launch, "Launching Kubernetes ... ")
-	if err := bs.StartCluster(kc); err != nil {
+	if err := bs.StartCluster(c); err != nil {
 		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
 	}
 }
