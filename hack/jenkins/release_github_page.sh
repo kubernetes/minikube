@@ -61,14 +61,14 @@ See [Getting Started](https://minikube.sigs.k8s.io/docs/start/)
 
 # ================================================================================
 # Deleting release from github before creating new one
-github-release delete \
+github-release -v delete \
   --user "${GITHUB_ORGANIZATION}" \
   --repo "${GITHUB_REPO}" \
   --tag "${TAGNAME}" \
   || true
 
 # Creating a new release in github
-github-release release ${RELEASE_FLAGS} \
+github-release -v release ${RELEASE_FLAGS} \
     --user "${GITHUB_ORGANIZATION}" \
     --repo "${GITHUB_REPO}" \
     --tag "${TAGNAME}" \
@@ -106,7 +106,7 @@ do
     n=0
     until [ $n -ge 5 ]
     do
-        github-release upload \
+        github-release -v upload \
           --user "${GITHUB_ORGANIZATION}" \
           --repo "${GITHUB_REPO}" \
           --tag "${TAGNAME}" \
