@@ -24,7 +24,6 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -100,6 +99,7 @@ type FlagHints struct {
 	CacheImages      bool
 	ContainerRuntime string
 	Bootstrapper     string
+	EnableDefaultCNI bool
 }
 
 // FlagDefaults returns suggested defaults based on a driver
@@ -110,8 +110,8 @@ func FlagDefaults(name string) FlagHints {
 		// only for kic, till other run-times are available we auto-set containerd.
 		if name == Docker {
 			fh.ContainerRuntime = "containerd"
-			fh.Bootstrapper = bootstrapper.KIC
 			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR))
+			fh.EnableDefaultCNI = true
 		}
 		return fh
 	}
