@@ -157,10 +157,10 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		glog.Infof("StartCluster complete in %s", time.Since(start))
 	}()
 
-	// version, err := bsutil.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
-	// if err != nil {
-	// 	return errors.Wrap(err, "parsing kubernetes version")
-	// }
+	version, err := bsutil.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "parsing kubernetes version")
+	}
 
 	extraFlags := bsutil.CreateFlagsFromExtraArgs(cfg.KubernetesConfig.ExtraOptions)
 	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime})
@@ -181,27 +181,30 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		"SystemVerification",
 	}
 	ignore = append(ignore, bsutil.SkipAdditionalPreflights[r.Name()]...)
-	// if cfg.KubernetesConfig.EnableDefaultCNI {
-	// 	// if err := k.applyOverlayNetwork(); err != nil {
-	// 	// 	return errors.Wrap(err, "applying overlay network")
-	// 	// }
-	// }
 
 	// Allow older kubeadm versions to function with newer Docker releases.
 	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
-	// fmt.Println("medya dbg: ", cfg.VMDriver)
-	// if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.VMDriver) {
-	// 	glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
-	// 	ignore = append(ignore, "SystemVerification")
-	// }
+	if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.VMDriver) {
+		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
+		ignore = append(ignore, "SystemVerification")
+	}
 
-	fmt.Printf("medya dbg:ignore is %+v ", ignore)
+	if driver.IsKIC(cfg.VMDriver) { // to bypass this error: /proc/sys/net/bridge/bridge-nf-call-iptables does not exist
+		ignore = append(ignore, "FileContent--proc-sys-net-bridge-bridge-nf-call-iptables")
+
+	}
+
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	rr, err := k.c.RunCmd(c)
 	if err != nil {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
 	}
-	fmt.Println(rr.Output())
+
+	if cfg.KubernetesConfig.EnableDefaultCNI {
+		if err := k.applyOverlayNetwork(); err != nil {
+			return errors.Wrap(err, "applying overlay network")
+		}
+	}
 
 	if !driver.IsKIC(cfg.VMDriver) { // TODO: skip for both after verifications https://github.com/kubernetes/minikube/issues/6239
 		glog.Infof("Configuring cluster permissions ...")
@@ -445,17 +448,17 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	return nil
 }
 
-// // applyOverlayNetwork applies the CNI plugin needed to make kic work
-// func (k *Bootstrapper) applyOverlayNetwork() error {
-// 	cmd := exec.Command(
-// 		"kubectl", "create", "--kubeconfig=/var/lib/minikube/kubeconfig",
-// 		"-f", bsutil.DefaultCNIConfigPath,
-// 	)
-// 	if rr, err := k.c.RunCmd(cmd); err != nil {
-// 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
-// 	}
-// 	return nil
-// }
+// applyOverlayNetwork applies the CNI plugin needed to make kic work
+func (k *Bootstrapper) applyOverlayNetwork() error {
+	cmd := exec.Command(
+		"kubectl", "create", "--kubeconfig=/etc/kubernetes/admin.conf",
+		"-f", bsutil.DefaultCNIConfigPath,
+	)
+	if rr, err := k.c.RunCmd(cmd); err != nil {
+		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
+	}
+	return nil
+}
 
 // clientEndpointAddr returns ip and port accessible for the kubernetes clients to talk to the cluster
 func (k *Bootstrapper) clientEndpointAddr(cfg config.MachineConfig) (string, int) {
