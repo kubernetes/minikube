@@ -65,6 +65,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
+	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
@@ -118,6 +119,7 @@ const (
 	hostDNSResolver         = "host-dns-resolver"
 	waitUntilHealthy        = "wait"
 	force                   = "force"
+	dryRun                  = "dry-run"
 	interactive             = "interactive"
 	waitTimeout             = "wait-timeout"
 	nativeSSH               = "native-ssh"
@@ -160,6 +162,7 @@ func initMinikubeFlags() {
 
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
+	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does does not mutate system state")
 
 	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to the minikube VM.")
 	startCmd.Flags().String(memory, defaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
@@ -200,7 +203,7 @@ func initKubernetesFlags() {
 
 // initDriverFlags inits the commandline flags for vm drivers
 func initDriverFlags() {
-	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.SupportedDrivers()))
+	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.DisplaySupportedDrivers()))
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
 
 	// kvm2
@@ -314,12 +317,20 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateUser(driverName)
 
 	// Download & update the driver, even in --download-only mode
-	updateDriver(driverName)
+	if !viper.GetBool(dryRun) {
+		updateDriver(driverName)
+	}
 
 	k8sVersion, isUpgrade := getKubernetesVersion(existing)
 	config, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
+	}
+
+	// This is about as far as we can go without overwriting config files
+	if viper.GetBool(dryRun) {
+		out.T(out.DryRun, `dry-run validation complete!`)
+		return
 	}
 
 	cacheISO(&config, driverName)
@@ -573,25 +584,34 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 func selectDriver(existing *cfg.MachineConfig) string {
 	name := viper.GetString("vm-driver")
 	glog.Infof("selectDriver: flag=%q, old=%v", name, existing)
+
+	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 	options := driver.Choices()
 	pick, alts := driver.Choose(name, options)
+	exp := ""
+	if pick.Priority == registry.Experimental {
+		exp = "experimental"
+	}
 
 	if name != "" {
-		out.T(out.Sparkle, `Selecting '{{.driver}}' driver from user configuration (alternates: {{.alternates}})`, out.V{"driver": name, "alternates": alts})
+		out.T(out.Sparkle, `Selecting {{.experimental}} '{{.driver}}' driver from user configuration (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": name, "alternates": alts})
 		return name
 	}
 
 	// By default, the driver is whatever we used last time
 	if existing != nil {
 		pick, alts := driver.Choose(existing.VMDriver, options)
-		out.T(out.Sparkle, `Selecting '{{.driver}}' driver from existing profile (alternates: {{.alternates}})`, out.V{"driver": existing.VMDriver, "alternates": alts})
+		if pick.Priority == registry.Experimental {
+			exp = "experimental"
+		}
+		out.T(out.Sparkle, `Selecting {{.experimental}} '{{.driver}}' driver from existing profile (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": existing.VMDriver, "alternates": alts})
 		return pick.Name
 	}
 
 	if len(options) > 1 {
-		out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"driver": pick.Name, "alternates": alts})
+		out.T(out.Sparkle, `Automatically selected the {{.experimental}} '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": pick.Name, "alternates": alts})
 	} else {
-		out.T(out.Sparkle, `Automatically selected the '{{.driver}}' driver`, out.V{"driver": pick.Name})
+		out.T(out.Sparkle, `Automatically selected the {{.experimental}} '{{.driver}}' driver`, out.V{"experimental": exp, "driver": pick.Name})
 	}
 
 	if pick.Name == "" {
@@ -604,7 +624,7 @@ func selectDriver(existing *cfg.MachineConfig) string {
 func validateDriver(name string, existing *cfg.MachineConfig) {
 	glog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
-		exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+		exit.WithCodeT(exit.Unavailable, "The driver {{.experimental}} '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
 
 	st := driver.Status(name)
@@ -769,7 +789,7 @@ func validateDiskSize() {
 func validateMemorySize() {
 	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
 	if memorySizeMB < pkgutil.CalculateSizeInMB(minimumMemorySize) && !viper.GetBool(force) {
-		exit.UsageT("Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumMemorySize)})
+		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumMemorySize)})
 	}
 	if memorySizeMB < pkgutil.CalculateSizeInMB(defaultMemorySize) && !viper.GetBool(force) {
 		out.T(out.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default_memorysize}}MB. Beware that minikube might not work correctly or crash unexpectedly.",
@@ -1169,9 +1189,10 @@ func getKubernetesVersion(old *cfg.MachineConfig) (string, bool) {
 	isUpgrade := false
 
 	if paramVersion == "" { // if the user did not specify any version then ...
-		if old != nil { // .. use the old version from config
+		if old != nil { // .. use the old version from config (if any)
 			paramVersion = old.KubernetesConfig.KubernetesVersion
-		} else { // .. otherwise use the default version
+		}
+		if paramVersion == "" { // .. otherwise use the default version
 			paramVersion = constants.DefaultKubernetesVersion
 		}
 	}

@@ -33,7 +33,7 @@ import (
 // TransferBinaries transfers all required Kubernetes binaries
 func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 	var g errgroup.Group
-	for _, name := range constants.KubeadmBinaries {
+	for _, name := range constants.KubernetesReleaseBinaries {
 		name := name
 		g.Go(func() error {
 			src, err := machine.CacheBinary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)

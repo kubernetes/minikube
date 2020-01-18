@@ -86,8 +86,9 @@ var ImageRepositories = map[string][]string{
 	"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
 }
 
-// KubeadmBinaries are Kubernetes release binaries required for kubeadm
-var KubeadmBinaries = []string{"kubelet", "kubeadm"}
+// KubernetesReleaseBinaries are Kubernetes release binaries required for
+// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)
+var KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
 
 // ImageCacheDir is the path to the image cache directory
 var ImageCacheDir = localpath.MakeMiniPath("cache", "images")

@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -58,6 +59,19 @@ var (
 // SupportedDrivers returns a list of supported drivers
 func SupportedDrivers() []string {
 	return supportedDrivers
+}
+
+// DisplaySupportedDrivers returns a string with a list of supported drivers
+func DisplaySupportedDrivers() string {
+	var sd []string
+	for _, d := range supportedDrivers {
+		if registry.Driver(d).Priority == registry.Experimental {
+			sd = append(sd, d+" (experimental)")
+			continue
+		}
+		sd = append(sd, d)
+	}
+	return strings.Join(sd, ", ")
 }
 
 // Supported returns if the driver is supported on this host.
@@ -170,4 +184,11 @@ func Choose(requested string, options []registry.DriverState) (registry.DriverSt
 // Status returns the status of a driver
 func Status(name string) registry.State {
 	return registry.Status(name)
+}
+
+// SetLibvirtURI sets the URI to perform libvirt health checks against
+func SetLibvirtURI(v string) {
+	glog.Infof("Setting default libvirt URI to %s", v)
+	os.Setenv("LIBVIRT_DEFAULT_URI", v)
+
 }

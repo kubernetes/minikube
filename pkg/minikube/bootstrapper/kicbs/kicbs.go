@@ -33,6 +33,7 @@ import (
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
@@ -69,7 +70,7 @@ func NewBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 
 // UpdateCluster updates the cluster
 func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
-	images, err := images.KIC(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
+	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "kic images")
 	}
@@ -79,7 +80,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}
-	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.KubernetesConfig.CRISocket})
+	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime, Socket: cfg.KubernetesConfig.CRISocket, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
@@ -114,10 +115,9 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
 
-	// TODO: add addons for kic later
-	// if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
-	// 	return errors.Wrap(err, "adding addons")
-	// }
+	if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
+		return errors.Wrap(err, "adding addons")
+	}
 
 	for _, f := range files {
 		if err := k.c.Copy(f); err != nil {

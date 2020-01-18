@@ -87,11 +87,11 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"AddonManager", validateAddonManager},
 			{"ComponentHealth", validateComponentHealth},
 			{"ConfigCmd", validateConfigCmd},
 			{"DashboardCmd", validateDashboardCmd},
 			{"DNS", validateDNS},
+			{"DryRun", validateDryRun},
 			{"StatusCmd", validateStatusCmd},
 			{"LogsCmd", validateLogsCmd},
 			{"MountCmd", validateMountCmd},
@@ -166,14 +166,6 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 	}
 	if !strings.Contains(rr.Stdout.String(), "kube-system") {
 		t.Errorf("%s = %q, want *kube-system*", rr.Command(), rr.Stdout)
-	}
-}
-
-// validateAddonManager asserts that the kube-addon-manager pod is deployed properly
-func validateAddonManager(ctx context.Context, t *testing.T, profile string) {
-	// If --wait=false, this may take a couple of minutes
-	if _, err := PodWait(ctx, t, profile, "kube-system", "component=kube-addon-manager", 10*time.Minute); err != nil {
-		t.Fatalf("wait: %v", err)
 	}
 }
 
@@ -306,6 +298,32 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	want := []byte("10.96.0.1")
 	if !bytes.Contains(rr.Stdout.Bytes(), want) {
 		t.Errorf("nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
+	}
+}
+
+// validateDryRun asserts that the dry-run mode quickly exits with the right code
+func validateDryRun(ctx context.Context, t *testing.T, profile string) {
+	// dry-run mode should always be able to finish quickly
+	mctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+
+	// Too little memory!
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB"}, StartArgs()...)
+	c := exec.CommandContext(mctx, Target(), startArgs...)
+	rr, err := Run(t, c)
+
+	wantCode := 78 // exit.Config
+	if rr.ExitCode != wantCode {
+		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
+	}
+
+	dctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	startArgs = append([]string{"start", "-p", profile, "--dry-run"}, StartArgs()...)
+	c = exec.CommandContext(dctx, Target(), startArgs...)
+	rr, err = Run(t, c)
+	if rr.ExitCode != 0 || err != nil {
+		t.Errorf("dry-run exit code = %d, wanted = %d: %v", rr.ExitCode, 0, err)
 	}
 }
 
@@ -548,46 +566,14 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateAddonsCmd asserts basic "addon" command functionality
 func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
-
-	// Default output
+	// Table output
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	listLines := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-	r := regexp.MustCompile(`-\s[a-z|-]+:\s(enabled|disabled)`)
-	for _, line := range listLines {
-		match := r.MatchString(line)
-		if !match {
-			t.Errorf("Plugin output did not match expected format. Got: %s", line)
-		}
-	}
-
-	// Custom format
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list", "--format", `"{{.AddonName}}":"{{.AddonStatus}}"`))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	listLines = strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-	r = regexp.MustCompile(`"[a-z|-]+":"(enabled|disabled)"`)
-	for _, line := range listLines {
-		match := r.MatchString(line)
-		if !match {
-			t.Errorf("Plugin output did not match expected custom format. Got: %s", line)
-		}
-	}
-
-	// Custom format shorthand
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list", "-f", `"{{.AddonName}}":"{{.AddonStatus}}"`))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	listLines = strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-	r = regexp.MustCompile(`"[a-z|-]+":"(enabled|disabled)"`)
-	for _, line := range listLines {
-		match := r.MatchString(line)
-		if !match {
-			t.Errorf("Plugin output did not match expected custom format. Got: %s", line)
+	for _, a := range []string{"dashboard", "ingress", "ingress-dns"} {
+		if !strings.Contains(rr.Output(), a) {
+			t.Errorf("addon list expected to include %q but didn't output: %q", a, rr.Output())
 		}
 	}
 

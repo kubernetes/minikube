@@ -143,6 +143,26 @@ func (r *CRIO) LoadImage(path string) error {
 	return nil
 }
 
+// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+func (r *CRIO) CGroupDriver() (string, error) {
+	c := exec.Command("crio", "config")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return "", err
+	}
+	cgroupManager := "cgroupfs" // default
+	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
+		if strings.HasPrefix(line, "cgroup_manager") {
+			// cgroup_manager = "cgroupfs"
+			f := strings.Split(strings.TrimSpace(line), " = ")
+			if len(f) == 2 {
+				cgroupManager = strings.Trim(f[1], "\"")
+			}
+		}
+	}
+	return cgroupManager, nil
+}
+
 // KubeletOptions returns kubelet options for a runtime.
 func (r *CRIO) KubeletOptions() map[string]string {
 	return map[string]string{
@@ -170,7 +190,7 @@ func (r *CRIO) StopContainers(ids []string) error {
 
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
 func (r *CRIO) ContainerLogCmd(id string, len int, follow bool) string {
-	return criContainerLogCmd(id, len, follow)
+	return criContainerLogCmd(r.Runner, id, len, follow)
 }
 
 // SystemLogCmd returns the command to retrieve system logs
