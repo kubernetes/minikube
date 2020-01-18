@@ -101,7 +101,7 @@ This test case has only 1 thing to test and that is the
 nnetworking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
-	versions := []string{"v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
+	versions := []string{"v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
 	tests := []struct {
 		name      string
 		runtime   string

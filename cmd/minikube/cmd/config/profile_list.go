@@ -59,7 +59,6 @@ var profileListCmd = &cobra.Command{
 var printProfilesTable = func() {
 
 	var validData [][]string
-
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Profile", "VM Driver", "NodeIP", "Node Port", "Kubernetes Version", "Status"})
 	table.SetAutoFormatHeaders(false)
