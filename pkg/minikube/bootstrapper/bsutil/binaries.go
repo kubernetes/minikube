@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// bsutil package will eventually be renamed to kubeadm package after getting rid of older one
+// Package bsutil package will eventually be renamed to kubeadm package after getting rid of older one
 package bsutil
 
 import (
@@ -33,7 +33,7 @@ import (
 // TransferBinaries transfers all required Kubernetes binaries
 func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 	var g errgroup.Group
-	for _, name := range constants.KubeadmBinaries {
+	for _, name := range constants.KubernetesReleaseBinaries {
 		name := name
 		g.Go(func() error {
 			src, err := machine.CacheBinary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)

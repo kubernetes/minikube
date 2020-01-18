@@ -56,22 +56,10 @@ const (
 
 // GetCachedBinaryList returns the list of binaries
 func GetCachedBinaryList(bootstrapper string) []string {
-	switch bootstrapper {
-	case Kubeadm:
-		return constants.KubeadmBinaries
-	default:
-		return []string{}
-	}
+	return constants.KubernetesReleaseBinaries
 }
 
 // GetCachedImageList returns the list of images for a version
 func GetCachedImageList(imageRepository string, version string, bootstrapper string) ([]string, error) {
-	switch bootstrapper {
-	case Kubeadm:
-		return images.Kubeadm(imageRepository, version)
-	case KIC:
-		return []string{"alpine"}, nil // for testing purpose just caching alpine for kicbs
-	default:
-		return []string{}, nil
-	}
+	return images.Kubeadm(imageRepository, version)
 }

@@ -37,6 +37,7 @@ import (
 // defaultStorageClassProvisioner is the name of the default storage class provisioner
 const defaultStorageClassProvisioner = "standard"
 
+// Set sets a value
 func Set(name, value, profile string) error {
 	a, valid := isAddonValid(name)
 	if !valid {
@@ -153,7 +154,7 @@ func enableOrDisableAddon(name, val, profile string) error {
 	}
 
 	data := assets.GenerateTemplateData(cfg.KubernetesConfig)
-	return enableOrDisableAddonInternal(addon, cmd, data, enable)
+	return enableOrDisableAddonInternal(addon, cmd, data, enable, profile)
 }
 
 func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
@@ -172,7 +173,7 @@ func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
 	return false, nil
 }
 
-func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
+func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool, profile string) error {
 	var err error
 
 	updateFile := cmd.Copy
@@ -195,7 +196,7 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 			return errors.Wrapf(err, "updating addon %s", addon.AssetName)
 		}
 	}
-	return nil
+	return reconcile(cmd, profile)
 }
 
 // enableOrDisableStorageClasses enables or disables storage classes

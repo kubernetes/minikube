@@ -33,6 +33,8 @@ const (
 	Unknown Priority = iota
 	// Unhealthy is when a driver does not pass health checks
 	Unhealthy
+	// Experimental is when a driver is not officially supported because it's still experimental
+	Experimental
 	// Discouraged is when a driver has caveats that preclude it's recommendation
 	Discouraged
 	// Deprecated is when a driver has been formally deprecated

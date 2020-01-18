@@ -30,7 +30,6 @@ import (
 	"io/ioutil"
 	"os/exec"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -39,13 +38,6 @@ import (
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/minikube/pkg/kapi"
-)
-
-var (
-	// startTimes is a list of startup times, to guarantee --start-offset
-	startTimes = []time.Time{}
-	// startTimesMutex is a lock to update startTimes without a race condition
-	startTimesMutex = &sync.Mutex{}
 )
 
 // RunResult stores the result of an cmd.Run call
@@ -347,34 +339,6 @@ func MaybeParallel(t *testing.T) {
 		return
 	}
 	t.Parallel()
-}
-
-// WaitForStartSlot enforces --start-offset to avoid startup race conditions
-func WaitForStartSlot(t *testing.T) {
-	// Not parallel
-	if NoneDriver() {
-		return
-	}
-
-	wakeup := time.Now()
-	startTimesMutex.Lock()
-	if len(startTimes) > 0 {
-		nextStart := startTimes[len(startTimes)-1].Add(*startOffset)
-		// Ignore nextStart if it is in the past - to guarantee offset for next caller
-		if time.Now().Before(nextStart) {
-			wakeup = nextStart
-		}
-	}
-	startTimes = append(startTimes, wakeup)
-	startTimesMutex.Unlock()
-
-	if time.Now().Before(wakeup) {
-		d := time.Until(wakeup)
-		t.Logf("Waiting for start slot at %s (sleeping %s)  ...", wakeup, d)
-		time.Sleep(d)
-	} else {
-		t.Logf("No need to wait for start slot, it is already %s", time.Now())
-	}
 }
 
 // killProcessFamily kills a pid and all of its children
