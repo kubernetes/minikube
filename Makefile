@@ -256,6 +256,10 @@ integration-versioned: out/minikube ## Trigger minikube integration testing
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
 	./test.sh
 
+.PHONY: gotest
+gotest: $(SOURCE_GENERATED) ## Trigger minikube test
+	go test -tags "$(MINIKUBE_BUILD_TAGS)" $(MINIKUBE_TEST_FILES)
+
 .PHONY: extract
 extract: ## Compile extract tool
 	go run cmd/extract/extract.go
