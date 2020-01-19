@@ -46,7 +46,7 @@ var podmanEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .VarlinkBridg
 
 // PodmanShellConfig represents the shell config for Podman
 type PodmanShellConfig struct {
-	shell.ShellConfig
+	shell.Config
 	VarlinkBridge string
 }
 
@@ -60,7 +60,7 @@ func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShel
 	const usgPlz = "To point your shell to minikube's podman service, run:"
 	var usgCmd = fmt.Sprintf("minikube -p %s podman-env", profile)
 	s := &PodmanShellConfig{
-		ShellConfig: *shell.ShellCfgSet(ec.EnvConfig, usgPlz, usgCmd),
+		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}
 	s.VarlinkBridge = envMap[constants.PodmanVarlinkBridgeEnv]
 

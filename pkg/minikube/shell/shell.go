@@ -71,8 +71,8 @@ const (
 	noneDelim = "="
 )
 
-// ShellConfig represents the shell config
-type ShellConfig struct {
+// Config represents the shell config
+type Config struct {
 	Prefix    string
 	Delimiter string
 	Suffix    string
@@ -118,9 +118,9 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 	return hint
 }
 
-// ShellCfgSet generates context variables for shell
-func ShellCfgSet(ec EnvConfig, plz, cmd string) *ShellConfig {
-	s := &ShellConfig{
+// CfgSet generates context variables for shell
+func CfgSet(ec EnvConfig, plz, cmd string) *Config {
+	s := &Config{
 		UsageHint: generateUsageHint(ec.Shell, plz, cmd),
 	}
 

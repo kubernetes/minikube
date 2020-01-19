@@ -49,7 +49,7 @@ var dockerEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVer
 
 // DockerShellConfig represents the shell config for Docker
 type DockerShellConfig struct {
-	shell.ShellConfig
+	shell.Config
 	DockerCertPath         string
 	DockerHost             string
 	DockerTLSVerify        string
@@ -78,7 +78,7 @@ func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShel
 	const usgPlz = "To point your shell to minikube's docker-daemon, run:"
 	var usgCmd = fmt.Sprintf("minikube -p %s docker-env", profile)
 	s := &DockerShellConfig{
-		ShellConfig: *shell.ShellCfgSet(ec.EnvConfig, usgPlz, usgCmd),
+		Config: *shell.CfgSet(ec.EnvConfig, usgPlz, usgCmd),
 	}
 	s.DockerCertPath = envMap[constants.DockerCertPathEnv]
 	s.DockerHost = envMap[constants.DockerHostEnv]
