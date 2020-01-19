@@ -153,12 +153,12 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 // shellCfgSet generates context variables for "docker-env"
 func shellCfgSet(ec EnvConfig, envMap map[string]string) *ShellConfig {
 	s := &ShellConfig{
-		DockerCertPath:         envMap[constants.DockerCertPathEnv],
-		DockerHost:             envMap[constants.DockerHostEnv],
-		DockerTLSVerify:        envMap[constants.DockerTLSVerifyEnv],
-		MinikubeDockerdProfile: envMap[constants.MinikubeActiveDockerdEnv],
-		UsageHint:              generateUsageHint(ec.profile, ec.shell),
+		UsageHint: generateUsageHint(ec.profile, ec.shell),
 	}
+	s.DockerCertPath = envMap[constants.DockerCertPathEnv]
+	s.DockerHost = envMap[constants.DockerHostEnv]
+	s.DockerTLSVerify = envMap[constants.DockerTLSVerifyEnv]
+	s.MinikubeDockerdProfile = envMap[constants.MinikubeActiveDockerdEnv]
 
 	if ec.noProxy {
 		noProxyVar, noProxyValue := defaultNoProxyGetter.GetNoProxyVar()
