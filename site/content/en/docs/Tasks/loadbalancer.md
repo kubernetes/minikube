@@ -9,7 +9,7 @@ description: >
 
 ## Overview
 
-A LoadBalancer service is the standard way to expose a service to the internet. With this method, each service gets it's own IP address.
+A LoadBalancer service is the standard way to expose a service to the internet. With this method, each service gets its own IP address.
 
 
 ## Using `minikube tunnel`
@@ -53,11 +53,11 @@ Status:
 
 #### Create a kubernetes deployment 
 ```
-  kubectl create deployment hello-minikube1 --image=k8s.gcr.io/echoserver:1.4
+kubectl create deployment hello-minikube1 --image=k8s.gcr.io/echoserver:1.4
 ```
 #### Create a kubernetes service type LoadBalancer
 ```
-  kubectl expose deployment hello-minikube1 --type=LoadBalancer --port=8080
+kubectl expose deployment hello-minikube1 --type=LoadBalancer --port=8080
 ```
 
 ### Check external IP 
@@ -65,13 +65,13 @@ Status:
 kubectl get svc
 ```
 <pre>
- $ kc get svc
-NAME             TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)          AGE
+$ kc get svc
+NAME              TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)          AGE
 hello-minikube1   LoadBalancer   10.96.184.178   10.96.184.178   8080:30791/TCP   40s
 </pre>
 
 
-note that without minikube tunnel, it would kubernetes would be showing external IP as "pending".
+note that without minikube tunnel, kubernetes would be showing external IP as "pending".
 
 ### Try in your browser
 open in your browser (make sure there is no proxy set)
@@ -80,7 +80,7 @@ http://REPLACE_WITH_EXTERNAL_IP:8080
 ```
 
 
-Each service will get it's own external ip.
+Each service will get its own external ip.
 
 ----
 ### DNS resolution (experimental)
