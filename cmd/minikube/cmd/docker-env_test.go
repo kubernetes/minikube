@@ -32,7 +32,7 @@ func (f FakeNoProxyGetter) GetNoProxyVar() (string, string) {
 	return f.NoProxyVar, f.NoProxyValue
 }
 
-func TestGenerateScripts(t *testing.T) {
+func TestGenerateDockerScripts(t *testing.T) {
 	var tests = []struct {
 		shell         string
 		config        DockerEnvConfig
@@ -212,7 +212,7 @@ export NO_PROXY="192.168.0.1,10.0.0.4,127.0.0.1"
 			defaultNoProxyGetter = tc.noProxyGetter
 			var b []byte
 			buf := bytes.NewBuffer(b)
-			if err := setScript(tc.config, buf); err != nil {
+			if err := dockerSetScript(tc.config, buf); err != nil {
 				t.Errorf("setScript(%+v) error: %v", tc.config, err)
 			}
 			got := buf.String()
@@ -221,7 +221,7 @@ export NO_PROXY="192.168.0.1,10.0.0.4,127.0.0.1"
 			}
 
 			buf = bytes.NewBuffer(b)
-			if err := unsetScript(tc.config, buf); err != nil {
+			if err := dockerUnsetScript(tc.config, buf); err != nil {
 				t.Errorf("unsetScript(%+v) error: %v", tc.config, err)
 			}
 			got = buf.String()

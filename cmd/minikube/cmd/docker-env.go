@@ -45,7 +45,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/shell"
 )
 
-var envTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
+var dockerEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
 
 // DockerShellConfig represents the shell config for Docker
 type DockerShellConfig struct {
@@ -60,7 +60,7 @@ type DockerShellConfig struct {
 
 var (
 	noProxy              bool
-	unset                bool
+	dockerUnset          bool
 	defaultNoProxyGetter NoProxyGetter
 )
 
@@ -72,8 +72,8 @@ type NoProxyGetter interface {
 // EnvNoProxyGetter gets the no_proxy variable, using environment
 type EnvNoProxyGetter struct{}
 
-// shellCfgSet generates context variables for "docker-env"
-func shellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShellConfig {
+// dockerShellCfgSet generates context variables for "docker-env"
+func dockerShellCfgSet(ec DockerEnvConfig, envMap map[string]string) *DockerShellConfig {
 	profile := ec.profile
 	const usgPlz = "To point your shell to minikube's docker-daemon, run:"
 	var usgCmd = fmt.Sprintf("minikube -p %s docker-env", profile)
@@ -134,7 +134,7 @@ func isDockerActive(d drivers.Driver) (bool, error) {
 	return err == nil && s == "active", nil
 }
 
-// envCmd represents the docker-env command
+// dockerEnvCmd represents the docker-env command
 var dockerEnvCmd = &cobra.Command{
 	Use:   "docker-env",
 	Short: "Sets up docker env variables; similar to '$(docker-machine env)'",
@@ -199,14 +199,14 @@ var dockerEnvCmd = &cobra.Command{
 			}
 		}
 
-		if unset {
-			if err := unsetScript(ec, os.Stdout); err != nil {
+		if dockerUnset {
+			if err := dockerUnsetScript(ec, os.Stdout); err != nil {
 				exit.WithError("Error generating unset output", err)
 			}
 			return
 		}
 
-		if err := setScript(ec, os.Stdout); err != nil {
+		if err := dockerSetScript(ec, os.Stdout); err != nil {
 			exit.WithError("Error generating set output", err)
 		}
 	},
@@ -222,17 +222,17 @@ type DockerEnvConfig struct {
 	noProxy  bool
 }
 
-// setScript writes out a shell-compatible 'docker-env' script
-func setScript(ec DockerEnvConfig, w io.Writer) error {
+// dockerSetScript writes out a shell-compatible 'docker-env' script
+func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
 	envVars, err := dockerEnvVars(ec)
 	if err != nil {
 		return err
 	}
-	return shell.SetScript(ec.EnvConfig, w, envTmpl, shellCfgSet(ec, envVars))
+	return shell.SetScript(ec.EnvConfig, w, dockerEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
-// setScript writes out a shell-compatible 'docker-env unset' script
-func unsetScript(ec DockerEnvConfig, w io.Writer) error {
+// dockerSetScript writes out a shell-compatible 'docker-env unset' script
+func dockerUnsetScript(ec DockerEnvConfig, w io.Writer) error {
 	vars := []string{
 		constants.DockerTLSVerifyEnv,
 		constants.DockerHostEnv,
@@ -278,5 +278,5 @@ func init() {
 	defaultNoProxyGetter = &EnvNoProxyGetter{}
 	dockerEnvCmd.Flags().BoolVar(&noProxy, "no-proxy", false, "Add machine IP to NO_PROXY environment variable")
 	dockerEnvCmd.Flags().StringVar(&shell.ForceShell, "shell", "", "Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect")
-	dockerEnvCmd.Flags().BoolVarP(&unset, "unset", "u", false, "Unset variables instead of setting them")
+	dockerEnvCmd.Flags().BoolVarP(&dockerUnset, "unset", "u", false, "Unset variables instead of setting them")
 }
