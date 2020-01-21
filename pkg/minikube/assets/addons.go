@@ -1,12 +1,9 @@
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,7 +37,7 @@ type Addon struct {
 }
 
 // NewAddon creates a new Addon
-func NewAddon(assets []*BinAsset, enabled bool, addonName string) *Addon {
+func NewAddon(assets []*BinAsset, enabled bool, addonName, namespace string) *Addon {
 	a := &Addon{
 		Assets:    assets,
 		enabled:   enabled,
@@ -71,235 +68,235 @@ var Addons = map[string]*Addon{
 	"addon-manager": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/addon-manager.yaml.tmpl",
-			vmpath.GuestManifestsDir,
+			TargetDirForAddon("kube-system"),
 			"addon-manager.yaml.tmpl",
 			"0640",
 			true),
-	}, false, "addon-manager"),
+	}, false, "addon-manager", "kube-system"),
 	"dashboard": NewAddon([]*BinAsset{
-		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrole.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-clusterrolebinding.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-configmap.yaml", vmpath.GuestAddonsDir, "dashboard-configmap.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-dp.yaml", vmpath.GuestAddonsDir, "dashboard-dp.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-ns.yaml", vmpath.GuestAddonsDir, "dashboard-ns.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-role.yaml", vmpath.GuestAddonsDir, "dashboard-role.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-rolebinding.yaml", vmpath.GuestAddonsDir, "dashboard-rolebinding.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-sa.yaml", vmpath.GuestAddonsDir, "dashboard-sa.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-secret.yaml", vmpath.GuestAddonsDir, "dashboard-secret.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-svc.yaml", vmpath.GuestAddonsDir, "dashboard-svc.yaml", "0640", false),
-	}, false, "dashboard"),
+		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-clusterrole.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-clusterrolebinding.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-configmap.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-configmap.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-dp.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-dp.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-ns.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-ns.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-role.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-role.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-rolebinding.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-rolebinding.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-sa.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-sa.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-secret.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-secret.yaml", "0640", false),
+		MustBinAsset("deploy/addons/dashboard/dashboard-svc.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-svc.yaml", "0640", false),
+	}, false, "dashboard", "kubernetes-dashboard"),
 	"default-storageclass": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/storageclass/storageclass.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"storageclass.yaml",
 			"0640",
 			false),
-	}, true, "default-storageclass"),
+	}, true, "default-storageclass", "kube-system"),
 	"storage-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/storage-provisioner/storage-provisioner.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"storage-provisioner.yaml",
 			"0640",
 			true),
-	}, true, "storage-provisioner"),
+	}, true, "storage-provisioner", "kube-system"),
 	"storage-provisioner-gluster": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/storage-gluster-ns.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"storage-gluster-ns.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/glusterfs-daemonset.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"glusterfs-daemonset.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/heketi-deployment.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"heketi-deployment.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/storage-provisioner-gluster/storage-provisioner-glusterfile.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"storage-privisioner-glusterfile.yaml",
 			"0640",
 			false),
-	}, false, "storage-provisioner-gluster"),
+	}, false, "storage-provisioner-gluster", "kube-system"),
 	"efk": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/efk/elasticsearch-rc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"elasticsearch-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/efk/elasticsearch-svc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"elasticsearch-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/efk/fluentd-es-rc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"fluentd-es-rc.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/efk/fluentd-es-configmap.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"fluentd-es-configmap.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/efk/kibana-rc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"kibana-rc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/efk/kibana-svc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"kibana-svc.yaml",
 			"0640",
 			false),
-	}, false, "efk"),
+	}, false, "efk", "kube-system"),
 	"ingress": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/ingress/ingress-configmap.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"ingress-configmap.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/ingress/ingress-rbac.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"ingress-rbac.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/ingress/ingress-dp.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"ingress-dp.yaml",
 			"0640",
 			true),
-	}, false, "ingress"),
+	}, false, "ingress", "kube-system"),
 	"istio-provisioner": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/istio-provisioner/istio-operator.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("istio-operator"),
 			"istio-operator.yaml",
 			"0640",
 			true),
-	}, false, "istio-provisioner"),
+	}, false, "istio-provisioner", "istio-operator"),
 	"istio": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/istio/istio-default-profile.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("istio-operator"),
 			"istio-default-profile.yaml",
 			"0640",
 			false),
-	}, false, "istio"),
+	}, false, "istio", "istio-operator"),
 	"metrics-server": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-apiservice.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"metrics-apiservice.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-server-deployment.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"metrics-server-deployment.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/metrics-server/metrics-server-service.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"metrics-server-service.yaml",
 			"0640",
 			false),
-	}, false, "metrics-server"),
+	}, false, "metrics-server", "kube-system"),
 	"registry": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/registry/registry-rc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"registry-rc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/registry/registry-svc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"registry-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/registry/registry-proxy.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"registry-proxy.yaml",
 			"0640",
 			false),
-	}, false, "registry"),
+	}, false, "registry", "kube-system"),
 	"registry-creds": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/registry-creds/registry-creds-rc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"registry-creds-rc.yaml",
 			"0640",
 			false),
-	}, false, "registry-creds"),
+	}, false, "registry-creds", "kube-system"),
 	"freshpod": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/freshpod/freshpod-rc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"freshpod-rc.yaml",
 			"0640",
 			true),
-	}, false, "freshpod"),
+	}, false, "freshpod", "kube-system"),
 	"nvidia-driver-installer": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/gpu/nvidia-driver-installer.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"nvidia-driver-installer.yaml",
 			"0640",
 			true),
-	}, false, "nvidia-driver-installer"),
+	}, false, "nvidia-driver-installer", "kube-system"),
 	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"nvidia-gpu-device-plugin.yaml",
 			"0640",
 			true),
-	}, false, "nvidia-gpu-device-plugin"),
+	}, false, "nvidia-gpu-device-plugin", "kube-system"),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/logviewer/logviewer-dp-and-svc.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"logviewer-dp-and-svc.yaml",
 			"0640",
 			false),
 		MustBinAsset(
 			"deploy/addons/logviewer/logviewer-rbac.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"logviewer-rbac.yaml",
 			"0640",
 			false),
-	}, false, "logviewer"),
+	}, false, "logviewer", "kube-system"),
 	"gvisor": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/gvisor/gvisor-pod.yaml.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"gvisor-pod.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/gvisor/gvisor-runtimeclass.yaml",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"gvisor-runtimeclass.yaml",
 			"0640",
 			false),
@@ -309,35 +306,40 @@ var Addons = map[string]*Addon{
 			constants.GvisorConfigTomlTargetName,
 			"0640",
 			true),
-	}, false, "gvisor"),
+	}, false, "gvisor", "kube-system"),
 	"helm-tiller": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/helm-tiller/helm-tiller-dp.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"helm-tiller-dp.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/helm-tiller/helm-tiller-rbac.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"helm-tiller-rbac.yaml",
 			"0640",
 			true),
 		MustBinAsset(
 			"deploy/addons/helm-tiller/helm-tiller-svc.tmpl",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"helm-tiller-svc.yaml",
 			"0640",
 			true),
-	}, false, "helm-tiller"),
+	}, false, "helm-tiller", "kube-system"),
 	"ingress-dns": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/ingress-dns/ingress-dns-pod.yaml",
-			vmpath.GuestAddonsDir,
+			TargetDirForAddon("kube-system"),
 			"ingress-dns-pod.yaml",
 			"0640",
 			false),
-	}, false, "ingress-dns"),
+	}, false, "ingress-dns", "kube-system"),
+}
+
+// TargetDirForAddon appends the namespace as a directory to /etc/kubernetes/addons
+func TargetDirForAddon(namespace string) string {
+	return filepath.Join(vmpath.GuestAddonsDir, namespace)
 }
 
 // AddMinikubeDirAssets adds all addons and files to the list

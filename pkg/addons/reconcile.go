@@ -17,6 +17,8 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -24,10 +26,12 @@ import (
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 var (
@@ -58,18 +62,32 @@ var kubectlPruneWhitelist = []string{
 // reconcile runs kubectl apply -f on the addons directory
 // to reconcile addons state in all running profiles
 func reconcile(cmd command.Runner, profile string) error {
-	c, err := kubectlCommand(profile)
+	// Walk through all subdirs in /etc/kubernetes/addons and reconcile addons
+	dirs, err := ioutil.ReadDir(vmpath.GuestAddonsDir)
 	if err != nil {
 		return err
 	}
-	if _, err := cmd.RunCmd(c); err != nil {
-		glog.Warningf("reconciling addons failed: %v", err)
-		return err
+
+	for _, d := range dirs {
+		if !d.IsDir() {
+			continue
+		}
+		namespace := d.Name()
+		glog.Infof("Reconciling addons in namespace %s", namespace)
+		c, err := kubectlCommand(profile, namespace)
+		if err != nil {
+			return err
+		}
+		if _, err := cmd.RunCmd(c); err != nil {
+			glog.Warningf("reconciling addons failed: %v", err)
+			return err
+		}
 	}
+
 	return nil
 }
 
-func kubectlCommand(profile string) (*exec.Cmd, error) {
+func kubectlCommand(profile, namespace string) (*exec.Cmd, error) {
 	v, err := k8sVersion(profile)
 	if err != nil {
 		return nil, err
@@ -78,7 +96,7 @@ func kubectlCommand(profile string) (*exec.Cmd, error) {
 
 	// prune will delete any existing objects with the label specified by "-l" which don't appear in /etc/kubernetes/addons
 	// this is how we delete disabled addons
-	args := []string{"KUBECONFIG=/var/lib/minikube/kubeconfig", kubectlBinary, "apply", "-f", "/etc/kubernetes/addons", "-l", "kubernetes.io/cluster-service!=true,addonmanager.kubernetes.io/mode=Reconcile", "--prune=true"}
+	args := []string{"KUBECONFIG=/var/lib/minikube/kubeconfig", kubectlBinary, "apply", "-f", assets.TargetDirForAddon(namespace), "-l", "kubernetes.io/cluster-service!=true,addonmanager.kubernetes.io/mode=Reconcile", "--prune=true"}
 	for _, k := range kubectlPruneWhitelist {
 		args = append(args, []string{"--prune-whitelist", k}...)
 	}
@@ -89,7 +107,7 @@ func kubectlCommand(profile string) (*exec.Cmd, error) {
 		return nil, errors.Wrap(err, "appending namespace flag")
 	}
 	if ok {
-		args = append(args, "--namespace=kube-system")
+		args = append(args, fmt.Sprintf("--namespace=%s", namespace))
 	}
 
 	cmd := exec.Command("sudo", args...)
