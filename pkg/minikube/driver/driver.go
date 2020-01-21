@@ -99,7 +99,6 @@ type FlagHints struct {
 	CacheImages      bool
 	ContainerRuntime string
 	Bootstrapper     string
-	EnableDefaultCNI bool
 }
 
 // FlagDefaults returns suggested defaults based on a driver
@@ -111,7 +110,6 @@ func FlagDefaults(name string) FlagHints {
 		if name == Docker {
 			fh.ContainerRuntime = "containerd"
 			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR))
-			fh.EnableDefaultCNI = true
 		}
 		return fh
 	}
