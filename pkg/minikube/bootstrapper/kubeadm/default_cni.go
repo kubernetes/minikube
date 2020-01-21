@@ -16,6 +16,8 @@ limitations under the License.
 
 package kubeadm
 
+import "html/template"
+
 // defaultCNIConfig is the CNI config which is provisioned when --enable-default-cni
 // has been passed to `minikube start`.
 //
@@ -43,10 +45,8 @@ const defaultCNIConfig = `
 }
 `
 
-// kicCNIConfig is the cni plugin needed for kic
-// uses cni plugin created by kind https://github.com/kubernetes-sigs/kind/blob/03a4b519067dc308308cce735065c47a6fda1583/pkg/build/node/cni.go
-const kicCNIConfig = `
----
+// kicCNIConfig is the cni plugin needed for kic uses cni plugin created by kind https://github.com/kubernetes-sigs/kind/blob/03a4b519067dc308308cce735065c47a6fda1583/pkg/build/node/cni.go
+var kicCNIConfig = template.Must(template.New("kubeletServiceTemplate").Parse(`---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -114,7 +114,7 @@ spec:
       serviceAccountName: kindnet
       containers:
       - name: kindnet-cni
-        image: kindest/kindnetd:0.5.3
+        image: {{.ImageName}}
         env:
         - name: HOST_IP
           valueFrom:
@@ -159,4 +159,4 @@ spec:
           path: /lib/modules
 
 ---
-`
+`))

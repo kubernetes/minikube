@@ -17,7 +17,9 @@ limitations under the License.
 package kubeadm
 
 import (
+	"bytes"
 	"os/exec"
+	"path"
 
 	"fmt"
 	"net"
@@ -200,9 +202,9 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
 	}
 
-	if cfg.KubernetesConfig.EnableDefaultCNI {
-		if err := k.applyOverlayNetwork(); err != nil {
-			return errors.Wrap(err, "applying overlay network")
+	if driver.IsKIC(cfg.VMDriver) {
+		if err := k.applyKicOverlay(cfg); err != nil {
+			return errors.Wrap(err, "applying kic overlay network")
 		}
 	}
 
@@ -426,10 +428,6 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	var cniFile []byte = nil
 	if cfg.KubernetesConfig.EnableDefaultCNI {
 		cniFile = []byte(defaultCNIConfig)
-		if driver.IsKIC(cfg.VMDriver) {
-			cniFile = []byte(kicCNIConfig)
-		}
-
 	}
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
 
@@ -448,12 +446,16 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	return nil
 }
 
-// applyOverlayNetwork applies the CNI plugin needed to make kic work
-func (k *Bootstrapper) applyOverlayNetwork() error {
-	cmd := exec.Command(
-		"kubectl", "create", "--kubeconfig=/etc/kubernetes/admin.conf",
-		"-f", bsutil.DefaultCNIConfigPath,
-	)
+// applyKicOverlay applies the CNI plugin needed to make kic work
+func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
+	cmd := exec.Command("sudo",
+		path.Join("/var/lib/minikube/binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", "--kubeconfig=/var/lib/minikube/kubeconfig",
+		"-f", "-")
+	b := bytes.Buffer{}
+	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
+		return err
+	}
+	cmd.Stdin = bytes.NewReader(b.Bytes())
 	if rr, err := k.c.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
 	}

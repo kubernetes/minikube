@@ -1027,10 +1027,6 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 		viper.Set(cacheImages, hints.CacheImages)
 	}
 
-	if !cmd.Flags().Changed(enableDefaultCNI) {
-		viper.Set(enableDefaultCNI, hints.EnableDefaultCNI)
-	}
-
 	if !cmd.Flags().Changed(containerRuntime) && hints.ContainerRuntime != "" {
 		viper.Set(containerRuntime, hints.ContainerRuntime)
 		glog.Infof("auto set %s to %q.", containerRuntime, hints.ContainerRuntime)
