@@ -53,7 +53,6 @@ var unpauseCmd = &cobra.Command{
 			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": cname})
 			os.Exit(1)
 		}
-
 		glog.Infof("config: %+v", cc)
 		host, err := cluster.CheckIfHostExistsAndLoad(api, cname)
 		if err != nil {
