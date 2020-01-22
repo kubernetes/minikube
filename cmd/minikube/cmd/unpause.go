@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,7 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/pause"
 )
 
 // unpauseCmd represents the docker-pause command
@@ -69,10 +68,26 @@ var unpauseCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Failed runtime", err)
 		}
-		err = pause.Unpause(cr, r)
+
+		glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
+		if allNamespaces {
+			namespaces = nil //all
+		} else {
+			if len(namespaces) == 0 {
+				exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
+			}
+		}
+
+		err = cluster.Unpause(cr, r, namespaces)
+
 		if err != nil {
 			exit.WithError("Pause", err)
 		}
 		out.T(out.Unpause, "The '{{.name}}' cluster is now unpaused", out.V{"name": cc.Name})
 	},
+}
+
+func init() {
+	unpauseCmd.Flags().StringSliceVarP(&namespaces, "--namespaces", "n", cluster.DefaultNamespaces, "namespaces to unpause")
+	unpauseCmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "If set, unpause all namespaces")
 }

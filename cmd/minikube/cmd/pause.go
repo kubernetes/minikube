@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -29,52 +30,77 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/pause"
+)
+
+var (
+	namespaces    []string
+	allNamespaces bool
 )
 
 // pauseCmd represents the docker-pause command
 var pauseCmd = &cobra.Command{
 	Use:   "pause",
 	Short: "pause containers",
-	Run: func(cmd *cobra.Command, args []string) {
-		cname := viper.GetString(config.MachineProfile)
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
-		cc, err := config.Load(cname)
+	Run:   runPause,
+}
 
-		if err != nil && !os.IsNotExist(err) {
-			exit.WithError("Error loading profile config", err)
-		}
+func runPause(cmd *cobra.Command, args []string) {
+	cname := viper.GetString(config.MachineProfile)
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		exit.WithError("Error getting client", err)
+	}
+	defer api.Close()
+	cc, err := config.Load(cname)
 
-		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": cname})
-			os.Exit(1)
-		}
+	if err != nil && !os.IsNotExist(err) {
+		exit.WithError("Error loading profile config", err)
+	}
 
-		glog.Infof("config: %+v", cc)
-		host, err := cluster.CheckIfHostExistsAndLoad(api, cname)
-		if err != nil {
-			exit.WithError("Error getting host", err)
-		}
+	if err != nil {
+		out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": cname})
+		os.Exit(1)
+	}
 
-		r, err := machine.CommandRunner(host)
-		if err != nil {
-			exit.WithError("Failed to get command runner", err)
-		}
+	glog.Infof("config: %+v", cc)
+	host, err := cluster.CheckIfHostExistsAndLoad(api, cname)
+	if err != nil {
+		exit.WithError("Error getting host", err)
+	}
 
-		config := cruntime.Config{Type: cc.ContainerRuntime, Runner: r}
-		cr, err := cruntime.New(config)
-		if err != nil {
-			exit.WithError("Failed runtime", err)
-		}
+	r, err := machine.CommandRunner(host)
+	if err != nil {
+		exit.WithError("Failed to get command runner", err)
+	}
 
-		err = pause.Pause(cr, r)
-		if err != nil {
-			exit.WithError("Pause", err)
+	config := cruntime.Config{Type: cc.ContainerRuntime, Runner: r}
+	cr, err := cruntime.New(config)
+	if err != nil {
+		exit.WithError("Failed runtime", err)
+	}
+
+	glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
+	if allNamespaces {
+		namespaces = nil //all
+	} else {
+		if len(namespaces) == 0 {
+			exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
 		}
-		out.T(out.Pause, "The '{{.name}}' cluster is now paused", out.V{"name": cc.Name})
-	},
+	}
+
+	err = cluster.Pause(cr, r, namespaces)
+	if err != nil {
+		exit.WithError("Pause", err)
+	}
+
+	if namespaces == nil {
+		out.T(out.Pause, "Paused all namespaces in the '{{.name}}' cluster", out.V{"name": cc.Name})
+	} else {
+		out.T(out.Pause, "Paused the following namespaces in '{{.name}}': {{.namespaces}}", out.V{"name": cc.Name, "namespaces": strings.Join(namespaces, ", ")})
+	}
+}
+
+func init() {
+	pauseCmd.Flags().StringSliceVarP(&namespaces, "--namespaces", "n", cluster.DefaultNamespaces, "namespaces to pause")
+	pauseCmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "If set, pause all namespaces")
 }

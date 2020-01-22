@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package pause
+package cluster
 
 import (
 	"github.com/golang/glog"
@@ -24,15 +24,22 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubelet"
 )
 
+// DefaultNamespaces are namespaces used by minikube, including addons
+var DefaultNamespaces = []string{
+	"kube-system",
+	"kubernetes-dashboard",
+	"storage-gluster",
+}
+
 // Pause pauses a Kubernetes cluster
-func Pause(cr cruntime.Manager, r command.Runner) error {
+func Pause(cr cruntime.Manager, r command.Runner, namespaces []string) error {
 	if err := kubelet.Disable(r); err != nil {
 		return errors.Wrap(err, "kubelet disable")
 	}
 	if err := kubelet.Stop(r); err != nil {
 		return errors.Wrap(err, "kubelet stop")
 	}
-	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Running})
+	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Running, Namespaces: namespaces})
 	if err != nil {
 		return errors.Wrap(err, "list running")
 	}
@@ -45,8 +52,8 @@ func Pause(cr cruntime.Manager, r command.Runner) error {
 }
 
 // Unpause unpauses a Kubernetes cluster
-func Unpause(cr cruntime.Manager, r command.Runner) error {
-	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Paused})
+func Unpause(cr cruntime.Manager, r command.Runner, namespaces []string) error {
+	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {
 		return errors.Wrap(err, "list paused")
 	}
