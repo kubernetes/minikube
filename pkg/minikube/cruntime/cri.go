@@ -27,6 +27,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/command"
 )
 
 // container maps to 'runc list -f json'
@@ -35,19 +36,37 @@ type container struct {
 	Status string
 }
 
+// crictlList returns the output of 'crictl ps' in an efficient manner
+func crictlList(cr CommandRunner, root string, o ListOptions) (*command.RunResult, error) {
+	glog.Infof("listing CRI containers in root %s: %+v", root, o)
+
+	// Use -a because otherwise paused containers are missed
+	baseCmd := []string{"crictl", "ps", "-a", "--quiet"}
+
+	if o.Name != "" {
+		baseCmd = append(baseCmd, fmt.Sprintf("--name=%s", o.Name))
+	}
+
+	// shortcut for all namespaces
+	if len(o.Namespaces) == 0 {
+		return cr.RunCmd(exec.Command("sudo", baseCmd...))
+	}
+
+	// Gather containers for all namespaces without causing extraneous shells to be launched
+	cmds := []string{}
+	for _, ns := range o.Namespaces {
+		cmd := fmt.Sprintf("%s --label io.kubernetes.pod.namespace=%s", strings.Join(baseCmd, " "), ns)
+		cmds = append(cmds, cmd)
+	}
+
+	return cr.RunCmd(exec.Command("sudo", "-s", "eval", strings.Join(cmds, "; ")))
+}
+
 // listCRIContainers returns a list of containers
 func listCRIContainers(cr CommandRunner, root string, o ListOptions) ([]string, error) {
-	// First use crictl, because it reliably matches names
-	args := []string{"crictl", "ps", "--quiet"}
-	if o.State == All {
-		args = append(args, "-a")
-	}
-	if o.Name != "" {
-		args = append(args, fmt.Sprintf("--name=%s", o.Name))
-	}
-	rr, err := cr.RunCmd(exec.Command("sudo", args...))
+	rr, err := crictlList(cr, root, o)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "crictl list")
 	}
 
 	// Avoid an id named ""
@@ -70,7 +89,7 @@ func listCRIContainers(cr CommandRunner, root string, o ListOptions) ([]string, 
 
 	// crictl does not understand paused pods
 	cs := []container{}
-	args = []string{"runc"}
+	args := []string{"runc"}
 	if root != "" {
 		args = append(args, "--root", root)
 	}

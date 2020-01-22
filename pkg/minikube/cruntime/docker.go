@@ -154,7 +154,14 @@ func (r *Docker) ListContainers(o ListOptions) ([]string, error) {
 	case Paused:
 		args = append(args, "--filter", "status=paused")
 	}
-	args = append(args, fmt.Sprintf("--filter=name=%s", KubernetesContainerPrefix+o.Name), "--format={{.ID}}")
+
+	nameFilter := KubernetesContainerPrefix + o.Name
+	if len(o.Namespaces) > 0 {
+		// Example result: k8s.*(kube-system|kubernetes-dashboard)
+		nameFilter = fmt.Sprintf("%s.*_(%s)_", nameFilter, strings.Join(o.Namespaces, "|"))
+	}
+
+	args = append(args, fmt.Sprintf("--filter=name=%s", nameFilter), "--format={{.ID}}")
 	rr, err := r.Runner.RunCmd(exec.Command("docker", args...))
 	if err != nil {
 		return nil, errors.Wrapf(err, "docker")

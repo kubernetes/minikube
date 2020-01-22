@@ -111,6 +111,8 @@ type ListOptions struct {
 	State ContainerState
 	// Name is a name filter
 	Name string
+	// Namespaces is the namespaces to look into
+	Namespaces []string
 }
 
 // New returns an appropriately configured runtime
