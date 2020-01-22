@@ -514,7 +514,8 @@ func startMachine(cfg *config.MachineConfig, node *config.Node) (runner command.
 	}
 	// Save IP to configuration file for subsequent use
 	node.IP = ip
-	if err := saveConfig(cfg); err != nil {
+
+	if err := saveNodeToConfig(cfg, node); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
@@ -1335,4 +1336,14 @@ func configureMounts() {
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func saveConfig(clusterCfg *config.MachineConfig) error {
 	return config.SaveProfile(viper.GetString(config.MachineProfile), clusterCfg)
+}
+
+func saveNodeToConfig(cfg *config.MachineConfig, node *config.Node) error {
+	for i, n := range cfg.Nodes {
+		if n.Name == node.Name {
+			cfg.Nodes[i] = *node
+			break
+		}
+	}
+	return saveConfig(cfg)
 }
