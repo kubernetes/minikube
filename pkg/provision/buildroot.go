@@ -314,7 +314,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return err
 	}
 
-	config, err := config.Load()
+	config, err := config.Load(p.Driver.GetMachineName())
 	if err != nil {
 		return errors.Wrap(err, "getting cluster config")
 	}

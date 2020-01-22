@@ -22,6 +22,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -64,8 +65,21 @@ var deleteCacheCmd = &cobra.Command{
 			exit.WithError("Failed to delete images from config", err)
 		}
 		// Delete images from cache/images directory
-		if err := machine.DeleteFromImageCacheDir(args); err != nil {
+		if err := image.DeleteFromCacheDir(args); err != nil {
 			exit.WithError("Failed to delete images", err)
+		}
+	},
+}
+
+// reloadCacheCmd represents the cache reload command
+var reloadCacheCmd = &cobra.Command{
+	Use:   "reload",
+	Short: "reload cached images.",
+	Long:  "reloads images previously added using the 'cache add' subcommand",
+	Run: func(cmd *cobra.Command, args []string) {
+		err := cacheAndLoadImagesInConfig()
+		if err != nil {
+			exit.WithError("Failed to reload cached images", err)
 		}
 	},
 }
@@ -85,8 +99,9 @@ func imagesInConfigFile() ([]string, error) {
 	return []string{}, nil
 }
 
-// CacheImagesInConfigFile caches the images currently in the config file (minikube start)
-func CacheImagesInConfigFile() error {
+// saveImagesToTarFromConfig saves images to tar in cache which specified in config file.
+// currently only used by download-only option
+func saveImagesToTarFromConfig() error {
 	images, err := imagesInConfigFile()
 	if err != nil {
 		return err
@@ -94,11 +109,12 @@ func CacheImagesInConfigFile() error {
 	if len(images) == 0 {
 		return nil
 	}
-	return machine.CacheImages(images, constants.ImageCacheDir)
+	return image.SaveToDir(images, constants.ImageCacheDir)
 }
 
-// loadCachedImagesInConfigFile loads the images currently in the config file (minikube start)
-func loadCachedImagesInConfigFile() error {
+// cacheAndLoadImagesInConfig loads the images currently in the config file
+// called by 'start' and 'cache reload' commands.
+func cacheAndLoadImagesInConfig() error {
 	images, err := imagesInConfigFile()
 	if err != nil {
 		return err
@@ -112,4 +128,5 @@ func loadCachedImagesInConfigFile() error {
 func init() {
 	cacheCmd.AddCommand(addCacheCmd)
 	cacheCmd.AddCommand(deleteCacheCmd)
+	cacheCmd.AddCommand(reloadCacheCmd)
 }

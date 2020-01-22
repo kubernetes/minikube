@@ -33,6 +33,8 @@ const (
 	APIServerName = "minikubeCA"
 	// ClusterDNSDomain is the default DNS domain
 	ClusterDNSDomain = "cluster.local"
+	// DefaultServiceCIDR is The CIDR to be used for service cluster IPs
+	DefaultServiceCIDR = "10.96.0.0/12"
 )
 
 // DefaultMinipath is the default Minikube path (under the home directory)
@@ -65,10 +67,10 @@ var DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.i
 var DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 // DefaultKubernetesVersion is the default kubernetes version
-var DefaultKubernetesVersion = "v1.17.0-beta.1"
+var DefaultKubernetesVersion = "v1.17.0"
 
 // NewestKubernetesVersion is the newest Kubernetes version to test against
-var NewestKubernetesVersion = "v1.17.0-beta.1"
+var NewestKubernetesVersion = "v1.17.0"
 
 // OldestKubernetesVersion is the oldest Kubernetes version to test against
 var OldestKubernetesVersion = "v1.11.10"
@@ -84,8 +86,9 @@ var ImageRepositories = map[string][]string{
 	"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},
 }
 
-// KubeadmBinaries are Kubernetes release binaries required for kubeadm
-var KubeadmBinaries = []string{"kubelet", "kubeadm"}
+// KubernetesReleaseBinaries are Kubernetes release binaries required for
+// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)
+var KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
 
 // ImageCacheDir is the path to the image cache directory
 var ImageCacheDir = localpath.MakeMiniPath("cache", "images")

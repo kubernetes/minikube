@@ -32,9 +32,11 @@ import (
 	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
+	"github.com/spf13/viper"
+	pkgaddons "k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -57,9 +59,15 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cc, err := pkg_config.Load()
+		profileName := viper.GetString(pkg_config.MachineProfile)
+		cc, err := pkg_config.Load(profileName)
 		if err != nil && !os.IsNotExist(err) {
 			exit.WithError("Error loading profile config", err)
+		}
+
+		if err != nil {
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
+			os.Exit(1)
 		}
 
 		api, err := machine.NewAPIClient()
@@ -104,7 +112,7 @@ var dashboardCmd = &cobra.Command{
 			// Send status messages to stderr for folks re-using this output.
 			out.ErrT(out.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = configcmd.Set("dashboard", "true")
+			err = pkgaddons.Set("dashboard", "true", viper.GetString(config.MachineProfile))
 			if err != nil {
 				exit.WithError("Unable to enable dashboard", err)
 			}

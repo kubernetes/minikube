@@ -10,22 +10,24 @@ require (
 	github.com/Parallels/docker-machine-parallels v1.3.0
 	github.com/Sirupsen/logrus v0.0.0-20170822132746-89742aefa4b2 // indirect
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
+	github.com/alecthomas/chroma v0.7.0
 	github.com/blang/semver v3.5.0+incompatible
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
 	github.com/cenkalti/backoff v2.2.1+incompatible
 	github.com/cheggaaa/pb/v3 v3.0.1
 	github.com/cloudfoundry-attic/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21
 	github.com/cloudfoundry/jibber_jabber v0.0.0-20151120183258-bcc4c8345a21 // indirect
-	github.com/docker/docker v1.13.1 // indirect
+	github.com/docker/docker v1.13.1
 	github.com/docker/go-units v0.3.3
 	github.com/docker/machine v0.7.1-0.20190718054102-a555e4f7a8f5 // version is 0.7.1 to pin to a555e4f7a8f5
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
+	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.3.0
-	github.com/gorilla/mux v1.7.1 // indirect
+	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce // indirect
 	github.com/hashicorp/go-getter v1.4.0
 	github.com/hashicorp/go-multierror v0.0.0-20160811015721-8c5f0ad93604 // indirect
@@ -69,17 +71,19 @@ require (
 	github.com/xeipuuv/gojsonschema v0.0.0-20160623135812-c539bca196be
 	github.com/zchee/go-vmnet v0.0.0-20161021174912-97ebf9174097
 	golang.org/x/build v0.0.0-20190111050920-041ab4dc3f9d
-	golang.org/x/crypto v0.0.0-20190611184440-5c40567a22f8
+	golang.org/x/crypto v0.0.0-20190701094942-4def268fd1a4
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb
 	golang.org/x/text v0.3.2
 	gopkg.in/airbrake/gobrake.v2 v2.0.9 // indirect
+	gopkg.in/check.v1 v1.0.0-20180628173108-788fd7840127 // indirect
 	gopkg.in/gemnasium/logrus-airbrake-hook.v2 v2.1.2 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.0.0
 	k8s.io/apimachinery v0.0.0
-	k8s.io/client-go v0.0.0
+	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/klog v0.3.3 // indirect
 	k8s.io/kubectl v0.0.0-00010101000000-000000000000
 	sigs.k8s.io/sig-storage-lib-external-provisioner v4.0.0+incompatible
 )

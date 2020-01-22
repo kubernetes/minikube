@@ -39,5 +39,4 @@ install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh  || echo "
 echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
 crontab -l
 
-# Download files and set permissions
 source common.sh

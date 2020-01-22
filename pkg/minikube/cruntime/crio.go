@@ -403,7 +403,7 @@ func (r *CRIO) Enable(disOthers bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
+	if err := generateCRIOConfig(r.Runner, r.ImageRepository); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
@@ -424,6 +424,20 @@ func (r *CRIO) Disable() error {
 	return nil
 }
 
+// ImageExists checks if an image exists
+func (r *CRIO) ImageExists(name string, sha string) bool {
+	// expected output looks like [NAME@sha256:SHA]
+	c := exec.Command("sudo", "podman", "inspect", "--format='{{.Id}}'", name)
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return false
+	}
+	if !strings.Contains(rr.Output(), sha) {
+		return false
+	}
+	return true
+}
+
 // LoadImage loads an image into this runtime
 func (r *CRIO) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
@@ -432,6 +446,26 @@ func (r *CRIO) LoadImage(path string) error {
 		return errors.Wrap(err, "crio load image")
 	}
 	return nil
+}
+
+// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+func (r *CRIO) CGroupDriver() (string, error) {
+	c := exec.Command("crio", "config")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return "", err
+	}
+	cgroupManager := "cgroupfs" // default
+	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
+		if strings.HasPrefix(line, "cgroup_manager") {
+			// cgroup_manager = "cgroupfs"
+			f := strings.Split(strings.TrimSpace(line), " = ")
+			if len(f) == 2 {
+				cgroupManager = strings.Trim(f[1], "\"")
+			}
+		}
+	}
+	return cgroupManager, nil
 }
 
 // KubeletOptions returns kubelet options for a runtime.
@@ -471,7 +505,7 @@ func (r *CRIO) StopContainers(ids []string) error {
 
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
 func (r *CRIO) ContainerLogCmd(id string, len int, follow bool) string {
-	return criContainerLogCmd(id, len, follow)
+	return criContainerLogCmd(r.Runner, id, len, follow)
 }
 
 // SystemLogCmd returns the command to retrieve system logs
@@ -480,13 +514,13 @@ func (r *CRIO) SystemLogCmd(len int) string {
 }
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
-func generateCRIOConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
+func generateCRIOConfig(cr CommandRunner, imageRepository string) error {
 	cPath := crioConfigFile
 	t, err := template.New("crio.conf").Parse(crioConfigTemplate)
 	if err != nil {
 		return err
 	}
-	pauseImage := images.PauseImage(imageRepository, k8sVersion)
+	pauseImage := images.Pause(imageRepository)
 	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: pauseImage}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {

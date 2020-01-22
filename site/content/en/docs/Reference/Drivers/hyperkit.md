@@ -17,7 +17,7 @@ description: >
 
 minikube start supports additional hyperkit specific flags:
 
-* **`--hyperkit-vpnkit-sock`**: Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSoc
+* **`--hyperkit-vpnkit-sock`**: Location of the VPNKit socket used for networking. If empty, disables Hyperkit VPNKitSock, if 'auto' uses Docker for Mac VPNKit connection, otherwise uses the specified VSock
 * **`--hyperkit-vsock-ports`**: List of guest VSock ports that should be exposed as sockets on the host
 * **`--nfs-share`**: Local folders to share with Guest via NFS mounts
 * **`--nfs-shares-root`**: Where to root the NFS Shares (default "/nfsshares")

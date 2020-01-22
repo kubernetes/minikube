@@ -170,13 +170,13 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
-func generateContainerdConfig(cr CommandRunner, imageRepository string, k8sVersion string) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string) error {
 	cPath := containerdConfigFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
 		return err
 	}
-	pauseImage := images.PauseImage(imageRepository, k8sVersion)
+	pauseImage := images.Pause(imageRepository)
 	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: pauseImage}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
@@ -199,7 +199,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
@@ -222,6 +222,15 @@ func (r *Containerd) Disable() error {
 	return nil
 }
 
+// ImageExists checks if an image exists, expected input format
+func (r *Containerd) ImageExists(name string, sha string) bool {
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo ctr -n=k8s.io images check | grep %s | grep %s", name, sha))
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return false
+	}
+	return true
+}
+
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
@@ -230,6 +239,29 @@ func (r *Containerd) LoadImage(path string) error {
 		return errors.Wrapf(err, "ctr images import")
 	}
 	return nil
+}
+
+// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+func (r *Containerd) CGroupDriver() (string, error) {
+	info, err := getCRIInfo(r.Runner)
+	if err != nil {
+		return "", err
+	}
+	if info["config"] == nil {
+		return "", errors.Wrapf(err, "missing config")
+	}
+	config, ok := info["config"].(map[string]interface{})
+	if !ok {
+		return "", errors.Wrapf(err, "config not map")
+	}
+	cgroupManager := "cgroupfs" // default
+	switch config["systemdCgroup"] {
+	case false:
+		cgroupManager = "cgroupfs"
+	case true:
+		cgroupManager = "systemd"
+	}
+	return cgroupManager, nil
 }
 
 // KubeletOptions returns kubelet options for a containerd
@@ -269,7 +301,7 @@ func (r *Containerd) StopContainers(ids []string) error {
 
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
 func (r *Containerd) ContainerLogCmd(id string, len int, follow bool) string {
-	return criContainerLogCmd(id, len, follow)
+	return criContainerLogCmd(r.Runner, id, len, follow)
 }
 
 // SystemLogCmd returns the command to retrieve system logs

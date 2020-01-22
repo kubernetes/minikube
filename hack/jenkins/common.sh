@@ -26,6 +26,9 @@
 
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
+export GOPATH="$HOME/go"
+export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
+
 echo ">> Starting at $(date)"
 echo ""
 echo "arch:      ${OS_ARCH}"
@@ -39,6 +42,8 @@ echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
+echo "go:        $(go version || true)"
+
 
 case "${VM_DRIVER}" in
   kvm2)
@@ -258,15 +263,27 @@ if [[ "${LOAD}" -gt 2 ]]; then
   uptime
 fi
 
+readonly TEST_OUT="${TEST_HOME}/testout.txt"
+readonly JSON_OUT="${TEST_HOME}/test.json"
+readonly HTML_OUT="${TEST_HOME}/test.html"
+
+e2e_start_time="$(date -u +%s)"
 echo ""
 echo ">> Starting ${E2E_BIN} at $(date)"
 set -x
+
+if test -f "${TEST_OUT}"; then
+  rm "${TEST_OUT}" || true # clean up previous runs of same build
+fi
+touch "${TEST_OUT}"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
-  -test.timeout=70m \
+  -test.timeout=70m -test.v \
   ${EXTRA_TEST_ARGS} \
-  -binary="${MINIKUBE_BIN}" && result=$? || result=$?
+  -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"
+
+result=${PIPESTATUS[0]} # capture the exit code of the first cmd in pipe.
 set +x
 echo ">> ${E2E_BIN} exited with ${result} at $(date)"
 echo ""
@@ -279,14 +296,66 @@ else
   echo "minikube: FAIL"
 fi
 
+## caclucate the time took to finish running e2e binary test.
+e2e_end_time="$(date -u +%s)"
+elapsed=$(($e2e_end_time-$e2e_start_time))
+min=$(($elapsed/60))
+sec=$(tail -c 3 <<< $((${elapsed}00/60)))
+elapsed=$min.$sec
+
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}"
+echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
+gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
+
+
+echo ">> Attmpting to convert test logs to json"
+if test -f "${JSON_OUT}"; then
+  rm "${JSON_OUT}" || true # clean up previous runs of same build
+fi
+
+touch "${JSON_OUT}"
+
+# Generate JSON output
+echo ">> Running go test2json"
+go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
+echo ">> Installing gopogh"
+cd /tmp
+GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.17 || true
+cd -
+echo ">> Running gopogh"
+if test -f "${HTML_OUT}"; then
+    rm "${HTML_OUT}" || true # clean up previous runs of same build
+fi
+
+touch "${HTML_OUT}"
+pessimistic_status=$(gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+description="completed with ${status} in ${elapsed} minute(s)."
+if [ "$status" = "failure" ]; then
+  description="completed with ${pessimistic_status} in ${elapsed} minute(s)."
+fi
+echo $description
+
+echo ">> uploading ${JSON_OUT}"
+gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
+echo ">> uploading ${HTML_OUT}"
+gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
+
+public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
+if grep -q html "$HTML_OUT"; then
+  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
+fi
+
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
-${SUDO_PREFIX}${MINIKUBE_BIN} delete >/dev/null 2>/dev/null || true
+${SUDO_PREFIX}${MINIKUBE_BIN} delete --all >/dev/null 2>/dev/null || true
 cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true
 ${SUDO_PREFIX} rm -f "${KUBECONFIG}" || true
-rmdir "${TEST_HOME}"
+${SUDO_PREFIX} rm -f "${TEST_OUT}" || true
+${SUDO_PREFIX} rm -f "${JSON_OUT}" || true
+${SUDO_PREFIX} rm -f "${HTML_OUT}" || true
+rmdir "${TEST_HOME}" || true
 echo ">> ${TEST_HOME} completed at $(date)"
 
 if [[ "${MINIKUBE_LOCATION}" == "master" ]]; then
@@ -300,6 +369,7 @@ function retry_github_status() {
   local state=$3
   local token=$4
   local target=$5
+  local desc=$6
 
    # Retry in case we hit our GitHub API quota or fail other ways.
   local attempt=0
@@ -312,7 +382,7 @@ function retry_github_status() {
       "https://api.github.com/repos/kubernetes/minikube/statuses/${commit}?access_token=${token}" \
       -H "Content-Type: application/json" \
       -X POST \
-      -d "{\"state\": \"${state}\", \"description\": \"Jenkins\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
+      -d "{\"state\": \"${state}\", \"description\": \"Jenkins: ${desc}\", \"target_url\": \"${target}\", \"context\": \"${context}\"}" || echo 999)
 
     # 2xx HTTP codes
     if [[ "${code}" =~ ^2 ]]; then
@@ -327,5 +397,7 @@ function retry_github_status() {
   done
 }
 
-retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "https://storage.googleapis.com/minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}.txt"
+
+
+retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
 exit $result

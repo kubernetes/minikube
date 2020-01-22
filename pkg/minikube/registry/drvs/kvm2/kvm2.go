@@ -20,6 +20,7 @@ package kvm2
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -86,13 +87,25 @@ func configure(mc config.MachineConfig) interface{} {
 	}
 }
 
+// defaultURI returns the QEMU URI to connect to for health checks
+func defaultURI() string {
+	u := os.Getenv("LIBVIRT_DEFAULT_URI")
+	if u != "" {
+		return u
+	}
+	return "qemu:///system"
+}
+
 func status() registry.State {
 	path, err := exec.LookPath("virsh")
 	if err != nil {
 		return registry.State{Error: err, Fix: "Install libvirt", Doc: docURL}
 	}
 
+	// On Ubuntu 19.10 (libvirt 5.4), this fails if LIBVIRT_DEFAULT_URI is unset
 	cmd := exec.Command(path, "domcapabilities", "--virttype", "kvm")
+	cmd.Env = append(os.Environ(), fmt.Sprintf("LIBVIRT_DEFAULT_URI=%s", defaultURI()))
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return registry.State{
@@ -104,6 +117,7 @@ func status() registry.State {
 	}
 
 	cmd = exec.Command("virsh", "list")
+	cmd.Env = append(os.Environ(), fmt.Sprintf("LIBVIRT_DEFAULT_URI=%s", defaultURI()))
 	out, err = cmd.CombinedOutput()
 	if err != nil {
 		return registry.State{
