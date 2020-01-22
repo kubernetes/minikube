@@ -86,4 +86,5 @@ const (
 	Sparkle
 	Pause
 	Unpause
+	DryRun
 )
