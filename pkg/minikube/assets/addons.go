@@ -66,11 +66,11 @@ func (a *Addon) IsEnabled() (bool, error) {
 // TODO: Make dynamically loadable: move this data to a .yaml file within each addon directory
 var Addons = map[string]*Addon{
 	"dashboard": NewAddon([]*BinAsset{
+		MustBinAsset("deploy/addons/dashboard/dashboard-ns.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-ns.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-clusterrole.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-clusterrolebinding.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-configmap.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-configmap.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-dp.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-dp.yaml", "0640", false),
-		MustBinAsset("deploy/addons/dashboard/dashboard-ns.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-ns.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-role.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-role.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-rolebinding.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-rolebinding.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-sa.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-sa.yaml", "0640", false),
@@ -331,7 +331,8 @@ var Addons = map[string]*Addon{
 
 // TargetDirForAddon appends the namespace as a directory to /etc/kubernetes/addons
 func TargetDirForAddon(namespace string) string {
-	return filepath.Join(vmpath.GuestAddonsDir, namespace)
+	return vmpath.GuestAddonsDir
+	// return filepath.Join(vmpath.GuestAddonsDir, namespace)
 }
 
 // AddMinikubeDirAssets adds all addons and files to the list
