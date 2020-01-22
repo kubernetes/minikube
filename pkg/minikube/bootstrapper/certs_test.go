@@ -38,7 +38,7 @@ func TestSetupCerts(t *testing.T) {
 	k8s := config.KubernetesConfig{
 		APIServerName: constants.APIServerName,
 		DNSDomain:     constants.ClusterDNSDomain,
-		ServiceCIDR:   util.DefaultServiceCIDR,
+		ServiceCIDR:   constants.DefaultServiceCIDR,
 	}
 
 	if err := os.Mkdir(filepath.Join(tempDir, "certs"), 0777); err != nil {

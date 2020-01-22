@@ -26,13 +26,13 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -40,8 +40,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/lock"
 
-	"github.com/juju/clock"
 	"github.com/juju/mutex"
 )
 
@@ -61,26 +61,23 @@ var (
 
 // SetupCerts gets the generated credentials required to talk to the APIServer.
 func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
+
+	localPath := localpath.MiniPath()
+	glog.Infof("Setting up %s for IP: %s\n", localPath, k8s.NodeIP)
+
 	// WARNING: This function was not designed for multiple profiles, so it is VERY racey:
 	//
 	// It updates a shared certificate file and uploads it to the apiserver before launch.
 	//
 	// If another process updates the shared certificate, it's invalid.
 	// TODO: Instead of racey manipulation of a shared certificate, use per-profile certs
-	spec := mutex.Spec{
-		Name:  "setupCerts",
-		Clock: clock.WallClock,
-		Delay: 15 * time.Second,
-	}
+	spec := lock.PathMutexSpec(filepath.Join(localPath, "certs"))
 	glog.Infof("acquiring lock: %+v", spec)
 	releaser, err := mutex.Acquire(spec)
 	if err != nil {
 		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
 	}
 	defer releaser.Release()
-
-	localPath := localpath.MiniPath()
-	glog.Infof("Setting up %s for IP: %s\n", localPath, k8s.NodeIP)
 
 	if err := generateCerts(k8s); err != nil {
 		return errors.Wrap(err, "Error generating certs")
@@ -114,7 +111,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig) error {
 
 	kcs := &kubeconfig.Settings{
 		ClusterName:          k8s.NodeName,
-		ClusterServerAddress: fmt.Sprintf("https://localhost:%d", k8s.NodePort),
+		ClusterServerAddress: fmt.Sprintf("https://%s", net.JoinHostPort("localhost", fmt.Sprint(k8s.NodePort))),
 		ClientCertificate:    path.Join(vmpath.GuestCertsDir, "apiserver.crt"),
 		ClientKey:            path.Join(vmpath.GuestCertsDir, "apiserver.key"),
 		CertificateAuthority: path.Join(vmpath.GuestCertsDir, "ca.crt"),
@@ -179,7 +176,7 @@ func generateCerts(k8s config.KubernetesConfig) error {
 
 	apiServerIPs := append(
 		k8s.APIServerIPs,
-		[]net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP("10.0.0.1")}...)
+		[]net.IP{net.ParseIP(k8s.NodeIP), serviceIP, net.ParseIP(kic.DefaultBindIPV4), net.ParseIP("10.0.0.1")}...)
 	apiServerNames := append(k8s.APIServerNames, k8s.APIServerName)
 	apiServerAlternateNames := append(
 		apiServerNames,

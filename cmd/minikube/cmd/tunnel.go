@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -37,7 +38,7 @@ var cleanup bool
 var tunnelCmd = &cobra.Command{
 	Use:   "tunnel",
 	Short: "tunnel makes services of type LoadBalancer accessible on localhost",
-	Long:  `tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP`,
+	Long:  `tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		RootCmd.PersistentPreRun(cmd, args)
 	},
@@ -76,11 +77,11 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		cc, err := config.Load()
+		cfg, err := config.Load(viper.GetString(config.MachineProfile))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		done, err := manager.StartTunnel(ctx, cc.Name, api, config.DefaultLoader, clientset.CoreV1())
+		done, err := manager.StartTunnel(ctx, cfg.Name, api, config.DefaultLoader, clientset.CoreV1())
 		if err != nil {
 			exit.WithError("error starting tunnel", err)
 		}

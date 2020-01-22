@@ -43,7 +43,7 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 		bin := bin // https://golang.org/doc/faq#closures_and_goroutines
 		g.Go(func() error {
 			if _, err := CacheBinary(bin, version, "linux", runtime.GOARCH); err != nil {
-				return errors.Wrapf(err, "caching image %s", bin)
+				return errors.Wrapf(err, "caching binary %s", bin)
 			}
 			return nil
 		})

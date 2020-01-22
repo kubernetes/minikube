@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/assets"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
@@ -83,37 +82,6 @@ func TestSetBool(t *testing.T) {
 	}
 }
 
-func TestIsAddonAlreadySet(t *testing.T) {
-	testCases := []struct {
-		addonName string
-	}{
-		{
-			addonName: "ingress",
-		},
-
-		{
-			addonName: "registry",
-		},
-	}
-
-	for _, test := range testCases {
-		addon := assets.Addons[test.addonName]
-		addonStatus, _ := addon.IsEnabled()
-
-		alreadySet, err := isAddonAlreadySet(addon, addonStatus)
-		if !alreadySet {
-			if addonStatus {
-				t.Errorf("Did not get expected status, \n\n expected %+v already enabled", test.addonName)
-			} else {
-				t.Errorf("Did not get expected status, \n\n expected %+v already disabled", test.addonName)
-			}
-		}
-		if err != nil {
-			t.Errorf("Got unexpected error: %+v", err)
-		}
-	}
-}
-
 func TestValidateProfile(t *testing.T) {
 	testCases := []struct {
 		profileName string
@@ -122,17 +90,16 @@ func TestValidateProfile(t *testing.T) {
 			profileName: "82374328742_2974224498",
 		},
 		{
-			profileName: "minikube",
+			profileName: "validate_test",
 		},
 	}
 
 	for _, test := range testCases {
 		profileNam := test.profileName
-		expectedMsg := fmt.Sprintf("profile %q not found", test.profileName)
-
+		expected := fmt.Sprintf("profile %q not found", test.profileName)
 		err, ok := ValidateProfile(profileNam)
-		if !ok && err.Error() != expectedMsg {
-			t.Errorf("Didnt receive expected message")
+		if !ok && err.Error() != expected {
+			t.Errorf("got error %q, expected %q", err, expected)
 		}
 	}
 }

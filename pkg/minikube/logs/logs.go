@@ -60,7 +60,7 @@ type logRunner interface {
 
 // lookbackwardsCount is how far back to look in a log for problems. This should be large enough to
 // include usage messages from a failed binary, but small enough to not include irrelevant problems.
-const lookBackwardsCount = 200
+const lookBackwardsCount = 400
 
 // Follow follows logs from multiple files in tail(1) format
 func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr logRunner) error {
@@ -186,8 +186,6 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 		}
 	}
 	cmds[r.Name()] = r.SystemLogCmd(length)
-	// Works across container runtimes with good formatting
-	// Fallback to 'docker ps' if it fails (none driver)
-	cmds["container status"] = "sudo crictl ps -a || sudo docker ps -a"
+	cmds["container status"] = cruntime.ContainerStatusCommand()
 	return cmds
 }

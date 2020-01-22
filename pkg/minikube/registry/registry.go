@@ -33,13 +33,15 @@ const (
 	Unknown Priority = iota
 	// Unhealthy is when a driver does not pass health checks
 	Unhealthy
+	// Experimental is when a driver is not officially supported because it's still experimental
+	Experimental
 	// Discouraged is when a driver has caveats that preclude it's recommendation
 	Discouraged
 	// Deprecated is when a driver has been formally deprecated
 	Deprecated
 	// Fallback is when a driver works well, but may not be high performance
 	Fallback
-	// Default is what what most 3rd party drivers are
+	// Default is what most 3rd party drivers are
 	Default
 	// Preferred is for drivers that use a native hypervisor interface
 	Preferred

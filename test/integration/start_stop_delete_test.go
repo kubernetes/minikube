@@ -20,15 +20,19 @@ package integration
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
+	"github.com/google/go-cmp/cmp"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -37,12 +41,11 @@ func TestStartStop(t *testing.T) {
 
 	t.Run("group", func(t *testing.T) {
 		tests := []struct {
-			name string
-			args []string
+			name    string
+			version string
+			args    []string
 		}{
-			{"docker", []string{
-				"--cache-images=false",
-				fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion),
+			{"old-docker", constants.OldestKubernetesVersion, []string{
 				// default is the network created by libvirt, if we change the name minikube won't boot
 				// because the given network doesn't exist
 				"--kvm-network=default",
@@ -51,21 +54,20 @@ func TestStartStop(t *testing.T) {
 				"--keep-context=false",
 				"--container-runtime=docker",
 			}},
-			{"cni", []string{
+			{"newest-cni", constants.NewestKubernetesVersion, []string{
 				"--feature-gates",
 				"ServerSideApply=true",
 				"--network-plugin=cni",
 				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
-				fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion),
 			}},
-			{"containerd", []string{
+			{"containerd", constants.DefaultKubernetesVersion, []string{
 				"--container-runtime=containerd",
 				"--docker-opt",
 				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
 			}},
-			{"crio", []string{
+			{"crio", "v1.15.0", []string{
 				"--container-runtime=crio",
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
@@ -76,7 +78,6 @@ func TestStartStop(t *testing.T) {
 			tc := tc
 			t.Run(tc.name, func(t *testing.T) {
 				MaybeParallel(t)
-				WaitForStartSlot(t)
 
 				if !strings.Contains(tc.name, "docker") && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
@@ -88,6 +89,7 @@ func TestStartStop(t *testing.T) {
 
 				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
+				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
 					// Fatal so that we may collect logs before stop/delete steps
@@ -104,7 +106,8 @@ func TestStartStop(t *testing.T) {
 						t.Fatalf("%s failed: %v", rr.Args, err)
 					}
 
-					names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute)
+					// 8 minutes, because 4 is not enough for images to pull in all cases.
+					names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 8*time.Minute)
 					if err != nil {
 						t.Fatalf("wait: %v", err)
 					}
@@ -137,16 +140,50 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("status = %q; want = %q", got, state.Stopped)
 				}
 
-				WaitForStartSlot(t)
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
 					t.Fatalf("%s failed: %v", rr.Args, err)
 				}
 
+				// Make sure that kubeadm did not need to pull in additional images
+				if !NoneDriver() {
+					rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
+					if err != nil {
+						t.Errorf("%s failed: %v", rr.Args, err)
+					}
+					jv := map[string][]struct {
+						Tags []string `json:"repoTags"`
+					}{}
+					err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
+					if err != nil {
+						t.Errorf("images unmarshal: %v", err)
+					}
+					gotImages := []string{}
+					for _, img := range jv["images"] {
+						for _, i := range img.Tags {
+							if defaultImage(i) {
+								// Remove docker.io for naming consistency between container runtimes
+								gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
+							} else {
+								t.Logf("Found non-minikube image: %s", i)
+							}
+						}
+					}
+					want, err := images.Kubeadm("", tc.version)
+					if err != nil {
+						t.Errorf("kubeadm images: %v", tc.version)
+					}
+					sort.Strings(want)
+					sort.Strings(gotImages)
+					if diff := cmp.Diff(want, gotImages); diff != "" {
+						t.Errorf("%s images mismatch (-want +got):\n%s", tc.version, diff)
+					}
+				}
+
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 2*time.Minute); err != nil {
+				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute); err != nil {
 					t.Fatalf("wait: %v", err)
 				}
 
@@ -155,7 +192,7 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("status = %q; want = %q", got, state.Running)
 				}
 
-				if !*cleanup {
+				if *cleanup {
 					// Normally handled by cleanuprofile, but not fatal there
 					rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
 					if err != nil {
@@ -165,4 +202,15 @@ func TestStartStop(t *testing.T) {
 			})
 		}
 	})
+}
+
+// defaultImage returns true if this image is expected in a default minikube install
+func defaultImage(name string) bool {
+	if strings.Contains(name, ":latest") {
+		return false
+	}
+	if strings.Contains(name, "k8s.gcr.io") || strings.Contains(name, "kubernetesui") || strings.Contains(name, "storage-provisioner") {
+		return true
+	}
+	return false
 }
