@@ -23,6 +23,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -32,6 +33,23 @@ type CRIO struct {
 	Runner            CommandRunner
 	ImageRepository   string
 	KubernetesVersion string
+}
+
+const (
+	// CRIOConfFile is the path to the CRI-O configuration
+	crioConfigFile = "/etc/crio/crio.conf"
+)
+
+// generateCRIOConfig sets up /etc/crio/crio.conf
+func generateCRIOConfig(cr CommandRunner, imageRepository string) error {
+	cPath := crioConfigFile
+	pauseImage := images.Pause(imageRepository)
+
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, cPath))
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "generateCRIOConfig.")
+	}
+	return nil
 }
 
 // Name is a human readable name for CRIO
