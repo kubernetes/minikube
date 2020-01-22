@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
@@ -78,12 +79,17 @@ var unpauseCmd = &cobra.Command{
 			}
 		}
 
-		err = cluster.Unpause(cr, r, namespaces)
-
+		ids, err := cluster.Unpause(cr, r, namespaces)
 		if err != nil {
 			exit.WithError("Pause", err)
 		}
-		out.T(out.Unpause, "The '{{.name}}' cluster is now unpaused", out.V{"name": cc.Name})
+
+		if namespaces == nil {
+			out.T(out.Pause, "Unpaused kubelet and {{.count}} containers", out.V{"count": len(ids)})
+		} else {
+			out.T(out.Pause, "Unpaused kubelet and {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+		}
+
 	},
 }
 

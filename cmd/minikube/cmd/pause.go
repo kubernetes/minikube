@@ -88,15 +88,15 @@ func runPause(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	err = cluster.Pause(cr, r, namespaces)
+	ids, err := cluster.Pause(cr, r, namespaces)
 	if err != nil {
 		exit.WithError("Pause", err)
 	}
 
 	if namespaces == nil {
-		out.T(out.Pause, "Paused all namespaces in the '{{.name}}' cluster", out.V{"name": cc.Name})
+		out.T(out.Unpause, "Paused kubelet and {{.count}} containers", out.V{"count": len(ids)})
 	} else {
-		out.T(out.Pause, "Paused the following namespaces in '{{.name}}': {{.namespaces}}", out.V{"name": cc.Name, "namespaces": strings.Join(namespaces, ", ")})
+		out.T(out.Unpause, "Paused kubelet and {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
 	}
 }
 
