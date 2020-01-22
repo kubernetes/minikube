@@ -102,6 +102,20 @@ func (r *Docker) Disable() error {
 	return nil
 }
 
+// ImageExists checks if an image exists
+func (r *Docker) ImageExists(name string, sha string) bool {
+	// expected output looks like [SHA_ALGO:SHA]
+	c := exec.Command("docker", "inspect", "--format='{{.Id}}'", name)
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return false
+	}
+	if !strings.Contains(rr.Output(), sha) {
+		return false
+	}
+	return true
+}
+
 // LoadImage loads an image into this runtime
 func (r *Docker) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)
@@ -111,6 +125,17 @@ func (r *Docker) LoadImage(path string) error {
 	}
 	return nil
 
+}
+
+// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+func (r *Docker) CGroupDriver() (string, error) {
+	// Note: the server daemon has to be running, for this call to return successfully
+	c := exec.Command("docker", "info", "--format", "'{{.CgroupDriver}}'")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return "", err
+	}
+	return strings.Split(rr.Stdout.String(), "\n")[0], nil
 }
 
 // KubeletOptions returns kubelet options for a runtime.
@@ -127,9 +152,9 @@ func (r *Docker) ListContainers(o ListOptions) ([]string, error) {
 	case All:
 		args = append(args, "-a")
 	case Paused:
-		args = append(args, "--filter status=paused")
+		args = append(args, "--filter", "status=paused")
 	}
-	args = append(args, fmt.Sprintf("--filter=name=%s", KubernetesContainerPrefix+o.Name), "--format=\"{{.ID}}\"")
+	args = append(args, fmt.Sprintf("--filter=name=%s", KubernetesContainerPrefix+o.Name), "--format={{.ID}}")
 	rr, err := r.Runner.RunCmd(exec.Command("docker", args...))
 	if err != nil {
 		return nil, errors.Wrapf(err, "docker")
