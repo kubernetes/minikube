@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strconv"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -193,7 +194,11 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 				return err
 			}
 		} else {
-			defer cmd.Remove(addonFile)
+			defer func() {
+				if err := cmd.Remove(addonFile); err != nil {
+					glog.Warningf("error removing %s; addon should still be disabled as expected", addonFile)
+				}
+			}()
 		}
 		files = append(files, filepath.Join(addonFile.GetTargetDir(), addonFile.GetTargetName()))
 	}
@@ -202,7 +207,7 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 		return err
 	}
 	if result, err := cmd.RunCmd(command); err != nil {
-		return errors.Wrapf(err, "error enabling addon:\n%s", result.Output())
+		return errors.Wrapf(err, "error updating addon:\n%s", result.Output())
 	}
 	return nil
 }
