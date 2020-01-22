@@ -18,6 +18,7 @@ package kubeadm
 
 import (
 	"os/exec"
+	"path"
 
 	"fmt"
 	"net"
@@ -77,9 +78,11 @@ func NewBootstrapper(api libmachine.API) (*Bootstrapper, error) {
 func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 	rr, err := k.c.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
 	if err != nil {
-		return "", errors.Wrapf(err, "getting kublet status. command: %q", rr.Command())
+		// Do not return now, as we still have parsing to do!
+		glog.Warningf("%s returned error: %v", rr.Command(), err)
 	}
 	s := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("kubelet is-active: %s", s)
 	switch s {
 	case "active":
 		return state.Running.String(), nil
@@ -93,6 +96,24 @@ func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 
 // GetAPIServerStatus returns the api-server status
 func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string, error) {
+	// sudo, in case hidepid is set
+	rr, err := k.c.RunCmd(exec.Command("sudo", "pgrep", "kube-apiserver"))
+	if err != nil {
+		return state.Stopped.String(), nil
+	}
+	pid := strings.TrimSpace(rr.Stdout.String())
+
+	// Check if apiserver is in an uninteruptible sleep
+	rr, err = k.c.RunCmd(exec.Command("sudo", "cut", "-d", " ", "-f3", path.Join("/proc", pid, "stat")))
+	if err != nil {
+		return state.Error.String(), err
+	}
+	st := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("apiserver process state: %s", st)
+	if st == "S" {
+		return state.Paused.String(), nil
+	}
+
 	return kverify.APIServerStatus(ip, apiserverPort)
 }
 
