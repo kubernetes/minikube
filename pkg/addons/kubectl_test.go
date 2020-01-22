@@ -17,31 +17,27 @@ limitations under the License.
 package addons
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
 
 func TestKubectlCommand(t *testing.T) {
-	expectedCommand := "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/%s/kubectl apply -f /etc/kubernetes/addons -l kubernetes.io/cluster-service!=true,addonmanager.kubernetes.io/mode=Reconcile --prune=true --prune-whitelist core/v1/ConfigMap --prune-whitelist core/v1/Endpoints --prune-whitelist core/v1/Namespace --prune-whitelist core/v1/PersistentVolumeClaim --prune-whitelist core/v1/PersistentVolume --prune-whitelist core/v1/Pod --prune-whitelist core/v1/ReplicationController --prune-whitelist core/v1/Secret --prune-whitelist core/v1/Service --prune-whitelist batch/v1/Job --prune-whitelist batch/v1beta1/CronJob --prune-whitelist apps/v1/DaemonSet --prune-whitelist apps/v1/Deployment --prune-whitelist apps/v1/ReplicaSet --prune-whitelist apps/v1/StatefulSet --prune-whitelist extensions/v1beta1/Ingress --recursive"
-
 	tests := []struct {
 		description string
-		k8sVersion  string
+		files       []string
+		enable      bool
 		expected    string
 	}{
 		{
-			description: "k8s version < 1.17.0",
-			k8sVersion:  "v1.16.0",
-			expected:    expectedCommand,
+			description: "enable an addon",
+			files:       []string{"a", "b"},
+			enable:      true,
+			expected:    "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.17.0/kubectl apply -f a -f b",
 		}, {
-			description: "k8s version == 1.17.0",
-			k8sVersion:  "v1.17.0",
-			expected:    expectedCommand + " --namespace=kube-system",
-		}, {
-			description: "k8s version > 1.17.0",
-			k8sVersion:  "v1.18.0",
-			expected:    expectedCommand + " --namespace=kube-system",
+			description: "disable an addon",
+			files:       []string{"a", "b"},
+			enable:      false,
+			expected:    "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.17.0/kubectl delete -f a -f b",
 		},
 	}
 
@@ -50,19 +46,17 @@ func TestKubectlCommand(t *testing.T) {
 			originalK8sVersion := k8sVersion
 			defer func() { k8sVersion = originalK8sVersion }()
 			k8sVersion = func(_ string) (string, error) {
-				return test.k8sVersion, nil
+				return "v1.17.0", nil
 			}
 
-			command, err := kubectlCommand("")
+			command, err := kubectlCommand("", test.files, test.enable)
 			if err != nil {
 				t.Fatalf("error getting kubectl command: %v", err)
 			}
 			actual := strings.Join(command.Args, " ")
 
-			expected := fmt.Sprintf(test.expected, test.k8sVersion)
-
-			if actual != expected {
-				t.Fatalf("expected does not match actual\nExpected: %s\nActual: %s", expected, actual)
+			if actual != test.expected {
+				t.Fatalf("expected does not match actual\nExpected: %s\nActual: %s", test.expected, actual)
 			}
 		})
 	}
