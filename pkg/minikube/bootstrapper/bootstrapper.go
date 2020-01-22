@@ -37,10 +37,10 @@ type LogOptions struct {
 type Bootstrapper interface {
 	// PullImages pulls images necessary for a cluster. Success should not be required.
 	PullImages(config.KubernetesConfig) error
-	StartCluster(config.KubernetesConfig) error
+	StartCluster(config.MachineConfig) error
 	UpdateCluster(config.MachineConfig) error
 	DeleteCluster(config.KubernetesConfig) error
-	WaitForCluster(config.KubernetesConfig, time.Duration) error
+	WaitForCluster(config.MachineConfig, time.Duration) error
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(LogOptions) map[string]string
 	SetupCerts(cfg config.KubernetesConfig) error
@@ -51,7 +51,6 @@ type Bootstrapper interface {
 const (
 	// Kubeadm is the kubeadm bootstrapper type
 	Kubeadm = "kubeadm"
-	KIC     = "kic"
 )
 
 // GetCachedBinaryList returns the list of binaries

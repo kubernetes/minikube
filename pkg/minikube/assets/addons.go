@@ -65,14 +65,6 @@ func (a *Addon) IsEnabled() (bool, error) {
 // Addons is the list of addons
 // TODO: Make dynamically loadable: move this data to a .yaml file within each addon directory
 var Addons = map[string]*Addon{
-	"addon-manager": NewAddon([]*BinAsset{
-		MustBinAsset(
-			"deploy/addons/addon-manager.yaml.tmpl",
-			TargetDirForAddon("kube-system"),
-			"addon-manager.yaml.tmpl",
-			"0640",
-			true),
-	}, false, "addon-manager", "kube-system"),
 	"dashboard": NewAddon([]*BinAsset{
 		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrole.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-clusterrole.yaml", "0640", false),
 		MustBinAsset("deploy/addons/dashboard/dashboard-clusterrolebinding.yaml", TargetDirForAddon("kubernetes-dashboard"), "dashboard-clusterrolebinding.yaml", "0640", false),
