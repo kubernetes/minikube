@@ -36,6 +36,16 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+// status returns a minikube component status as a string
+func status(ctx context.Context, t *testing.T, path string, profile string, key string) string {
+	t.Helper()
+	rr, err := Run(t, exec.CommandContext(ctx, path, "status", fmt.Sprintf("--format={{.%s}}", key), "-p", profile))
+	if err != nil {
+		t.Logf("status error: %v (may be ok)", err)
+	}
+	return strings.TrimSpace(rr.Stdout.String())
+}
+
 func TestStartStop(t *testing.T) {
 	MaybeParallel(t)
 
@@ -135,7 +145,7 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 
-				got := Status(ctx, t, Target(), profile)
+				got := status(ctx, t, Target(), profile, "Host")
 				if got != state.Stopped.String() {
 					t.Errorf("status = %q; want = %q", got, state.Stopped)
 				}
@@ -187,9 +197,40 @@ func TestStartStop(t *testing.T) {
 					t.Fatalf("wait: %v", err)
 				}
 
-				got = Status(ctx, t, Target(), profile)
+				got = status(ctx, t, Target(), profile, "Host")
 				if got != state.Running.String() {
-					t.Errorf("status = %q; want = %q", got, state.Running)
+					t.Errorf("host status = %q; want = %q", got, state.Running)
+				}
+
+				// Can this runtime be paused and unpaused?
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "pause", "-p", profile, "--alsologtostderr", "-v=1"))
+				if err != nil {
+					t.Fatalf("%s failed: %v", rr.Args, err)
+				}
+
+				got = status(ctx, t, Target(), profile, "APIServer")
+				if got != state.Paused.String() {
+					t.Errorf("apiserver status = %q; want = %q", got, state.Paused)
+				}
+
+				got = status(ctx, t, Target(), profile, "Kubelet")
+				if got != state.Stopped.String() {
+					t.Errorf("kubelet status = %q; want = %q", got, state.Stopped)
+				}
+
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "unpause", "-p", profile, "--alsologtostderr", "-v=1"))
+				if err != nil {
+					t.Fatalf("%s failed: %v", rr.Args, err)
+				}
+
+				got = status(ctx, t, Target(), profile, "APIServer")
+				if got != state.Running.String() {
+					t.Errorf("apiserver status = %q; want = %q", got, state.Running)
+				}
+
+				got = status(ctx, t, Target(), profile, "Kubelet")
+				if got != state.Running.String() {
+					t.Errorf("kubelet status = %q; want = %q", got, state.Running)
 				}
 
 				if *cleanup {

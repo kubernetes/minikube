@@ -62,10 +62,8 @@ func Unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]stri
 
 	if len(ids) == 0 {
 		glog.Warningf("no paused containers found")
-	} else {
-		if err := cr.UnpauseContainers(ids); err != nil {
-			return ids, errors.Wrap(err, "unpause")
-		}
+	} else if err := cr.UnpauseContainers(ids); err != nil {
+		return ids, errors.Wrap(err, "unpause")
 	}
 
 	if err := kubelet.Enable(r); err != nil {

@@ -82,10 +82,8 @@ func runPause(cmd *cobra.Command, args []string) {
 	glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
 	if allNamespaces {
 		namespaces = nil //all
-	} else {
-		if len(namespaces) == 0 {
-			exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
-		}
+	} else if len(namespaces) == 0 {
+		exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
 	}
 
 	ids, err := cluster.Pause(cr, r, namespaces)

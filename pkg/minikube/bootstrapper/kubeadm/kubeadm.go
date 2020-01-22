@@ -123,7 +123,7 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string,
 
 	rr, err = k.c.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup/freezer", fparts[2], "freezer.state")))
 	if err != nil {
-		glog.Errorf("unable to get freezer state: %s", rr.Stderr)
+		glog.Errorf("unable to get freezer state: %s", rr.Stderr.String())
 		return kverify.APIServerStatus(ip, apiserverPort)
 	}
 
