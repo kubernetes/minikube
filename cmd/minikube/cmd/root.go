@@ -32,7 +32,6 @@ import (
 	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/kicbs"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -274,16 +273,9 @@ func getClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 		if err != nil {
 			return nil, errors.Wrap(err, "getting a new kubeadm bootstrapper")
 		}
-	case bootstrapper.KIC:
-		b, err = kicbs.NewBootstrapper(api)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting a new kic bootstrapper")
-		}
-
 	default:
 		return nil, fmt.Errorf("unknown bootstrapper: %s", bootstrapperName)
 	}
-
 	return b, nil
 }
 
