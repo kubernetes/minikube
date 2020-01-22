@@ -118,9 +118,9 @@ func TestKubeletOptions(t *testing.T) {
 type serviceState int
 
 const (
-	Exited serviceState = iota
-	Running
-	Restarted
+	SvcExited serviceState = iota
+	SvcRunning
+	SvcRestarted
 )
 
 // FakeRunner is a command runner that isn't very smart.
@@ -262,6 +262,7 @@ func (f *FakeRunner) containerd(args []string, _ bool) (string, error) {
 
 // crictl is a fake implementation of crictl
 func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
+	f.t.Logf("crictl args: %s", args)
 	switch cmd := args[0]; cmd {
 	case "info":
 		return `{
@@ -273,9 +274,21 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 		  "golang": "go1.11.13"
 		}`, nil
 	case "ps":
+		fmt.Printf("args %d: %v\n", len(args), args)
+		if len(args) != 4 {
+			f.t.Logf("crictl all")
+			ids := []string{}
+			for id := range f.containers {
+				ids = append(ids, id)
+			}
+			f.t.Logf("fake crictl: Found containers: %v", ids)
+			return strings.Join(ids, "\n"), nil
+		}
+
 		// crictl ps -a --name=apiserver --state=Running --quiet
-		if args[1] == "-a" && strings.HasPrefix(args[2], "--name") {
-			fname := strings.Split(args[2], "=")[1]
+		if args[1] == "-a" && strings.HasPrefix(args[3], "--name") {
+			fname := strings.Split(args[3], "=")[1]
+			f.t.Logf("crictl filter for %s", fname)
 			ids := []string{}
 			f.t.Logf("fake crictl: Looking for containers matching %q", fname)
 			for id, cname := range f.containers {
@@ -285,14 +298,6 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 			}
 			f.t.Logf("fake crictl: Found containers: %v", ids)
 			return strings.Join(ids, "\n"), nil
-		} else if args[1] == "-a" {
-			ids := []string{}
-			for id := range f.containers {
-				ids = append(ids, id)
-			}
-			f.t.Logf("fake crictl: Found containers: %v", ids)
-			return strings.Join(ids, "\n"), nil
-
 		}
 	case "stop":
 		for _, id := range args[1:] {
@@ -341,23 +346,23 @@ func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // no
 			if !root {
 				return out, fmt.Errorf("not root")
 			}
-			f.services[svc] = Exited
+			f.services[svc] = SvcExited
 			f.t.Logf("fake systemctl: stopped %s", svc)
 		case "start":
 			if !root {
 				return out, fmt.Errorf("not root")
 			}
-			f.services[svc] = Running
+			f.services[svc] = SvcRunning
 			f.t.Logf("fake systemctl: started %s", svc)
 		case "restart":
 			if !root {
 				return out, fmt.Errorf("not root")
 			}
-			f.services[svc] = Restarted
-			f.t.Logf("fake systemctl: restarted %s", svc)
+			f.services[svc] = SvcRestarted
+			f.t.Logf("fake systemctl: SvcRestarted %s", svc)
 		case "is-active":
 			f.t.Logf("fake systemctl: %s is-status: %v", svc, state)
-			if state == Running {
+			if state == SvcRunning {
 				return out, nil
 			}
 			return out, fmt.Errorf("%s in state: %v", svc, state)
@@ -403,11 +408,11 @@ func TestVersion(t *testing.T) {
 
 // defaultServices reflects the default boot state for the minikube VM
 var defaultServices = map[string]serviceState{
-	"docker":        Running,
-	"docker.socket": Running,
-	"crio":          Exited,
-	"crio-shutdown": Exited,
-	"containerd":    Exited,
+	"docker":        SvcRunning,
+	"docker.socket": SvcRunning,
+	"crio":          SvcExited,
+	"crio-shutdown": SvcExited,
+	"containerd":    SvcExited,
 }
 
 func TestDisable(t *testing.T) {
@@ -446,25 +451,25 @@ func TestEnable(t *testing.T) {
 		want    map[string]serviceState
 	}{
 		{"docker", map[string]serviceState{
-			"docker":        Running,
-			"docker.socket": Running,
-			"containerd":    Exited,
-			"crio":          Exited,
-			"crio-shutdown": Exited,
+			"docker":        SvcRunning,
+			"docker.socket": SvcRunning,
+			"containerd":    SvcExited,
+			"crio":          SvcExited,
+			"crio-shutdown": SvcExited,
 		}},
 		{"containerd", map[string]serviceState{
-			"docker":        Exited,
-			"docker.socket": Exited,
-			"containerd":    Restarted,
-			"crio":          Exited,
-			"crio-shutdown": Exited,
+			"docker":        SvcExited,
+			"docker.socket": SvcExited,
+			"containerd":    SvcRestarted,
+			"crio":          SvcExited,
+			"crio-shutdown": SvcExited,
 		}},
 		{"crio", map[string]serviceState{
-			"docker":        Exited,
-			"docker.socket": Exited,
-			"containerd":    Exited,
-			"crio":          Restarted,
-			"crio-shutdown": Exited,
+			"docker":        SvcExited,
+			"docker.socket": SvcExited,
+			"containerd":    SvcExited,
+			"crio":          SvcRestarted,
+			"crio-shutdown": SvcExited,
 		}},
 	}
 	for _, tc := range tests {
@@ -516,7 +521,7 @@ func TestContainerFunctions(t *testing.T) {
 			}
 
 			// Get the list of apiservers
-			got, err := cr.ListContainers("apiserver")
+			got, err := cr.ListContainers(ListOptions{Name: "apiserver"})
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}
@@ -529,7 +534,7 @@ func TestContainerFunctions(t *testing.T) {
 			if err := cr.StopContainers(got); err != nil {
 				t.Fatalf("stop failed: %v", err)
 			}
-			got, err = cr.ListContainers("apiserver")
+			got, err = cr.ListContainers(ListOptions{Name: "apiserver"})
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}
@@ -539,7 +544,7 @@ func TestContainerFunctions(t *testing.T) {
 			}
 
 			// Get the list of everything else.
-			got, err = cr.ListContainers("")
+			got, err = cr.ListContainers(ListOptions{})
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}
@@ -552,7 +557,7 @@ func TestContainerFunctions(t *testing.T) {
 			if err := cr.KillContainers(got); err != nil {
 				t.Errorf("KillContainers: %v", err)
 			}
-			got, err = cr.ListContainers("")
+			got, err = cr.ListContainers(ListOptions{})
 			if err != nil {
 				t.Fatalf("ListContainers: %v", err)
 			}
