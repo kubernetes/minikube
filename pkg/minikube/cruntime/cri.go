@@ -31,10 +31,8 @@ import (
 
 // container maps to 'runc list -f json'
 type container struct {
-	pid         int
-	id          string
-	status      string
-	annotations map[string]string
+	ID     string
+	Status string
 }
 
 // listCRIContainers returns a list of containers
@@ -55,7 +53,8 @@ func listCRIContainers(cr CommandRunner, root string, o ListOptions) ([]string, 
 	// Avoid an id named ""
 	var ids []string
 	seen := map[string]bool{}
-	for _, id := range strings.Split(rr.Stderr.String(), "\n") {
+	for _, id := range strings.Split(rr.Stdout.String(), "\n") {
+		glog.Infof("found id: %q", id)
 		if id != "" && !seen[id] {
 			ids = append(ids, id)
 			seen[id] = true
@@ -71,39 +70,51 @@ func listCRIContainers(cr CommandRunner, root string, o ListOptions) ([]string, 
 
 	// crictl does not understand paused pods
 	cs := []container{}
-	args = []string{"runc", "list", "-f", "json"}
+	args = []string{"runc"}
 	if root != "" {
 		args = append(args, "--root", root)
 	}
 
-	if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
+	args = append(args, "list", "-f", "json")
+	rr, err = cr.RunCmd(exec.Command("sudo", args...))
+	if err != nil {
 		return nil, errors.Wrap(err, "runc")
 	}
-
-	d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
+	content := rr.Stdout.Bytes()
+	glog.Infof("JSON = %s", content)
+	d := json.NewDecoder(bytes.NewReader(content))
 	if err := d.Decode(&cs); err != nil {
 		return nil, err
 	}
 
+	if len(cs) == 0 {
+		return nil, fmt.Errorf("list returned 0 containers, but ps returned %d", len(ids))
+	}
+
+	glog.Infof("list returned %d containers", len(cs))
 	var fids []string
 	for _, c := range cs {
-		if !seen[c.id] {
+		glog.Infof("container: %+v", c)
+		if !seen[c.ID] {
+			glog.Infof("skipping %s - not in ps", c.ID)
 			continue
 		}
-		if o.State.String() != c.status {
+		if o.State != All && o.State.String() != c.Status {
+			glog.Infof("skipping %s: state = %q, want %q", c, c.Status, o.State)
 			continue
 		}
-		fids = append(fids, c.id)
+		fids = append(fids, c.ID)
 	}
 	return fids, nil
 }
 
-// pauseCRIContainers pauses a list of containers
+// pauseContainers pauses a list of containers
 func pauseCRIContainers(cr CommandRunner, root string, ids []string) error {
-	args := []string{"runc", "pause"}
+	args := []string{"runc"}
 	if root != "" {
 		args = append(args, "--root", root)
 	}
+	args = append(args, "pause")
 
 	for _, id := range ids {
 		cargs := append(args, id)
@@ -114,12 +125,23 @@ func pauseCRIContainers(cr CommandRunner, root string, ids []string) error {
 	return nil
 }
 
+// getCrictlPath returns the absolute path of crictl
+func getCrictlPath(cr CommandRunner) string {
+	cmd := "crictl"
+	rr, err := cr.RunCmd(exec.Command("which", cmd))
+	if err != nil {
+		return cmd
+	}
+	return strings.Split(rr.Stdout.String(), "\n")[0]
+}
+
 // unpauseCRIContainers pauses a list of containers
 func unpauseCRIContainers(cr CommandRunner, root string, ids []string) error {
-	args := []string{"runc", "unpause"}
+	args := []string{"runc"}
 	if root != "" {
 		args = append(args, "--root", root)
 	}
+	args = append(args, "resume")
 
 	for _, id := range ids {
 		cargs := append(args, id)
@@ -137,7 +159,8 @@ func killCRIContainers(cr CommandRunner, ids []string) error {
 	}
 	glog.Infof("Killing containers: %s", ids)
 
-	args := append([]string{"crictl", "rm"}, ids...)
+	crictl := getCrictlPath(cr)
+	args := append([]string{crictl, "rm"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crictl")
@@ -151,7 +174,9 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 		return nil
 	}
 	glog.Infof("Stopping containers: %s", ids)
-	args := append([]string{"crictl", "rm"}, ids...)
+
+	crictl := getCrictlPath(cr)
+	args := append([]string{crictl, "rm"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crictl")
@@ -181,10 +206,30 @@ image-endpoint: unix://{{.Socket}}
 	return nil
 }
 
+// getCRIInfo returns current information
+func getCRIInfo(cr CommandRunner) (map[string]interface{}, error) {
+	args := []string{"crictl", "info"}
+	c := exec.Command("sudo", args...)
+	rr, err := cr.RunCmd(c)
+	if err != nil {
+		return nil, errors.Wrap(err, "get cri info")
+	}
+	info := rr.Stdout.String()
+	jsonMap := make(map[string]interface{})
+	err = json.Unmarshal([]byte(info), &jsonMap)
+	if err != nil {
+		return nil, err
+	}
+	return jsonMap, nil
+}
+
 // criContainerLogCmd returns the command to retrieve the log for a container based on ID
-func criContainerLogCmd(id string, len int, follow bool) string {
+func criContainerLogCmd(cr CommandRunner, id string, len int, follow bool) string {
+	crictl := getCrictlPath(cr)
 	var cmd strings.Builder
-	cmd.WriteString("sudo crictl logs ")
+	cmd.WriteString("sudo ")
+	cmd.WriteString(crictl)
+	cmd.WriteString(" logs ")
 	if len > 0 {
 		cmd.WriteString(fmt.Sprintf("--tail %d ", len))
 	}
