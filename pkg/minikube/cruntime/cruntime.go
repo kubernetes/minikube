@@ -36,7 +36,7 @@ const (
 )
 
 func (cs ContainerState) String() string {
-	return [...]string{"All", "Running", "Paused"}[cs]
+	return [...]string{"all", "running", "paused"}[cs]
 }
 
 // CommandRunner is the subset of command.Runner this package consumes
@@ -61,6 +61,8 @@ type Manager interface {
 	// Style is an associated StyleEnum for Name()
 	Style() out.StyleEnum
 
+	// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+	CGroupDriver() (string, error)
 	// KubeletOptions returns kubelet options for a runtime.
 	KubeletOptions() map[string]string
 	// SocketPath returns the path to the socket file for a given runtime
@@ -70,6 +72,9 @@ type Manager interface {
 
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
+
+	// ImageExists takes image name and image sha checks if an it exists
+	ImageExists(string, string) bool
 
 	// ListContainers returns a list of managed by this container runtime
 	ListContainers(ListOptions) ([]string, error)
@@ -120,6 +125,12 @@ func New(c Config) (Manager, error) {
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
 	}
+}
+
+// ContainerStatusCommand works across container runtimes with good formatting
+func ContainerStatusCommand() string {
+	// Fallback to 'docker ps' if it fails (none driver)
+	return "sudo `which crictl || echo crictl` ps -a || sudo docker ps -a"
 }
 
 // disableOthers disables all other runtimes except for me.
