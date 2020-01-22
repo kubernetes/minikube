@@ -19,17 +19,19 @@ package none
 import (
 	"fmt"
 	"os/exec"
+	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/net"
-	"k8s.io/kubernetes/cmd/kubeadm/app/phases/kubelet"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // cleanupPaths are paths to be removed by cleanup, and are used by both kubeadm and minikube.
@@ -121,7 +123,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	if err := kubelet.Check(d.exec); err != nil {
+	if err := checkKubelet(d.exec); err != nil {
 		glog.Infof("kubelet not running: %v", err)
 		return state.Stopped, nil
 	}
@@ -130,12 +132,12 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	if err := kubelet.TryStopKubelet(d.exec); err != nil {
+	if err := stopKubelet(d.exec); err != nil {
 		return errors.Wrap(err, "kubelet")
 	}
 
 	// First try to gracefully stop containers
-	containers, err := d.runtime.ListContainers("")
+	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -147,7 +149,7 @@ func (d *Driver) Kill() error {
 		return errors.Wrap(err, "stop")
 	}
 
-	containers, err = d.runtime.ListContainers("")
+	containers, err = d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -175,7 +177,7 @@ func (d *Driver) Remove() error {
 
 // Restart a host
 func (d *Driver) Restart() error {
-	return kubelet.Restart(d.exec)
+	return restartKubelet(d.exec)
 }
 
 // Start a host
@@ -194,10 +196,10 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
-	if err := kubelet.Stop(d.exec); err != nil {
+	if err := stopKubelet(d.exec); err != nil {
 		return err
 	}
-	containers, err := d.runtime.ListContainers("")
+	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -212,4 +214,50 @@ func (d *Driver) Stop() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support ssh commands")
+}
+
+// stopKubelet idempotently stops the kubelet
+func stopKubelet(cr command.Runner) error {
+	glog.Infof("stopping kubelet.service ...")
+	stop := func() error {
+		cmd := exec.Command("sudo", "systemctl", "stop", "kubelet.service")
+		if rr, err := cr.RunCmd(cmd); err != nil {
+			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
+		}
+		cmd = exec.Command("sudo", "systemctl", "show", "-p", "SubState", "kubelet")
+		rr, err := cr.RunCmd(cmd)
+		if err != nil {
+			glog.Errorf("temporary error: for %q : %v", rr.Command(), err)
+		}
+		if !strings.Contains(rr.Stdout.String(), "dead") && !strings.Contains(rr.Stdout.String(), "failed") {
+			return fmt.Errorf("unexpected kubelet state: %q", rr.Stdout.String())
+		}
+		return nil
+	}
+
+	if err := retry.Expo(stop, 2*time.Second, time.Minute*3, 5); err != nil {
+		return errors.Wrapf(err, "error stopping kubelet")
+	}
+
+	return nil
+}
+
+// restartKubelet restarts the kubelet
+func restartKubelet(cr command.Runner) error {
+	glog.Infof("restarting kubelet.service ...")
+	c := exec.Command("sudo", "systemctl", "restart", "kubelet.service")
+	if _, err := cr.RunCmd(c); err != nil {
+		return err
+	}
+	return nil
+}
+
+// checkKubelet returns an error if the kubelet is not running.
+func checkKubelet(cr command.Runner) error {
+	glog.Infof("checking for running kubelet ...")
+	c := exec.Command("systemctl", "is-active", "--quiet", "service", "kubelet")
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "check kubelet")
+	}
+	return nil
 }
