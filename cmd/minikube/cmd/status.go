@@ -48,7 +48,7 @@ const (
 	Misconfigured = "Misconfigured" // analagous to state.Error
 )
 
-// Status holds string representations of libmachine.state.State
+// Status holds string representations of component states
 type Status struct {
 	Host       string
 	Kubelet    string
