@@ -856,7 +856,7 @@ func validateRegistryMirror() {
 		for _, loc := range registryMirror {
 			URL, err := url.Parse(loc)
 			if err != nil {
-				glog.Errorln("Error Parsing URL: ", err)
+				glog.Errorln("Error yolo Parsing URL: ", err)
 			}
 			if (URL.Scheme != "http" && URL.Scheme != "https") || URL.Path != "" {
 				exit.UsageT("Sorry, the url provided with the --registry-mirror flag is invalid: {{.url}}", out.V{"url": loc})
