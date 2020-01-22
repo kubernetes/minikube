@@ -56,8 +56,8 @@ func APIServerProcess(runner command.Runner, start time.Time, timeout time.Durat
 }
 
 // SystemPods verifies essential pods for running kurnetes is running
-func SystemPods(client *kubernetes.Clientset, start time.Time, ip string, port int, timeout time.Duration) error {
-	glog.Infof("waiting for kube-system pods to appear %s...", net.JoinHostPort(ip, fmt.Sprint(port)))
+func SystemPods(client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
+	glog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
 	podStart := time.Time{}
 	podList := func() (bool, error) {
