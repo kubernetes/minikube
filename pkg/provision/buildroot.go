@@ -170,10 +170,25 @@ WantedBy=multi-user.target
 		return nil, err
 	}
 
-	return &provision.DockerOptions{
+	dockerCfg := &provision.DockerOptions{
 		EngineOptions:     engineCfg.String(),
 		EngineOptionsPath: "/lib/systemd/system/docker.service",
-	}, nil
+	}
+
+	log.Info("Setting Docker configuration on the remote daemon...")
+
+	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dockerCfg.EngineOptionsPath), dockerCfg.EngineOptions, dockerCfg.EngineOptionsPath)); err != nil {
+		return nil, err
+	}
+
+	if err := p.Service("docker", serviceaction.Enable); err != nil {
+		return nil, err
+	}
+
+	if err := p.Service("docker", serviceaction.Restart); err != nil {
+		return nil, err
+	}
+	return dockerCfg, nil
 }
 
 func rootFileSystemType(p *BuildrootProvisioner) (string, error) {
@@ -218,7 +233,7 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	}
 
 	log.Debugf("setting minikube options for container-runtime")
-	if err := setMinikubeOptions(p); err != nil {
+	if err := setContainerRuntimeOptions(p); err != nil {
 		log.Debugf("Error setting container-runtime options during provisioning %v", err)
 		return err
 	}
@@ -239,7 +254,24 @@ func setRemoteAuthOptions(p provision.Provisioner) auth.Options {
 	return authOptions
 }
 
-func setMinikubeOptions(p *BuildrootProvisioner) error {
+func setContainerRuntimeOptions(p *BuildrootProvisioner) error {
+	c, err := config.Load(p.Driver.GetMachineName())
+	if err != nil {
+		return errors.Wrap(err, "getting cluster config")
+	}
+
+	switch c.ContainerRuntime {
+	case "crio", "cri-o":
+		return p.setCrioOptions()
+	case "containerd":
+		return nil
+	default:
+		_, err := p.GenerateDockerOptions(engine.DefaultPort)
+		return err
+	}
+}
+
+func (p *BuildrootProvisioner) setCrioOptions() error {
 	// pass through --insecure-registry
 	var (
 		crioOptsTmpl = `
@@ -258,11 +290,6 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 
 	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(crioOptsPath), crioOptsBuf.String(), crioOptsPath)); err != nil {
 		return err
-	}
-
-	// This is unlikely to cause issues unless the user has explicitly requested CRIO, so just log a warning.
-	if err := p.Service("crio", serviceaction.Restart); err != nil {
-		log.Warn("Unable to restart crio service. Error: %v", err)
 	}
 
 	return nil
@@ -312,33 +339,6 @@ func configureAuth(p *BuildrootProvisioner) error {
 	err = copyRemoteCerts(authOptions, driver)
 	if err != nil {
 		return err
-	}
-
-	config, err := config.Load(p.Driver.GetMachineName())
-	if err != nil {
-		return errors.Wrap(err, "getting cluster config")
-	}
-
-	dockerCfg, err := p.GenerateDockerOptions(engine.DefaultPort)
-	if err != nil {
-		return errors.Wrap(err, "generating docker options")
-	}
-
-	log.Info("Setting Docker configuration on the remote daemon...")
-
-	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dockerCfg.EngineOptionsPath), dockerCfg.EngineOptions, dockerCfg.EngineOptionsPath)); err != nil {
-		return err
-	}
-
-	if config.ContainerRuntime == "" {
-
-		if err := p.Service("docker", serviceaction.Enable); err != nil {
-			return err
-		}
-
-		if err := p.Service("docker", serviceaction.Restart); err != nil {
-			return err
-		}
 	}
 
 	return nil
