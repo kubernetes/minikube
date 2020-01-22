@@ -61,27 +61,29 @@ func (r *simpleReporter) Report(tunnelState *Status) {
 		routerError = tunnelState.RouteError.Error()
 	}
 
-	errors := fmt.Sprintf(`    errors: 
-		minikube: %s
-		router: %s
-		loadbalancer emulator: %s
-`, minikubeError, routerError, lbError)
+	if lbError != noErrors || minikubeError != noErrors || routerError != noErrors {
+		errors := fmt.Sprintf(`    errors:
+			minikube: %s
+			router: %s
+			loadbalancer emulator: %s
+	`, minikubeError, routerError, lbError)
 
-	_, err := r.out.Write([]byte(fmt.Sprintf(
-		`Status:	
-	machine: %s
-	pid: %d
-	route: %s
-	minikube: %s
-	services: %s
-%s`, tunnelState.TunnelID.MachineName,
-		tunnelState.TunnelID.Pid,
-		tunnelState.TunnelID.Route,
-		minikubeState,
-		managedServices,
-		errors)))
-	if err != nil {
-		glog.Errorf("failed to report state %s", err)
+		_, err := r.out.Write([]byte(fmt.Sprintf(
+			`Status:
+		machine: %s
+		pid: %d
+		route: %s
+		minikube: %s
+		services: %s
+	%s`, tunnelState.TunnelID.MachineName,
+			tunnelState.TunnelID.Pid,
+			tunnelState.TunnelID.Route,
+			minikubeState,
+			managedServices,
+			errors)))
+		if err != nil {
+			glog.Errorf("failed to report state %s", err)
+		}
 	}
 }
 
