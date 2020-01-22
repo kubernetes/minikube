@@ -303,12 +303,12 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 
 // validateDryRun asserts that the dry-run mode quickly exits with the right code
 func validateDryRun(ctx context.Context, t *testing.T, profile string) {
-	// dry-run mode should always be able to finish quickly
-	mctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	// dry-run mode should always be able to finish quickly (<5s)
+	mctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
 
 	// Too little memory!
-	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--dry-run", "--memory", "250MB", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	c := exec.CommandContext(mctx, Target(), startArgs...)
 	rr, err := Run(t, c)
 
@@ -317,9 +317,9 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
 	}
 
-	dctx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	dctx, cancel := context.WithTimeout(ctx, 4*time.Second)
 	defer cancel()
-	startArgs = append([]string{"start", "-p", profile, "--dry-run"}, StartArgs()...)
+	startArgs = append([]string{"start", "-p", profile, "--dry-run", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	c = exec.CommandContext(dctx, Target(), startArgs...)
 	rr, err = Run(t, c)
 	if rr.ExitCode != 0 || err != nil {
