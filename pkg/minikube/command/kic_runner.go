@@ -169,7 +169,11 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 
 // Remove removes a file
 func (k *kicRunner) Remove(f assets.CopyableFile) error {
-	return fmt.Errorf("not implemented yet for kic runner")
+	fp := path.Join(f.GetTargetDir(), f.GetTargetName())
+	if rr, err := k.RunCmd(exec.Command("sudo", "rm", fp)); err != nil {
+		return errors.Wrapf(err, "removing file %q output: %s", fp, rr.Output())
+	}
+	return nil
 }
 
 // isTerminal returns true if the writer w is a terminal
