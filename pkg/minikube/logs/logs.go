@@ -47,7 +47,6 @@ var importantPods = []string{
 	"coredns",
 	"kube-scheduler",
 	"kube-proxy",
-	"kube-addon-manager",
 	"kubernetes-dashboard",
 	"storage-provisioner",
 	"kube-controller-manager",
