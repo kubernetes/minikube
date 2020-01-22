@@ -32,45 +32,47 @@ var DefaultNamespaces = []string{
 }
 
 // Pause pauses a Kubernetes cluster
-func Pause(cr cruntime.Manager, r command.Runner, namespaces []string) error {
+func Pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string, error) {
+	ids := []string{}
+	// Disable the kubelet so it does not attempt to restart paused pods
 	if err := kubelet.Disable(r); err != nil {
-		return errors.Wrap(err, "kubelet disable")
+		return ids, errors.Wrap(err, "kubelet disable")
 	}
 	if err := kubelet.Stop(r); err != nil {
-		return errors.Wrap(err, "kubelet stop")
+		return ids, errors.Wrap(err, "kubelet stop")
 	}
 	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Running, Namespaces: namespaces})
 	if err != nil {
-		return errors.Wrap(err, "list running")
+		return ids, errors.Wrap(err, "list running")
 	}
 	if len(ids) == 0 {
 		glog.Warningf("no running containers to pause")
-		return nil
+		return ids, nil
 	}
-	return cr.PauseContainers(ids)
+	return ids, cr.PauseContainers(ids)
 
 }
 
 // Unpause unpauses a Kubernetes cluster
-func Unpause(cr cruntime.Manager, r command.Runner, namespaces []string) error {
+func Unpause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string, error) {
 	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Paused, Namespaces: namespaces})
 	if err != nil {
-		return errors.Wrap(err, "list paused")
+		return ids, errors.Wrap(err, "list paused")
 	}
 
 	if len(ids) == 0 {
 		glog.Warningf("no paused containers found")
 	} else {
 		if err := cr.UnpauseContainers(ids); err != nil {
-			return errors.Wrap(err, "unpause")
+			return ids, errors.Wrap(err, "unpause")
 		}
 	}
 
 	if err := kubelet.Enable(r); err != nil {
-		return errors.Wrap(err, "kubelet enable")
+		return ids, errors.Wrap(err, "kubelet enable")
 	}
 	if err := kubelet.Start(r); err != nil {
-		return errors.Wrap(err, "kubelet start")
+		return ids, errors.Wrap(err, "kubelet start")
 	}
-	return nil
+	return ids, nil
 }

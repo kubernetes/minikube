@@ -107,16 +107,17 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string,
 	pid := strings.TrimSpace(rr.Stdout.String())
 
 	// Get the freezer cgroup entry for this pid
-	rr, err = k.c.RunCmd(exec.Command("sudo", "egrep", "^[-09]+:freezer:", path.Join("/proc", pid, "cgroup")))
+	rr, err = k.c.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", path.Join("/proc", pid, "cgroup")))
 	if err != nil {
-		return state.Error.String(), err
+		glog.Warningf("unable to find freezer cgroup: %v", err)
+		return kverify.APIServerStatus(ip, apiserverPort)
+
 	}
 	freezer := strings.TrimSpace(rr.Stdout.String())
 	glog.Infof("apiserver freezer: %q", freezer)
-
 	fparts := strings.Split(freezer, ":")
-	if len(fparts) == 3 {
-		glog.Warningf("unable to parse freezer: %s", freezer)
+	if len(fparts) != 3 {
+		glog.Warningf("unable to parse freezer - found %d parts: %s", len(fparts), freezer)
 		return kverify.APIServerStatus(ip, apiserverPort)
 	}
 

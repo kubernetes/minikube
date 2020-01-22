@@ -151,6 +151,8 @@ func (r *Docker) ListContainers(o ListOptions) ([]string, error) {
 	switch o.State {
 	case All:
 		args = append(args, "-a")
+	case Running:
+		args = append(args, "--filter", "status=running")
 	case Paused:
 		args = append(args, "--filter", "status=paused")
 	}
