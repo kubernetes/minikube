@@ -94,7 +94,7 @@ func (d *Driver) DriverName() string {
 
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
-	ip, err := net.ChooseBindAddress(nil)
+	ip, err := net.ChooseHostInterface()
 	if err != nil {
 		return "", err
 	}
