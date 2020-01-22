@@ -106,14 +106,29 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string,
 	}
 	pid := strings.TrimSpace(rr.Stdout.String())
 
-	// Check if apiserver is in an uninteruptible sleep
-	rr, err = k.c.RunCmd(exec.Command("sudo", "cut", "-d", " ", "-f3", path.Join("/proc", pid, "stat")))
+	// Get the freezer cgroup entry for this pid
+	rr, err = k.c.RunCmd(exec.Command("sudo", "egrep", "^[-09]+:freezer:", path.Join("/proc", pid, "cgroup")))
 	if err != nil {
 		return state.Error.String(), err
 	}
-	st := strings.TrimSpace(rr.Stdout.String())
-	glog.Infof("apiserver process state: %s", st)
-	if st == "S" {
+	freezer := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("apiserver freezer: %q", freezer)
+
+	fparts := strings.Split(freezer, ":")
+	if len(fparts) == 3 {
+		glog.Warningf("unable to parse freezer: %s", freezer)
+		return kverify.APIServerStatus(ip, apiserverPort)
+	}
+
+	rr, err = k.c.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup/freezer", fparts[2], "freezer.state")))
+	if err != nil {
+		glog.Errorf("unable to get freezer state: %s", rr.Stderr)
+		return kverify.APIServerStatus(ip, apiserverPort)
+	}
+
+	fs := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("freezer state: %q", fs)
+	if fs == "FREEZING" || fs == "FROZEN" {
 		return state.Paused.String(), nil
 	}
 
