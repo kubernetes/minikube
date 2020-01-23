@@ -44,11 +44,11 @@ var output string
 
 const (
 	// Additional states used by kubeconfig
-	Configured    = "Configured"    // analagous to state.Saved
-	Misconfigured = "Misconfigured" // analagous to state.Error
+	Configured    = "Configured"    // analogous to state.Saved
+	Misconfigured = "Misconfigured" // analogous to state.Error
 )
 
-// Status holds string representations of libmachine.state.State
+// Status holds string representations of component states
 type Status struct {
 	Host       string
 	Kubelet    string
