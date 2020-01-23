@@ -31,11 +31,6 @@ type Addon struct {
 // Addons is a list of all addons
 var Addons = []*Addon{
 	{
-		name:      "addon-manager",
-		set:       SetBool,
-		callbacks: []setFn{enableOrDisableAddon},
-	},
-	{
 		name:      "dashboard",
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableAddon},
