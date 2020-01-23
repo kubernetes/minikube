@@ -342,7 +342,7 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 		dstFilename := path.Base(caCertFile)
 		certStorePath := path.Join(SSLCertStoreDir, dstFilename)
 		cmd := fmt.Sprintf("test -f %s || ln -s %s %s", caCertFile, certStorePath, caCertFile)
-		if _, err := cr.RunCmd(exec.Command("sudo", "-s", "eval", cmd)); err != nil {
+		if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
 			return errors.Wrapf(err, "create symlink for %s", caCertFile)
 		}
 		if hasSSLBinary {
@@ -353,7 +353,7 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
 
 			cmd := fmt.Sprintf("test -f %s || ln -s %s %s", subjectHashLink, certStorePath, subjectHashLink)
-			if _, err := cr.RunCmd(exec.Command("sudo", "-s", "eval", cmd)); err != nil {
+			if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
 				return errors.Wrapf(err, "create symlink for %s", caCertFile)
 			}
 		}

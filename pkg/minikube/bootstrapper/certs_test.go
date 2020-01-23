@@ -17,9 +17,7 @@ limitations under the License.
 package bootstrapper
 
 import (
-	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -53,21 +51,12 @@ func TestSetupCerts(t *testing.T) {
 		t.Fatalf("error generating certificate: %v", err)
 	}
 
-	cmdMap := map[string]string{
-		"sudo mkdir -p  /var/lib/minikube/certs": "",
-	}
-	certFilenames := map[string]string{"ca.crt": "minikubeCA.pem", "mycert.pem": "mycert.pem"}
-	for _, dst := range certFilenames {
-		certFile := path.Join(CACertificatesDir, dst)
-		certStorePath := path.Join(SSLCertStoreDir, dst)
-		certNameHash := "abcdef"
-		remoteCertHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", certNameHash))
-		cmdMap[fmt.Sprintf("sudo ln -s %s %s", certFile, certStorePath)] = "1"
-		cmdMap[fmt.Sprintf("openssl x509 -hash -noout -in %s", certFile)] = certNameHash
-		cmdMap[fmt.Sprintf("sudo ln -s %s %s", certStorePath, remoteCertHashLink)] = "1"
+	expected := map[string]string{
+		"fuck": "off",
+		`sudo /bin/bash -c "test -f /usr/share/ca-certificates/mycert.pem || ln -s /etc/ssl/certs/mycert.pem /usr/share/ca-certificates/mycert.pem"`: "wut",
 	}
 	f := command.NewFakeCommandRunner()
-	f.SetCommandToOutput(cmdMap)
+	f.SetCommandToOutput(expected)
 
 	var filesToBeTransferred []string
 	for _, cert := range certs {
