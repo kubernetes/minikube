@@ -19,6 +19,7 @@ package cmd
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"text/template"
@@ -94,9 +95,13 @@ var statusCmd = &cobra.Command{
 
 		switch strings.ToLower(output) {
 		case "text":
-			printStatusText(st)
+			if err := statusText(st, os.Stdout); err != nil {
+				exit.WithError("status text failure", err)
+			}
 		case "json":
-			printStatusJSON(st)
+			if err := statusJSON(st, os.Stdout); err != nil {
+				exit.WithError("status json failure", err)
+			}
 		default:
 			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
 		}
@@ -160,14 +165,13 @@ func status(api libmachine.API, name string) (*Status, error) {
 		st.APIServer = state.Error.String()
 	}
 
+	st.Kubeconfig = Misconfigured
 	ks, err := kubeconfig.IsClusterInConfig(ip, name)
 	if err != nil {
 		glog.Errorln("Error kubeconfig status:", err)
 	}
 	if ks {
 		st.Kubeconfig = Configured
-	} else {
-		st.Kubeconfig = Misconfigured
 	}
 	return st, nil
 }
@@ -180,24 +184,26 @@ For the list accessible variables for the template, see the struct values here: 
 		`minikube status --output OUTPUT. json, text`)
 }
 
-var printStatusText = func(st *Status) {
+func statusText(st *Status, w io.Writer) error {
 	tmpl, err := template.New("status").Parse(statusFormat)
 	if err != nil {
-		exit.WithError("Error creating status template", err)
+		return err
 	}
-	err = tmpl.Execute(os.Stdout, st)
-	if err != nil {
-		exit.WithError("Error executing status template", err)
+	if err := tmpl.Execute(w, st); err != nil {
+		return err
 	}
 	if st.Kubeconfig == Misconfigured {
-		out.WarningT("Warning: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`")
+		_, err := w.Write([]byte("\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n"))
+		return err
 	}
+	return nil
 }
 
-var printStatusJSON = func(st *Status) {
+func statusJSON(st *Status, w io.Writer) error {
 	js, err := json.Marshal(st)
 	if err != nil {
-		exit.WithError("Error converting status to json", err)
+		return err
 	}
-	out.String(string(js))
+	_, err = w.Write(js)
+	return err
 }
