@@ -22,6 +22,7 @@ import (
 	"path"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/docker/docker/client"
 	"github.com/docker/machine/libmachine/state"
@@ -63,7 +64,12 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 // LoadImages loads previously cached images into the container runtime
 func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string, cacheDir string) error {
 	glog.Infof("LoadImages start: %s", images)
-	defer glog.Infof("LoadImages end")
+	start := time.Now()
+
+	defer func() {
+		glog.Infof("LoadImages completed in %s", time.Since(start))
+	}()
+
 	var g errgroup.Group
 	cr, err := cruntime.New(cruntime.Config{Type: cc.ContainerRuntime, Runner: runner})
 	if err != nil {
