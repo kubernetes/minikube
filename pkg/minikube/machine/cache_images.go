@@ -65,7 +65,7 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 	glog.Infof("LoadImages start: %s", images)
 	defer glog.Infof("LoadImages end")
 	var g errgroup.Group
-	cr, err := cruntime.New(cruntime.Config{Type: cc.ContainerRuntime, Runner: runner})
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
