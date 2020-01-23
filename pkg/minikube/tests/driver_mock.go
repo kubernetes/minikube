@@ -99,6 +99,7 @@ func (d *MockDriver) GetState() (state.State, error) {
 	d.Logf("MockDriver.GetState: %v", d.CurrentState)
 	if d.NotExistError {
 		d.CurrentState = state.Error
+		// don't use cluster.ErrorMachineNotExist to avoid import cycle
 		return d.CurrentState, errors.New("machine does not exist")
 	}
 	return d.CurrentState, nil
