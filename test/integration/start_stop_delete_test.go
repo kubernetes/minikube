@@ -100,44 +100,14 @@ func TestStartStop(t *testing.T) {
 				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
+
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
-					// Fatal so that we may collect logs before stop/delete steps
 					t.Fatalf("%s failed: %v", rr.Args, err)
 				}
 
-				// SADNESS: 0/1 nodes are available: 1 node(s) had taints that the pod didn't tolerate.
-				if strings.Contains(tc.name, "cni") {
-					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-				} else {
-					// schedule a pod to assert persistence
-					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
-					if err != nil {
-						t.Fatalf("%s failed: %v", rr.Args, err)
-					}
-
-					// 8 minutes, because 4 is not enough for images to pull in all cases.
-					names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 8*time.Minute)
-					if err != nil {
-						t.Fatalf("wait: %v", err)
-					}
-
-					// Use this pod to confirm that the runtime resource limits are sane
-					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "ulimit -n"))
-					if err != nil {
-						t.Fatalf("ulimit: %v", err)
-					}
-
-					got, err := strconv.ParseInt(strings.TrimSpace(rr.Stdout.String()), 10, 64)
-					if err != nil {
-						t.Errorf("ParseInt(%q): %v", rr.Stdout.String(), err)
-					}
-
-					// Arbitrary value set by some container runtimes. If higher, apps like MySQL may make bad decisions.
-					expected := int64(1048576)
-					if got != expected {
-						t.Errorf("'ulimit -n' returned %d, expected %d", got, expected)
-					}
+				if !strings.Contains(tc.name, "cni") {
+					testPodScheduling(ctx, t, profile)
 				}
 
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
@@ -156,41 +126,6 @@ func TestStartStop(t *testing.T) {
 					t.Fatalf("%s failed: %v", rr.Args, err)
 				}
 
-				// Make sure that kubeadm did not need to pull in additional images
-				if !NoneDriver() {
-					rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
-					if err != nil {
-						t.Errorf("%s failed: %v", rr.Args, err)
-					}
-					jv := map[string][]struct {
-						Tags []string `json:"repoTags"`
-					}{}
-					err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
-					if err != nil {
-						t.Errorf("images unmarshal: %v", err)
-					}
-					gotImages := []string{}
-					for _, img := range jv["images"] {
-						for _, i := range img.Tags {
-							if defaultImage(i) {
-								// Remove docker.io for naming consistency between container runtimes
-								gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
-							} else {
-								t.Logf("Found non-minikube image: %s", i)
-							}
-						}
-					}
-					want, err := images.Kubeadm("", tc.version)
-					if err != nil {
-						t.Errorf("kubeadm images: %v", tc.version)
-					}
-					sort.Strings(want)
-					sort.Strings(gotImages)
-					if diff := cmp.Diff(want, gotImages); diff != "" {
-						t.Errorf("%s images mismatch (-want +got):\n%s", tc.version, diff)
-					}
-				}
-
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
 				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute); err != nil {
@@ -202,36 +137,11 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("host status = %q; want = %q", got, state.Running)
 				}
 
-				// Can this runtime be paused and unpaused?
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "pause", "-p", profile, "--alsologtostderr", "-v=1"))
-				if err != nil {
-					t.Fatalf("%s failed: %v", rr.Args, err)
+				if !NoneDriver() {
+					testPulledImages(ctx, t, profile, tc.version)
 				}
 
-				got = status(ctx, t, Target(), profile, "APIServer")
-				if got != state.Paused.String() {
-					t.Errorf("apiserver status = %q; want = %q", got, state.Paused)
-				}
-
-				got = status(ctx, t, Target(), profile, "Kubelet")
-				if got != state.Stopped.String() {
-					t.Errorf("kubelet status = %q; want = %q", got, state.Stopped)
-				}
-
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "unpause", "-p", profile, "--alsologtostderr", "-v=1"))
-				if err != nil {
-					t.Fatalf("%s failed: %v", rr.Args, err)
-				}
-
-				got = status(ctx, t, Target(), profile, "APIServer")
-				if got != state.Running.String() {
-					t.Errorf("apiserver status = %q; want = %q", got, state.Running)
-				}
-
-				got = status(ctx, t, Target(), profile, "Kubelet")
-				if got != state.Running.String() {
-					t.Errorf("kubelet status = %q; want = %q", got, state.Running)
-				}
+				testPause(ctx, t, profile)
 
 				if *cleanup {
 					// Normally handled by cleanuprofile, but not fatal there
@@ -243,6 +153,113 @@ func TestStartStop(t *testing.T) {
 			})
 		}
 	})
+}
+
+// testPodScheduling asserts that this configuration can schedule new pods
+func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
+	t.Helper()
+
+	// schedule a pod to assert persistence
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+
+	// 8 minutes, because 4 is not enough for images to pull in all cases.
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 8*time.Minute)
+	if err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+
+	// Use this pod to confirm that the runtime resource limits are sane
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "/bin/sh", "-c", "ulimit -n"))
+	if err != nil {
+		t.Fatalf("ulimit: %v", err)
+	}
+
+	got, err := strconv.ParseInt(strings.TrimSpace(rr.Stdout.String()), 10, 64)
+	if err != nil {
+		t.Errorf("ParseInt(%q): %v", rr.Stdout.String(), err)
+	}
+
+	// Arbitrary value set by some container runtimes. If higher, apps like MySQL may make bad decisions.
+	expected := int64(1048576)
+	if got != expected {
+		t.Errorf("'ulimit -n' returned %d, expected %d", got, expected)
+	}
+}
+
+// testPulledImages asserts that this configuration pulls only expected images
+func testPulledImages(ctx context.Context, t *testing.T, profile string, version string) {
+	t.Helper()
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	jv := map[string][]struct {
+		Tags []string `json:"repoTags"`
+	}{}
+	err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
+	if err != nil {
+		t.Errorf("images unmarshal: %v", err)
+	}
+	gotImages := []string{}
+	for _, img := range jv["images"] {
+		for _, i := range img.Tags {
+			if defaultImage(i) {
+				// Remove docker.io for naming consistency between container runtimes
+				gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
+			} else {
+				t.Logf("Found non-minikube image: %s", i)
+			}
+		}
+	}
+	want, err := images.Kubeadm("", version)
+	if err != nil {
+		t.Errorf("kubeadm images: %v", version)
+	}
+	sort.Strings(want)
+	sort.Strings(gotImages)
+	if diff := cmp.Diff(want, gotImages); diff != "" {
+		t.Errorf("%s images mismatch (-want +got):\n%s", version, diff)
+	}
+}
+
+// testPause asserts that this configuration can be paused and unpaused
+func testPause(ctx context.Context, t *testing.T, profile string) {
+	t.Helper()
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "pause", "-p", profile, "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+
+	got := status(ctx, t, Target(), profile, "APIServer")
+	if got != state.Paused.String() {
+		t.Errorf("apiserver status = %q; want = %q", got, state.Paused)
+	}
+
+	got = status(ctx, t, Target(), profile, "Kubelet")
+	if got != state.Stopped.String() {
+		t.Errorf("kubelet status = %q; want = %q", got, state.Stopped)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "unpause", "-p", profile, "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+
+	got = status(ctx, t, Target(), profile, "APIServer")
+	if got != state.Running.String() {
+		t.Errorf("apiserver status = %q; want = %q", got, state.Running)
+	}
+
+	got = status(ctx, t, Target(), profile, "Kubelet")
+	if got != state.Running.String() {
+		t.Errorf("kubelet status = %q; want = %q", got, state.Running)
+	}
+
 }
 
 // defaultImage returns true if this image is expected in a default minikube install
