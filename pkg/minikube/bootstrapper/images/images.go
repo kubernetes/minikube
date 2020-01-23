@@ -112,7 +112,6 @@ func archTag(hasTag bool) string {
 // auxiliary returns images that are helpful for running minikube
 func auxiliary(mirror string) []string {
 	return []string{
-		addonManager(mirror),
 		storageProvisioner(mirror),
 		dashboardFrontend(mirror),
 		dashboardMetrics(mirror),
@@ -122,11 +121,6 @@ func auxiliary(mirror string) []string {
 // storageProvisioner returns the minikube storage provisioner image
 func storageProvisioner(mirror string) string {
 	return path.Join(minikubeRepo(mirror), "storage-provisioner"+archTag(false)+"v1.8.1")
-}
-
-// addonManager returns the Kubernetes addon manager image
-func addonManager(mirror string) string {
-	return path.Join(kubernetesRepo(mirror), "kube-addon-manager"+archTag(false)+"v9.0.2")
 }
 
 // dashboardFrontend returns the image used for the dashboard frontend
