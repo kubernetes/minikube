@@ -362,7 +362,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// setup kubeadm (must come after setupKubeconfig)
-	bs := setupKubeAdm(machineAPI, mRunner, mc, n)
+	bs := setupKubeAdm(machineAPI, mc, n)
 
 	// pull images or restart cluster
 	bootstrapCluster(bs, cr, mRunner, mc, preExists, isUpgrade)
@@ -953,7 +953,6 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		CPUs:                viper.GetInt(cpus),
 		DiskSize:            pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
 		VMDriver:            drvName,
-		ContainerRuntime:    viper.GetString(containerRuntime),
 		HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
 		HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
 		NFSShare:            viper.GetStringSlice(nfsShare),
@@ -1254,7 +1253,7 @@ func getKubernetesVersion(old *config.MachineConfig) (string, bool) {
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, cr command.Runner, config config.MachineConfig, node config.Node) bootstrapper.Bootstrapper {
+func setupKubeAdm(mAPI libmachine.API, cfg config.MachineConfig, node config.Node) bootstrapper.Bootstrapper {
 	bs, err := getClusterBootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
@@ -1263,10 +1262,10 @@ func setupKubeAdm(mAPI libmachine.API, cr command.Runner, config config.MachineC
 		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
-	if err := bs.UpdateCluster(config); err != nil {
+	if err := bs.UpdateCluster(cfg); err != nil {
 		exit.WithError("Failed to update cluster", err)
 	}
-	if err := bs.SetupCerts(config.KubernetesConfig, node); err != nil {
+	if err := bs.SetupCerts(cfg.KubernetesConfig, node); err != nil {
 		exit.WithError("Failed to setup certs", err)
 	}
 	return bs

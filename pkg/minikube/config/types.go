@@ -40,7 +40,6 @@ type MachineConfig struct {
 	CPUs                int
 	DiskSize            int
 	VMDriver            string
-	ContainerRuntime    string
 	HyperkitVpnKitSock  string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts  []string // Only used by the Hyperkit driver
 	DockerEnv           []string // Each entry is formatted as KEY=VALUE.

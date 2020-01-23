@@ -53,8 +53,12 @@ func NewKubeletConfig(mc config.MachineConfig, r cruntime.Manager) ([]byte, erro
 	if k8s.NetworkPlugin != "" {
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}
+	master, err := config.GetMasterNode(mc)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting master node")
+	}
 	if _, ok := extraOpts["node-ip"]; !ok {
-		extraOpts["node-ip"] = mc.Nodes[0].IP
+		extraOpts["node-ip"] = master.IP
 	}
 
 	pauseImage := images.Pause(k8s.ImageRepository)

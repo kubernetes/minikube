@@ -213,7 +213,7 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 	if !driver.IsKIC(cfg.VMDriver) { // TODO: skip for both after verifications https://github.com/kubernetes/minikube/issues/6239
 		glog.Infof("Configuring cluster permissions ...")
 		elevate := func() error {
-			client, err := k.client(cfg.KubernetesConfig, master)
+			client, err := k.client(master)
 			if err != nil {
 				return err
 			}
@@ -233,22 +233,22 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 }
 
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
-func (k *Bootstrapper) client(cfg config.KubernetesConfig, n config.Node) (*kubernetes.Clientset, error) {
+func (k *Bootstrapper) client(n config.Node) (*kubernetes.Clientset, error) {
 	if k.k8sClient != nil {
 		return k.k8sClient, nil
 	}
 
-	config, err := kapi.ClientConfig(k.contextName)
+	cc, err := kapi.ClientConfig(k.contextName)
 	if err != nil {
 		return nil, errors.Wrap(err, "client config")
 	}
 
 	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(n.IP, strconv.Itoa(n.Port)))
-	if config.Host != endpoint {
-		glog.Errorf("Overriding stale ClientConfig host %s with %s", config.Host, endpoint)
-		config.Host = endpoint
+	if cc.Host != endpoint {
+		glog.Errorf("Overriding stale ClientConfig host %s with %s", cc.Host, endpoint)
+		cc.Host = endpoint
 	}
-	c, err := kubernetes.NewForConfig(config)
+	c, err := kubernetes.NewForConfig(cc)
 	if err == nil {
 		k.k8sClient = c
 	}
@@ -260,6 +260,9 @@ func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Dur
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
 	master, err := config.GetMasterNode(cfg)
+	if err != nil {
+		return err
+	}
 	if err := kverify.APIServerProcess(k.c, start, timeout); err != nil {
 		return err
 	}
@@ -267,7 +270,7 @@ func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Dur
 		return err
 	}
 
-	c, err := k.client(cfg.KubernetesConfig, master)
+	c, err := k.client(master)
 	if err != nil {
 		return errors.Wrap(err, "get k8s client")
 	}
@@ -322,7 +325,7 @@ func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
 	}
 
 	for _, n := range cfg.Nodes {
-		client, err := k.client(cfg.KubernetesConfig, n)
+		client, err := k.client(n)
 		if err != nil {
 			return errors.Wrap(err, "getting k8s client")
 		}
@@ -396,7 +399,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
 		}
 	}
-	r, err := cruntime.New(cruntime.Config{Type: cfg.ContainerRuntime,
+	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime,
 		Runner: k.c, Socket: cfg.KubernetesConfig.CRISocket})
 	if err != nil {
 		return errors.Wrap(err, "runtime")

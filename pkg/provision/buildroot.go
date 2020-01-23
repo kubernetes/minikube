@@ -260,7 +260,7 @@ func setContainerRuntimeOptions(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "getting cluster config")
 	}
 
-	switch c.ContainerRuntime {
+	switch c.KubernetesConfig.ContainerRuntime {
 	case "crio", "cri-o":
 		return p.setCrioOptions()
 	case "containerd":

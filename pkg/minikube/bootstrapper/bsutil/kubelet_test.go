@@ -107,10 +107,10 @@ ExecStart=/var/lib/minikube/binaries/v1.17.0/kubelet --authorization-mode=Webhoo
 `,
 		},
 		{
-			description: "default containerd runtime",
+			description: "default containerd runtime with IP override",
 			cfg: config.MachineConfig{
 				KubernetesConfig: config.KubernetesConfig{
-					KubernetesVersion: constants.OldestKubernetesVersion,
+					KubernetesVersion: constants.DefaultKubernetesVersion,
 					ContainerRuntime:  "containerd",
 					ExtraOptions: config.ExtraOptionSlice{
 						config.ExtraOption{
@@ -166,7 +166,7 @@ ExecStart=/var/lib/minikube/binaries/v1.17.0/kubelet --authorization-mode=Webhoo
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
-			runtime, err := cruntime.New(cruntime.Config{Type: tc.cfg.ContainerRuntime,
+			runtime, err := cruntime.New(cruntime.Config{Type: tc.cfg.KubernetesConfig.ContainerRuntime,
 				Runner: command.NewFakeCommandRunner()})
 			if err != nil {
 				t.Fatalf("runtime: %v", err)
