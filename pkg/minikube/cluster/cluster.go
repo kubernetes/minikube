@@ -24,6 +24,7 @@ import (
 	"math"
 	"net"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -46,6 +47,7 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
 
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -54,6 +56,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/sshutil"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -67,6 +71,17 @@ var (
 	// The maximum the guest VM clock is allowed to be ahead and behind. This value is intentionally
 	// large to allow for inaccurate methodology, but still small enough so that certificates are likely valid.
 	maxClockDesyncSeconds = 2.1
+
+	// requiredDirectories are directories to create on the host during setup
+	requiredDirectories = []string{
+		vmpath.GuestAddonsDir,
+		vmpath.GuestManifestsDir,
+		vmpath.GuestEphemeralDir,
+		vmpath.GuestPersistentDir,
+		vmpath.GuestCertsDir,
+		path.Join(vmpath.GuestPersistentDir, "images"),
+		path.Join(vmpath.GuestPersistentDir, "binaries"),
+	}
 )
 
 // This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
@@ -497,6 +512,10 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "create")
 	}
 
+	if err := createRequiredDirectories(h); err != nil {
+		return h, err
+	}
+
 	if driver.BareMetal(config.VMDriver) {
 		showLocalOsRelease()
 	} else if !driver.BareMetal(config.VMDriver) && !driver.IsKIC(config.VMDriver) {
@@ -645,4 +664,37 @@ func IsMinikubeRunning(api libmachine.API) bool {
 		return false
 	}
 	return true
+}
+
+// createRequiredDirectories creates directories expected by minikube to exist
+func createRequiredDirectories(h *host.Host) error {
+	glog.Infof("creating required directories: %v", requiredDirectories)
+	r, err := commandRunner(h)
+	if err != nil {
+		return errors.Wrap(err, "command runner")
+	}
+
+	args := append([]string{"mkdir", "-p"}, requiredDirectories...)
+	if _, err := r.RunCmd(exec.Command("sudo", args...)); err != nil {
+		return errors.Wrap(err, "mkdir")
+	}
+	return nil
+}
+
+// commandRunner returns best available command runner for this host
+func commandRunner(h *host.Host) (command.Runner, error) {
+	if h.DriverName == driver.Mock {
+		return &command.FakeCommandRunner{}, nil
+	}
+	if driver.BareMetal(h.Driver.DriverName()) {
+		return &command.ExecRunner{}, nil
+	}
+	if h.Driver.DriverName() == driver.Docker {
+		return command.NewKICRunner(h.Name, "docker"), nil
+	}
+	client, err := sshutil.NewSSHClient(h.Driver)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
+	}
+	return command.NewSSHRunner(client), nil
 }
