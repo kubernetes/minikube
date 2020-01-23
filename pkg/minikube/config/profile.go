@@ -83,7 +83,7 @@ func ProfileExists(name string, miniHome ...string) bool {
 	return err == nil
 }
 
-// CreateEmptyProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
+// CreateEmptyProfile creates an empty profile and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func CreateEmptyProfile(name string, miniHome ...string) error {
 	cfg := &MachineConfig{}
 	return SaveProfile(name, cfg, miniHome...)
@@ -191,7 +191,7 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 	return dirs, err
 }
 
-// profileFilePath returns the Minikube profile config file
+// profileFilePath returns path of profile config file
 func profileFilePath(profile string, miniHome ...string) string {
 	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {

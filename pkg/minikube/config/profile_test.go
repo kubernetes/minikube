@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-// TestListProfiles uses a different uses different MINIKUBE_HOME with rest of tests since it relies on file list index
+// TestListProfiles uses a different MINIKUBE_HOME with rest of tests since it relies on file list index
 func TestListProfiles(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/profile/.minikube")
 	if err != nil {

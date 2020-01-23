@@ -51,8 +51,6 @@ type Bootstrapper interface {
 const (
 	// Kubeadm is the kubeadm bootstrapper type
 	Kubeadm = "kubeadm"
-	// KIC is the kic bootstrapper type
-	KIC = "kic"
 )
 
 // GetCachedBinaryList returns the list of binaries
