@@ -42,13 +42,14 @@ func init() {
 }
 
 func configure(mc config.MachineConfig) interface{} {
+	master, _ := config.GetMasterNode(mc)
 	return kic.NewDriver(kic.Config{
 		MachineName:  mc.Name,
 		StorePath:    localpath.MiniPath(),
 		ImageDigest:  kic.BaseImage,
 		CPU:          mc.CPUs,
 		Memory:       mc.Memory,
-		HostBindPort: mc.Nodes[0].Port,
+		HostBindPort: master.Port,
 		OCIBinary:    oci.Docker,
 	})
 
