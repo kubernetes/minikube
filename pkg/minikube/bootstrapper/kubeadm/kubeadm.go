@@ -272,7 +272,7 @@ func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Dur
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	return kverify.SystemPods(c, start, master.IP, master.Port, timeout)
+	return kverify.SystemPods(c, start, timeout)
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
@@ -327,7 +327,7 @@ func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
 			return errors.Wrap(err, "getting k8s client")
 		}
 
-		if err := kverify.SystemPods(client, time.Now(), n.IP, n.Port, kconst.DefaultControlPlaneTimeout); err != nil {
+		if err := kverify.SystemPods(client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 			return errors.Wrap(err, "system pods")
 		}
 

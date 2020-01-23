@@ -30,17 +30,23 @@ import (
 func TestGenerateKubeletConfig(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         config.KubernetesConfig
+		cfg         config.MachineConfig
 		expected    string
 		shouldErr   bool
 	}{
 		{
 			description: "old docker",
-			cfg: config.KubernetesConfig{
-				NodeIP:            "192.168.1.100",
-				KubernetesVersion: constants.OldestKubernetesVersion,
-				NodeName:          "minikube",
-				ContainerRuntime:  "docker",
+			cfg: config.MachineConfig{
+				KubernetesConfig: config.KubernetesConfig{
+					KubernetesVersion: constants.OldestKubernetesVersion,
+					ContainerRuntime:  "docker",
+				},
+				Nodes: []config.Node{
+					config.Node{
+						IP:   "192.168.1.100",
+						Name: "minikube",
+					},
+				},
 			},
 			expected: `[Unit]
 Wants=docker.socket
@@ -54,11 +60,17 @@ ExecStart=/var/lib/minikube/binaries/v1.11.10/kubelet --allow-privileged=true --
 		},
 		{
 			description: "newest cri runtime",
-			cfg: config.KubernetesConfig{
-				NodeIP:            "192.168.1.100",
-				KubernetesVersion: constants.NewestKubernetesVersion,
-				NodeName:          "minikube",
-				ContainerRuntime:  "cri-o",
+			cfg: config.MachineConfig{
+				KubernetesConfig: config.KubernetesConfig{
+					KubernetesVersion: constants.NewestKubernetesVersion,
+					ContainerRuntime:  "cri-o",
+				},
+				Nodes: []config.Node{
+					config.Node{
+						IP:   "192.168.1.100",
+						Name: "minikube",
+					},
+				},
 			},
 			expected: `[Unit]
 Wants=crio.service
@@ -72,11 +84,17 @@ ExecStart=/var/lib/minikube/binaries/v1.17.0/kubelet --authorization-mode=Webhoo
 		},
 		{
 			description: "default containerd runtime",
-			cfg: config.KubernetesConfig{
-				NodeIP:            "192.168.1.100",
-				KubernetesVersion: constants.DefaultKubernetesVersion,
-				NodeName:          "minikube",
-				ContainerRuntime:  "containerd",
+			cfg: config.MachineConfig{
+				KubernetesConfig: config.KubernetesConfig{
+					KubernetesVersion: constants.DefaultKubernetesVersion,
+					ContainerRuntime:  "containerd",
+				},
+				Nodes: []config.Node{
+					config.Node{
+						IP:   "192.168.1.100",
+						Name: "minikube",
+					},
+				},
 			},
 			expected: `[Unit]
 Wants=containerd.service
@@ -90,16 +108,22 @@ ExecStart=/var/lib/minikube/binaries/v1.17.0/kubelet --authorization-mode=Webhoo
 		},
 		{
 			description: "default containerd runtime",
-			cfg: config.KubernetesConfig{
-				NodeIP:            "192.168.1.100",
-				KubernetesVersion: constants.DefaultKubernetesVersion,
-				NodeName:          "minikube",
-				ContainerRuntime:  "containerd",
-				ExtraOptions: config.ExtraOptionSlice{
-					config.ExtraOption{
-						Component: Kubelet,
-						Key:       "node-ip",
-						Value:     "192.168.1.200",
+			cfg: config.MachineConfig{
+				KubernetesConfig: config.KubernetesConfig{
+					KubernetesVersion: constants.OldestKubernetesVersion,
+					ContainerRuntime:  "containerd",
+					ExtraOptions: config.ExtraOptionSlice{
+						config.ExtraOption{
+							Component: Kubelet,
+							Key:       "node-ip",
+							Value:     "192.168.1.200",
+						},
+					},
+				},
+				Nodes: []config.Node{
+					config.Node{
+						IP:   "192.168.1.100",
+						Name: "minikube",
 					},
 				},
 			},
@@ -115,12 +139,18 @@ ExecStart=/var/lib/minikube/binaries/v1.17.0/kubelet --authorization-mode=Webhoo
 		},
 		{
 			description: "docker with custom image repository",
-			cfg: config.KubernetesConfig{
-				NodeIP:            "192.168.1.100",
-				KubernetesVersion: constants.DefaultKubernetesVersion,
-				NodeName:          "minikube",
-				ContainerRuntime:  "docker",
-				ImageRepository:   "docker-proxy-image.io/google_containers",
+			cfg: config.MachineConfig{
+				KubernetesConfig: config.KubernetesConfig{
+					KubernetesVersion: constants.DefaultKubernetesVersion,
+					ContainerRuntime:  "docker",
+					ImageRepository:   "docker-proxy-image.io/google_containers",
+				},
+				Nodes: []config.Node{
+					config.Node{
+						IP:   "192.168.1.100",
+						Name: "minikube",
+					},
+				},
 			},
 			expected: `[Unit]
 Wants=docker.socket
