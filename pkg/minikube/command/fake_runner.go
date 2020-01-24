@@ -55,6 +55,10 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	start := time.Now()
 
 	out, ok := f.cmdMap.Load(strings.Join(rr.Args, " "))
+	if !ok {
+		return rr, fmt.Errorf("unregistered command: `%s`\nexpected: %v\n", rr.Command(), f.commands())
+	}
+
 	var buf bytes.Buffer
 	outStr := ""
 	if out != nil {
@@ -69,14 +73,9 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 	elapsed := time.Since(start)
 
-	if ok {
-		// Reduce log spam
-		if elapsed > (1 * time.Second) {
-			glog.Infof("(FakeCommandRunner) Done: %v: (%s)", rr.Command(), elapsed)
-		}
-	} else {
-		glog.Infof("(FakeCommandRunner) Non-zero exit: %v: (%s)\n%s", rr.Command(), elapsed, out)
-		return rr, fmt.Errorf("unavailable command: %s", rr.Command())
+	// Reduce log spam
+	if elapsed > (1 * time.Second) {
+		glog.Infof("(FakeCommandRunner) Done: %v: (%s)", rr.Command(), elapsed)
 	}
 	return rr, nil
 }
@@ -108,6 +107,7 @@ func (f *FakeCommandRunner) SetFileToContents(fileToContents map[string]string) 
 // SetCommandToOutput stores the file to contents map for the FakeCommandRunner
 func (f *FakeCommandRunner) SetCommandToOutput(cmdToOutput map[string]string) {
 	for k, v := range cmdToOutput {
+		glog.Infof("fake command %q -> %q", k, v)
 		f.cmdMap.Store(k, v)
 	}
 }
@@ -119,6 +119,15 @@ func (f *FakeCommandRunner) GetFileToContents(filename string) (string, error) {
 		return "", fmt.Errorf("unavailable file: %s", filename)
 	}
 	return contents.(string), nil
+}
+
+func (f *FakeCommandRunner) commands() []string {
+	cmds := []string{}
+	f.cmdMap.Range(func(k, v interface{}) bool {
+		cmds = append(cmds, fmt.Sprintf("`%s`", k))
+		return true
+	})
+	return cmds
 }
 
 // DumpMaps prints out the list of stored commands and stored filenames.
