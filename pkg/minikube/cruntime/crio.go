@@ -27,6 +27,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
+const (
+	// CRIOConfFile is the path to the CRI-O configuration
+	crioConfigFile = "/etc/crio/crio.conf"
+)
+
 // CRIO contains CRIO runtime state
 type CRIO struct {
 	Socket            string
@@ -34,11 +39,6 @@ type CRIO struct {
 	ImageRepository   string
 	KubernetesVersion string
 }
-
-const (
-	// CRIOConfFile is the path to the CRI-O configuration
-	crioConfigFile = "/etc/crio/crio.conf"
-)
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
 func generateCRIOConfig(cr CommandRunner, imageRepository string) error {
@@ -192,8 +192,18 @@ func (r *CRIO) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of managed by this container runtime
-func (r *CRIO) ListContainers(filter string) ([]string, error) {
-	return listCRIContainers(r.Runner, filter)
+func (r *CRIO) ListContainers(o ListOptions) ([]string, error) {
+	return listCRIContainers(r.Runner, "", o)
+}
+
+// PauseContainers pauses a running container based on ID
+func (r *CRIO) PauseContainers(ids []string) error {
+	return pauseCRIContainers(r.Runner, "", ids)
+}
+
+// PauseContainers pauses a running container based on ID
+func (r *CRIO) UnpauseContainers(ids []string) error {
+	return unpauseCRIContainers(r.Runner, "", ids)
 }
 
 // KillContainers removes containers based on ID
