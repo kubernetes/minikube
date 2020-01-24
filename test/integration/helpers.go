@@ -321,16 +321,6 @@ func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, n
 	}
 }
 
-// Status returns the minikube cluster status as a string
-func Status(ctx context.Context, t *testing.T, path string, profile string) string {
-	t.Helper()
-	rr, err := Run(t, exec.CommandContext(ctx, path, "status", "--format={{.Host}}", "-p", profile))
-	if err != nil {
-		t.Logf("status error: %v (may be ok)", err)
-	}
-	return strings.TrimSpace(rr.Stdout.String())
-}
-
 // MaybeParallel sets that the test should run in parallel
 func MaybeParallel(t *testing.T) {
 	t.Helper()
