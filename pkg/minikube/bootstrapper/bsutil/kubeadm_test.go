@@ -121,8 +121,9 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 				cfg := tc.cfg
 				cfg.Nodes = []config.Node{
 					config.Node{
-						IP:   "1.1.1.1",
-						Name: "mk",
+						IP:           "1.1.1.1",
+						Name:         "mk",
+						ControlPlane: true,
 					},
 				}
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
@@ -195,11 +196,13 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 				if len(cfg.Nodes) > 0 {
 					cfg.Nodes[0].IP = "1.1.1.1"
 					cfg.Nodes[0].Name = "mk"
+					cfg.Nodes[0].ControlPlane = true
 				} else {
 					cfg.Nodes = []config.Node{
 						config.Node{
-							IP:   "1.1.1.1",
-							Name: "mk",
+							IP:           "1.1.1.1",
+							Name:         "mk",
+							ControlPlane: true,
 						},
 					}
 				}
