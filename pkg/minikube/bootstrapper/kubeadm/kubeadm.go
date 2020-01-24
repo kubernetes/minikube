@@ -468,7 +468,7 @@ func (k *Bootstrapper) clientEndpointAddr(cfg config.MachineConfig) (string, int
 	if driver.IsKIC(cfg.VMDriver) { // for kic we ask docker/podman what port it assigned to node port
 		p, err := oci.HostPortBinding(cfg.VMDriver, cfg.Name, cfg.KubernetesConfig.NodePort)
 		if err != nil {
-			glog.Warningf("Error getting host bind port %s for api server for %s driver: %v ", p, cfg.VMDriver, err)
+			glog.Warningf("Error getting host bind port %q for api server for %q driver: %v ", p, cfg.VMDriver, err)
 		}
 		return kic.DefaultBindIPV4, p
 	}
