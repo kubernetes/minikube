@@ -97,7 +97,7 @@ func (d *Driver) Create() error {
 
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings, oci.PortMapping{
-		ListenAddress: "127.0.0.1",
+		ListenAddress: DefaultBindIPV4,
 		HostPort:      int32(d.NodeConfig.HostBindPort),
 		ContainerPort: constants.APIServerPort,
 	})
