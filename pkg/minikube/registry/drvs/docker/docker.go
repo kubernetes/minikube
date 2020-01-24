@@ -42,7 +42,7 @@ func init() {
 }
 
 func configure(mc config.MachineConfig) interface{} {
-	master, _ := config.GetMasterNode(mc)
+	master, _ := config.MasterNode(mc)
 	return kic.NewDriver(kic.Config{
 		MachineName:  mc.Name,
 		StorePath:    localpath.MiniPath(),

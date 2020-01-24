@@ -54,7 +54,7 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 	}
 
 	// In case of no port assigned, use default
-	master, err := config.GetMasterNode(mc)
+	master, err := config.MasterNode(mc)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting master node")
 	}
