@@ -27,6 +27,8 @@ import (
 )
 
 const (
+	// SSHPort is the SSH serviceport on the node vm and container
+	SSHPort = 22
 	// APIServerPort is the default API server port
 	APIServerPort = 8443
 	// APIServerName is the default API server name
