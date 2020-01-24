@@ -50,8 +50,8 @@ func (p *Profile) IsValid() bool {
 	return true
 }
 
-// GetMasterNode gets the node specific config for the control plane
-func GetMasterNode(cc MachineConfig) (Node, error) {
+// MasterNode gets the node specific config for the control plane
+func MasterNode(cc MachineConfig) (Node, error) {
 	for _, n := range cc.Nodes {
 		if n.Type == Master {
 			return n, nil

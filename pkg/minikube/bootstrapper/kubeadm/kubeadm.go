@@ -203,7 +203,7 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		return err
 	}
 
-	master, err := config.GetMasterNode(cfg)
+	master, err := config.MasterNode(cfg)
 	if err != nil {
 		return err
 	}
@@ -295,7 +295,7 @@ func (k *Bootstrapper) client(n config.Node) (*kubernetes.Clientset, error) {
 func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
-	master, err := config.GetMasterNode(cfg)
+	master, err := config.MasterNode(cfg)
 	if err != nil {
 		return err
 	}
