@@ -65,14 +65,13 @@ type MachineConfig struct {
 	HostOnlyNicType     string // Only used by virtualbox
 	NatNicType          string // Only used by virtualbox
 	Addons              map[string]bool
-	NodeBindPort        int32 // Only used by kic
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
 	KubernetesVersion string
 	NodeIP            string
-	NodePort          int
+	NodePort          int // kubernetes api server port
 	NodeName          string
 	APIServerName     string
 	APIServerNames    []string
