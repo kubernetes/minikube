@@ -77,7 +77,7 @@ func (b *BaseAsset) GetModTime() (time.Time, error) {
 // FileAsset is an asset using a file
 type FileAsset struct {
 	BaseAsset
-	reader *io.SectionReader
+	reader io.ReadSeeker
 }
 
 // NewMemoryAssetTarget creates a new MemoryAsset, with target
@@ -139,7 +139,7 @@ func (f *FileAsset) Seek(offset int64, whence int) (int64, error) {
 // MemoryAsset is a memory-based asset
 type MemoryAsset struct {
 	BaseAsset
-	reader *bytes.Reader
+	reader io.ReadSeeker
 	length int
 }
 
@@ -174,7 +174,7 @@ func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *Memory
 // BinAsset is a bindata (binary data) asset
 type BinAsset struct {
 	BaseAsset
-	reader   *bytes.Reader
+	reader   io.ReadSeeker
 	template *template.Template
 	length   int
 }
