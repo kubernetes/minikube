@@ -18,6 +18,7 @@ package kic
 
 import (
 	"fmt"
+	"net"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -27,13 +28,11 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/node"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -63,17 +62,16 @@ type Driver struct {
 
 // Config is configuration for the kic driver used by registry
 type Config struct {
-	MachineName     string            // maps to the container name being created
-	CPU             int               // Number of CPU cores assigned to the container
-	Memory          int               // max memory in MB
-	StorePath       string            // libmachine store path
-	OCIBinary       string            // oci tool to use (docker, podman,...)
-	ImageDigest     string            // image name with sha to use for the node
-	APIHostBindPort int               // bind port for api server
-	SSHHostBindPort int               // bind port for ssh server
-	Mounts          []oci.Mount       // mounts
-	PortMappings    []oci.PortMapping // container port mappings
-	Envs            map[string]string // key,value of environment variables passed to the node
+	MachineName   string            // maps to the container name being created
+	CPU           int               // Number of CPU cores assigned to the container
+	Memory        int               // max memory in MB
+	StorePath     string            // libmachine store path
+	OCIBinary     string            // oci tool to use (docker, podman,...)
+	ImageDigest   string            // image name with sha to use for the node
+	Mounts        []oci.Mount       // mounts
+	APIServerPort int               // kubernetes api server port inside the container
+	PortMappings  []oci.PortMapping // container port mappings
+	Envs          map[string]string // key,value of environment variables passed to the node
 }
 
 // NewDriver returns a fully configured Kic driver
@@ -93,25 +91,24 @@ func NewDriver(c Config) *Driver {
 // Create a host using the driver's config
 func (d *Driver) Create() error {
 	params := node.CreateConfig{
-		Name:         d.NodeConfig.MachineName,
-		Image:        d.NodeConfig.ImageDigest,
-		ClusterLabel: node.ClusterLabelKey + "=" + d.MachineName,
-		CPUs:         strconv.Itoa(d.NodeConfig.CPU),
-		Memory:       strconv.Itoa(d.NodeConfig.Memory) + "mb",
-		Envs:         d.NodeConfig.Envs,
-		ExtraArgs:    []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIHostBindPort)},
-		OCIBinary:    d.NodeConfig.OCIBinary,
+		Name:          d.NodeConfig.MachineName,
+		Image:         d.NodeConfig.ImageDigest,
+		ClusterLabel:  node.ClusterLabelKey + "=" + d.MachineName,
+		CPUs:          strconv.Itoa(d.NodeConfig.CPU),
+		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
+		Envs:          d.NodeConfig.Envs,
+		ExtraArgs:     []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
+		OCIBinary:     d.NodeConfig.OCIBinary,
+		APIServerPort: d.NodeConfig.APIServerPort,
 	}
 
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings, oci.PortMapping{
 		ListenAddress: DefaultBindIPV4,
-		HostPort:      int32(d.NodeConfig.APIHostBindPort),
 		ContainerPort: constants.APIServerPort,
 	},
 		oci.PortMapping{
 			ListenAddress: DefaultBindIPV4,
-			HostPort:      int32(d.NodeConfig.APIHostBindPort) + constants.SSHPort, // TODO: @medyagh: use github.com/phayes/freeport instead.
 			ContainerPort: constants.SSHPort,
 		},
 	)
@@ -174,17 +171,29 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
-	cc, err := config.Load(viper.GetString(config.MachineProfile))
+	p, err := oci.HostPortBinding(d.OCIBinary, d.MachineName, constants.SSHPort)
 	if err != nil {
-		glog.Infof("error loading config file which may be okay on first run : %v ", err)
-		return 22, nil
+		return p, errors.Wrap(err, "get ssh host-port")
 	}
-	return int(cc.SSHBindPort), nil
+	return p, nil
+}
+
+// GetSSHKeyPath returns the ssh key path
+func (d *Driver) GetSSHKeyPath() string {
+	if d.SSHKeyPath == "" {
+		d.SSHKeyPath = d.ResolveStorePath("id_rsa")
+	}
+	return d.SSHKeyPath
 }
 
 // GetURL returns ip of the container running kic control-panel
 func (d *Driver) GetURL() (string, error) {
-	return d.GetIP()
+	p, err := oci.HostPortBinding(d.NodeConfig.OCIBinary, d.MachineName, d.NodeConfig.APIServerPort)
+	url := fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(p)))
+	if err != nil {
+		return url, errors.Wrap(err, "api host port binding")
+	}
+	return url, nil
 }
 
 // GetState returns the state that the host is in (running, stopped, etc)
