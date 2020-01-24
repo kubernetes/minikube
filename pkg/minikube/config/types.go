@@ -65,7 +65,6 @@ type MachineConfig struct {
 	KubernetesConfig    KubernetesConfig
 	Nodes               []Node
 	Addons              map[string]bool
-	NodeBindPort        int32 // Only used by kic
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
