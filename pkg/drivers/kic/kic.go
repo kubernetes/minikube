@@ -23,8 +23,10 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
+	"github.com/golang/glog"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/node"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -94,23 +96,27 @@ func (d *Driver) Create() error {
 		CPUs:         strconv.Itoa(d.NodeConfig.CPU),
 		Memory:       strconv.Itoa(d.NodeConfig.Memory) + "mb",
 		Envs:         d.NodeConfig.Envs,
-		ExtraArgs:    []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.HostBindPort)},
+		ExtraArgs:    []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIHostBindPort)},
 		OCIBinary:    d.NodeConfig.OCIBinary,
 	}
 
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings, oci.PortMapping{
 		ListenAddress: DefaultBindIPV4,
-		HostPort:      int32(d.NodeConfig.HostBindPort),
+		HostPort:      int32(d.NodeConfig.APIHostBindPort),
 		ContainerPort: constants.APIServerPort,
 	},
 		oci.PortMapping{
 			ListenAddress: DefaultBindIPV4,
-			HostPort:      int32(d.NodeConfig.HostBindPort) + constants.SSHPort, // TODO: @medyagh: use github.com/phayes/freeport instead.
+			HostPort:      int32(d.NodeConfig.APIHostBindPort) + constants.SSHPort, // TODO: @medyagh: use github.com/phayes/freeport instead.
 			ContainerPort: constants.SSHPort,
 		},
 	)
-
+	keyPath := d.GetSSHKeyPath()
+	glog.Infof("Creating ssh key for kic: %s...", keyPath)
+	if err := ssh.GenerateSSHKey(keyPath); err != nil {
+		return errors.Wrap(err, "generate ssh key")
+	}
 	_, err := node.CreateNode(params)
 	if err != nil {
 		return errors.Wrap(err, "create kic node")
