@@ -81,6 +81,8 @@ var styles = map[StyleEnum]style{
 	Celebration:   {Prefix: "🎉  "},
 	Workaround:    {Prefix: "👉  ", LowPrefix: lowIndent},
 	Sparkle:       {Prefix: "✨  "},
+	Pause:         {Prefix: "⏸️  "},
+	Unpause:       {Prefix: "⏯️  "},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},
