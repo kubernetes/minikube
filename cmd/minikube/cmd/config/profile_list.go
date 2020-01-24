@@ -80,7 +80,7 @@ var printProfilesTable = func() {
 		if err != nil {
 			glog.Infof("error getting host status for %v", err)
 		}
-		master, err := config.MasterNode(*p.Config)
+		master, err := config.PrimaryControlPlane(*p.Config)
 		if err != nil {
 			exit.WithError("profile has no master node", err)
 		}

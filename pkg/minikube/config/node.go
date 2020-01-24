@@ -20,7 +20,7 @@ package config
 func AddNode(cc *MachineConfig, name string, controlPlane bool, k8sVersion string, profileName string) error {
 	t := Worker
 	if controlPlane {
-		t = Master
+		t = ControlPlane
 	}
 	node := Node{
 		Name: name,
