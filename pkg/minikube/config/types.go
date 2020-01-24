@@ -93,18 +93,9 @@ type Node struct {
 	IP                string
 	Port              int
 	KubernetesVersion string
-	Type              NodeType
+	ControlPlane      bool
+	Worker            bool
 }
-
-// NodeType is an enum to describe the node type.
-type NodeType int
-
-const (
-	// ControlPlane is the control plane.
-	ControlPlane NodeType = iota
-	// Worker is a... worker.
-	Worker
-)
 
 // VersionedExtraOption holds information on flags to apply to a specific range
 // of versions
