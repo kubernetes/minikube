@@ -77,7 +77,7 @@ func TestStartStop(t *testing.T) {
 				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
 			}},
-			{"crio", "v1.15.0", []string{
+			{"crio", "v1.15.7", []string{
 				"--container-runtime=crio",
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
