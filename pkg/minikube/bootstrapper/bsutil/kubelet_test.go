@@ -43,8 +43,9 @@ func TestGenerateKubeletConfig(t *testing.T) {
 				},
 				Nodes: []config.Node{
 					config.Node{
-						IP:   "192.168.1.100",
-						Name: "minikube",
+						IP:           "192.168.1.100",
+						Name:         "minikube",
+						ControlPlane: true,
 					},
 				},
 			},
@@ -67,8 +68,9 @@ ExecStart=/var/lib/minikube/binaries/v1.11.10/kubelet --allow-privileged=true --
 				},
 				Nodes: []config.Node{
 					config.Node{
-						IP:   "192.168.1.100",
-						Name: "minikube",
+						IP:           "192.168.1.100",
+						Name:         "minikube",
+						ControlPlane: true,
 					},
 				},
 			},
@@ -91,8 +93,9 @@ ExecStart=/var/lib/minikube/binaries/v1.17.0/kubelet --authorization-mode=Webhoo
 				},
 				Nodes: []config.Node{
 					config.Node{
-						IP:   "192.168.1.100",
-						Name: "minikube",
+						IP:           "192.168.1.100",
+						Name:         "minikube",
+						ControlPlane: true,
 					},
 				},
 			},
@@ -122,8 +125,9 @@ ExecStart=/var/lib/minikube/binaries/v1.17.0/kubelet --authorization-mode=Webhoo
 				},
 				Nodes: []config.Node{
 					config.Node{
-						IP:   "192.168.1.100",
-						Name: "minikube",
+						IP:           "192.168.1.100",
+						Name:         "minikube",
+						ControlPlane: true,
 					},
 				},
 			},
@@ -147,8 +151,9 @@ ExecStart=/var/lib/minikube/binaries/v1.17.0/kubelet --authorization-mode=Webhoo
 				},
 				Nodes: []config.Node{
 					config.Node{
-						IP:   "192.168.1.100",
-						Name: "minikube",
+						IP:           "192.168.1.100",
+						Name:         "minikube",
+						ControlPlane: true,
 					},
 				},
 			},
