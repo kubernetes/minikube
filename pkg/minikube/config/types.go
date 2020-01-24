@@ -100,8 +100,8 @@ type Node struct {
 type NodeType int
 
 const (
-	// Master is the control plane.
-	Master NodeType = iota
+	// ControlPlane is the control plane.
+	ControlPlane NodeType = iota
 	// Worker is a... worker.
 	Worker
 )

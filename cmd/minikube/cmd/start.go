@@ -937,11 +937,12 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
-	masterNode := config.Node{
+	// Create the initial node, which will necessarily be a control plane
+	cp := config.Node{
 		Port:              viper.GetInt(apiServerPort),
 		KubernetesVersion: k8sVersion,
 		Name:              constants.DefaultNodeName,
-		Type:              config.Master,
+		Type:              config.ControlPlane,
 	}
 
 	cfg := config.MachineConfig{
@@ -991,9 +992,9 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,
 		},
-		Nodes: []config.Node{masterNode},
+		Nodes: []config.Node{cp},
 	}
-	return cfg, masterNode, nil
+	return cfg, cp, nil
 }
 
 // setDockerProxy sets the proxy environment variables in the docker environment.
