@@ -27,11 +27,13 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/node"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -172,7 +174,12 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
-	return d.NodeConfig.SSHHostBindPort, nil
+	cc, err := config.Load(viper.GetString(config.MachineProfile))
+	if err != nil {
+		glog.Infof("error loading config file which may be okay on first run : %v ", err)
+		return 22, nil
+	}
+	return int(cc.SSHBindPort), nil
 }
 
 // GetURL returns ip of the container running kic control-panel
