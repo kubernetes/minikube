@@ -25,11 +25,12 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/node"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
@@ -112,15 +113,37 @@ func (d *Driver) Create() error {
 			ContainerPort: constants.SSHPort,
 		},
 	)
+	_, err := node.CreateNode(params)
+	if err != nil {
+		return errors.Wrap(err, "create kic node")
+	}
+
+	if err := d.prepareSSH(); err != nil {
+		return errors.Wrap(err, "prepare kic ssh")
+	}
+	return nil
+}
+
+// prepareSSH will generate keys and copy to the container so minikube ssh works
+func (d *Driver) prepareSSH() error {
 	keyPath := d.GetSSHKeyPath()
 	glog.Infof("Creating ssh key for kic: %s...", keyPath)
 	if err := ssh.GenerateSSHKey(keyPath); err != nil {
 		return errors.Wrap(err, "generate ssh key")
 	}
-	_, err := node.CreateNode(params)
+
+	cmder := command.NewKICRunner(d.NodeConfig.MachineName, d.NodeConfig.OCIBinary)
+	f, err := assets.NewFileAsset(d.GetSSHKeyPath()+".pub", "/home/docker/.ssh/", "authorized_keys", "0644")
 	if err != nil {
-		return errors.Wrap(err, "create kic node")
+		return errors.Wrap(err, "create pubkey assetfile ")
 	}
+	if err := cmder.Copy(f); err != nil {
+		return errors.Wrap(err, "copying pub key")
+	}
+	if rr, err := cmder.RunCmd(exec.Command("chown", "docker:docker", "/home/docker/.ssh/authorized_keys")); err != nil {
+		return errors.Wrapf(err, "apply authorized_keys file ownership, output %s", rr.Output())
+	}
+
 	return nil
 }
 
