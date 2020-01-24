@@ -942,7 +942,8 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		Port:              viper.GetInt(apiServerPort),
 		KubernetesVersion: k8sVersion,
 		Name:              constants.DefaultNodeName,
-		Type:              config.ControlPlane,
+		ControlPlane:      true,
+		Worker:            true,
 	}
 
 	cfg := config.MachineConfig{

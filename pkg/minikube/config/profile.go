@@ -53,7 +53,7 @@ func (p *Profile) IsValid() bool {
 // PrimaryControlPlane gets the node specific config for the first created control plane
 func PrimaryControlPlane(cc MachineConfig) (Node, error) {
 	for _, n := range cc.Nodes {
-		if n.Type == ControlPlane {
+		if n.ControlPlane {
 			return n, nil
 		}
 	}
