@@ -19,6 +19,7 @@ package provision
 import (
 	"bytes"
 	"fmt"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"strings"
@@ -210,7 +211,7 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	p.AuthOptions = authOptions
 	p.EngineOptions = engineOptions
 
-	log.Debugf("setting hostname %q", p.Driver.GetMachineName())
+	log.Infof("provisioning hostname %q", p.Driver.GetMachineName())
 	if err := p.SetHostname(p.Driver.GetMachineName()); err != nil {
 		return err
 	}
@@ -221,6 +222,7 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	log.Debugf("setting up certificates")
 	configAuth := func() error {
 		if err := configureAuth(p); err != nil {
+			log.Warnf("configureAuth failed: %v", err)
 			return &retry.RetriableError{Err: err}
 		}
 		return nil
@@ -296,6 +298,12 @@ CRIO_MINIKUBE_OPTIONS='{{ range .EngineOptions.InsecureRegistry }}--insecure-reg
 }
 
 func configureAuth(p *BuildrootProvisioner) error {
+	log.Infof("configureAuth start")
+	start := time.Now()
+	defer func() {
+		log.Infof("configureAuth took %s", time.Since(start))
+	}()
+
 	driver := p.GetDriver()
 	machineName := driver.GetMachineName()
 	authOptions := p.GetAuthOptions()
@@ -307,8 +315,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "error getting ip during provisioning")
 	}
 
-	err = copyHostCerts(authOptions)
-	if err != nil {
+	if err := copyHostCerts(authOptions); err != nil {
 		return err
 	}
 
@@ -336,15 +343,11 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return fmt.Errorf("error generating server cert: %v", err)
 	}
 
-	err = copyRemoteCerts(authOptions, driver)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return copyRemoteCerts(authOptions, driver)
 }
 
 func copyHostCerts(authOptions auth.Options) error {
+	log.Infof("copyHostCerts")
 	execRunner := &command.ExecRunner{}
 	hostCerts := map[string]string{
 		authOptions.CaCertPath:     path.Join(authOptions.StorePath, "ca.pem"),
@@ -352,6 +355,9 @@ func copyHostCerts(authOptions auth.Options) error {
 		authOptions.ClientKeyPath:  path.Join(authOptions.StorePath, "key.pem"),
 	}
 
+	if _, err := execRunner.RunCmd(exec.Command("mkdir", "-p", authOptions.StorePath)); err != nil {
+		return err
+	}
 	for src, dst := range hostCerts {
 		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0777")
 		if err != nil {
@@ -366,6 +372,8 @@ func copyHostCerts(authOptions auth.Options) error {
 }
 
 func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
+	log.Infof("copyRemoteCerts")
+
 	remoteCerts := map[string]string{
 		authOptions.CaCertPath:     authOptions.CaCertRemotePath,
 		authOptions.ServerCertPath: authOptions.ServerCertRemotePath,
@@ -377,6 +385,17 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 		return errors.Wrap(err, "provisioning: error getting ssh client")
 	}
 	sshRunner := command.NewSSHRunner(sshClient)
+
+	dirs := []string{}
+	for _, dst := range remoteCerts {
+		dirs = append(dirs, path.Dir(dst))
+	}
+
+	args := append([]string{"mkdir", "-p"}, dirs...)
+	if _, err = sshRunner.RunCmd(exec.Command("sudo", args...)); err != nil {
+		return err
+	}
+
 	for src, dst := range remoteCerts {
 		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0640")
 		if err != nil {

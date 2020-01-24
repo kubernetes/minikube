@@ -471,6 +471,17 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
 		return errors.Wrap(err, "adding addons")
 	}
+
+	// Combine mkdir request into a single call to reduce load
+	dirs := []string{}
+	for _, f := range files {
+		dirs = append(dirs, f.GetTargetDir())
+	}
+	args := append([]string{"mkdir", "-p"}, dirs...)
+	if _, err := k.c.RunCmd(exec.Command("sudo", args...)); err != nil {
+		return errors.Wrap(err, "mkdir")
+	}
+
 	for _, f := range files {
 		if err := k.c.Copy(f); err != nil {
 			return errors.Wrapf(err, "copy")
