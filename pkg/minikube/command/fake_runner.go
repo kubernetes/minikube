@@ -54,9 +54,19 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 	start := time.Now()
 
-	out, ok := f.cmdMap.Load(strings.Join(rr.Args, " "))
+	key := rr.Command()
+	out, ok := f.cmdMap.Load(key)
 	if !ok {
-		return rr, fmt.Errorf("unregistered command: `%s`\nexpected: %v\n", rr.Command(), f.commands())
+		cmds := f.commands()
+		if len(cmds) == 0 {
+			return rr, fmt.Errorf("asked to execute %s, but FakeCommandRunner has no commands stored", rr.Command())
+		}
+
+		var txt strings.Builder
+		for _, c := range f.commands() {
+			txt.WriteString(fmt.Sprintf("  `%s`\n", c))
+		}
+		return rr, fmt.Errorf("unregistered command:\n  `%s`\nexpected one of:\n%s", key, txt.String())
 	}
 
 	var buf bytes.Buffer
@@ -124,7 +134,7 @@ func (f *FakeCommandRunner) GetFileToContents(filename string) (string, error) {
 func (f *FakeCommandRunner) commands() []string {
 	cmds := []string{}
 	f.cmdMap.Range(func(k, v interface{}) bool {
-		cmds = append(cmds, fmt.Sprintf("`%s`", k))
+		cmds = append(cmds, fmt.Sprintf("%s", k))
 		return true
 	})
 	return cmds

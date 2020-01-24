@@ -513,7 +513,7 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 	}
 
 	if err := createRequiredDirectories(h); err != nil {
-		return h, err
+		return h, errors.Wrap(err, "required directories")
 	}
 
 	if driver.BareMetal(config.VMDriver) {
@@ -668,6 +668,10 @@ func IsMinikubeRunning(api libmachine.API) bool {
 
 // createRequiredDirectories creates directories expected by minikube to exist
 func createRequiredDirectories(h *host.Host) error {
+	if h.DriverName == driver.Mock {
+		glog.Infof("skipping createRequiredDirectories")
+		return nil
+	}
 	glog.Infof("creating required directories: %v", requiredDirectories)
 	r, err := commandRunner(h)
 	if err != nil {
@@ -676,7 +680,7 @@ func createRequiredDirectories(h *host.Host) error {
 
 	args := append([]string{"mkdir", "-p"}, requiredDirectories...)
 	if _, err := r.RunCmd(exec.Command("sudo", args...)); err != nil {
-		return errors.Wrap(err, "mkdir")
+		return errors.Wrapf(err, "sudo mkdir (%s)", h.DriverName)
 	}
 	return nil
 }
@@ -684,6 +688,7 @@ func createRequiredDirectories(h *host.Host) error {
 // commandRunner returns best available command runner for this host
 func commandRunner(h *host.Host) (command.Runner, error) {
 	if h.DriverName == driver.Mock {
+		glog.Errorf("commandRunner: returning unconfigured FakeCommandRunner, commands will fail!")
 		return &command.FakeCommandRunner{}, nil
 	}
 	if driver.BareMetal(h.Driver.DriverName()) {
