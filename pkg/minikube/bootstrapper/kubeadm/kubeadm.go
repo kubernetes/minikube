@@ -39,6 +39,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -464,9 +465,12 @@ func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
 
 // clientEndpointAddr returns ip and port accessible for the kubernetes clients to talk to the cluster
 func (k *Bootstrapper) clientEndpointAddr(cfg config.MachineConfig) (string, int) {
-	if driver.IsKIC(cfg.VMDriver) {
-		// because docker container ip on non-linux is not accesible
-		return kic.DefaultBindIPV4, cfg.KubernetesConfig.NodePort
+	if driver.IsKIC(cfg.VMDriver) { // for kic we ask docker/podman what port it assigned to node port
+		p, err := oci.HostPortBinding(cfg.VMDriver, cfg.Name, cfg.KubernetesConfig.NodePort)
+		if err != nil {
+			glog.Warningf("Error getting host bind port %s for api server for %s driver: %v ", p, cfg.VMDriver, err)
+		}
+		return kic.DefaultBindIPV4, p
 	}
 	return cfg.KubernetesConfig.NodeIP, cfg.KubernetesConfig.NodePort
 }
