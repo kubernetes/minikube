@@ -18,6 +18,7 @@ package oci
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -28,7 +29,6 @@ import (
 	"github.com/pkg/errors"
 
 	"fmt"
-	"net"
 	"os/exec"
 	"strings"
 	"time"
@@ -279,13 +279,9 @@ func UsernsRemap(ociBinary string) bool {
 func generatePortMappings(portMappings ...PortMapping) []string {
 	result := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {
-		var hostPortBinding string
-		if pm.ListenAddress != "" {
-			hostPortBinding = net.JoinHostPort(pm.ListenAddress, fmt.Sprintf("%d", pm.HostPort))
-		} else {
-			hostPortBinding = fmt.Sprintf("%d", pm.HostPort)
-		}
-		publish := fmt.Sprintf("--publish=%s:%d", hostPortBinding, pm.ContainerPort)
+		// let docker pick a host port by leaving it as ::
+		// example --publish=127.0.0.17::8443 will get a random host port for 8443
+		publish := fmt.Sprintf("--publish=%s::%d", pm.ListenAddress, pm.ContainerPort)
 		result = append(result, publish)
 	}
 	return result
@@ -393,4 +389,24 @@ func Copy(ociBinary string, ociID string, asset assets.CopyableFile) error {
 		return errors.Wrapf(err, "error copying %s into node", asset.GetAssetName())
 	}
 	return nil
+}
+
+// HostPortBinding will return port mapping for a container using cli.
+// example : HostPortBinding("docker", "minikube", "22")
+// will return the docker assigned port:
+// 32769, nil
+// only supports TCP ports
+func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) {
+	cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return 0, errors.Wrapf(err, "getting host-bind port %q for container ID %q", contPort, ociID)
+	}
+	o := strings.Trim(string(out), "\n")
+	o = strings.Trim(o, "'")
+	p, err := strconv.Atoi(o)
+	if err != nil {
+		return p, errors.Wrapf(err, "convert host-port %q to number", p)
+	}
+	return p, nil
 }
