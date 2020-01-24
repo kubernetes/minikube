@@ -65,7 +65,8 @@ type MachineConfig struct {
 	HostOnlyNicType     string // Only used by virtualbox
 	NatNicType          string // Only used by virtualbox
 	Addons              map[string]bool
-	NodeBindPort        int32 // Only used by kic
+	APIBindPort         int32 // the host port to bind to apiserver inside the container only used by kic
+	SSHBindPort         int32 // the host port to bind to ssh service inside the container only used by kic
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
