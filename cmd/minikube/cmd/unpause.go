@@ -64,7 +64,7 @@ var unpauseCmd = &cobra.Command{
 			exit.WithError("Failed to get command runner", err)
 		}
 
-		cr, err := cruntime.New(cruntime.Config{Type: cc.ContainerRuntime, Runner: r})
+		cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
 		if err != nil {
 			exit.WithError("Failed runtime", err)
 		}
