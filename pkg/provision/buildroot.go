@@ -315,8 +315,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return errors.Wrap(err, "error getting ip during provisioning")
 	}
 
-	err = copyHostCerts(authOptions)
-	if err != nil {
+	if err := copyHostCerts(authOptions); err != nil {
 		return err
 	}
 
@@ -344,12 +343,7 @@ func configureAuth(p *BuildrootProvisioner) error {
 		return fmt.Errorf("error generating server cert: %v", err)
 	}
 
-	err = copyRemoteCerts(authOptions, driver)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return copyRemoteCerts(authOptions, driver)
 }
 
 func copyHostCerts(authOptions auth.Options) error {
@@ -361,8 +355,7 @@ func copyHostCerts(authOptions auth.Options) error {
 		authOptions.ClientKeyPath:  path.Join(authOptions.StorePath, "key.pem"),
 	}
 
-	_, err := execRunner.RunCmd(exec.Command("mkdir", "-p", authOptions.StorePath))
-	if err != nil {
+	if _, err := execRunner.RunCmd(exec.Command("mkdir", "-p", authOptions.StorePath)); err != nil {
 		return err
 	}
 	for src, dst := range hostCerts {
@@ -399,8 +392,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 	}
 
 	args := append([]string{"mkdir", "-p"}, dirs...)
-	_, err = sshRunner.RunCmd(exec.Command("sudo", args...))
-	if err != nil {
+	if _, err = sshRunner.RunCmd(exec.Command("sudo", args...)); err != nil {
 		return err
 	}
 
