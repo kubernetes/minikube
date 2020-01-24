@@ -176,6 +176,11 @@ func (d *Driver) GetSSHPort() (int, error) {
 	return p, nil
 }
 
+// GetSSHUsername returns the ssh username
+func (d *Driver) GetSSHUsername() string {
+	return "docker"
+}
+
 // GetSSHKeyPath returns the ssh key path
 func (d *Driver) GetSSHKeyPath() string {
 	if d.SSHKeyPath == "" {
