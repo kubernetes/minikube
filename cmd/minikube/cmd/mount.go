@@ -108,7 +108,6 @@ var mountCmd = &cobra.Command{
 			exit.WithError("Error getting config", err)
 		}
 		host, err := api.Load(cc.Name)
-
 		if err != nil {
 			exit.WithError("Error loading api", err)
 		}

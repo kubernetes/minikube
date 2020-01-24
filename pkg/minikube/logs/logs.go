@@ -169,7 +169,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, follow bool) map[string]string {
 	cmds := bs.LogCommands(bootstrapper.LogOptions{Lines: length, Follow: follow})
 	for _, pod := range importantPods {
-		ids, err := r.ListContainers(pod)
+		ids, err := r.ListContainers(cruntime.ListOptions{Name: pod})
 		if err != nil {
 			glog.Errorf("Failed to list containers for %q: %v", pod, err)
 			continue
