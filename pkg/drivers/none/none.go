@@ -137,7 +137,7 @@ func (d *Driver) Kill() error {
 	}
 
 	// First try to gracefully stop containers
-	containers, err := d.runtime.ListContainers("")
+	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -149,7 +149,7 @@ func (d *Driver) Kill() error {
 		return errors.Wrap(err, "stop")
 	}
 
-	containers, err = d.runtime.ListContainers("")
+	containers, err = d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -199,7 +199,7 @@ func (d *Driver) Stop() error {
 	if err := stopKubelet(d.exec); err != nil {
 		return err
 	}
-	containers, err := d.runtime.ListContainers("")
+	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
