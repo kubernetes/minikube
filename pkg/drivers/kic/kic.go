@@ -58,16 +58,17 @@ type Driver struct {
 
 // Config is configuration for the kic driver used by registry
 type Config struct {
-	MachineName  string            // maps to the container name being created
-	CPU          int               // Number of CPU cores assigned to the container
-	Memory       int               // max memory in MB
-	StorePath    string            // libmachine store path
-	OCIBinary    string            // oci tool to use (docker, podman,...)
-	ImageDigest  string            // image name with sha to use for the node
-	HostBindPort int               // port to connect to forward from container to user's machine
-	Mounts       []oci.Mount       // mounts
-	PortMappings []oci.PortMapping // container port mappings
-	Envs         map[string]string // key,value of environment variables passed to the node
+	MachineName     string            // maps to the container name being created
+	CPU             int               // Number of CPU cores assigned to the container
+	Memory          int               // max memory in MB
+	StorePath       string            // libmachine store path
+	OCIBinary       string            // oci tool to use (docker, podman,...)
+	ImageDigest     string            // image name with sha to use for the node
+	APIHostBindPort int               // bind port for api server
+	SSHHostBindPort int               // bind port for ssh server
+	Mounts          []oci.Mount       // mounts
+	PortMappings    []oci.PortMapping // container port mappings
+	Envs            map[string]string // key,value of environment variables passed to the node
 }
 
 // NewDriver returns a fully configured Kic driver
@@ -137,12 +138,12 @@ func (d *Driver) GetIP() (string, error) {
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
-	return "", fmt.Errorf("driver does not have SSHHostName")
+	return DefaultBindIPV4, nil
 }
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
-	return 0, fmt.Errorf("driver does not support GetSSHPort")
+	return d.NodeConfig.SSHHostBindPort, nil
 }
 
 // GetURL returns ip of the container running kic control-panel
