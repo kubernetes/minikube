@@ -29,7 +29,7 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
             # Let kernel re-read partition table
             partprobe
             # Add the data partition
-            (echo n; echo p; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
+            (echo g; echo n; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
             # Let kernel re-read partition table
             partprobe
             # wait for the partition to actually exist, timeout after about 5 seconds
@@ -57,7 +57,7 @@ if [ ! -n "$BOOT2DOCKER_DATA" ]; then
                 if [ $NON_NUL == 0 ]; then
                     # Create the partition, format it and then mount it
                     echo "NEW VMware boot2docker managed disk image ($UNPARTITIONED_HD): formatting it for use"
-                    (echo n; echo p; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
+                    (echo g; echo n; echo 1; echo ; echo ; echo w) | fdisk $UNPARTITIONED_HD
                     BOOT2DOCKER_DATA=`echo "${UNPARTITIONED_HD}1"`
                     mkfs.ext4 -i 2048 -L $LABEL $BOOT2DOCKER_DATA
                 else

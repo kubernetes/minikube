@@ -80,11 +80,11 @@ var printProfilesTable = func() {
 		if err != nil {
 			glog.Infof("error getting host status for %v", err)
 		}
-		master, err := config.MasterNode(*p.Config)
+		cp, err := config.PrimaryControlPlane(*p.Config)
 		if err != nil {
-			exit.WithError("profile has no master node", err)
+			exit.WithError("profile has no control plane", err)
 		}
-		validData = append(validData, []string{p.Name, p.Config.VMDriver, master.IP, strconv.Itoa(master.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
+		validData = append(validData, []string{p.Name, p.Config.VMDriver, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
 	}
 
 	table.AppendBulk(validData)

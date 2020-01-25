@@ -50,10 +50,10 @@ func (p *Profile) IsValid() bool {
 	return true
 }
 
-// MasterNode gets the node specific config for the control plane
-func MasterNode(cc MachineConfig) (Node, error) {
+// PrimaryControlPlane gets the node specific config for the first created control plane
+func PrimaryControlPlane(cc MachineConfig) (Node, error) {
 	for _, n := range cc.Nodes {
-		if n.Type == Master {
+		if n.ControlPlane {
 			return n, nil
 		}
 	}

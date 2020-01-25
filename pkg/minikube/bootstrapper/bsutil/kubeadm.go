@@ -54,11 +54,11 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 	}
 
 	// In case of no port assigned, use default
-	master, err := config.MasterNode(mc)
+	cp, err := config.PrimaryControlPlane(mc)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting master node")
+		return nil, errors.Wrap(err, "getting control plane")
 	}
-	nodePort := master.Port
+	nodePort := cp.Port
 	if nodePort <= 0 {
 		nodePort = constants.APIServerPort
 	}
@@ -82,11 +82,11 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 		CertDir:           vmpath.GuestCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
 		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
-		AdvertiseAddress:  master.IP,
+		AdvertiseAddress:  cp.IP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
-		NodeName:          master.Name,
+		NodeName:          cp.Name,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
 		ExtraArgs:         extraComponentConfig,

@@ -444,15 +444,11 @@ func displayEnviron(env []string) {
 }
 
 func setupKubeconfig(h *host.Host, c *config.MachineConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
-	addr := ""
-	var err error
-	if driver.IsKIC(h.DriverName) {
-		addr = fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(n.Port)))
-	} else {
-		addr, err = h.Driver.GetURL()
-		if err != nil {
-			exit.WithError("Failed to get driver URL", err)
-		}
+	addr, err := h.Driver.GetURL()
+	if err != nil {
+		exit.WithError("Failed to get driver URL", err)
+	}
+	if !driver.IsKIC(h.DriverName) {
 		addr = strings.Replace(addr, "tcp://", "https://", -1)
 		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(n.Port), -1)
 	}
@@ -937,11 +933,13 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
-	masterNode := config.Node{
+	// Create the initial node, which will necessarily be a control plane
+	cp := config.Node{
 		Port:              viper.GetInt(apiServerPort),
 		KubernetesVersion: k8sVersion,
 		Name:              constants.DefaultNodeName,
-		Type:              config.Master,
+		ControlPlane:      true,
+		Worker:            true,
 	}
 
 	cfg := config.MachineConfig{
@@ -991,9 +989,9 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,
 		},
-		Nodes: []config.Node{masterNode},
+		Nodes: []config.Node{cp},
 	}
-	return cfg, masterNode, nil
+	return cfg, cp, nil
 }
 
 // setDockerProxy sets the proxy environment variables in the docker environment.
