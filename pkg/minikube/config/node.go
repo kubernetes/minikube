@@ -18,13 +18,13 @@ package config
 
 // AddNode adds a new node config to an existing cluster.
 func AddNode(cc *MachineConfig, name string, controlPlane bool, k8sVersion string, profileName string) error {
-	t := Worker
-	if controlPlane {
-		t = Master
-	}
 	node := Node{
-		Name: name,
-		Type: t,
+		Name:   name,
+		Worker: true,
+	}
+
+	if controlPlane {
+		node.ControlPlane = true
 	}
 
 	if k8sVersion != "" {

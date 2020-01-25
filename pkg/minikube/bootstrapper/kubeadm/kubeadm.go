@@ -203,7 +203,7 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		return err
 	}
 
-	master, err := config.MasterNode(cfg)
+	cp, err := config.PrimaryControlPlane(cfg)
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 	if !driver.IsKIC(cfg.VMDriver) { // TODO: skip for both after verifications https://github.com/kubernetes/minikube/issues/6239
 		glog.Infof("Configuring cluster permissions ...")
 		elevate := func() error {
-			client, err := k.client(master)
+			client, err := k.client(cp)
 			if err != nil {
 				return err
 			}
@@ -295,18 +295,18 @@ func (k *Bootstrapper) client(n config.Node) (*kubernetes.Clientset, error) {
 func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
-	master, err := config.MasterNode(cfg)
+	cp, err := config.PrimaryControlPlane(cfg)
 	if err != nil {
 		return err
 	}
 	if err := kverify.APIServerProcess(k.c, start, timeout); err != nil {
 		return err
 	}
-	if err := kverify.APIServerIsRunning(start, master.IP, master.Port, timeout); err != nil {
+	if err := kverify.APIServerIsRunning(start, cp.IP, cp.Port, timeout); err != nil {
 		return err
 	}
 
-	c, err := k.client(master)
+	c, err := k.client(cp)
 	if err != nil {
 		return errors.Wrap(err, "get k8s client")
 	}
@@ -476,6 +476,17 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
 		return errors.Wrap(err, "adding addons")
 	}
+
+	// Combine mkdir request into a single call to reduce load
+	dirs := []string{}
+	for _, f := range files {
+		dirs = append(dirs, f.GetTargetDir())
+	}
+	args := append([]string{"mkdir", "-p"}, dirs...)
+	if _, err := k.c.RunCmd(exec.Command("sudo", args...)); err != nil {
+		return errors.Wrap(err, "mkdir")
+	}
+
 	for _, f := range files {
 		if err := k.c.Copy(f); err != nil {
 			return errors.Wrapf(err, "copy")

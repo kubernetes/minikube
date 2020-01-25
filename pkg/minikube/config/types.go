@@ -65,7 +65,6 @@ type MachineConfig struct {
 	KubernetesConfig    KubernetesConfig
 	Nodes               []Node
 	Addons              map[string]bool
-	NodeBindPort        int32 // Only used by kic
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
@@ -93,18 +92,9 @@ type Node struct {
 	IP                string
 	Port              int
 	KubernetesVersion string
-	Type              NodeType
+	ControlPlane      bool
+	Worker            bool
 }
-
-// NodeType is an enum to describe the node type.
-type NodeType int
-
-const (
-	// Master is the control plane.
-	Master NodeType = iota
-	// Worker is a... worker.
-	Worker
-)
 
 // VersionedExtraOption holds information on flags to apply to a specific range
 // of versions
