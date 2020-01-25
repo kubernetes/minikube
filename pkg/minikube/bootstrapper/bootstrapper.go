@@ -43,7 +43,7 @@ type Bootstrapper interface {
 	WaitForCluster(config.MachineConfig, time.Duration) error
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(LogOptions) map[string]string
-	SetupCerts(cfg config.KubernetesConfig) error
+	SetupCerts(config.KubernetesConfig, config.Node) error
 	GetKubeletStatus() (string, error)
 	GetAPIServerStatus(net.IP, int) (string, error)
 }

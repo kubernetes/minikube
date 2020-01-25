@@ -65,7 +65,7 @@ func TestSetupCerts(t *testing.T) {
 	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(localpath.MiniPath(), "ca.crt"))
 	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(localpath.MiniPath(), "certs", "mycert.pem"))
 
-	if err := SetupCerts(f, k8s); err != nil {
+	if err := SetupCerts(f, k8s, config.Node{}); err != nil {
 		t.Fatalf("Error starting cluster: %v", err)
 	}
 	for _, cert := range filesToBeTransferred {

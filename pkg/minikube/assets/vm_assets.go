@@ -38,6 +38,7 @@ type CopyableFile interface {
 	GetTargetName() string
 	GetPermissions() string
 	GetModTime() (time.Time, error)
+	Seek(int64, int) (int64, error)
 }
 
 // BaseAsset is the base asset class
@@ -76,7 +77,7 @@ func (b *BaseAsset) GetModTime() (time.Time, error) {
 // FileAsset is an asset using a file
 type FileAsset struct {
 	BaseAsset
-	reader io.Reader
+	reader io.ReadSeeker
 }
 
 // NewMemoryAssetTarget creates a new MemoryAsset, with target
@@ -91,6 +92,11 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error opening file asset: %s", src)
 	}
+	info, err := os.Stat(src)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Error getting info for %s", src)
+	}
+	r := io.NewSectionReader(f, 0, info.Size())
 	return &FileAsset{
 		BaseAsset: BaseAsset{
 			AssetName:   src,
@@ -98,7 +104,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 			TargetName:  targetName,
 			Permissions: permissions,
 		},
-		reader: f,
+		reader: r,
 	}, nil
 }
 
@@ -117,6 +123,7 @@ func (f *FileAsset) GetModTime() (time.Time, error) {
 	return fi.ModTime(), err
 }
 
+// Read reads the asset
 func (f *FileAsset) Read(p []byte) (int, error) {
 	if f.reader == nil {
 		return 0, errors.New("Error attempting FileAsset.Read, FileAsset.reader uninitialized")
@@ -124,10 +131,15 @@ func (f *FileAsset) Read(p []byte) (int, error) {
 	return f.reader.Read(p)
 }
 
+// Seek resets the reader to offset
+func (f *FileAsset) Seek(offset int64, whence int) (int64, error) {
+	return f.reader.Seek(offset, whence)
+}
+
 // MemoryAsset is a memory-based asset
 type MemoryAsset struct {
 	BaseAsset
-	reader io.Reader
+	reader io.ReadSeeker
 	length int
 }
 
@@ -139,6 +151,11 @@ func (m *MemoryAsset) GetLength() int {
 // Read reads the asset
 func (m *MemoryAsset) Read(p []byte) (int, error) {
 	return m.reader.Read(p)
+}
+
+// Seek resets the reader to offset
+func (m *MemoryAsset) Seek(offset int64, whence int) (int64, error) {
+	return m.reader.Seek(offset, whence)
 }
 
 // NewMemoryAsset creates a new MemoryAsset
@@ -157,7 +174,7 @@ func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *Memory
 // BinAsset is a bindata (binary data) asset
 type BinAsset struct {
 	BaseAsset
-	reader   io.Reader
+	reader   io.ReadSeeker
 	template *template.Template
 	length   int
 }
@@ -252,4 +269,9 @@ func (m *BinAsset) Read(p []byte) (int, error) {
 		return 0, fmt.Errorf("attempted read from a 0 length asset")
 	}
 	return m.reader.Read(p)
+}
+
+// Seek resets the reader to offset
+func (m *BinAsset) Seek(offset int64, whence int) (int64, error) {
+	return m.reader.Seek(offset, whence)
 }

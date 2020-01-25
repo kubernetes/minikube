@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -35,20 +36,29 @@ func (p *Profile) IsValid() bool {
 	if p.Config == nil {
 		return false
 	}
-	if len(p.Config) == 0 {
+	if p.Config == nil {
 		return false
 	}
-	// This will become a loop for multinode
-	if p.Config[0] == nil {
+	if p.Config.VMDriver == "" {
 		return false
 	}
-	if p.Config[0].VMDriver == "" {
-		return false
-	}
-	if p.Config[0].KubernetesConfig.KubernetesVersion == "" {
-		return false
+	for _, n := range p.Config.Nodes {
+		if n.KubernetesVersion == "" {
+			return false
+		}
 	}
 	return true
+}
+
+// PrimaryControlPlane gets the node specific config for the first created control plane
+func PrimaryControlPlane(cc MachineConfig) (Node, error) {
+	for _, n := range cc.Nodes {
+		if n.ControlPlane {
+			return n, nil
+		}
+	}
+
+	return Node{}, errors.New("could not find master node")
 }
 
 // ProfileNameInReservedKeywords checks if the profile is an internal keywords
@@ -76,11 +86,11 @@ func ProfileExists(name string, miniHome ...string) bool {
 // CreateEmptyProfile creates an empty profile and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func CreateEmptyProfile(name string, miniHome ...string) error {
 	cfg := &MachineConfig{}
-	return CreateProfile(name, cfg, miniHome...)
+	return SaveProfile(name, cfg, miniHome...)
 }
 
-// CreateProfile creates a profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func CreateProfile(name string, cfg *MachineConfig, miniHome ...string) error {
+// SaveProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
+func SaveProfile(name string, cfg *MachineConfig, miniHome ...string) error {
 	data, err := json.MarshalIndent(cfg, "", "    ")
 	if err != nil {
 		return err
@@ -160,7 +170,7 @@ func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
 	p := &Profile{
 		Name:   name,
-		Config: []*MachineConfig{cfg},
+		Config: cfg,
 	}
 	return p, err
 }
