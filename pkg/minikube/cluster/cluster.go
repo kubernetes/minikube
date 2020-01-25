@@ -49,7 +49,6 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	cfg "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -97,44 +96,44 @@ func init() {
 }
 
 // CacheISO downloads and caches ISO.
-func CacheISO(config cfg.MachineConfig) error {
-	if driver.BareMetal(config.VMDriver) {
+func CacheISO(cfg config.MachineConfig) error {
+	if driver.BareMetal(cfg.VMDriver) {
 		return nil
 	}
-	return config.Downloader.CacheMinikubeISOFromURL(config.MinikubeISO)
+	return cfg.Downloader.CacheMinikubeISOFromURL(cfg.MinikubeISO)
 }
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
+func StartHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error) {
 	// Prevent machine-driver boot races, as well as our own certificate race
-	releaser, err := acquireMachinesLock(config.Name)
+	releaser, err := acquireMachinesLock(cfg.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "boot lock")
 	}
 	start := time.Now()
 	defer func() {
-		glog.Infof("releasing machines lock for %q, held for %s", config.Name, time.Since(start))
+		glog.Infof("releasing machines lock for %q, held for %s", cfg.Name, time.Since(start))
 		releaser.Release()
 	}()
 
-	exists, err := api.Exists(config.Name)
+	exists, err := api.Exists(cfg.Name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "exists: %s", config.Name)
+		return nil, errors.Wrapf(err, "exists: %s", cfg.Name)
 	}
 	if !exists {
 		glog.Infoln("Machine does not exist... provisioning new machine")
-		glog.Infof("Provisioning machine with config: %+v", config)
-		return createHost(api, config)
+		glog.Infof("Provisioning machine with config: %+v", cfg)
+		return createHost(api, cfg)
 	}
 
 	glog.Infoln("Skipping create...Using existing machine configuration")
 
-	h, err := api.Load(config.Name)
+	h, err := api.Load(cfg.Name)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
 
-	if exists && config.Name == constants.DefaultMachineName {
+	if exists && cfg.Name == constants.DefaultMachineName {
 		out.T(out.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
 	}
 
@@ -145,9 +144,9 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": config.VMDriver, "profile_name": config.Name})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": cfg.VMDriver, "profile_name": cfg.Name})
 	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": config.VMDriver, "profile_name": config.Name})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": cfg.VMDriver, "profile_name": cfg.Name})
 		if err := h.Driver.Start(); err != nil {
 			return nil, errors.Wrap(err, "start")
 		}
@@ -156,7 +155,7 @@ func StartHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error)
 		}
 	}
 
-	e := engineOptions(config)
+	e := engineOptions(cfg)
 	glog.Infof("engine options: %+v", e)
 
 	out.T(out.Waiting, "Waiting for the host to be provisioned ...")
@@ -383,12 +382,12 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	return ip, nil
 }
 
-func engineOptions(config cfg.MachineConfig) *engine.Options {
+func engineOptions(cfg config.MachineConfig) *engine.Options {
 	o := engine.Options{
-		Env:              config.DockerEnv,
-		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, config.InsecureRegistry...),
-		RegistryMirror:   config.RegistryMirror,
-		ArbitraryFlags:   config.DockerOpt,
+		Env:              cfg.DockerEnv,
+		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, cfg.InsecureRegistry...),
+		RegistryMirror:   cfg.RegistryMirror,
+		ArbitraryFlags:   cfg.DockerOpt,
 		InstallURL:       drivers.DefaultEngineInstallURL,
 	}
 	return &o
@@ -463,48 +462,48 @@ func showRemoteOsRelease(driver drivers.Driver) {
 }
 
 // showHostInfo shows host information
-func showHostInfo(config cfg.MachineConfig) {
-	if driver.BareMetal(config.VMDriver) {
+func showHostInfo(cfg config.MachineConfig) {
+	if driver.BareMetal(cfg.VMDriver) {
 		info, err := getHostInfo()
 		if err == nil {
 			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
-	} else if driver.IsKIC(config.VMDriver) {
+	} else if driver.IsKIC(cfg.VMDriver) {
 		info, err := getHostInfo() // TODO medyagh: get docker-machine info for non linux
 		if err == nil {
-			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": config.Memory, "host_memory_size": info.Memory})
+			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": cfg.VMDriver, "number_of_cpus": cfg.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": cfg.Memory, "host_memory_size": info.Memory})
 		}
 	} else {
-		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": config.VMDriver, "number_of_cpus": config.CPUs, "memory_size": config.Memory, "disk_size": config.DiskSize})
+		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.VMDriver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize})
 	}
 }
 
-func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error) {
-	if config.VMDriver == driver.VMwareFusion && viper.GetBool(cfg.ShowDriverDeprecationNotification) {
+func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error) {
+	if cfg.VMDriver == driver.VMwareFusion && viper.GetBool(config.ShowDriverDeprecationNotification) {
 		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
-	showHostInfo(config)
-	def := registry.Driver(config.VMDriver)
+	showHostInfo(cfg)
+	def := registry.Driver(cfg.VMDriver)
 	if def.Empty() {
-		return nil, fmt.Errorf("unsupported/missing driver: %s", config.VMDriver)
+		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.VMDriver)
 	}
-	dd := def.Config(config)
+	dd := def.Config(cfg)
 	data, err := json.Marshal(dd)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal")
 	}
 
-	h, err := api.NewHost(config.VMDriver, data)
+	h, err := api.NewHost(cfg.VMDriver, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "new host")
 	}
 
 	h.HostOptions.AuthOptions.CertDir = localpath.MiniPath()
 	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
-	h.HostOptions.EngineOptions = engineOptions(config)
+	h.HostOptions.EngineOptions = engineOptions(cfg)
 
 	if err := api.Create(h); err != nil {
 		// Wait for all the logs to reach the client
@@ -516,9 +515,9 @@ func createHost(api libmachine.API, config cfg.MachineConfig) (*host.Host, error
 		return h, errors.Wrap(err, "required directories")
 	}
 
-	if driver.BareMetal(config.VMDriver) {
+	if driver.BareMetal(cfg.VMDriver) {
 		showLocalOsRelease()
-	} else if !driver.BareMetal(config.VMDriver) && !driver.IsKIC(config.VMDriver) {
+	} else if !driver.BareMetal(cfg.VMDriver) && !driver.IsKIC(cfg.VMDriver) {
 		showRemoteOsRelease(h.Driver)
 		// Ensure that even new VM's have proper time synchronization up front
 		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
