@@ -400,7 +400,7 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 	cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return 0, errors.Wrapf(err, "getting host-bind port %q for container ID %q", contPort, ociID)
+		return 0, errors.Wrapf(err, "getting host-bind port %d for container ID %q, output %s", contPort, ociID, out)
 	}
 	o := strings.Trim(string(out), "\n")
 	o = strings.Trim(o, "'")
