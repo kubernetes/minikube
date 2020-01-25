@@ -42,15 +42,13 @@ func init() {
 }
 
 func configure(mc config.MachineConfig) interface{} {
-	cp, _ := config.PrimaryControlPlane(mc)
 	return kic.NewDriver(kic.Config{
-		MachineName:  mc.Name,
-		StorePath:    localpath.MiniPath(),
-		ImageDigest:  kic.BaseImage,
-		CPU:          mc.CPUs,
-		Memory:       mc.Memory,
-		HostBindPort: cp.Port,
-		OCIBinary:    oci.Docker,
+		MachineName: mc.Name,
+		StorePath:   localpath.MiniPath(),
+		ImageDigest: kic.BaseImage,
+		CPU:         mc.CPUs,
+		Memory:      mc.Memory,
+		OCIBinary:   oci.Docker,
 	})
 
 }
