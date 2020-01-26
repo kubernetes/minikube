@@ -27,7 +27,7 @@ import (
 type Profile struct {
 	Name   string
 	Status string // running, stopped
-	Config []*MachineConfig
+	Config *MachineConfig
 }
 
 // MachineConfig contains the parameters used to start a cluster.
@@ -40,7 +40,6 @@ type MachineConfig struct {
 	CPUs                int
 	DiskSize            int
 	VMDriver            string
-	ContainerRuntime    string
 	HyperkitVpnKitSock  string   // Only used by the Hyperkit driver
 	HyperkitVSockPorts  []string // Only used by the Hyperkit driver
 	DockerEnv           []string // Each entry is formatted as KEY=VALUE.
@@ -61,19 +60,16 @@ type MachineConfig struct {
 	NoVTXCheck          bool   // Only used by virtualbox
 	DNSProxy            bool   // Only used by virtualbox
 	HostDNSResolver     bool   // Only used by virtualbox
-	KubernetesConfig    KubernetesConfig
 	HostOnlyNicType     string // Only used by virtualbox
 	NatNicType          string // Only used by virtualbox
+	KubernetesConfig    KubernetesConfig
+	Nodes               []Node
 	Addons              map[string]bool
-	NodeBindPort        int32 // Only used by kic
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
 	KubernetesVersion string
-	NodeIP            string
-	NodePort          int
-	NodeName          string
 	APIServerName     string
 	APIServerNames    []string
 	APIServerIPs      []net.IP
@@ -88,6 +84,16 @@ type KubernetesConfig struct {
 
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool
+}
+
+// Node contains information about specific nodes in a cluster
+type Node struct {
+	Name              string
+	IP                string
+	Port              int
+	KubernetesVersion string
+	ControlPlane      bool
+	Worker            bool
 }
 
 // VersionedExtraOption holds information on flags to apply to a specific range

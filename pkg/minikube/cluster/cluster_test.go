@@ -374,6 +374,8 @@ func TestGetHostDockerEnv(t *testing.T) {
 }
 
 func TestGetHostDockerEnvIPv6(t *testing.T) {
+	RegisterMockDriver(t)
+
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
