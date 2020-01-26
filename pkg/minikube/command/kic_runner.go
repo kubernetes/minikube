@@ -24,6 +24,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"time"
 
 	"github.com/golang/glog"
@@ -118,7 +119,7 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		if exitError, ok := err.(*exec.ExitError); ok {
 			rr.ExitCode = exitError.ExitCode()
 		}
-		err = errors.Wrapf(err, "command failed: %s", oc.Args)
+		err = fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
 	}
 	return rr, err
 
@@ -148,28 +149,34 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 			return errors.Wrap(err, "close temporary file")
 		}
 		assetName = tmpFile.Name()
-
 	}
+
 	// based of format of "docker cp containerName:destination"
 	destination := fmt.Sprintf("%s:%s/%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
-	// make sure dir exists inside the container
-	if _, err := k.RunCmd(exec.Command("mkdir", "-p", f.GetTargetDir())); err != nil {
-		return errors.Wrapf(err, "error making dir %s", f.GetTargetDir())
+
+	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
+	if err != nil {
+		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
 	}
 
-	if out, err := exec.Command(k.ociBin, "cp", assetName, destination).CombinedOutput(); err != nil {
+	// Rely on cp -a to propagate permissions
+	if err := os.Chmod(assetName, os.FileMode(perms)); err != nil {
+		return errors.Wrapf(err, "chmod")
+	}
+	if out, err := exec.Command(k.ociBin, "cp", "-a", assetName, destination).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "error copying %s into node, output: %s", f.GetAssetName(), string(out))
 	}
-	fp := path.Join(f.GetTargetDir(), f.GetTargetName())
-	if _, err := k.RunCmd(exec.Command("sudo", "chmod", f.GetPermissions(), fp)); err != nil {
-		return errors.Wrapf(err, "failed to chmod file permissions %s", fp)
-	}
+
 	return nil
 }
 
 // Remove removes a file
 func (k *kicRunner) Remove(f assets.CopyableFile) error {
-	return fmt.Errorf("not implemented yet for kic runner")
+	fp := path.Join(f.GetTargetDir(), f.GetTargetName())
+	if rr, err := k.RunCmd(exec.Command("sudo", "rm", fp)); err != nil {
+		return errors.Wrapf(err, "removing file %q output: %s", fp, rr.Output())
+	}
+	return nil
 }
 
 // isTerminal returns true if the writer w is a terminal
