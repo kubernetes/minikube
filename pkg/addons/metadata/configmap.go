@@ -2,7 +2,7 @@ package metadata
 
 import (
 	"bytes"
-	"os"
+	"fmt"
 	"os/exec"
 )
 
@@ -67,8 +67,9 @@ func updateConfigmap(data string) error {
 	reader := bytes.NewReader([]byte(data))
 	cmd.Stdin = reader
 
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stdout
-
-	return cmd.Run()
+  if output, err := cmd.CombinedOutput(); err != nil {
+    fmt.Println(string(output))
+    return err
+  }
+	return nil
 }

@@ -27,11 +27,9 @@ func EnableOrDisable(name, val, profile string) error {
 }
 
 func enableAddon() error {
-	fmt.Println("updating configmap")
 	if err := updateConfigmap(metadataCorefileConfigmap); err != nil {
 		return err
 	}
-	fmt.Println("restarting core dns")
 	if err := restartCoreDNS(); err != nil {
 		return err
 	}
@@ -39,11 +37,9 @@ func enableAddon() error {
 }
 
 func disableAddon() error {
-	fmt.Println("updating configmap")
 	if err := updateConfigmap(originalCorefileConfigmap); err != nil {
 		return err
 	}
-	fmt.Println("restarting core dns")
 	if err := restartCoreDNS(); err != nil {
 		return err
 	}
@@ -66,8 +62,8 @@ func restartCoreDNS() error {
 		coreDNSPods = append(coreDNSPods, p.GetName())
 	}
 
+	fmt.Println("Restarting coredns...")
 	for _, p := range coreDNSPods {
-		fmt.Println("Deleting", p)
 		if err := client.CoreV1().Pods(ns).Delete(p, &metav1.DeleteOptions{}); err != nil {
 			return err
 		}
