@@ -16,7 +16,10 @@ limitations under the License.
 
 package addons
 
-import "k8s.io/minikube/pkg/minikube/config"
+import (
+	"k8s.io/minikube/pkg/addons/metadata"
+	"k8s.io/minikube/pkg/minikube/config"
+)
 
 type setFn func(string, string, string) error
 
@@ -121,5 +124,10 @@ var Addons = []*Addon{
 		name:      "storage-provisioner-gluster",
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableStorageClasses},
+	},
+	{
+		name:      "metadata",
+		set:       SetBool,
+		callbacks: []setFn{metadata.EnableOrDisable, enableOrDisableAddon},
 	},
 }

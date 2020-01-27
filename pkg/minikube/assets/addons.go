@@ -331,6 +331,26 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "ingress-dns"),
+	"metadata": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/metadata/metadata-ns.yaml",
+			vmpath.GuestAddonsDir,
+			"metadata-ns.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/metadata/metadata-deployment.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"metadata-deployment.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/metadata/metadata-service.yaml.tmpl",
+			vmpath.GuestAddonsDir,
+			"metadata-service.yaml",
+			"0640",
+			false),
+	}, false, "metadata"),
 }
 
 // AddMinikubeDirAssets adds all addons and files to the list
