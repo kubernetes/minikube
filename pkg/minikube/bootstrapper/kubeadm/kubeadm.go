@@ -39,6 +39,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -249,7 +250,7 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 	if !driver.IsKIC(cfg.VMDriver) { // TODO: skip for both after verifications https://github.com/kubernetes/minikube/issues/6239
 		glog.Infof("Configuring cluster permissions ...")
 		elevate := func() error {
-			client, err := k.client(cp)
+			client, err := k.client(cp.IP, cp.Port)
 			if err != nil {
 				return err
 			}
@@ -269,7 +270,7 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 }
 
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
-func (k *Bootstrapper) client(n config.Node) (*kubernetes.Clientset, error) {
+func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error) {
 	if k.k8sClient != nil {
 		return k.k8sClient, nil
 	}
@@ -279,7 +280,7 @@ func (k *Bootstrapper) client(n config.Node) (*kubernetes.Clientset, error) {
 		return nil, errors.Wrap(err, "client config")
 	}
 
-	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(n.IP, strconv.Itoa(n.Port)))
+	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(ip, strconv.Itoa(port)))
 	if cc.Host != endpoint {
 		glog.Errorf("Overriding stale ClientConfig host %s with %s", cc.Host, endpoint)
 		cc.Host = endpoint
@@ -302,11 +303,21 @@ func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Dur
 	if err := kverify.APIServerProcess(k.c, start, timeout); err != nil {
 		return err
 	}
-	if err := kverify.APIServerIsRunning(start, cp.IP, cp.Port, timeout); err != nil {
+
+	ip := cp.IP
+	port := cp.Port
+	if driver.IsKIC(cfg.VMDriver) {
+		ip = kic.DefaultBindIPV4
+		port, err = oci.HostPortBinding(cfg.VMDriver, cfg.Name, port)
+		if err != nil {
+			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
+		}
+	}
+	if err := kverify.APIServerIsRunning(start, ip, port, timeout); err != nil {
 		return err
 	}
 
-	c, err := k.client(cp)
+	c, err := k.client(ip, port)
 	if err != nil {
 		return errors.Wrap(err, "get k8s client")
 	}
@@ -361,7 +372,7 @@ func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
 	}
 
 	for _, n := range cfg.Nodes {
-		client, err := k.client(n)
+		client, err := k.client(n.IP, n.Port)
 		if err != nil {
 			return errors.Wrap(err, "getting k8s client")
 		}
