@@ -1,7 +1,6 @@
 package metadata
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -62,7 +61,6 @@ func restartCoreDNS() error {
 		coreDNSPods = append(coreDNSPods, p.GetName())
 	}
 
-	fmt.Println("Restarting coredns...")
 	for _, p := range coreDNSPods {
 		if err := client.CoreV1().Pods(ns).Delete(p, &metav1.DeleteOptions{}); err != nil {
 			return err
