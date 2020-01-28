@@ -168,8 +168,9 @@ func disableOthers(me Manager, cr CommandRunner) error {
 // Context: https://github.com/kubernetes/kubeadm/issues/1062
 func enableIPForwarding(cr CommandRunner) error {
 	c := exec.Command("sudo", "modprobe", "br_netfilter")
-	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "br_netfilter")
+	if rr, err := cr.RunCmd(c); err != nil {
+		glog.Warningf("Error enabling IP forwarding %s: %s", rr.Command(), rr.Output())
+		// return errors.Wrap(err, "br_netfilter")
 	}
 
 	c = exec.Command("sudo", "sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward")
