@@ -12,7 +12,6 @@ jobs:
       run : |
         make minikube-linux-amd64
         make e2e-linux-amd64
-        mkdir -p /report
     - name: run integration test
       run: |
         echo running docker driver intergration test on ubuntu
