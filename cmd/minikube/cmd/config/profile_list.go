@@ -60,7 +60,7 @@ var printProfilesTable = func() {
 
 	var validData [][]string
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Profile", "VM Driver", "NodeIP", "Node Port", "Kubernetes Version", "Status"})
+	table.SetHeader([]string{"Profile", "VM Driver", "Container Runtime", "NodeIP", "API Port", "Kubernetes Version", "Status"})
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
@@ -84,7 +84,7 @@ var printProfilesTable = func() {
 		if err != nil {
 			exit.WithError("profile has no control plane", err)
 		}
-		validData = append(validData, []string{p.Name, p.Config.VMDriver, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
+		validData = append(validData, []string{p.Name, p.Config.VMDriver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
 	}
 
 	table.AppendBulk(validData)
