@@ -11,18 +11,15 @@ data:
   Corefile: |
     .:53 {
         errors
-        health {
-           lameduck 5s
-        }
-        ready
+        health
         kubernetes cluster.local in-addr.arpa ip6.arpa {
            pods insecure
+           upstream
            fallthrough in-addr.arpa ip6.arpa
-           ttl 30
         }
         rewrite name metadata.google.internal metadata.metadata.svc.cluster.local
         prometheus :9153
-        forward . /etc/resolv.conf
+        proxy . /etc/resolv.conf
         cache 30
         loop
         reload
@@ -39,17 +36,14 @@ data:
   Corefile: |
     .:53 {
         errors
-        health {
-           lameduck 5s
-        }
-        ready
+        health
         kubernetes cluster.local in-addr.arpa ip6.arpa {
            pods insecure
+           upstream
            fallthrough in-addr.arpa ip6.arpa
-           ttl 30
         }
         prometheus :9153
-        forward . /etc/resolv.conf
+        proxy . /etc/resolv.conf
         cache 30
         loop
         reload
@@ -67,9 +61,9 @@ func updateConfigmap(data string) error {
 	reader := bytes.NewReader([]byte(data))
 	cmd.Stdin = reader
 
-  if output, err := cmd.CombinedOutput(); err != nil {
-    fmt.Println(string(output))
-    return err
-  }
+	if output, err := cmd.CombinedOutput(); err != nil {
+		fmt.Println(string(output))
+		return err
+	}
 	return nil
 }
