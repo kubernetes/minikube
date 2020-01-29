@@ -29,7 +29,3 @@ jobs:
       with:
         name: html_report
         path: /testout.html
-        name: json_report
-        path: /testout.json
-        name: text_report
-        path: /testout.txt
