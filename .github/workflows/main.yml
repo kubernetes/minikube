@@ -65,6 +65,10 @@ jobs:
         make minikube-darwin-amd64
         make e2e-darwin-amd64
         mkdir -p report
+    - name: install docker
+        run: |
+          brew install docker-machine docker
+          sudo docker –version
     - name: install gopogh
       run: |
         cd /tmp
