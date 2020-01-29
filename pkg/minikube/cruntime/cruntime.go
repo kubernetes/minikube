@@ -169,10 +169,10 @@ func disableOthers(me Manager, cr CommandRunner) error {
 func enableIPForwarding(cr CommandRunner) error {
 	c := exec.Command("sudo", "sysctl", "net.netfilter.nf_conntrack_count")
 	if rr, err := cr.RunCmd(c); err != nil {
-		glog.Infof("couldn't verify netfilter by %q which might be okay. output=%q error=%v", rr.Command(), rr.Output(), err)
+		glog.Infof("couldn't verify netfilter by %q which might be okay. error: %v", rr.Command(), err)
 		c = exec.Command("sudo", "modprobe", "br_netfilter")
-		if rr, err := cr.RunCmd(c); err != nil {
-			return errors.Wrapf(err, "br_netfilter. output: %s", rr.Output())
+		if _, err := cr.RunCmd(c); err != nil {
+			return errors.Wrapf(err, "br_netfilter")
 		}
 	}
 	c = exec.Command("sudo", "sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward")
