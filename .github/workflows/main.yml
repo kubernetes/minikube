@@ -11,7 +11,7 @@ jobs:
     - uses: actions/checkout@v2
     - name: Run a one-line script
       run: echo Hello, world!
-    - name: Run a multi-line script
+    - name: run integration test
       run: |
-        echo Add other actions to build,
-        echo test, and deploy your project.
+        echo running docker driver intergration test on ubuntu
+        env TEST_ARGS="-minikube-start-args=--vm-driver=docker" make integration
