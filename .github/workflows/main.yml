@@ -3,7 +3,7 @@ name: CI
 on: [push]
 
 jobs:
-  build:
+  docker_ubuntu:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,6 +23,7 @@ jobs:
         cd -
     - name: generate report
       run: |
+        export PATH=${PATH}:`go env GOPATH`/bin
         go tool test2json -t < testout.txt > testout.json || true
         gopogh -in testout.json -out testout.html -name "docker ubuntu" -repo github.com/kubernetes/minikube/  || true
     - uses: actions/upload-artifact@v1
