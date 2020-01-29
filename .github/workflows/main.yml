@@ -9,20 +9,23 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: build binaries
-      run : |
+    - shell: bash
+      run: |
         make minikube-linux-amd64
         make e2e-linux-amd64
     - name: run integration test
-      run: |
-        echo running docker driver intergration test on ubuntu
-        ./out/e2e-linux-amd64 '-test.run TestStartStop TestDownloadOnly -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64' 2>&1 | tee testout.txt 
+      - shell: bash
+        run: |
+        ./out/e2e-linux-amd64 '-test.run TestDownloadOnly -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64' 2>&1 | tee /tmp/testout.txt
     - name: generate report
-      run: |
-        echo converting test output to human readable format
+      - shell: bash
+        run: |
+        cd /tmp
         GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.17 || true
-        go tool test2json -t < "testout.txt" > "testout.json" || true
-        gopogh -in "testout.json" -out "/tmp/testout.html" -name "docker ubuntu" -repo github.com/kubernetes/minikube/  || true 
+        cd -
+        go tool test2json -t < "/tmp/testout.txt" > "/tmp/testout.json" || true
+        gopogh -in "/tmp/testout.json" -out "/tmp/testout.html" -name "docker ubuntu" -repo github.com/kubernetes/minikube/  || true 
     - uses: actions/upload-artifact@v1
       with:
-        name: report
+        name: html report
         path: /tmp/testout.html
