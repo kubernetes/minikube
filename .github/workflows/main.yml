@@ -4,14 +4,25 @@ on: [push]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
 
     steps:
     - uses: actions/checkout@v2
-    - name: Run a one-line script
-      run: echo Hello, world!
+    - name: build binaries
+      run : |
+        make minikube-linux-amd64
+        make e2e-linux-amd64
+        cd /tmp
+        GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.17 || true
+        cd -
     - name: run integration test
       run: |
         echo running docker driver intergration test on ubuntu
-        env TEST_ARGS="-minikube-start-args=--vm-driver=docker" make integration
+        ./out/e2e-linux-amd64 '-test.run TestStartStop TestDownloadOnly -minikube-start-args=--vm-driver=docker ' -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee testout.txt"
+        echo converting test output to human readable format
+        go tool test2json -t < "testout.txt" > "testout.json" || true
+        gopogh -in "testout.json" -out "/tmp/testout.html" -name "docker ubuntu" -repo github.com/kubernetes/minikube/  || true 
+    - uses: actions/upload-artifact@v1
+      with:
+        name: html report
+        path: /tmp/testout.html
