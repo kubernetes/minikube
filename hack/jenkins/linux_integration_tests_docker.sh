@@ -27,7 +27,7 @@ set -e
 
 OS_ARCH="linux-amd64"
 VM_DRIVER="docker"
-JOB_NAME="docker_Linux"
+JOB_NAME="Docker_Linux"
 EXPECTED_DEFAULT_DRIVER="kvm2"
 
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
