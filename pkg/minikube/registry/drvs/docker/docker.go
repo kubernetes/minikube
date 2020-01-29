@@ -17,8 +17,10 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -59,8 +61,11 @@ func status() registry.State {
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/kic/"}
 	}
+	// Allow no more than 2 seconds for querying state
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	err = exec.Command("docker", "info").Run()
+	err = exec.CommandContext(ctx, "docker", "info").Run()
 	if err != nil {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is not running. Try: restarting docker desktop."}
 	}
