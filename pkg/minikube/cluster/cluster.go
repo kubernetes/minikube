@@ -543,7 +543,7 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 	}
 
 	ip := kic.DefaultBindIPV4
-	if !driver.IsKIC(host.Driver.DriverName()) { // unlike VM drivers, kic externally accessible ip is different that node ip
+	if !driver.IsKIC(host.Driver.DriverName()) { // kic externally accessible ip is different that node ip
 		ip, err = host.Driver.GetIP()
 		if err != nil {
 			return nil, errors.Wrap(err, "Error getting ip from host")
