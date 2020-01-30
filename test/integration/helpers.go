@@ -185,9 +185,9 @@ func CleanupWithLogs(t *testing.T, profile string, cancel context.CancelFunc) {
 
 // clusterLogs shows logs for debugging a failed cluster
 func clusterLogs(t *testing.T, profile string) {
-	st := Status(context.Background(), t, Target(), profile)
+	st := Status(context.Background(), t, Target(), profile, "Host")
 	if st != state.Running.String() {
-		t.Logf("%q is not running, skipping log retrieval (state=%q)", profile, st)
+		t.Logf("%q host is not running, skipping log retrieval (state=%q)", profile, st)
 		return
 	}
 
@@ -198,6 +198,12 @@ func clusterLogs(t *testing.T, profile string) {
 		return
 	}
 	t.Logf("%s logs: %s", t.Name(), rr.Stdout)
+
+	st = Status(context.Background(), t, Target(), profile, "APIServer")
+	if st != state.Running.String() {
+		t.Logf("%q apiserver is not running, skipping kubectl commands (state=%q)", profile, st)
+		return
+	}
 
 	rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
 	if rerr != nil {
@@ -313,8 +319,26 @@ func PodWait(ctx context.Context, t *testing.T, profile string, ns string, selec
 	return names, fmt.Errorf("%s: %v", fmt.Sprintf("%s within %s", selector, timeout), err)
 }
 
+// Status returns a minikube component status as a string
+func Status(ctx context.Context, t *testing.T, path string, profile string, key string) string {
+	t.Helper()
+	// Reminder of useful keys: "Host", "Kubelet", "APIServer"
+	rr, err := Run(t, exec.CommandContext(ctx, path, "status", fmt.Sprintf("--format={{.%s}}", key), "-p", profile))
+	if err != nil {
+		t.Logf("status error: %v (may be ok)", err)
+	}
+	return strings.TrimSpace(rr.Stdout.String())
+}
+
 // showPodLogs logs debug info for pods
 func showPodLogs(ctx context.Context, t *testing.T, profile string, ns string, names []string) {
+	t.Helper()
+	st := Status(context.Background(), t, Target(), profile, "APIServer")
+	if st != state.Running.String() {
+		t.Logf("%q apiserver is not running, skipping kubectl commands (state=%q)", profile, st)
+		return
+	}
+
 	t.Logf("%s: showing logs for failed pods as of %s", t.Name(), time.Now())
 
 	for _, name := range names {
