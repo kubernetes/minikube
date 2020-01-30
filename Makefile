@@ -494,8 +494,8 @@ storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-pr
 
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
-	docker rmi -f $(REGISTRY)/kicbase:v0.0.2-snapshot || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.2-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
+	docker rmi -f $(REGISTRY)/kicbase:v0.0.3-snapshot || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.3-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
 
 
 
