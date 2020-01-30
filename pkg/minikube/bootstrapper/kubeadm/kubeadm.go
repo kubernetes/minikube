@@ -41,7 +41,6 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
@@ -483,10 +482,6 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 		cniFile = []byte(defaultCNIConfig)
 	}
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
-
-	if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
-		return errors.Wrap(err, "adding addons")
-	}
 
 	// Combine mkdir request into a single call to reduce load
 	dirs := []string{}

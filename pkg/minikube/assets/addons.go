@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -57,11 +58,18 @@ func (a *Addon) Name() string {
 // IsEnabled checks if an Addon is enabled for the current profile
 func (a *Addon) IsEnabled() (bool, error) {
 	c, err := config.Load(viper.GetString(config.MachineProfile))
-	if err == nil {
-		if status, ok := c.Addons[a.Name()]; ok {
-			return status, nil
-		}
+	if err != nil {
+		return false, err
 	}
+
+	// Is this addon explicitly listed in their configuration?
+	status, ok := c.Addons[a.Name()]
+	glog.Infof("IsEnabled %q = %v (listed in config=%v)", a.Name(), status, ok)
+	if ok {
+		return status, nil
+	}
+
+	// Return the default unconfigured state of the addon
 	return a.enabled, nil
 }
 
