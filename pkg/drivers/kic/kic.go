@@ -18,20 +18,37 @@ package kic
 
 import (
 	"fmt"
+	"net"
 	"os/exec"
 	"strconv"
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/node"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
+// DefaultPodCIDR is The CIDR to be used for pods inside the node.
+const DefaultPodCIDR = "10.244.0.0/16"
+
+// DefaultBindIPV4 is The default IP the container will bind to.
+const DefaultBindIPV4 = "127.0.0.1"
+
+// BaseImage is the base image is used to spin up kic containers created by kind.
+const BaseImage = "gcr.io/k8s-minikube/kicbase:v0.0.2@sha256:8f531b90901721a7bd4e67ceffbbc7ee6c4292b0e6d1a9d6eb59f117d57bc4e9"
+
+// OverlayImage is the cni plugin used for overlay image, created by kind.
+const OverlayImage = "kindest/kindnetd:0.5.3"
+
+// Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -46,11 +63,11 @@ type Config struct {
 	MachineName   string            // maps to the container name being created
 	CPU           int               // Number of CPU cores assigned to the container
 	Memory        int               // max memory in MB
-	StorePath     string            // lib machine store path
+	StorePath     string            // libmachine store path
 	OCIBinary     string            // oci tool to use (docker, podman,...)
 	ImageDigest   string            // image name with sha to use for the node
-	APIServerPort int32             // port to connect to forward from container to user's machine
 	Mounts        []oci.Mount       // mounts
+	APIServerPort int               // kubernetes api server port inside the container
 	PortMappings  []oci.PortMapping // container port mappings
 	Envs          map[string]string // key,value of environment variables passed to the node
 }
@@ -64,6 +81,7 @@ func NewDriver(c Config) *Driver {
 		},
 		exec:       command.NewKICRunner(c.MachineName, c.OCIBinary),
 		NodeConfig: c,
+		OCIBinary:  c.OCIBinary,
 	}
 	return d
 }
@@ -71,27 +89,58 @@ func NewDriver(c Config) *Driver {
 // Create a host using the driver's config
 func (d *Driver) Create() error {
 	params := node.CreateConfig{
-		Name:         d.NodeConfig.MachineName,
-		Image:        d.NodeConfig.ImageDigest,
-		ClusterLabel: node.ClusterLabelKey + "=" + d.MachineName,
-		CPUs:         strconv.Itoa(d.NodeConfig.CPU),
-		Memory:       strconv.Itoa(d.NodeConfig.Memory) + "mb",
-		Envs:         d.NodeConfig.Envs,
-		ExtraArgs:    []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
-		OCIBinary:    d.NodeConfig.OCIBinary,
+		Name:          d.NodeConfig.MachineName,
+		Image:         d.NodeConfig.ImageDigest,
+		ClusterLabel:  node.ClusterLabelKey + "=" + d.MachineName,
+		CPUs:          strconv.Itoa(d.NodeConfig.CPU),
+		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
+		Envs:          d.NodeConfig.Envs,
+		ExtraArgs:     []string{"--expose", fmt.Sprintf("%d", d.NodeConfig.APIServerPort)},
+		OCIBinary:     d.NodeConfig.OCIBinary,
+		APIServerPort: d.NodeConfig.APIServerPort,
 	}
 
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings, oci.PortMapping{
-		ListenAddress: "127.0.0.1",
-		HostPort:      d.NodeConfig.APIServerPort,
-		ContainerPort: 6443,
-	})
-
+		ListenAddress: DefaultBindIPV4,
+		ContainerPort: constants.APIServerPort,
+	},
+		oci.PortMapping{
+			ListenAddress: DefaultBindIPV4,
+			ContainerPort: constants.SSHPort,
+		},
+	)
 	_, err := node.CreateNode(params)
 	if err != nil {
 		return errors.Wrap(err, "create kic node")
 	}
+
+	if err := d.prepareSSH(); err != nil {
+		return errors.Wrap(err, "prepare kic ssh")
+	}
+	return nil
+}
+
+// prepareSSH will generate keys and copy to the container so minikube ssh works
+func (d *Driver) prepareSSH() error {
+	keyPath := d.GetSSHKeyPath()
+	glog.Infof("Creating ssh key for kic: %s...", keyPath)
+	if err := ssh.GenerateSSHKey(keyPath); err != nil {
+		return errors.Wrap(err, "generate ssh key")
+	}
+
+	cmder := command.NewKICRunner(d.NodeConfig.MachineName, d.NodeConfig.OCIBinary)
+	f, err := assets.NewFileAsset(d.GetSSHKeyPath()+".pub", "/home/docker/.ssh/", "authorized_keys", "0644")
+	if err != nil {
+		return errors.Wrap(err, "create pubkey assetfile ")
+	}
+	if err := cmder.Copy(f); err != nil {
+		return errors.Wrap(err, "copying pub key")
+	}
+	if rr, err := cmder.RunCmd(exec.Command("chown", "docker:docker", "/home/docker/.ssh/authorized_keys")); err != nil {
+		return errors.Wrapf(err, "apply authorized_keys file ownership, output %s", rr.Output())
+	}
+
 	return nil
 }
 
@@ -115,17 +164,39 @@ func (d *Driver) GetIP() (string, error) {
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
-	return "", fmt.Errorf("driver does not have SSHHostName")
+	return DefaultBindIPV4, nil
 }
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
-	return 0, fmt.Errorf("driver does not support GetSSHPort")
+	p, err := oci.HostPortBinding(d.OCIBinary, d.MachineName, constants.SSHPort)
+	if err != nil {
+		return p, errors.Wrap(err, "get ssh host-port")
+	}
+	return p, nil
+}
+
+// GetSSHUsername returns the ssh username
+func (d *Driver) GetSSHUsername() string {
+	return "docker"
+}
+
+// GetSSHKeyPath returns the ssh key path
+func (d *Driver) GetSSHKeyPath() string {
+	if d.SSHKeyPath == "" {
+		d.SSHKeyPath = d.ResolveStorePath("id_rsa")
+	}
+	return d.SSHKeyPath
 }
 
 // GetURL returns ip of the container running kic control-panel
 func (d *Driver) GetURL() (string, error) {
-	return d.GetIP()
+	p, err := oci.HostPortBinding(d.NodeConfig.OCIBinary, d.MachineName, d.NodeConfig.APIServerPort)
+	url := fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(p)))
+	if err != nil {
+		return url, errors.Wrap(err, "api host port binding")
+	}
+	return url, nil
 }
 
 // GetState returns the state that the host is in (running, stopped, etc)
@@ -136,23 +207,20 @@ func (d *Driver) GetState() (state.State, error) {
 	if err != nil {
 		return state.Error, errors.Wrapf(err, "error stop node %s", d.MachineName)
 	}
-	if o == "running" {
+	switch o {
+	case "running":
 		return state.Running, nil
-	}
-	if o == "exited" {
+	case "exited":
 		return state.Stopped, nil
-	}
-	if o == "paused" {
+	case "paused":
 		return state.Paused, nil
-	}
-	if o == "restarting" {
+	case "restarting":
 		return state.Starting, nil
-	}
-	if o == "dead" {
+	case "dead":
 		return state.Error, nil
+	default:
+		return state.None, fmt.Errorf("unknown state")
 	}
-	return state.None, fmt.Errorf("unknown state")
-
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
@@ -249,33 +317,4 @@ func (d *Driver) nodeID(nameOrID string) (string, error) {
 		id = []byte{}
 	}
 	return string(id), err
-}
-
-func ImageForVersion(ver string) (string, error) {
-	switch ver {
-	case "v1.11.10":
-		return "medyagh/kic:v1.11.10@sha256:23bb7f5e8dd2232ec829132172e87f7b9d8de65269630989e7dac1e0fe993b74", nil
-	case "v1.12.8":
-		return "medyagh/kic:v1.12.8@sha256:c74bc5f3efe3539f6e1ad7f11bf7c09f3091c0547cb28071f4e43067053e5898", nil
-	case "v1.12.9":
-		return "medyagh/kic:v1.12.9@sha256:ff82f58e18dcb22174e8eb09dae14f7edd82d91a83c7ef19e33298d0eba6a0e3", nil
-	case "v1.12.10":
-		return "medyagh/kic:v1.12.10@sha256:2d174bae7c20698e59791e7cca9b6db234053d1a92a009d5bb124e482540c70b", nil
-	case "v1.13.6":
-		return "medyagh/kic:v1.13.6@sha256:cf63e50f824fe17b90374d38d64c5964eb9fe6b3692669e1201fcf4b29af4964", nil
-	case "v1.13.7":
-		return "medyagh/kic:v1.13.7@sha256:1a6a5e1c7534cf3012655e99df680496df9bcf0791a304adb00617d5061233fa", nil
-	case "v1.14.3":
-		return "medyagh/kic:v1.14.3@sha256:cebec21f6af23d5dfa3465b88ddf4a1acb94c2c20a0a6ff8cc1c027b0a4e2cec", nil
-	case "v1.15.0":
-		return "medyagh/kic:v1.15.0@sha256:40d433d00a2837c8be829bd3cb0576988e377472062490bce0b18281c7f85303", nil
-	case "v1.15.3":
-		return "medyagh/kic:v1.15.3@sha256:f05ce52776a86c6ead806942d424de7076af3f115b0999332981a446329e6cf1", nil
-	case "v1.16.1":
-		return "medyagh/kic:v1.16.1@sha256:e74530d22e6a04442a97a09bdbba885ad693fcc813a0d1244da32666410d1ad1", nil
-	case "v1.16.2":
-		return "medyagh/kic:v1.16.2@sha256:3374a30971bf5b0011441a227fa56ef990b76125b36ca0ab8316a3c7e4f137a3", nil
-	default:
-		return "medyagh/kic:v1.16.2@sha256:3374a30971bf5b0011441a227fa56ef990b76125b36ca0ab8316a3c7e4f137a3", nil
-	}
 }

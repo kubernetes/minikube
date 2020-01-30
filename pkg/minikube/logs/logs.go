@@ -47,7 +47,6 @@ var importantPods = []string{
 	"coredns",
 	"kube-scheduler",
 	"kube-proxy",
-	"kube-addon-manager",
 	"kubernetes-dashboard",
 	"storage-provisioner",
 	"kube-controller-manager",
@@ -170,7 +169,7 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, follow bool) map[string]string {
 	cmds := bs.LogCommands(bootstrapper.LogOptions{Lines: length, Follow: follow})
 	for _, pod := range importantPods {
-		ids, err := r.ListContainers(pod)
+		ids, err := r.ListContainers(cruntime.ListOptions{Name: pod})
 		if err != nil {
 			glog.Errorf("Failed to list containers for %q: %v", pod, err)
 			continue
@@ -186,8 +185,6 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 		}
 	}
 	cmds[r.Name()] = r.SystemLogCmd(length)
-	// Works across container runtimes with good formatting
-	// Fallback to 'docker ps' if it fails (none driver)
-	cmds["container status"] = "sudo crictl ps -a || sudo docker ps -a"
+	cmds["container status"] = cruntime.ContainerStatusCommand()
 	return cmds
 }

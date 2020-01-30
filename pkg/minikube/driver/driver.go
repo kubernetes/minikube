@@ -20,9 +20,10 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -59,6 +60,19 @@ func SupportedDrivers() []string {
 	return supportedDrivers
 }
 
+// DisplaySupportedDrivers returns a string with a list of supported drivers
+func DisplaySupportedDrivers() string {
+	var sd []string
+	for _, d := range supportedDrivers {
+		if registry.Driver(d).Priority == registry.Experimental {
+			sd = append(sd, d+" (experimental)")
+			continue
+		}
+		sd = append(sd, d)
+	}
+	return strings.Join(sd, ", ")
+}
+
 // Supported returns if the driver is supported on this host.
 func Supported(name string) bool {
 	for _, d := range supportedDrivers {
@@ -81,7 +95,7 @@ func BareMetal(name string) bool {
 
 // FlagHints are hints for what default options should be used for this driver
 type FlagHints struct {
-	ExtraOptions     string
+	ExtraOptions     []string
 	CacheImages      bool
 	ContainerRuntime string
 	Bootstrapper     string
@@ -89,24 +103,25 @@ type FlagHints struct {
 
 // FlagDefaults returns suggested defaults based on a driver
 func FlagDefaults(name string) FlagHints {
+	fh := FlagHints{}
 	if name != None {
-		fh := FlagHints{CacheImages: true}
+		fh.CacheImages = true
 		// only for kic, till other run-times are available we auto-set containerd.
 		if name == Docker {
 			fh.ContainerRuntime = "containerd"
-			fh.Bootstrapper = bootstrapper.KIC
+			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR))
 		}
 		return fh
 	}
 
-	extraOpts := ""
+	fh.CacheImages = false
+	// if specifc linux add this option for systemd work on none driver
 	if _, err := os.Stat(systemdResolvConf); err == nil {
-		extraOpts = fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
+		noneEO := fmt.Sprintf("kubelet.resolv-conf=%s", systemdResolvConf)
+		fh.ExtraOptions = append(fh.ExtraOptions, noneEO)
+		return fh
 	}
-	return FlagHints{
-		ExtraOptions: extraOpts,
-		CacheImages:  false,
-	}
+	return fh
 }
 
 // Choices returns a list of drivers which are possible on this system
@@ -167,4 +182,11 @@ func Choose(requested string, options []registry.DriverState) (registry.DriverSt
 // Status returns the status of a driver
 func Status(name string) registry.State {
 	return registry.Status(name)
+}
+
+// SetLibvirtURI sets the URI to perform libvirt health checks against
+func SetLibvirtURI(v string) {
+	glog.Infof("Setting default libvirt URI to %s", v)
+	os.Setenv("LIBVIRT_DEFAULT_URI", v)
+
 }

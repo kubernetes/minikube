@@ -127,6 +127,7 @@ func Load(profile string) (*MachineConfig, error) {
 	return DefaultLoader.LoadConfigFromFile(profile)
 }
 
+// Write writes the kubernetes and machine config for the current machine
 func Write(profile string, cc *MachineConfig) error {
 	return DefaultLoader.WriteConfigToFile(profile, cc)
 }

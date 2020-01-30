@@ -59,7 +59,6 @@ var profileListCmd = &cobra.Command{
 var printProfilesTable = func() {
 
 	var validData [][]string
-
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Profile", "VM Driver", "NodeIP", "Node Port", "Kubernetes Version", "Status"})
 	table.SetAutoFormatHeaders(false)
@@ -81,7 +80,11 @@ var printProfilesTable = func() {
 		if err != nil {
 			glog.Infof("error getting host status for %v", err)
 		}
-		validData = append(validData, []string{p.Name, p.Config[0].VMDriver, p.Config[0].KubernetesConfig.NodeIP, strconv.Itoa(p.Config[0].KubernetesConfig.NodePort), p.Config[0].KubernetesConfig.KubernetesVersion, p.Status})
+		cp, err := config.PrimaryControlPlane(*p.Config)
+		if err != nil {
+			exit.WithError("profile has no control plane", err)
+		}
+		validData = append(validData, []string{p.Name, p.Config.VMDriver, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
 	}
 
 	table.AppendBulk(validData)

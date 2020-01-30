@@ -37,13 +37,13 @@ type LogOptions struct {
 type Bootstrapper interface {
 	// PullImages pulls images necessary for a cluster. Success should not be required.
 	PullImages(config.KubernetesConfig) error
-	StartCluster(config.KubernetesConfig) error
+	StartCluster(config.MachineConfig) error
 	UpdateCluster(config.MachineConfig) error
 	DeleteCluster(config.KubernetesConfig) error
-	WaitForCluster(config.KubernetesConfig, time.Duration) error
+	WaitForCluster(config.MachineConfig, time.Duration) error
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(LogOptions) map[string]string
-	SetupCerts(cfg config.KubernetesConfig) error
+	SetupCerts(config.KubernetesConfig, config.Node) error
 	GetKubeletStatus() (string, error)
 	GetAPIServerStatus(net.IP, int) (string, error)
 }
@@ -51,27 +51,14 @@ type Bootstrapper interface {
 const (
 	// Kubeadm is the kubeadm bootstrapper type
 	Kubeadm = "kubeadm"
-	KIC     = "kic"
 )
 
 // GetCachedBinaryList returns the list of binaries
 func GetCachedBinaryList(bootstrapper string) []string {
-	switch bootstrapper {
-	case Kubeadm:
-		return constants.KubeadmBinaries
-	default:
-		return []string{}
-	}
+	return constants.KubernetesReleaseBinaries
 }
 
 // GetCachedImageList returns the list of images for a version
 func GetCachedImageList(imageRepository string, version string, bootstrapper string) ([]string, error) {
-	switch bootstrapper {
-	case Kubeadm:
-		return images.Kubeadm(imageRepository, version)
-	case KIC:
-		return []string{"alpine"}, nil // for testing purpose just caching alpine for kicbs
-	default:
-		return []string{}, nil
-	}
+	return images.Kubeadm(imageRepository, version)
 }

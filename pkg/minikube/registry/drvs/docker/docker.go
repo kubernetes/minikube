@@ -17,12 +17,14 @@ limitations under the License.
 package docker
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -33,27 +35,23 @@ func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Docker,
 		Config:   configure,
-		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{}) },
+		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
-		Priority: registry.Discouraged, // experimental
+		Priority: registry.Experimental,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
 }
 
 func configure(mc config.MachineConfig) interface{} {
-	img, err := kic.ImageForVersion(mc.KubernetesConfig.KubernetesVersion)
-	if err != nil {
-		glog.Errorf("err to getting kic image for %s: imgesha:%s", img, mc.KubernetesConfig.KubernetesVersion)
-	}
 	return kic.NewDriver(kic.Config{
 		MachineName:   mc.Name,
 		StorePath:     localpath.MiniPath(),
-		ImageDigest:   img,
+		ImageDigest:   kic.BaseImage,
 		CPU:           mc.CPUs,
 		Memory:        mc.Memory,
-		APIServerPort: mc.NodeBindPort,
-		OCIBinary:     "docker",
+		OCIBinary:     oci.Docker,
+		APIServerPort: mc.Nodes[0].Port,
 	})
 
 }
@@ -63,8 +61,11 @@ func status() registry.State {
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/kic/"}
 	}
+	// Allow no more than 2 seconds for querying state
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	err = exec.Command("docker", "info").Run()
+	err = exec.CommandContext(ctx, "docker", "info").Run()
 	if err != nil {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is not running. Try: restarting docker desktop."}
 	}

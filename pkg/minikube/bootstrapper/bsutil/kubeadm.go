@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// bsutil package will eventually be renamed to kubeadm package after getting rid of older one
+// Package bsutil will eventually be renamed to kubeadm package after getting rid of older one
 package bsutil
 
 import (
@@ -24,19 +24,19 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/template"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util"
 )
 
 // Container runtimes
 const remoteContainerRuntime = "remote"
 
 // GenerateKubeadmYAML generates the kubeadm.yaml file
-func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, error) {
+func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, error) {
+	k8s := mc.KubernetesConfig
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
@@ -53,8 +53,12 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
-	// In case of no port assigned, use util.APIServerPort
-	nodePort := k8s.NodePort
+	// In case of no port assigned, use default
+	cp, err := config.PrimaryControlPlane(mc)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting control plane")
+	}
+	nodePort := cp.Port
 	if nodePort <= 0 {
 		nodePort = constants.APIServerPort
 	}
@@ -76,13 +80,13 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		NoTaintMaster     bool
 	}{
 		CertDir:           vmpath.GuestCertsDir,
-		ServiceCIDR:       util.DefaultServiceCIDR,
+		ServiceCIDR:       constants.DefaultServiceCIDR,
 		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
-		AdvertiseAddress:  k8s.NodeIP,
+		AdvertiseAddress:  cp.IP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
-		NodeName:          k8s.NodeName,
+		NodeName:          cp.Name,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
 		ExtraArgs:         extraComponentConfig,
@@ -97,13 +101,13 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 
 	opts.NoTaintMaster = true
 	b := bytes.Buffer{}
-	configTmpl := template.KubeAdmConfigTmplV1Alpha1
+	configTmpl := ktmpl.V1Alpha1
 	if version.GTE(semver.MustParse("1.12.0")) {
-		configTmpl = template.KubeAdmConfigTmplV1Alpha3
+		configTmpl = ktmpl.V1Alpha3
 	}
 	// v1beta1 works in v1.13, but isn't required until v1.14.
 	if version.GTE(semver.MustParse("1.14.0-alpha.0")) {
-		configTmpl = template.KubeAdmConfigTmplV1Beta1
+		configTmpl = ktmpl.V1Beta1
 	}
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
