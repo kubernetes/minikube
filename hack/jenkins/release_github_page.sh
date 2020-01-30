@@ -84,8 +84,8 @@ FILES_TO_UPLOAD=(
     'minikube-windows-amd64.exe'
     'minikube-windows-amd64.exe.sha256'
     'minikube-installer.exe'
-    "minikube_${DEB_VERSION}.deb"
-    "minikube-${RPM_VERSION}.rpm"
+    "minikube_${DEB_VERSION}-0_amd64.deb"
+    "minikube-${RPM_VERSION}-0.x86_64.rpm"
     'docker-machine-driver-kvm2'
     'docker-machine-driver-kvm2.sha256'
     'docker-machine-driver-hyperkit'
