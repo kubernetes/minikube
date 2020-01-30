@@ -115,13 +115,12 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		if elapsed > (1 * time.Second) {
 			glog.Infof("Done: %v: (%s)", oc.Args, elapsed)
 		}
-	} else {
-		if exitError, ok := err.(*exec.ExitError); ok {
-			rr.ExitCode = exitError.ExitCode()
-		}
-		err = fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
+		return rr, nil
 	}
-	return rr, err
+	if exitError, ok := err.(*exec.ExitError); ok {
+		rr.ExitCode = exitError.ExitCode()
+	}
+	return rr, fmt.Errorf("%s: %v\nstdout:\n%s\nstderr:\n%s", rr.Command(), err, rr.Stdout.String(), rr.Stderr.String())
 
 }
 
