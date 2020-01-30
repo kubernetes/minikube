@@ -25,7 +25,7 @@ import (
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.MachineConfig, name string, controlPlane bool, k8sVersion string, profileName string) error {
+func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, k8sVersion string, profileName string) error {
 	n := config.Node{
 		Name:   name,
 		Worker: true,
@@ -35,8 +35,14 @@ func Add(cc *config.MachineConfig, name string, controlPlane bool, k8sVersion st
 		n.ControlPlane = true
 	}
 
+	if worker {
+		n.Worker = true
+	}
+
 	if k8sVersion != "" {
 		n.KubernetesVersion = k8sVersion
+	} else {
+		n.KubernetesVersion = cc.KubernetesConfig.KubernetesVersion
 	}
 
 	cc.Nodes = append(cc.Nodes, n)
@@ -78,5 +84,6 @@ func Stop(cc *config.MachineConfig, name string) error {
 // Start spins up a guest and starts the kubernetes node.
 func Start(cc *config.MachineConfig, name string) error {
 	// Throw all the slop from cmd.start in here
+	// Add the node if it doesn't already exist
 	return nil
 }

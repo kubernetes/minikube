@@ -21,6 +21,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
+// NodeCmd represents the set of node subcommands
 var NodeCmd = &cobra.Command{
 	Use:   "node",
 	Short: "Node operations",
