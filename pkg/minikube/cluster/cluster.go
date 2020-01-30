@@ -543,7 +543,7 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 	}
 
 	ip := kic.DefaultBindIPV4
-	if !driver.IsKIC(host.Driver.DriverName()) { // unlike VM drivers, kic externaly accessible ip is different that node ip
+	if !driver.IsKIC(host.Driver.DriverName()) { // unlike VM drivers, kic externally accessible ip is different that node ip
 		ip, err = host.Driver.GetIP()
 		if err != nil {
 			return nil, errors.Wrap(err, "Error getting ip from host")
@@ -553,7 +553,7 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 
 	tcpPrefix := "tcp://"
 	port := constants.DockerDaemonPort
-	if driver.IsKIC(host.Driver.DriverName()) {
+	if driver.IsKIC(host.Driver.DriverName()) { // for kic we need to find out what port docker allocated during creation
 		port, err = oci.HostPortBinding(host.Driver.DriverName(), pName, constants.DockerDaemonPort)
 		if err != nil {
 			return nil, errors.Wrapf(err, "get hostbind port for %d", constants.DockerDaemonPort)
