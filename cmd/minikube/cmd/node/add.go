@@ -24,6 +24,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var nodeAddCmd = &cobra.Command{
@@ -40,8 +41,10 @@ var nodeAddCmd = &cobra.Command{
 		if name == "" {
 			name = profile + strconv.Itoa(len(mc.Nodes)+1)
 		}
+		out.T(out.SuccessType, "Adding node {{.name}} to cluster {{.profile}}", out.V{"name": name, "profile": profile})
 		cp := viper.GetBool("control-plane")
-		err = node.Add(mc, name, cp, "", profile)
+		worker := viper.GetBool("worker")
+		err = node.Add(mc, name, cp, worker, "", profile)
 		if err != nil {
 			exit.WithError("Error adding node to cluster", err)
 		}
@@ -51,5 +54,6 @@ var nodeAddCmd = &cobra.Command{
 func init() {
 	nodeAddCmd.Flags().String("name", "", "The name of the node to add.")
 	nodeAddCmd.Flags().Bool("control-plane", false, "If true, the node added will also be a control plane in addition to a worker.")
+	nodeAddCmd.Flags().Bool("worker", true, "If true, the added node will be marked for work. Defaults to true.")
 	NodeCmd.AddCommand(nodeAddCmd)
 }
