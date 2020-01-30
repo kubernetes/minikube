@@ -18,6 +18,7 @@ package oci
 
 import (
 	"os"
+	"strconv"
 
 	"github.com/docker/machine/libmachine/state"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -28,7 +29,6 @@ import (
 	"github.com/pkg/errors"
 
 	"fmt"
-	"net"
 	"os/exec"
 	"strings"
 	"time"
@@ -53,17 +53,14 @@ func Status(ociBinary string, ociID string) (state.State, error) {
 	out, err := cmd.CombinedOutput()
 	o := strings.Trim(string(out), "\n")
 	s := state.Error
-	if o == "running" {
+	switch o {
+	case "running":
 		s = state.Running
-	}
-	if o == "exited" {
+	case "exited":
 		s = state.Stopped
-	}
-
-	if o == "paused" {
+	case "paused":
 		s = state.Paused
-	}
-	if o == "restaring" {
+	case "restaring":
 		s = state.Starting
 	}
 
@@ -111,7 +108,6 @@ func Pause(ociBinary string, ociID string) error {
 
 // Inspect return low-level information on containers
 func Inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
-
 	cmd := exec.Command(ociBinary, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
@@ -283,13 +279,9 @@ func UsernsRemap(ociBinary string) bool {
 func generatePortMappings(portMappings ...PortMapping) []string {
 	result := make([]string, 0, len(portMappings))
 	for _, pm := range portMappings {
-		var hostPortBinding string
-		if pm.ListenAddress != "" {
-			hostPortBinding = net.JoinHostPort(pm.ListenAddress, fmt.Sprintf("%d", pm.HostPort))
-		} else {
-			hostPortBinding = fmt.Sprintf("%d", pm.HostPort)
-		}
-		publish := fmt.Sprintf("--publish=%s:%d", hostPortBinding, pm.ContainerPort)
+		// let docker pick a host port by leaving it as ::
+		// example --publish=127.0.0.17::8443 will get a random host port for 8443
+		publish := fmt.Sprintf("--publish=%s::%d", pm.ListenAddress, pm.ContainerPort)
 		result = append(result, publish)
 	}
 	return result
@@ -353,16 +345,9 @@ func CreateContainer(ociBinary string, image string, opts ...CreateOpt) ([]strin
 	for scanner.Scan() {
 		output = append(output, scanner.Text())
 	}
-	// TODO : check for exist status 125 that means it alread exists, we can re-start it
-	// example error:
-	// $ docker run --cpus=2 --memory=2000m -d -t --privileged --security-opt seccomp=unconfined --tmpfs /tmp --tmpfs /run -v /lib/modules:/lib/modules:ro --hostname p1control-plane --name p1control-plane --label io.k8s.sigs.kic.clusterp1 --label io.k8s.sigs.kic.role=control-plane --expose 50182 --publish=127.0.0.1:50182:6443 medyagh/kic:v1.15.0@sha256:1f03b3168ffe8ab43ce170a5729e31b0d53fb3a1af88e1ad1bdf4626fad8a91c
-	//		 docker: Error response from daemon: Conflict. The container name "/p1control-plane" is already in use by container "0204dcf3ca51c874b6c7dac989beae9d98dd44af53e0a17312f4d3480c1f6191". You have to remove (or rename) that container to be able to reuse that name.
-	// 		 See 'docker run --help'.
-	// $ echo $?
-	// 125
 
 	if err != nil {
-		return output, errors.Wrapf(err, "CreateContainer %v ", args)
+		return output, errors.Wrapf(err, "args: %v  output: %s ", args, output)
 	}
 	return output, nil
 }
@@ -404,4 +389,24 @@ func Copy(ociBinary string, ociID string, asset assets.CopyableFile) error {
 		return errors.Wrapf(err, "error copying %s into node", asset.GetAssetName())
 	}
 	return nil
+}
+
+// HostPortBinding will return port mapping for a container using cli.
+// example : HostPortBinding("docker", "minikube", "22")
+// will return the docker assigned port:
+// 32769, nil
+// only supports TCP ports
+func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) {
+	cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return 0, errors.Wrapf(err, "getting host-bind port %d for container ID %q, output %s", contPort, ociID, out)
+	}
+	o := strings.Trim(string(out), "\n")
+	o = strings.Trim(o, "'")
+	p, err := strconv.Atoi(o)
+	if err != nil {
+		return p, errors.Wrapf(err, "convert host-port %q to number", p)
+	}
+	return p, nil
 }

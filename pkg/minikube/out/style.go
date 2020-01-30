@@ -81,6 +81,8 @@ var styles = map[StyleEnum]style{
 	Celebration:   {Prefix: "🎉  "},
 	Workaround:    {Prefix: "👉  ", LowPrefix: lowIndent},
 	Sparkle:       {Prefix: "✨  "},
+	Pause:         {Prefix: "⏸️  "},
+	Unpause:       {Prefix: "⏯️  "},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},
@@ -113,6 +115,7 @@ var styles = map[StyleEnum]style{
 	Unmount:          {Prefix: "🔥  "},
 	MountOptions:     {Prefix: "💾  "},
 	Fileserver:       {Prefix: "🚀  ", OmitNewline: true},
+	DryRun:           {Prefix: "🏜️   "},
 }
 
 // Add a prefix to a string

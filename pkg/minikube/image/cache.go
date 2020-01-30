@@ -25,10 +25,12 @@ import (
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
+	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/util/lock"
 )
 
 // DeleteFromCacheDir deletes tar files stored in cache dir
@@ -72,37 +74,54 @@ func SaveToDir(images []string, cacheDir string) error {
 }
 
 // saveToTarFile caches an image
-func saveToTarFile(image, dst string) error {
+func saveToTarFile(iname, rawDest string) error {
 	start := time.Now()
 	defer func() {
-		glog.Infof("cache image %q -> %s to local destination -> %q", image, dst, time.Since(start))
+		glog.Infof("cache image %q -> %q took %s", iname, rawDest, time.Since(start))
 	}()
+
+	// OS-specific mangling of destination path
+	dst, err := localpath.DstPath(rawDest)
+	if err != nil {
+		return errors.Wrap(err, "getting destination path")
+	}
+
+	spec := lock.PathMutexSpec(dst)
+	spec.Timeout = 10 * time.Minute
+	glog.Infof("acquiring lock: %+v", spec)
+	releaser, err := mutex.Acquire(spec)
+	if err != nil {
+		return errors.Wrapf(err, "unable to acquire lock for %+v", spec)
+	}
+	defer releaser.Release()
 
 	if _, err := os.Stat(dst); err == nil {
 		glog.Infof("%s exists", dst)
 		return nil
 	}
 
-	dstPath, err := localpath.DstPath(dst)
-	if err != nil {
-		return errors.Wrap(err, "getting destination path")
-	}
-
-	if err := os.MkdirAll(filepath.Dir(dstPath), 0777); err != nil {
+	if err := os.MkdirAll(filepath.Dir(dst), 0777); err != nil {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}
 
-	ref, err := name.ParseReference(image, name.WeakValidation)
+	ref, err := name.ParseReference(iname, name.WeakValidation)
 	if err != nil {
-		return errors.Wrapf(err, "parsing image ref name for %s", image)
+		return errors.Wrapf(err, "parsing image ref name for %s", iname)
+	}
+	if ref == nil {
+		return errors.Wrapf(err, "nil reference for %s", iname)
 	}
 
 	img, err := retrieveImage(ref)
 	if err != nil {
 		glog.Warningf("unable to retrieve image: %v", err)
 	}
-	glog.Infoln("opening: ", dstPath)
-	f, err := ioutil.TempFile(filepath.Dir(dstPath), filepath.Base(dstPath)+".*.tmp")
+	if img == nil {
+		return errors.Wrapf(err, "nil image for %s", iname)
+	}
+
+	glog.Infoln("opening: ", dst)
+	f, err := ioutil.TempFile(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
 	if err != nil {
 		return err
 	}
@@ -116,7 +135,7 @@ func saveToTarFile(image, dst string) error {
 			}
 		}
 	}()
-	tag, err := name.NewTag(image, name.WeakValidation)
+	tag, err := name.NewTag(iname, name.WeakValidation)
 	if err != nil {
 		return errors.Wrap(err, "newtag")
 	}
@@ -128,7 +147,7 @@ func saveToTarFile(image, dst string) error {
 	if err != nil {
 		return errors.Wrap(err, "close")
 	}
-	err = os.Rename(f.Name(), dstPath)
+	err = os.Rename(f.Name(), dst)
 	if err != nil {
 		return errors.Wrap(err, "rename")
 	}
