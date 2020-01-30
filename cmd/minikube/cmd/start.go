@@ -47,6 +47,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	pkgaddons "k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -409,10 +410,36 @@ func cacheISO(cfg *config.MachineConfig, driverName string) {
 }
 
 func enableAddons() {
-	for _, a := range addonList {
+	start := time.Now()
+	glog.Infof("enableAddons")
+	defer func() {
+		glog.Infof("enableAddons completed in %s", time.Since(start))
+	}()
+	toEnable := []string{}
+
+	// Apply addons that are enabled by default
+	for name, a := range assets.Addons {
+		enabled, err := a.IsEnabled()
+		if err != nil {
+			glog.Errorf("is-enabled failed for %q: %v", a.Name(), err)
+			continue
+		}
+		if enabled {
+			toEnable = append(toEnable, name)
+		}
+	}
+
+	toEnable = append(toEnable, addonList...)
+	if len(toEnable) == 0 {
+		return
+	}
+
+	out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnable, ", ")})
+	for _, a := range toEnable {
 		err := pkgaddons.Set(a, "true", viper.GetString(config.MachineProfile))
 		if err != nil {
-			exit.WithError("addon enable failed", err)
+			// Intentionally non-fatal
+			out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": a, "error": err})
 		}
 	}
 }

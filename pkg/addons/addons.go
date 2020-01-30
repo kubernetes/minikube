@@ -19,7 +19,7 @@ package addons
 import (
 	"fmt"
 	"os"
-	"path/filepath"
+	"path"
 	"strconv"
 
 	"github.com/golang/glog"
@@ -41,6 +41,8 @@ const defaultStorageClassProvisioner = "standard"
 
 // Set sets a value
 func Set(name, value, profile string) error {
+	glog.Infof("Setting %s=%s in profile %q", name, value, profile)
+
 	a, valid := isAddonValid(name)
 	if !valid {
 		return errors.Errorf("%s is not a valid addon", name)
@@ -100,6 +102,7 @@ func SetBool(m *config.MachineConfig, name string, val string) error {
 
 // enableOrDisableAddon updates addon status executing any commands necessary
 func enableOrDisableAddon(name, val, profile string) error {
+	glog.Infof("Setting addon %s=%s in %q", name, val, profile)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -112,9 +115,9 @@ func enableOrDisableAddon(name, val, profile string) error {
 		out.ErrT(out.Conflict, "{{.error}}", out.V{"error": err})
 		return err
 	}
-	//if addon is already enabled or disabled, do nothing
+
 	if alreadySet {
-		return nil
+		glog.Warningf("addon %s should already be in state %v", name, val)
 	}
 
 	if name == "istio" && enable {
@@ -137,6 +140,7 @@ func enableOrDisableAddon(name, val, profile string) error {
 	//if minikube is not running, we return and simply update the value in the addon
 	//config and rewrite the file
 	if !cluster.IsMinikubeRunning(api) {
+		glog.Warningf("minikube is not running, writing to disk and doing nothing")
 		return nil
 	}
 
@@ -178,37 +182,44 @@ func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
 func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool, profile string) error {
 	files := []string{}
 	for _, addon := range addon.Assets {
-		var addonFile assets.CopyableFile
+		var f assets.CopyableFile
 		var err error
 		if addon.IsTemplate() {
-			addonFile, err = addon.Evaluate(data)
+			f, err = addon.Evaluate(data)
 			if err != nil {
 				return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
 			}
 
 		} else {
-			addonFile = addon
+			f = addon
 		}
+		fPath := path.Join(f.GetTargetDir(), f.GetTargetName())
+
 		if enable {
-			if err := cmd.Copy(addonFile); err != nil {
+			glog.Infof("installing %s", fPath)
+			if err := cmd.Copy(f); err != nil {
 				return err
 			}
 		} else {
+			glog.Infof("Removing %+v", fPath)
 			defer func() {
-				if err := cmd.Remove(addonFile); err != nil {
-					glog.Warningf("error removing %s; addon should still be disabled as expected", addonFile)
+				if err := cmd.Remove(f); err != nil {
+					glog.Warningf("error removing %s; addon should still be disabled as expected", fPath)
 				}
 			}()
 		}
-		files = append(files, filepath.Join(addonFile.GetTargetDir(), addonFile.GetTargetName()))
+		files = append(files, fPath)
 	}
 	command, err := kubectlCommand(profile, files, enable)
 	if err != nil {
 		return err
 	}
-	if result, err := cmd.RunCmd(command); err != nil {
-		return errors.Wrapf(err, "error updating addon:\n%s", result.Output())
+	glog.Infof("Running: %s", command)
+	rr, err := cmd.RunCmd(command)
+	if err != nil {
+		return errors.Wrapf(err, "addon apply")
 	}
+	glog.Infof("output:\n%s", rr.Output())
 	return nil
 }
 
