@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -194,7 +195,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 
 	if err == nil && driver.BareMetal(cc.VMDriver) {
-		if err := uninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+		if err := uninstallKubernetes(api, profile.Name, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
 			if ok {
 				delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
@@ -276,12 +277,34 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
 }
 
-func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsName string) error {
+func uninstallKubernetes(api libmachine.API, profile string, kc pkg_config.KubernetesConfig, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
 	clusterBootstrapper, err := getClusterBootstrapper(api, bsName)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
-	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
+	}
+
+	host, err := cluster.CheckIfHostExistsAndLoad(api, profile)
+	if err != nil {
+		exit.WithError("Error getting host", err)
+	}
+	r, err := machine.CommandRunner(host)
+	if err != nil {
+		exit.WithError("Failed to get command runner", err)
+	}
+
+	cr, err := cruntime.New(cruntime.Config{Type: kc.ContainerRuntime, Runner: r})
+	if err != nil {
+		exit.WithError("Failed runtime", err)
+	}
+
+	// Unpause the cluster if necessary to avoid hung kubeadm
+	_, err = cluster.Unpause(cr, r, nil)
+	if err != nil {
+		glog.Errorf("unpause failed: %v", err)
+	}
+
+	if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
 		return DeletionError{Err: fmt.Errorf("failed to delete cluster: %v", err), Errtype: Fatal}
 	}
 	return nil
