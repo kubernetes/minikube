@@ -69,7 +69,7 @@ jobs:
       run: |
           brew install docker-machine docker
           brew services start docker-machine
-          sudo docker –version
+          sudo docker version
     - name: install gopogh
       run: |
         cd /tmp
