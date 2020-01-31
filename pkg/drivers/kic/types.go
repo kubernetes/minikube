@@ -45,7 +45,7 @@ type Config struct {
 	Envs          map[string]string // key,value of environment variables passed to the node
 }
 
-type createConfig struct {
+type createParams struct {
 	Name          string            // used for container name and hostname
 	Image         string            // container image to use to create the node.
 	ClusterLabel  string            // label the containers we create using minikube so we can clean up
