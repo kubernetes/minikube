@@ -1083,6 +1083,10 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 }
 
 func trySSH(h *host.Host, ip string) {
+	if viper.GetBool(force) {
+		return
+	}
+
 	sshAddr := net.JoinHostPort(ip, "22")
 
 	dial := func() (err error) {
@@ -1097,8 +1101,7 @@ func trySSH(h *host.Host, ip string) {
 	}
 
 	if err := retry.Expo(dial, time.Second, 13*time.Second); err != nil {
-		if !viper.GetBool(force) {
-			exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
+		exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
 
 	This is likely due to one of two reasons:
 
