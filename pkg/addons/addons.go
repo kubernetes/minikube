@@ -44,7 +44,6 @@ const defaultStorageClassProvisioner = "standard"
 // Set sets a value
 func Set(name, value, profile string) error {
 	glog.Infof("Setting %s=%s in profile %q", name, value, profile)
-
 	a, valid := isAddonValid(name)
 	if !valid {
 		return errors.Errorf("%s is not a valid addon", name)
@@ -70,6 +69,7 @@ func Set(name, value, profile string) error {
 		return errors.Wrap(err, "running callbacks")
 	}
 
+	glog.Infof("Writing new config for %q ...", profile)
 	// Write the value
 	return config.Write(profile, c)
 }
@@ -112,7 +112,7 @@ func enableOrDisableAddon(name, val, profile string) error {
 	addon := assets.Addons[name]
 
 	// check addon status before enabling/disabling it
-	alreadySet, err := isAddonAlreadySet(addon, enable)
+	alreadySet, err := isAddonAlreadySet(addon, enable, profile)
 	if err != nil {
 		out.ErrT(out.Conflict, "{{.error}}", out.V{"error": err})
 		return err
@@ -139,21 +139,15 @@ func enableOrDisableAddon(name, val, profile string) error {
 	}
 	defer api.Close()
 
-	//if minikube is not running, we return and simply update the value in the addon
-	//config and rewrite the file
-	if !cluster.IsMinikubeRunning(api) {
-		glog.Warningf("minikube is not running, writing to disk and doing nothing")
-		return nil
-	}
-
 	cfg, err := config.Load(profile)
 	if err != nil && !os.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
-	host, err := cluster.CheckIfHostExistsAndLoad(api, cfg.Name)
-	if err != nil {
-		return errors.Wrap(err, "getting host")
+	host, err := cluster.CheckIfHostExistsAndLoad(api, profile)
+	if err != nil || !cluster.IsHostRunning(api, profile) {
+		glog.Warningf("%q is not running, writing to %s=%v disk and skipping the rest (err=%v)", profile, addon.Name(), enable, err)
+		return nil
 	}
 
 	cmd, err := machine.CommandRunner(host)
@@ -165,11 +159,10 @@ func enableOrDisableAddon(name, val, profile string) error {
 	return enableOrDisableAddonInternal(addon, cmd, data, enable, profile)
 }
 
-func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
-	addonStatus, err := addon.IsEnabled()
-
+func isAddonAlreadySet(addon *assets.Addon, enable bool, profile string) (bool, error) {
+	addonStatus, err := addon.IsEnabled(profile)
 	if err != nil {
-		return false, errors.Wrap(err, "addon is enabled")
+		return false, errors.Wrap(err, "is enabled")
 	}
 
 	if addonStatus && enable {
@@ -227,6 +220,7 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 
 // enableOrDisableStorageClasses enables or disables storage classes
 func enableOrDisableStorageClasses(name, val, profile string) error {
+	glog.Infof("enableOrDisableStorageClasses %s=%v on %q", name, val, profile)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrap(err, "Error parsing boolean")
@@ -239,6 +233,17 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 	storagev1, err := storageclass.GetStoragev1()
 	if err != nil {
 		return errors.Wrapf(err, "Error getting storagev1 interface %v ", err)
+	}
+
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "machine client")
+	}
+	defer api.Close()
+
+	if !cluster.IsHostRunning(api, profile) {
+		glog.Warningf("%q is not running, writing to %s=%v disk and skipping enablement", profile, name, val)
+		return enableOrDisableAddon(name, val, profile)
 	}
 
 	if enable {
@@ -269,7 +274,7 @@ func Start(profile string, additional []string) {
 
 	// Apply addons that are enabled by default
 	for name, a := range assets.Addons {
-		enabled, err := a.IsEnabled()
+		enabled, err := a.IsEnabled(profile)
 		if err != nil {
 			glog.Errorf("is-enabled failed for %q: %v", a.Name(), err)
 			continue
