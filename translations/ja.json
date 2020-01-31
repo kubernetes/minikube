@@ -516,7 +516,7 @@
 	"config view failed": "",
 	"dashboard service is not running: {{.error}}": "",
 	"disable failed": "",
-	"dry-run mode. Validates configuration, but does does not mutate system state": "",
+	"dry-run mode. Validates configuration, but does not mutate system state": "",
 	"dry-run validation complete!": "",
 	"enable failed": "",
 	"error creating clientset": "",
