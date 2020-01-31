@@ -44,18 +44,3 @@ type Config struct {
 	PortMappings  []oci.PortMapping // container port mappings
 	Envs          map[string]string // key,value of environment variables passed to the node
 }
-
-type createParams struct {
-	Name          string            // used for container name and hostname
-	Image         string            // container image to use to create the node.
-	ClusterLabel  string            // label the containers we create using minikube so we can clean up
-	Role          string            // currently only role supported is control-plane
-	Mounts        []oci.Mount       // volume mounts
-	APIServerPort int               // kubernetes api server port
-	PortMappings  []oci.PortMapping // ports to map to container from host
-	CPUs          string            // number of cpu cores assign to container
-	Memory        string            // memory (mbs) to assign to the container
-	Envs          map[string]string // environment variables to pass to the container
-	ExtraArgs     []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
-	OCIBinary     string            // docker or podman
-}
