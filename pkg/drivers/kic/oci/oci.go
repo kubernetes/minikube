@@ -55,7 +55,7 @@ func CreateContainerNode(p CreateParams) error {
 		// label the node with the cluster ID
 		"--label", p.ClusterLabel,
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", NodeRoleKey, p.Role),
+		"--label", fmt.Sprintf("%s=%s", nodeRoleKey, p.Role),
 	}
 
 	for key, val := range p.Envs {
