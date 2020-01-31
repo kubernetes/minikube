@@ -19,6 +19,7 @@ package provision
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -186,9 +187,29 @@ WantedBy=multi-user.target
 		return nil, err
 	}
 
-	if err := p.Service("docker", serviceaction.Restart); err != nil {
+	log.Info("Moving folder...")
+	if _, err = p.SSHCommand("sudo mv /var/lib/all_of_docker/docker.tar /docker.tar"); err != nil {
 		return nil, err
 	}
+
+	log.Info("Extracting docker images...")
+	if _, err = p.SSHCommand("sudo tar xvf /docker.tar"); err != nil {
+		return nil, err
+	}
+
+	if _, err = p.SSHCommand("sudo systemctl stop docker"); err != nil {
+		return nil, err
+	}
+
+	if _, err = p.SSHCommand("sudo systemctl start docker"); err != nil {
+		return nil, err
+	}
+
+	// if err := p.Service("docker", serviceaction.Start); err != nil {
+	// 	return nil, err
+	// }
+
+	os.Exit(1)
 	return dockerCfg, nil
 }
 
