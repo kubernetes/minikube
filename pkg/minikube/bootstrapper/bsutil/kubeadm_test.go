@@ -101,14 +101,14 @@ This test case has only 1 thing to test and that is the
 nnetworking/dnsDomain value
 */
 func TestGenerateKubeadmYAMLDNS(t *testing.T) {
-	versions := []string{"v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
+	versions := []string{"v1.17", "v1.16", "v1.15", "v1.14", "v1.13", "v1.12"}
 	tests := []struct {
 		name      string
 		runtime   string
 		shouldErr bool
-		cfg       config.KubernetesConfig
+		cfg       config.MachineConfig
 	}{
-		{"dns", "docker", false, config.KubernetesConfig{DNSDomain: "1.1.1.1"}},
+		{"dns", "docker", false, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{DNSDomain: "1.1.1.1"}}},
 	}
 	for _, version := range versions {
 		for _, tc := range tests {
@@ -119,9 +119,14 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 			tname := tc.name + "_" + version
 			t.Run(tname, func(t *testing.T) {
 				cfg := tc.cfg
-				cfg.NodeIP = "1.1.1.1"
-				cfg.NodeName = "mk"
-				cfg.KubernetesVersion = version + ".0"
+				cfg.Nodes = []config.Node{
+					config.Node{
+						IP:           "1.1.1.1",
+						Name:         "mk",
+						ControlPlane: true,
+					},
+				}
+				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
 
 				got, err := GenerateKubeadmYAML(cfg, runtime)
 				if err != nil && !tc.shouldErr {
@@ -166,17 +171,17 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 		name      string
 		runtime   string
 		shouldErr bool
-		cfg       config.KubernetesConfig
+		cfg       config.MachineConfig
 	}{
-		{"default", "docker", false, config.KubernetesConfig{}},
-		{"containerd", "containerd", false, config.KubernetesConfig{}},
-		{"crio", "crio", false, config.KubernetesConfig{}},
-		{"options", "docker", false, config.KubernetesConfig{ExtraOptions: extraOpts}},
-		{"crio-options-gates", "crio", false, config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}},
-		{"unknown-component", "docker", true, config.KubernetesConfig{ExtraOptions: config.ExtraOptionSlice{config.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}},
-		{"containerd-api-port", "containerd", false, config.KubernetesConfig{NodePort: 12345}},
-		{"containerd-pod-network-cidr", "containerd", false, config.KubernetesConfig{ExtraOptions: extraOptsPodCidr}},
-		{"image-repository", "docker", false, config.KubernetesConfig{ImageRepository: "test/repo"}},
+		{"default", "docker", false, config.MachineConfig{}},
+		{"containerd", "containerd", false, config.MachineConfig{}},
+		{"crio", "crio", false, config.MachineConfig{}},
+		{"options", "docker", false, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOpts}}},
+		{"crio-options-gates", "crio", false, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}}},
+		{"unknown-component", "docker", true, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: config.ExtraOptionSlice{config.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}}},
+		{"containerd-api-port", "containerd", false, config.MachineConfig{Nodes: []config.Node{config.Node{Port: 12345}}}},
+		{"containerd-pod-network-cidr", "containerd", false, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOptsPodCidr}}},
+		{"image-repository", "docker", false, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{ImageRepository: "test/repo"}}},
 	}
 	for _, version := range versions {
 		for _, tc := range tests {
@@ -187,9 +192,21 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 			tname := tc.name + "_" + version
 			t.Run(tname, func(t *testing.T) {
 				cfg := tc.cfg
-				cfg.NodeIP = "1.1.1.1"
-				cfg.NodeName = "mk"
-				cfg.KubernetesVersion = version + ".0"
+
+				if len(cfg.Nodes) > 0 {
+					cfg.Nodes[0].IP = "1.1.1.1"
+					cfg.Nodes[0].Name = "mk"
+					cfg.Nodes[0].ControlPlane = true
+				} else {
+					cfg.Nodes = []config.Node{
+						config.Node{
+							IP:           "1.1.1.1",
+							Name:         "mk",
+							ControlPlane: true,
+						},
+					}
+				}
+				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
 
 				got, err := GenerateKubeadmYAML(cfg, runtime)
 				if err != nil && !tc.shouldErr {

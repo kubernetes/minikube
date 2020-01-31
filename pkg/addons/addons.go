@@ -19,8 +19,10 @@ package addons
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -37,6 +39,7 @@ import (
 // defaultStorageClassProvisioner is the name of the default storage class provisioner
 const defaultStorageClassProvisioner = "standard"
 
+// Set sets a value
 func Set(name, value, profile string) error {
 	a, valid := isAddonValid(name)
 	if !valid {
@@ -153,7 +156,7 @@ func enableOrDisableAddon(name, val, profile string) error {
 	}
 
 	data := assets.GenerateTemplateData(cfg.KubernetesConfig)
-	return enableOrDisableAddonInternal(addon, cmd, data, enable)
+	return enableOrDisableAddonInternal(addon, cmd, data, enable, profile)
 }
 
 func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
@@ -172,16 +175,11 @@ func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
 	return false, nil
 }
 
-func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
-	var err error
-
-	updateFile := cmd.Copy
-	if !enable {
-		updateFile = cmd.Remove
-	}
-
+func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool, profile string) error {
+	files := []string{}
 	for _, addon := range addon.Assets {
 		var addonFile assets.CopyableFile
+		var err error
 		if addon.IsTemplate() {
 			addonFile, err = addon.Evaluate(data)
 			if err != nil {
@@ -191,9 +189,25 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 		} else {
 			addonFile = addon
 		}
-		if err := updateFile(addonFile); err != nil {
-			return errors.Wrapf(err, "updating addon %s", addon.AssetName)
+		if enable {
+			if err := cmd.Copy(addonFile); err != nil {
+				return err
+			}
+		} else {
+			defer func() {
+				if err := cmd.Remove(addonFile); err != nil {
+					glog.Warningf("error removing %s; addon should still be disabled as expected", addonFile)
+				}
+			}()
 		}
+		files = append(files, filepath.Join(addonFile.GetTargetDir(), addonFile.GetTargetName()))
+	}
+	command, err := kubectlCommand(profile, files, enable)
+	if err != nil {
+		return err
+	}
+	if result, err := cmd.RunCmd(command); err != nil {
+		return errors.Wrapf(err, "error updating addon:\n%s", result.Output())
 	}
 	return nil
 }

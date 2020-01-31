@@ -59,9 +59,15 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cc, err := pkg_config.Load(viper.GetString(config.MachineProfile))
+		profileName := viper.GetString(pkg_config.MachineProfile)
+		cc, err := pkg_config.Load(profileName)
 		if err != nil && !os.IsNotExist(err) {
 			exit.WithError("Error loading profile config", err)
+		}
+
+		if err != nil {
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
+			os.Exit(1)
 		}
 
 		api, err := machine.NewAPIClient()
@@ -85,9 +91,11 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
-		err = proxy.ExcludeIP(cc.KubernetesConfig.NodeIP) // to be used for http get calls
-		if err != nil {
-			glog.Errorf("Error excluding IP from proxy: %s", err)
+		for _, n := range cc.Nodes {
+			err = proxy.ExcludeIP(n.IP) // to be used for http get calls
+			if err != nil {
+				glog.Errorf("Error excluding IP from proxy: %s", err)
+			}
 		}
 
 		kubectl, err := exec.LookPath("kubectl")

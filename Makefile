@@ -14,13 +14,13 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 6
-VERSION_BUILD ?= 2
+VERSION_MINOR ?= 7
+VERSION_BUILD ?= 0-beta.1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
@@ -81,10 +81,16 @@ BUILD_OS := $(shell uname -s)
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 
 STORAGE_PROVISIONER_TAG := v1.8.1
+# TODO: multi-arch manifest
+ifeq ($(GOARCH),amd64)
+STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
+else
+STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
+endif
 
 # Set the version information for the Kubernetes servers
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT)
-PROVISIONER_LDFLAGS := "$(MINIKUBE_LDFLAGS) -s -w"
+PROVISIONER_LDFLAGS := "-X k8s.io/minikube/pkg/storage.version=$(STORAGE_PROVISIONER_TAG) -s -w"
 
 MINIKUBEFILES := ./cmd/minikube/
 HYPERKIT_FILES := ./cmd/drivers/hyperkit
@@ -472,24 +478,30 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo ""
 	@echo "$(@) successfully built"
 
-out/storage-provisioner:
-	GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+out/storage-provisioner: out/storage-provisioner-$(GOARCH)
+	cp $< $@
+
+out/storage-provisioner-%: cmd/storage-provisioner/main.go pkg/storage/storage_provisioner.go
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
+else
+	CGO_ENABLED=0 GOOS=linux GOARCH=$* go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+endif
 
 .PHONY: storage-provisioner-image
-storage-provisioner-image: out/storage-provisioner ## Build storage-provisioner docker image
-ifeq ($(GOARCH),amd64)
-	docker build -t $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  .
-else
-	docker build -t $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile-$(GOARCH) .
-endif
+storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-provisioner docker image
+	docker build -t $(STORAGE_PROVISIONER_IMAGE) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$(GOARCH) .
+
+.PHONY: kic-base-image
+kic-base-image: ## builds the base image used for kic.
+	docker rmi -f $(REGISTRY)/kicbase:v0.0.3-snapshot || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.3-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
+
+
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
-ifeq ($(GOARCH),amd64)
-	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
-else
-	gcloud docker -- push $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
-endif
+	gcloud docker -- push $(STORAGE_PROVISIONER_IMAGE)
 
 .PHONY: out/gvisor-addon
 out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
@@ -590,6 +602,7 @@ out/mkcmp:
 .PHONY: out/performance-monitor
 out/performance-monitor:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/monitor/monitor.go
+
 
 .PHONY: help
 help:

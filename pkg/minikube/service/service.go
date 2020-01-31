@@ -331,10 +331,11 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 	if err != nil {
 		return &retry.RetriableError{Err: err}
 	}
+
 	secrets := client.Secrets(namespace)
 	secret, err := secrets.Get(name, meta.GetOptions{})
 	if err != nil {
-		return &retry.RetriableError{Err: err}
+		glog.Infof("Failed to retrieve existing secret: %v", err)
 	}
 
 	// Delete existing secret

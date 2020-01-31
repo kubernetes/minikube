@@ -24,12 +24,11 @@ import (
 
 func TestAuxiliary(t *testing.T) {
 	want := []string{
-		"k8s.gcr.io/kube-addon-manager:v9.0.2",
 		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
 		"kubernetesui/dashboard:v2.0.0-beta8",
 		"kubernetesui/metrics-scraper:v1.0.2",
 	}
-	got := Auxiliary("")
+	got := auxiliary("")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("images mismatch (-want +got):\n%s", diff)
 	}
@@ -37,12 +36,11 @@ func TestAuxiliary(t *testing.T) {
 
 func TestAuxiliaryMirror(t *testing.T) {
 	want := []string{
-		"test.mirror/kube-addon-manager:v9.0.2",
 		"test.mirror/storage-provisioner:v1.8.1",
 		"test.mirror/dashboard:v2.0.0-beta8",
 		"test.mirror/metrics-scraper:v1.0.2",
 	}
-	got := Auxiliary("test.mirror")
+	got := auxiliary("test.mirror")
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("images mismatch (-want +got):\n%s", diff)
 	}

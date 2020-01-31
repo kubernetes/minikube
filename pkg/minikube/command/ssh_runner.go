@@ -196,7 +196,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return nil
 	})
 
-	scp := fmt.Sprintf("sudo mkdir -p %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
+	scp := fmt.Sprintf("sudo test -d %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
 	mtime, err := f.GetModTime()
 	if err != nil {
 		glog.Infof("error getting modtime for %s: %v", dst, err)
