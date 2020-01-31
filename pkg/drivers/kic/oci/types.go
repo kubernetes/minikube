@@ -19,6 +19,10 @@ package oci
 const (
 	Docker = "docker"
 	Podman = "podman"
+	// ClusterLabelKey is applied to each node docker container for identification
+	ClusterLabelKey = "io.x-k8s.kic.cluster"
+	// NodeRoleKey is used to identify if it is control plane or worker
+	NodeRoleKey = "io.k8s.sigs.kic.role"
 )
 
 /*

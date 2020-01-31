@@ -35,18 +35,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// DefaultPodCIDR is The CIDR to be used for pods inside the node.
-const DefaultPodCIDR = "10.244.0.0/16"
-
-// DefaultBindIPV4 is The default IP the container will bind to.
-const DefaultBindIPV4 = "127.0.0.1"
-
-// BaseImage is the base image is used to spin up kic containers created by kind.
-const BaseImage = "gcr.io/k8s-minikube/kicbase:v0.0.3@sha256:34db5e30f8830c0d5e49b62f3ea6b2844f805980592fe0084cbea799bfb12664"
-
-// OverlayImage is the cni plugin used for overlay image, created by kind.
-const OverlayImage = "kindest/kindnetd:0.5.3"
-
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
 type Driver struct {
 	*drivers.BaseDriver
@@ -76,7 +64,7 @@ func (d *Driver) Create() error {
 	params := createConfig{
 		Name:          d.NodeConfig.MachineName,
 		Image:         d.NodeConfig.ImageDigest,
-		ClusterLabel:  ClusterLabelKey + "=" + d.MachineName,
+		ClusterLabel:  oci.ClusterLabelKey + "=" + d.MachineName,
 		CPUs:          strconv.Itoa(d.NodeConfig.CPU),
 		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
 		Envs:          d.NodeConfig.Envs,
@@ -334,7 +322,7 @@ func createNode(p createConfig) error {
 		// label the node with the cluster ID
 		"--label", p.ClusterLabel,
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", NodeRoleKey, p.Role),
+		"--label", fmt.Sprintf("%s=%s", oci.NodeRoleKey, p.Role),
 	}
 
 	for key, val := range p.Envs {
