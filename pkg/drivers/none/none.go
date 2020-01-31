@@ -26,7 +26,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/net"
+	knet "k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -94,7 +94,7 @@ func (d *Driver) DriverName() string {
 
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
-	ip, err := net.ChooseHostInterface()
+	ip, err := knet.ChooseHostInterface()
 	if err != nil {
 		return "", err
 	}
@@ -123,10 +123,13 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	if err := checkKubelet(d.exec); err != nil {
-		glog.Infof("kubelet not running: %v", err)
-		return state.Stopped, nil
+	_, err := d.GetIP()
+	if err != nil {
+		return state.Error, err
 	}
+
+	// If we got this far, it's safe to call the host as running like a VM would.
+	// Rely on other checks to determine if kubelet and apiserver are healthy.
 	return state.Running, nil
 }
 
@@ -248,16 +251,6 @@ func restartKubelet(cr command.Runner) error {
 	c := exec.Command("sudo", "systemctl", "restart", "kubelet.service")
 	if _, err := cr.RunCmd(c); err != nil {
 		return err
-	}
-	return nil
-}
-
-// checkKubelet returns an error if the kubelet is not running.
-func checkKubelet(cr command.Runner) error {
-	glog.Infof("checking for running kubelet ...")
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "kubelet")
-	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "check kubelet")
 	}
 	return nil
 }

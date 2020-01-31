@@ -23,6 +23,8 @@ import (
 	"net"
 	"net/http"
 	"os/exec"
+	"path"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
@@ -101,12 +103,12 @@ func APIServerIsRunning(start time.Time, ip string, port int, timeout time.Durat
 			return false, fmt.Errorf("cluster wait timed out during healthz check")
 		}
 
-		status, err := APIServerStatus(net.ParseIP(ip), port)
+		status, err := apiServerHealthz(net.ParseIP(ip), port)
 		if err != nil {
 			glog.Warningf("status: %v", err)
 			return false, nil
 		}
-		if status != "Running" {
+		if status != state.Running {
 			return false, nil
 		}
 		return true, nil
@@ -119,9 +121,53 @@ func APIServerIsRunning(start time.Time, ip string, port int, timeout time.Durat
 	return nil
 }
 
-// APIServerStatus hits the /healthz endpoint and returns libmachine style state.State
-func APIServerStatus(ip net.IP, apiserverPort int) (string, error) {
-	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(ip.String(), fmt.Sprint(apiserverPort)))
+// APIServerStatus returns apiserver status in libmachine style state.State
+func APIServerStatus(cr command.Runner, ip net.IP, port int) (state.State, error) {
+	glog.Infof("Checking apiserver status ...")
+	// sudo, in case hidepid is set
+	rr, err := cr.RunCmd(exec.Command("sudo", "pgrep", "kube-apiserver"))
+	if err != nil {
+		return state.Stopped, nil
+	}
+	pids := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
+	pid := pids[len(pids)-1]
+	if len(pids) != 1 {
+		glog.Errorf("found %d apiserver pids: %v - choosing %s", len(pids), pids, pid)
+	}
+
+	// Get the freezer cgroup entry for this pid
+	rr, err = cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", path.Join("/proc", pid, "cgroup")))
+	if err != nil {
+		glog.Warningf("unable to find freezer cgroup: %v", err)
+		return apiServerHealthz(ip, port)
+
+	}
+	freezer := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("apiserver freezer: %q", freezer)
+	fparts := strings.Split(freezer, ":")
+	if len(fparts) != 3 {
+		glog.Warningf("unable to parse freezer - found %d parts: %s", len(fparts), freezer)
+		return apiServerHealthz(ip, port)
+	}
+
+	rr, err = cr.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup/freezer", fparts[2], "freezer.state")))
+	if err != nil {
+		glog.Errorf("unable to get freezer state: %s", rr.Stderr.String())
+		return apiServerHealthz(ip, port)
+	}
+
+	fs := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("freezer state: %q", fs)
+	if fs == "FREEZING" || fs == "FROZEN" {
+		return state.Paused, nil
+	}
+	return apiServerHealthz(ip, port)
+}
+
+// apiServerHealthz hits the /healthz endpoint and returns libmachine style state.State
+func apiServerHealthz(ip net.IP, port int) (state.State, error) {
+	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(ip.String(), fmt.Sprint(port)))
+	glog.Infof("Checking apiserver healthz at %s ...", url)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
 		Proxy:           nil, // To avoid connectiv issue if http(s)_proxy is set.
@@ -131,11 +177,31 @@ func APIServerStatus(ip net.IP, apiserverPort int) (string, error) {
 	resp, err := client.Get(url)
 	// Connection refused, usually.
 	if err != nil {
-		return state.Stopped.String(), nil
+		return state.Stopped, nil
 	}
 	if resp.StatusCode != http.StatusOK {
 		glog.Warningf("%s response: %v %+v", url, err, resp)
-		return state.Error.String(), nil
+		return state.Error, nil
 	}
-	return state.Running.String(), nil
+	return state.Running, nil
+}
+
+func KubeletStatus(cr command.Runner) (state.State, error) {
+	glog.Infof("Checking kubelet status ...")
+	rr, err := cr.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
+	if err != nil {
+		// Do not return now, as we still have parsing to do!
+		glog.Warningf("%s returned error: %v", rr.Command(), err)
+	}
+	s := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("kubelet is-active: %s", s)
+	switch s {
+	case "active":
+		return state.Running, nil
+	case "inactive":
+		return state.Stopped, nil
+	case "activating":
+		return state.Starting, nil
+	}
+	return state.Error, nil
 }

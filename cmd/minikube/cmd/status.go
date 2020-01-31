@@ -30,7 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -142,24 +142,31 @@ func status(api libmachine.API, name string) (*Status, error) {
 		return st, errors.Wrap(err, "host")
 	}
 
-	// Nonexistent it is!
 	if hs == state.None.String() {
 		return st, nil
 	}
+
 	st.Host = hs
-	if st.Host != state.Running.String() {
+	if st.Host != state.Running.String() && st.Host != state.Paused.String() {
 		return st, nil
 	}
 
-	bs, err := getClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+	host, err := cluster.CheckIfHostExistsAndLoad(api, name)
 	if err != nil {
-		return st, errors.Wrap(err, "bootstrapper")
+		return st, err
 	}
 
-	st.Kubelet, err = bs.GetKubeletStatus()
+	cr, err := machine.CommandRunner(host)
+	if err != nil {
+		return st, err
+	}
+
+	stk, err := kverify.KubeletStatus(cr)
 	if err != nil {
 		glog.Warningf("kubelet err: %v", err)
 		st.Kubelet = state.Error.String()
+	} else {
+		st.Kubelet = stk.String()
 	}
 
 	ip, err := cluster.GetHostDriverIP(api, name)
@@ -175,10 +182,12 @@ func status(api libmachine.API, name string) (*Status, error) {
 		port = constants.APIServerPort
 	}
 
-	st.APIServer, err = bs.GetAPIServerStatus(ip, port)
+	sta, err := kverify.APIServerStatus(cr, ip, port)
 	if err != nil {
 		glog.Errorln("Error apiserver status:", err)
 		st.APIServer = state.Error.String()
+	} else {
+		st.APIServer = sta.String()
 	}
 
 	st.Kubeconfig = Misconfigured
