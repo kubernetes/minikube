@@ -387,6 +387,9 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "getting IP")
 	}
+	if driver.IsKIC(host.DriverName) {
+		ipStr = kic.DefaultBindIPV4
+	}
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
 		return nil, fmt.Errorf("parsing IP: %s", ipStr)
