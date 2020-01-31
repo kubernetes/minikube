@@ -82,7 +82,7 @@ func TestDownloadOnly(t *testing.T) {
 				}
 
 				// checking binaries downloaded (kubelet,kubeadm)
-				for _, bin := range constants.KubeadmBinaries {
+				for _, bin := range constants.KubernetesReleaseBinaries {
 					fp := filepath.Join(localpath.MiniPath(), "cache", v, bin)
 					_, err := os.Stat(fp)
 					if err != nil {
@@ -111,7 +111,7 @@ func TestDownloadOnly(t *testing.T) {
 			got := ""
 			for _, p := range ps["valid"] {
 				if p.Name == profile {
-					got = p.Config[0].VMDriver
+					got = p.Config.VMDriver
 				}
 			}
 

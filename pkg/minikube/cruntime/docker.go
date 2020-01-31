@@ -127,6 +127,17 @@ func (r *Docker) LoadImage(path string) error {
 
 }
 
+// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+func (r *Docker) CGroupDriver() (string, error) {
+	// Note: the server daemon has to be running, for this call to return successfully
+	c := exec.Command("docker", "info", "--format", "'{{.CgroupDriver}}'")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return "", err
+	}
+	return strings.Split(rr.Stdout.String(), "\n")[0], nil
+}
+
 // KubeletOptions returns kubelet options for a runtime.
 func (r *Docker) KubeletOptions() map[string]string {
 	return map[string]string{
@@ -135,11 +146,27 @@ func (r *Docker) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of containers
-func (r *Docker) ListContainers(filter string) ([]string, error) {
-	filter = KubernetesContainerPrefix + filter
-	rr, err := r.Runner.RunCmd(exec.Command("docker", "ps", "-a", fmt.Sprintf("--filter=name=%s", filter), "--format=\"{{.ID}}\""))
+func (r *Docker) ListContainers(o ListOptions) ([]string, error) {
+	args := []string{"ps"}
+	switch o.State {
+	case All:
+		args = append(args, "-a")
+	case Running:
+		args = append(args, "--filter", "status=running")
+	case Paused:
+		args = append(args, "--filter", "status=paused")
+	}
+
+	nameFilter := KubernetesContainerPrefix + o.Name
+	if len(o.Namespaces) > 0 {
+		// Example result: k8s.*(kube-system|kubernetes-dashboard)
+		nameFilter = fmt.Sprintf("%s.*_(%s)_", nameFilter, strings.Join(o.Namespaces, "|"))
+	}
+
+	args = append(args, fmt.Sprintf("--filter=name=%s", nameFilter), "--format={{.ID}}")
+	rr, err := r.Runner.RunCmd(exec.Command("docker", args...))
 	if err != nil {
-		return nil, errors.Wrapf(err, "docker ListContainers. ")
+		return nil, errors.Wrapf(err, "docker")
 	}
 	var ids []string
 	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
@@ -173,7 +200,35 @@ func (r *Docker) StopContainers(ids []string) error {
 	args := append([]string{"stop"}, ids...)
 	c := exec.Command("docker", args...)
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "stopping containers docker.")
+		return errors.Wrap(err, "docker")
+	}
+	return nil
+}
+
+// PauseContainers pauses a running container based on ID
+func (r *Docker) PauseContainers(ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	glog.Infof("Pausing containers: %s", ids)
+	args := append([]string{"pause"}, ids...)
+	c := exec.Command("docker", args...)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "docker")
+	}
+	return nil
+}
+
+// UnpauseContainers unpauses a container based on ID
+func (r *Docker) UnpauseContainers(ids []string) error {
+	if len(ids) == 0 {
+		return nil
+	}
+	glog.Infof("Unpausing containers: %s", ids)
+	args := append([]string{"unpause"}, ids...)
+	c := exec.Command("docker", args...)
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "docker")
 	}
 	return nil
 }
