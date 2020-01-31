@@ -627,17 +627,18 @@ func getIPForInterface(name string) (net.IP, error) {
 
 // CheckIfHostExistsAndLoad checks if a host exists, and loads it if it does
 func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Host, error) {
+	glog.Infof("Checking if %q exists ...", machineName)
 	exists, err := api.Exists(machineName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error checking that machine exists: %s", machineName)
 	}
 	if !exists {
-		return nil, errors.Errorf("Machine does not exist for api.Exists(%s)", machineName)
+		return nil, errors.Errorf("machine %q does not exist", machineName)
 	}
 
 	host, err := api.Load(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error loading store for: %s", machineName)
+		return nil, errors.Wrapf(err, "loading machine %q", machineName)
 	}
 	return host, nil
 }
@@ -666,14 +667,15 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	return client.Shell(args...)
 }
 
-// IsMinikubeRunning checks that minikube has a status available and that
-// the status is `Running`
-func IsMinikubeRunning(api libmachine.API) bool {
-	s, err := GetHostStatus(api, viper.GetString(config.MachineProfile))
+// IsHostRunning asserts that this profile's primary host is in state "Running"
+func IsHostRunning(api libmachine.API, name string) bool {
+	s, err := GetHostStatus(api, name)
 	if err != nil {
+		glog.Warningf("host status for %q returned error: %v", name, err)
 		return false
 	}
 	if s != state.Running.String() {
+		glog.Warningf("%q host status: %s", name, s)
 		return false
 	}
 	return true

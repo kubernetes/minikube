@@ -102,7 +102,7 @@ var printAddonsList = func() {
 
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
-		addonStatus, err := addonBundle.IsEnabled()
+		addonStatus, err := addonBundle.IsEnabled(pName)
 		if err != nil {
 			out.WarningT("Unable to get addon status for {{.name}}: {{.error}}", out.V{"name": addonName, "error": err})
 		}
@@ -134,7 +134,7 @@ var printAddonsJSON = func() {
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
 
-		addonStatus, err := addonBundle.IsEnabled()
+		addonStatus, err := addonBundle.IsEnabled(pName)
 		if err != nil {
 			glog.Errorf("Unable to get addon status for %s: %v", addonName, err)
 			continue
