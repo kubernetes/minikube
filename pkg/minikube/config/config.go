@@ -18,8 +18,8 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
+	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -148,17 +148,20 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 	// Move to profile package
 	path := profileFilePath(profileName, miniHome...)
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, err
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("cluster %q does not exist", profileName)
+		}
+		return nil, errors.Wrap(err, "stat")
 	}
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read")
 	}
 
 	if err := json.Unmarshal(data, &cc); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unmarshal")
 	}
 	return &cc, nil
 }
