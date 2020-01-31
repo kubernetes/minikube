@@ -594,7 +594,7 @@ func selectDriver(existing *config.MachineConfig) string {
 	if existing != nil {
 		pick, alts := driver.Choose(existing.VMDriver, options)
 		if pick.Priority == registry.Experimental {
-			exp = "experimental"
+			exp = "experimental "
 		}
 		out.T(out.Sparkle, `Selecting {{.experimental}}'{{.driver}}' driver from existing profile (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": existing.VMDriver, "alternates": alts})
 		return pick.Name
