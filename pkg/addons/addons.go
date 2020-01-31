@@ -18,7 +18,6 @@ package addons
 
 import (
 	"fmt"
-	"os"
 	"path"
 	"strconv"
 	"strings"
@@ -140,7 +139,7 @@ func enableOrDisableAddon(name, val, profile string) error {
 	defer api.Close()
 
 	cfg, err := config.Load(profile)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 

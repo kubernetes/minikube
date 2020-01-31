@@ -295,7 +295,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	existing, err := config.Load(viper.GetString(config.MachineProfile))
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
@@ -751,7 +751,7 @@ func validateUser(drvName string) {
 		os.Exit(exit.Permissions)
 	}
 	_, err = config.Load(viper.GetString(config.MachineProfile))
-	if err == nil || !os.IsNotExist(err) {
+	if err == nil || !config.IsNotExist(err) {
 		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
 	}
 	if !useForce {

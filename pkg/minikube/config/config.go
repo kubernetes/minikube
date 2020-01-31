@@ -54,6 +54,23 @@ var (
 	ErrKeyNotFound = errors.New("specified key could not be found in config")
 )
 
+type ErrNotExist struct {
+	s string
+}
+
+func (e *ErrNotExist) Error() string {
+	return e.s
+}
+
+// IsNotExist returns whether the error means a nonexistent configuration
+func IsNotExist(err error) bool {
+	switch err.(type) {
+	case *ErrNotExist:
+		return true
+	}
+	return false
+}
+
 // MinikubeConfig represents minikube config
 type MinikubeConfig map[string]interface{}
 
@@ -151,7 +168,7 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
-			return nil, fmt.Errorf("cluster %q does not exist", profileName)
+			return nil, &ErrNotExist{fmt.Sprintf("cluster %q does not exist", profileName)}
 		}
 		return nil, errors.Wrap(err, "stat")
 	}
