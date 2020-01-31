@@ -159,7 +159,7 @@ func initMinikubeFlags() {
 
 	startCmd.Flags().Bool(force, false, "Force minikube to perform possibly dangerous operations")
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
-	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does does not mutate system state")
+	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
 
 	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to the minikube VM.")
 	startCmd.Flags().String(memory, defaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
