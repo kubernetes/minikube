@@ -136,7 +136,7 @@ var printAddonsJSON = func() {
 
 		addonStatus, err := addonBundle.IsEnabled()
 		if err != nil {
-			glog.Errorf("Unable to get addon status for {{.name}}: {{.error}}", err)
+			glog.Errorf("Unable to get addon status for %s: %v", addonName, err)
 			continue
 		}
 
