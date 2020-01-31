@@ -98,6 +98,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
 	profilesToDelete := append(validProfiles, invalidProfiles...)
+
 	// If the purge flag is set, go ahead and delete the .minikube directory.
 	if purge && len(profilesToDelete) > 1 && !deleteAll {
 		out.ErrT(out.Notice, "Multiple minikube profiles were found - ")
