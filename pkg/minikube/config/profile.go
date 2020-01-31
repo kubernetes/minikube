@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -146,9 +147,16 @@ func DeleteProfile(profile string, miniHome ...string) error {
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggested to be deleted
 func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
+
+	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
 	if err != nil {
 		return nil, nil, err
+	}
+	// try to get profiles list based on all contrainers created by docker driver
+	cs, err := oci.ListOwnedContainers("docker")
+	if err == nil {
+		pDirs = append(pDirs, cs...)
 	}
 	for _, n := range pDirs {
 		p, err := LoadProfile(n, miniHome...)

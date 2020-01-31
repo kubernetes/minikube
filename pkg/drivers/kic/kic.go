@@ -29,7 +29,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
-	"k8s.io/minikube/pkg/drivers/kic/node"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -58,20 +57,6 @@ type Driver struct {
 	OCIBinary  string // docker,podman
 }
 
-// Config is configuration for the kic driver used by registry
-type Config struct {
-	MachineName   string            // maps to the container name being created
-	CPU           int               // Number of CPU cores assigned to the container
-	Memory        int               // max memory in MB
-	StorePath     string            // libmachine store path
-	OCIBinary     string            // oci tool to use (docker, podman,...)
-	ImageDigest   string            // image name with sha to use for the node
-	Mounts        []oci.Mount       // mounts
-	APIServerPort int               // kubernetes api server port inside the container
-	PortMappings  []oci.PortMapping // container port mappings
-	Envs          map[string]string // key,value of environment variables passed to the node
-}
-
 // NewDriver returns a fully configured Kic driver
 func NewDriver(c Config) *Driver {
 	d := &Driver{
@@ -88,10 +73,10 @@ func NewDriver(c Config) *Driver {
 
 // Create a host using the driver's config
 func (d *Driver) Create() error {
-	params := node.CreateConfig{
+	params := createConfig{
 		Name:          d.NodeConfig.MachineName,
 		Image:         d.NodeConfig.ImageDigest,
-		ClusterLabel:  node.ClusterLabelKey + "=" + d.MachineName,
+		ClusterLabel:  ClusterLabelKey + "=" + d.MachineName,
 		CPUs:          strconv.Itoa(d.NodeConfig.CPU),
 		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
 		Envs:          d.NodeConfig.Envs,
@@ -114,7 +99,7 @@ func (d *Driver) Create() error {
 			ContainerPort: constants.DockerDaemonPort,
 		},
 	)
-	_, err := node.CreateNode(params)
+	err := createNode(params)
 	if err != nil {
 		return errors.Wrap(err, "create kic node")
 	}
@@ -158,12 +143,13 @@ func (d *Driver) DriverName() string {
 
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
-	node, err := node.Find(d.OCIBinary, d.MachineName, d.exec)
-	if err != nil {
-		return "", fmt.Errorf("ip not found for nil node")
-	}
-	ip, _, err := node.IP()
+	ip, _, err := oci.ContainerIPs(d.OCIBinary, d.MachineName)
 	return ip, err
+}
+
+// GetExternalIP returns an IP which is accissble from outside
+func (d *Driver) GetExternalIP() (string, error) {
+	return DefaultBindIPV4, nil
 }
 
 // GetSSHHostname returns hostname for use with ssh
@@ -321,4 +307,57 @@ func (d *Driver) nodeID(nameOrID string) (string, error) {
 		id = []byte{}
 	}
 	return string(id), err
+}
+
+// createNode creates a new container node
+func createNode(p createConfig) error {
+	runArgs := []string{
+		fmt.Sprintf("--cpus=%s", p.CPUs),
+		fmt.Sprintf("--memory=%s", p.Memory),
+		"-d", // run the container detached
+		"-t", // allocate a tty for entrypoint logs
+		// running containers in a container requires privileged
+		// NOTE: we could try to replicate this with --cap-add, and use less
+		// privileges, but this flag also changes some mounts that are necessary
+		// including some ones docker would otherwise do by default.
+		// for now this is what we want. in the future we may revisit this.
+		"--privileged",
+		"--security-opt", "seccomp=unconfined", // also ignore seccomp
+		"--tmpfs", "/tmp", // various things depend on working /tmp
+		"--tmpfs", "/run", // systemd wants a writable /run
+		// logs,pods be stroed on  filesystem vs inside container,
+		"--volume", "/var",
+		// some k8s things want /lib/modules
+		"-v", "/lib/modules:/lib/modules:ro",
+		"--hostname", p.Name, // make hostname match container name
+		"--name", p.Name, // ... and set the container name
+		// label the node with the cluster ID
+		"--label", p.ClusterLabel,
+		// label the node with the role ID
+		"--label", fmt.Sprintf("%s=%s", NodeRoleKey, p.Role),
+	}
+
+	for key, val := range p.Envs {
+		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
+	}
+
+	// adds node specific args
+	runArgs = append(runArgs, p.ExtraArgs...)
+
+	if oci.UsernsRemap(p.OCIBinary) {
+		// We need this argument in order to make this command work
+		// in systems that have userns-remap enabled on the docker daemon
+		runArgs = append(runArgs, "--userns=host")
+	}
+
+	_, err := oci.CreateContainer(p.OCIBinary,
+		p.Image,
+		oci.WithRunArgs(runArgs...),
+		oci.WithMounts(p.Mounts),
+		oci.WithPortMappings(p.PortMappings),
+	)
+	if err != nil {
+		return errors.Wrap(err, "create a kic node")
+	}
+	return nil
 }
