@@ -19,10 +19,11 @@ package config
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
