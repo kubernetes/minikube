@@ -596,14 +596,14 @@ func selectDriver(existing *config.MachineConfig) string {
 		if pick.Priority == registry.Experimental {
 			exp = "experimental"
 		}
-		out.T(out.Sparkle, `Selecting {{.experimental}} '{{.driver}}' driver from existing profile (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": existing.VMDriver, "alternates": alts})
+		out.T(out.Sparkle, `Selecting {{.experimental}}'{{.driver}}' driver from existing profile (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": existing.VMDriver, "alternates": alts})
 		return pick.Name
 	}
 
 	if len(options) > 1 {
-		out.T(out.Sparkle, `Automatically selected the {{.experimental}} '{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": pick.Name, "alternates": alts})
+		out.T(out.Sparkle, `Automatically selected the {{.experimental}}'{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": pick.Name, "alternates": alts})
 	} else {
-		out.T(out.Sparkle, `Automatically selected the {{.experimental}} '{{.driver}}' driver`, out.V{"experimental": exp, "driver": pick.Name})
+		out.T(out.Sparkle, `Automatically selected the {{.experimental}}'{{.driver}}' driver`, out.V{"experimental": exp, "driver": pick.Name})
 	}
 
 	if pick.Name == "" {
