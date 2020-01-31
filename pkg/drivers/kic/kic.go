@@ -298,7 +298,7 @@ func (d *Driver) nodeID(nameOrID string) (string, error) {
 }
 
 // createNode creates a new container node
-func createNode(p createConfig) error {
+func createNode(p createParams) error {
 	runArgs := []string{
 		fmt.Sprintf("--cpus=%s", p.CPUs),
 		fmt.Sprintf("--memory=%s", p.Memory),
