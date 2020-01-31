@@ -158,7 +158,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	if err == nil {
 		pDirs = append(pDirs, cs...)
 	}
-	pDirs = removeDups(pDirs)
+	pDirs = removeDupes(pDirs)
 	for _, n := range pDirs {
 		p, err := LoadProfile(n, miniHome...)
 		if err != nil {
@@ -174,8 +174,8 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	return validPs, inValidPs, nil
 }
 
-// removeDups removes duplicates
-func removeDups(profiles []string) []string {
+// removeDupes removes duplicates
+func removeDupes(profiles []string) []string {
 	// Use map to record duplicates as we find them.
 	seen := map[string]bool{}
 	result := []string{}
