@@ -311,7 +311,17 @@ func StopHost(api libmachine.API) error {
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
-	if err != nil {
+	if err != nil && host == nil {
+		// before we give up on deleting the host
+		//  we try to kill the possible orphan kic driver
+		// this case will happen if the user deleted both profile and machine folder
+		// inside minikube home
+		cmd := exec.Command(oci.Docker, "rm", "-f", "-v", machineName)
+		err := cmd.Run()
+		if err == nil {
+			glog.Infof("Found stale kic container and successfully cleaned it up.")
+			return nil
+		}
 		return errors.Wrap(err, "load")
 	}
 
@@ -376,6 +386,9 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	ipStr, err := host.Driver.GetIP()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting IP")
+	}
+	if driver.IsKIC(host.DriverName) {
+		ipStr = kic.DefaultBindIPV4
 	}
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
