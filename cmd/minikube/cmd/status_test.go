@@ -31,6 +31,7 @@ func TestExitCode(t *testing.T) {
 		{"ok", 0, &Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured}},
 		{"paused", 2, &Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured}},
 		{"down", 7, &Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured}},
+		{"missing", 7, &Status{Host: "Nonexistent", Kubelet: "Nonexistent", APIServer: "Nonexistent", Kubeconfig: "Nonexistent"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
