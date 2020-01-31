@@ -21,10 +21,6 @@ import "k8s.io/minikube/pkg/drivers/kic/oci"
 const (
 	// Docker default bridge network is named "bridge" (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
 	DefaultNetwork = "bridge"
-	// ClusterLabelKey is applied to each node docker container for identification
-	ClusterLabelKey = "io.x-k8s.kic.cluster"
-	// NodeRoleKey is used to identify if it is control plane or worker
-	NodeRoleKey = "io.k8s.sigs.kic.role"
 	// DefaultPodCIDR is The CIDR to be used for pods inside the node.
 	DefaultPodCIDR = "10.244.0.0/16"
 	// DefaultBindIPV4 is The default IP the container will bind to.

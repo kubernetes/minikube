@@ -410,10 +410,10 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 	return p, nil
 }
 
-// ListContainers lists all the containres that kic driver created on user's machine using a label
+// listContainersByLabel lists all the containres that kic driver created on user's machine using a label
 // io.x-k8s.kic.cluster
-func ListContainersByLabel(ociBinary string, label string) (error, []string) {
-	cmd := exec.Command(ociBinary, "ps", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}")
+func listContainersByLabel(ociBinary string, label string) ([]string, error) {
+	cmd := exec.Command(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
 	var b bytes.Buffer
 	cmd.Stdout = &b
 	cmd.Stderr = &b
@@ -423,7 +423,7 @@ func ListContainersByLabel(ociBinary string, label string) (error, []string) {
 	for sc.Scan() {
 		lines = append(lines, sc.Text())
 	}
-	return err, lines
+	return lines, err
 }
 
 // ContainerID returns a container ID from its name
@@ -452,15 +452,5 @@ func ContainerIPs(ociBinary string, name string) (string, string, error) {
 
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
 func ListOwnedContainers(ociBinary string) ([]string, error) {
-	cmd := exec.Command(ociBinary, "ps", "-a", "--filter", "label=io.x-k8s.kic.cluster", "--format", "{{.Names}}")
-	var b bytes.Buffer
-	cmd.Stdout = &b
-	cmd.Stderr = &b
-	err := cmd.Run()
-	var lines []string
-	sc := bufio.NewScanner(&b)
-	for sc.Scan() {
-		lines = append(lines, sc.Text())
-	}
-	return lines, err
+	return listContainersByLabel(ociBinary, ClusterLabelKey)
 }
