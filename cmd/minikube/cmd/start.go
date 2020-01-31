@@ -1155,7 +1155,6 @@ func trySSH(h *host.Host, ip string) {
 	- Use an alternative --vm-driver
 	- Use --force to override this connectivity check
 	`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
-		}
 	}
 }
 
