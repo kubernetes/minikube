@@ -146,7 +146,7 @@ func enableOrDisableAddon(name, val, profile string) error {
 
 	host, err := cluster.CheckIfHostExistsAndLoad(api, profile)
 	if err != nil || !cluster.IsHostRunning(api, profile) {
-		glog.Warningf("%q is not running, writing to %s=%v disk and skipping the rest (err=%v)", profile, addon.Name(), enable, err)
+		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement (err=%v)", profile, addon.Name(), enable, err)
 		return nil
 	}
 
@@ -242,7 +242,7 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 	defer api.Close()
 
 	if !cluster.IsHostRunning(api, profile) {
-		glog.Warningf("%q is not running, writing to %s=%v disk and skipping enablement", profile, name, val)
+		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", profile, name, val)
 		return enableOrDisableAddon(name, val, profile)
 	}
 
