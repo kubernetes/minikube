@@ -311,7 +311,7 @@ func StopHost(api libmachine.API) error {
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
-	if err != nil && host.DriverName == "" {
+	if err != nil && host == nil {
 		// before we give up on deleting the host
 		//  we try to kill the possible orphan kic driver
 		// this case will happen if the user deleted both profile and machine folder
