@@ -71,18 +71,19 @@ var printProfilesTable = func() {
 	}
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Infof("failed to get machine api client %v", err)
+		glog.Errorf("failed to get machine api client %v", err)
 	}
 	defer api.Close()
 
 	for _, p := range validProfiles {
 		p.Status, err = cluster.GetHostStatus(api, p.Name)
 		if err != nil {
-			glog.Infof("error getting host status for %v", err)
+			glog.Warningf("error getting host status for %s: %v", p.Name, err)
 		}
 		cp, err := config.PrimaryControlPlane(*p.Config)
 		if err != nil {
-			exit.WithError("profile has no control plane", err)
+			glog.Errorf("%q has no control plane: %v", p.Name, err)
+			// Print the data we know about anyways
 		}
 		validData = append(validData, []string{p.Name, p.Config.VMDriver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
 	}
@@ -111,7 +112,7 @@ var printProfilesTable = func() {
 var printProfilesJSON = func() {
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Infof("failed to get machine api client %v", err)
+		glog.Errorf("failed to get machine api client %v", err)
 	}
 	defer api.Close()
 
@@ -119,7 +120,7 @@ var printProfilesJSON = func() {
 	for _, v := range validProfiles {
 		status, err := cluster.GetHostStatus(api, v.Name)
 		if err != nil {
-			glog.Infof("error getting host status for  %v", err)
+			glog.Warningf("error getting host status for %s: %v", v.Name, err)
 		}
 		v.Status = status
 	}
