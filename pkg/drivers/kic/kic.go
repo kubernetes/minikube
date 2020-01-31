@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -183,7 +184,7 @@ func (d *Driver) GetState() (state.State, error) {
 	out, err := cmd.CombinedOutput()
 	o := strings.Trim(string(out), "\n")
 	if err != nil {
-		return state.Error, errors.Wrapf(err, "error stop node %s", d.MachineName)
+		return state.Error, errors.Wrapf(err, "get container %s status", d.MachineName)
 	}
 	switch o {
 	case "running":
@@ -212,12 +213,17 @@ func (d *Driver) Kill() error {
 
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
-	if _, err := d.nodeID(d.MachineName); err != nil {
-		return errors.Wrapf(err, "not found node %s", d.MachineName)
+	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
+		log.Warnf("could not find the container %s to remove it.", d.MachineName)
 	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "rm", "-f", "-v", d.MachineName)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "error removing node %s", d.MachineName)
+	o, err := cmd.CombinedOutput()
+	out := strings.Trim(string(o), "\n")
+	if err != nil {
+		if strings.Contains(out, "is already in progress") {
+			log.Warnf("Docker engine is stuck. please restart docker daemon on your computer.", d.MachineName)
+		}
+		return errors.Wrapf(err, "removing container %s, output %s", d.MachineName, out)
 	}
 	return nil
 }
@@ -285,14 +291,4 @@ func (d *Driver) Stop() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
-}
-
-// looks up for a container node by name, will return error if not found.
-func (d *Driver) nodeID(nameOrID string) (string, error) {
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.Id}}", nameOrID)
-	id, err := cmd.CombinedOutput()
-	if err != nil {
-		id = []byte{}
-	}
-	return string(id), err
 }

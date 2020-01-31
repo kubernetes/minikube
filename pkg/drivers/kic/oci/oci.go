@@ -171,6 +171,16 @@ func ContainerIPs(ociBinary string, name string) (string, string, error) {
 
 }
 
+// ContainerID returns id of a container name
+func ContainerID(ociBinary string, nameOrID string) (string, error) {
+	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID)
+	id, err := cmd.CombinedOutput()
+	if err != nil {
+		id = []byte{}
+	}
+	return string(id), err
+}
+
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
 func ListOwnedContainers(ociBinary string) ([]string, error) {
 	return listContainersByLabel(ociBinary, ClusterLabelKey)
