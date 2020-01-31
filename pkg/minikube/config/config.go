@@ -64,8 +64,7 @@ func (e *ErrNotExist) Error() string {
 
 // IsNotExist returns whether the error means a nonexistent configuration
 func IsNotExist(err error) bool {
-	switch err.(type) {
-	case *ErrNotExist:
+	if _, ok := err.(*ErrNotExist); ok {
 		return true
 	}
 	return false
