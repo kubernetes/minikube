@@ -310,8 +310,18 @@ func StopHost(api libmachine.API) error {
 
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API, machineName string) error {
-	host, err := api.Load(machineName)
-	if err != nil {
+	h, err := api.Load(machineName)
+	if err != nil && h.DriverName == "" {
+		// before we give up on deleting the host
+		//  we try to kill the possible orphan kic driver
+		// this case will happen if the user deleted both profile and machine folder
+		// inside minikube home
+		cmd := exec.Command(oci.Docker, "rm", "-f", "-v", machineName)
+		err := cmd.Run()
+		if err == nil {
+			glog.Infof("Found stale kic container and successfully cleaned it up.")
+			return nil
+		}
 		return errors.Wrap(err, "load")
 	}
 
@@ -323,19 +333,19 @@ func DeleteHost(api libmachine.API, machineName string) error {
 	}
 
 	if status == state.None.String() {
-		return mcnerror.ErrHostDoesNotExist{Name: host.Name}
+		return mcnerror.ErrHostDoesNotExist{Name: h.Name}
 	}
 
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
-	if host.Driver.DriverName() == driver.HyperV {
-		if err := trySSHPowerOff(host); err != nil {
+	if h.Driver.DriverName() == driver.HyperV {
+		if err := trySSHPowerOff(h); err != nil {
 			glog.Infof("Unable to power off minikube because the host was not found.")
 		}
-		out.T(out.DeletingHost, "Successfully powered off Hyper-V. minikube driver -- {{.driver}}", out.V{"driver": host.Driver.DriverName()})
+		out.T(out.DeletingHost, "Successfully powered off Hyper-V. minikube driver -- {{.driver}}", out.V{"driver": h.Driver.DriverName()})
 	}
 
-	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
-	if err := host.Driver.Remove(); err != nil {
+	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": h.DriverName})
+	if err := h.Driver.Remove(); err != nil {
 		return errors.Wrap(err, "host remove")
 	}
 	if err := api.Remove(machineName); err != nil {
