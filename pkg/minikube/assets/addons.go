@@ -59,7 +59,7 @@ func (a *Addon) Name() string {
 func (a *Addon) IsEnabled() (bool, error) {
 	c, err := config.Load(viper.GetString(config.MachineProfile))
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "load")
 	}
 
 	// Is this addon explicitly listed in their configuration?

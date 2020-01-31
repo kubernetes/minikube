@@ -21,6 +21,8 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -167,7 +169,7 @@ func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
 	addonStatus, err := addon.IsEnabled()
 
 	if err != nil {
-		return false, errors.Wrap(err, "get the addon status")
+		return false, errors.Wrap(err, "addon is enabled")
 	}
 
 	if addonStatus && enable {
@@ -254,4 +256,40 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 	}
 
 	return enableOrDisableAddon(name, val, profile)
+}
+
+// Start enables the default addons for a profile, plus any additional
+func Start(profile string, additional []string) {
+	start := time.Now()
+	glog.Infof("enableAddons")
+	defer func() {
+		glog.Infof("enableAddons completed in %s", time.Since(start))
+	}()
+	toEnable := []string{}
+
+	// Apply addons that are enabled by default
+	for name, a := range assets.Addons {
+		enabled, err := a.IsEnabled()
+		if err != nil {
+			glog.Errorf("is-enabled failed for %q: %v", a.Name(), err)
+			continue
+		}
+		if enabled {
+			toEnable = append(toEnable, name)
+		}
+	}
+
+	toEnable = append(toEnable, additional...)
+	if len(toEnable) == 0 {
+		return
+	}
+
+	out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnable, ", ")})
+	for _, a := range toEnable {
+		err := Set(a, "true", profile)
+		if err != nil {
+			// Intentionally non-fatal
+			out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": a, "error": err})
+		}
+	}
 }
