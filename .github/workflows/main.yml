@@ -67,9 +67,9 @@ jobs:
         mkdir -p report
     - name: install docker
       run: |
-          brew install docker-machine docker
-          brew services start docker-machine
-          sudo docker version
+          brew install docker-machine docker || true
+          brew services start docker-machine || true
+          docker version || true
     - name: install gopogh
       run: |
         cd /tmp
