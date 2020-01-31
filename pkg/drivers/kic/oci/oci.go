@@ -21,7 +21,6 @@ import (
 	"strconv"
 
 	"github.com/docker/machine/libmachine/state"
-	"k8s.io/minikube/pkg/minikube/assets"
 
 	"bufio"
 	"bytes"
@@ -378,15 +377,15 @@ func WithPortMappings(portMappings []PortMapping) CreateOpt {
 }
 
 // Copy copies a local asset into the container
-func Copy(ociBinary string, ociID string, asset assets.CopyableFile) error {
-	if _, err := os.Stat(asset.GetAssetName()); os.IsNotExist(err) {
-		return errors.Wrapf(err, "error source %s does not exist", asset.GetAssetName())
+func Copy(ociBinary string, ociID string, targetDir string, fName string) error {
+	if _, err := os.Stat(fName); os.IsNotExist(err) {
+		return errors.Wrapf(err, "error source %s does not exist", fName)
 	}
-	destination := fmt.Sprintf("%s:%s", ociID, asset.GetTargetDir())
-	cmd := exec.Command(ociBinary, "cp", asset.GetAssetName(), destination)
+	destination := fmt.Sprintf("%s:%s", ociID, targetDir)
+	cmd := exec.Command(ociBinary, "cp", fName, destination)
 	err := cmd.Run()
 	if err != nil {
-		return errors.Wrapf(err, "error copying %s into node", asset.GetAssetName())
+		return errors.Wrapf(err, "error copying %s into node", fName)
 	}
 	return nil
 }
@@ -409,4 +408,59 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 		return p, errors.Wrapf(err, "convert host-port %q to number", p)
 	}
 	return p, nil
+}
+
+// ListContainers lists all the containres that kic driver created on user's machine using a label
+// io.x-k8s.kic.cluster
+func ListContainersByLabel(ociBinary string, label string) (error, []string) {
+	cmd := exec.Command(ociBinary, "ps", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}")
+	var b bytes.Buffer
+	cmd.Stdout = &b
+	cmd.Stderr = &b
+	err := cmd.Run()
+	var lines []string
+	sc := bufio.NewScanner(&b)
+	for sc.Scan() {
+		lines = append(lines, sc.Text())
+	}
+	return err, lines
+}
+
+// ContainerID returns a container ID from its name
+func ContainerID(ociBinary string, name string) (string, error) {
+	ids, err := Inspect(ociBinary, name, "{{.Id}}")
+	return ids[0], err
+}
+
+// ContainerIPs returns ipv4,ipv6, error of a container by their name
+func ContainerIPs(ociBinary string, name string) (string, string, error) {
+	// retrieve the IP address of the node using docker inspect
+	lines, err := Inspect(ociBinary, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
+	if err != nil {
+		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
+	}
+	if len(lines) != 1 {
+		return "", "", errors.Errorf("IPs output should only be one line, got %d lines", len(lines))
+	}
+	ips := strings.Split(lines[0], ",")
+	if len(ips) != 2 {
+		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
+	}
+	return ips[0], ips[1], nil
+
+}
+
+// ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
+func ListOwnedContainers(ociBinary string) ([]string, error) {
+	cmd := exec.Command(ociBinary, "ps", "-a", "--filter", "label=io.x-k8s.kic.cluster", "--format", "{{.Names}}")
+	var b bytes.Buffer
+	cmd.Stdout = &b
+	cmd.Stderr = &b
+	err := cmd.Run()
+	var lines []string
+	sc := bufio.NewScanner(&b)
+	for sc.Scan() {
+		lines = append(lines, sc.Text())
+	}
+	return lines, err
 }
