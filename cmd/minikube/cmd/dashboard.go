@@ -60,7 +60,7 @@ var dashboardCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		profileName := viper.GetString(pkg_config.MachineProfile)
 		cc, err := pkg_config.Load(profileName)
-		if err != nil && !os.IsNotExist(err) {
+		if err != nil && !pkg_config.IsNotExist(err) {
 			exit.WithError("Error loading profile config", err)
 		}
 

@@ -45,7 +45,7 @@ var unpauseCmd = &cobra.Command{
 		defer api.Close()
 		cc, err := config.Load(cname)
 
-		if err != nil && !os.IsNotExist(err) {
+		if err != nil && !config.IsNotExist(err) {
 			exit.WithError("Error loading profile config", err)
 		}
 
