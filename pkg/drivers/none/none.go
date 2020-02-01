@@ -18,6 +18,7 @@ package none
 
 import (
 	"fmt"
+	"net"
 	"os/exec"
 	"strings"
 	"time"
@@ -28,8 +29,11 @@ import (
 	"github.com/pkg/errors"
 	knet "k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -123,14 +127,27 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	_, err := d.GetIP()
+	ip, err := d.GetIP()
 	if err != nil {
 		return state.Error, err
 	}
 
-	// If we got this far, it's safe to call the host as running like a VM would.
-	// Rely on other checks to determine if kubelet and apiserver are healthy.
-	return state.Running, nil
+	port, err := kubeconfig.Port(d.BaseDriver.MachineName)
+	if err != nil {
+		glog.Warningf("unable to get port: %v", err)
+		port = constants.APIServerPort
+	}
+
+	// Confusing logic, as libmachine.Stop will loop until the state == Stopped
+	ast, err := kverify.APIServerStatus(d.exec, net.ParseIP(ip), port)
+	if err != nil {
+		return ast, err
+	}
+	if ast == state.Paused || ast == state.Running {
+		return ast, nil
+	}
+
+	return kverify.KubeletStatus(d.exec)
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
