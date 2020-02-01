@@ -72,7 +72,7 @@ var styles = map[StyleEnum]style{
 	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	Command:       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	LogEntry:      {Prefix: "    "},                         // Indent
-	Crushed:       {Prefix: "💔  "},
+	Deleted:       {Prefix: "💀  "},
 	URL:           {Prefix: "👉  ", LowPrefix: lowIndent},
 	Documentation: {Prefix: "📘  "},
 	Issues:        {Prefix: "⁉️   "},
