@@ -200,7 +200,7 @@ func (d *Driver) Start() error {
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
 	if err := stopKubelet(d.exec); err != nil {
-		return err
+		return errors.Wrap(err, "stop kubelet")
 	}
 	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
@@ -208,9 +208,10 @@ func (d *Driver) Stop() error {
 	}
 	if len(containers) > 0 {
 		if err := d.runtime.StopContainers(containers); err != nil {
-			return errors.Wrap(err, "stop")
+			return errors.Wrap(err, "stop containers")
 		}
 	}
+	glog.Infof("none driver is stopped!")
 	return nil
 }
 
