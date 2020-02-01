@@ -149,7 +149,16 @@ func status(api libmachine.API, name string) (*Status, error) {
 	}
 	st.Host = hs
 
-	// We have enough to query kubeconfig now!
+	// If it's not running, quickly bail out rather than delivering conflicting messages
+	if st.Host != state.Running.String() {
+		glog.Infof("host is not running, skipping remaining checks")
+		st.APIServer = st.Host
+		st.Kubelet = st.Host
+		st.Kubeconfig = st.Host
+		return st, nil
+	}
+
+	// We have a fully operational host, now we can check for details
 	ip, err := cluster.GetHostDriverIP(api, name)
 	if err != nil {
 		glog.Errorln("Error host driver ip status:", err)
@@ -170,15 +179,6 @@ func status(api libmachine.API, name string) (*Status, error) {
 		st.Kubeconfig = Configured
 	}
 
-	// If it's not running, quickly bail out rather than delivering confusing information.
-	if st.Host != state.Running.String() {
-		glog.Infof("host is not running, skipping remaining checks")
-		st.APIServer = st.Host
-		st.Kubelet = st.Host
-		return st, nil
-	}
-
-	// At this point, we start executing commands on the cluster for more details
 	host, err := cluster.CheckIfHostExistsAndLoad(api, name)
 	if err != nil {
 		return st, err
