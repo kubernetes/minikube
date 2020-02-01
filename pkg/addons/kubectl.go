@@ -17,7 +17,6 @@ limitations under the License.
 package addons
 
 import (
-	"os"
 	"os/exec"
 	"path"
 
@@ -53,7 +52,7 @@ func kubectlCommand(profile string, files []string, enable bool) (*exec.Cmd, err
 
 func kubernetesVersion(profile string) (string, error) {
 	cc, err := config.Load(profile)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !config.IsNotExist(err) {
 		return "", err
 	}
 	version := constants.DefaultKubernetesVersion

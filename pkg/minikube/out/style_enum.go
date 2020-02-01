@@ -87,4 +87,6 @@ const (
 	Pause
 	Unpause
 	DryRun
+	AddonEnable
+	AddonDisable
 )

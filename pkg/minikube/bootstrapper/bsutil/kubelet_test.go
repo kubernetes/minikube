@@ -42,7 +42,7 @@ func TestGenerateKubeletConfig(t *testing.T) {
 					ContainerRuntime:  "docker",
 				},
 				Nodes: []config.Node{
-					config.Node{
+					{
 						IP:           "192.168.1.100",
 						Name:         "minikube",
 						ControlPlane: true,
@@ -67,7 +67,7 @@ ExecStart=/var/lib/minikube/binaries/v1.11.10/kubelet --allow-privileged=true --
 					ContainerRuntime:  "cri-o",
 				},
 				Nodes: []config.Node{
-					config.Node{
+					{
 						IP:           "192.168.1.100",
 						Name:         "minikube",
 						ControlPlane: true,
@@ -92,7 +92,7 @@ ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhoo
 					ContainerRuntime:  "containerd",
 				},
 				Nodes: []config.Node{
-					config.Node{
+					{
 						IP:           "192.168.1.100",
 						Name:         "minikube",
 						ControlPlane: true,
@@ -124,7 +124,7 @@ ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhoo
 					},
 				},
 				Nodes: []config.Node{
-					config.Node{
+					{
 						IP:           "192.168.1.100",
 						Name:         "minikube",
 						ControlPlane: true,
@@ -150,7 +150,7 @@ ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhoo
 					ImageRepository:   "docker-proxy-image.io/google_containers",
 				},
 				Nodes: []config.Node{
-					config.Node{
+					{
 						IP:           "192.168.1.100",
 						Name:         "minikube",
 						ControlPlane: true,
