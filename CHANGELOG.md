@@ -12,7 +12,6 @@
 * Allow building storage-provisioner for other arch [#6257](https://github.com/kubernetes/minikube/pull/6257)
 * Prevent registry-creds configure from failing when a secret does not exist.  [#6380](https://github.com/kubernetes/minikube/pull/6380)
 * improve checking modprob netfilter [#6427](https://github.com/kubernetes/minikube/pull/6427)
-* Update kvm2.md [#6267](https://github.com/kubernetes/minikube/pull/6267)
 
 Huge thank you for this release towards our contributors: 
 
