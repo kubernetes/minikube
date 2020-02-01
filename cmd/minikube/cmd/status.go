@@ -138,6 +138,7 @@ func status(api libmachine.API, name string) (*Status, error) {
 	}
 
 	hs, err := cluster.GetHostStatus(api, name)
+	glog.Infof("%s host status = %q (err=%v)", name, hs, err)
 	if err != nil {
 		return st, errors.Wrap(err, "host")
 	}
@@ -162,6 +163,8 @@ func status(api libmachine.API, name string) (*Status, error) {
 	}
 
 	stk, err := kverify.KubeletStatus(cr)
+	glog.Infof("%s kubelet status = %s (err=%v)", stk, err)
+
 	if err != nil {
 		glog.Warningf("kubelet err: %v", err)
 		st.Kubelet = state.Error.String()
@@ -183,6 +186,8 @@ func status(api libmachine.API, name string) (*Status, error) {
 	}
 
 	sta, err := kverify.APIServerStatus(cr, ip, port)
+	glog.Infof("%s apiserver status = %s (err=%v)", stk, err)
+
 	if err != nil {
 		glog.Errorln("Error apiserver status:", err)
 		st.APIServer = state.Error.String()
@@ -192,6 +197,8 @@ func status(api libmachine.API, name string) (*Status, error) {
 
 	st.Kubeconfig = Misconfigured
 	ks, err := kubeconfig.IsClusterInConfig(ip, name)
+	glog.Infof("%s kubeconfig status = %s (err=%v)", ks, err)
+
 	if err != nil {
 		glog.Errorln("Error kubeconfig status:", err)
 	}

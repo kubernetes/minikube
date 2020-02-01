@@ -127,6 +127,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
+	glog.Infof("GetState called")
 	ip, err := d.GetIP()
 	if err != nil {
 		return state.Error, err
