@@ -308,21 +308,21 @@ func StopHost(api libmachine.API) error {
 	return nil
 }
 
+// deleteOrphanedKIC attempts to delete an orphaned docker instance
+func deleteOrphanedKIC(name string) {
+	cmd := exec.Command(oci.Docker, "rm", "-f", "-v", name)
+	err := cmd.Run()
+	if err == nil {
+		glog.Infof("Found stale kic container and successfully cleaned it up!")
+	}
+}
+
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
 	if err != nil && host == nil {
-		// before we give up on deleting the host
-		//  we try to kill the possible orphan kic driver
-		// this case will happen if the user deleted both profile and machine folder
-		// inside minikube home
-		cmd := exec.Command(oci.Docker, "rm", "-f", "-v", machineName)
-		err := cmd.Run()
-		if err == nil {
-			glog.Infof("Found stale kic container and successfully cleaned it up.")
-			return nil
-		}
-		return errors.Wrap(err, "load")
+		deleteOrphanedKIC(machineName)
+		// keep going even if minikube  does not know about the host
 	}
 
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
@@ -333,7 +333,7 @@ func DeleteHost(api libmachine.API, machineName string) error {
 	}
 
 	if status == state.None.String() {
-		return mcnerror.ErrHostDoesNotExist{Name: host.Name}
+		return mcnerror.ErrHostDoesNotExist{Name: machineName}
 	}
 
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
