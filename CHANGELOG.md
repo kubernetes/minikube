@@ -1,6 +1,6 @@
 # Release Notes
 
-## Version 1.7.0 - 2020-01-31
+## Version 1.7.0-beta.2 - 2020-01-31
 
 * Add docker run-time for kic driver [#6436](https://github.com/kubernetes/minikube/pull/6436)
 * Add addon enablement to start [#6440](https://github.com/kubernetes/minikube/pull/6440)
