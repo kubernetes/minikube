@@ -1,4 +1,4 @@
-# Your inspiring proposal title
+# Multi-node
 
 * First proposed: 2020-01-31
 * Authors: Sharif Elgamal (@sharifelgamal)
