@@ -105,9 +105,12 @@ func TestStartStop(t *testing.T) {
 					t.Errorf("%s failed: %v", rr.Args, err)
 				}
 
-				got := Status(ctx, t, Target(), profile, "Host")
-				if got != state.Stopped.String() {
-					t.Errorf("status = %q; want = %q", got, state.Stopped)
+				// The none driver never really stops
+				if !NoneDriver() {
+					got := Status(ctx, t, Target(), profile, "Host")
+					if got != state.Stopped.String() {
+						t.Errorf("post-stop host status = %q; want = %q", got, state.Stopped)
+					}
 				}
 
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -124,7 +127,7 @@ func TestStartStop(t *testing.T) {
 
 				got = Status(ctx, t, Target(), profile, "Host")
 				if got != state.Running.String() {
-					t.Errorf("host status = %q; want = %q", got, state.Running)
+					t.Errorf("post-start host status = %q; want = %q", got, state.Running)
 				}
 
 				if !NoneDriver() {
@@ -227,12 +230,12 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 
 	got := Status(ctx, t, Target(), profile, "APIServer")
 	if got != state.Paused.String() {
-		t.Errorf("apiserver status = %q; want = %q", got, state.Paused)
+		t.Errorf("post-pause apiserver status = %q; want = %q", got, state.Paused)
 	}
 
 	got = Status(ctx, t, Target(), profile, "Kubelet")
 	if got != state.Stopped.String() {
-		t.Errorf("kubelet status = %q; want = %q", got, state.Stopped)
+		t.Errorf("post-pause kubelet status = %q; want = %q", got, state.Stopped)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "unpause", "-p", profile, "--alsologtostderr", "-v=1"))
@@ -242,12 +245,12 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 
 	got = Status(ctx, t, Target(), profile, "APIServer")
 	if got != state.Running.String() {
-		t.Errorf("apiserver status = %q; want = %q", got, state.Running)
+		t.Errorf("post-unpause apiserver status = %q; want = %q", got, state.Running)
 	}
 
 	got = Status(ctx, t, Target(), profile, "Kubelet")
 	if got != state.Running.String() {
-		t.Errorf("kubelet status = %q; want = %q", got, state.Running)
+		t.Errorf("post-unpause kubelet status = %q; want = %q", got, state.Running)
 	}
 
 }
