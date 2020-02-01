@@ -125,7 +125,7 @@ func TestStartStop(t *testing.T) {
 					t.Fatalf("wait: %v", err)
 				}
 
-				got = Status(ctx, t, Target(), profile, "Host")
+				got := Status(ctx, t, Target(), profile, "Host")
 				if got != state.Running.String() {
 					t.Errorf("post-start host status = %q; want = %q", got, state.Running)
 				}
