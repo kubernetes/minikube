@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -51,8 +50,8 @@ minikube kubectl -- get pods --namespace kube-system`,
 		}
 		defer api.Close()
 
-		cc, err := pkg_config.Load(viper.GetString(config.MachineProfile))
-		if err != nil && !os.IsNotExist(err) {
+		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		if err != nil && !config.IsNotExist(err) {
 			out.ErrLn("Error loading profile config: %v", err)
 		}
 

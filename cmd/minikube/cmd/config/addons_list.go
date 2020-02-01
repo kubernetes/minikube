@@ -102,9 +102,9 @@ var printAddonsList = func() {
 
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
-		addonStatus, err := addonBundle.IsEnabled()
+		addonStatus, err := addonBundle.IsEnabled(pName)
 		if err != nil {
-			exit.WithError("Error getting addons status", err)
+			out.WarningT("Unable to get addon status for {{.name}}: {{.error}}", out.V{"name": addonName, "error": err})
 		}
 		tData = append(tData, []string{addonName, pName, fmt.Sprintf("%s %s", stringFromStatus(addonStatus), iconFromStatus(addonStatus))})
 	}
@@ -114,12 +114,11 @@ var printAddonsList = func() {
 
 	v, _, err := config.ListProfiles()
 	if err != nil {
-		glog.Infof("error getting list of porfiles: %v", err)
+		glog.Errorf("list profiles returned error: %v", err)
 	}
 	if len(v) > 1 {
 		out.T(out.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
 	}
-
 }
 
 var printAddonsJSON = func() {
@@ -135,9 +134,10 @@ var printAddonsJSON = func() {
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
 
-		addonStatus, err := addonBundle.IsEnabled()
+		addonStatus, err := addonBundle.IsEnabled(pName)
 		if err != nil {
-			exit.WithError("Error getting addons status", err)
+			glog.Errorf("Unable to get addon status for %s: %v", addonName, err)
+			continue
 		}
 
 		addonsMap[addonName] = map[string]interface{}{

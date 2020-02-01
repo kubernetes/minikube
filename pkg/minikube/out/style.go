@@ -116,6 +116,8 @@ var styles = map[StyleEnum]style{
 	MountOptions:     {Prefix: "💾  "},
 	Fileserver:       {Prefix: "🚀  ", OmitNewline: true},
 	DryRun:           {Prefix: "🏜️   "},
+	AddonEnable:      {Prefix: "🌟  "},
+	AddonDisable:     {Prefix: "🌑  "},
 }
 
 // Add a prefix to a string

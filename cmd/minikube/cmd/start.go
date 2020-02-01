@@ -46,7 +46,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	pkgaddons "k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -104,7 +104,6 @@ const (
 	imageMirrorCountry    = "image-mirror-country"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
-	addons                = "addons"
 	cacheImages           = "cache-images"
 	uuid                  = "uuid"
 	vpnkitSock            = "hyperkit-vpnkit-sock"
@@ -172,7 +171,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
-	startCmd.Flags().StringArrayVar(&addonList, addons, nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
+	startCmd.Flags().StringArrayVar(&addonList, "addons", nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
@@ -296,7 +295,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	existing, err := config.Load(viper.GetString(config.MachineProfile))
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
@@ -368,8 +367,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	bootstrapCluster(bs, cr, mRunner, mc, preExists, isUpgrade)
 	configureMounts()
 
-	// enable addons with start command
-	enableAddons()
+	// enable addons
+	addons.Start(viper.GetString(config.MachineProfile), addonList)
 
 	if err = cacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
@@ -404,15 +403,6 @@ func cacheISO(cfg *config.MachineConfig, driverName string) {
 	if !driver.BareMetal(driverName) && !driver.IsKIC(driverName) {
 		if err := cluster.CacheISO(*cfg); err != nil {
 			exit.WithError("Failed to cache ISO", err)
-		}
-	}
-}
-
-func enableAddons() {
-	for _, a := range addonList {
-		err := pkgaddons.Set(a, "true", viper.GetString(config.MachineProfile))
-		if err != nil {
-			exit.WithError("addon enable failed", err)
 		}
 	}
 }
@@ -761,7 +751,7 @@ func validateUser(drvName string) {
 		os.Exit(exit.Permissions)
 	}
 	_, err = config.Load(viper.GetString(config.MachineProfile))
-	if err == nil || !os.IsNotExist(err) {
+	if err == nil || !config.IsNotExist(err) {
 		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
 	}
 	if !useForce {
