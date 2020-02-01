@@ -36,7 +36,6 @@ import (
 	pkgaddons "k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -61,7 +60,7 @@ var dashboardCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		profileName := viper.GetString(pkg_config.MachineProfile)
 		cc, err := pkg_config.Load(profileName)
-		if err != nil && !os.IsNotExist(err) {
+		if err != nil && !pkg_config.IsNotExist(err) {
 			exit.WithError("Error loading profile config", err)
 		}
 
@@ -103,18 +102,18 @@ var dashboardCmd = &cobra.Command{
 			exit.WithCodeT(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		}
 
-		if !cluster.IsMinikubeRunning(api) {
+		if !cluster.IsHostRunning(api, profileName) {
 			os.Exit(1)
 		}
 
 		// Check dashboard status before enabling it
 		dashboardAddon := assets.Addons["dashboard"]
-		dashboardStatus, _ := dashboardAddon.IsEnabled()
+		dashboardStatus, _ := dashboardAddon.IsEnabled(profileName)
 		if !dashboardStatus {
 			// Send status messages to stderr for folks re-using this output.
 			out.ErrT(out.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = pkgaddons.Set("dashboard", "true", viper.GetString(config.MachineProfile))
+			err = pkgaddons.Set("dashboard", "true", profileName)
 			if err != nil {
 				exit.WithError("Unable to enable dashboard", err)
 			}

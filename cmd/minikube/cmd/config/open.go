@@ -24,8 +24,10 @@ import (
 	"github.com/pkg/browser"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -66,7 +68,8 @@ var addonsOpenCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		if !cluster.IsMinikubeRunning(api) {
+		profileName := viper.GetString(pkg_config.MachineProfile)
+		if !cluster.IsHostRunning(api, profileName) {
 			os.Exit(1)
 		}
 		addon, ok := assets.Addons[addonName] // validate addon input
@@ -75,7 +78,7 @@ var addonsOpenCmd = &cobra.Command{
 To see the list of available addons run:
 minikube addons list`, out.V{"name": addonName})
 		}
-		ok, err = addon.IsEnabled()
+		ok, err = addon.IsEnabled(profileName)
 		if err != nil {
 			exit.WithError("IsEnabled failed", err)
 		}
