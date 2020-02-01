@@ -143,35 +143,13 @@ func status(api libmachine.API, name string) (*Status, error) {
 		return st, errors.Wrap(err, "host")
 	}
 
+	// We have no record of this host. Return nonexistent struct
 	if hs == state.None.String() {
 		return st, nil
 	}
-
 	st.Host = hs
-	if st.Host != state.Running.String() && st.Host != state.Paused.String() {
-		return st, nil
-	}
 
-	host, err := cluster.CheckIfHostExistsAndLoad(api, name)
-	if err != nil {
-		return st, err
-	}
-
-	cr, err := machine.CommandRunner(host)
-	if err != nil {
-		return st, err
-	}
-
-	stk, err := kverify.KubeletStatus(cr)
-	glog.Infof("%s kubelet status = %s (err=%v)", stk, err)
-
-	if err != nil {
-		glog.Warningf("kubelet err: %v", err)
-		st.Kubelet = state.Error.String()
-	} else {
-		st.Kubelet = stk.String()
-	}
-
+	// We have enough to query kubeconfig now!
 	ip, err := cluster.GetHostDriverIP(api, name)
 	if err != nil {
 		glog.Errorln("Error host driver ip status:", err)
@@ -185,8 +163,44 @@ func status(api libmachine.API, name string) (*Status, error) {
 		port = constants.APIServerPort
 	}
 
+	st.Kubeconfig = Misconfigured
+	ok, err := kubeconfig.IsClusterInConfig(ip, name)
+	glog.Infof("%s is in kubeconfig at ip %s: %v (err=%v)", name, ip, ok, err)
+	if ok {
+		st.Kubeconfig = Configured
+	}
+
+	// If it's not running, quickly bail out rather than delivering confusing information.
+	if st.Host != state.Running.String() {
+		glog.Infof("host is not running, skipping remaining checks")
+		st.APIServer = st.Host
+		st.Kubelet = st.Host
+		return st, nil
+	}
+
+	// At this point, we start executing commands on the cluster for more details
+	host, err := cluster.CheckIfHostExistsAndLoad(api, name)
+	if err != nil {
+		return st, err
+	}
+
+	cr, err := machine.CommandRunner(host)
+	if err != nil {
+		return st, err
+	}
+
+	stk, err := kverify.KubeletStatus(cr)
+	glog.Infof("%s kubelet status = %s (err=%v)", name, stk, err)
+
+	if err != nil {
+		glog.Warningf("kubelet err: %v", err)
+		st.Kubelet = state.Error.String()
+	} else {
+		st.Kubelet = stk.String()
+	}
+
 	sta, err := kverify.APIServerStatus(cr, ip, port)
-	glog.Infof("%s apiserver status = %s (err=%v)", stk, err)
+	glog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
 
 	if err != nil {
 		glog.Errorln("Error apiserver status:", err)
@@ -195,16 +209,6 @@ func status(api libmachine.API, name string) (*Status, error) {
 		st.APIServer = sta.String()
 	}
 
-	st.Kubeconfig = Misconfigured
-	ks, err := kubeconfig.IsClusterInConfig(ip, name)
-	glog.Infof("%s kubeconfig status = %s (err=%v)", ks, err)
-
-	if err != nil {
-		glog.Errorln("Error kubeconfig status:", err)
-	}
-	if ks {
-		st.Kubeconfig = Configured
-	}
 	return st, nil
 }
 
