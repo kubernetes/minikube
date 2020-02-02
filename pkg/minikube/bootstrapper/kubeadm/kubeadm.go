@@ -41,7 +41,6 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
@@ -372,7 +371,16 @@ func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
 	}
 
 	for _, n := range cfg.Nodes {
-		client, err := k.client(n.IP, n.Port)
+		ip := n.IP
+		port := n.Port
+		if driver.IsKIC(cfg.VMDriver) {
+			ip = kic.DefaultBindIPV4
+			port, err = oci.HostPortBinding(cfg.VMDriver, cfg.Name, port)
+			if err != nil {
+				return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
+			}
+		}
+		client, err := k.client(ip, port)
 		if err != nil {
 			return errors.Wrap(err, "getting k8s client")
 		}
@@ -483,10 +491,6 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 		cniFile = []byte(defaultCNIConfig)
 	}
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
-
-	if err := bsutil.AddAddons(&files, assets.GenerateTemplateData(cfg.KubernetesConfig)); err != nil {
-		return errors.Wrap(err, "adding addons")
-	}
 
 	// Combine mkdir request into a single call to reduce load
 	dirs := []string{}

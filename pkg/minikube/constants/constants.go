@@ -27,6 +27,8 @@ import (
 )
 
 const (
+	// DockerDaemonPort is the port Docker daemon listening inside a minikube node (vm or container).
+	DockerDaemonPort = 2376
 	// SSHPort is the SSH serviceport on the node vm and container
 	SSHPort = 22
 	// APIServerPort is the default API server port

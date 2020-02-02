@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y \
   sudo \
   dnsutils \
   openssh-server \
+  docker.io \
   && apt-get clean -y 
 # based on https://github.com/rastasheep/ubuntu-sshd/blob/master/18.04/Dockerfile
 # making SSH work for docker container 
@@ -28,7 +29,7 @@ RUN rm -rf \
     /kind/bin/kubeadm /kind/bin/kubelet /kind/systemd /kind/images /kind/manifests
 RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
 # for minikube ssh. to match VM using docker username
-RUN adduser --disabled-password --gecos '' docker
+RUN adduser --ingroup docker --disabled-password --gecos '' docker 
 RUN adduser docker sudo
 RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 USER docker

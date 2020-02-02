@@ -341,7 +341,7 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 	for _, caCertFile := range caCerts {
 		dstFilename := path.Base(caCertFile)
 		certStorePath := path.Join(SSLCertStoreDir, dstFilename)
-		cmd := fmt.Sprintf("test -f %s || ln -s %s %s", caCertFile, certStorePath, caCertFile)
+		cmd := fmt.Sprintf("test -f %s || ln -fs %s %s", caCertFile, certStorePath, caCertFile)
 		if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
 			return errors.Wrapf(err, "create symlink for %s", caCertFile)
 		}
@@ -352,7 +352,8 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 			}
 			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
 
-			cmd := fmt.Sprintf("test -f %s || ln -s %s %s", subjectHashLink, certStorePath, subjectHashLink)
+			// NOTE: This symlink may exist, but point to a missing file
+			cmd := fmt.Sprintf("test -L %s || ln -fs %s %s", subjectHashLink, certStorePath, subjectHashLink)
 			if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
 				return errors.Wrapf(err, "create symlink for %s", caCertFile)
 			}

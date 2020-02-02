@@ -120,7 +120,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 			t.Run(tname, func(t *testing.T) {
 				cfg := tc.cfg
 				cfg.Nodes = []config.Node{
-					config.Node{
+					{
 						IP:           "1.1.1.1",
 						Name:         "mk",
 						ControlPlane: true,
@@ -179,7 +179,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 		{"options", "docker", false, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOpts}}},
 		{"crio-options-gates", "crio", false, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}}},
 		{"unknown-component", "docker", true, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: config.ExtraOptionSlice{config.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}}},
-		{"containerd-api-port", "containerd", false, config.MachineConfig{Nodes: []config.Node{config.Node{Port: 12345}}}},
+		{"containerd-api-port", "containerd", false, config.MachineConfig{Nodes: []config.Node{{Port: 12345}}}},
 		{"containerd-pod-network-cidr", "containerd", false, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOptsPodCidr}}},
 		{"image-repository", "docker", false, config.MachineConfig{KubernetesConfig: config.KubernetesConfig{ImageRepository: "test/repo"}}},
 	}
@@ -199,7 +199,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 					cfg.Nodes[0].ControlPlane = true
 				} else {
 					cfg.Nodes = []config.Node{
-						config.Node{
+						{
 							IP:           "1.1.1.1",
 							Name:         "mk",
 							ControlPlane: true,

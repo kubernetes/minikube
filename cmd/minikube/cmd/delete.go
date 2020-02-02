@@ -131,14 +131,12 @@ func runDelete(cmd *cobra.Command, args []string) {
 		profileName := viper.GetString(pkg_config.MachineProfile)
 		profile, err := pkg_config.LoadProfile(profileName)
 		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": profileName})
 		}
 
 		errs := DeleteProfiles([]*pkg_config.Profile{profile})
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
-		} else {
-			out.T(out.DeletingHost, "Successfully deleted profile \"{{.name}}\"", out.V{"name": profileName})
 		}
 	}
 
@@ -153,7 +151,7 @@ func purgeMinikubeDirectory() {
 	if err := os.RemoveAll(localpath.MiniPath()); err != nil {
 		exit.WithError("unable to delete minikube config folder", err)
 	}
-	out.T(out.Crushed, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
+	out.T(out.Deleted, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
 }
 
 // DeleteProfiles deletes one or more profiles
@@ -188,7 +186,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 	defer api.Close()
 	cc, err := pkg_config.Load(profile.Name)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !pkg_config.IsNotExist(err) {
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
 		return DeletionError{Err: delErr, Errtype: MissingProfile}
 	}
@@ -212,7 +210,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	if err = cluster.DeleteHost(api, profile.Name); err != nil {
 		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": profile.Name})
+			glog.Infof("%s cluster does not exist. Proceeding ahead with cleanup.", profile.Name)
 		default:
 			out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
 			out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
@@ -223,7 +221,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	deleteProfileDirectory(profile.Name)
 
 	if err := pkg_config.DeleteProfile(profile.Name); err != nil {
-		if os.IsNotExist(err) {
+		if pkg_config.IsNotExist(err) {
 			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("\"%s\" profile does not exist", profile.Name))
 			return DeletionError{Err: delErr, Errtype: MissingProfile}
 		}
@@ -231,11 +229,10 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		return DeletionError{Err: delErr, Errtype: Fatal}
 	}
 
-	out.T(out.Crushed, `The "{{.name}}" cluster has been deleted.`, out.V{"name": profile.Name})
-
 	if err := deleteContext(profile.Name); err != nil {
 		return err
 	}
+	out.T(out.Deleted, `Removed all traces of the "{{.name}}" cluster.`, out.V{"name": profile.Name})
 	return nil
 }
 
