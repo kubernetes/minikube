@@ -2,7 +2,7 @@ Package: docker-machine-driver-kvm2
 Version: --VERSION--
 Section: base
 Priority: optional
-Architecture: amd64
+Architecture: --ARCH--
 Depends: libvirt0 (>= 1.3.1)
 Recommends: minikube
 Maintainer: Thomas Strömberg <t+minikube@stromberg.org>
