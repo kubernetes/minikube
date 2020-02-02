@@ -374,6 +374,9 @@ mdlint:
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
+deb_version:
+	@echo $(DEB_VERSION)
+
 out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-0_amd64.deb
 	cp $< $@
 
@@ -386,6 +389,9 @@ out/minikube_$(DEB_VERSION)-0_%.deb: out/minikube-linux-%
 	cp $< out/minikube_$(DEB_VERSION)/usr/bin/minikube
 	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION) $@
 	rm -rf out/minikube_$(DEB_VERSION)
+
+rpm_version:
+	@echo $(RPM_VERSION)
 
 out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-0.x86_64.rpm
 	cp $< $@
