@@ -20,9 +20,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/docker/machine/libmachine/state"
-	"k8s.io/minikube/pkg/minikube/assets"
-
 	"bufio"
 	"bytes"
 
@@ -31,83 +28,166 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
-	"time"
-
-	"github.com/cenkalti/backoff"
 )
 
-// Stop stops a container
-func Stop(ociBinary, ociID string) error {
-	cmd := exec.Command(ociBinary, "stop", ociID)
+// CreateContainerNode creates a new container node
+func CreateContainerNode(p CreateParams) error {
+	runArgs := []string{
+		fmt.Sprintf("--cpus=%s", p.CPUs),
+		fmt.Sprintf("--memory=%s", p.Memory),
+		"-d", // run the container detached
+		"-t", // allocate a tty for entrypoint logs
+		// running containers in a container requires privileged
+		// NOTE: we could try to replicate this with --cap-add, and use less
+		// privileges, but this flag also changes some mounts that are necessary
+		// including some ones docker would otherwise do by default.
+		// for now this is what we want. in the future we may revisit this.
+		"--privileged",
+		"--security-opt", "seccomp=unconfined", // also ignore seccomp
+		"--tmpfs", "/tmp", // various things depend on working /tmp
+		"--tmpfs", "/run", // systemd wants a writable /run
+		// logs,pods be stroed on  filesystem vs inside container,
+		"--volume", "/var",
+		// some k8s things want /lib/modules
+		"-v", "/lib/modules:/lib/modules:ro",
+		"--hostname", p.Name, // make hostname match container name
+		"--name", p.Name, // ... and set the container name
+		// label the node with the cluster ID
+		"--label", p.ClusterLabel,
+		// label the node with the role ID
+		"--label", fmt.Sprintf("%s=%s", nodeRoleKey, p.Role),
+	}
+
+	for key, val := range p.Envs {
+		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
+	}
+
+	// adds node specific args
+	runArgs = append(runArgs, p.ExtraArgs...)
+
+	if isUsernsRemapEnabled(p.OCIBinary) {
+		// We need this argument in order to make this command work
+		// in systems that have userns-remap enabled on the docker daemon
+		runArgs = append(runArgs, "--userns=host")
+	}
+
+	_, err := createContainer(p.OCIBinary,
+		p.Image,
+		withRunArgs(runArgs...),
+		withMounts(p.Mounts),
+		withPortMappings(p.PortMappings),
+	)
+	if err != nil {
+		return errors.Wrap(err, "create a kic node")
+	}
+	return nil
+}
+
+// CreateContainer creates a container with "docker/podman run"
+func createContainer(ociBinary string, image string, opts ...createOpt) ([]string, error) {
+	o := &createOpts{}
+	for _, opt := range opts {
+		o = opt(o)
+	}
+	// convert mounts to container run args
+	runArgs := o.RunArgs
+	for _, mount := range o.Mounts {
+		runArgs = append(runArgs, generateMountBindings(mount)...)
+	}
+	for _, portMapping := range o.PortMappings {
+		runArgs = append(runArgs, generatePortMappings(portMapping)...)
+	}
+	// construct the actual docker run argv
+	args := []string{"run"}
+	args = append(args, runArgs...)
+	args = append(args, image)
+	args = append(args, o.ContainerArgs...)
+	cmd := exec.Command(ociBinary, args...)
+	var buff bytes.Buffer
+	cmd.Stdout = &buff
+	cmd.Stderr = &buff
+	err := cmd.Run()
+	scanner := bufio.NewScanner(&buff)
+	var output []string
+	for scanner.Scan() {
+		output = append(output, scanner.Text())
+	}
+
+	if err != nil {
+		return output, errors.Wrapf(err, "args: %v  output: %s ", args, output)
+	}
+	return output, nil
+}
+
+// Copy copies a local asset into the container
+func Copy(ociBinary string, ociID string, targetDir string, fName string) error {
+	if _, err := os.Stat(fName); os.IsNotExist(err) {
+		return errors.Wrapf(err, "error source %s does not exist", fName)
+	}
+	destination := fmt.Sprintf("%s:%s", ociID, targetDir)
+	cmd := exec.Command(ociBinary, "cp", fName, destination)
 	err := cmd.Run()
 	if err != nil {
-		return errors.Wrapf(err, "error stop node %s", ociID)
+		return errors.Wrapf(err, "error copying %s into node", fName)
 	}
-
 	return nil
 }
 
-// Status returns the status of the container
-func Status(ociBinary string, ociID string) (state.State, error) {
-	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.State.Status}}", ociID)
+// HostPortBinding will return port mapping for a container using cli.
+// example : HostPortBinding("docker", "minikube", "22")
+// will return the docker assigned port:
+// 32769, nil
+// only supports TCP ports
+func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) {
+	cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
 	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return 0, errors.Wrapf(err, "getting host-bind port %d for container ID %q, output %s", contPort, ociID, out)
+	}
 	o := strings.Trim(string(out), "\n")
-	s := state.Error
-	switch o {
-	case "running":
-		s = state.Running
-	case "exited":
-		s = state.Stopped
-	case "paused":
-		s = state.Paused
-	case "restaring":
-		s = state.Starting
-	}
-
+	o = strings.Trim(o, "'")
+	p, err := strconv.Atoi(o)
 	if err != nil {
-		return state.Error, errors.Wrapf(err, "error getting node %s status", ociID)
+		return p, errors.Wrapf(err, "convert host-port %q to number", p)
 	}
-	return s, nil
+	return p, nil
 }
 
-// SystemStatus checks if the oci container engine is running
-func SystemStatus(ociBinary string, ociID string) (state.State, error) {
-	_, err := exec.LookPath(ociBinary)
+// ContainerIPs returns ipv4,ipv6, error of a container by their name
+func ContainerIPs(ociBinary string, name string) (string, string, error) {
+	// retrieve the IP address of the node using docker inspect
+	lines, err := inspect(ociBinary, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
-		return state.Error, err
+		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
 	}
+	if len(lines) != 1 {
+		return "", "", errors.Errorf("IPs output should only be one line, got %d lines", len(lines))
+	}
+	ips := strings.Split(lines[0], ",")
+	if len(ips) != 2 {
+		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
+	}
+	return ips[0], ips[1], nil
 
-	err = exec.Command("docker", "info").Run()
+}
+
+// ContainerID returns id of a container name
+func ContainerID(ociBinary string, nameOrID string) (string, error) {
+	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID)
+	id, err := cmd.CombinedOutput()
 	if err != nil {
-		return state.Error, err
+		id = []byte{}
 	}
-
-	return state.Running, nil
+	return string(id), err
 }
 
-// Remove removes a container
-func Remove(ociBinary string, ociID string) error {
-	// TODO: force remove should be an option
-	cmd := exec.Command(ociBinary, "rm", "-f", "-v", ociID)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "error removing node %s", ociID)
-	}
-
-	return nil
+// ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
+func ListOwnedContainers(ociBinary string) ([]string, error) {
+	return listContainersByLabel(ociBinary, ClusterLabelKey)
 }
 
-// Pause pauses a container
-func Pause(ociBinary string, ociID string) error {
-	cmd := exec.Command(ociBinary, "pause", ociID)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "error pausing node %s", ociID)
-	}
-
-	return nil
-}
-
-// Inspect return low-level information on containers
-func Inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
+// inspect return low-level information on containers
+func inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
 	cmd := exec.Command(ociBinary, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
@@ -121,65 +201,6 @@ func Inspect(ociBinary string, containerNameOrID, format string) ([]string, erro
 		lines = append(lines, scanner.Text())
 	}
 	return lines, err
-}
-
-// NetworkInspect displays detailed information on one or more networks
-func NetworkInspect(networkNames []string, format string) ([]string, error) {
-	cmd := exec.Command("docker", "network", "inspect",
-		"-f", format,
-		strings.Join(networkNames, " "))
-	var buff bytes.Buffer
-	cmd.Stdout = &buff
-	cmd.Stderr = &buff
-	err := cmd.Run()
-	scanner := bufio.NewScanner(&buff)
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	return lines, err
-}
-
-// GetSubnets returns a slice of subnets for a specified network name
-// For example the command : docker network inspect -f '{{range (index (index . "IPAM") "Config")}}{{index . "Subnet"}} {{end}}' bridge
-// returns 172.17.0.0/16
-func GetSubnets(networkName string) ([]string, error) {
-	format := `{{range (index (index . "IPAM") "Config")}}{{index . "Subnet"}} {{end}}`
-	lines, err := NetworkInspect([]string{networkName}, format)
-	if err != nil {
-		return nil, err
-	}
-	return strings.Split(lines[0], " "), nil
-}
-
-// ImageInspect return low-level information on containers images
-func ImageInspect(containerNameOrID, format string) ([]string, error) {
-	cmd := exec.Command("docker", "image", "inspect",
-		"-f", format,
-		containerNameOrID,
-	)
-	var buff bytes.Buffer
-	cmd.Stdout = &buff
-	cmd.Stderr = &buff
-	err := cmd.Run()
-	scanner := bufio.NewScanner(&buff)
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	return lines, err
-}
-
-// ImageID return the Id of the container image
-func ImageID(containerNameOrID string) (string, error) {
-	lines, err := ImageInspect(containerNameOrID, "{{ .Id }}")
-	if err != nil {
-		return "", err
-	}
-	if len(lines) != 1 {
-		return "", fmt.Errorf("docker image ID should only be one line, got %d lines", len(lines))
-	}
-	return lines[0], nil
 }
 
 /*
@@ -228,33 +249,8 @@ func generateMountBindings(mounts ...Mount) []string {
 	return result
 }
 
-// PullIfNotPresent pulls docker image if not present back off exponentially
-func PullIfNotPresent(ociBinary string, image string, forceUpdate bool, maxWait time.Duration) error {
-	cmd := exec.Command(ociBinary, "inspect", "--type=image", image)
-	err := cmd.Run()
-	if err == nil && !forceUpdate {
-		return nil // if presents locally and not force
-	}
-	b := backoff.NewExponentialBackOff()
-	b.MaxElapsedTime = maxWait
-	f := func() error {
-		return pull(ociBinary, image)
-	}
-	return backoff.Retry(f, b)
-}
-
-// Pull pulls an image, retrying up to retries times
-func pull(ociBinary string, image string) error {
-	cmd := exec.Command(ociBinary, "pull", image)
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("error pull image %s : %v", image, err)
-	}
-	return err
-}
-
-// UsernsRemap checks if userns-remap is enabled in dockerd
-func UsernsRemap(ociBinary string) bool {
+// isUsernsRemapEnabled checks if userns-remap is enabled in docker
+func isUsernsRemapEnabled(ociBinary string) bool {
 	cmd := exec.Command(ociBinary, "info", "--format", "'{{json .SecurityOptions}}'")
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
@@ -287,126 +283,43 @@ func generatePortMappings(portMappings ...PortMapping) []string {
 	return result
 }
 
-// Save saves an image archive "docker/podman save"
-func Save(ociBinary string, image, dest string) error {
-	cmd := exec.Command(ociBinary, "save", "-o", dest, image)
-	var buff bytes.Buffer
-	cmd.Stdout = &buff
-	cmd.Stderr = &buff
-	err := cmd.Run()
-	scanner := bufio.NewScanner(&buff)
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err != nil {
-		return errors.Wrapf(err, "saving image to tar failed, output %s", lines[0])
-	}
-	return nil
-}
-
-// CreateOpt is an option for Create
-type CreateOpt func(*createOpts) *createOpts
-
-// actual options struct
-type createOpts struct {
-	RunArgs       []string
-	ContainerArgs []string
-	Mounts        []Mount
-	PortMappings  []PortMapping
-}
-
-// CreateContainer creates a container with "docker/podman run"
-func CreateContainer(ociBinary string, image string, opts ...CreateOpt) ([]string, error) {
-	o := &createOpts{}
-	for _, opt := range opts {
-		o = opt(o)
-	}
-	// convert mounts to container run args
-	runArgs := o.RunArgs
-	for _, mount := range o.Mounts {
-		runArgs = append(runArgs, generateMountBindings(mount)...)
-	}
-	for _, portMapping := range o.PortMappings {
-		runArgs = append(runArgs, generatePortMappings(portMapping)...)
-	}
-	// construct the actual docker run argv
-	args := []string{"run"}
-	args = append(args, runArgs...)
-	args = append(args, image)
-	args = append(args, o.ContainerArgs...)
-	cmd := exec.Command(ociBinary, args...)
-	var buff bytes.Buffer
-	cmd.Stdout = &buff
-	cmd.Stderr = &buff
-	err := cmd.Run()
-	scanner := bufio.NewScanner(&buff)
-	var output []string
-	for scanner.Scan() {
-		output = append(output, scanner.Text())
-	}
-
-	if err != nil {
-		return output, errors.Wrapf(err, "args: %v  output: %s ", args, output)
-	}
-	return output, nil
-}
-
-// WithRunArgs sets the args for docker run
+// withRunArgs sets the args for docker run
 // as in the args portion of `docker run args... image containerArgs...`
-func WithRunArgs(args ...string) CreateOpt {
+func withRunArgs(args ...string) createOpt {
 	return func(r *createOpts) *createOpts {
 		r.RunArgs = args
 		return r
 	}
 }
 
-// WithMounts sets the container mounts
-func WithMounts(mounts []Mount) CreateOpt {
+// withMounts sets the container mounts
+func withMounts(mounts []Mount) createOpt {
 	return func(r *createOpts) *createOpts {
 		r.Mounts = mounts
 		return r
 	}
 }
 
-// WithPortMappings sets the container port mappings to the host
-func WithPortMappings(portMappings []PortMapping) CreateOpt {
+// withPortMappings sets the container port mappings to the host
+func withPortMappings(portMappings []PortMapping) createOpt {
 	return func(r *createOpts) *createOpts {
 		r.PortMappings = portMappings
 		return r
 	}
 }
 
-// Copy copies a local asset into the container
-func Copy(ociBinary string, ociID string, asset assets.CopyableFile) error {
-	if _, err := os.Stat(asset.GetAssetName()); os.IsNotExist(err) {
-		return errors.Wrapf(err, "error source %s does not exist", asset.GetAssetName())
-	}
-	destination := fmt.Sprintf("%s:%s", ociID, asset.GetTargetDir())
-	cmd := exec.Command(ociBinary, "cp", asset.GetAssetName(), destination)
+// listContainersByLabel lists all the containres that kic driver created on user's machine using a label
+// io.x-k8s.kic.cluster
+func listContainersByLabel(ociBinary string, label string) ([]string, error) {
+	cmd := exec.Command(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
+	var b bytes.Buffer
+	cmd.Stdout = &b
+	cmd.Stderr = &b
 	err := cmd.Run()
-	if err != nil {
-		return errors.Wrapf(err, "error copying %s into node", asset.GetAssetName())
+	var lines []string
+	sc := bufio.NewScanner(&b)
+	for sc.Scan() {
+		lines = append(lines, sc.Text())
 	}
-	return nil
-}
-
-// HostPortBinding will return port mapping for a container using cli.
-// example : HostPortBinding("docker", "minikube", "22")
-// will return the docker assigned port:
-// 32769, nil
-// only supports TCP ports
-func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) {
-	cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return 0, errors.Wrapf(err, "getting host-bind port %d for container ID %q, output %s", contPort, ociID, out)
-	}
-	o := strings.Trim(string(out), "\n")
-	o = strings.Trim(o, "'")
-	p, err := strconv.Atoi(o)
-	if err != nil {
-		return p, errors.Wrapf(err, "convert host-port %q to number", p)
-	}
-	return p, nil
+	return lines, err
 }

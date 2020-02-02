@@ -40,10 +40,14 @@ func TestAPIError(t *testing.T) {
 		machineAPI, configLoader, machineName,
 	}
 
-	s, r, err := inspector.getStateAndRoute()
+	_, _, err := inspector.getStateAndRoute()
+	if err == nil {
+		t.Errorf("expected error, got nil")
+	}
 
-	if err == nil || !strings.Contains(err.Error(), "Machine does not exist") {
-		t.Errorf("cluster inspector should propagate errors from API, getStateAndRoute() returned \"%v, %v\", %v", s, r, err)
+	// Make sure we properly propagate errors upward
+	if !strings.Contains(err.Error(), "exist") {
+		t.Errorf("getStateAndRoute error=%q, expected *exist*", err)
 	}
 }
 

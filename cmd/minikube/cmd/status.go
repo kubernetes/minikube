@@ -45,8 +45,10 @@ var output string
 
 const (
 	// Additional states used by kubeconfig
-	Configured    = "Configured"    // analogous to state.Saved
-	Misconfigured = "Misconfigured" // analogous to state.Error
+	Configured    = "Configured"    // ~state.Saved
+	Misconfigured = "Misconfigured" // ~state.Error
+	// Additional states used for clarity
+	Nonexistent = "Nonexistent" // ~state.None
 )
 
 // Status holds string representations of component states
@@ -92,6 +94,9 @@ var statusCmd = &cobra.Command{
 		if err != nil {
 			glog.Errorf("status error: %v", err)
 		}
+		if st.Host == Nonexistent {
+			glog.Errorf("The %q cluster does not exist!", machineName)
+		}
 
 		switch strings.ToLower(output) {
 		case "text":
@@ -125,10 +130,21 @@ func exitCode(st *Status) int {
 }
 
 func status(api libmachine.API, name string) (*Status, error) {
-	st := &Status{}
+	st := &Status{
+		Host:       Nonexistent,
+		APIServer:  Nonexistent,
+		Kubelet:    Nonexistent,
+		Kubeconfig: Nonexistent,
+	}
+
 	hs, err := cluster.GetHostStatus(api, name)
 	if err != nil {
 		return st, errors.Wrap(err, "host")
+	}
+
+	// Nonexistent it is!
+	if hs == state.None.String() {
+		return st, nil
 	}
 	st.Host = hs
 	if st.Host != state.Running.String() {

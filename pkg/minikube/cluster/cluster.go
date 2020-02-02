@@ -47,6 +47,8 @@ import (
 	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/viper"
 
+	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -306,11 +308,21 @@ func StopHost(api libmachine.API) error {
 	return nil
 }
 
+// deleteOrphanedKIC attempts to delete an orphaned docker instance
+func deleteOrphanedKIC(name string) {
+	cmd := exec.Command(oci.Docker, "rm", "-f", "-v", name)
+	err := cmd.Run()
+	if err == nil {
+		glog.Infof("Found stale kic container and successfully cleaned it up!")
+	}
+}
+
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
-	if err != nil {
-		return errors.Wrap(err, "load")
+	if err != nil && host == nil {
+		deleteOrphanedKIC(machineName)
+		// keep going even if minikube  does not know about the host
 	}
 
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
@@ -321,7 +333,7 @@ func DeleteHost(api libmachine.API, machineName string) error {
 	}
 
 	if status == state.None.String() {
-		return mcnerror.ErrHostDoesNotExist{Name: host.Name}
+		return mcnerror.ErrHostDoesNotExist{Name: machineName}
 	}
 
 	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
@@ -374,6 +386,9 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 	ipStr, err := host.Driver.GetIP()
 	if err != nil {
 		return nil, errors.Wrap(err, "getting IP")
+	}
+	if driver.IsKIC(host.DriverName) {
+		ipStr = kic.DefaultBindIPV4
 	}
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
@@ -534,21 +549,33 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 
 // GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
 func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
-	host, err := CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
+	pName := viper.GetString(config.MachineProfile)
+	host, err := CheckIfHostExistsAndLoad(api, pName)
 	if err != nil {
 		return nil, errors.Wrap(err, "Error checking that api exists and loading it")
 	}
-	ip, err := host.Driver.GetIP()
-	if err != nil {
-		return nil, errors.Wrap(err, "Error getting ip from host")
+
+	ip := kic.DefaultBindIPV4
+	if !driver.IsKIC(host.Driver.DriverName()) { // kic externally accessible ip is different that node ip
+		ip, err = host.Driver.GetIP()
+		if err != nil {
+			return nil, errors.Wrap(err, "Error getting ip from host")
+		}
+
 	}
 
 	tcpPrefix := "tcp://"
-	port := "2376"
+	port := constants.DockerDaemonPort
+	if driver.IsKIC(host.Driver.DriverName()) { // for kic we need to find out what port docker allocated during creation
+		port, err = oci.HostPortBinding(host.Driver.DriverName(), pName, constants.DockerDaemonPort)
+		if err != nil {
+			return nil, errors.Wrapf(err, "get hostbind port for %d", constants.DockerDaemonPort)
+		}
+	}
 
 	envMap := map[string]string{
 		"DOCKER_TLS_VERIFY": "1",
-		"DOCKER_HOST":       tcpPrefix + net.JoinHostPort(ip, port),
+		"DOCKER_HOST":       tcpPrefix + net.JoinHostPort(ip, fmt.Sprint(port)),
 		"DOCKER_CERT_PATH":  localpath.MakeMiniPath("certs"),
 	}
 	return envMap, nil
@@ -613,17 +640,18 @@ func getIPForInterface(name string) (net.IP, error) {
 
 // CheckIfHostExistsAndLoad checks if a host exists, and loads it if it does
 func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Host, error) {
+	glog.Infof("Checking if %q exists ...", machineName)
 	exists, err := api.Exists(machineName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error checking that machine exists: %s", machineName)
 	}
 	if !exists {
-		return nil, errors.Errorf("Machine does not exist for api.Exists(%s)", machineName)
+		return nil, errors.Errorf("machine %q does not exist", machineName)
 	}
 
 	host, err := api.Load(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error loading store for: %s", machineName)
+		return nil, errors.Wrapf(err, "loading machine %q", machineName)
 	}
 	return host, nil
 }
@@ -652,14 +680,15 @@ func CreateSSHShell(api libmachine.API, args []string) error {
 	return client.Shell(args...)
 }
 
-// IsMinikubeRunning checks that minikube has a status available and that
-// the status is `Running`
-func IsMinikubeRunning(api libmachine.API) bool {
-	s, err := GetHostStatus(api, viper.GetString(config.MachineProfile))
+// IsHostRunning asserts that this profile's primary host is in state "Running"
+func IsHostRunning(api libmachine.API, name string) bool {
+	s, err := GetHostStatus(api, name)
 	if err != nil {
+		glog.Warningf("host status for %q returned error: %v", name, err)
 		return false
 	}
 	if s != state.Running.String() {
+		glog.Warningf("%q host status: %s", name, s)
 		return false
 	}
 	return true
