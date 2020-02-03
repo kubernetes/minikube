@@ -534,6 +534,12 @@ release-minikube: out/minikube checksum ## Minikube release
 out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-amd64
 	cp $< $@
 
+out/docker-machine-driver-kvm2-x86_64: out/docker-machine-driver-kvm2-amd64
+	cp $< $@
+
+out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
+	cp $< $@
+
 out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
@@ -560,7 +566,7 @@ out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_%.deb: out/docker-machine-driver
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
 	sed -E -i 's/--ARCH--/'$*'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
 	mkdir -p out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin
-	cp out/docker-machine-driver-kvm2 out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
+	cp $< out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
 	fakeroot dpkg-deb --build out/docker-machine-driver-kvm2_$(DEB_VERSION) $@
 	rm -rf out/docker-machine-driver-kvm2_$(DEB_VERSION)
 
