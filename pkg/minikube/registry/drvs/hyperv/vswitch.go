@@ -144,74 +144,59 @@ func createVMSwitch(switchName string, adapter netAdapter) error {
 
 // choose VM switch connected to an adapter. If adapter name is not specified,
 // it tries to use an "up" LAN adapter then other adapters for external network
-func chooseSwitch(adapterName string) (string, error) {
+func chooseSwitch(adapterName string) (string, netAdapter, error) {
 	var adapter netAdapter
 	if adapterName != "" {
 		foundAdapters, err := getNetAdapters(false, fmt.Sprintf("($_.InterfaceDescription -eq \"%s\")", adapterName))
 		if err != nil {
-			return "", err
+			return "", netAdapter{}, err
 		}
 
 		if len(foundAdapters) == 0 {
-			return "", errors.Errorf("adapter %s not found", adapterName)
+			return "", netAdapter{}, errors.Errorf("adapter %s not found", adapterName)
 		}
 
 		adapter = foundAdapters[0]
 		foundSwitch, err := findConnectedVMSwitch(adapter.InterfaceGUID)
-		if err != nil {
-			return "", err
-		}
-
-		if foundSwitch != "" {
-			return foundSwitch, nil
-		}
-
-	} else {
-		adapters, err := getOrderedAdapters()
-		if err != nil {
-			return "", err
-		}
-
-		if len(adapters) == 0 {
-			return "", errors.Errorf("no connected adapter available")
-		}
-
-		externalVMSwitches, err := getVMSwitch("($_.SwitchType -eq 2)")
-		if err != nil {
-			return "", errors.Wrapf(err, "failed to list external VM switches")
-		}
-
-		if len(externalVMSwitches) > 0 {
-			// it doesn't seem like Windows allows one VM switch for each adapter
-			adapterSwitches := map[string][]string{}
-			for _, vmSwitch := range externalVMSwitches {
-				for _, connectedAdapter := range vmSwitch.NetAdapterInterfaceGuid {
-					var switches []string
-					key := strings.ToUpper(fmt.Sprintf("{%s}", connectedAdapter))
-					if _, ok := adapterSwitches[key]; ok {
-						switches = adapterSwitches[key]
-					}
-					switches = append(switches, vmSwitch.Name)
-					adapterSwitches[key] = switches
-				}
-			}
-
-			for _, adapter := range adapters {
-				if switches, ok := adapterSwitches[adapter.InterfaceGUID]; ok && len(switches) > 0 {
-					return switches[0], nil
-				}
-			}
-		}
-
-		adapter = adapters[0]
+		return foundSwitch, adapter, err
 	}
 
-	// create a switch on the switch
-	switchName := "minikube"
-	err := createVMSwitch(switchName, adapter)
+	adapters, err := getOrderedAdapters()
 	if err != nil {
-		return "", err
+		return "", netAdapter{}, err
 	}
 
-	return switchName, nil
+	if len(adapters) == 0 {
+		return "", netAdapter{}, errors.Errorf("no connected adapter available")
+	}
+
+	externalVMSwitches, err := getVMSwitch("($_.SwitchType -eq 2)")
+	if err != nil {
+		return "", netAdapter{}, errors.Wrapf(err, "failed to list external VM switches")
+	}
+
+	if len(externalVMSwitches) > 0 {
+		// it doesn't seem like Windows allows one VM switch for each adapter
+		adapterSwitches := map[string][]string{}
+		for _, vmSwitch := range externalVMSwitches {
+			for _, connectedAdapter := range vmSwitch.NetAdapterInterfaceGuid {
+				var switches []string
+				key := strings.ToUpper(fmt.Sprintf("{%s}", connectedAdapter))
+				if _, ok := adapterSwitches[key]; ok {
+					switches = adapterSwitches[key]
+				}
+				switches = append(switches, vmSwitch.Name)
+				adapterSwitches[key] = switches
+			}
+		}
+
+		for _, adapter := range adapters {
+			if switches, ok := adapterSwitches[adapter.InterfaceGUID]; ok && len(switches) > 0 {
+				return switches[0], adapter, nil
+			}
+		}
+	}
+
+	adapter = adapters[0]
+	return "", adapter, nil
 }

@@ -36,7 +36,8 @@ import (
 )
 
 const (
-	docURL = "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperv/"
+	docURL                    = "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperv/"
+	defaultExternalSwitchName = "minikube"
 )
 
 func init() {
@@ -56,9 +57,17 @@ func configure(config cfg.MachineConfig) (interface{}, error) {
 	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
 	d.VSwitch = config.HypervVirtualSwitch
 	if d.VSwitch == "" && config.HypervUseExternalSwitch {
-		switchName, err := chooseSwitch(config.HypervExternalAdapter)
+		switchName, adapter, err := chooseSwitch(config.HypervExternalAdapter)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to choose switch for Hyper-V driver")
+		}
+		if config.HypervExternalAdapter == "" && switchName == "" {
+			// create a switch on the returned adapter
+			switchName = defaultExternalSwitchName
+			err := createVMSwitch(switchName, adapter)
+			if err != nil {
+				return "", err
+			}
 		}
 		d.VSwitch = switchName
 	}
