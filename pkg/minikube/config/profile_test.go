@@ -21,7 +21,7 @@ import (
 	"testing"
 )
 
-// TestListProfiles uses a different uses different MINIKUBE_HOME with rest of tests since it relies on file list index
+// TestListProfiles uses a different MINIKUBE_HOME with rest of tests since it relies on file list index
 func TestListProfiles(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/profile/.minikube")
 	if err != nil {
@@ -54,8 +54,8 @@ func TestListProfiles(t *testing.T) {
 		if val[tt.index].Name != tt.expectName {
 			t.Errorf("expected %s got %v", tt.expectName, val[tt.index].Name)
 		}
-		if val[tt.index].Config[0].VMDriver != tt.vmDriver {
-			t.Errorf("expected %s got %v", tt.vmDriver, val[tt.index].Config[0].VMDriver)
+		if val[tt.index].Config.VMDriver != tt.vmDriver {
+			t.Errorf("expected %s got %v", tt.vmDriver, val[tt.index].Config.VMDriver)
 		}
 
 	}
@@ -176,7 +176,7 @@ func TestCreateProfile(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		n := tc.name // capturing  loop variable
-		gotErr := CreateProfile(n, tc.cfg, miniDir)
+		gotErr := SaveProfile(n, tc.cfg, miniDir)
 		if gotErr != nil && tc.expectErr == false {
 			t.Errorf("expected CreateEmptyProfile not to error but got err=%v", gotErr)
 		}

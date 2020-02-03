@@ -80,9 +80,6 @@ func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 // Copy copies a file and its permissions
 func (*ExecRunner) Copy(f assets.CopyableFile) error {
-	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {
-		return errors.Wrapf(err, "error making dirs for %s", f.GetTargetDir())
-	}
 	targetPath := path.Join(f.GetTargetDir(), f.GetTargetName())
 	if _, err := os.Stat(targetPath); err == nil {
 		if err := os.Remove(targetPath); err != nil {
