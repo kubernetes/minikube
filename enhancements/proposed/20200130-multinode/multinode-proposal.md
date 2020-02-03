@@ -34,6 +34,14 @@ Each node will correspond to one VM (or container) and will connect back to the 
 
 Also added will be the `node` sub command, e.g. `minikube node start` and `minikube node delete`. This will allow users to control their cluster however they please. Eventually, we will want to support passing in a `yaml` file into `minikube start` that defines all the nodes and their configs in one go. 
 
+Users will be able to start multinode clusters in two ways:
+1. `minikube start --nodes=2`
+1. * `minikube start`
+   * `minikube node add --name=node2`
+   * `minikube node start --name=node2`
+
+A note about `docker env`, the initial implementation won't properly support `docker env` in any consistent way, use at your own risk. The plan is to propagate any changes made to all the nodes in the cluster, with the caveat that anything that interrupts the command will cause a potentially corrupt cluster.
+
 ## Alternatives Considered
 
 _TBD_
