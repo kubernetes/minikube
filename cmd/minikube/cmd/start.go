@@ -1149,7 +1149,7 @@ func tryLookup(r command.Runner) {
 		// will try with different command format for ISOs with diffrent busybox versions.
 		if rr, err = r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
 			glog.Warningf("nslookup failed: %v", rr.Args, err)
-			out.WarningT("VM may be unable to resolve external DNS records")
+			out.WarningT("Node may be unable to resolve external DNS records")
 		}
 	}
 }
