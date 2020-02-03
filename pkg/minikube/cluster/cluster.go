@@ -192,7 +192,7 @@ func configureHost(h *host.Host, e *engine.Options) error {
 	}()
 
 	if err := createRequiredDirectories(h); err != nil {
-		errors.Wrap(err, "required directories")
+		return errors.Wrap(err, "required directories")
 	}
 
 	if len(e.Env) > 0 {
