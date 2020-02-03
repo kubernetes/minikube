@@ -30,7 +30,7 @@ import (
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
-func NewKubeletConfig(mc config.MachineConfig, r cruntime.Manager) ([]byte, error) {
+func NewKubeletConfig(mc config.MachineConfig, nc config.Node, r cruntime.Manager) ([]byte, error) {
 	k8s := mc.KubernetesConfig
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -60,8 +60,8 @@ func NewKubeletConfig(mc config.MachineConfig, r cruntime.Manager) ([]byte, erro
 	if _, ok := extraOpts["node-ip"]; !ok {
 		extraOpts["node-ip"] = cp.IP
 	}
-	if len(mc.Nodes) > 0 && mc.Nodes[0].Name != "" {
-		extraOpts["hostname-override"] = mc.Nodes[0].Name
+	if nc.Name != "" {
+		extraOpts["hostname-override"] = nc.Name
 	}
 
 	pauseImage := images.Pause(k8s.ImageRepository)

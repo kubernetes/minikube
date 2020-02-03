@@ -88,6 +88,7 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
 		ClusterName:       k8s.ClusterName,
+		NodeName:          cp.Name,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
 		ExtraArgs:         extraComponentConfig,
