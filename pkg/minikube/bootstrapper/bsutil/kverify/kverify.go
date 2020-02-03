@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
 	"time"
 
@@ -39,13 +40,12 @@ import (
 // APIServerProcess waits for api server to be healthy returns error if it doesn't
 func APIServerProcess(runner command.Runner, start time.Time, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver process to appear ...")
-	err := wait.PollImmediate(time.Second*1, timeout, func() (bool, error) {
+	err := wait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during process check")
 		}
-		rr, ierr := runner.RunCmd(exec.Command("sudo", "pgrep", "kube-apiserver"))
-		if ierr != nil {
-			glog.Warningf("pgrep apiserver: %v cmd: %s", ierr, rr.Command())
+
+		if _, ierr := apiServerPID(runner); ierr != nil {
 			return false, nil
 		}
 		return true, nil
@@ -55,6 +55,16 @@ func APIServerProcess(runner command.Runner, start time.Time, timeout time.Durat
 	}
 	glog.Infof("duration metric: took %s to wait for apiserver process to appear ...", time.Since(start))
 	return nil
+}
+
+// apiServerPID returns our best guess to the apiserver pid
+func apiServerPID(cr command.Runner) (int, error) {
+	rr, err := cr.RunCmd(exec.Command("sudo", "pgrep", "-xnf", "kube-apiserver.*minikube.*"))
+	if err != nil {
+		return 0, err
+	}
+	s := strings.TrimSpace(rr.Stdout.String())
+	return strconv.Atoi(s)
 }
 
 // SystemPods verifies essential pods for running kurnetes is running
@@ -124,19 +134,15 @@ func APIServerIsRunning(start time.Time, ip string, port int, timeout time.Durat
 // APIServerStatus returns apiserver status in libmachine style state.State
 func APIServerStatus(cr command.Runner, ip net.IP, port int) (state.State, error) {
 	glog.Infof("Checking apiserver status ...")
-	// sudo, in case hidepid is set
-	rr, err := cr.RunCmd(exec.Command("sudo", "pgrep", "kube-apiserver"))
+
+	pid, err := apiServerPID(cr)
 	if err != nil {
+		glog.Warningf("unable to get apiserver pid: %v", err)
 		return state.Stopped, nil
-	}
-	pids := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-	pid := pids[len(pids)-1]
-	if len(pids) != 1 {
-		glog.Errorf("found %d apiserver pids: %v - choosing %s", len(pids), pids, pid)
 	}
 
 	// Get the freezer cgroup entry for this pid
-	rr, err = cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", path.Join("/proc", pid, "cgroup")))
+	rr, err := cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", fmt.Sprintf("/proc/%d/cgroup", pid)))
 	if err != nil {
 		glog.Warningf("unable to find freezer cgroup: %v", err)
 		return apiServerHealthz(ip, port)
