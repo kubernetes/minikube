@@ -19,6 +19,7 @@ package addons
 import (
 	"fmt"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -68,8 +69,7 @@ func Set(name, value, profile string) error {
 		return errors.Wrap(err, "running callbacks")
 	}
 
-	glog.Infof("Writing new config for %q ...", profile)
-	// Write the value
+	glog.Infof("Writing out %q config to set %s=%v...", profile, name, value)
 	return config.Write(profile, c)
 }
 
@@ -263,33 +263,42 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 }
 
 // Start enables the default addons for a profile, plus any additional
-func Start(profile string, additional []string) {
+func Start(profile string, toEnable map[string]bool, additional []string) {
 	start := time.Now()
-	glog.Infof("enableAddons")
+	glog.Infof("enableAddons start: toEnable=%v, additional=%s", toEnable, additional)
 	defer func() {
 		glog.Infof("enableAddons completed in %s", time.Since(start))
 	}()
-	toEnable := []string{}
 
-	// Apply addons that are enabled by default
+	// Get the default values of any addons not saved to our config
 	for name, a := range assets.Addons {
-		enabled, err := a.IsEnabled(profile)
+		defaultVal, err := a.IsEnabled(profile)
 		if err != nil {
 			glog.Errorf("is-enabled failed for %q: %v", a.Name(), err)
 			continue
 		}
-		if enabled {
-			toEnable = append(toEnable, name)
+
+		_, exists := toEnable[name]
+		if !exists {
+			toEnable[name] = defaultVal
 		}
 	}
 
-	toEnable = append(toEnable, additional...)
-	if len(toEnable) == 0 {
-		return
+	// Apply new addons
+	for _, name := range additional {
+		toEnable[name] = true
 	}
 
-	out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnable, ", ")})
-	for _, a := range toEnable {
+	toEnableList := []string{}
+	for k, v := range toEnable {
+		if v {
+			toEnableList = append(toEnableList, k)
+		}
+	}
+	sort.Strings(toEnableList)
+
+	out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
+	for _, a := range toEnableList {
 		err := Set(a, "true", profile)
 		if err != nil {
 			// Intentionally non-fatal
