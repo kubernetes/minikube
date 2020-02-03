@@ -367,8 +367,12 @@ func runStart(cmd *cobra.Command, args []string) {
 	bootstrapCluster(bs, cr, mRunner, mc, preExists, isUpgrade)
 	configureMounts()
 
-	// enable addons
-	addons.Start(viper.GetString(config.MachineProfile), addonList)
+	// enable addons, both old and new!
+	existingAddons := map[string]bool{}
+	if existing != nil && existing.Addons != nil {
+		existingAddons = existing.Addons
+	}
+	addons.Start(viper.GetString(config.MachineProfile), existingAddons, addonList)
 
 	if err = cacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
