@@ -144,8 +144,10 @@ func (d *Driver) GetState() (state.State, error) {
 	if err != nil {
 		return ast, err
 	}
+
+	// If the apiserver is up, we'll claim to be up.
 	if ast == state.Paused || ast == state.Running {
-		return ast, nil
+		return state.Running, nil
 	}
 
 	return kverify.KubeletStatus(d.exec)
