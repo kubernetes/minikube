@@ -36,9 +36,8 @@ type vmSwitch struct {
 	NetAdapterInterfaceGuid []string
 }
 
+// returns network adapters matching to the given filtering condition
 func getNetAdapters(physical bool, condition string) ([]netAdapter, error) {
-	//	Get-NetAdapter -Physical | Where-Object {($_.Status -eq "Up") -And  ($_.PhysicalMediaType -notlike "*802.11*")} | Select-Object -Property InterfaceDescription
-	//	ConvertTo-Json @(Hyper-V\Get-VMSwitch | Where-Object { $_.SwitchType -eq 2 -And $_.NetAdapterInterfaceDescriptions -contains $Adapters[0].InterfaceDescription })
 	cmdlet := []string{"Get-NetAdapter"}
 	if physical {
 		cmdlet = append(cmdlet, "-Physical")
@@ -62,6 +61,7 @@ func getNetAdapters(physical bool, condition string) ([]netAdapter, error) {
 	return adapters, nil
 }
 
+// returns Hyper-V switches matching to the given filtering condition
 func getVMSwitch(condition string) ([]vmSwitch, error) {
 	cmd := []string{"Hyper-V\\Get-VMSwitch"}
 	if condition != "" {
@@ -82,6 +82,7 @@ func getVMSwitch(condition string) ([]vmSwitch, error) {
 	return vmSwitches, nil
 }
 
+// returns Hyper-V switches which connects to the adapter of the given GUID
 func findConnectedVMSwitch(adapterGUID string) (string, error) {
 	foundSwitches, err := getVMSwitch(fmt.Sprintf("($_.SwitchType -eq 2) -And ($_.NetAdapterInterfaceGuid -contains \"%s\")", adapterGUID))
 	if err != nil {
@@ -95,6 +96,7 @@ func findConnectedVMSwitch(adapterGUID string) (string, error) {
 	return "", nil
 }
 
+// returns "up" net adapters in the order Physical LAN adapters then other adapters
 func getOrderedAdapters() ([]netAdapter, error) {
 	// look for "Up" adapters and prefer physical LAN over other options
 	lanAdapters, err := getNetAdapters(true, "($_.Status -eq \"Up\") -And ($_.PhysicalMediaType -like \"*802.3*\")")
@@ -130,6 +132,7 @@ func getOrderedAdapters() ([]netAdapter, error) {
 	return orderedAdapters, nil
 }
 
+// create a new VM switch of the given name and network adapter
 func createVMSwitch(switchName string, adapter netAdapter) error {
 	err := cmd(fmt.Sprintf("Hyper-V\\New-VMSwitch -Name \"%s\" -NetAdapterInterfaceDescription \"%s\"", switchName, adapter.InterfaceDescription))
 	if err != nil {
@@ -139,6 +142,8 @@ func createVMSwitch(switchName string, adapter netAdapter) error {
 	return nil
 }
 
+// choose VM switch connected to an adapter. If adapter name is not specified,
+// it tries to use an "up" LAN adapter then other adapters for external network
 func chooseSwitch(adapterName string) (string, error) {
 	var adapter netAdapter
 	if adapterName != "" {
