@@ -30,6 +30,8 @@ dns:
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
+    extraArgs:
+      listen-metrics-urls: http://127.0.0.1:2381,http://1.1.1.1:2381
 kubernetesVersion: v1.14.0
 networking:
   dnsDomain: cluster.local
@@ -43,3 +45,7 @@ evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+metricsBindAddress: 1.1.1.1:10249

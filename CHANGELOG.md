@@ -1,5 +1,59 @@
 # Release Notes
 
+## Version 1.7.0-beta.2 - 2020-01-31
+
+* Add docker run-time for kic driver [#6436](https://github.com/kubernetes/minikube/pull/6436)
+* Add addon enablement to start [#6440](https://github.com/kubernetes/minikube/pull/6440)
+* Configure etcd and kube-proxy metrics to listen on minikube node IP [#6322](https://github.com/kubernetes/minikube/pull/6322)
+* add container runtime info to profile list [#6409](https://github.com/kubernetes/minikube/pull/6409)
+* Allow 'profiles list' to work even if a profile has no control plane [#6450](https://github.com/kubernetes/minikube/pull/6450)
+* status: Explicitly state that the cluster does not exist [#6438](https://github.com/kubernetes/minikube/pull/6438)
+* Do not use an arch suffix for the coredns name [#6243](https://github.com/kubernetes/minikube/pull/6243)
+* Allow building storage-provisioner for other arch [#6257](https://github.com/kubernetes/minikube/pull/6257)
+* Prevent registry-creds configure from failing when a secret does not exist.  [#6380](https://github.com/kubernetes/minikube/pull/6380)
+* improve checking modprob netfilter [#6427](https://github.com/kubernetes/minikube/pull/6427)
+
+Huge thank you for this release towards our contributors: 
+
+- Anders Björklund
+- Bjørn Harald Fotland
+- Chance Zibolski
+- Kim Bao Long
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- akshay
+
+## Version 1.7.0-beta.1 - 2020-01-24
+
+* Add 'pause' command to freeze Kubernetes cluster [#5962](https://github.com/kubernetes/minikube/pull/5962)
+* kic driver: add multiple profiles and ssh [#6390](https://github.com/kubernetes/minikube/pull/6390)
+* Update DefaultKubernetesVersion to v1.17.2 [#6392](https://github.com/kubernetes/minikube/pull/6392)
+* Add varlink program for using with podman-remote [#6349](https://github.com/kubernetes/minikube/pull/6349)
+* Batch file manipulation calls to reduce number of redundant commands [#6385](https://github.com/kubernetes/minikube/pull/6385)
+* Update Kubernetes libraries to v1.17.2 [#6374](https://github.com/kubernetes/minikube/pull/6374)
+* Fix dashboard by using kubectl apply/delete instead of prune for addons [#6376](https://github.com/kubernetes/minikube/pull/6376)
+* Remove addon manager [#6334](https://github.com/kubernetes/minikube/pull/6334)
+* Remove unnecessary crio restart to improve start latency [#6369](https://github.com/kubernetes/minikube/pull/6369)
+* Check for nil ref and img before passing them into go-containerregistry [#6236](https://github.com/kubernetes/minikube/pull/6236)
+* Change the compression methods used on the iso [#6341](https://github.com/kubernetes/minikube/pull/6341)
+* Update the crio.conf instead of overwriting it [#6219](https://github.com/kubernetes/minikube/pull/6219)
+* Update Japanese translation [#6339](https://github.com/kubernetes/minikube/pull/6339)
+* Fix syntax of minikube kubectl example command [#6255](https://github.com/kubernetes/minikube/pull/6255)
+* Stop minikube dashboard from crashing at start [#6325](https://github.com/kubernetes/minikube/pull/6325)
+
+Thanks you to the following contributors:
+
+- Anders F Björklund
+- inductor
+- Medya Ghazizadeh
+- Naoki Oketani
+- Priya Wadhwa
+- Sharif Elgamal
+- sshukun
+- Thomas Strömberg
+
 ## Version 1.7.0-beta.0 - 2020-01-15
 
 * add the ability to mark drivers as experimental  [#6326](https://github.com/kubernetes/minikube/pull/6326)
