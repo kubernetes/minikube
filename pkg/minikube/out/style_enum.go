@@ -45,7 +45,7 @@ const (
 	Option
 	Command
 	LogEntry
-	Crushed
+	Deleted
 	URL
 	Documentation
 	Issues
