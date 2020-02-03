@@ -60,8 +60,8 @@ func NewKubeletConfig(mc config.MachineConfig, r cruntime.Manager) ([]byte, erro
 	if _, ok := extraOpts["node-ip"]; !ok {
 		extraOpts["node-ip"] = cp.IP
 	}
-	if k8s.NodeName != "" {
-		extraOpts["hostname-override"] = k8s.NodeName
+	if len(mc.Nodes) > 0 && mc.Nodes[0].Name != "" {
+		extraOpts["hostname-override"] = mc.Nodes[0].Name
 	}
 
 	pauseImage := images.Pause(k8s.ImageRepository)
