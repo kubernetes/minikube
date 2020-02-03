@@ -74,10 +74,10 @@ func SaveToDir(images []string, cacheDir string) error {
 }
 
 // saveToTarFile caches an image
-func saveToTarFile(image, rawDest string) error {
+func saveToTarFile(iname, rawDest string) error {
 	start := time.Now()
 	defer func() {
-		glog.Infof("cache image %q -> %q took %s", image, rawDest, time.Since(start))
+		glog.Infof("cache image %q -> %q took %s", iname, rawDest, time.Since(start))
 	}()
 
 	// OS-specific mangling of destination path
@@ -104,15 +104,22 @@ func saveToTarFile(image, rawDest string) error {
 		return errors.Wrapf(err, "making cache image directory: %s", dst)
 	}
 
-	ref, err := name.ParseReference(image, name.WeakValidation)
+	ref, err := name.ParseReference(iname, name.WeakValidation)
 	if err != nil {
-		return errors.Wrapf(err, "parsing image ref name for %s", image)
+		return errors.Wrapf(err, "parsing image ref name for %s", iname)
+	}
+	if ref == nil {
+		return errors.Wrapf(err, "nil reference for %s", iname)
 	}
 
 	img, err := retrieveImage(ref)
 	if err != nil {
 		glog.Warningf("unable to retrieve image: %v", err)
 	}
+	if img == nil {
+		return errors.Wrapf(err, "nil image for %s", iname)
+	}
+
 	glog.Infoln("opening: ", dst)
 	f, err := ioutil.TempFile(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
 	if err != nil {
@@ -128,7 +135,7 @@ func saveToTarFile(image, rawDest string) error {
 			}
 		}
 	}()
-	tag, err := name.NewTag(image, name.WeakValidation)
+	tag, err := name.NewTag(iname, name.WeakValidation)
 	if err != nil {
 		return errors.Wrap(err, "newtag")
 	}

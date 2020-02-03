@@ -54,7 +54,21 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 	start := time.Now()
 
-	out, ok := f.cmdMap.Load(strings.Join(rr.Args, " "))
+	key := rr.Command()
+	out, ok := f.cmdMap.Load(key)
+	if !ok {
+		cmds := f.commands()
+		if len(cmds) == 0 {
+			return rr, fmt.Errorf("asked to execute %s, but FakeCommandRunner has no commands stored", rr.Command())
+		}
+
+		var txt strings.Builder
+		for _, c := range f.commands() {
+			txt.WriteString(fmt.Sprintf("  `%s`\n", c))
+		}
+		return rr, fmt.Errorf("unregistered command:\n  `%s`\nexpected one of:\n%s", key, txt.String())
+	}
+
 	var buf bytes.Buffer
 	outStr := ""
 	if out != nil {
@@ -69,14 +83,9 @@ func (f *FakeCommandRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 	elapsed := time.Since(start)
 
-	if ok {
-		// Reduce log spam
-		if elapsed > (1 * time.Second) {
-			glog.Infof("(FakeCommandRunner) Done: %v: (%s)", rr.Command(), elapsed)
-		}
-	} else {
-		glog.Infof("(FakeCommandRunner) Non-zero exit: %v: (%s)\n%s", rr.Command(), elapsed, out)
-		return rr, fmt.Errorf("unavailable command: %s", rr.Command())
+	// Reduce log spam
+	if elapsed > (1 * time.Second) {
+		glog.Infof("(FakeCommandRunner) Done: %v: (%s)", rr.Command(), elapsed)
 	}
 	return rr, nil
 }
@@ -108,6 +117,7 @@ func (f *FakeCommandRunner) SetFileToContents(fileToContents map[string]string) 
 // SetCommandToOutput stores the file to contents map for the FakeCommandRunner
 func (f *FakeCommandRunner) SetCommandToOutput(cmdToOutput map[string]string) {
 	for k, v := range cmdToOutput {
+		glog.Infof("fake command %q -> %q", k, v)
 		f.cmdMap.Store(k, v)
 	}
 }
@@ -119,6 +129,15 @@ func (f *FakeCommandRunner) GetFileToContents(filename string) (string, error) {
 		return "", fmt.Errorf("unavailable file: %s", filename)
 	}
 	return contents.(string), nil
+}
+
+func (f *FakeCommandRunner) commands() []string {
+	cmds := []string{}
+	f.cmdMap.Range(func(k, v interface{}) bool {
+		cmds = append(cmds, fmt.Sprintf("%s", k))
+		return true
+	})
+	return cmds
 }
 
 // DumpMaps prints out the list of stored commands and stored filenames.

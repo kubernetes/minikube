@@ -17,9 +17,11 @@ limitations under the License.
 package virtualbox
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/docker/machine/drivers/virtualbox"
 	"github.com/docker/machine/libmachine/drivers"
@@ -75,7 +77,11 @@ func status() registry.State {
 		}
 	}
 
-	cmd := exec.Command(path, "list", "hostinfo")
+	// Allow no more than 2 seconds for querying state
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, path, "list", "hostinfo")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return registry.State{

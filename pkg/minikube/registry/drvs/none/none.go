@@ -46,7 +46,7 @@ func configure(mc config.MachineConfig) (interface{}, error) {
 	return none.NewDriver(none.Config{
 		MachineName:      mc.Name,
 		StorePath:        localpath.MiniPath(),
-		ContainerRuntime: mc.ContainerRuntime,
+		ContainerRuntime: mc.KubernetesConfig.ContainerRuntime,
 	}), nil
 }
 
