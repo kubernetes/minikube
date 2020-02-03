@@ -191,6 +191,10 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		glog.Infof("configureHost completed within %s", time.Since(start))
 	}()
 
+	if err := createRequiredDirectories(h); err != nil {
+		errors.Wrap(err, "required directories")
+	}
+
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		glog.Infof("Detecting provisioner ...")
@@ -284,6 +288,12 @@ func trySSHPowerOff(h *host.Host) error {
 
 // StopHost stops the host VM, saving state to disk.
 func StopHost(api libmachine.API) error {
+	glog.Infof("Stopping host ...")
+	start := time.Now()
+	defer func() {
+		glog.Infof("Stopped host within %s", time.Since(start))
+	}()
+
 	machineName := viper.GetString(config.MachineProfile)
 	host, err := api.Load(machineName)
 	if err != nil {
@@ -299,6 +309,7 @@ func StopHost(api libmachine.API) error {
 	}
 
 	if err := host.Stop(); err != nil {
+		glog.Infof("host.Stop failed: %v", err)
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
 			return nil
@@ -527,7 +538,7 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 	}
 
 	if err := createRequiredDirectories(h); err != nil {
-		return h, errors.Wrap(err, "required directories")
+		errors.Wrap(err, "required directories")
 	}
 
 	if driver.BareMetal(cfg.VMDriver) {
