@@ -538,7 +538,7 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 	}
 
 	if err := createRequiredDirectories(h); err != nil {
-		errors.Wrap(err, "required directories")
+		return h, errors.Wrap(err, "required directories")
 	}
 
 	if driver.BareMetal(cfg.VMDriver) {
