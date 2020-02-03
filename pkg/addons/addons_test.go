@@ -119,7 +119,7 @@ func TestEnableAndDisableAddon(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	profile := createTestProfile(t)
-	Start(profile, []string{"dashboard"})
+	Start(profile, map[string]bool{}, []string{"dashboard"})
 
 	enabled, err := assets.Addons["dashboard"].IsEnabled(profile)
 	if err != nil {
