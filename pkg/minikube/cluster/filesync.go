@@ -48,12 +48,12 @@ func syncLocalAssets(cr command.Runner) error {
 
 // localAssets returns local files and addons from the minikube home directory
 func localAssets() ([]assets.CopyableFile, error) {
-	fs, err := assetsFromDir(localpath.MakeMiniPath("addons"), vmpath.GuestAddonsDir)
+	fs, err := assetsFromDir(localpath.MakeMiniPath("addons"), vmpath.GuestAddonsDir, true)
 	if err != nil {
 		return fs, errors.Wrap(err, "addons dir")
 	}
 
-	localFiles, err := assetsFromDir(localpath.MakeMiniPath("files"), "/")
+	localFiles, err := assetsFromDir(localpath.MakeMiniPath("files"), "/", false)
 	if err != nil {
 		return fs, errors.Wrap(err, "files dir")
 	}
@@ -62,8 +62,8 @@ func localAssets() ([]assets.CopyableFile, error) {
 	return fs, nil
 }
 
-// assetsFromDir generates assets from a local filepath
-func assetsFromDir(localRoot string, destRoot string) ([]assets.CopyableFile, error) {
+// assetsFromDir generates assets from a local filepath, with/without a flattened hierarchy
+func assetsFromDir(localRoot string, destRoot string, flatten bool) ([]assets.CopyableFile, error) {
 	glog.Infof("Scanning %s for local assets ...", localRoot)
 	fs := []assets.CopyableFile{}
 	err := filepath.Walk(localRoot, func(localPath string, fi os.FileInfo, err error) error {
@@ -86,11 +86,16 @@ func assetsFromDir(localRoot string, destRoot string) ([]assets.CopyableFile, er
 		}
 
 		dest := path.Join(destRoot, rel)
-		f, err := assets.NewFileAsset(localPath, path.Dir(dest), path.Base(dest), ps)
+		targetDir := path.Dir(dest)
+		targetName := path.Base(dest)
+		if flatten {
+			targetDir = destRoot
+		}
+		glog.Infof("local asset: %s -> %s in %s", localPath, targetName, targetDir)
+		f, err := assets.NewFileAsset(localPath, targetDir, targetName, ps)
 		if err != nil {
 			return errors.Wrapf(err, "creating file asset for %s", localPath)
 		}
-		glog.Infof("found asset to sync: %s -> %s", localPath, dest)
 		fs = append(fs, f)
 		return nil
 	})
