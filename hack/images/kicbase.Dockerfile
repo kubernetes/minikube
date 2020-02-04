@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
   && apt-get clean -y 
 # disable containerd by default
 RUN systemctl disable containerd
+RUN rm /etc/crictl.yaml
 # enable docker which is default
 RUN systemctl enable docker
 # making SSH work for docker container 
