@@ -113,6 +113,12 @@ func TestStartStop(t *testing.T) {
 					}
 				}
 
+				// Enable an addon to assert it comes up afterwards
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+				if err != nil {
+					t.Errorf("%s failed: %v", rr.Args, err)
+				}
+
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
@@ -121,8 +127,13 @@ func TestStartStop(t *testing.T) {
 
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-				} else if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute); err != nil {
-					t.Fatalf("wait: %v", err)
+				} else {
+					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute); err != nil {
+						t.Fatalf("post-stop-start pod wait: %v", err)
+					}
+					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", 4*time.Minute); err != nil {
+						t.Fatalf("post-stop-start addon wait: %v", err)
+					}
 				}
 
 				got := Status(ctx, t, Target(), profile, "Host")
