@@ -158,13 +158,7 @@ func postStartSetup(h *host.Host, mc config.MachineConfig) error {
 		showLocalOsRelease()
 	}
 
-	if !driver.BareMetal(mc.VMDriver) && !driver.IsKIC(mc.VMDriver) {
-		showRemoteOsRelease(h.Driver)
-		if err := ensureSyncedGuestClock(h); err != nil {
-			return err
-		}
-	}
-	return nil
+	return syncLocalAssets(r)
 }
 
 // commandRunner returns best available command runner for this host

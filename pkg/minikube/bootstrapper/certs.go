@@ -221,8 +221,8 @@ func generateCerts(k8s config.KubernetesConfig, n config.Node) error {
 	}
 
 	for _, caCertSpec := range caCertSpecs {
-		if !(util.CanReadFile(caCertSpec.certPath) &&
-			util.CanReadFile(caCertSpec.keyPath)) {
+		if !(canReadFile(caCertSpec.certPath) &&
+			canReadFile(caCertSpec.keyPath)) {
 			if err := util.GenerateCACert(
 				caCertSpec.certPath, caCertSpec.keyPath, caCertSpec.subject,
 			); err != nil {
@@ -360,4 +360,15 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 		}
 	}
 	return nil
+}
+
+// canReadFile returns true if the file represented
+// by path exists and is readable, otherwise false.
+func canReadFile(path string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+	return true
 }
