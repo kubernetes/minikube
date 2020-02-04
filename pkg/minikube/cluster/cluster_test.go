@@ -338,7 +338,7 @@ func TestGetHostStatus(t *testing.T) {
 	checkState(state.Stopped.String())
 }
 
-func TestGetHostDockerEnv(t *testing.T) {
+func TestGetNodeDockerEnv(t *testing.T) {
 	RegisterMockDriver(t)
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
@@ -356,7 +356,7 @@ func TestGetHostDockerEnv(t *testing.T) {
 	}
 	h.Driver = d
 
-	envMap, err := GetHostDockerEnv(api)
+	envMap, err := GetNodeDockerEnv(api)
 	if err != nil {
 		t.Fatalf("Unexpected error getting env: %v", err)
 	}
@@ -374,7 +374,7 @@ func TestGetHostDockerEnv(t *testing.T) {
 	}
 }
 
-func TestGetHostDockerEnvIPv6(t *testing.T) {
+func TestGetNodeDockerEnvIPv6(t *testing.T) {
 	RegisterMockDriver(t)
 
 	tempDir := tests.MakeTempDir()
@@ -393,7 +393,7 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 	}
 	h.Driver = d
 
-	envMap, err := GetHostDockerEnv(api)
+	envMap, err := GetNodeDockerEnv(api)
 	if err != nil {
 		t.Fatalf("Unexpected error getting env: %v", err)
 	}

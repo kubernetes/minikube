@@ -31,8 +31,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-// GetHostDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
-func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
+// GetNodeDockerEnv gets the necessary docker env variables to allow the use of docker through minikube's vm
+func GetNodeDockerEnv(api libmachine.API) (map[string]string, error) {
 	pName := viper.GetString(config.MachineProfile)
 	host, err := CheckIfHostExistsAndLoad(api, pName)
 	if err != nil {
@@ -58,9 +58,10 @@ func GetHostDockerEnv(api libmachine.API) (map[string]string, error) {
 	}
 
 	envMap := map[string]string{
-		constants.DockerTLSVerifyEnv: "1",
-		constants.DockerHostEnv:      tcpPrefix + net.JoinHostPort(ip, fmt.Sprint(port)),
-		constants.DockerCertPathEnv:  localpath.MakeMiniPath("certs"),
+		constants.DockerTLSVerifyEnv:       "1",
+		constants.DockerHostEnv:            tcpPrefix + net.JoinHostPort(ip, fmt.Sprint(port)),
+		constants.DockerCertPathEnv:        localpath.MakeMiniPath("certs"),
+		constants.MinikubeActiveDockerdEnv: pName,
 	}
 	return envMap, nil
 }

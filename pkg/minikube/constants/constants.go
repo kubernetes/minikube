@@ -39,7 +39,6 @@ const (
 	ClusterDNSDomain = "cluster.local"
 	// DefaultServiceCIDR is The CIDR to be used for service cluster IPs
 	DefaultServiceCIDR = "10.96.0.0/12"
-
 	// DockerTLSVerifyEnv is used for docker daemon settings
 	DockerTLSVerifyEnv = "DOCKER_TLS_VERIFY"
 	// DockerHostEnv is used for docker daemon settings
@@ -48,8 +47,12 @@ const (
 	DockerCertPathEnv = "DOCKER_CERT_PATH"
 	// MinikubeActiveDockerdEnv holds the docker daemon which user's shell is pointing at
 	// value would be profile or empty if pointing to the user's host daemon.
+	// DockerDaemonEnvs has list of environment variables to control docker daemon shell is using
+
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
 )
+
+var DockerDaemonEnvs = [3]string{DockerHostEnv, DockerTLSVerifyEnv, DockerCertPathEnv}
 
 // DefaultMinipath is the default Minikube path (under the home directory)
 var DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")

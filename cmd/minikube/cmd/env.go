@@ -163,7 +163,7 @@ REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 
 func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 
-	envMap, err := cluster.GetHostDockerEnv(api)
+	envMap, err := cluster.GetNodeDockerEnv(api)
 	if err != nil {
 		return nil, err
 	}
