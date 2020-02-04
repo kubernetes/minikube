@@ -30,6 +30,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -88,6 +89,10 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
 			return h, errors.Wrap(err, "provision")
 		}
+	}
+
+	if h.DriverName == driver.Mock {
+		return h, nil
 	}
 
 	if err := postStartSetup(h, mc); err != nil {
