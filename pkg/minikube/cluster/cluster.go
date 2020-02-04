@@ -284,6 +284,12 @@ func trySSHPowerOff(h *host.Host) error {
 
 // StopHost stops the host VM, saving state to disk.
 func StopHost(api libmachine.API) error {
+	glog.Infof("Stopping host ...")
+	start := time.Now()
+	defer func() {
+		glog.Infof("Stopped host within %s", time.Since(start))
+	}()
+
 	machineName := viper.GetString(config.MachineProfile)
 	host, err := api.Load(machineName)
 	if err != nil {
@@ -299,6 +305,7 @@ func StopHost(api libmachine.API) error {
 	}
 
 	if err := host.Stop(); err != nil {
+		glog.Infof("host.Stop failed: %v", err)
 		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
 		if ok && alreadyInStateError.State == state.Stopped {
 			return nil
