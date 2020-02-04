@@ -30,37 +30,22 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // ExecRunner runs commands using the os/exec package.
 //
 // It implements the CommandRunner interface.
 type execRunner struct {
-	EnsureUsingHostDaemon bool // if set it ensures that the command runs against the host docker (podman) daemon not the one inside minikube
 }
 
 // NewExecRunner returns a kicRunner implementor of runner which runs cmds inside a container
-func NewExecRunner(ensureHostDaemon ...bool) Runner {
-	if len(ensureHostDaemon) > 0 {
-		return &execRunner{
-			EnsureUsingHostDaemon: ensureHostDaemon[0]}
-	} else {
-		return &execRunner{}
-	}
+func NewExecRunner() Runner {
+	return &execRunner{}
 }
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
 func (e *execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
-	glog.Infof("Run: %v", rr.Command())
-	if e.EnsureUsingHostDaemon {
-		err := pointToHostDockerDaemon()
-		if err != nil {
-			return rr, errors.Wrap(err, "pointing to correct docker-daemon")
-		}
-	}
-
 	var outb, errb io.Writer
 	if cmd.Stdout == nil {
 		var so bytes.Buffer
@@ -99,12 +84,6 @@ func (e *execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 // Copy copies a file and its permissions
 func (e *execRunner) Copy(f assets.CopyableFile) error {
-	if e.EnsureUsingHostDaemon {
-		err := pointToHostDockerDaemon()
-		if err != nil {
-			return errors.Wrap(err, "pointing to correct docker-daemon")
-		}
-	}
 	targetPath := path.Join(f.GetTargetDir(), f.GetTargetName())
 	if _, err := os.Stat(targetPath); err == nil {
 		if err := os.Remove(targetPath); err != nil {
@@ -134,35 +113,6 @@ do you have the correct permissions?`,
 
 // Remove removes a file
 func (e *execRunner) Remove(f assets.CopyableFile) error {
-	if e.EnsureUsingHostDaemon {
-		err := pointToHostDockerDaemon()
-		if err != nil {
-			return errors.Wrap(err, "pointing to correct docker-daemon")
-		}
-	}
 	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 	return os.Remove(targetPath)
-}
-
-// pointToHostDockerDaemon will unset env variables that point to docker inside minikube
-// to make sure it points to the docker daemon installed by user.
-func pointToHostDockerDaemon() error {
-	start := time.Now()
-	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
-	if p != "" {
-		fmt.Println("medya dbg: shell is pointing to docker inside minikube will unset")
-	}
-
-	for i := range constants.DockerDaemonEnvs {
-		e := constants.DockerDaemonEnvs[i]
-		fmt.Printf("medya dbg: setting env %s", e)
-		err := os.Setenv(e, "")
-		if err != nil {
-			return errors.Wrapf(err, "resetting %s env", e)
-		}
-
-	}
-	elapsed := time.Since(start)
-	fmt.Printf("Done: (%s)\n", elapsed)
-	return nil
 }
