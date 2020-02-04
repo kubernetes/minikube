@@ -1148,12 +1148,15 @@ Suggested workarounds:
 
 func tryLookup(r command.Runner) {
 	// DNS check
-	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
-		glog.Warningf("%s failed: %v", rr.Args, err)
-		out.WarningT("VM may be unable to resolve external DNS records")
+	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io", "-type=ns")); err != nil {
+		glog.Infof("%s failed: %v which might be okay will retry nslookup without query type", rr.Args, err)
+		// will try with without query type for ISOs with different busybox versions.
+		if _, err = r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
+			glog.Warningf("nslookup failed: %v", err)
+			out.WarningT("Node may be unable to resolve external DNS records")
+		}
 	}
 }
-
 func tryRegistry(r command.Runner) {
 	// Try an HTTPS connection to the image repository
 	proxy := os.Getenv("HTTPS_PROXY")
