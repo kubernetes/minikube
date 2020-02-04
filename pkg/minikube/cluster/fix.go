@@ -91,6 +91,10 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 		}
 	}
 
+	if h.DriverName == driver.Mock {
+		return h, nil
+	}
+
 	if err := postStartSetup(h, mc); err != nil {
 		return h, errors.Wrap(err, "post-start")
 	}
