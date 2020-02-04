@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y \
   openssh-server \
   docker.io \
   && apt-get clean -y 
+# we will use provision package in future https://github.com/kubernetes/minikube/issues/6485
+ADD hack/images/docker.service /lib/systemd/system/docker.service
 # disable containerd by default
 RUN systemctl disable containerd
 # enable docker which is default
