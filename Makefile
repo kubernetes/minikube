@@ -51,7 +51,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.19.88
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.21.0
+GOLINT_VERSION ?= v1.23.2
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -500,8 +500,8 @@ storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-pr
 
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
-	docker rmi -f $(REGISTRY)/kicbase:v0.0.3-snapshot || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.3-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
+	docker rmi -f $(REGISTRY)/kicbase:v0.0.4-snapshot || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.4-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
 
 
 
@@ -534,6 +534,12 @@ release-minikube: out/minikube checksum ## Minikube release
 out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-amd64
 	cp $< $@
 
+out/docker-machine-driver-kvm2-x86_64: out/docker-machine-driver-kvm2-amd64
+	cp $< $@
+
+out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
+	cp $< $@
+
 out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
@@ -560,7 +566,7 @@ out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_%.deb: out/docker-machine-driver
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
 	sed -E -i 's/--ARCH--/'$*'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
 	mkdir -p out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin
-	cp out/docker-machine-driver-kvm2 out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
+	cp $< out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
 	fakeroot dpkg-deb --build out/docker-machine-driver-kvm2_$(DEB_VERSION) $@
 	rm -rf out/docker-machine-driver-kvm2_$(DEB_VERSION)
 
