@@ -91,7 +91,7 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 		}
 	}
 
-	if h.DriverName == driver.Mock {
+	if driver.IsMock(h.DriverName) {
 		return h, nil
 	}
 
