@@ -191,6 +191,10 @@ func configureHost(h *host.Host, e *engine.Options) error {
 		glog.Infof("configureHost completed within %s", time.Since(start))
 	}()
 
+	if err := createRequiredDirectories(h); err != nil {
+		return errors.Wrap(err, "required directories")
+	}
+
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		glog.Infof("Detecting provisioner ...")
