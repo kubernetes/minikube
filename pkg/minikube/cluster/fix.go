@@ -7,12 +7,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/machine/libmachine/engine"
-	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/provision"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -23,7 +24,37 @@ var (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(h *host.Host, e *engine.Options) error {
+func fixHost(api libmachine.API, mc config.MachineConfig) error {
+	h, err := api.Load(cfg.Name)
+	if err != nil {
+		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
+	}
+
+	s, err := h.Driver.GetState()
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting state for host")
+	}
+
+	if s == state.Running {
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": cfg.VMDriver, "profile_name": cfg.Name})
+	} else {
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": cfg.VMDriver, "profile_name": cfg.Name})
+		if err := h.Driver.Start(); err != nil {
+			return nil, errors.Wrap(err, "start")
+		}
+		if err := api.Save(h); err != nil {
+			return nil, errors.Wrap(err, "save")
+		}
+	}
+
+	e := engineOptions(cfg)
+	out.T(out.Waiting, "Waiting for the host to be provisioned ...")
+	err = fixHost(h, e, cfg)
+	if err != nil {
+		return nil, err
+	}
+	return h, nil
+
 	start := time.Now()
 	glog.Infof("fixHost: %+v", h.Driver)
 	defer func() {
@@ -43,10 +74,10 @@ func fixHost(h *host.Host, e *engine.Options) error {
 		}
 	}
 
-	if driver.BareMetal(h.Driver.DriverName()) {
-		glog.Infof("%s is a local driver, skipping auth/time setup", h.Driver.DriverName())
-		return nil
+	if err := postStartSetup(h, mc); err != nil {
+		return errors.Wrap(err, "post-start")
 	}
+
 	glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
 	if err := h.ConfigureAuth(); err != nil {
 		return &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}

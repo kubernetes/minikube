@@ -12,12 +12,10 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -61,49 +59,11 @@ func StartHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error)
 		return nil, errors.Wrapf(err, "exists: %s", cfg.Name)
 	}
 	if !exists {
-		glog.Infoln("Machine does not exist... provisioning new machine")
-		glog.Infof("Provisioning machine with config: %+v", cfg)
+		glog.Infof("Provisioning new machine with config: %+v", cfg)
 		return createHost(api, cfg)
 	}
-
 	glog.Infoln("Skipping create...Using existing machine configuration")
-
-	h, err := api.Load(cfg.Name)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
-	}
-
-	if exists && cfg.Name == constants.DefaultMachineName {
-		out.T(out.Tip, "Tip: Use 'minikube start -p <name>' to create a new cluster, or 'minikube delete' to delete this one.")
-	}
-
-	s, err := h.Driver.GetState()
-	glog.Infoln("Machine state: ", s)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error getting state for host")
-	}
-
-	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": cfg.VMDriver, "profile_name": cfg.Name})
-	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": cfg.VMDriver, "profile_name": cfg.Name})
-		if err := h.Driver.Start(); err != nil {
-			return nil, errors.Wrap(err, "start")
-		}
-		if err := api.Save(h); err != nil {
-			return nil, errors.Wrap(err, "save")
-		}
-	}
-
-	e := engineOptions(cfg)
-	glog.Infof("engine options: %+v", e)
-
-	out.T(out.Waiting, "Waiting for the host to be provisioned ...")
-	err = fixHost(h, e)
-	if err != nil {
-		return nil, err
-	}
-	return h, nil
+	return fixHost(api, cfg)
 }
 
 func engineOptions(cfg config.MachineConfig) *engine.Options {
@@ -150,50 +110,9 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "create")
 	}
 
-	if err := createRequiredDirectories(h); err != nil {
-		return h, errors.Wrap(err, "required directories")
+	if err := postStartSetup(h, cfg); err != nil {
+		return h, errors.Wrap(err, "post-start")
 	}
-
-	for _, addon := range addon.Assets {
-		var f assets.CopyableFile
-		var err error
-		if addon.IsTemplate() {
-			f, err = addon.Evaluate(data)
-			if err != nil {
-				return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
-			}
-
-		} else {
-			f = addon
-		}
-		fPath := path.Join(f.GetTargetDir(), f.GetTargetName())
-
-		if enable {
-			glog.Infof("installing %s", fPath)
-			if err := cmd.Copy(f); err != nil {
-				return err
-			}
-		} else {
-			glog.Infof("Removing %+v", fPath)
-			defer func() {
-				if err := cmd.Remove(f); err != nil {
-					glog.Warningf("error removing %s; addon should still be disabled as expected", fPath)
-				}
-			}()
-		}
-		files = append(files, fPath)
-	}
-
-	if driver.BareMetal(cfg.VMDriver) {
-		showLocalOsRelease()
-	} else if !driver.BareMetal(cfg.VMDriver) && !driver.IsKIC(cfg.VMDriver) {
-		showRemoteOsRelease(h.Driver)
-		// Ensure that even new VM's have proper time synchronization up front
-		// It's 2019, and I can't believe I am still dealing with time desync as a problem.
-		if err := ensureSyncedGuestClock(h); err != nil {
-			return h, err
-		}
-	} // TODO:medyagh add show-os release for kic
 
 	if err := api.Save(h); err != nil {
 		return nil, errors.Wrap(err, "save")
@@ -201,12 +120,13 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 	return h, nil
 }
 
-// createRequiredDirectories creates directories expected by minikube to exist
-func createRequiredDirectories(h *host.Host) error {
+// postStart are functions shared between startHost and fixHost
+func postStartSetup(h *host.Host, mc config.MachineConfig) error {
 	if h.DriverName == driver.Mock {
-		glog.Infof("skipping createRequiredDirectories")
+		glog.Infof("mock driver: skipping postStart")
 		return nil
 	}
+
 	glog.Infof("creating required directories: %v", requiredDirectories)
 	r, err := commandRunner(h)
 	if err != nil {
@@ -216,6 +136,17 @@ func createRequiredDirectories(h *host.Host) error {
 	args := append([]string{"mkdir", "-p"}, requiredDirectories...)
 	if _, err := r.RunCmd(exec.Command("sudo", args...)); err != nil {
 		return errors.Wrapf(err, "sudo mkdir (%s)", h.DriverName)
+	}
+
+	if driver.BareMetal(mc.VMDriver) {
+		showLocalOsRelease()
+	}
+
+	if !driver.BareMetal(mc.VMDriver) && !driver.IsKIC(mc.VMDriver) {
+		showRemoteOsRelease(h.Driver)
+		if err := ensureSyncedGuestClock(h); err != nil {
+			return err
+		}
 	}
 	return nil
 }
