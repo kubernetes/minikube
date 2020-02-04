@@ -214,7 +214,6 @@ func (api *LocalClient) Create(h *host.Host) error {
 				var pv lib_provision.Provisioner
 				if driver.IsKIC(h.Driver.DriverName()) {
 					pv = provision.NewUbuntuProvisioner(h.Driver)
-					fmt.Println("choosing ubuntu provisioner")
 				} else {
 					pv = provision.NewBuildrootProvisioner(h.Driver)
 				}
