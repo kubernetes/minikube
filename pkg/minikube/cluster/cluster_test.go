@@ -362,9 +362,10 @@ func TestGetHostDockerEnv(t *testing.T) {
 	}
 
 	dockerEnvKeys := [...]string{
-		"DOCKER_TLS_VERIFY",
-		"DOCKER_HOST",
-		"DOCKER_CERT_PATH",
+		constants.DockerTLSVerifyEnv,
+		constants.DockerHostEnv,
+		constants.DockerCertPathEnv,
+		constants.MinikubeActiveDockerdEnv,
 	}
 	for _, dockerEnvKey := range dockerEnvKeys {
 		if _, hasKey := envMap[dockerEnvKey]; !hasKey {
