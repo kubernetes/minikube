@@ -174,10 +174,10 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 	}
 
 	shellCfg := &ShellConfig{
-		DockerCertPath:         envMap["DOCKER_CERT_PATH"],
-		DockerHost:             envMap["DOCKER_HOST"],
-		DockerTLSVerify:        envMap["DOCKER_TLS_VERIFY"],
-		MinikubeDockerdProfile: envMap["MINIKUBE_ACTIVE_DOCKERD"],
+		DockerCertPath:         envMap[constants.DockerCertPathEnv],
+		DockerHost:             envMap[constants.DockerHostEnv],
+		DockerTLSVerify:        envMap[constants.DockerTLSVerifyEnv],
+		MinikubeDockerdProfile: envMap[constants.MinikubeActiveDockerdEnv],
 		UsageHint:              generateUsageHint(userShell),
 	}
 
