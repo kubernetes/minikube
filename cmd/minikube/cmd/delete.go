@@ -35,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -131,14 +132,12 @@ func runDelete(cmd *cobra.Command, args []string) {
 		profileName := viper.GetString(pkg_config.MachineProfile)
 		profile, err := pkg_config.LoadProfile(profileName)
 		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": profileName})
 		}
 
 		errs := DeleteProfiles([]*pkg_config.Profile{profile})
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
-		} else {
-			out.T(out.DeletingHost, "Successfully deleted profile \"{{.name}}\"", out.V{"name": profileName})
 		}
 	}
 
@@ -153,7 +152,7 @@ func purgeMinikubeDirectory() {
 	if err := os.RemoveAll(localpath.MiniPath()); err != nil {
 		exit.WithError("unable to delete minikube config folder", err)
 	}
-	out.T(out.Crushed, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
+	out.T(out.Deleted, "Successfully purged minikube directory located at - [{{.minikubeDirectory}}]", out.V{"minikubeDirectory": localpath.MiniPath()})
 }
 
 // DeleteProfiles deletes one or more profiles
@@ -188,13 +187,13 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 	defer api.Close()
 	cc, err := pkg_config.Load(profile.Name)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !pkg_config.IsNotExist(err) {
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
 		return DeletionError{Err: delErr, Errtype: MissingProfile}
 	}
 
 	if err == nil && driver.BareMetal(cc.VMDriver) {
-		if err := uninstallKubernetes(api, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+		if err := uninstallKubernetes(api, profile.Name, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
 			if ok {
 				delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
@@ -212,7 +211,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	if err = cluster.DeleteHost(api, profile.Name); err != nil {
 		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.name}}" cluster does not exist. Proceeding ahead with cleanup.`, out.V{"name": profile.Name})
+			glog.Infof("%s cluster does not exist. Proceeding ahead with cleanup.", profile.Name)
 		default:
 			out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
 			out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
@@ -223,7 +222,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	deleteProfileDirectory(profile.Name)
 
 	if err := pkg_config.DeleteProfile(profile.Name); err != nil {
-		if os.IsNotExist(err) {
+		if pkg_config.IsNotExist(err) {
 			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("\"%s\" profile does not exist", profile.Name))
 			return DeletionError{Err: delErr, Errtype: MissingProfile}
 		}
@@ -231,11 +230,10 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		return DeletionError{Err: delErr, Errtype: Fatal}
 	}
 
-	out.T(out.Crushed, `The "{{.name}}" cluster has been deleted.`, out.V{"name": profile.Name})
-
 	if err := deleteContext(profile.Name); err != nil {
 		return err
 	}
+	out.T(out.Deleted, `Removed all traces of the "{{.name}}" cluster.`, out.V{"name": profile.Name})
 	return nil
 }
 
@@ -276,12 +274,34 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
 }
 
-func uninstallKubernetes(api libmachine.API, kc pkg_config.KubernetesConfig, bsName string) error {
+func uninstallKubernetes(api libmachine.API, profile string, kc pkg_config.KubernetesConfig, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
 	clusterBootstrapper, err := getClusterBootstrapper(api, bsName)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
-	} else if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
+	}
+
+	host, err := cluster.CheckIfHostExistsAndLoad(api, profile)
+	if err != nil {
+		exit.WithError("Error getting host", err)
+	}
+	r, err := machine.CommandRunner(host)
+	if err != nil {
+		exit.WithError("Failed to get command runner", err)
+	}
+
+	cr, err := cruntime.New(cruntime.Config{Type: kc.ContainerRuntime, Runner: r})
+	if err != nil {
+		exit.WithError("Failed runtime", err)
+	}
+
+	// Unpause the cluster if necessary to avoid hung kubeadm
+	_, err = cluster.Unpause(cr, r, nil)
+	if err != nil {
+		glog.Errorf("unpause failed: %v", err)
+	}
+
+	if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
 		return DeletionError{Err: fmt.Errorf("failed to delete cluster: %v", err), Errtype: Fatal}
 	}
 	return nil

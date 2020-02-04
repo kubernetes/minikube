@@ -40,6 +40,7 @@ jobs=(
      # 'KVM-GPU_Linux' - Disabled
      'KVM_Linux'
      'none_Linux'
+     'Docker_Linux'
 )
 
 # retry_github_status provides reliable github status updates
@@ -78,6 +79,6 @@ function retry_github_status() {
 
 for j in ${jobs[@]}; do
   retry_github_status "${ghprbActualCommit}" "${j}" "pending" "${access_token}" \
-    "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}.txt"
+    "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}.pending"
 done
 

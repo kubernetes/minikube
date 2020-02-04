@@ -18,6 +18,9 @@ package config
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -32,11 +35,11 @@ var addonsDisableCmd = &cobra.Command{
 		}
 
 		addon := args[0]
-		err := Set(addon, "false")
+		err := addons.Set(addon, "false", viper.GetString(config.MachineProfile))
 		if err != nil {
 			exit.WithError("disable failed", err)
 		}
-		out.SuccessT(`"{{.minikube_addon}}" was successfully disabled`, out.V{"minikube_addon": addon})
+		out.T(out.AddonDisable, `"The '{{.minikube_addon}}' addon is disabled`, out.V{"minikube_addon": addon})
 	},
 }
 

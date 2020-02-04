@@ -14,13 +14,13 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 6
-VERSION_BUILD ?= 1
+VERSION_MINOR ?= 7
+VERSION_BUILD ?= 0-beta.2
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
@@ -29,7 +29,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 GO_VERSION ?= 1.13.4
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2019.02.7
+BUILDROOT_BRANCH ?= 2019.02.8
 REGISTRY?=gcr.io/k8s-minikube
 
 # Get git commit id
@@ -49,9 +49,9 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.81
+KERNEL_VERSION ?= 4.19.88
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.21.0
+GOLINT_VERSION ?= v1.23.2
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
@@ -82,10 +82,16 @@ BUILD_OS := $(shell uname -s)
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 
 STORAGE_PROVISIONER_TAG := v1.8.1
+# TODO: multi-arch manifest
+ifeq ($(GOARCH),amd64)
+STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
+else
+STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
+endif
 
 # Set the version information for the Kubernetes servers
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT)
-PROVISIONER_LDFLAGS := "$(MINIKUBE_LDFLAGS) -s -w"
+PROVISIONER_LDFLAGS := "-X k8s.io/minikube/pkg/storage.version=$(STORAGE_PROVISIONER_TAG) -s -w"
 
 MINIKUBEFILES := ./cmd/minikube/
 HYPERKIT_FILES := ./cmd/drivers/hyperkit
@@ -369,6 +375,9 @@ mdlint:
 out/docs/minikube.md: $(shell find "cmd") $(shell find "pkg/minikube/constants") pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go run -ldflags="$(MINIKUBE_LDFLAGS)" -tags gendocs hack/help_text/gen_help_text.go
 
+deb_version:
+	@echo $(DEB_VERSION)
+
 out/minikube_$(DEB_VERSION).deb: out/minikube_$(DEB_VERSION)-0_amd64.deb
 	cp $< $@
 
@@ -381,6 +390,9 @@ out/minikube_$(DEB_VERSION)-0_%.deb: out/minikube-linux-%
 	cp $< out/minikube_$(DEB_VERSION)/usr/bin/minikube
 	fakeroot dpkg-deb --build out/minikube_$(DEB_VERSION) $@
 	rm -rf out/minikube_$(DEB_VERSION)
+
+rpm_version:
+	@echo $(RPM_VERSION)
 
 out/minikube-$(RPM_VERSION).rpm: out/minikube-$(RPM_VERSION)-0.x86_64.rpm
 	cp $< $@
@@ -473,24 +485,30 @@ $(ISO_BUILD_IMAGE): deploy/iso/minikube-iso/Dockerfile
 	@echo ""
 	@echo "$(@) successfully built"
 
-out/storage-provisioner:
-	GOOS=linux go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+out/storage-provisioner: out/storage-provisioner-$(GOARCH)
+	cp $< $@
+
+out/storage-provisioner-%: cmd/storage-provisioner/main.go pkg/storage/storage_provisioner.go
+ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
+	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
+else
+	CGO_ENABLED=0 GOOS=linux GOARCH=$* go build -o $@ -ldflags=$(PROVISIONER_LDFLAGS) cmd/storage-provisioner/main.go
+endif
 
 .PHONY: storage-provisioner-image
-storage-provisioner-image: out/storage-provisioner ## Build storage-provisioner docker image
-ifeq ($(GOARCH),amd64)
-	docker build -t $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile  .
-else
-	docker build -t $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG) -f deploy/storage-provisioner/Dockerfile-$(GOARCH) .
-endif
+storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-provisioner docker image
+	docker build -t $(STORAGE_PROVISIONER_IMAGE) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$(GOARCH) .
+
+.PHONY: kic-base-image
+kic-base-image: ## builds the base image used for kic.
+	docker rmi -f $(REGISTRY)/kicbase:v0.0.4-snapshot || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.4-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
+
+
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
-ifeq ($(GOARCH),amd64)
-	gcloud docker -- push $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
-else
-	gcloud docker -- push $(REGISTRY)/storage-provisioner-$(GOARCH):$(STORAGE_PROVISIONER_TAG)
-endif
+	gcloud docker -- push $(STORAGE_PROVISIONER_IMAGE)
 
 .PHONY: out/gvisor-addon
 out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Build gvisor addon
@@ -514,13 +532,23 @@ release-minikube: out/minikube checksum ## Minikube release
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH) $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH)
 	gsutil cp out/minikube-$(GOOS)-$(GOARCH).sha256 $(MINIKUBE_UPLOAD_LOCATION)/$(MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH).sha256
 
-out/docker-machine-driver-kvm2:
+out/docker-machine-driver-kvm2: out/docker-machine-driver-kvm2-amd64
+	cp $< $@
+
+out/docker-machine-driver-kvm2-x86_64: out/docker-machine-driver-kvm2-amd64
+	cp $< $@
+
+out/docker-machine-driver-kvm2-aarch64: out/docker-machine-driver-kvm2-arm64
+	cp $< $@
+
+out/docker-machine-driver-kvm2-%:
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	docker inspect -f '{{.Id}} {{.RepoTags}}' $(KVM_BUILD_IMAGE) || $(MAKE) kvm-image
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make $@ COMMIT=$(COMMIT))
 	# make extra sure that we are linking with the older version of libvirt (1.3.1)
 	test "`strings $@ | grep '^LIBVIRT_[0-9]' | sort | tail -n 1`" = "LIBVIRT_1.2.9"
 else
+	GOARCH=$* \
 	go build \
 		-installsuffix "static" \
 		-ldflags="$(KVM2_LDFLAGS)" \
@@ -530,21 +558,29 @@ else
 endif
 	chmod +X $@
 
-out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2
+out/docker-machine-driver-kvm2_$(DEB_VERSION).deb: out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_amd64.deb
+	cp $< $@
+
+out/docker-machine-driver-kvm2_$(DEB_VERSION)-0_%.deb: out/docker-machine-driver-kvm2-%
 	cp -r installers/linux/deb/kvm2_deb_template out/docker-machine-driver-kvm2_$(DEB_VERSION)
 	chmod 0755 out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN
 	sed -E -i 's/--VERSION--/'$(DEB_VERSION)'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
+	sed -E -i 's/--ARCH--/'$*'/g' out/docker-machine-driver-kvm2_$(DEB_VERSION)/DEBIAN/control
 	mkdir -p out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin
-	cp out/docker-machine-driver-kvm2 out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
-	fakeroot dpkg-deb --build out/docker-machine-driver-kvm2_$(DEB_VERSION)
+	cp $< out/docker-machine-driver-kvm2_$(DEB_VERSION)/usr/bin/docker-machine-driver-kvm2
+	fakeroot dpkg-deb --build out/docker-machine-driver-kvm2_$(DEB_VERSION) $@
 	rm -rf out/docker-machine-driver-kvm2_$(DEB_VERSION)
 
-out/docker-machine-driver-kvm2-$(RPM_VERSION).rpm: out/docker-machine-driver-kvm2
+out/docker-machine-driver-kvm2-$(RPM_VERSION).rpm: out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.x86_64.deb
+	cp $< $@
+
+out/docker-machine-driver-kvm2-$(RPM_VERSION)-0.%.rpm: out/docker-machine-driver-kvm2-%
 	cp -r installers/linux/rpm/kvm2_rpm_template out/docker-machine-driver-kvm2-$(RPM_VERSION)
 	sed -E -i 's/--VERSION--/'$(RPM_VERSION)'/g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
 	sed -E -i 's|--OUT--|'$(PWD)/out'|g' out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
-	rpmbuild -bb -D "_rpmdir $(PWD)/out" -D "_rpmfilename docker-machine-driver-kvm2-$(RPM_VERSION).rpm" \
+	rpmbuild -bb -D "_rpmdir $(PWD)/out" --target $* \
 		out/docker-machine-driver-kvm2-$(RPM_VERSION)/docker-machine-driver-kvm2.spec
+	@mv out/$*/docker-machine-driver-kvm2-$(RPM_VERSION)-0.$*.rpm out/ && rmdir out/$*
 	rm -rf out/docker-machine-driver-kvm2-$(RPM_VERSION)
 
 .PHONY: kvm-image
@@ -601,6 +637,7 @@ compare: out/mkcmp out/minikube
 	git checkout $(CURRENT_GIT_BRANCH)
 	out/mkcmp out/master.minikube out/$(CURRENT_GIT_BRANCH).minikube
 	
+
 .PHONY: help
 help:
 	@printf "\033[1mAvailable targets for minikube ${VERSION}\033[21m\n"

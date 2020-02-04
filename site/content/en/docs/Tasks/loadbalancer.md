@@ -9,36 +9,80 @@ description: >
 
 ## Overview
 
-A LoadBalancer service is the standard way to expose a service to the internet. With this method, each service gets it's own IP address.
+A LoadBalancer service is the standard way to expose a service to the internet. With this method, each service gets its own IP address.
 
 
 ## Using `minikube tunnel`
 
-Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. It will run until Ctrl-C is hit.
+Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. It will run in a separate terminal until Ctrl-C is hit.
 
-````shell
-minikube tunnel
-````
-Example output:
+## Example
 
-```text
-out/minikube tunnel
-Password: *****
-Status:
-        machine: minikube
-        pid: 59088
-        route: 10.96.0.0/12 -> 192.168.99.101
-        minikube: Running
-        services: []
-    errors:
-                minikube: no errors
-                router: no errors
-                loadbalancer emulator: no errors
+#### Run tunnel in a separate terminal
+it will ask for password.
+
 ```
-
+minikube tunnel
+```
 
 `minikube tunnel` runs as a separate daemon, creating a network route on the host to the service CIDR of the cluster using the cluster's IP address as a gateway.  The tunnel command exposes the external IP directly to any program running on the host operating system.
 
+
+<details>
+<summary>
+tunnel output example
+</summary>
+<pre>
+Password: 
+Status:	
+	machine: minikube
+	pid: 39087
+	route: 10.96.0.0/12 -> 192.168.64.194
+	minikube: Running
+	services: [hello-minikube]
+    errors: 
+		minikube: no errors
+		router: no errors
+		loadbalancer emulator: no errors
+...
+...
+...
+</pre>
+</details>
+
+
+#### Create a kubernetes deployment 
+```
+kubectl create deployment hello-minikube1 --image=k8s.gcr.io/echoserver:1.4
+```
+#### Create a kubernetes service type LoadBalancer
+```
+kubectl expose deployment hello-minikube1 --type=LoadBalancer --port=8080
+```
+
+### Check external IP 
+```
+kubectl get svc
+```
+<pre>
+$ kc get svc
+NAME              TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)          AGE
+hello-minikube1   LoadBalancer   10.96.184.178   10.96.184.178   8080:30791/TCP   40s
+</pre>
+
+
+note that without minikube tunnel, kubernetes would be showing external IP as "pending".
+
+### Try in your browser
+open in your browser (make sure there is no proxy set)
+```
+http://REPLACE_WITH_EXTERNAL_IP:8080
+```
+
+
+Each service will get its own external ip.
+
+----
 ### DNS resolution (experimental)
 
 If you are on macOS, the tunnel command also allows DNS resolution for Kubernetes services from the host.

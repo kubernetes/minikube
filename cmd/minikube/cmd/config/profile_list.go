@@ -59,9 +59,8 @@ var profileListCmd = &cobra.Command{
 var printProfilesTable = func() {
 
 	var validData [][]string
-
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"Profile", "VM Driver", "NodeIP", "Node Port", "Kubernetes Version", "Status"})
+	table.SetHeader([]string{"Profile", "VM Driver", "Runtime", "IP", "Port", "Version", "Status"})
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
@@ -72,16 +71,21 @@ var printProfilesTable = func() {
 	}
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Infof("failed to get machine api client %v", err)
+		glog.Errorf("failed to get machine api client %v", err)
 	}
 	defer api.Close()
 
 	for _, p := range validProfiles {
 		p.Status, err = cluster.GetHostStatus(api, p.Name)
 		if err != nil {
-			glog.Infof("error getting host status for %v", err)
+			glog.Warningf("error getting host status for %s: %v", p.Name, err)
 		}
-		validData = append(validData, []string{p.Name, p.Config[0].VMDriver, p.Config[0].KubernetesConfig.NodeIP, strconv.Itoa(p.Config[0].KubernetesConfig.NodePort), p.Config[0].KubernetesConfig.KubernetesVersion, p.Status})
+		cp, err := config.PrimaryControlPlane(*p.Config)
+		if err != nil {
+			glog.Errorf("%q has no control plane: %v", p.Name, err)
+			// Print the data we know about anyways
+		}
+		validData = append(validData, []string{p.Name, p.Config.VMDriver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
 	}
 
 	table.AppendBulk(validData)
@@ -108,7 +112,7 @@ var printProfilesTable = func() {
 var printProfilesJSON = func() {
 	api, err := machine.NewAPIClient()
 	if err != nil {
-		glog.Infof("failed to get machine api client %v", err)
+		glog.Errorf("failed to get machine api client %v", err)
 	}
 	defer api.Close()
 
@@ -116,7 +120,7 @@ var printProfilesJSON = func() {
 	for _, v := range validProfiles {
 		status, err := cluster.GetHostStatus(api, v.Name)
 		if err != nil {
-			glog.Infof("error getting host status for  %v", err)
+			glog.Warningf("error getting host status for %s: %v", v.Name, err)
 		}
 		v.Status = status
 	}
@@ -138,7 +142,7 @@ var printProfilesJSON = func() {
 
 	var body = map[string]interface{}{}
 
-	if err == nil || os.IsNotExist(err) {
+	if err == nil || config.IsNotExist(err) {
 		body["valid"] = valid
 		body["invalid"] = invalid
 		jsonString, _ := json.Marshal(body)

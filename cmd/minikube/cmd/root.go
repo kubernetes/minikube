@@ -53,9 +53,9 @@ var dirs = [...]string{
 }
 
 var viperWhiteList = []string{
-	"v",
 	"alsologtostderr",
 	"log_dir",
+	"v",
 }
 
 // RootCmd represents the base command when called without any subcommands
@@ -172,6 +172,8 @@ func init() {
 				stopCmd,
 				deleteCmd,
 				dashboardCmd,
+				pauseCmd,
+				unpauseCmd,
 			},
 		},
 		{
@@ -213,6 +215,7 @@ func init() {
 				logsCmd,
 				updateCheckCmd,
 				versionCmd,
+				optionsCmd,
 			},
 		},
 	}
@@ -267,15 +270,14 @@ func getClusterBootstrapper(api libmachine.API, bootstrapperName string) (bootst
 	var b bootstrapper.Bootstrapper
 	var err error
 	switch bootstrapperName {
-	case bootstrapper.BootstrapperTypeKubeadm:
-		b, err = kubeadm.NewKubeadmBootstrapper(api)
+	case bootstrapper.Kubeadm:
+		b, err = kubeadm.NewBootstrapper(api)
 		if err != nil {
-			return nil, errors.Wrap(err, "getting kubeadm bootstrapper")
+			return nil, errors.Wrap(err, "getting a new kubeadm bootstrapper")
 		}
 	default:
 		return nil, fmt.Errorf("unknown bootstrapper: %s", bootstrapperName)
 	}
-
 	return b, nil
 }
 

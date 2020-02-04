@@ -23,7 +23,13 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/out"
+)
+
+const (
+	// CRIOConfFile is the path to the CRI-O configuration
+	crioConfigFile = "/etc/crio/crio.conf"
 )
 
 // CRIO contains CRIO runtime state
@@ -32,6 +38,18 @@ type CRIO struct {
 	Runner            CommandRunner
 	ImageRepository   string
 	KubernetesVersion string
+}
+
+// generateCRIOConfig sets up /etc/crio/crio.conf
+func generateCRIOConfig(cr CommandRunner, imageRepository string) error {
+	cPath := crioConfigFile
+	pauseImage := images.Pause(imageRepository)
+
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, cPath))
+	if _, err := cr.RunCmd(c); err != nil {
+		return errors.Wrap(err, "generateCRIOConfig.")
+	}
+	return nil
 }
 
 // Name is a human readable name for CRIO
@@ -143,6 +161,26 @@ func (r *CRIO) LoadImage(path string) error {
 	return nil
 }
 
+// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+func (r *CRIO) CGroupDriver() (string, error) {
+	c := exec.Command("crio", "config")
+	rr, err := r.Runner.RunCmd(c)
+	if err != nil {
+		return "", err
+	}
+	cgroupManager := "cgroupfs" // default
+	for _, line := range strings.Split(rr.Stdout.String(), "\n") {
+		if strings.HasPrefix(line, "cgroup_manager") {
+			// cgroup_manager = "cgroupfs"
+			f := strings.Split(strings.TrimSpace(line), " = ")
+			if len(f) == 2 {
+				cgroupManager = strings.Trim(f[1], "\"")
+			}
+		}
+	}
+	return cgroupManager, nil
+}
+
 // KubeletOptions returns kubelet options for a runtime.
 func (r *CRIO) KubeletOptions() map[string]string {
 	return map[string]string{
@@ -154,8 +192,18 @@ func (r *CRIO) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of managed by this container runtime
-func (r *CRIO) ListContainers(filter string) ([]string, error) {
-	return listCRIContainers(r.Runner, filter)
+func (r *CRIO) ListContainers(o ListOptions) ([]string, error) {
+	return listCRIContainers(r.Runner, "", o)
+}
+
+// PauseContainers pauses a running container based on ID
+func (r *CRIO) PauseContainers(ids []string) error {
+	return pauseCRIContainers(r.Runner, "", ids)
+}
+
+// PauseContainers pauses a running container based on ID
+func (r *CRIO) UnpauseContainers(ids []string) error {
+	return unpauseCRIContainers(r.Runner, "", ids)
 }
 
 // KillContainers removes containers based on ID
@@ -170,7 +218,7 @@ func (r *CRIO) StopContainers(ids []string) error {
 
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
 func (r *CRIO) ContainerLogCmd(id string, len int, follow bool) string {
-	return criContainerLogCmd(id, len, follow)
+	return criContainerLogCmd(r.Runner, id, len, follow)
 }
 
 // SystemLogCmd returns the command to retrieve system logs
