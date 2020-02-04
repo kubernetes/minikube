@@ -138,8 +138,7 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 
 // postStart are functions shared between startHost and fixHost
 func postStartSetup(h *host.Host, mc config.MachineConfig) error {
-	if h.DriverName == driver.Mock {
-		glog.Infof("mock driver: skipping postStart")
+	if driver.IsMock(h.DriverName) {
 		return nil
 	}
 
@@ -157,13 +156,15 @@ func postStartSetup(h *host.Host, mc config.MachineConfig) error {
 	if driver.BareMetal(mc.VMDriver) {
 		showLocalOsRelease()
 	}
-
+	if driver.IsVM(mc.VMDriver) {
+		logRemoteOsRelease(h.Driver)
+	}
 	return syncLocalAssets(r)
 }
 
 // commandRunner returns best available command runner for this host
 func commandRunner(h *host.Host) (command.Runner, error) {
-	if h.DriverName == driver.Mock {
+	if driver.IsMock(h.DriverName) {
 		glog.Errorf("commandRunner: returning unconfigured FakeCommandRunner, commands will fail!")
 		return &command.FakeCommandRunner{}, nil
 	}
