@@ -22,12 +22,12 @@ var (
 	maxClockDesyncSeconds = 2.1
 )
 
-// restartHost fixes up a previously configured VM
-func restartHost(h *host.Host, e *engine.Options) error {
+// fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
+func fixHost(h *host.Host, e *engine.Options) error {
 	start := time.Now()
-	glog.Infof("ressurectHost: %+v", h.Driver)
+	glog.Infof("fixHost: %+v", h.Driver)
 	defer func() {
-		glog.Infof("ressurectHost completed within %s", time.Since(start))
+		glog.Infof("fixHost completed within %s", time.Since(start))
 	}()
 
 	if len(e.Env) > 0 {

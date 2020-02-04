@@ -99,7 +99,7 @@ func StartHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error)
 	glog.Infof("engine options: %+v", e)
 
 	out.T(out.Waiting, "Waiting for the host to be provisioned ...")
-	err = ressurectHost(h, e)
+	err = fixHost(h, e)
 	if err != nil {
 		return nil, err
 	}
