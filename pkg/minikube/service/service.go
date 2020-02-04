@@ -22,7 +22,6 @@ import (
 	"io"
 	"net/url"
 	"os"
-	"sort"
 	"strings"
 	"text/template"
 	"time"
@@ -283,12 +282,9 @@ func WaitForService(api libmachine.API, namespace string, service string, urlTem
 	if interval == 0 {
 		interval = 1
 	}
-	services, err := GetServiceURLs(api, namespace, urlTemplate)
+
+	err := CheckService(namespace, service)
 	if err != nil {
-		return nil, err
-	}
-	searchServices := sort.Search(len(services), func(i int) bool { return services[i].Name == service })
-	if searchServices == len(services) {
 		return nil, &SVCNotFoundError{err}
 	}
 
