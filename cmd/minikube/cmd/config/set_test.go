@@ -16,9 +16,18 @@ limitations under the License.
 
 package config
 
-import "testing"
+import (
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/localpath"
+)
 
 func TestNotFound(t *testing.T) {
+	createTestProfile(t)
 	err := Set("nonexistent", "10")
 	if err == nil {
 		t.Fatalf("Set did not return error for unknown property")
@@ -26,6 +35,7 @@ func TestNotFound(t *testing.T) {
 }
 
 func TestSetNotAllowed(t *testing.T) {
+	createTestProfile(t)
 	err := Set("vm-driver", "123456")
 	if err == nil || err.Error() != "[driver \"123456\" is not supported]" {
 		t.Fatalf("Set did not return error for unallowed value")
@@ -33,7 +43,9 @@ func TestSetNotAllowed(t *testing.T) {
 }
 
 func TestSetOK(t *testing.T) {
+	createTestProfile(t)
 	err := Set("vm-driver", "virtualbox")
+	defer Unset("vm-driver")
 	if err != nil {
 		t.Fatalf("Set returned error for valid property value")
 	}
@@ -44,4 +56,27 @@ func TestSetOK(t *testing.T) {
 	if val != "virtualbox" {
 		t.Fatalf("Get returned %s, expected \"virtualbox\"", val)
 	}
+}
+
+func createTestProfile(t *testing.T) string {
+	t.Helper()
+	td, err := ioutil.TempDir("", "profile")
+	if err != nil {
+		t.Fatalf("tempdir: %v", err)
+	}
+
+	err = os.Setenv(localpath.MinikubeHome, td)
+	if err != nil {
+		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
+	}
+
+	// Not necessary, but it is a handy random alphanumeric
+	name := filepath.Base(td)
+	if err := os.MkdirAll(config.ProfileFolderPath(name), 0777); err != nil {
+		t.Fatalf("error creating temporary directory")
+	}
+	if err := config.DefaultLoader.WriteConfigToFile(name, &config.MachineConfig{}); err != nil {
+		t.Fatalf("error creating temporary profile config: %v", err)
+	}
+	return name
 }
