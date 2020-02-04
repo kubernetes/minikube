@@ -172,7 +172,6 @@ func (p *UbuntuProvisioner) Package(name string, action pkgaction.PackageAction)
 
 // Provision does the provisioning
 func (p *UbuntuProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
-	fmt.Println("************ INSISDE ******* PRVOVISION ******************")
 	p.SwarmOptions = swarmOptions
 	p.AuthOptions = authOptions
 	p.EngineOptions = engineOptions
