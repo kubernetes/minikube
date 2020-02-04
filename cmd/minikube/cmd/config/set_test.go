@@ -45,7 +45,12 @@ func TestSetNotAllowed(t *testing.T) {
 func TestSetOK(t *testing.T) {
 	createTestProfile(t)
 	err := Set("vm-driver", "virtualbox")
-	defer Unset("vm-driver")
+	defer func() {
+		err = Unset("vm-driver")
+		if err != nil {
+			t.Errorf("failed to unset vm-driver")
+		}
+	}()
 	if err != nil {
 		t.Fatalf("Set returned error for valid property value")
 	}
@@ -58,7 +63,7 @@ func TestSetOK(t *testing.T) {
 	}
 }
 
-func createTestProfile(t *testing.T) string {
+func createTestProfile(t *testing.T) {
 	t.Helper()
 	td, err := ioutil.TempDir("", "profile")
 	if err != nil {
@@ -78,5 +83,4 @@ func createTestProfile(t *testing.T) string {
 	if err := config.DefaultLoader.WriteConfigToFile(name, &config.MachineConfig{}); err != nil {
 		t.Fatalf("error creating temporary profile config: %v", err)
 	}
-	return name
 }
