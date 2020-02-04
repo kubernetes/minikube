@@ -32,6 +32,7 @@ import (
 )
 
 const (
+	containerdNamespaceRoot = "/run/containerd/runc/k8s.io"
 	// ContainerdConfFile is the path to the containerd configuration
 	containerdConfigFile     = "/etc/containerd/config.toml"
 	containerdConfigTemplate = `root = "/var/lib/containerd"
@@ -240,6 +241,29 @@ func (r *Containerd) LoadImage(path string) error {
 	return nil
 }
 
+// CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
+func (r *Containerd) CGroupDriver() (string, error) {
+	info, err := getCRIInfo(r.Runner)
+	if err != nil {
+		return "", err
+	}
+	if info["config"] == nil {
+		return "", errors.Wrapf(err, "missing config")
+	}
+	config, ok := info["config"].(map[string]interface{})
+	if !ok {
+		return "", errors.Wrapf(err, "config not map")
+	}
+	cgroupManager := "cgroupfs" // default
+	switch config["systemdCgroup"] {
+	case false:
+		cgroupManager = "cgroupfs"
+	case true:
+		cgroupManager = "systemd"
+	}
+	return cgroupManager, nil
+}
+
 // KubeletOptions returns kubelet options for a containerd
 func (r *Containerd) KubeletOptions() map[string]string {
 	return map[string]string{
@@ -251,8 +275,18 @@ func (r *Containerd) KubeletOptions() map[string]string {
 }
 
 // ListContainers returns a list of managed by this container runtime
-func (r *Containerd) ListContainers(filter string) ([]string, error) {
-	return listCRIContainers(r.Runner, filter)
+func (r *Containerd) ListContainers(o ListOptions) ([]string, error) {
+	return listCRIContainers(r.Runner, containerdNamespaceRoot, o)
+}
+
+// PauseContainers pauses a running container based on ID
+func (r *Containerd) PauseContainers(ids []string) error {
+	return pauseCRIContainers(r.Runner, containerdNamespaceRoot, ids)
+}
+
+// PauseContainers pauses a running container based on ID
+func (r *Containerd) UnpauseContainers(ids []string) error {
+	return unpauseCRIContainers(r.Runner, containerdNamespaceRoot, ids)
 }
 
 // KillContainers removes containers based on ID
@@ -267,7 +301,7 @@ func (r *Containerd) StopContainers(ids []string) error {
 
 // ContainerLogCmd returns the command to retrieve the log for a container based on ID
 func (r *Containerd) ContainerLogCmd(id string, len int, follow bool) string {
-	return criContainerLogCmd(id, len, follow)
+	return criContainerLogCmd(r.Runner, id, len, follow)
 }
 
 // SystemLogCmd returns the command to retrieve system logs

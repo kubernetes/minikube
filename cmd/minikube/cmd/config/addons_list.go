@@ -22,17 +22,17 @@ import (
 	"os"
 	"sort"
 	"strings"
-	"text/template"
 
+	"github.com/golang/glog"
+	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-const defaultAddonListFormat = "- {{.AddonName}}: {{.AddonStatus}}\n"
-
-var addonListFormat string
 var addonListOutput string
 
 // AddonListTemplate represents the addon list template
@@ -50,10 +50,6 @@ var addonsListCmd = &cobra.Command{
 			exit.UsageT("usage: minikube addons list")
 		}
 
-		if addonListOutput != "list" && addonListFormat != defaultAddonListFormat {
-			exit.UsageT("Cannot use both --output and --format options")
-		}
-
 		switch strings.ToLower(addonListOutput) {
 		case "list":
 			printAddonsList()
@@ -67,14 +63,6 @@ var addonsListCmd = &cobra.Command{
 
 func init() {
 	addonsListCmd.Flags().StringVarP(
-		&addonListFormat,
-		"format",
-		"f",
-		defaultAddonListFormat,
-		`Go template format string for the addon list output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
-For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/config#AddonListTemplate`)
-
-	addonsListCmd.Flags().StringVarP(
 		&addonListOutput,
 		"output",
 		"o",
@@ -82,6 +70,13 @@ For the list of accessible variables for the template, see the struct values her
 		`minikube addons list --output OUTPUT. json, list`)
 
 	AddonsCmd.AddCommand(addonsListCmd)
+}
+
+var iconFromStatus = func(addonStatus bool) string {
+	if addonStatus {
+		return "✅"
+	}
+	return "   " // because emoji indentation is different
 }
 
 var stringFromStatus = func(addonStatus bool) string {
@@ -97,27 +92,38 @@ var printAddonsList = func() {
 		addonNames = append(addonNames, addonName)
 	}
 	sort.Strings(addonNames)
+	var tData [][]string
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Addon Name", "Profile", "Status"})
+	table.SetAutoFormatHeaders(true)
+	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
+	table.SetCenterSeparator("|")
+	pName := viper.GetString(config.MachineProfile)
 
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
-		addonStatus, err := addonBundle.IsEnabled()
+		addonStatus, err := addonBundle.IsEnabled(pName)
 		if err != nil {
-			exit.WithError("Error getting addons status", err)
+			out.WarningT("Unable to get addon status for {{.name}}: {{.error}}", out.V{"name": addonName, "error": err})
 		}
-		tmpl, err := template.New("list").Parse(addonListFormat)
-		if err != nil {
-			exit.WithError("Error creating list template", err)
-		}
-		listTmplt := AddonListTemplate{addonName, stringFromStatus(addonStatus)}
-		err = tmpl.Execute(os.Stdout, listTmplt)
-		if err != nil {
-			exit.WithError("Error executing list template", err)
-		}
+		tData = append(tData, []string{addonName, pName, fmt.Sprintf("%s %s", stringFromStatus(addonStatus), iconFromStatus(addonStatus))})
+	}
+
+	table.AppendBulk(tData)
+	table.Render()
+
+	v, _, err := config.ListProfiles()
+	if err != nil {
+		glog.Errorf("list profiles returned error: %v", err)
+	}
+	if len(v) > 1 {
+		out.T(out.Tip, "To see addons list for other profiles use: `minikube addons -p name list`")
 	}
 }
 
 var printAddonsJSON = func() {
 	addonNames := make([]string, 0, len(assets.Addons))
+	pName := viper.GetString(config.MachineProfile)
 	for addonName := range assets.Addons {
 		addonNames = append(addonNames, addonName)
 	}
@@ -128,13 +134,15 @@ var printAddonsJSON = func() {
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
 
-		addonStatus, err := addonBundle.IsEnabled()
+		addonStatus, err := addonBundle.IsEnabled(pName)
 		if err != nil {
-			exit.WithError("Error getting addons status", err)
+			glog.Errorf("Unable to get addon status for %s: %v", addonName, err)
+			continue
 		}
 
 		addonsMap[addonName] = map[string]interface{}{
-			"Status": stringFromStatus(addonStatus),
+			"Status":  stringFromStatus(addonStatus),
+			"Profile": pName,
 		}
 	}
 	jsonString, _ := json.Marshal(addonsMap)

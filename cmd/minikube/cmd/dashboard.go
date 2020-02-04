@@ -33,10 +33,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	configcmd "k8s.io/minikube/cmd/minikube/cmd/config"
+	pkgaddons "k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -59,9 +58,15 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cc, err := pkg_config.Load(viper.GetString(config.MachineProfile))
-		if err != nil && !os.IsNotExist(err) {
+		profileName := viper.GetString(pkg_config.MachineProfile)
+		cc, err := pkg_config.Load(profileName)
+		if err != nil && !pkg_config.IsNotExist(err) {
 			exit.WithError("Error loading profile config", err)
+		}
+
+		if err != nil {
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist`, out.V{"name": profileName})
+			os.Exit(1)
 		}
 
 		api, err := machine.NewAPIClient()
@@ -85,9 +90,11 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
-		err = proxy.ExcludeIP(cc.KubernetesConfig.NodeIP) // to be used for http get calls
-		if err != nil {
-			glog.Errorf("Error excluding IP from proxy: %s", err)
+		for _, n := range cc.Nodes {
+			err = proxy.ExcludeIP(n.IP) // to be used for http get calls
+			if err != nil {
+				glog.Errorf("Error excluding IP from proxy: %s", err)
+			}
 		}
 
 		kubectl, err := exec.LookPath("kubectl")
@@ -95,18 +102,18 @@ var dashboardCmd = &cobra.Command{
 			exit.WithCodeT(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		}
 
-		if !cluster.IsMinikubeRunning(api) {
+		if !cluster.IsHostRunning(api, profileName) {
 			os.Exit(1)
 		}
 
 		// Check dashboard status before enabling it
 		dashboardAddon := assets.Addons["dashboard"]
-		dashboardStatus, _ := dashboardAddon.IsEnabled()
+		dashboardStatus, _ := dashboardAddon.IsEnabled(profileName)
 		if !dashboardStatus {
 			// Send status messages to stderr for folks re-using this output.
 			out.ErrT(out.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = configcmd.Set("dashboard", "true")
+			err = pkgaddons.Set("dashboard", "true", profileName)
 			if err != nil {
 				exit.WithError("Unable to enable dashboard", err)
 			}

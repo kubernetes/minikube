@@ -19,6 +19,7 @@ limitations under the License.
 package hyperkit
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -87,7 +88,11 @@ func status() registry.State {
 		return registry.State{Error: err, Fix: "Run 'brew install hyperkit'", Doc: docURL}
 	}
 
-	cmd := exec.Command(path, "-v")
+	// Allow no more than 2 seconds for querying state
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, path, "-v")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return registry.State{Installed: true, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Run 'brew install hyperkit'", Doc: docURL}

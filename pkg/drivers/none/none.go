@@ -18,6 +18,7 @@ package none
 
 import (
 	"fmt"
+	"net"
 	"os/exec"
 	"strings"
 	"time"
@@ -26,10 +27,13 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/apimachinery/pkg/util/net"
+	knet "k8s.io/apimachinery/pkg/util/net"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -94,7 +98,7 @@ func (d *Driver) DriverName() string {
 
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
-	ip, err := net.ChooseBindAddress(nil)
+	ip, err := knet.ChooseHostInterface()
 	if err != nil {
 		return "", err
 	}
@@ -123,11 +127,30 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	if err := checkKubelet(d.exec); err != nil {
-		glog.Infof("kubelet not running: %v", err)
-		return state.Stopped, nil
+	glog.Infof("GetState called")
+	ip, err := d.GetIP()
+	if err != nil {
+		return state.Error, err
 	}
-	return state.Running, nil
+
+	port, err := kubeconfig.Port(d.BaseDriver.MachineName)
+	if err != nil {
+		glog.Warningf("unable to get port: %v", err)
+		port = constants.APIServerPort
+	}
+
+	// Confusing logic, as libmachine.Stop will loop until the state == Stopped
+	ast, err := kverify.APIServerStatus(d.exec, net.ParseIP(ip), port)
+	if err != nil {
+		return ast, err
+	}
+
+	// If the apiserver is up, we'll claim to be up.
+	if ast == state.Paused || ast == state.Running {
+		return state.Running, nil
+	}
+
+	return kverify.KubeletStatus(d.exec)
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
@@ -137,7 +160,7 @@ func (d *Driver) Kill() error {
 	}
 
 	// First try to gracefully stop containers
-	containers, err := d.runtime.ListContainers("")
+	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -149,7 +172,7 @@ func (d *Driver) Kill() error {
 		return errors.Wrap(err, "stop")
 	}
 
-	containers, err = d.runtime.ListContainers("")
+	containers, err = d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
@@ -197,17 +220,18 @@ func (d *Driver) Start() error {
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
 	if err := stopKubelet(d.exec); err != nil {
-		return err
+		return errors.Wrap(err, "stop kubelet")
 	}
-	containers, err := d.runtime.ListContainers("")
+	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
 	if len(containers) > 0 {
 		if err := d.runtime.StopContainers(containers); err != nil {
-			return errors.Wrap(err, "stop")
+			return errors.Wrap(err, "stop containers")
 		}
 	}
+	glog.Infof("none driver is stopped!")
 	return nil
 }
 
@@ -248,16 +272,6 @@ func restartKubelet(cr command.Runner) error {
 	c := exec.Command("sudo", "systemctl", "restart", "kubelet.service")
 	if _, err := cr.RunCmd(c); err != nil {
 		return err
-	}
-	return nil
-}
-
-// checkKubelet returns an error if the kubelet is not running.
-func checkKubelet(cr command.Runner) error {
-	glog.Infof("checking for running kubelet ...")
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "kubelet")
-	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "check kubelet")
 	}
 	return nil
 }

@@ -35,7 +35,6 @@ func TestGvisorAddon(t *testing.T) {
 	}
 
 	MaybeParallel(t)
-	WaitForStartSlot(t)
 	profile := UniqueProfileName("gvisor")
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
 	defer func() {
@@ -49,7 +48,7 @@ func TestGvisorAddon(t *testing.T) {
 		CleanupWithLogs(t, profile, cancel)
 	}()
 
-	startArgs := append([]string{"start", "-p", profile, "--container-runtime=containerd", "--docker-opt", "containerd=/var/run/containerd/containerd.sock", "--wait=false"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, "--container-runtime=containerd", "--docker-opt", "containerd=/var/run/containerd/containerd.sock"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -61,19 +60,10 @@ func TestGvisorAddon(t *testing.T) {
 		t.Logf("%s failed: %v (won't test local image)", rr.Args, err)
 	}
 
-	// NOTE: addons are global, but the addon must assert that the runtime is containerd
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "enable", "gvisor"))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
-
-	// Because addons are persistent across profiles :(
-	defer func() {
-		rr, err := Run(t, exec.Command(Target(), "-p", profile, "addons", "disable", "gvisor"))
-		if err != nil {
-			t.Logf("%s failed: %v", rr.Args, err)
-		}
-	}()
 
 	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 4*time.Minute); err != nil {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
