@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -34,29 +34,31 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-// BuildrootProvisioner provisions the custom system based on Buildroot
-type BuildrootProvisioner struct {
-	provision.SystemdProvisioner
+// UbuntuProvisioner provisions the ubuntu
+type UbuntuProvisioner struct {
+	BuildrootProvisioner
 }
 
-// NewBuildrootProvisioner creates a new BuildrootProvisioner
-func NewBuildrootProvisioner(d drivers.Driver) provision.Provisioner {
-	return &BuildrootProvisioner{
-		provision.NewSystemdProvisioner("buildroot", d),
+// NewUbuntuProvisioner creates a new UbuntuProvisioner
+func NewUbuntuProvisioner(d drivers.Driver) provision.Provisioner {
+	return &UbuntuProvisioner{
+		BuildrootProvisioner{
+			provision.NewSystemdProvisioner("ubuntu", d),
+		},
 	}
 }
 
-func (p *BuildrootProvisioner) String() string {
-	return "buildroot"
+func (p *UbuntuProvisioner) String() string {
+	return "ubuntu"
 }
 
 // CompatibleWithHost checks if provisioner is compatible with host
-func (p *BuildrootProvisioner) CompatibleWithHost() bool {
-	return p.OsReleaseInfo.ID == "buildroot"
+func (p *UbuntuProvisioner) CompatibleWithHost() bool {
+	return p.OsReleaseInfo.ID == "ubuntu"
 }
 
 // GenerateDockerOptions generates the *provision.DockerOptions for this provisioner
-func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision.DockerOptions, error) {
+func (p *UbuntuProvisioner) GenerateDockerOptions(dockerPort int) (*provision.DockerOptions, error) {
 	var engineCfg bytes.Buffer
 
 	drvLabel := fmt.Sprintf("provider=%s", p.Driver.DriverName())
@@ -72,8 +74,10 @@ func (p *BuildrootProvisioner) GenerateDockerOptions(dockerPort int) (*provision
 	engineConfigTmpl := `[Unit]
 Description=Docker Application Container Engine
 Documentation=https://docs.docker.com
-After=network.target  minikube-automount.service docker.socket
-Requires= minikube-automount.service docker.socket 
+BindsTo=containerd.service
+After=network-online.target firewalld.service containerd.service
+Wants=network-online.target
+Requires=docker.socket
 
 [Service]
 Type=notify
@@ -162,12 +166,12 @@ WantedBy=multi-user.target
 }
 
 // Package installs a package
-func (p *BuildrootProvisioner) Package(name string, action pkgaction.PackageAction) error {
+func (p *UbuntuProvisioner) Package(name string, action pkgaction.PackageAction) error {
 	return nil
 }
 
 // Provision does the provisioning
-func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
+func (p *UbuntuProvisioner) Provision(swarmOptions swarm.Options, authOptions auth.Options, engineOptions engine.Options) error {
 	p.SwarmOptions = swarmOptions
 	p.AuthOptions = authOptions
 	p.EngineOptions = engineOptions
