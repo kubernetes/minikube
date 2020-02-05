@@ -23,7 +23,9 @@ import (
 	"bufio"
 	"bytes"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/constants"
 
 	"fmt"
 	"os/exec"
@@ -32,6 +34,10 @@ import (
 
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker-daemon")
+	}
+
 	runArgs := []string{
 		fmt.Sprintf("--cpus=%s", p.CPUs),
 		fmt.Sprintf("--memory=%s", p.Memory),
@@ -65,13 +71,17 @@ func CreateContainerNode(p CreateParams) error {
 	// adds node specific args
 	runArgs = append(runArgs, p.ExtraArgs...)
 
-	if isUsernsRemapEnabled(p.OCIBinary) {
+	enabled, err := isUsernsRemapEnabled(p.OCIBinary)
+	if err != nil {
+		glog.Warningf("Failed to detect if userns is enabled: %v", err)
+	}
+	if enabled {
 		// We need this argument in order to make this command work
 		// in systems that have userns-remap enabled on the docker daemon
 		runArgs = append(runArgs, "--userns=host")
 	}
 
-	_, err := createContainer(p.OCIBinary,
+	_, err = createContainer(p.OCIBinary,
 		p.Image,
 		withRunArgs(runArgs...),
 		withMounts(p.Mounts),
@@ -85,6 +95,10 @@ func CreateContainerNode(p CreateParams) error {
 
 // CreateContainer creates a container with "docker/podman run"
 func createContainer(ociBinary string, image string, opts ...createOpt) ([]string, error) {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return nil, errors.Wrap(err, "point host docker-daemon")
+	}
+
 	o := &createOpts{}
 	for _, opt := range opts {
 		o = opt(o)
@@ -121,6 +135,9 @@ func createContainer(ociBinary string, image string, opts ...createOpt) ([]strin
 
 // Copy copies a local asset into the container
 func Copy(ociBinary string, ociID string, targetDir string, fName string) error {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker-daemon")
+	}
 	if _, err := os.Stat(fName); os.IsNotExist(err) {
 		return errors.Wrapf(err, "error source %s does not exist", fName)
 	}
@@ -139,6 +156,9 @@ func Copy(ociBinary string, ociID string, targetDir string, fName string) error 
 // 32769, nil
 // only supports TCP ports
 func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return 0, errors.Wrap(err, "point host docker-daemon")
+	}
 	cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
@@ -155,6 +175,9 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 
 // ContainerIPs returns ipv4,ipv6, error of a container by their name
 func ContainerIPs(ociBinary string, name string) (string, string, error) {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return "", "", errors.Wrap(err, "point host docker-daemon")
+	}
 	// retrieve the IP address of the node using docker inspect
 	lines, err := inspect(ociBinary, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
@@ -173,6 +196,9 @@ func ContainerIPs(ociBinary string, name string) (string, string, error) {
 
 // ContainerID returns id of a container name
 func ContainerID(ociBinary string, nameOrID string) (string, error) {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return "", errors.Wrap(err, "point host docker-daemon")
+	}
 	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID)
 	id, err := cmd.CombinedOutput()
 	if err != nil {
@@ -188,6 +214,9 @@ func ListOwnedContainers(ociBinary string) ([]string, error) {
 
 // inspect return low-level information on containers
 func inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return nil, errors.Wrap(err, "point host docker-daemon")
+	}
 	cmd := exec.Command(ociBinary, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
@@ -250,7 +279,10 @@ func generateMountBindings(mounts ...Mount) []string {
 }
 
 // isUsernsRemapEnabled checks if userns-remap is enabled in docker
-func isUsernsRemapEnabled(ociBinary string) bool {
+func isUsernsRemapEnabled(ociBinary string) (bool, error) {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return false, errors.Wrap(err, "point host docker-daemon")
+	}
 	cmd := exec.Command(ociBinary, "info", "--format", "'{{json .SecurityOptions}}'")
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
@@ -262,14 +294,14 @@ func isUsernsRemapEnabled(ociBinary string) bool {
 		lines = append(lines, scanner.Text())
 	}
 	if err != nil {
-		return false
+		return false, nil
 	}
 	if len(lines) > 0 {
 		if strings.Contains(lines[0], "name=userns") {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
 func generatePortMappings(portMappings ...PortMapping) []string {
@@ -311,6 +343,9 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 // listContainersByLabel lists all the containres that kic driver created on user's machine using a label
 // io.x-k8s.kic.cluster
 func listContainersByLabel(ociBinary string, label string) ([]string, error) {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return nil, errors.Wrap(err, "point host docker-daemon")
+	}
 	cmd := exec.Command(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
 	var b bytes.Buffer
 	cmd.Stdout = &b
@@ -322,4 +357,23 @@ func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 		lines = append(lines, sc.Text())
 	}
 	return lines, err
+}
+
+// PointToHostDockerDaemon will unset env variables that point to docker inside minikube
+// to make sure it points to the docker daemon installed by user.
+func PointToHostDockerDaemon() error {
+	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
+	if p != "" {
+		glog.Infof("shell is pointing to docker inside minikube. will unset to use host")
+	}
+
+	for i := range constants.DockerDaemonEnvs {
+		e := constants.DockerDaemonEnvs[i]
+		err := os.Setenv(e, "")
+		if err != nil {
+			return errors.Wrapf(err, "resetting %s env", e)
+		}
+
+	}
+	return nil
 }

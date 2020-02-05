@@ -64,7 +64,7 @@ type Config struct {
 
 // NewDriver returns a fully configured None driver
 func NewDriver(c Config) *Driver {
-	runner := &command.ExecRunner{}
+	runner := command.NewExecRunner()
 	runtime, err := cruntime.New(cruntime.Config{Type: c.ContainerRuntime, Runner: runner})
 	// Libraries shouldn't panic, but there is no way for drivers to return error :(
 	if err != nil {

@@ -116,7 +116,7 @@ func configureAuth(p miniProvisioner) error {
 
 func copyHostCerts(authOptions auth.Options) error {
 	log.Infof("copyHostCerts")
-	execRunner := &command.ExecRunner{}
+	execRunner := command.NewExecRunner()
 	hostCerts := map[string]string{
 		authOptions.CaCertPath:     path.Join(authOptions.StorePath, "ca.pem"),
 		authOptions.ClientCertPath: path.Join(authOptions.StorePath, "cert.pem"),
