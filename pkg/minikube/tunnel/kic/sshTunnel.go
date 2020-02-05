@@ -13,20 +13,20 @@ type sshTunnel struct {
 	cmd     *exec.Cmd
 }
 
-func createSSHTunnel(t *Tunnel, name, clusterIP string, ports []v1.ServicePort) *sshTunnel {
+func createSSHTunnel(name, sshPort, sshKey string, svc v1.Service) *sshTunnel {
 	// extract sshArgs
 	sshArgs := []string{
 		"-N",
 		"docker@127.0.0.1",
-		"-p", t.sshPort,
-		"-i", t.sshKey,
+		"-p", sshPort,
+		"-i", sshKey,
 	}
 
-	for _, port := range ports {
+	for _, port := range svc.Spec.Ports {
 		arg := fmt.Sprintf(
 			"-L %d:%s:%d",
 			port.Port,
-			clusterIP,
+			svc.Spec.ClusterIP,
 			port.Port,
 		)
 
@@ -57,7 +57,11 @@ func (s *sshTunnel) run() {
 	}
 
 	// we are ignoring wait return, because the process will be killed, once the tunnel is not needed.
-	s.cmd.Wait()
+	err = s.cmd.Wait()
+	if err != nil {
+		// TODO: improve logging
+		fmt.Println(err)
+	}
 }
 
 func (s *sshTunnel) stop() {
