@@ -39,7 +39,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/sshutil"
-	"k8s.io/minikube/pkg/util"
 )
 
 // generic interface for minikube provisioner
@@ -117,7 +116,7 @@ func configureAuth(p miniProvisioner) error {
 
 func copyHostCerts(authOptions auth.Options) error {
 	log.Infof("copyHostCerts")
-	execRunner := &command.ExecRunner{}
+	execRunner := command.NewExecRunner()
 	hostCerts := map[string]string{
 		authOptions.CaCertPath:     path.Join(authOptions.StorePath, "ca.pem"),
 		authOptions.ClientCertPath: path.Join(authOptions.StorePath, "cert.pem"),
@@ -246,7 +245,30 @@ func rootFileSystemType(p provision.SSHCommander) (string, error) {
 // (see systemd man pages for more info). This is not supported by minikube, thus needs to be escaped.
 func escapeSystemdDirectives(engineConfigContext *provision.EngineConfigContext) {
 	// escape '%' in Environment option so that it does not evaluate into a template specifier
-	engineConfigContext.EngineOptions.Env = util.ReplaceChars(engineConfigContext.EngineOptions.Env, systemdSpecifierEscaper)
+	engineConfigContext.EngineOptions.Env = replaceChars(engineConfigContext.EngineOptions.Env, systemdSpecifierEscaper)
 	// input might contain whitespaces, wrap it in quotes
-	engineConfigContext.EngineOptions.Env = util.ConcatStrings(engineConfigContext.EngineOptions.Env, "\"", "\"")
+	engineConfigContext.EngineOptions.Env = concatStrings(engineConfigContext.EngineOptions.Env, "\"", "\"")
+}
+
+// replaceChars returns a copy of the src slice with each string modified by the replacer
+func replaceChars(src []string, replacer *strings.Replacer) []string {
+	ret := make([]string, len(src))
+	for i, s := range src {
+		ret[i] = replacer.Replace(s)
+	}
+	return ret
+}
+
+// concatStrings concatenates each string in the src slice with prefix and postfix and returns a new slice
+func concatStrings(src []string, prefix string, postfix string) []string {
+	var buf bytes.Buffer
+	ret := make([]string, len(src))
+	for i, s := range src {
+		buf.WriteString(prefix)
+		buf.WriteString(s)
+		buf.WriteString(postfix)
+		ret[i] = buf.String()
+		buf.Reset()
+	}
+	return ret
 }
