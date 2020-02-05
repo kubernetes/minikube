@@ -27,7 +27,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -38,10 +37,11 @@ import (
 var kubectlCmd = &cobra.Command{
 	Use:   "kubectl",
 	Short: "Run kubectl",
-	Long: `Run the kubernetes client, download it if necessary.
+	Long: `Run the kubernetes client, download it if necessary. Remember -- after kubectl!
+
 Examples:
 minikube kubectl -- --help
-kubectl get pods --namespace kube-system`,
+minikube kubectl -- get pods --namespace kube-system`,
 	Run: func(cmd *cobra.Command, args []string) {
 		api, err := machine.NewAPIClient()
 		if err != nil {
@@ -50,8 +50,8 @@ kubectl get pods --namespace kube-system`,
 		}
 		defer api.Close()
 
-		cc, err := pkg_config.Load(viper.GetString(config.MachineProfile))
-		if err != nil && !os.IsNotExist(err) {
+		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		if err != nil && !config.IsNotExist(err) {
 			out.ErrLn("Error loading profile config: %v", err)
 		}
 

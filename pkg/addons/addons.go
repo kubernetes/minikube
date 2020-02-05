@@ -18,9 +18,13 @@ package addons
 
 import (
 	"fmt"
-	"os"
+	"path"
+	"sort"
 	"strconv"
+	"strings"
+	"time"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -39,6 +43,7 @@ const defaultStorageClassProvisioner = "standard"
 
 // Set sets a value
 func Set(name, value, profile string) error {
+	glog.Infof("Setting %s=%s in profile %q", name, value, profile)
 	a, valid := isAddonValid(name)
 	if !valid {
 		return errors.Errorf("%s is not a valid addon", name)
@@ -64,7 +69,7 @@ func Set(name, value, profile string) error {
 		return errors.Wrap(err, "running callbacks")
 	}
 
-	// Write the value
+	glog.Infof("Writing out %q config to set %s=%v...", profile, name, value)
 	return config.Write(profile, c)
 }
 
@@ -98,6 +103,7 @@ func SetBool(m *config.MachineConfig, name string, val string) error {
 
 // enableOrDisableAddon updates addon status executing any commands necessary
 func enableOrDisableAddon(name, val, profile string) error {
+	glog.Infof("Setting addon %s=%s in %q", name, val, profile)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -105,14 +111,14 @@ func enableOrDisableAddon(name, val, profile string) error {
 	addon := assets.Addons[name]
 
 	// check addon status before enabling/disabling it
-	alreadySet, err := isAddonAlreadySet(addon, enable)
+	alreadySet, err := isAddonAlreadySet(addon, enable, profile)
 	if err != nil {
 		out.ErrT(out.Conflict, "{{.error}}", out.V{"error": err})
 		return err
 	}
-	//if addon is already enabled or disabled, do nothing
+
 	if alreadySet {
-		return nil
+		glog.Warningf("addon %s should already be in state %v", name, val)
 	}
 
 	if name == "istio" && enable {
@@ -132,20 +138,15 @@ func enableOrDisableAddon(name, val, profile string) error {
 	}
 	defer api.Close()
 
-	//if minikube is not running, we return and simply update the value in the addon
-	//config and rewrite the file
-	if !cluster.IsMinikubeRunning(api) {
-		return nil
-	}
-
 	cfg, err := config.Load(profile)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
-	host, err := cluster.CheckIfHostExistsAndLoad(api, cfg.Name)
-	if err != nil {
-		return errors.Wrap(err, "getting host")
+	host, err := cluster.CheckIfHostExistsAndLoad(api, profile)
+	if err != nil || !cluster.IsHostRunning(api, profile) {
+		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement (err=%v)", profile, addon.Name(), enable, err)
+		return nil
 	}
 
 	cmd, err := machine.CommandRunner(host)
@@ -154,14 +155,13 @@ func enableOrDisableAddon(name, val, profile string) error {
 	}
 
 	data := assets.GenerateTemplateData(cfg.KubernetesConfig)
-	return enableOrDisableAddonInternal(addon, cmd, data, enable)
+	return enableOrDisableAddonInternal(addon, cmd, data, enable, profile)
 }
 
-func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
-	addonStatus, err := addon.IsEnabled()
-
+func isAddonAlreadySet(addon *assets.Addon, enable bool, profile string) (bool, error) {
+	addonStatus, err := addon.IsEnabled(profile)
 	if err != nil {
-		return false, errors.Wrap(err, "get the addon status")
+		return false, errors.Wrap(err, "is enabled")
 	}
 
 	if addonStatus && enable {
@@ -173,34 +173,53 @@ func isAddonAlreadySet(addon *assets.Addon, enable bool) (bool, error) {
 	return false, nil
 }
 
-func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
-	var err error
-
-	updateFile := cmd.Copy
-	if !enable {
-		updateFile = cmd.Remove
-	}
-
+func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool, profile string) error {
+	files := []string{}
 	for _, addon := range addon.Assets {
-		var addonFile assets.CopyableFile
+		var f assets.CopyableFile
+		var err error
 		if addon.IsTemplate() {
-			addonFile, err = addon.Evaluate(data)
+			f, err = addon.Evaluate(data)
 			if err != nil {
 				return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
 			}
 
 		} else {
-			addonFile = addon
+			f = addon
 		}
-		if err := updateFile(addonFile); err != nil {
-			return errors.Wrapf(err, "updating addon %s", addon.AssetName)
+		fPath := path.Join(f.GetTargetDir(), f.GetTargetName())
+
+		if enable {
+			glog.Infof("installing %s", fPath)
+			if err := cmd.Copy(f); err != nil {
+				return err
+			}
+		} else {
+			glog.Infof("Removing %+v", fPath)
+			defer func() {
+				if err := cmd.Remove(f); err != nil {
+					glog.Warningf("error removing %s; addon should still be disabled as expected", fPath)
+				}
+			}()
 		}
+		files = append(files, fPath)
 	}
+	command, err := kubectlCommand(profile, files, enable)
+	if err != nil {
+		return err
+	}
+	glog.Infof("Running: %s", command)
+	rr, err := cmd.RunCmd(command)
+	if err != nil {
+		return errors.Wrapf(err, "addon apply")
+	}
+	glog.Infof("output:\n%s", rr.Output())
 	return nil
 }
 
 // enableOrDisableStorageClasses enables or disables storage classes
 func enableOrDisableStorageClasses(name, val, profile string) error {
+	glog.Infof("enableOrDisableStorageClasses %s=%v on %q", name, val, profile)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrap(err, "Error parsing boolean")
@@ -213,6 +232,17 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 	storagev1, err := storageclass.GetStoragev1()
 	if err != nil {
 		return errors.Wrapf(err, "Error getting storagev1 interface %v ", err)
+	}
+
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		return errors.Wrap(err, "machine client")
+	}
+	defer api.Close()
+
+	if !cluster.IsHostRunning(api, profile) {
+		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", profile, name, val)
+		return enableOrDisableAddon(name, val, profile)
 	}
 
 	if enable {
@@ -230,4 +260,49 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 	}
 
 	return enableOrDisableAddon(name, val, profile)
+}
+
+// Start enables the default addons for a profile, plus any additional
+func Start(profile string, toEnable map[string]bool, additional []string) {
+	start := time.Now()
+	glog.Infof("enableAddons start: toEnable=%v, additional=%s", toEnable, additional)
+	defer func() {
+		glog.Infof("enableAddons completed in %s", time.Since(start))
+	}()
+
+	// Get the default values of any addons not saved to our config
+	for name, a := range assets.Addons {
+		defaultVal, err := a.IsEnabled(profile)
+		if err != nil {
+			glog.Errorf("is-enabled failed for %q: %v", a.Name(), err)
+			continue
+		}
+
+		_, exists := toEnable[name]
+		if !exists {
+			toEnable[name] = defaultVal
+		}
+	}
+
+	// Apply new addons
+	for _, name := range additional {
+		toEnable[name] = true
+	}
+
+	toEnableList := []string{}
+	for k, v := range toEnable {
+		if v {
+			toEnableList = append(toEnableList, k)
+		}
+	}
+	sort.Strings(toEnableList)
+
+	out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
+	for _, a := range toEnableList {
+		err := Set(a, "true", profile)
+		if err != nil {
+			// Intentionally non-fatal
+			out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": a, "error": err})
+		}
+	}
 }

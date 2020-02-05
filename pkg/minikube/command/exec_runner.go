@@ -35,13 +35,17 @@ import (
 // ExecRunner runs commands using the os/exec package.
 //
 // It implements the CommandRunner interface.
-type ExecRunner struct{}
+type execRunner struct {
+}
+
+// NewExecRunner returns a kicRunner implementor of runner which runs cmds inside a container
+func NewExecRunner() Runner {
+	return &execRunner{}
+}
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
-func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
-	glog.Infof("Run: %v", rr.Command())
-
 	var outb, errb io.Writer
 	if cmd.Stdout == nil {
 		var so bytes.Buffer
@@ -79,10 +83,7 @@ func (*ExecRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 }
 
 // Copy copies a file and its permissions
-func (*ExecRunner) Copy(f assets.CopyableFile) error {
-	if err := os.MkdirAll(f.GetTargetDir(), os.ModePerm); err != nil {
-		return errors.Wrapf(err, "error making dirs for %s", f.GetTargetDir())
-	}
+func (*execRunner) Copy(f assets.CopyableFile) error {
 	targetPath := path.Join(f.GetTargetDir(), f.GetTargetName())
 	if _, err := os.Stat(targetPath); err == nil {
 		if err := os.Remove(targetPath); err != nil {
@@ -111,7 +112,7 @@ do you have the correct permissions?`,
 }
 
 // Remove removes a file
-func (e *ExecRunner) Remove(f assets.CopyableFile) error {
+func (*execRunner) Remove(f assets.CopyableFile) error {
 	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 	return os.Remove(targetPath)
 }

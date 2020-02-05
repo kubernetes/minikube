@@ -338,7 +338,7 @@ func TestGetHostStatus(t *testing.T) {
 	checkState(state.Stopped.String())
 }
 
-func TestGetHostDockerEnv(t *testing.T) {
+func TestGetNodeDockerEnv(t *testing.T) {
 	RegisterMockDriver(t)
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
@@ -356,15 +356,16 @@ func TestGetHostDockerEnv(t *testing.T) {
 	}
 	h.Driver = d
 
-	envMap, err := GetHostDockerEnv(api)
+	envMap, err := GetNodeDockerEnv(api)
 	if err != nil {
 		t.Fatalf("Unexpected error getting env: %v", err)
 	}
 
 	dockerEnvKeys := [...]string{
-		"DOCKER_TLS_VERIFY",
-		"DOCKER_HOST",
-		"DOCKER_CERT_PATH",
+		constants.DockerTLSVerifyEnv,
+		constants.DockerHostEnv,
+		constants.DockerCertPathEnv,
+		constants.MinikubeActiveDockerdEnv,
 	}
 	for _, dockerEnvKey := range dockerEnvKeys {
 		if _, hasKey := envMap[dockerEnvKey]; !hasKey {
@@ -373,7 +374,9 @@ func TestGetHostDockerEnv(t *testing.T) {
 	}
 }
 
-func TestGetHostDockerEnvIPv6(t *testing.T) {
+func TestGetNodeDockerEnvIPv6(t *testing.T) {
+	RegisterMockDriver(t)
+
 	tempDir := tests.MakeTempDir()
 	defer os.RemoveAll(tempDir)
 
@@ -390,7 +393,7 @@ func TestGetHostDockerEnvIPv6(t *testing.T) {
 	}
 	h.Driver = d
 
-	envMap, err := GetHostDockerEnv(api)
+	envMap, err := GetNodeDockerEnv(api)
 	if err != nil {
 		t.Fatalf("Unexpected error getting env: %v", err)
 	}

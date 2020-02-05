@@ -61,14 +61,14 @@ See [Getting Started](https://minikube.sigs.k8s.io/docs/start/)
 
 # ================================================================================
 # Deleting release from github before creating new one
-github-release delete \
+github-release -v delete \
   --user "${GITHUB_ORGANIZATION}" \
   --repo "${GITHUB_REPO}" \
   --tag "${TAGNAME}" \
   || true
 
 # Creating a new release in github
-github-release release ${RELEASE_FLAGS} \
+github-release -v release ${RELEASE_FLAGS} \
     --user "${GITHUB_ORGANIZATION}" \
     --repo "${GITHUB_REPO}" \
     --tag "${TAGNAME}" \
@@ -84,8 +84,8 @@ FILES_TO_UPLOAD=(
     'minikube-windows-amd64.exe'
     'minikube-windows-amd64.exe.sha256'
     'minikube-installer.exe'
-    "minikube_${DEB_VERSION}.deb"
-    "minikube-${RPM_VERSION}.rpm"
+    "minikube_${DEB_VERSION}-0_amd64.deb"
+    "minikube-${RPM_VERSION}-0.x86_64.rpm"
     'docker-machine-driver-kvm2'
     'docker-machine-driver-kvm2.sha256'
     'docker-machine-driver-hyperkit'
@@ -106,7 +106,7 @@ do
     n=0
     until [ $n -ge 5 ]
     do
-        github-release upload \
+        github-release -v upload \
           --user "${GITHUB_ORGANIZATION}" \
           --repo "${GITHUB_REPO}" \
           --tag "${TAGNAME}" \
