@@ -17,6 +17,12 @@ type Tunnel struct {
 	v1Core  typed_core.CoreV1Interface
 }
 
+type sshTunnel struct {
+	name string
+	kill bool
+	cmd  *exec.Cmd
+}
+
 // NewTunnel ...
 func NewTunnel(sshPort, sshKey string, v1Core typed_core.CoreV1Interface) *Tunnel {
 	return &Tunnel{
@@ -28,25 +34,46 @@ func NewTunnel(sshPort, sshKey string, v1Core typed_core.CoreV1Interface) *Tunne
 
 // Start ...
 func (t *Tunnel) Start() error {
+	sshTunnels := make(map[string]*sshTunnel)
+
 	for {
 		services, err := t.v1Core.Services("").List(metav1.ListOptions{})
 		if err != nil {
-			// do I return error, or log and continue?
 			return err
+		}
+
+		for _, v := range sshTunnels {
+			v.kill = true
 		}
 
 		for _, s := range services.Items {
 			if s.Spec.Type == v1.ServiceTypeLoadBalancer {
-				t.createTunnel(s.Name, s.Spec.ClusterIP, s.Spec.Ports)
+				sshTunnel, ok := sshTunnels[s.Name]
+
+				if ok {
+					sshTunnel.kill = false
+					continue
+				}
+
+				newSSHTunnel := t.createSSHTunnel(s.Name, s.Spec.ClusterIP, s.Spec.Ports)
+				sshTunnels[newSSHTunnel.name] = newSSHTunnel
+			}
+		}
+
+		for _, v := range sshTunnels {
+			if v.kill {
+				v.stop()
+				delete(sshTunnels, v.name)
 			}
 		}
 
 		// which time to use?
-		time.Sleep(10 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 
-func (t *Tunnel) createTunnel(name, clusterIP string, ports []v1.ServicePort) {
+func (t *Tunnel) createSSHTunnel(name, clusterIP string, ports []v1.ServicePort) *sshTunnel {
+	// extract sshArgs
 	sshArgs := []string{
 		"-N",
 		"docker@127.0.0.1",
@@ -66,6 +93,37 @@ func (t *Tunnel) createTunnel(name, clusterIP string, ports []v1.ServicePort) {
 	}
 
 	cmd := exec.Command("ssh", sshArgs...)
-	err := cmd.Run()
-	fmt.Println(err)
+
+	// TODO: name must be different, because if a service was changed,
+	// we must remove the old process and create the new one
+	s := &sshTunnel{
+		name: fmt.Sprintf("%s", name),
+		kill: false,
+		cmd:  cmd,
+	}
+
+	go s.run()
+
+	return s
+}
+
+func (s *sshTunnel) run() {
+	fmt.Println("running", s.name)
+	err := s.cmd.Start()
+	if err != nil {
+		// TODO: improve logging
+		fmt.Println(err)
+	}
+
+	// we are ignoring wait return, because the process will be killed, once the tunnel is not needed.
+	s.cmd.Wait()
+}
+
+func (s *sshTunnel) stop() {
+	fmt.Println("stopping", s.name)
+	err := s.cmd.Process.Kill()
+	if err != nil {
+		// TODO: improve logging
+		fmt.Println(err)
+	}
 }
