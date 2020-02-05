@@ -180,6 +180,10 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return state.Error, errors.Wrap(err, "point host docker-daemon")
+	}
+
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
 	out, err := cmd.CombinedOutput()
 	o := strings.Trim(string(out), "\n")
