@@ -91,11 +91,7 @@ func SystemPods(client *kubernetes.Clientset, start time.Time, timeout time.Dura
 		}
 
 		glog.Infof("%d kube-system pods found since %s", len(pods.Items), podStart)
-		if time.Since(podStart) > 2*kconst.APICallRetryInterval {
-			glog.Infof("stability requirement met, returning")
-			return true, nil
-		}
-		return false, nil
+		return true, nil
 	}
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
 		return fmt.Errorf("apiserver never returned a pod list")
