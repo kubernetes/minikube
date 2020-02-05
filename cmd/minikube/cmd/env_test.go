@@ -62,7 +62,7 @@ func newShellCfg(shell, prefix, suffix, delim string) *ShellConfig {
 		DockerCertPath:  localpath.MakeMiniPath("certs"),
 		DockerTLSVerify: "1",
 		DockerHost:      "tcp://127.0.0.1:2376",
-		UsageHint:       generateUsageHint(shell),
+		UsageHint:       generateUsageHint("minikube", shell),
 		Prefix:          prefix,
 		Suffix:          suffix,
 		Delimiter:       delim,
@@ -144,7 +144,7 @@ func TestShellCfgSet(t *testing.T) {
 				DockerCertPath:  localpath.MakeMiniPath("certs"),
 				DockerTLSVerify: "1",
 				DockerHost:      "tcp://127.0.0.1:2376",
-				UsageHint:       usageHintMap["bash"],
+				UsageHint:       generateUsageHint("minikube", "bash"),
 				Prefix:          bashSetPfx,
 				Suffix:          bashSetSfx,
 				Delimiter:       bashSetDelim,
@@ -163,7 +163,7 @@ func TestShellCfgSet(t *testing.T) {
 				DockerCertPath:  localpath.MakeMiniPath("certs"),
 				DockerTLSVerify: "1",
 				DockerHost:      "tcp://127.0.0.1:2376",
-				UsageHint:       usageHintMap["bash"],
+				UsageHint:       generateUsageHint("minikube", "bash"),
 				Prefix:          bashSetPfx,
 				Suffix:          bashSetSfx,
 				Delimiter:       bashSetDelim,
@@ -182,7 +182,7 @@ func TestShellCfgSet(t *testing.T) {
 				DockerCertPath:  localpath.MakeMiniPath("certs"),
 				DockerTLSVerify: "1",
 				DockerHost:      "tcp://127.0.0.1:2376",
-				UsageHint:       usageHintMap["bash"],
+				UsageHint:       generateUsageHint("minikube", "bash"),
 				Prefix:          bashSetPfx,
 				Suffix:          bashSetSfx,
 				Delimiter:       bashSetDelim,
@@ -201,7 +201,7 @@ func TestShellCfgSet(t *testing.T) {
 				DockerCertPath:  localpath.MakeMiniPath("certs"),
 				DockerTLSVerify: "1",
 				DockerHost:      "tcp://127.0.0.1:2376",
-				UsageHint:       usageHintMap["bash"],
+				UsageHint:       generateUsageHint("minikube", "bash"),
 				Prefix:          bashSetPfx,
 				Suffix:          bashSetSfx,
 				Delimiter:       bashSetDelim,
@@ -220,7 +220,7 @@ func TestShellCfgSet(t *testing.T) {
 				DockerCertPath:  localpath.MakeMiniPath("certs"),
 				DockerTLSVerify: "1",
 				DockerHost:      "tcp://127.0.0.1:2376",
-				UsageHint:       usageHintMap["bash"],
+				UsageHint:       generateUsageHint("minikube", "bash"),
 				Prefix:          bashSetPfx,
 				Suffix:          bashSetSfx,
 				Delimiter:       bashSetDelim,
@@ -254,6 +254,7 @@ func TestShellCfgSet(t *testing.T) {
 }
 
 func TestShellCfgUnset(t *testing.T) {
+
 	var tests = []struct {
 		description      string
 		shell            string
@@ -266,7 +267,7 @@ func TestShellCfgUnset(t *testing.T) {
 				Prefix:    bashUnsetPfx,
 				Suffix:    bashUnsetSfx,
 				Delimiter: bashUnsetDelim,
-				UsageHint: usageHintMap["bash"],
+				UsageHint: generateUsageHint("minikube", "bash"),
 			},
 		},
 		{
@@ -276,7 +277,7 @@ func TestShellCfgUnset(t *testing.T) {
 				Prefix:    bashUnsetPfx,
 				Suffix:    bashUnsetSfx,
 				Delimiter: bashUnsetDelim,
-				UsageHint: usageHintMap["bash"],
+				UsageHint: generateUsageHint("minikube", "bash"),
 			},
 		},
 		{
@@ -286,7 +287,7 @@ func TestShellCfgUnset(t *testing.T) {
 				Prefix:    fishUnsetPfx,
 				Suffix:    fishUnsetSfx,
 				Delimiter: fishUnsetDelim,
-				UsageHint: usageHintMap["fish"],
+				UsageHint: generateUsageHint("minikube", "fish"),
 			},
 		},
 		{
@@ -296,7 +297,7 @@ func TestShellCfgUnset(t *testing.T) {
 				Prefix:    psUnsetPfx,
 				Suffix:    psUnsetSfx,
 				Delimiter: psUnsetDelim,
-				UsageHint: usageHintMap["powershell"],
+				UsageHint: generateUsageHint("minikube", "powershell"),
 			},
 		},
 		{
@@ -306,7 +307,7 @@ func TestShellCfgUnset(t *testing.T) {
 				Prefix:    cmdUnsetPfx,
 				Suffix:    cmdUnsetSfx,
 				Delimiter: cmdUnsetDelim,
-				UsageHint: usageHintMap["cmd"],
+				UsageHint: generateUsageHint("minikube", "cmd"),
 			},
 		},
 		{
@@ -316,7 +317,7 @@ func TestShellCfgUnset(t *testing.T) {
 				Prefix:    emacsUnsetPfx,
 				Suffix:    emacsUnsetSfx,
 				Delimiter: emacsUnsetDelim,
-				UsageHint: usageHintMap["emacs"],
+				UsageHint: generateUsageHint("minikube", "emacs"),
 			},
 		},
 	}

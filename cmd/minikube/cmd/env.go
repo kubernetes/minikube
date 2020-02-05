@@ -128,9 +128,9 @@ type NoProxyGetter interface {
 // EnvNoProxyGetter gets the no_proxy variable, using environment
 type EnvNoProxyGetter struct{}
 
-func generateUsageHint(userShell string) string {
+func generateUsageHint(profile string, userShell string) string {
 	const usgPlz = "Please run command bellow to point your shell to minikube's docker-daemon :"
-	var usgCmd = fmt.Sprintf("minikube -p %s docker-env", viper.GetString(config.MachineProfile))
+	var usgCmd = fmt.Sprintf("minikube -p %s docker-env", profile)
 	var usageHintMap = map[string]string{
 		"bash": fmt.Sprintf(`
 # %s
@@ -178,7 +178,7 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 		DockerHost:             envMap[constants.DockerHostEnv],
 		DockerTLSVerify:        envMap[constants.DockerTLSVerifyEnv],
 		MinikubeDockerdProfile: envMap[constants.MinikubeActiveDockerdEnv],
-		UsageHint:              generateUsageHint(userShell),
+		UsageHint:              generateUsageHint(viper.GetString(config.MachineProfile), userShell),
 	}
 
 	if noProxy {
@@ -247,7 +247,7 @@ func shellCfgUnset() (*ShellConfig, error) {
 	}
 
 	shellCfg := &ShellConfig{
-		UsageHint: generateUsageHint(userShell),
+		UsageHint: generateUsageHint(viper.GetString(config.MachineProfile), userShell),
 	}
 
 	if noProxy {

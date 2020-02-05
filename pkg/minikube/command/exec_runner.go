@@ -44,7 +44,7 @@ func NewExecRunner() Runner {
 }
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
-func (e *execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
 	var outb, errb io.Writer
 	if cmd.Stdout == nil {
@@ -83,7 +83,7 @@ func (e *execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 }
 
 // Copy copies a file and its permissions
-func (e *execRunner) Copy(f assets.CopyableFile) error {
+func (*execRunner) Copy(f assets.CopyableFile) error {
 	targetPath := path.Join(f.GetTargetDir(), f.GetTargetName())
 	if _, err := os.Stat(targetPath); err == nil {
 		if err := os.Remove(targetPath); err != nil {
@@ -112,7 +112,7 @@ do you have the correct permissions?`,
 }
 
 // Remove removes a file
-func (e *execRunner) Remove(f assets.CopyableFile) error {
+func (*execRunner) Remove(f assets.CopyableFile) error {
 	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
 	return os.Remove(targetPath)
 }
