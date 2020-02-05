@@ -1,5 +1,27 @@
 # Release Notes
 
+## Version 1.7.1 - 2020-02-05
+
+* Create directory using os.MkDirAll, as mkdir -p does not work on windows [#6508](https://github.com/kubernetes/minikube/pull/6508)
+* Revert role change from cluster-admin->system:persistent-volume-provisioner [#6511](https://github.com/kubernetes/minikube/pull/6511)
+* gvisor fixes for v1.7.0 [#6512](https://github.com/kubernetes/minikube/pull/6512)
+* Remove pod list stability double check [#6509](https://github.com/kubernetes/minikube/pull/6509)
+* Use cluster-dns IP setup by kubeadm [#6472](https://github.com/kubernetes/minikube/pull/6472)
+* Skip driver autodetection if driver is already set [#6503](https://github.com/kubernetes/minikube/pull/6503)
+* Customizing host path for dynamically provisioned PersistentVolumes [#6156](https://github.com/kubernetes/minikube/pull/6156)
+* Update kubeadm api version from v1beta1 to v1beta2 [#6150](https://github.com/kubernetes/minikube/pull/6150)
+* Use profile name as cluster/node name [#6200](https://github.com/kubernetes/minikube/pull/6200)
+
+Thank you to our wonderful and amazing contributors who contributed to this bug-fix release:
+
+- Nanik T
+- Ruben
+- Sharif Elgamal
+- Thomas Strömberg
+- tstromberg
+- Vijay Katam
+- Zhongcheng Lao
+
 ## Version 1.7.0 - 2020-02-04
 
 * Add Azure Container Registry support [#6483](https://github.com/kubernetes/minikube/pull/6483)
