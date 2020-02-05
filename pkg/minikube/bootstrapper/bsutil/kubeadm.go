@@ -111,6 +111,10 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 	if version.GTE(semver.MustParse("1.14.0-alpha.0")) {
 		configTmpl = ktmpl.V1Beta1
 	}
+	// v1beta2 isn't required until v1.17.
+	if version.GTE(semver.MustParse("1.17.0")) {
+		configTmpl = ktmpl.V1Beta2
+	}
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
 	}
