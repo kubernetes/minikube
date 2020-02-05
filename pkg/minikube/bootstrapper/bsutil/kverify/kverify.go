@@ -71,26 +71,20 @@ func apiServerPID(cr command.Runner) (int, error) {
 func SystemPods(client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
 	glog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
-	podStart := time.Time{}
 	podList := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during pod check")
 		}
 		// Wait for any system pod, as waiting for apiserver may block until etcd
 		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
-		if len(pods.Items) < 2 {
-			podStart = time.Time{}
-			return false, nil
-		}
 		if err != nil {
-			podStart = time.Time{}
+			glog.Warningf("pod list returned error: %v", err)
 			return false, nil
 		}
-		if podStart.IsZero() {
-			podStart = time.Now()
+		glog.Infof("%d kube-system pods found", len(pods.Items))
+		if len(pods.Items) < 2 {
+			return false, nil
 		}
-
-		glog.Infof("%d kube-system pods found since %s", len(pods.Items), podStart)
 		return true, nil
 	}
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
