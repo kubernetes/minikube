@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package assets
+package cluster
 
 import (
 	"io/ioutil"
@@ -37,12 +37,12 @@ func setupTestDir() (string, error) {
 	return path, err
 }
 
-func TestAddMinikubeDirAssets(t *testing.T) {
-
+func TestAssetsFromDir(t *testing.T) {
 	tests := []struct {
 		description string
 		baseDir     string
 		vmPath      string
+		flatten     bool
 		files       []struct {
 			relativePath string
 			expectedPath string
@@ -50,7 +50,8 @@ func TestAddMinikubeDirAssets(t *testing.T) {
 	}{
 		{
 			description: "relative path assets",
-			baseDir:     "/files",
+			baseDir:     "/addons",
+			flatten:     true,
 			files: []struct {
 				relativePath string
 				expectedPath string
@@ -73,6 +74,7 @@ func TestAddMinikubeDirAssets(t *testing.T) {
 		{
 			description: "absolute path assets",
 			baseDir:     "/files",
+			flatten:     false,
 			files: []struct {
 				relativePath string
 				expectedPath string
@@ -90,7 +92,7 @@ func TestAddMinikubeDirAssets(t *testing.T) {
 					expectedPath: "/dir2",
 				},
 			},
-			vmPath: "",
+			vmPath: "/",
 		},
 	}
 	var testDirs = make([]string, 0)
@@ -139,8 +141,7 @@ func TestAddMinikubeDirAssets(t *testing.T) {
 				}
 			}
 
-			var actualFiles []CopyableFile
-			err = addMinikubeDirToAssets(testFileBaseDir, test.vmPath, &actualFiles)
+			actualFiles, err := assetsFromDir(testFileBaseDir, test.vmPath, test.flatten)
 			if err != nil {
 				t.Errorf("got unexpected error adding minikube dir assets: %v", err)
 				return
