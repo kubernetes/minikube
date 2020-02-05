@@ -18,6 +18,7 @@ limitations under the License.
 package bsutil
 
 import (
+	"os/exec"
 	"path"
 	"runtime"
 
@@ -32,8 +33,14 @@ import (
 
 // TransferBinaries transfers all required Kubernetes binaries
 func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
+	dir := binRoot(cfg.KubernetesVersion)
+	_, err := c.RunCmd(exec.Command("sudo", "mkdir", "-p", dir))
+	if err != nil {
+		return err
+	}
+
 	var g errgroup.Group
-	for _, name := range constants.KubeadmBinaries {
+	for _, name := range constants.KubernetesReleaseBinaries {
 		name := name
 		g.Go(func() error {
 			src, err := machine.CacheBinary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)
@@ -41,7 +48,7 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 				return errors.Wrapf(err, "downloading %s", name)
 			}
 
-			dst := path.Join(binRoot(cfg.KubernetesVersion), name)
+			dst := path.Join(dir, name)
 			if err := machine.CopyBinary(c, src, dst); err != nil {
 				return errors.Wrapf(err, "copybinary %s -> %s", src, dst)
 			}

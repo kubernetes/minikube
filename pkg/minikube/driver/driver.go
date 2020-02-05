@@ -20,10 +20,10 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -60,6 +60,19 @@ func SupportedDrivers() []string {
 	return supportedDrivers
 }
 
+// DisplaySupportedDrivers returns a string with a list of supported drivers
+func DisplaySupportedDrivers() string {
+	var sd []string
+	for _, d := range supportedDrivers {
+		if registry.Driver(d).Priority == registry.Experimental {
+			sd = append(sd, d+" (experimental)")
+			continue
+		}
+		sd = append(sd, d)
+	}
+	return strings.Join(sd, ", ")
+}
+
 // Supported returns if the driver is supported on this host.
 func Supported(name string) bool {
 	for _, d := range supportedDrivers {
@@ -73,6 +86,19 @@ func Supported(name string) bool {
 // IsKIC checks if the driver is a kubernetes in continer
 func IsKIC(name string) bool {
 	return name == Docker
+}
+
+// IsMock checks if the driver is a mock
+func IsMock(name string) bool {
+	return name == Mock
+}
+
+// IsVM checks if the driver is a VM
+func IsVM(name string) bool {
+	if IsKIC(name) || IsMock(name) || BareMetal(name) {
+		return false
+	}
+	return true
 }
 
 // BareMetal returns if this driver is unisolated
@@ -95,8 +121,6 @@ func FlagDefaults(name string) FlagHints {
 		fh.CacheImages = true
 		// only for kic, till other run-times are available we auto-set containerd.
 		if name == Docker {
-			fh.ContainerRuntime = "containerd"
-			fh.Bootstrapper = bootstrapper.KIC
 			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR))
 		}
 		return fh

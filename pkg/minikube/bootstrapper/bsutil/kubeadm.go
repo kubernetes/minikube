@@ -35,7 +35,8 @@ import (
 const remoteContainerRuntime = "remote"
 
 // GenerateKubeadmYAML generates the kubeadm.yaml file
-func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byte, error) {
+func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, error) {
+	k8s := mc.KubernetesConfig
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
@@ -53,7 +54,11 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 	}
 
 	// In case of no port assigned, use default
-	nodePort := k8s.NodePort
+	cp, err := config.PrimaryControlPlane(mc)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting control plane")
+	}
+	nodePort := cp.Port
 	if nodePort <= 0 {
 		nodePort = constants.APIServerPort
 	}
@@ -66,6 +71,7 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		APIServerPort     int
 		KubernetesVersion string
 		EtcdDataDir       string
+		ClusterName       string
 		NodeName          string
 		DNSDomain         string
 		CRISocket         string
@@ -77,11 +83,12 @@ func GenerateKubeadmYAML(k8s config.KubernetesConfig, r cruntime.Manager) ([]byt
 		CertDir:           vmpath.GuestCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
 		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
-		AdvertiseAddress:  k8s.NodeIP,
+		AdvertiseAddress:  cp.IP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
-		NodeName:          k8s.NodeName,
+		ClusterName:       k8s.ClusterName,
+		NodeName:          cp.Name,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
 		ExtraArgs:         extraComponentConfig,

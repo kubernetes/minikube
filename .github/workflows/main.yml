@@ -1,0 +1,144 @@
+name: CI
+
+on: [pull_request]
+
+jobs:
+  docker_ubuntu_16_04:
+    runs-on: ubuntu-16.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: build binaries
+      run : |
+        make minikube-linux-amd64
+        make e2e-linux-amd64
+        mkdir -p report
+    - name: install gopogh
+      run: |
+        cd /tmp
+        GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
+        cd -
+    - name: run integration test
+      run: |
+        mkdir -p /tmp/testhome
+        MINIKUBE_HOME=/tmp/testhome ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+    - name: generate gopogh report
+      run: |
+        export PATH=${PATH}:`go env GOPATH`/bin
+        go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+        gopogh -in ./report/testout.json -out ./report/testout.html -name "docker ubuntu" -repo github.com/kubernetes/minikube/  || true
+    - uses: actions/upload-artifact@v1
+      with:
+        name: docker_on_ubuntu_16_04_report
+        path: report
+  docker_ubuntu_18_04:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: build binaries
+      run : |
+        make minikube-linux-amd64
+        make e2e-linux-amd64
+        mkdir -p report
+    - name: install gopogh
+      run: |
+        cd /tmp
+        GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
+        cd -
+    - name: run integration test
+      run: |
+        mkdir -p /tmp/testhome 
+        MINIKUBE_HOME=/tmp/testhome ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+    - name: generate gopogh report
+      run: |
+        export PATH=${PATH}:`go env GOPATH`/bin
+        go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+        gopogh -in ./report/testout.json -out ./report/testout.html -name "docker ubuntu" -repo github.com/kubernetes/minikube/  || true
+    - uses: actions/upload-artifact@v1
+      with:
+        name: docker_on_ubuntu_18_04_report
+        path: report
+  docker_macos:
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: build binaries
+      run : |
+        make minikube-darwin-amd64
+        make e2e-darwin-amd64
+        mkdir -p report
+    - name: install docker
+      run: |
+          brew install docker-machine docker || true
+          brew services start docker-machine || true
+          docker version || true
+    - name: install gopogh
+      run: |
+        cd /tmp
+        GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
+        cd -
+    - name: run integration test
+      run: |
+        mkdir -p /tmp/testhome
+        MINIKUBE_HOME=/tmp/testhome ./out/e2e-darwin-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./out/minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
+    - name: generate gopogh report
+      run: |
+        export PATH=${PATH}:`go env GOPATH`/bin
+        go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+        gopogh -in ./report/testout.json -out ./report/testout.html -name "docker macos" -repo github.com/kubernetes/minikube/  || true
+    - uses: actions/upload-artifact@v1
+      with:
+        name: docker_on_macos_report
+        path: ./report
+  none_ubuntu16_04:
+    runs-on: ubuntu-16.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: build binaries
+      run : |
+        make minikube-linux-amd64
+        make e2e-linux-amd64
+        mkdir -p report
+    - name: install gopogh
+      run: |
+        cd /tmp
+        GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
+        cd -
+    - name: run integration test
+      run: |
+        mkdir -p /tmp/testhome
+        MINIKUBE_HOME=/tmp/testhome sudo -E ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=none -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+    - name: generate gopogh report
+      run: |
+        export PATH=${PATH}:`go env GOPATH`/bin
+        go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+        gopogh -in ./report/testout.json -out ./report/testout.html -name "docker ubuntu" -repo github.com/kubernetes/minikube/  || true
+    - uses: actions/upload-artifact@v1
+      with:
+        name: none_on_ubuntu_16_04
+        path: report
+  none_ubuntu_18_04:
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: build binaries
+      run : |
+        make minikube-linux-amd64
+        make e2e-linux-amd64
+    - name: install gopogh
+      run: |
+        cd /tmp
+        GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
+        cd -
+    - name: run integration test
+      run: |
+        mkdir -p /tmp/testhome
+        MINIKUBE_HOME=/tmp/testhome sudo -E ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=none -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+    - name: generate gopogh report
+      run: |
+        export PATH=${PATH}:`go env GOPATH`/bin
+        go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+        gopogh -in ./report/testout.json -out ./report/testout.html -name "docker ubuntu" -repo github.com/kubernetes/minikube/  || true
+    - uses: actions/upload-artifact@v1
+      with:
+        name: none_on_ubuntu_latest_report
+        path: report

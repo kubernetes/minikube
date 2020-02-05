@@ -34,7 +34,6 @@ import (
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/util"
 )
 
 var (
@@ -80,13 +79,13 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 	wg.Add(2)
 
 	go func() {
-		if err := teePrefix(util.ErrPrefix, errPipe, errB, glog.V(8).Infof); err != nil {
+		if err := teePrefix(ErrPrefix, errPipe, errB, glog.V(8).Infof); err != nil {
 			glog.Errorf("tee stderr: %v", err)
 		}
 		wg.Done()
 	}()
 	go func() {
-		if err := teePrefix(util.OutPrefix, outPipe, outB, glog.V(8).Infof); err != nil {
+		if err := teePrefix(OutPrefix, outPipe, outB, glog.V(8).Infof); err != nil {
 			glog.Errorf("tee stdout: %v", err)
 		}
 		wg.Done()
@@ -196,7 +195,7 @@ func (s *SSHRunner) Copy(f assets.CopyableFile) error {
 		return nil
 	})
 
-	scp := fmt.Sprintf("sudo mkdir -p %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
+	scp := fmt.Sprintf("sudo test -d %s && sudo scp -t %s", f.GetTargetDir(), f.GetTargetDir())
 	mtime, err := f.GetModTime()
 	if err != nil {
 		glog.Infof("error getting modtime for %s: %v", dst, err)

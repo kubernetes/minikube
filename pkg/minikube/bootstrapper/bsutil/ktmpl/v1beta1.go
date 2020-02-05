@@ -51,7 +51,7 @@ kind: ClusterConfiguration
 {{range $i, $val := .FeatureArgs}}{{$i}}: {{$val}}
 {{end -}}{{end -}}
 certificatesDir: {{.CertDir}}
-clusterName: kubernetes
+clusterName: {{.ClusterName}}
 apiServer:
   certSANs: ["127.0.0.1", "localhost", "{{.AdvertiseAddress}}"]
 controlPlaneEndpoint: localhost:{{.APIServerPort}}
@@ -60,6 +60,8 @@ dns:
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
+    extraArgs:
+      listen-metrics-urls: http://127.0.0.1:2381,http://{{.AdvertiseAddress}}:2381
 kubernetesVersion: {{.KubernetesVersion}}
 networking:
   dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
@@ -73,4 +75,8 @@ evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
+---
+apiVersion: kubeproxy.config.k8s.io/v1alpha1
+kind: KubeProxyConfiguration
+metricsBindAddress: {{.AdvertiseAddress}}:10249
 `))

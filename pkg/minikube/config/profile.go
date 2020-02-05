@@ -18,12 +18,14 @@ package config
 
 import (
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/golang/glog"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -35,20 +37,29 @@ func (p *Profile) IsValid() bool {
 	if p.Config == nil {
 		return false
 	}
-	if len(p.Config) == 0 {
+	if p.Config == nil {
 		return false
 	}
-	// This will become a loop for multinode
-	if p.Config[0] == nil {
+	if p.Config.VMDriver == "" {
 		return false
 	}
-	if p.Config[0].VMDriver == "" {
-		return false
-	}
-	if p.Config[0].KubernetesConfig.KubernetesVersion == "" {
-		return false
+	for _, n := range p.Config.Nodes {
+		if n.KubernetesVersion == "" {
+			return false
+		}
 	}
 	return true
+}
+
+// PrimaryControlPlane gets the node specific config for the first created control plane
+func PrimaryControlPlane(cc MachineConfig) (Node, error) {
+	for _, n := range cc.Nodes {
+		if n.ControlPlane {
+			return n, nil
+		}
+	}
+
+	return Node{}, errors.New("could not find master node")
 }
 
 // ProfileNameInReservedKeywords checks if the profile is an internal keywords
@@ -73,14 +84,14 @@ func ProfileExists(name string, miniHome ...string) bool {
 	return err == nil
 }
 
-// CreateEmptyProfile creates an empty profile stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
+// CreateEmptyProfile creates an empty profile and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func CreateEmptyProfile(name string, miniHome ...string) error {
 	cfg := &MachineConfig{}
-	return CreateProfile(name, cfg, miniHome...)
+	return SaveProfile(name, cfg, miniHome...)
 }
 
-// CreateProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func CreateProfile(name string, cfg *MachineConfig, miniHome ...string) error {
+// SaveProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
+func SaveProfile(name string, cfg *MachineConfig, miniHome ...string) error {
 	data, err := json.MarshalIndent(cfg, "", "    ")
 	if err != nil {
 		return err
@@ -136,10 +147,18 @@ func DeleteProfile(profile string, miniHome ...string) error {
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggested to be deleted
 func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
+
+	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
 	if err != nil {
 		return nil, nil, err
 	}
+	// try to get profiles list based on all contrainers created by docker driver
+	cs, err := oci.ListOwnedContainers(oci.Docker)
+	if err == nil {
+		pDirs = append(pDirs, cs...)
+	}
+	pDirs = removeDupes(pDirs)
 	for _, n := range pDirs {
 		p, err := LoadProfile(n, miniHome...)
 		if err != nil {
@@ -155,12 +174,32 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	return validPs, inValidPs, nil
 }
 
+// removeDupes removes duplicates
+func removeDupes(profiles []string) []string {
+	// Use map to record duplicates as we find them.
+	seen := map[string]bool{}
+	result := []string{}
+
+	for n := range profiles {
+		if seen[profiles[n]] {
+			// Do not add duplicate.
+		} else {
+			// Record this element as an encountered element.
+			seen[profiles[n]] = true
+			// Append to result slice.
+			result = append(result, profiles[n])
+		}
+	}
+	// Return the new slice.
+	return result
+}
+
 // LoadProfile loads type Profile based on its name
 func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 	cfg, err := DefaultLoader.LoadConfigFromFile(name, miniHome...)
 	p := &Profile{
 		Name:   name,
-		Config: []*MachineConfig{cfg},
+		Config: cfg,
 	}
 	return p, err
 }
@@ -181,7 +220,7 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 	return dirs, err
 }
 
-// profileFilePath returns the Minikube profile config file
+// profileFilePath returns path of profile config file
 func profileFilePath(profile string, miniHome ...string) string {
 	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {

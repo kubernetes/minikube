@@ -1,5 +1,103 @@
 # Release Notes
 
+## Version 1.7.0 - 2020-02-04
+
+* Add Azure Container Registry support [#6483](https://github.com/kubernetes/minikube/pull/6483)
+* Support --force for overriding the ssh check [#6237](https://github.com/kubernetes/minikube/pull/6237)
+* Update translation files with new strings [#6491](https://github.com/kubernetes/minikube/pull/6491)
+* fix docker-env for kic drivers [#6487](https://github.com/kubernetes/minikube/pull/6487)
+* Fix bugs that prevented previously-enabled addons from starting up [#6471](https://github.com/kubernetes/minikube/pull/6471)
+* Fix none driver bugs with "pause"  [#6452](https://github.com/kubernetes/minikube/pull/6452)
+
+Thank you to those brave souls who made the final push toward this release:
+
+- Medya Gh
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+
+## Version 1.7.0-beta.2 - 2020-01-31
+
+* Add docker run-time for kic driver [#6436](https://github.com/kubernetes/minikube/pull/6436)
+* Configure etcd and kube-proxy metrics to listen on minikube node IP [#6322](https://github.com/kubernetes/minikube/pull/6322)
+* add container runtime info to profile list [#6409](https://github.com/kubernetes/minikube/pull/6409)
+* status: Explicitly state that the cluster does not exist [#6438](https://github.com/kubernetes/minikube/pull/6438)
+* Do not use an arch suffix for the coredns name [#6243](https://github.com/kubernetes/minikube/pull/6243)
+* Prevent registry-creds configure from failing when a secret does not exist.  [#6380](https://github.com/kubernetes/minikube/pull/6380)
+* improve checking modprob netfilter [#6427](https://github.com/kubernetes/minikube/pull/6427)
+
+Huge thank you for this release towards our contributors: 
+
+- Anders Björklund
+- Bjørn Harald Fotland
+- Chance Zibolski
+- Kim Bao Long
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- akshay
+
+## Version 1.7.0-beta.1 - 2020-01-24
+
+* Add 'pause' command to freeze Kubernetes cluster [#5962](https://github.com/kubernetes/minikube/pull/5962)
+* kic driver: add multiple profiles and ssh [#6390](https://github.com/kubernetes/minikube/pull/6390)
+* Update DefaultKubernetesVersion to v1.17.2 [#6392](https://github.com/kubernetes/minikube/pull/6392)
+* Add varlink program for using with podman-remote [#6349](https://github.com/kubernetes/minikube/pull/6349)
+* Update Kubernetes libraries to v1.17.2 [#6374](https://github.com/kubernetes/minikube/pull/6374)
+* Remove addon manager [#6334](https://github.com/kubernetes/minikube/pull/6334)
+* Remove unnecessary crio restart to improve start latency [#6369](https://github.com/kubernetes/minikube/pull/6369)
+* Check for nil ref and img before passing them into go-containerregistry [#6236](https://github.com/kubernetes/minikube/pull/6236)
+* Change the compression methods used on the iso [#6341](https://github.com/kubernetes/minikube/pull/6341)
+* Update the crio.conf instead of overwriting it [#6219](https://github.com/kubernetes/minikube/pull/6219)
+* Update Japanese translation [#6339](https://github.com/kubernetes/minikube/pull/6339)
+* Stop minikube dashboard from crashing at start [#6325](https://github.com/kubernetes/minikube/pull/6325)
+
+Thanks you to the following contributors:
+
+- Anders F Björklund
+- inductor
+- Medya Ghazizadeh
+- Naoki Oketani
+- Priya Wadhwa
+- Sharif Elgamal
+- sshukun
+- Thomas Strömberg
+
+## Version 1.7.0-beta.0 - 2020-01-15
+
+* Use CGroupDriver function from cruntime for kubelet [#6287](https://github.com/kubernetes/minikube/pull/6287)
+* Experimental Docker support (kic) using the Kind image [#6151](https://github.com/kubernetes/minikube/pull/6151)
+* disable istio provisioner by default [#6315](https://github.com/kubernetes/minikube/pull/6315)
+* Add --dry-run option to start [#6256](https://github.com/kubernetes/minikube/pull/6256)
+* Improve "addon list" by viewing as a table  [#6274](https://github.com/kubernetes/minikube/pull/6274)
+* Disable IPv6 in the minikube VM until it can be properly supported [#6241](https://github.com/kubernetes/minikube/pull/6241)
+* Fixes IPv6 address handling in kubeadm [#6214](https://github.com/kubernetes/minikube/pull/6214)
+* Upgrade crio to 1.16.1 [#6210](https://github.com/kubernetes/minikube/pull/6210)
+* Upgrade podman to 1.6.4 [#6208](https://github.com/kubernetes/minikube/pull/6208)
+* Enable or disable addons per profile [#6124](https://github.com/kubernetes/minikube/pull/6124)
+* Upgrade buildroot minor version [#6199](https://github.com/kubernetes/minikube/pull/6199)
+* Add systemd patch for booting on AMD Ryzen [#6183](https://github.com/kubernetes/minikube/pull/6183)
+* update zh translation [#6176](https://github.com/kubernetes/minikube/pull/6176)
+* Add istio addon for minikube [#6154](https://github.com/kubernetes/minikube/pull/6154)
+
+Huge thank you for this release towards our contributors:
+- Anders Björklund
+- andylibrian
+- Dao Cong Tien
+- Dominic Yin
+- fenglixa
+- GennadySpb
+- Kenta Iso
+- Kim Bao Long
+- Medya Ghazizadeh
+- Nguyen Hai Truong
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- ttonline6
+- Zhongcheng Lao
+- Zhou Hao
 
 ## Version 1.6.2  - 2019-12-19
 
@@ -11,7 +109,7 @@
 * start: Remove create/delete retry loop [#6129](https://github.com/kubernetes/minikube/pull/6129)
 * Change error text to encourage better issue reports [#6121](https://github.com/kubernetes/minikube/pull/6121)
 
-Huge thank you for this release towards our contributors: 
+Huge thank you for this release towards our contributors:
 - Anukul Sangwan
 - Aresforchina
 - Curtis Carter

@@ -18,7 +18,7 @@ a consistent way to manage various VM providers.
 %prep
 mkdir -p %{name}-%{version}
 cd %{name}-%{version}
-cp --OUT--/docker-machine-driver-kvm2 .
+cp --OUT--/docker-machine-driver-kvm2-%{_arch} docker-machine-driver-kvm2
 
 %install
 cd %{name}-%{version}
