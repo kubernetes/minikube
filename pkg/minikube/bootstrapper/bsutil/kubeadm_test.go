@@ -127,6 +127,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 					},
 				}
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
+				cfg.KubernetesConfig.ClusterName = "kubernetes"
 
 				got, err := GenerateKubeadmYAML(cfg, runtime)
 				if err != nil && !tc.shouldErr {
@@ -207,6 +208,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 					}
 				}
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
+				cfg.KubernetesConfig.ClusterName = "kubernetes"
 
 				got, err := GenerateKubeadmYAML(cfg, runtime)
 				if err != nil && !tc.shouldErr {

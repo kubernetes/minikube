@@ -177,7 +177,7 @@ ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhoo
 				t.Fatalf("runtime: %v", err)
 			}
 
-			got, err := NewKubeletConfig(tc.cfg, runtime)
+			got, err := NewKubeletConfig(tc.cfg, tc.cfg.Nodes[0], runtime)
 			if err != nil && !tc.shouldErr {
 				t.Errorf("got unexpected error generating config: %v", err)
 				return
