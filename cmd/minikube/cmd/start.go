@@ -1116,6 +1116,10 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 }
 
 func trySSH(h *host.Host, ip string) {
+	if viper.GetBool(force) {
+		return
+	}
+
 	sshAddr := net.JoinHostPort(ip, "22")
 
 	dial := func() (err error) {
@@ -1132,17 +1136,19 @@ func trySSH(h *host.Host, ip string) {
 	if err := retry.Expo(dial, time.Second, 13*time.Second); err != nil {
 		exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
 
-This is likely due to one of two reasons:
+	This is likely due to one of two reasons:
 
-- VPN or firewall interference
-- {{.hypervisor}} network configuration issue
+	- VPN or firewall interference
+	- {{.hypervisor}} network configuration issue
 
-Suggested workarounds:
+	Suggested workarounds:
 
-- Disable your local VPN or firewall software
-- Configure your local VPN or firewall to allow access to {{.ip}}
-- Restart or reinstall {{.hypervisor}}
-- Use an alternative --vm-driver`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
+	- Disable your local VPN or firewall software
+	- Configure your local VPN or firewall to allow access to {{.ip}}
+	- Restart or reinstall {{.hypervisor}}
+	- Use an alternative --vm-driver
+	- Use --force to override this connectivity check
+	`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
 	}
 }
 

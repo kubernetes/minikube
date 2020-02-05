@@ -17,7 +17,6 @@ limitations under the License.
 package util
 
 import (
-	"strings"
 	"testing"
 )
 
@@ -39,46 +38,6 @@ func TestGetBinaryDownloadURL(t *testing.T) {
 		}
 	}
 
-}
-
-func TestReplaceChars(t *testing.T) {
-	testData := []struct {
-		src         []string
-		replacer    *strings.Replacer
-		expectedRes []string
-	}{
-		{[]string{"abc%def", "%Y%"}, strings.NewReplacer("%", "X"), []string{"abcXdef", "XYX"}},
-	}
-
-	for _, tt := range testData {
-		res := ReplaceChars(tt.src, tt.replacer)
-		for i, val := range res {
-			if val != tt.expectedRes[i] {
-				t.Fatalf("Expected '%s' but got '%s'", tt.expectedRes, res)
-			}
-		}
-	}
-}
-
-func TestConcatStrings(t *testing.T) {
-	testData := []struct {
-		src         []string
-		prefix      string
-		postfix     string
-		expectedRes []string
-	}{
-		{[]string{"abc", ""}, "xx", "yy", []string{"xxabcyy", "xxyy"}},
-		{[]string{"abc", ""}, "", "", []string{"abc", ""}},
-	}
-
-	for _, tt := range testData {
-		res := ConcatStrings(tt.src, tt.prefix, tt.postfix)
-		for i, val := range res {
-			if val != tt.expectedRes[i] {
-				t.Fatalf("Expected '%s' but got '%s'", tt.expectedRes, res)
-			}
-		}
-	}
 }
 
 func TestCalculateSizeInMB(t *testing.T) {
