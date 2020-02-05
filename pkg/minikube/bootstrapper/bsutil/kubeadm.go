@@ -71,6 +71,7 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 		APIServerPort     int
 		KubernetesVersion string
 		EtcdDataDir       string
+		ClusterName       string
 		NodeName          string
 		DNSDomain         string
 		CRISocket         string
@@ -86,6 +87,7 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
+		ClusterName:       k8s.ClusterName,
 		NodeName:          cp.Name,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
@@ -108,6 +110,10 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 	// v1beta1 works in v1.13, but isn't required until v1.14.
 	if version.GTE(semver.MustParse("1.14.0-alpha.0")) {
 		configTmpl = ktmpl.V1Beta1
+	}
+	// v1beta2 isn't required until v1.17.
+	if version.GTE(semver.MustParse("1.17.0")) {
+		configTmpl = ktmpl.V1Beta2
 	}
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err

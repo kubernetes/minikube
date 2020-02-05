@@ -434,7 +434,8 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
-	kubeletCfg, err := bsutil.NewKubeletConfig(cfg, r)
+	// TODO: multiple nodes
+	kubeletCfg, err := bsutil.NewKubeletConfig(cfg, cfg.Nodes[0], r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}

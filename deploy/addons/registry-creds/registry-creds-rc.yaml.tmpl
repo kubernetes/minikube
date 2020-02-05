@@ -18,7 +18,7 @@ spec:
         addonmanager.kubernetes.io/mode: Reconcile
     spec:
       containers:
-      - image: upmcenterprises/registry-creds:1.9
+      - image: upmcenterprises/registry-creds:1.10
         name: registry-creds
         imagePullPolicy: Always
         env:
@@ -77,6 +77,21 @@ spec:
               secretKeyRef:
                 name: registry-creds-gcr
                 key: gcrurl
+          - name: ACR_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-acr
+                key: ACR_PASSWORD
+          - name: ACR_URL
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-acr
+                key: ACR_URL
+          - name: ACR_CLIENT_ID
+            valueFrom:
+              secretKeyRef:
+                name: registry-creds-acr
+                key: ACR_CLIENT_ID
         volumeMounts:
         - name: gcr-creds
           mountPath: "/root/.config/gcloud"

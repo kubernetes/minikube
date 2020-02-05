@@ -36,14 +36,15 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
-const (
-	envTmpl = `{{ .Prefix }}DOCKER_TLS_VERIFY{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}DOCKER_HOST{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}DOCKER_CERT_PATH{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}`
+var envTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
 
+const (
 	fishSetPfx   = "set -gx "
 	fishSetSfx   = "\";\n"
 	fishSetDelim = " \""
@@ -89,35 +90,18 @@ const (
 	noneDelim = "="
 )
 
-var usageHintMap = map[string]string{
-	"bash": `# Run this command to configure your shell:
-# eval $(minikube docker-env)
-`,
-	"fish": `# Run this command to configure your shell:
-# eval (minikube docker-env)
-`,
-	"powershell": `# Run this command to configure your shell:
-# & minikube docker-env | Invoke-Expression
-`,
-	"cmd": `REM Run this command to configure your shell:
-REM @FOR /f "tokens=*" %i IN ('minikube docker-env') DO @%i
-`,
-	"emacs": `;; Run this command to configure your shell:
-;; (with-temp-buffer (shell-command "minikube docker-env" (current-buffer)) (eval-buffer))
-`,
-}
-
 // ShellConfig represents the shell config
 type ShellConfig struct {
-	Prefix          string
-	Delimiter       string
-	Suffix          string
-	DockerCertPath  string
-	DockerHost      string
-	DockerTLSVerify string
-	UsageHint       string
-	NoProxyVar      string
-	NoProxyValue    string
+	Prefix                 string
+	Delimiter              string
+	Suffix                 string
+	DockerCertPath         string
+	DockerHost             string
+	DockerTLSVerify        string
+	MinikubeDockerdProfile string
+	UsageHint              string
+	NoProxyVar             string
+	NoProxyValue           string
 }
 
 var (
@@ -144,7 +128,32 @@ type NoProxyGetter interface {
 // EnvNoProxyGetter gets the no_proxy variable, using environment
 type EnvNoProxyGetter struct{}
 
-func generateUsageHint(userShell string) string {
+func generateUsageHint(profile string, userShell string) string {
+	const usgPlz = "Please run command bellow to point your shell to minikube's docker-daemon :"
+	var usgCmd = fmt.Sprintf("minikube -p %s docker-env", profile)
+	var usageHintMap = map[string]string{
+		"bash": fmt.Sprintf(`
+# %s
+# eval $(%s)
+`, usgPlz, usgCmd),
+		"fish": fmt.Sprintf(`
+# %s
+# eval (%s)
+`, usgPlz, usgCmd),
+		"powershell": fmt.Sprintf(`
+# %s
+# & %s | Invoke-Expression
+	`, usgPlz, usgCmd),
+		"cmd": fmt.Sprintf(`
+REM %s
+REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
+	`, usgPlz, usgCmd),
+		"emacs": fmt.Sprintf(`
+;; %s
+;; (with-temp-buffer (shell-command "%s" (current-buffer)) (eval-buffer))
+	`, usgPlz, usgCmd),
+	}
+
 	hint, ok := usageHintMap[userShell]
 	if !ok {
 		return usageHintMap["bash"]
@@ -154,7 +163,7 @@ func generateUsageHint(userShell string) string {
 
 func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 
-	envMap, err := cluster.GetHostDockerEnv(api)
+	envMap, err := cluster.GetNodeDockerEnv(api)
 	if err != nil {
 		return nil, err
 	}
@@ -165,10 +174,11 @@ func shellCfgSet(api libmachine.API) (*ShellConfig, error) {
 	}
 
 	shellCfg := &ShellConfig{
-		DockerCertPath:  envMap["DOCKER_CERT_PATH"],
-		DockerHost:      envMap["DOCKER_HOST"],
-		DockerTLSVerify: envMap["DOCKER_TLS_VERIFY"],
-		UsageHint:       generateUsageHint(userShell),
+		DockerCertPath:         envMap[constants.DockerCertPathEnv],
+		DockerHost:             envMap[constants.DockerHostEnv],
+		DockerTLSVerify:        envMap[constants.DockerTLSVerifyEnv],
+		MinikubeDockerdProfile: envMap[constants.MinikubeActiveDockerdEnv],
+		UsageHint:              generateUsageHint(viper.GetString(config.MachineProfile), userShell),
 	}
 
 	if noProxy {
@@ -237,7 +247,7 @@ func shellCfgUnset() (*ShellConfig, error) {
 	}
 
 	shellCfg := &ShellConfig{
-		UsageHint: generateUsageHint(userShell),
+		UsageHint: generateUsageHint(viper.GetString(config.MachineProfile), userShell),
 	}
 
 	if noProxy {
