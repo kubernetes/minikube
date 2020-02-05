@@ -30,6 +30,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -90,19 +91,31 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 		}
 	}
 
+	if driver.IsMock(h.DriverName) {
+		return h, nil
+	}
+
 	if err := postStartSetup(h, mc); err != nil {
 		return h, errors.Wrap(err, "post-start")
+	}
+
+	if driver.BareMetal(h.Driver.DriverName()) {
+		glog.Infof("%s is local, skipping auth/time setup (requires ssh)", h.Driver.DriverName())
+		return h, nil
 	}
 
 	glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
 	if err := h.ConfigureAuth(); err != nil {
 		return h, &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 	}
-	return h, ensureSyncedGuestClock(h)
+	return h, ensureSyncedGuestClock(h, mc.VMDriver)
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
-func ensureSyncedGuestClock(h hostRunner) error {
+func ensureSyncedGuestClock(h hostRunner, drv string) error {
+	if !driver.IsVM(drv) {
+		return nil
+	}
 	d, err := guestClockDelta(h, time.Now())
 	if err != nil {
 		glog.Warningf("Unable to measure system clock delta: %v", err)
