@@ -17,93 +17,115 @@ limitations under the License.
 package addons
 
 import (
-	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 
-	"gotest.tools/assert"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+func createTestProfile(t *testing.T) string {
+	t.Helper()
+	td, err := ioutil.TempDir("", "profile")
+	if err != nil {
+		t.Fatalf("tempdir: %v", err)
+	}
+
+	err = os.Setenv(localpath.MinikubeHome, td)
+	if err != nil {
+		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
+	}
+
+	// Not necessary, but it is a handy random alphanumeric
+	name := filepath.Base(td)
+	if err := os.MkdirAll(config.ProfileFolderPath(name), 0777); err != nil {
+		t.Fatalf("error creating temporary directory")
+	}
+	if err := config.DefaultLoader.WriteConfigToFile(name, &config.MachineConfig{}); err != nil {
+		t.Fatalf("error creating temporary profile config: %v", err)
+	}
+	return name
+}
+
 func TestIsAddonAlreadySet(t *testing.T) {
-	testCases := []struct {
-		addonName string
-	}{
-		{
-			addonName: "ingress",
-		},
-
-		{
-			addonName: "registry",
-		},
+	profile := createTestProfile(t)
+	if err := Set("registry", "true", profile); err != nil {
+		t.Errorf("unable to set registry true: %v", err)
+	}
+	enabled, err := assets.Addons["registry"].IsEnabled(profile)
+	if err != nil {
+		t.Errorf("registry: %v", err)
+	}
+	if !enabled {
+		t.Errorf("expected registry to be enabled")
 	}
 
-	for _, test := range testCases {
-		addon := assets.Addons[test.addonName]
-		addonStatus, _ := addon.IsEnabled()
-
-		alreadySet, err := isAddonAlreadySet(addon, addonStatus)
-		if !alreadySet {
-			if addonStatus {
-				t.Errorf("Did not get expected status, \n\n expected %+v already enabled", test.addonName)
-			} else {
-				t.Errorf("Did not get expected status, \n\n expected %+v already disabled", test.addonName)
-			}
-		}
-		if err != nil {
-			t.Errorf("Got unexpected error: %+v", err)
-		}
+	enabled, err = assets.Addons["ingress"].IsEnabled(profile)
+	if err != nil {
+		t.Errorf("ingress: %v", err)
 	}
+	if enabled {
+		t.Errorf("expected ingress to not be enabled")
+	}
+
 }
 
 func TestDisableUnknownAddon(t *testing.T) {
-	tmpProfile := "temp-minikube-profile"
-	if err := Set("InvalidAddon", "false", tmpProfile); err == nil {
+	profile := createTestProfile(t)
+	if err := Set("InvalidAddon", "false", profile); err == nil {
 		t.Fatalf("Disable did not return error for unknown addon")
 	}
 }
 
 func TestEnableUnknownAddon(t *testing.T) {
-	tmpProfile := "temp-minikube-profile"
-	if err := Set("InvalidAddon", "true", tmpProfile); err == nil {
+	profile := createTestProfile(t)
+	if err := Set("InvalidAddon", "true", profile); err == nil {
 		t.Fatalf("Enable did not return error for unknown addon")
 	}
 }
 
 func TestEnableAndDisableAddon(t *testing.T) {
-	tests := []struct {
-		name   string
-		enable bool
-	}{
-		{
-			name:   "test enable",
-			enable: true,
-		}, {
-			name:   "test disable",
-			enable: false,
-		},
+	profile := createTestProfile(t)
+
+	// enable
+	if err := Set("dashboard", "true", profile); err != nil {
+		t.Errorf("Disable returned unexpected error: " + err.Error())
 	}
 
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			tmpProfile := "temp-minikube-profile"
-			if err := os.MkdirAll(config.ProfileFolderPath(tmpProfile), 0777); err != nil {
-				t.Fatalf("error creating temporary directory")
-			}
-			defer os.RemoveAll(config.ProfileFolderPath(tmpProfile))
+	c, err := config.DefaultLoader.LoadConfigFromFile(profile)
+	if err != nil {
+		t.Errorf("unable to load profile: %v", err)
+	}
+	if c.Addons["dashboard"] != true {
+		t.Errorf("expected dashboard to be enabled")
+	}
 
-			if err := config.DefaultLoader.WriteConfigToFile(tmpProfile, &config.MachineConfig{}); err != nil {
-				t.Fatalf("error creating temporary profile config: %v", err)
-			}
-			if err := Set("dashboard", fmt.Sprintf("%t", test.enable), tmpProfile); err != nil {
-				t.Fatalf("Disable returned unexpected error: " + err.Error())
-			}
-			c, err := config.DefaultLoader.LoadConfigFromFile(tmpProfile)
-			if err != nil {
-				t.Fatalf("error loading config: %v", err)
-			}
-			assert.Equal(t, c.Addons["dashboard"], test.enable)
-		})
+	// disable
+	if err := Set("dashboard", "false", profile); err != nil {
+		t.Errorf("Disable returned unexpected error: " + err.Error())
+	}
+
+	c, err = config.DefaultLoader.LoadConfigFromFile(profile)
+	if err != nil {
+		t.Errorf("unable to load profile: %v", err)
+	}
+	if c.Addons["dashboard"] != false {
+		t.Errorf("expected dashboard to be enabled")
+	}
+}
+
+func TestStart(t *testing.T) {
+	profile := createTestProfile(t)
+	Start(profile, map[string]bool{}, []string{"dashboard"})
+
+	enabled, err := assets.Addons["dashboard"].IsEnabled(profile)
+	if err != nil {
+		t.Errorf("dashboard: %v", err)
+	}
+	if !enabled {
+		t.Errorf("expected dashboard to be enabled")
 	}
 }

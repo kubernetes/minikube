@@ -72,7 +72,7 @@ var styles = map[StyleEnum]style{
 	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	Command:       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	LogEntry:      {Prefix: "    "},                         // Indent
-	Crushed:       {Prefix: "💔  "},
+	Deleted:       {Prefix: "💀  "},
 	URL:           {Prefix: "👉  ", LowPrefix: lowIndent},
 	Documentation: {Prefix: "📘  "},
 	Issues:        {Prefix: "⁉️   "},
@@ -116,6 +116,8 @@ var styles = map[StyleEnum]style{
 	MountOptions:     {Prefix: "💾  "},
 	Fileserver:       {Prefix: "🚀  ", OmitNewline: true},
 	DryRun:           {Prefix: "🏜️   "},
+	AddonEnable:      {Prefix: "🌟  "},
+	AddonDisable:     {Prefix: "🌑  "},
 }
 
 // Add a prefix to a string

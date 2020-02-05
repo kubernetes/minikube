@@ -24,29 +24,17 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
-	"k8s.io/minikube/pkg/drivers/kic/node"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
-
-// DefaultPodCIDR is The CIDR to be used for pods inside the node.
-const DefaultPodCIDR = "10.244.0.0/16"
-
-// DefaultBindIPV4 is The default IP the container will bind to.
-const DefaultBindIPV4 = "127.0.0.1"
-
-// BaseImage is the base image is used to spin up kic containers created by kind.
-const BaseImage = "gcr.io/k8s-minikube/kicbase:v0.0.2@sha256:8f531b90901721a7bd4e67ceffbbc7ee6c4292b0e6d1a9d6eb59f117d57bc4e9"
-
-// OverlayImage is the cni plugin used for overlay image, created by kind.
-const OverlayImage = "kindest/kindnetd:0.5.3"
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
 type Driver struct {
@@ -56,20 +44,6 @@ type Driver struct {
 	exec       command.Runner
 	NodeConfig Config
 	OCIBinary  string // docker,podman
-}
-
-// Config is configuration for the kic driver used by registry
-type Config struct {
-	MachineName   string            // maps to the container name being created
-	CPU           int               // Number of CPU cores assigned to the container
-	Memory        int               // max memory in MB
-	StorePath     string            // libmachine store path
-	OCIBinary     string            // oci tool to use (docker, podman,...)
-	ImageDigest   string            // image name with sha to use for the node
-	Mounts        []oci.Mount       // mounts
-	APIServerPort int               // kubernetes api server port inside the container
-	PortMappings  []oci.PortMapping // container port mappings
-	Envs          map[string]string // key,value of environment variables passed to the node
 }
 
 // NewDriver returns a fully configured Kic driver
@@ -88,10 +62,10 @@ func NewDriver(c Config) *Driver {
 
 // Create a host using the driver's config
 func (d *Driver) Create() error {
-	params := node.CreateConfig{
+	params := oci.CreateParams{
 		Name:          d.NodeConfig.MachineName,
 		Image:         d.NodeConfig.ImageDigest,
-		ClusterLabel:  node.ClusterLabelKey + "=" + d.MachineName,
+		ClusterLabel:  oci.ClusterLabelKey + "=" + d.MachineName,
 		CPUs:          strconv.Itoa(d.NodeConfig.CPU),
 		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
 		Envs:          d.NodeConfig.Envs,
@@ -109,8 +83,12 @@ func (d *Driver) Create() error {
 			ListenAddress: DefaultBindIPV4,
 			ContainerPort: constants.SSHPort,
 		},
+		oci.PortMapping{
+			ListenAddress: DefaultBindIPV4,
+			ContainerPort: constants.DockerDaemonPort,
+		},
 	)
-	_, err := node.CreateNode(params)
+	err := oci.CreateContainerNode(params)
 	if err != nil {
 		return errors.Wrap(err, "create kic node")
 	}
@@ -154,12 +132,13 @@ func (d *Driver) DriverName() string {
 
 // GetIP returns an IP or hostname that this host is available at
 func (d *Driver) GetIP() (string, error) {
-	node, err := node.Find(d.OCIBinary, d.MachineName, d.exec)
-	if err != nil {
-		return "", fmt.Errorf("ip not found for nil node")
-	}
-	ip, _, err := node.IP()
+	ip, _, err := oci.ContainerIPs(d.OCIBinary, d.MachineName)
 	return ip, err
+}
+
+// GetExternalIP returns an IP which is accissble from outside
+func (d *Driver) GetExternalIP() (string, error) {
+	return DefaultBindIPV4, nil
 }
 
 // GetSSHHostname returns hostname for use with ssh
@@ -205,7 +184,7 @@ func (d *Driver) GetState() (state.State, error) {
 	out, err := cmd.CombinedOutput()
 	o := strings.Trim(string(out), "\n")
 	if err != nil {
-		return state.Error, errors.Wrapf(err, "error stop node %s", d.MachineName)
+		return state.Error, errors.Wrapf(err, "get container %s status", d.MachineName)
 	}
 	switch o {
 	case "running":
@@ -234,12 +213,17 @@ func (d *Driver) Kill() error {
 
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
-	if _, err := d.nodeID(d.MachineName); err != nil {
-		return errors.Wrapf(err, "not found node %s", d.MachineName)
+	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
+		log.Warnf("could not find the container %s to remove it.", d.MachineName)
 	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "rm", "-f", "-v", d.MachineName)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "error removing node %s", d.MachineName)
+	o, err := cmd.CombinedOutput()
+	out := strings.Trim(string(o), "\n")
+	if err != nil {
+		if strings.Contains(out, "is already in progress") {
+			log.Warnf("Docker engine is stuck. please restart docker daemon on your computer.", d.MachineName)
+		}
+		return errors.Wrapf(err, "removing container %s, output %s", d.MachineName, out)
 	}
 	return nil
 }
@@ -307,14 +291,4 @@ func (d *Driver) Stop() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
-}
-
-// looks up for a container node by name, will return error if not found.
-func (d *Driver) nodeID(nameOrID string) (string, error) {
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.Id}}", nameOrID)
-	id, err := cmd.CombinedOutput()
-	if err != nil {
-		id = []byte{}
-	}
-	return string(id), err
 }

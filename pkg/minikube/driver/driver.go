@@ -108,7 +108,6 @@ func FlagDefaults(name string) FlagHints {
 		fh.CacheImages = true
 		// only for kic, till other run-times are available we auto-set containerd.
 		if name == Docker {
-			fh.ContainerRuntime = "containerd"
 			fh.ExtraOptions = append(fh.ExtraOptions, fmt.Sprintf("kubeadm.pod-network-cidr=%s", kic.DefaultPodCIDR))
 		}
 		return fh

@@ -72,7 +72,6 @@ require (
 	golang.org/x/sys v0.0.0-20190826190057-c7b8b68b1456
 	golang.org/x/text v0.3.2
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
-	gotest.tools v2.2.0+incompatible
 	k8s.io/api v0.17.2
 	k8s.io/apimachinery v0.17.2
 	k8s.io/client-go v11.0.0+incompatible
