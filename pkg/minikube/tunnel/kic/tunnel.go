@@ -42,7 +42,7 @@ func (t *Tunnel) Start() error {
 
 		for _, s := range services.Items {
 			if s.Spec.Type == v1.ServiceTypeLoadBalancer {
-				name := sshTunnelName(s.Name, s.Spec.ClusterIP, s.Spec.Ports)
+				name := sshTunnelName(s)
 				existingSSHTunnel, ok := sshTunnels[name]
 
 				if ok {
@@ -70,14 +70,14 @@ func (t *Tunnel) Start() error {
 // sshTunnelName creaets a uniq name for the tunnel, using its name/clusterIP/ports.
 // This allows a new process to be created if an existing service was changed,
 // the new process will support the IP/Ports change ocurred.
-func sshTunnelName(name, clusterIP string, ports []v1.ServicePort) string {
+func sshTunnelName(service v1.Service) string {
 	n := []string{
-		name,
+		service.Name,
 		"-",
-		clusterIP,
+		service.Spec.ClusterIP,
 	}
 
-	for _, port := range ports {
+	for _, port := range service.Spec.Ports {
 		n = append(n, fmt.Sprintf("-%d", port.Port))
 	}
 
