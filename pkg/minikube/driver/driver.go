@@ -88,6 +88,19 @@ func IsKIC(name string) bool {
 	return name == Docker
 }
 
+// IsMock checks if the driver is a mock
+func IsMock(name string) bool {
+	return name == Mock
+}
+
+// IsVM checks if the driver is a VM
+func IsVM(name string) bool {
+	if IsKIC(name) || IsMock(name) || BareMetal(name) {
+		return false
+	}
+	return true
+}
+
 // BareMetal returns if this driver is unisolated
 func BareMetal(name string) bool {
 	return name == None || name == Mock
