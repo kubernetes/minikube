@@ -10,6 +10,32 @@ env:
 matrix:
   include:
     - language: go
+      arch: s390x
+      name: Code Lint
+      go: 1.13.4
+      env:
+        - TESTSUITE=lintall
+      before_install:
+        - sudo apt-get install -y libvirt-dev
+      script: make test
+
+    - language: go
+      arch: s390x 
+      name: Unit Test
+      go: 1.13.4
+      env:
+        - TESTSUITE=unittest
+      before_install:
+        - sudo apt-get install -y libvirt-dev
+      script: make test
+
+    - language: go
+      arch: s390x
+      name: Build
+      go: 1.13.4
+      script: make
+
+    - language: go
       name: Code Lint
       go: 1.13.6
       env:
