@@ -99,6 +99,11 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 		return h, errors.Wrap(err, "post-start")
 	}
 
+	if driver.BareMetal(h.Driver.DriverName()) {
+		glog.Infof("%s is local, skipping auth/time setup (requires ssh)", h.Driver.DriverName())
+		return h, nil
+	}
+
 	glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
 	if err := h.ConfigureAuth(); err != nil {
 		return h, &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
