@@ -19,6 +19,7 @@ package provision
 import (
 	"bytes"
 	"fmt"
+	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
@@ -116,16 +117,19 @@ func configureAuth(p miniProvisioner) error {
 
 func copyHostCerts(authOptions auth.Options) error {
 	log.Infof("copyHostCerts")
-	execRunner := command.NewExecRunner()
+
+	err := os.MkdirAll(authOptions.StorePath, 0700)
+	if err != nil {
+		log.Errorf("mkdir failed: %v", err)
+	}
+
 	hostCerts := map[string]string{
 		authOptions.CaCertPath:     path.Join(authOptions.StorePath, "ca.pem"),
 		authOptions.ClientCertPath: path.Join(authOptions.StorePath, "cert.pem"),
 		authOptions.ClientKeyPath:  path.Join(authOptions.StorePath, "key.pem"),
 	}
 
-	if _, err := execRunner.RunCmd(exec.Command("mkdir", "-p", authOptions.StorePath)); err != nil {
-		return err
-	}
+	execRunner := command.NewExecRunner()
 	for src, dst := range hostCerts {
 		f, err := assets.NewFileAsset(src, path.Dir(dst), filepath.Base(dst), "0777")
 		if err != nil {
