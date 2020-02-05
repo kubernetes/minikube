@@ -927,11 +927,16 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
+	var kubeNodeName string
+	if drvName != driver.None {
+		kubeNodeName = viper.GetString(config.MachineProfile)
+	}
+
 	// Create the initial node, which will necessarily be a control plane
 	cp := config.Node{
 		Port:              viper.GetInt(apiServerPort),
 		KubernetesVersion: k8sVersion,
-		Name:              constants.DefaultNodeName,
+		Name:              kubeNodeName,
 		ControlPlane:      true,
 		Worker:            true,
 	}
@@ -969,6 +974,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		NatNicType:          viper.GetString(natNicType),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
+			ClusterName:            viper.GetString(config.MachineProfile),
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,
 			APIServerIPs:           apiServerIPs,
