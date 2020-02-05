@@ -208,7 +208,7 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 	if err != nil {
 		return err
 	}
-	glog.Infof("Running: %s", command)
+	glog.Infof("Running: %v", command)
 	rr, err := cmd.RunCmd(command)
 	if err != nil {
 		return errors.Wrapf(err, "addon apply")

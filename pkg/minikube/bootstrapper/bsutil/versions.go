@@ -86,7 +86,6 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 	config.NewUnversionedOption(Kubelet, "config", "/var/lib/kubelet/config.yaml"),
 
 	// Network args
-	config.NewUnversionedOption(Kubelet, "cluster-dns", "10.96.0.10"),
 	config.NewUnversionedOption(Kubelet, "cluster-domain", "cluster.local"),
 
 	// Auth args
