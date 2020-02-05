@@ -50,7 +50,7 @@ func (t *Tunnel) Start() error {
 					continue
 				}
 
-				newSSHTunnel := createSSHTunnel(t, name, s.Spec.ClusterIP, s.Spec.Ports)
+				newSSHTunnel := createSSHTunnel(name, t.sshPort, t.sshKey, s)
 				sshTunnels[newSSHTunnel.name] = newSSHTunnel
 			}
 		}
