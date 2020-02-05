@@ -41,7 +41,7 @@ dns:
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
-kubernetesVersion: v1.17.0
+kubernetesVersion: v1.19.0
 networking:
   dnsDomain: cluster.local
   podSubnet: ""

@@ -2,7 +2,7 @@ apiVersion: kubeadm.k8s.io/v1beta2
 kind: InitConfiguration
 localAPIEndpoint:
   advertiseAddress: 1.1.1.1
-  bindPort: 8443
+  bindPort: 12345
 bootstrapTokens:
   - groups:
       - system:bootstrappers:kubeadm:default-node-token
@@ -11,7 +11,7 @@ bootstrapTokens:
       - signing
       - authentication
 nodeRegistration:
-  criSocket: /var/run/crio/crio.sock
+  criSocket: /run/containerd/containerd.sock
   name: mk
   taints: []
 ---
@@ -20,28 +20,18 @@ kind: ClusterConfiguration
 apiServer:
   extraArgs:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-    fail-no-swap: "true"
-    feature-gates: "a=b"
-controllerManager:
-  extraArgs:
-    feature-gates: "a=b"
-    kube-api-burst: "32"
-scheduler:
-  extraArgs:
-    feature-gates: "a=b"
-    scheduler-name: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
 apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
-controlPlaneEndpoint: localhost:8443
+controlPlaneEndpoint: localhost:12345
 controllerManager: {}
 dns:
   type: CoreDNS
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
-kubernetesVersion: v1.17.0
+kubernetesVersion: v1.18.0
 networking:
   dnsDomain: cluster.local
   podSubnet: ""
