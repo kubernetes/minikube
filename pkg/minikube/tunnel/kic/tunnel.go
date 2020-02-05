@@ -1,6 +1,8 @@
 package kic
 
 import (
+	"fmt"
+	"strings"
 	"time"
 
 	v1 "k8s.io/api/core/v1"
@@ -34,32 +36,50 @@ func (t *Tunnel) Start() error {
 			return err
 		}
 
-		for _, v := range sshTunnels {
-			v.sigkill = true
+		for _, sshTunnel := range sshTunnels {
+			sshTunnel.sigkill = true
 		}
 
 		for _, s := range services.Items {
 			if s.Spec.Type == v1.ServiceTypeLoadBalancer {
-				sshTunnel, ok := sshTunnels[s.Name]
+				name := sshTunnelName(s.Name, s.Spec.ClusterIP, s.Spec.Ports)
+				existingSSHTunnel, ok := sshTunnels[name]
 
 				if ok {
-					sshTunnel.sigkill = false
+					existingSSHTunnel.sigkill = false
 					continue
 				}
 
-				newSSHTunnel := createSSHTunnel(t, s.Name, s.Spec.ClusterIP, s.Spec.Ports)
+				newSSHTunnel := createSSHTunnel(t, name, s.Spec.ClusterIP, s.Spec.Ports)
 				sshTunnels[newSSHTunnel.name] = newSSHTunnel
 			}
 		}
 
-		for _, v := range sshTunnels {
-			if v.sigkill {
-				v.stop()
-				delete(sshTunnels, v.name)
+		for _, sshTunnel := range sshTunnels {
+			if sshTunnel.sigkill {
+				sshTunnel.stop()
+				delete(sshTunnels, sshTunnel.name)
 			}
 		}
 
-		// which time to use?
+		// TODO: which time to use?
 		time.Sleep(1 * time.Second)
 	}
+}
+
+// sshTunnelName creaets a uniq name for the tunnel, using its name/clusterIP/ports.
+// This allows a new process to be created if an existing service was changed,
+// the new process will support the IP/Ports change ocurred.
+func sshTunnelName(name, clusterIP string, ports []v1.ServicePort) string {
+	n := []string{
+		name,
+		"-",
+		clusterIP,
+	}
+
+	for _, port := range ports {
+		n = append(n, fmt.Sprintf("-%d", port.Port))
+	}
+
+	return strings.Join(n, "")
 }
