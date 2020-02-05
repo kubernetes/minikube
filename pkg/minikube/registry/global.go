@@ -17,6 +17,7 @@ limitations under the License.
 package registry
 
 import (
+	"fmt"
 	"os"
 	"sort"
 
@@ -36,6 +37,9 @@ type DriverState struct {
 }
 
 func (d DriverState) String() string {
+	if d.Priority == Experimental {
+		return fmt.Sprintf("%s (experimental)", d.Name)
+	}
 	return d.Name
 }
 
