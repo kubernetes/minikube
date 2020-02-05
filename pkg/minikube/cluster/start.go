@@ -185,9 +185,10 @@ func commandRunner(h *host.Host) (command.Runner, error) {
 		glog.Infof("returning FakeCommandRunner for %q driver", d)
 		return &command.FakeCommandRunner{}, nil
 	}
-	if driver.BareMetal(d) {
+
+  if driver.BareMetal(h.Driver.DriverName()) {
 		glog.Infof("returning ExecRunner for %q driver", d)
-		return &command.ExecRunner{}, nil
+    return command.NewExecRunner(), nil
 	}
 	if driver.IsKIC(d) {
 		glog.Infof("Returning KICRunner for %q driver", d)
