@@ -2,6 +2,7 @@
 
 ## Version 1.7.0 - 2020-02-04
 
+* Add Azure Container Registry support [#6483](https://github.com/kubernetes/minikube/pull/6483)
 * Support --force for overriding the ssh check [#6237](https://github.com/kubernetes/minikube/pull/6237)
 * Update translation files with new strings [#6491](https://github.com/kubernetes/minikube/pull/6491)
 * fix docker-env for kic drivers [#6487](https://github.com/kubernetes/minikube/pull/6487)
