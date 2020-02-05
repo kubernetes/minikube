@@ -147,17 +147,10 @@ func Choices() []registry.DriverState {
 	return options
 }
 
-// Choose returns a suggested driver from a set of options
-func Choose(requested string, options []registry.DriverState) (registry.DriverState, []registry.DriverState) {
-	glog.Infof("requested: %q", requested)
+// Suggest returns a suggested driver from a set of options
+func Suggest(options []registry.DriverState) (registry.DriverState, []registry.DriverState) {
 	pick := registry.DriverState{}
 	for _, ds := range options {
-		if ds.Name == requested {
-			glog.Infof("choosing %q because it was requested", ds.Name)
-			pick = ds
-			continue
-		}
-
 		if !ds.State.Installed {
 			continue
 		}
@@ -192,8 +185,13 @@ func Choose(requested string, options []registry.DriverState) (registry.DriverSt
 }
 
 // Status returns the status of a driver
-func Status(name string) registry.State {
-	return registry.Status(name)
+func Status(name string) registry.DriverState {
+	d := registry.Driver(name)
+	return registry.DriverState{
+		Name:     d.Name,
+		Priority: d.Priority,
+		State:    registry.Status(name),
+	}
 }
 
 // SetLibvirtURI sets the URI to perform libvirt health checks against
