@@ -30,7 +30,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -45,8 +45,10 @@ var output string
 
 const (
 	// Additional states used by kubeconfig
-	Configured    = "Configured"    // analogous to state.Saved
-	Misconfigured = "Misconfigured" // analogous to state.Error
+	Configured    = "Configured"    // ~state.Saved
+	Misconfigured = "Misconfigured" // ~state.Error
+	// Additional states used for clarity
+	Nonexistent = "Nonexistent" // ~state.None
 )
 
 // Status holds string representations of component states
@@ -92,6 +94,9 @@ var statusCmd = &cobra.Command{
 		if err != nil {
 			glog.Errorf("status error: %v", err)
 		}
+		if st.Host == Nonexistent {
+			glog.Errorf("The %q cluster does not exist!", machineName)
+		}
 
 		switch strings.ToLower(output) {
 		case "text":
@@ -125,27 +130,35 @@ func exitCode(st *Status) int {
 }
 
 func status(api libmachine.API, name string) (*Status, error) {
-	st := &Status{}
+	st := &Status{
+		Host:       Nonexistent,
+		APIServer:  Nonexistent,
+		Kubelet:    Nonexistent,
+		Kubeconfig: Nonexistent,
+	}
+
 	hs, err := cluster.GetHostStatus(api, name)
+	glog.Infof("%s host status = %q (err=%v)", name, hs, err)
 	if err != nil {
 		return st, errors.Wrap(err, "host")
 	}
+
+	// We have no record of this host. Return nonexistent struct
+	if hs == state.None.String() {
+		return st, nil
+	}
 	st.Host = hs
+
+	// If it's not running, quickly bail out rather than delivering conflicting messages
 	if st.Host != state.Running.String() {
+		glog.Infof("host is not running, skipping remaining checks")
+		st.APIServer = st.Host
+		st.Kubelet = st.Host
+		st.Kubeconfig = st.Host
 		return st, nil
 	}
 
-	bs, err := getClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
-	if err != nil {
-		return st, errors.Wrap(err, "bootstrapper")
-	}
-
-	st.Kubelet, err = bs.GetKubeletStatus()
-	if err != nil {
-		glog.Warningf("kubelet err: %v", err)
-		st.Kubelet = state.Error.String()
-	}
-
+	// We have a fully operational host, now we can check for details
 	ip, err := cluster.GetHostDriverIP(api, name)
 	if err != nil {
 		glog.Errorln("Error host driver ip status:", err)
@@ -159,20 +172,43 @@ func status(api libmachine.API, name string) (*Status, error) {
 		port = constants.APIServerPort
 	}
 
-	st.APIServer, err = bs.GetAPIServerStatus(ip, port)
+	st.Kubeconfig = Misconfigured
+	ok, err := kubeconfig.IsClusterInConfig(ip, name)
+	glog.Infof("%s is in kubeconfig at ip %s: %v (err=%v)", name, ip, ok, err)
+	if ok {
+		st.Kubeconfig = Configured
+	}
+
+	host, err := cluster.CheckIfHostExistsAndLoad(api, name)
+	if err != nil {
+		return st, err
+	}
+
+	cr, err := machine.CommandRunner(host)
+	if err != nil {
+		return st, err
+	}
+
+	stk, err := kverify.KubeletStatus(cr)
+	glog.Infof("%s kubelet status = %s (err=%v)", name, stk, err)
+
+	if err != nil {
+		glog.Warningf("kubelet err: %v", err)
+		st.Kubelet = state.Error.String()
+	} else {
+		st.Kubelet = stk.String()
+	}
+
+	sta, err := kverify.APIServerStatus(cr, ip, port)
+	glog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
+
 	if err != nil {
 		glog.Errorln("Error apiserver status:", err)
 		st.APIServer = state.Error.String()
+	} else {
+		st.APIServer = sta.String()
 	}
 
-	st.Kubeconfig = Misconfigured
-	ks, err := kubeconfig.IsClusterInConfig(ip, name)
-	if err != nil {
-		glog.Errorln("Error kubeconfig status:", err)
-	}
-	if ks {
-		st.Kubeconfig = Configured
-	}
 	return st, nil
 }
 

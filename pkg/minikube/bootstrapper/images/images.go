@@ -74,7 +74,7 @@ func coreDNS(v semver.Version, mirror string) string {
 	case 11:
 		cv = "1.1.3"
 	}
-	return path.Join(kubernetesRepo(mirror), "coredns"+archTag(false)+cv)
+	return path.Join(kubernetesRepo(mirror), "coredns"+":"+cv)
 }
 
 // etcd returns the image used for etcd

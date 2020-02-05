@@ -167,11 +167,14 @@ func disableOthers(me Manager, cr CommandRunner) error {
 // enableIPForwarding configures IP forwarding, which is handled normally by Docker
 // Context: https://github.com/kubernetes/kubeadm/issues/1062
 func enableIPForwarding(cr CommandRunner) error {
-	c := exec.Command("sudo", "modprobe", "br_netfilter")
-	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "br_netfilter")
+	c := exec.Command("sudo", "sysctl", "net.netfilter.nf_conntrack_count")
+	if rr, err := cr.RunCmd(c); err != nil {
+		glog.Infof("couldn't verify netfilter by %q which might be okay. error: %v", rr.Command(), err)
+		c = exec.Command("sudo", "modprobe", "br_netfilter")
+		if _, err := cr.RunCmd(c); err != nil {
+			return errors.Wrapf(err, "br_netfilter")
+		}
 	}
-
 	c = exec.Command("sudo", "sh", "-c", "echo 1 > /proc/sys/net/ipv4/ip_forward")
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "ip_forward")

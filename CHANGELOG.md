@@ -1,5 +1,30 @@
 # Release Notes
 
+## Version 1.7.0-beta.2 - 2020-01-31
+
+* Add docker run-time for kic driver [#6436](https://github.com/kubernetes/minikube/pull/6436)
+* Add addon enablement to start [#6440](https://github.com/kubernetes/minikube/pull/6440)
+* Configure etcd and kube-proxy metrics to listen on minikube node IP [#6322](https://github.com/kubernetes/minikube/pull/6322)
+* add container runtime info to profile list [#6409](https://github.com/kubernetes/minikube/pull/6409)
+* Allow 'profiles list' to work even if a profile has no control plane [#6450](https://github.com/kubernetes/minikube/pull/6450)
+* status: Explicitly state that the cluster does not exist [#6438](https://github.com/kubernetes/minikube/pull/6438)
+* Do not use an arch suffix for the coredns name [#6243](https://github.com/kubernetes/minikube/pull/6243)
+* Allow building storage-provisioner for other arch [#6257](https://github.com/kubernetes/minikube/pull/6257)
+* Prevent registry-creds configure from failing when a secret does not exist.  [#6380](https://github.com/kubernetes/minikube/pull/6380)
+* improve checking modprob netfilter [#6427](https://github.com/kubernetes/minikube/pull/6427)
+
+Huge thank you for this release towards our contributors: 
+
+- Anders Björklund
+- Bjørn Harald Fotland
+- Chance Zibolski
+- Kim Bao Long
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- akshay
+
 ## Version 1.7.0-beta.1 - 2020-01-24
 
 * Add 'pause' command to freeze Kubernetes cluster [#5962](https://github.com/kubernetes/minikube/pull/5962)

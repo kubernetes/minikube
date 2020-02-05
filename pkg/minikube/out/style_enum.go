@@ -45,7 +45,7 @@ const (
 	Option
 	Command
 	LogEntry
-	Crushed
+	Deleted
 	URL
 	Documentation
 	Issues
@@ -87,4 +87,6 @@ const (
 	Pause
 	Unpause
 	DryRun
+	AddonEnable
+	AddonDisable
 )
