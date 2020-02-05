@@ -54,6 +54,7 @@ var (
 		vmpath.GuestCertsDir,
 		path.Join(vmpath.GuestPersistentDir, "images"),
 		path.Join(vmpath.GuestPersistentDir, "binaries"),
+		"/tmp/gvisor",
 	}
 )
 
