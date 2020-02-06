@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -47,7 +48,7 @@ func configure(mc config.MachineConfig) interface{} {
 	return kic.NewDriver(kic.Config{
 		MachineName:   mc.Name,
 		StorePath:     localpath.MiniPath(),
-		ImageDigest:   kic.BaseImage,
+		ImageDigest:   strings.Split(kic.BaseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
 		CPU:           mc.CPUs,
 		Memory:        mc.Memory,
 		OCIBinary:     oci.Podman,

@@ -39,8 +39,6 @@ func CreateContainerNode(p CreateParams) error {
 	}
 
 	runArgs := []string{
-		fmt.Sprintf("--cpus=%s", p.CPUs),
-		fmt.Sprintf("--memory=%s", p.Memory),
 		"-d", // run the container detached
 		"-t", // allocate a tty for entrypoint logs
 		// running containers in a container requires privileged
@@ -62,6 +60,11 @@ func CreateContainerNode(p CreateParams) error {
 		"--label", p.ClusterLabel,
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleKey, p.Role),
+	}
+	// Podman does not allow setting resources when cgroup is specified
+	// exact podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
+	if o.ociBinary != Podman {
+		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs), fmt.Sprintf("--memory=%s", p.Memory))
 	}
 
 	for key, val := range p.Envs {
@@ -113,6 +116,10 @@ func createContainer(ociBinary string, image string, opts ...createOpt) ([]strin
 	}
 	// construct the actual docker run argv
 	args := []string{"run"}
+	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
+	if ociBinary == Podman {
+		args = append(args, "--cgroup-manager", "cgroupfs")
+	}
 	args = append(args, runArgs...)
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
