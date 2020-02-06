@@ -9,9 +9,9 @@ description: >
 
 ## Overview
 
-The Docker driver is an experimental VM-free driver that ships with minikube v1.7.0.
+The Docker driver is an experimental VM-free driver that ships with minikube v1.7.
 
-The Docker driver reuses the base image from (kind)[https://kind.sigs.k8s.io/], but extended to support a Docker runtime.
+This driver was inspired by the [kind project](https://kind.sigs.k8s.io/), and uses a modified version of its base image.
 
 ## Special features
 
@@ -19,7 +19,7 @@ No hypervisor required when run on Linux.
 
 ## Limitations
 
-As an experimental driver, not all commands are supported on all platforms. Notably: `mount,` `service`, `tunnel`, and others.
+As an experimental driver, not all commands are supported on all platforms. Notably: `mount,` `service`, `tunnel`, and others. Most of these limitations will be addressed by minikube v1.8 (March 2020)
 
 ## Issues
 
