@@ -30,6 +30,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh/terminal"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
@@ -162,10 +163,15 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	if err := os.Chmod(assetName, os.FileMode(perms)); err != nil {
 		return errors.Wrapf(err, "chmod")
 	}
+	if k.ociBin == oci.Podman { // Podman does not support -a
+		if out, err := exec.Command(oci.Podman, "cp", assetName, destination).CombinedOutput(); err != nil {
+			return errors.Wrapf(err, "error copying %s into node, output: %s", f.GetAssetName(), string(out))
+		}
+		return nil
+	}
 	if out, err := exec.Command(k.ociBin, "cp", "-a", assetName, destination).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "error copying %s into node, output: %s", f.GetAssetName(), string(out))
 	}
-
 	return nil
 }
 
