@@ -214,6 +214,22 @@ func (d *Driver) Start() error {
 	if err != nil {
 		return err
 	}
+
+	// Kill any processes that may interfere with kubeadm
+	if err := stopKubelet(d.exec); err != nil {
+		glog.Warningf("unable to stop kubelet: %v", err)
+	}
+	containers, err := d.runtime.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
+	if err != nil {
+		glog.Warningf("unable to list kube-system containers: %v", err)
+	}
+	if len(containers) > 0 {
+		glog.Warningf("found %d kube-system containers to stop", len(containers))
+		if err := d.runtime.StopContainers(containers); err != nil {
+			glog.Warningf("error stopping containers: %v", err)
+		}
+	}
+
 	return nil
 }
 
