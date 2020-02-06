@@ -4,29 +4,33 @@ linkTitle: "pause"
 weight: 1
 date: 2020-02-05
 description: >
-  Pause Kubernetes
+  pause the Kubernetes control plane or other namespaces
 ---
 
+### Overview
+
+The pause command allows you to freeze containers using the Linux [cgroup freezer](https://www.kernel.org/doc/Documentation/cgroup-v1/freezer-subsystem.txt). Once frozen, processes will no longer consume CPU cycles, but will remain in memory.
+
+By default, the pause command will pause the Kubernetes control plane (kube-system namespace), leaving your applications running. This reduces the background CPU usage of a minikube cluster to a negligable 2-3% of a CPU.
 
 ### Usage
 
 ```
-minikube unpause [flags]
+minikube pause [flags]
 ```
 
 ### Options
 
 ```
-  -n, ----namespaces strings   namespaces to unpause (default [kube-system,kubernetes-dashboard,storage-gluster,istio-operator])
-  -A, --all-namespaces         If set, unpause all namespaces
-  -h, --help                   help for unpause
+  -n, ----namespaces strings   namespaces to pause (default [kube-system,kubernetes-dashboard,storage-gluster,istio-operator])
+  -A, --all-namespaces         If set, pause all namespaces
+  -h, --help                   help for pause
 ```
 
 ### Options inherited from parent commands
 
 ```
       --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
       --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
       --log_dir string                   If non-empty, write log files in this directory
       --logtostderr                      log to standard error instead of files
