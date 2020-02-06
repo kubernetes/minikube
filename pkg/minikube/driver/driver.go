@@ -87,7 +87,7 @@ func Supported(name string) bool {
 
 // IsKIC checks if the driver is a kubernetes in continer
 func IsKIC(name string) bool {
-	return name == Docker
+	return name == Docker || name == Podman
 }
 
 // IsMock checks if the driver is a mock
