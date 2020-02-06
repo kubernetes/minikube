@@ -63,7 +63,7 @@ func CreateContainerNode(p CreateParams) error {
 	}
 	// Podman does not allow setting resources when cgroup is specified
 	// exact podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
-	if o.ociBinary != Podman {
+	if p.OCIBinary != Podman {
 		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs), fmt.Sprintf("--memory=%s", p.Memory))
 	}
 
