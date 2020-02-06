@@ -151,7 +151,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	api := tests.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
 	api.NotExistError = true
-	_, err := createHost(api, defaultMachineConfig)
+	h, err := createHost(api, defaultMachineConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -159,20 +159,27 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
+	mc := defaultMachineConfig
+	mc.Name = h.Name
+
 	// This should pass with creating host, while machine does not exist.
-	_, err = StartHost(api, defaultMachineConfig)
+	h, err = StartHost(api, mc)
 	if err != nil {
-		t.Fatalf("Error starting host: %v", err)
+		if err != ErrorMachineNotExist {
+			t.Fatalf("Error starting host: %v", err)
+		}
 	}
+
+	mc.Name = h.Name
 
 	// Second call. This should pass without calling Create because the host exists already.
-	h, err := StartHost(api, defaultMachineConfig)
+	h, err = StartHost(api, mc)
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
 
-	if h.Name != config.GetMachineName() {
-		t.Fatalf("GetMachineName()=%q, want %q", config.GetMachineName(), h.Name)
+	if h.Name != viper.GetString("profile") {
+		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
 	}
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
@@ -355,7 +362,7 @@ func TestDeleteHostErrMachineNotExist(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api); err == nil {
+	if err := DeleteHost(api, viper.GetString("profile")); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
