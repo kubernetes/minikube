@@ -46,10 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-var (
-	forceShell string
-	envTmpl    = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
-)
+var envTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
 
 const (
 	fishSetPfx   = "set -gx "
@@ -112,6 +109,9 @@ type ShellConfig struct {
 }
 
 var (
+	noProxy              bool
+	forceShell           string
+	unset                bool
 	defaultNoProxyGetter NoProxyGetter
 )
 
@@ -331,23 +331,20 @@ var dockerEnvCmd = &cobra.Command{
 		ec := EnvConfig{
 			profile:  profile,
 			driver:   host.DriverName,
+			shell:    forceShell,
 			hostIP:   hostIP,
 			certsDir: localpath.MakeMiniPath("certs"),
-			noProxy:  viper.GetBool("no-proxy"),
+			noProxy:  noProxy,
 		}
 
-		sh := viper.GetString("shell")
-		fmt.Printf("user shell=%s\n", sh)
-		if sh == "" {
-			sh, err = shell.Detect()
+		if ec.shell == "" {
+			ec.shell, err = shell.Detect()
 			if err != nil {
 				exit.WithError("Error detecting shell", err)
 			}
 		}
-		ec.shell = sh
-		fmt.Printf("shell=%s, ec: %+v\n", viper.GetString("shell"), ec)
 
-		if viper.GetBool("unset") {
+		if unset {
 			if err := generateUnsetScript(ec, os.Stdout); err != nil {
 				exit.WithError("Error generating unset output", err)
 			}
@@ -412,7 +409,7 @@ func dockerEnvVars(ec EnvConfig) (map[string]string, error) {
 
 func init() {
 	defaultNoProxyGetter = &EnvNoProxyGetter{}
-	dockerEnvCmd.Flags().Bool("no-proxy", false, "Add machine IP to NO_PROXY environment variable")
-	dockerEnvCmd.Flags().StringVar(&forceShell, "shell", "auto", "Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect")
-	dockerEnvCmd.Flags().BoolP("unset", "u", false, "Unset variables instead of setting them")
+	dockerEnvCmd.Flags().BoolVar(&noProxy, "no-proxy", false, "Add machine IP to NO_PROXY environment variable")
+	dockerEnvCmd.Flags().StringVar(&forceShell, "shell", "", "Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect")
+	dockerEnvCmd.Flags().BoolVarP(&unset, "unset", "u", false, "Unset variables instead of setting them")
 }
