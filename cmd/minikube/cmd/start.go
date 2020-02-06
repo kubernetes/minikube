@@ -1297,13 +1297,6 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
 func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, mc config.MachineConfig, preexisting bool, isUpgrade bool) {
-	if isUpgrade || !preexisting {
-		out.T(out.Pulling, "Pulling images ...")
-		if err := bs.PullImages(mc.KubernetesConfig); err != nil {
-			out.T(out.FailureType, "Unable to pull images, which may be OK: {{.error}}", out.V{"error": err})
-		}
-	}
-
 	out.T(out.Launch, "Launching Kubernetes ... ")
 	if err := bs.StartCluster(mc); err != nil {
 		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
