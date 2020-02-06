@@ -81,9 +81,9 @@ func showLocalOsRelease() {
 	out.T(out.Provisioner, "OS release is {{.pretty_name}}", out.V{"pretty_name": osReleaseInfo.PrettyName})
 }
 
-// showRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM
-func showRemoteOsRelease(driver drivers.Driver) {
-	provisioner, err := provision.DetectProvisioner(driver)
+// logRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM
+func logRemoteOsRelease(drv drivers.Driver) {
+	provisioner, err := provision.DetectProvisioner(drv)
 	if err != nil {
 		glog.Errorf("DetectProvisioner: %v", err)
 		return
@@ -105,12 +105,14 @@ func showHostInfo(cfg config.MachineConfig) {
 		if err == nil {
 			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
 		}
-	} else if driver.IsKIC(cfg.VMDriver) {
+		return
+	}
+	if driver.IsKIC(cfg.VMDriver) {
 		info, err := getHostInfo() // TODO medyagh: get docker-machine info for non linux
 		if err == nil {
 			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": cfg.VMDriver, "number_of_cpus": cfg.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": cfg.Memory, "host_memory_size": info.Memory})
 		}
-	} else {
-		out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.VMDriver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize})
+		return
 	}
+	out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.VMDriver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize})
 }

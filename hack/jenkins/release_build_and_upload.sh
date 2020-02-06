@@ -35,11 +35,11 @@ grep -E "^VERSION_MAJOR \\?=" Makefile | grep "${VERSION_MAJOR}"
 grep -E "^VERSION_MINOR \\?=" Makefile | grep "${VERSION_MINOR}"
 grep -E "^VERSION_BUILD \\?=" Makefile | grep "${VERSION_BUILD}"
 
-# Diagnostics
-go env GOPATH
+# Force go packages to the Jekins home directory
+export GOPATH=$HOME/go
 
 # Build and upload
-env GOPATH=$HOME/go BUILD_IN_DOCKER=y \
+env BUILD_IN_DOCKER=y \
   make -j 16 \
   all \
   out/minikube-installer.exe \
