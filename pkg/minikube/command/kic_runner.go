@@ -162,12 +162,14 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	}
 	if k.ociBin == oci.Podman { // Podman cp command doesn't match docker and doesn't have -a
 		//example: podman cp file.txt minikube:/home/docker/file.txt
+		// older versions of podman (for example 1.4) has a bug that creates a directory for the file !
+		// TODO:medyagh add a check to not allow using old podmans
 		destination := fmt.Sprintf("%s:%s%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
 		fmt.Printf("medya dbg: about to run:\n podman cp %s %s\n", assetName, destination)
 		if out, err := exec.Command(oci.Podman, "cp", assetName, destination).CombinedOutput(); err != nil {
 			return errors.Wrapf(err, "copying %s into node, output: %s", f.GetAssetName(), string(out))
 		}
-		if out, err := exec.Command(oci.Podman, "exec", "-it", k.nameOrID, "chmod", perms, fmt.Sprintf("%s/%s", f.GetTargetDir(), assetName)).CombinedOutput(); err != nil {
+		if out, err := exec.Command(oci.Podman, "exec", "-it", k.nameOrID, "chmod", fmt.Sprint(perms), fmt.Sprintf("%s/%s", f.GetTargetDir(), assetName)).CombinedOutput(); err != nil {
 			return errors.Wrapf(err, "chmod-ing copied file: %s", f.GetAssetName(), string(out))
 		}
 
