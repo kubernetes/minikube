@@ -4,7 +4,8 @@ linkTitle: "unpause"
 weight: 1
 date: 2020-02-05
 description: >
-  unpause Kubernetes
+   unpause the Kubernetes control plane or other namespaces
+
 ---
 
 ### Usage
