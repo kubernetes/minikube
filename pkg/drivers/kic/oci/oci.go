@@ -194,6 +194,21 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 
 // ContainerIPs returns ipv4,ipv6, error of a container by their name
 func ContainerIPs(ociBinary string, name string) (string, string, error) {
+	if ociBinary == Podman {
+		cmd := exec.Command(ociBinary, "inspect",
+			"-f", "{{.NetworkSettings.IPAddress}}",
+			name)
+		out, err := cmd.CombinedOutput()
+		output := string(out)
+		if err != nil {
+			return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
+		}
+		if err == nil && output == "" { // podman returns empty for 127.0.0.1
+			return "127.0.0.1", "", nil // TODO:medaygh move DefaultBindIP from kic package to here
+		}
+		return output, "", nil
+	}
+
 	if err := PointToHostDockerDaemon(); err != nil {
 		return "", "", errors.Wrap(err, "point host docker-daemon")
 	}
