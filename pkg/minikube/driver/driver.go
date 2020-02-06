@@ -28,6 +28,8 @@ import (
 )
 
 const (
+	// Podman is Kubernetes in container using podman driver
+	Podman = "podman"
 	// Docker is Kubernetes in container using docker driver
 	Docker = "docker"
 	// Mock driver
