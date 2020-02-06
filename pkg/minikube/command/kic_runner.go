@@ -151,26 +151,33 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 		assetName = tmpFile.Name()
 	}
 
-	// based of format of "docker cp containerName:destination"
-	destination := fmt.Sprintf("%s:%s/%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
-
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
 	if err != nil {
-		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
+		return errors.Wrapf(err, "converting permissions %s to integer", f.GetPermissions())
 	}
 
 	// Rely on cp -a to propagate permissions
 	if err := os.Chmod(assetName, os.FileMode(perms)); err != nil {
 		return errors.Wrapf(err, "chmod")
 	}
-	if k.ociBin == oci.Podman { // Podman does not support -a
+	if k.ociBin == oci.Podman { // Podman cp command doesn't match docker and doesn't have -a
+		//example: podman cp file.txt minikube:/home/docker/file.txt
+		destination := fmt.Sprintf("%s:%s/%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
+		fmt.Printf("medya dbg: about to run:\n podman cp %s %s\n", assetName, destination)
 		if out, err := exec.Command(oci.Podman, "cp", assetName, destination).CombinedOutput(); err != nil {
-			return errors.Wrapf(err, "error copying %s into node, output: %s", f.GetAssetName(), string(out))
+			return errors.Wrapf(err, "copying %s into node, output: %s", f.GetAssetName(), string(out))
 		}
+		if out, err := exec.Command(oci.Podman, "chmod", fmt.Sprintf("%s/%s", f.GetTargetDir(), assetName)).CombinedOutput(); err != nil {
+			return errors.Wrapf(err, "chmod-ing copied file: %s", f.GetAssetName(), string(out))
+		}
+
 		return nil
 	}
+	// example "docker cp containerName:destination src"
+	destination := fmt.Sprintf("%s:%s/%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
 	if out, err := exec.Command(k.ociBin, "cp", "-a", assetName, destination).CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "error copying %s into node, output: %s", f.GetAssetName(), string(out))
+
+		return errors.Wrapf(err, "copying %s into node, output: %s", f.GetAssetName(), string(out))
 	}
 	return nil
 }
