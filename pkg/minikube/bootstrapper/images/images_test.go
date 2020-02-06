@@ -24,7 +24,7 @@ import (
 
 func TestAuxiliary(t *testing.T) {
 	want := []string{
-		"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
+		"gcr.io/k8s-minikube/storage-provisioner" + archTag(false) + "v1.8.1",
 		"kubernetesui/dashboard:v2.0.0-beta8",
 		"kubernetesui/metrics-scraper:v1.0.2",
 	}
@@ -36,7 +36,7 @@ func TestAuxiliary(t *testing.T) {
 
 func TestAuxiliaryMirror(t *testing.T) {
 	want := []string{
-		"test.mirror/storage-provisioner:v1.8.1",
+		"test.mirror/storage-provisioner" + archTag(false) + "v1.8.1",
 		"test.mirror/dashboard:v2.0.0-beta8",
 		"test.mirror/metrics-scraper:v1.0.2",
 	}
