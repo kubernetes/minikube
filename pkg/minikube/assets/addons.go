@@ -17,19 +17,13 @@ limitations under the License.
 package assets
 
 import (
-	"fmt"
-	"os"
-	"path"
-	"path/filepath"
 	"runtime"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util"
 )
 
 // Addon is a named list of assets, that can be enabled
@@ -338,60 +332,6 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "ingress-dns"),
-}
-
-// AddMinikubeDirAssets adds all addons and files to the list
-// of files to be copied to the vm.
-func AddMinikubeDirAssets(assets *[]CopyableFile) error {
-	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("addons"), vmpath.GuestAddonsDir, assets); err != nil {
-		return errors.Wrap(err, "adding addons folder to assets")
-	}
-	if err := addMinikubeDirToAssets(localpath.MakeMiniPath("files"), "", assets); err != nil {
-		return errors.Wrap(err, "adding files rootfs to assets")
-	}
-
-	return nil
-}
-
-// AddMinikubeDirToAssets adds all the files in the basedir argument to the list
-// of files to be copied to the vm.  If vmpath is left blank, the files will be
-// transferred to the location according to their relative minikube folder path.
-func addMinikubeDirToAssets(basedir, vmpath string, assets *[]CopyableFile) error {
-	return filepath.Walk(basedir, func(hostpath string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		isDir, err := util.IsDirectory(hostpath)
-		if err != nil {
-			return errors.Wrapf(err, "checking if %s is directory", hostpath)
-		}
-		if !isDir {
-			vmdir := vmpath
-			if vmdir == "" {
-				rPath, err := filepath.Rel(basedir, hostpath)
-				if err != nil {
-					return errors.Wrap(err, "generating relative path")
-				}
-				rPath = filepath.Dir(rPath)
-				rPath = filepath.ToSlash(rPath)
-				vmdir = path.Join("/", rPath)
-			}
-			permString := fmt.Sprintf("%o", info.Mode().Perm())
-			// The conversion will strip the leading 0 if present, so add it back
-			// if we need to.
-			if len(permString) == 3 {
-				permString = fmt.Sprintf("0%s", permString)
-			}
-
-			f, err := NewFileAsset(hostpath, vmdir, filepath.Base(hostpath), permString)
-			if err != nil {
-				return errors.Wrapf(err, "creating file asset for %s", hostpath)
-			}
-			*assets = append(*assets, f)
-		}
-
-		return nil
-	})
 }
 
 // GenerateTemplateData generates template data for template assets

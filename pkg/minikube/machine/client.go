@@ -36,6 +36,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/persist"
+	lib_provision "github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/docker/machine/libmachine/swarm"
@@ -151,7 +152,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 		return &command.FakeCommandRunner{}, nil
 	}
 	if driver.BareMetal(h.Driver.DriverName()) {
-		return &command.ExecRunner{}, nil
+		return command.NewExecRunner(), nil
 	}
 	if h.Driver.DriverName() == driver.Docker {
 		return command.NewKICRunner(h.Name, "docker"), nil
@@ -207,10 +208,15 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"provisioning",
 			func() error {
-				if driver.BareMetal(h.Driver.DriverName()) || driver.IsKIC(h.Driver.DriverName()) {
+				if driver.BareMetal(h.Driver.DriverName()) {
 					return nil
 				}
-				pv := provision.NewBuildrootProvisioner(h.Driver)
+				var pv lib_provision.Provisioner
+				if driver.IsKIC(h.Driver.DriverName()) {
+					pv = provision.NewUbuntuProvisioner(h.Driver)
+				} else {
+					pv = provision.NewBuildrootProvisioner(h.Driver)
+				}
 				return pv.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
 			},
 		},

@@ -98,42 +98,12 @@ func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 }
 
 // GetAPIServerStatus returns the api-server status
-func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, apiserverPort int) (string, error) {
-	// sudo, in case hidepid is set
-	rr, err := k.c.RunCmd(exec.Command("sudo", "pgrep", "kube-apiserver"))
+func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, port int) (string, error) {
+	s, err := kverify.APIServerStatus(k.c, ip, port)
 	if err != nil {
-		return state.Stopped.String(), nil
+		return state.Error.String(), err
 	}
-	pid := strings.TrimSpace(rr.Stdout.String())
-
-	// Get the freezer cgroup entry for this pid
-	rr, err = k.c.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", path.Join("/proc", pid, "cgroup")))
-	if err != nil {
-		glog.Warningf("unable to find freezer cgroup: %v", err)
-		return kverify.APIServerStatus(ip, apiserverPort)
-
-	}
-	freezer := strings.TrimSpace(rr.Stdout.String())
-	glog.Infof("apiserver freezer: %q", freezer)
-	fparts := strings.Split(freezer, ":")
-	if len(fparts) != 3 {
-		glog.Warningf("unable to parse freezer - found %d parts: %s", len(fparts), freezer)
-		return kverify.APIServerStatus(ip, apiserverPort)
-	}
-
-	rr, err = k.c.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup/freezer", fparts[2], "freezer.state")))
-	if err != nil {
-		glog.Errorf("unable to get freezer state: %s", rr.Stderr.String())
-		return kverify.APIServerStatus(ip, apiserverPort)
-	}
-
-	fs := strings.TrimSpace(rr.Stdout.String())
-	glog.Infof("freezer state: %q", fs)
-	if fs == "FREEZING" || fs == "FROZEN" {
-		return state.Paused.String(), nil
-	}
-
-	return kverify.APIServerStatus(ip, apiserverPort)
+	return s.String(), nil
 }
 
 // LogCommands returns a map of log type to a command which will display that log.
@@ -464,7 +434,8 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
-	kubeletCfg, err := bsutil.NewKubeletConfig(cfg, r)
+	// TODO: multiple nodes
+	kubeletCfg, err := bsutil.NewKubeletConfig(cfg, cfg.Nodes[0], r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}

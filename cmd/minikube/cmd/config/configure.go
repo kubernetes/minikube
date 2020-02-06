@@ -53,6 +53,9 @@ var addonsConfigureCmd = &cobra.Command{
 			dockerUser := "changeme"
 			dockerPass := "changeme"
 			gcrURL := "https://gcr.io"
+			acrURL := "changeme"
+			acrClientID := "changeme"
+			acrPassword := "changeme"
 
 			enableAWSECR := AskForYesNoConfirmation("\nDo you want to enable AWS Elastic Container Registry?", posResponses, negResponses)
 			if enableAWSECR {
@@ -88,6 +91,13 @@ var addonsConfigureCmd = &cobra.Command{
 				dockerServer = AskForStaticValue("-- Enter docker registry server url: ")
 				dockerUser = AskForStaticValue("-- Enter docker registry username: ")
 				dockerPass = AskForPasswordValue("-- Enter docker registry password: ")
+			}
+
+			enableACR := AskForYesNoConfirmation("\nDo you want to enable Azure Container Registry?", posResponses, negResponses)
+			if enableACR {
+				acrURL = AskForStaticValue("-- Enter Azure Container Registry (ACR) URL: ")
+				acrClientID = AskForStaticValue("-- Enter client ID (service principal ID) to access ACR: ")
+				acrPassword = AskForPasswordValue("-- Enter service principal password to access Azure Container Registry: ")
 			}
 
 			// Create ECR Secret
@@ -148,6 +158,26 @@ var addonsConfigureCmd = &cobra.Command{
 			if err != nil {
 				out.WarningT("ERROR creating `registry-creds-dpr` secret")
 			}
+
+			// Create Azure Container Registry Secret
+			err = service.CreateSecret(
+				"kube-system",
+				"registry-creds-acr",
+				map[string]string{
+					"ACR_URL":       acrURL,
+					"ACR_CLIENT_ID": acrClientID,
+					"ACR_PASSWORD":  acrPassword,
+				},
+				map[string]string{
+					"app":                           "registry-creds",
+					"cloud":                         "acr",
+					"kubernetes.io/minikube-addons": "registry-creds",
+				})
+
+			if err != nil {
+				out.WarningT("ERROR creating `registry-creds-acr` secret")
+			}
+
 		default:
 			out.FailureT("{{.name}} has no available configuration options", out.V{"name": addon})
 			return

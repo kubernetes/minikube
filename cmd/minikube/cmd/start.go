@@ -303,9 +303,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
-	driverName := selectDriver(existing)
+	ds := selectDriver(existing)
+	driverName := ds.Name
 	glog.Infof("selected driver: %s", driverName)
-	validateDriver(driverName, existing)
+	validateDriver(ds, existing)
 	err = autoSetDriverOptions(cmd, driverName)
 	if err != nil {
 		glog.Errorf("Error autoSetOptions : %v", err)
@@ -371,8 +372,12 @@ func runStart(cmd *cobra.Command, args []string) {
 	bootstrapCluster(bs, cr, mRunner, mc, preExists, isUpgrade)
 	configureMounts()
 
-	// enable addons
-	addons.Start(viper.GetString(config.MachineProfile), addonList)
+	// enable addons, both old and new!
+	existingAddons := map[string]bool{}
+	if existing != nil && existing.Addons != nil {
+		existingAddons = existing.Addons
+	}
+	addons.Start(viper.GetString(config.MachineProfile), existingAddons, addonList)
 
 	if err = cacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
@@ -567,53 +572,49 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	return nil
 }
 
-func selectDriver(existing *config.MachineConfig) string {
-	name := viper.GetString("vm-driver")
-	glog.Infof("selectDriver: flag=%q, old=%v", name, existing)
-
+func selectDriver(existing *config.MachineConfig) registry.DriverState {
+	// Technically unrelated, but important to perform before detection
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
-	options := driver.Choices()
-	pick, alts := driver.Choose(name, options)
-	exp := ""
-	if pick.Priority == registry.Experimental {
-		exp = "experimental "
-	}
 
-	if name != "" {
-		out.T(out.Sparkle, `Selecting {{.experimental}}'{{.driver}}' driver from user configuration (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": name, "alternates": alts})
-		return name
+	if viper.GetString("vm-driver") != "" {
+		ds := driver.Status(viper.GetString("vm-driver"))
+		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
+		return ds
 	}
 
 	// By default, the driver is whatever we used last time
-	if existing != nil {
-		pick, alts := driver.Choose(existing.VMDriver, options)
-		if pick.Priority == registry.Experimental {
-			exp = "experimental "
-		}
-		out.T(out.Sparkle, `Selecting {{.experimental}}'{{.driver}}' driver from existing profile (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": existing.VMDriver, "alternates": alts})
-		return pick.Name
+	if existing != nil && existing.VMDriver != "" {
+		ds := driver.Status(existing.VMDriver)
+		out.T(out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
+		return ds
 	}
 
-	if len(options) > 1 {
-		out.T(out.Sparkle, `Automatically selected the {{.experimental}}'{{.driver}}' driver (alternates: {{.alternates}})`, out.V{"experimental": exp, "driver": pick.Name, "alternates": alts})
-	} else {
-		out.T(out.Sparkle, `Automatically selected the {{.experimental}}'{{.driver}}' driver`, out.V{"experimental": exp, "driver": pick.Name})
-	}
-
+	pick, alts := driver.Suggest(driver.Choices())
 	if pick.Name == "" {
 		exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --vm-driver, or see https://minikube.sigs.k8s.io/docs/start/")
 	}
-	return pick.Name
+
+	if len(alts) > 1 {
+		altNames := []string{}
+		for _, a := range alts {
+			altNames = append(altNames, a.String())
+		}
+		out.T(out.Sparkle, `Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}`, out.V{"driver": pick.Name, "alternates": strings.Join(altNames, ", ")})
+	} else {
+		out.T(out.Sparkle, `Automatically selected the {{.driver}} driver`, out.V{"driver": pick.String()})
+	}
+	return pick
 }
 
 // validateDriver validates that the selected driver appears sane, exits if not
-func validateDriver(name string, existing *config.MachineConfig) {
+func validateDriver(ds registry.DriverState, existing *config.MachineConfig) {
+	name := ds.Name
 	glog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
 		exit.WithCodeT(exit.Unavailable, "The driver {{.experimental}} '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
 
-	st := driver.Status(name)
+	st := ds.State
 	glog.Infof("status for %s: %+v", name, st)
 
 	if st.Error != nil {
@@ -927,11 +928,16 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
 	}
 
+	var kubeNodeName string
+	if drvName != driver.None {
+		kubeNodeName = viper.GetString(config.MachineProfile)
+	}
+
 	// Create the initial node, which will necessarily be a control plane
 	cp := config.Node{
 		Port:              viper.GetInt(apiServerPort),
 		KubernetesVersion: k8sVersion,
-		Name:              constants.DefaultNodeName,
+		Name:              kubeNodeName,
 		ControlPlane:      true,
 		Worker:            true,
 	}
@@ -971,6 +977,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		NatNicType:              viper.GetString(natNicType),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
+			ClusterName:            viper.GetString(config.MachineProfile),
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,
 			APIServerIPs:           apiServerIPs,
@@ -1118,6 +1125,10 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 }
 
 func trySSH(h *host.Host, ip string) {
+	if viper.GetBool(force) {
+		return
+	}
+
 	sshAddr := net.JoinHostPort(ip, "22")
 
 	dial := func() (err error) {
@@ -1134,28 +1145,33 @@ func trySSH(h *host.Host, ip string) {
 	if err := retry.Expo(dial, time.Second, 13*time.Second); err != nil {
 		exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
 
-This is likely due to one of two reasons:
+	This is likely due to one of two reasons:
 
-- VPN or firewall interference
-- {{.hypervisor}} network configuration issue
+	- VPN or firewall interference
+	- {{.hypervisor}} network configuration issue
 
-Suggested workarounds:
+	Suggested workarounds:
 
-- Disable your local VPN or firewall software
-- Configure your local VPN or firewall to allow access to {{.ip}}
-- Restart or reinstall {{.hypervisor}}
-- Use an alternative --vm-driver`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
+	- Disable your local VPN or firewall software
+	- Configure your local VPN or firewall to allow access to {{.ip}}
+	- Restart or reinstall {{.hypervisor}}
+	- Use an alternative --vm-driver
+	- Use --force to override this connectivity check
+	`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
 	}
 }
 
 func tryLookup(r command.Runner) {
 	// DNS check
-	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
-		glog.Warningf("%s failed: %v", rr.Args, err)
-		out.WarningT("VM may be unable to resolve external DNS records")
+	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io", "-type=ns")); err != nil {
+		glog.Infof("%s failed: %v which might be okay will retry nslookup without query type", rr.Args, err)
+		// will try with without query type for ISOs with different busybox versions.
+		if _, err = r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
+			glog.Warningf("nslookup failed: %v", err)
+			out.WarningT("Node may be unable to resolve external DNS records")
+		}
 	}
 }
-
 func tryRegistry(r command.Runner) {
 	// Try an HTTPS connection to the image repository
 	proxy := os.Getenv("HTTPS_PROXY")

@@ -72,6 +72,7 @@ type MachineConfig struct {
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
 	KubernetesVersion string
+	ClusterName       string
 	APIServerName     string
 	APIServerNames    []string
 	APIServerIPs      []net.IP

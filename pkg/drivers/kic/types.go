@@ -25,8 +25,9 @@ const (
 	DefaultPodCIDR = "10.244.0.0/16"
 	// DefaultBindIPV4 is The default IP the container will bind to.
 	DefaultBindIPV4 = "127.0.0.1"
-	// BaseImage is the base image is used to spin up kic containers created by kind.
-	BaseImage = "gcr.io/k8s-minikube/kicbase:v0.0.3@sha256:34db5e30f8830c0d5e49b62f3ea6b2844f805980592fe0084cbea799bfb12664" // OverlayImage is the cni plugin used for overlay image, created by kind.
+	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
+	BaseImage = "gcr.io/k8s-minikube/kicbase:v0.0.5@sha256:3ddd8461dfb5c3e452ccc44d87750b87a574ec23fc425da67dccc1f0c57d428a"
+	// OverlayImage is the cni plugin used for overlay image, created by kind.
 	// CNI plugin image used for kic drivers created by kind.
 	OverlayImage = "kindest/kindnetd:0.5.3"
 )

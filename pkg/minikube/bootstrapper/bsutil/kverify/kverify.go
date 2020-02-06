@@ -23,6 +23,9 @@ import (
 	"net"
 	"net/http"
 	"os/exec"
+	"path"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
@@ -37,13 +40,12 @@ import (
 // APIServerProcess waits for api server to be healthy returns error if it doesn't
 func APIServerProcess(runner command.Runner, start time.Time, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver process to appear ...")
-	err := wait.PollImmediate(time.Second*1, timeout, func() (bool, error) {
+	err := wait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during process check")
 		}
-		rr, ierr := runner.RunCmd(exec.Command("sudo", "pgrep", "kube-apiserver"))
-		if ierr != nil {
-			glog.Warningf("pgrep apiserver: %v cmd: %s", ierr, rr.Command())
+
+		if _, ierr := apiServerPID(runner); ierr != nil {
 			return false, nil
 		}
 		return true, nil
@@ -55,35 +57,35 @@ func APIServerProcess(runner command.Runner, start time.Time, timeout time.Durat
 	return nil
 }
 
+// apiServerPID returns our best guess to the apiserver pid
+func apiServerPID(cr command.Runner) (int, error) {
+	rr, err := cr.RunCmd(exec.Command("sudo", "pgrep", "-xnf", "kube-apiserver.*minikube.*"))
+	if err != nil {
+		return 0, err
+	}
+	s := strings.TrimSpace(rr.Stdout.String())
+	return strconv.Atoi(s)
+}
+
 // SystemPods verifies essential pods for running kurnetes is running
 func SystemPods(client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
 	glog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
-	podStart := time.Time{}
 	podList := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during pod check")
 		}
 		// Wait for any system pod, as waiting for apiserver may block until etcd
 		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
-		if len(pods.Items) < 2 {
-			podStart = time.Time{}
-			return false, nil
-		}
 		if err != nil {
-			podStart = time.Time{}
+			glog.Warningf("pod list returned error: %v", err)
 			return false, nil
 		}
-		if podStart.IsZero() {
-			podStart = time.Now()
+		glog.Infof("%d kube-system pods found", len(pods.Items))
+		if len(pods.Items) < 2 {
+			return false, nil
 		}
-
-		glog.Infof("%d kube-system pods found since %s", len(pods.Items), podStart)
-		if time.Since(podStart) > 2*kconst.APICallRetryInterval {
-			glog.Infof("stability requirement met, returning")
-			return true, nil
-		}
-		return false, nil
+		return true, nil
 	}
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
 		return fmt.Errorf("apiserver never returned a pod list")
@@ -101,12 +103,12 @@ func APIServerIsRunning(start time.Time, ip string, port int, timeout time.Durat
 			return false, fmt.Errorf("cluster wait timed out during healthz check")
 		}
 
-		status, err := APIServerStatus(net.ParseIP(ip), port)
+		status, err := apiServerHealthz(net.ParseIP(ip), port)
 		if err != nil {
 			glog.Warningf("status: %v", err)
 			return false, nil
 		}
-		if status != "Running" {
+		if status != state.Running {
 			return false, nil
 		}
 		return true, nil
@@ -119,9 +121,49 @@ func APIServerIsRunning(start time.Time, ip string, port int, timeout time.Durat
 	return nil
 }
 
-// APIServerStatus hits the /healthz endpoint and returns libmachine style state.State
-func APIServerStatus(ip net.IP, apiserverPort int) (string, error) {
-	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(ip.String(), fmt.Sprint(apiserverPort)))
+// APIServerStatus returns apiserver status in libmachine style state.State
+func APIServerStatus(cr command.Runner, ip net.IP, port int) (state.State, error) {
+	glog.Infof("Checking apiserver status ...")
+
+	pid, err := apiServerPID(cr)
+	if err != nil {
+		glog.Warningf("unable to get apiserver pid: %v", err)
+		return state.Stopped, nil
+	}
+
+	// Get the freezer cgroup entry for this pid
+	rr, err := cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", fmt.Sprintf("/proc/%d/cgroup", pid)))
+	if err != nil {
+		glog.Warningf("unable to find freezer cgroup: %v", err)
+		return apiServerHealthz(ip, port)
+
+	}
+	freezer := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("apiserver freezer: %q", freezer)
+	fparts := strings.Split(freezer, ":")
+	if len(fparts) != 3 {
+		glog.Warningf("unable to parse freezer - found %d parts: %s", len(fparts), freezer)
+		return apiServerHealthz(ip, port)
+	}
+
+	rr, err = cr.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup/freezer", fparts[2], "freezer.state")))
+	if err != nil {
+		glog.Errorf("unable to get freezer state: %s", rr.Stderr.String())
+		return apiServerHealthz(ip, port)
+	}
+
+	fs := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("freezer state: %q", fs)
+	if fs == "FREEZING" || fs == "FROZEN" {
+		return state.Paused, nil
+	}
+	return apiServerHealthz(ip, port)
+}
+
+// apiServerHealthz hits the /healthz endpoint and returns libmachine style state.State
+func apiServerHealthz(ip net.IP, port int) (state.State, error) {
+	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(ip.String(), fmt.Sprint(port)))
+	glog.Infof("Checking apiserver healthz at %s ...", url)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
 		Proxy:           nil, // To avoid connectiv issue if http(s)_proxy is set.
@@ -131,11 +173,31 @@ func APIServerStatus(ip net.IP, apiserverPort int) (string, error) {
 	resp, err := client.Get(url)
 	// Connection refused, usually.
 	if err != nil {
-		return state.Stopped.String(), nil
+		return state.Stopped, nil
 	}
 	if resp.StatusCode != http.StatusOK {
 		glog.Warningf("%s response: %v %+v", url, err, resp)
-		return state.Error.String(), nil
+		return state.Error, nil
 	}
-	return state.Running.String(), nil
+	return state.Running, nil
+}
+
+func KubeletStatus(cr command.Runner) (state.State, error) {
+	glog.Infof("Checking kubelet status ...")
+	rr, err := cr.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
+	if err != nil {
+		// Do not return now, as we still have parsing to do!
+		glog.Warningf("%s returned error: %v", rr.Command(), err)
+	}
+	s := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("kubelet is-active: %s", s)
+	switch s {
+	case "active":
+		return state.Running, nil
+	case "inactive":
+		return state.Stopped, nil
+	case "activating":
+		return state.Starting, nil
+	}
+	return state.Error, nil
 }
