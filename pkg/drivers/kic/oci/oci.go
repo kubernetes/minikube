@@ -170,7 +170,7 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 	var err error
 	if ociBinary == Podman {
 		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
-		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort \"%d\"}}{{.HostPort}}{{end}}{{end}}", contPort), ociID)
+		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprintf(contPort)), ociID)
 		out, err = cmd.CombinedOutput()
 		if err != nil {
 			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
