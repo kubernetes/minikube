@@ -345,13 +345,13 @@ var dockerEnvCmd = &cobra.Command{
 		}
 
 		if unset {
-			if err := generateUnsetScript(ec, os.Stdout); err != nil {
+			if err := unsetScript(ec, os.Stdout); err != nil {
 				exit.WithError("Error generating unset output", err)
 			}
 			return
 		}
 
-		if err := generateSetScript(ec, os.Stdout); err != nil {
+		if err := setScript(ec, os.Stdout); err != nil {
 			exit.WithError("Error generating set output", err)
 		}
 	},
@@ -367,8 +367,8 @@ type EnvConfig struct {
 	noProxy  bool
 }
 
-// generateSetScript writes out a shell-compatible 'docker-env' script
-func generateSetScript(ec EnvConfig, w io.Writer) error {
+// setScript writes out a shell-compatible 'docker-env' script
+func setScript(ec EnvConfig, w io.Writer) error {
 	tmpl := template.Must(template.New("envConfig").Parse(envTmpl))
 	envVars, err := dockerEnvVars(ec)
 	if err != nil {
@@ -377,8 +377,8 @@ func generateSetScript(ec EnvConfig, w io.Writer) error {
 	return tmpl.Execute(w, shellCfgSet(ec, envVars))
 }
 
-// generateSetScript writes out a shell-compatible 'docker-env unset' script
-func generateUnsetScript(ec EnvConfig, w io.Writer) error {
+// setScript writes out a shell-compatible 'docker-env unset' script
+func unsetScript(ec EnvConfig, w io.Writer) error {
 	tmpl := template.Must(template.New("envConfig").Parse(envTmpl))
 	return tmpl.Execute(w, shellCfgUnset(ec))
 }
