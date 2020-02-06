@@ -166,11 +166,23 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 	if err := PointToHostDockerDaemon(); err != nil {
 		return 0, errors.Wrap(err, "point host docker-daemon")
 	}
-	cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return 0, errors.Wrapf(err, "getting host-bind port %d for container ID %q, output %s", contPort, ociID, out)
+	var out []byte
+	var err error
+	if ociBinary == Podman {
+		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
+		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort \"%d\"}}{{.HostPort}}{{end}}{{end}}", contPort), ociID)
+		out, err = cmd.CombinedOutput()
+		if err != nil {
+			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
+		}
+	} else {
+		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
+		out, err = cmd.CombinedOutput()
+		if err != nil {
+			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
+		}
 	}
+
 	o := strings.Trim(string(out), "\n")
 	o = strings.Trim(o, "'")
 	p, err := strconv.Atoi(o)
