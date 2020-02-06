@@ -54,6 +54,7 @@ var (
 		vmpath.GuestCertsDir,
 		path.Join(vmpath.GuestPersistentDir, "images"),
 		path.Join(vmpath.GuestPersistentDir, "binaries"),
+		"/tmp/gvisor",
 	}
 )
 
@@ -94,6 +95,12 @@ func engineOptions(cfg config.MachineConfig) *engine.Options {
 }
 
 func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error) {
+	glog.Infof("createHost starting for %q (driver=%q)", cfg.Name, cfg.VMDriver)
+	start := time.Now()
+	defer func() {
+		glog.Infof("createHost completed in %s", time.Since(start))
+	}()
+
 	if cfg.VMDriver == driver.VMwareFusion && viper.GetBool(config.ShowDriverDeprecationNotification) {
 		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
@@ -120,11 +127,14 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 	h.HostOptions.AuthOptions.StorePath = localpath.MiniPath()
 	h.HostOptions.EngineOptions = engineOptions(cfg)
 
+	cstart := time.Now()
+	glog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.VMDriver)
 	if err := api.Create(h); err != nil {
 		// Wait for all the logs to reach the client
 		time.Sleep(2 * time.Second)
 		return nil, errors.Wrap(err, "create")
 	}
+	glog.Infof("libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
 
 	if err := postStartSetup(h, cfg); err != nil {
 		return h, errors.Wrap(err, "post-start")
@@ -138,8 +148,13 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 
 // postStart are functions shared between startHost and fixHost
 func postStartSetup(h *host.Host, mc config.MachineConfig) error {
-	if h.DriverName == driver.Mock {
-		glog.Infof("mock driver: skipping postStart")
+	glog.Infof("post-start starting for %q (driver=%q)", h.Name, h.DriverName)
+	start := time.Now()
+	defer func() {
+		glog.Infof("post-start completed in %s", time.Since(start))
+	}()
+
+	if driver.IsMock(h.DriverName) {
 		return nil
 	}
 
@@ -157,31 +172,34 @@ func postStartSetup(h *host.Host, mc config.MachineConfig) error {
 	if driver.BareMetal(mc.VMDriver) {
 		showLocalOsRelease()
 	}
-
-	if !driver.BareMetal(mc.VMDriver) && !driver.IsKIC(mc.VMDriver) {
-		showRemoteOsRelease(h.Driver)
-		if err := ensureSyncedGuestClock(h); err != nil {
-			return err
-		}
+	if driver.IsVM(mc.VMDriver) {
+		logRemoteOsRelease(h.Driver)
 	}
-	return nil
+	return syncLocalAssets(r)
 }
 
 // commandRunner returns best available command runner for this host
 func commandRunner(h *host.Host) (command.Runner, error) {
-	if h.DriverName == driver.Mock {
-		glog.Errorf("commandRunner: returning unconfigured FakeCommandRunner, commands will fail!")
+	d := h.Driver.DriverName()
+	glog.V(1).Infof("determining appropriate runner for %q", d)
+	if driver.IsMock(d) {
+		glog.Infof("returning FakeCommandRunner for %q driver", d)
 		return &command.FakeCommandRunner{}, nil
 	}
+
 	if driver.BareMetal(h.Driver.DriverName()) {
-		return &command.ExecRunner{}, nil
+		glog.Infof("returning ExecRunner for %q driver", d)
+		return command.NewExecRunner(), nil
 	}
-	if h.Driver.DriverName() == driver.Docker {
+	if driver.IsKIC(d) {
+		glog.Infof("Returning KICRunner for %q driver", d)
 		return command.NewKICRunner(h.Name, "docker"), nil
 	}
+
+	glog.Infof("Creating SSH client and returning SSHRunner for %q driver", d)
 	client, err := sshutil.NewSSHClient(h.Driver)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
+		return nil, errors.Wrap(err, "ssh client")
 	}
 	return command.NewSSHRunner(client), nil
 }
