@@ -15,12 +15,12 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 7
-VERSION_BUILD ?= 0
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
@@ -73,6 +73,7 @@ GOARCH ?= $(shell go env GOARCH)
 GOPATH ?= $(shell go env GOPATH)
 BUILD_DIR ?= ./out
 $(shell mkdir -p $(BUILD_DIR))
+CURRENT_GIT_BRANCH ?= $(shell git branch | grep \* | cut -d ' ' -f2)
 
 # Use system python if it exists, otherwise use Docker.
 PYTHON := $(shell command -v python || echo "docker run --rm -it -v $(shell pwd):/minikube -w /minikube python python")
@@ -90,7 +91,7 @@ endif
 
 # Set the version information for the Kubernetes servers
 MINIKUBE_LDFLAGS := -X k8s.io/minikube/pkg/version.version=$(VERSION) -X k8s.io/minikube/pkg/version.isoVersion=$(ISO_VERSION) -X k8s.io/minikube/pkg/version.isoPath=$(ISO_BUCKET) -X k8s.io/minikube/pkg/version.gitCommitID=$(COMMIT)
-PROVISIONER_LDFLAGS := "-X k8s.io/minikube/pkg/storage.version=$(STORAGE_PROVISIONER_TAG) -s -w"
+PROVISIONER_LDFLAGS := "-X k8s.io/minikube/pkg/storage.version=$(STORAGE_PROVISIONER_TAG) -s -w -extldflags '-static'"
 
 MINIKUBEFILES := ./cmd/minikube/
 HYPERKIT_FILES := ./cmd/drivers/hyperkit
@@ -627,6 +628,15 @@ out/mkcmp:
 out/performance-monitor:
 	GOOS=$(GOOS) GOARCH=$(GOARCH) go build -o $@ cmd/performance/monitor/monitor.go
 
+.PHONY: compare
+compare: out/mkcmp out/minikube
+	mv out/minikube out/$(CURRENT_GIT_BRANCH).minikube
+	git checkout master
+	make out/minikube
+	mv out/minikube out/master.minikube
+	git checkout $(CURRENT_GIT_BRANCH)
+	out/mkcmp out/master.minikube out/$(CURRENT_GIT_BRANCH).minikube
+	
 
 .PHONY: help
 help:

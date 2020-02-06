@@ -152,7 +152,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 		return &command.FakeCommandRunner{}, nil
 	}
 	if driver.BareMetal(h.Driver.DriverName()) {
-		return &command.ExecRunner{}, nil
+		return command.NewExecRunner(), nil
 	}
 	if h.Driver.DriverName() == driver.Docker {
 		return command.NewKICRunner(h.Name, "docker"), nil

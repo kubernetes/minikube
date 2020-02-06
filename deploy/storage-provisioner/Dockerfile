@@ -14,5 +14,5 @@
 
 FROM scratch
 ARG arch
-COPY out/storage-provisioner-${arch} storage-provisioner
+COPY out/storage-provisioner-${arch} /storage-provisioner
 CMD ["/storage-provisioner"]

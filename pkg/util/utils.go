@@ -17,15 +17,11 @@ limitations under the License.
 package util
 
 import (
-	"bytes"
 	"fmt"
-	"io"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strconv"
-	"strings"
-	"time"
 
 	units "github.com/docker/go-units"
 	"github.com/pkg/errors"
@@ -34,12 +30,6 @@ import (
 )
 
 const (
-	// ErrPrefix notes an error
-	ErrPrefix = "! "
-
-	// OutPrefix notes output
-	OutPrefix = "> "
-
 	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-amd64%s"
 )
 
@@ -57,46 +47,6 @@ func CalculateSizeInMB(humanReadableSize string) int {
 	return int(size / units.MB)
 }
 
-// Until endlessly loops the provided function until a message is received on the done channel.
-// The function will wait the duration provided in sleep between function calls. Errors will be sent on provider Writer.
-func Until(fn func() error, w io.Writer, name string, sleep time.Duration, done <-chan struct{}) {
-	var exitErr error
-	for {
-		select {
-		case <-done:
-			return
-		default:
-			exitErr = fn()
-			if exitErr == nil {
-				fmt.Fprintf(w, Pad("%s: Exited with no errors.\n"), name)
-			} else {
-				fmt.Fprintf(w, Pad("%s: Exit with error: %v"), name, exitErr)
-			}
-
-			// wait provided duration before trying again
-			time.Sleep(sleep)
-		}
-	}
-}
-
-// Pad pads the string with newlines
-func Pad(str string) string {
-	return fmt.Sprintf("\n%s\n", str)
-}
-
-// CanReadFile returns true if the file represented
-// by path exists and is readable, otherwise false.
-func CanReadFile(path string) bool {
-	f, err := os.Open(path)
-	if err != nil {
-		return false
-	}
-
-	defer f.Close()
-
-	return true
-}
-
 // GetBinaryDownloadURL returns a suitable URL for the platform
 func GetBinaryDownloadURL(version, platform string) string {
 	switch platform {
@@ -105,15 +55,6 @@ func GetBinaryDownloadURL(version, platform string) string {
 	default:
 		return fmt.Sprintf(downloadURL, version, platform, "")
 	}
-}
-
-// IsDirectory checks if path is a directory
-func IsDirectory(path string) (bool, error) {
-	fileInfo, err := os.Stat(path)
-	if err != nil {
-		return false, errors.Wrapf(err, "Error calling os.Stat on file %s", path)
-	}
-	return fileInfo.IsDir(), nil
 }
 
 // ChownR does a recursive os.Chown
@@ -147,27 +88,4 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 		}
 	}
 	return nil
-}
-
-// ReplaceChars returns a copy of the src slice with each string modified by the replacer
-func ReplaceChars(src []string, replacer *strings.Replacer) []string {
-	ret := make([]string, len(src))
-	for i, s := range src {
-		ret[i] = replacer.Replace(s)
-	}
-	return ret
-}
-
-// ConcatStrings concatenates each string in the src slice with prefix and postfix and returns a new slice
-func ConcatStrings(src []string, prefix string, postfix string) []string {
-	var buf bytes.Buffer
-	ret := make([]string, len(src))
-	for i, s := range src {
-		buf.WriteString(prefix)
-		buf.WriteString(s)
-		buf.WriteString(postfix)
-		ret[i] = buf.String()
-		buf.Reset()
-	}
-	return ret
 }
