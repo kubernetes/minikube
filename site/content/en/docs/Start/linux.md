@@ -22,7 +22,7 @@ Download and install minikube:
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube_{{< latest >}}-0_amd64.deb \
- && sudo dpkg -i minikube_{{< latest >}}.deb
+ && sudo dpkg -i minikube_{{< latest >}}-0_amd64.deb
  ```
 
 {{% /tab %}}
@@ -33,7 +33,7 @@ Download and install minikube:
 
 ```shell
 curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-{{< latest >}}-0.x86_64.rpm \
- && sudo rpm -ivh minikube-{{< latest >}}.rpm
+ && sudo rpm -ivh minikube-{{< latest >}}-0.x86_64.rpm
  ```
 
 {{% /tab %}}
