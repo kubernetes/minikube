@@ -14,19 +14,33 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package node
+package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/exit"
+)
 
 var nodeStopCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "stop",
 	Short: "Stops a node in a cluster.",
 	Long:  "Stops a node in a cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
+		name := viper.GetString("name")
+		if name == "" {
+			exit.UsageT("name is required")
+		}
 
+		// Retrieve the node
+
+		// Make sure it's running
+
+		// Stop that sucker
 	},
 }
 
 func init() {
-
+	nodeStopCmd.Flags().String("name", "", "The name of the node to delete")
+	nodeCmd.AddCommand(nodeStopCmd)
 }
