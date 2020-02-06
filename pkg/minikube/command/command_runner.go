@@ -26,6 +26,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
+var (
+	// ErrPrefix notes an error
+	ErrPrefix = "! "
+
+	// OutPrefix notes output
+	OutPrefix = "> "
+)
+
 // RunResult holds the results of a Runner
 type RunResult struct {
 	Stdout   bytes.Buffer
