@@ -14,12 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package node
+package cmd
 
 import (
 	"strconv"
 
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -30,7 +31,7 @@ import (
 var nodeAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Adds a node to the given cluster.",
-	Long:  "Adds a node to the given cluster config, without starting it.",
+	Long:  "Adds a node to the given cluster config, and starts it.",
 	Run: func(cmd *cobra.Command, args []string) {
 		name := viper.GetString("name")
 		profile := viper.GetString(config.MachineProfile)
@@ -48,6 +49,8 @@ var nodeAddCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error adding node to cluster", err)
 		}
+
+		//ok now start the node
 	},
 }
 
@@ -55,5 +58,11 @@ func init() {
 	nodeAddCmd.Flags().String("name", "", "The name of the node to add.")
 	nodeAddCmd.Flags().Bool("control-plane", false, "If true, the node added will also be a control plane in addition to a worker.")
 	nodeAddCmd.Flags().Bool("worker", true, "If true, the added node will be marked for work. Defaults to true.")
-	NodeCmd.AddCommand(nodeAddCmd)
+	//We should figure out which of these flags to actually import
+	startCmd.Flags().Visit(
+		func(f *pflag.Flag) {
+			nodeAddCmd.Flags().AddFlag(f)
+		},
+	)
+	nodeCmd.AddCommand(nodeAddCmd)
 }

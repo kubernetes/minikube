@@ -46,7 +46,12 @@ func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, 
 	}
 
 	cc.Nodes = append(cc.Nodes, n)
-	return config.SaveProfile(profileName, cc)
+	err := config.SaveProfile(profileName, cc)
+	if err != nil {
+		return err
+	}
+
+	return Start(cc, name)
 }
 
 // Delete stops and deletes the given node from the given cluster
@@ -69,8 +74,6 @@ func Delete(cc *config.MachineConfig, name string) error {
 	if err != nil {
 		glog.Warningf("Failed to stop node %s. Will still try to delete.", name)
 	}
-
-	// Spin down the machine, eventually.
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
 	return config.SaveProfile(viper.GetString(config.MachineProfile), cc)

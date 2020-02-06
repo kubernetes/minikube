@@ -31,7 +31,6 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/cmd/minikube/cmd/node"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -206,7 +205,7 @@ func init() {
 				mountCmd,
 				sshCmd,
 				kubectlCmd,
-				node.NodeCmd,
+				nodeCmd,
 			},
 		},
 		{
