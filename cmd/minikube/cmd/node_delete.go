@@ -19,7 +19,11 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 )
 
 var nodeDeleteCmd = &cobra.Command{
@@ -31,13 +35,24 @@ var nodeDeleteCmd = &cobra.Command{
 		if name == "" {
 			exit.UsageT("name is required")
 		}
+
+		// Make sure it's not running
+		api, err := machine.NewAPIClient()
+		if err != nil {
+			exit.WithError("creating api client", err)
+		}
+
+		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		if err != nil {
+			exit.WithError("loading config", err)
+		}
+
+		if cluster.IsHostRunning(api, name) {
+			node.Stop(cc, name)
+		}
+
+		node.Delete(cc, name)
 	},
-
-	// Retrieve the node
-
-	// If it's running, stop it
-
-	// Delete that sucker
 }
 
 func init() {
