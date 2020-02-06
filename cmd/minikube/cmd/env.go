@@ -129,27 +129,22 @@ type NoProxyGetter interface {
 type EnvNoProxyGetter struct{}
 
 func generateUsageHint(profile string, userShell string) string {
-	const usgPlz = "Please run command bellow to point your shell to minikube's docker-daemon :"
+	const usgPlz = "To point your shell to minikube's docker-daemon:"
 	var usgCmd = fmt.Sprintf("minikube -p %s docker-env", profile)
 	var usageHintMap = map[string]string{
-		"bash": fmt.Sprintf(`
-# %s
+		"bash": fmt.Sprintf(`# %s
 # eval $(%s)
 `, usgPlz, usgCmd),
-		"fish": fmt.Sprintf(`
-# %s
+		"fish": fmt.Sprintf(`# %s
 # eval (%s)
 `, usgPlz, usgCmd),
-		"powershell": fmt.Sprintf(`
-# %s
+		"powershell": fmt.Sprintf(`# %s
 # & %s | Invoke-Expression
 	`, usgPlz, usgCmd),
-		"cmd": fmt.Sprintf(`
-REM %s
+		"cmd": fmt.Sprintf(`REM %s
 REM @FOR /f "tokens=*" %%i IN ('%s') DO @%%i
 	`, usgPlz, usgCmd),
-		"emacs": fmt.Sprintf(`
-;; %s
+		"emacs": fmt.Sprintf(`;; %s
 ;; (with-temp-buffer (shell-command "%s" (current-buffer)) (eval-buffer))
 	`, usgPlz, usgCmd),
 	}
