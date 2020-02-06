@@ -19,6 +19,8 @@ VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
+KUBERNETES_VERSION ?= $(shell cat pkg/minikube/constants/constants.go | grep "DefaultKubernetesVersion =" | cut -d ' ' -f4 | sed 's/"//g')
+
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
@@ -500,10 +502,13 @@ storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-pr
 	docker build -t $(STORAGE_PROVISIONER_IMAGE) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$(GOARCH) .
 
 .PHONY: kic-base-image
-kic-base-image: ## builds the base image used for kic.
-	docker rmi -f $(REGISTRY)/kicbase:v0.0.5-snapshot || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.5-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
+kic-base-image: generate-preloaded-images-tar ## builds the base image used for kic.
+	docker rmi -f $(REGISTRY)/kicbase:v0.0.5-k8s-${KUBERNETES_VERSION} || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.5-k8s-${KUBERNETES_VERSION}  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg KUBERNETES_VERSION=${KUBERNETES_VERSION} .
 
+.PHONY: generate-preloaded-images-tar
+generate-preloaded-images-tar: out/minikube
+	KUBERNETES_VERSION=${KUBERNETES_VERSION} ./hack/preload-images/generate-preloaded-images-tar.sh
 
 
 .PHONY: push-storage-provisioner-image
