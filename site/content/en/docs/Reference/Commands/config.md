@@ -14,6 +14,7 @@ config modifies minikube config files using subcommands like "minikube config se
 Configurable fields: 
 
  * vm-driver
+ * container-runtime
  * feature-gates
  * v
  * cpus
@@ -33,26 +34,13 @@ Configurable fields:
  * bootstrapper
  * ShowDriverDeprecationNotification
  * ShowBootstrapperDeprecationNotification
- * dashboard
- * addon-manager
- * default-storageclass
- * efk
- * ingress
- * registry
- * registry-creds
- * freshpod
- * default-storageclass
- * storage-provisioner
- * storage-provisioner-gluster
- * metrics-server
- * nvidia-driver-installer
- * nvidia-gpu-device-plugin
- * logviewer
- * gvisor
+ * insecure-registry
  * hyperv-virtual-switch
  * disable-driver-mounts
  * cache
  * embed-certs
+ * native-ssh
+
 
 ### subcommands
 

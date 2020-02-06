@@ -49,3 +49,10 @@ Lists all valid minikube profiles and detects all possible invalid profiles.
 ```
 minikube profile list [flags]
 ```
+
+### Options
+
+```
+  -h, --help            help for list
+  -o, --output string   The output format. One of 'json', 'table' (default "table")
+```

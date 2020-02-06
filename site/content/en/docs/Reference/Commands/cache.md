@@ -39,3 +39,11 @@ minikube cache list [flags]
                         For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#CacheListTemplate (default "{{.CacheImage}}\n")
   -h, --help            help for list
 ```
+
+## minikube cache reload
+
+reloads images previously added using the 'cache add' subcommand
+
+```
+minikube cache reload [flags]
+```
