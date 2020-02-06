@@ -17,9 +17,16 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var nodeStopCmd = &cobra.Command{
@@ -32,11 +39,22 @@ var nodeStopCmd = &cobra.Command{
 			exit.UsageT("name is required")
 		}
 
-		// Retrieve the node
+		api, err := machine.NewAPIClient()
+		if err != nil {
+			exit.WithError("creating api client", err)
+		}
 
-		// Make sure it's running
+		if !cluster.IsHostRunning(api, name) {
+			out.T(out.Check, "{{.name}} is already stopped", out.V{"name": name})
+			os.Exit(0)
+		}
 
-		// Stop that sucker
+		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		if err != nil {
+			exit.WithError("loading config", err)
+		}
+		// Start it up baby
+		node.Stop(cc, name)
 	},
 }
 

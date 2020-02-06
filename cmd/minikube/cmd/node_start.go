@@ -17,9 +17,16 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var nodeStartCmd = &cobra.Command{
@@ -31,11 +38,28 @@ var nodeStartCmd = &cobra.Command{
 		if name == "" {
 			exit.UsageT("name is required")
 		}
+
+		// Make sure it's not running
+		api, err := machine.NewAPIClient()
+		if err != nil {
+			exit.WithError("creating api client", err)
+		}
+
+		if cluster.IsHostRunning(api, name) {
+			out.T(out.Check, "{{.name}} is already running", out.V{"name": name})
+			os.Exit(0)
+		}
+
+		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		if err != nil {
+			exit.WithError("loading config", err)
+		}
+		// Start it up baby
+		node.Start(cc, name)
 	},
 }
 
 func init() {
 	nodeStartCmd.Flags().String("name", "", "The name of the node to delete")
 	nodeCmd.AddCommand(nodeStartCmd)
-
 }

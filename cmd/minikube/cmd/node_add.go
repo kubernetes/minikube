@@ -50,7 +50,7 @@ var nodeAddCmd = &cobra.Command{
 			exit.WithError("Error adding node to cluster", err)
 		}
 
-		//ok now start the node
+		node.Start(mc, name)
 	},
 }
 
