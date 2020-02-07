@@ -744,7 +744,7 @@ func validateUser(drvName string) {
 
 	useForce := viper.GetBool(force)
 
-	if driver.NeedsRoot(drvName) )&& u.Uid != "0" && !useForce {
+	if driver.NeedsRoot(drvName) && u.Uid != "0" && !useForce {
 		exit.WithCodeT(exit.Permissions, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo minikube --vm-driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
 	}
 

@@ -210,9 +210,9 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
 	}
 
-	if driver.IsKIC(cfg.VMDriver) {
+	if cfg.VMDriver == driver.Docker {
 		if err := k.applyKicOverlay(cfg); err != nil {
-			return errors.Wrap(err, "applying kic overlay network")
+			return errors.Wrap(err, "apply kic overlay")
 		}
 	}
 
