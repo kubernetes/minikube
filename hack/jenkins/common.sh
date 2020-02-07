@@ -29,6 +29,10 @@ readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$
 export GOPATH="$HOME/go"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
+
+# installing golang so we could go-get gopogh
+sudo ./check_install_golang.sh "1.13.4" "/usr/local"
+
 echo ">> Starting at $(date)"
 echo ""
 echo "arch:      ${OS_ARCH}"
@@ -320,7 +324,7 @@ echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 echo ">> Installing gopogh"
 cd /tmp
-GO111MODULE="off" go get -u github.com/medyagh/gopogh@v0.0.17 || true
+GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.17 || true
 cd -
 echo ">> Running gopogh"
 if test -f "${HTML_OUT}"; then
