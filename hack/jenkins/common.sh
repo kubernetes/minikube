@@ -31,7 +31,7 @@ export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 
 # installing golang so we could go-get gopogh
-sudo ./check_install_golang.sh "1.13.4" "/usr/local"
+sudo ./check_install_golang.sh "1.13.4" "/usr/local" || true
 
 echo ">> Starting at $(date)"
 echo ""
