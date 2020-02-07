@@ -108,6 +108,11 @@ func BareMetal(name string) bool {
 	return name == None || name == Mock
 }
 
+// NeedsRoot returns true if driver needs to run with root privileges
+func NeedsRoot(name string) bool {
+	return name == None || name == Podman
+}
+
 // FlagHints are hints for what default options should be used for this driver
 type FlagHints struct {
 	ExtraOptions     []string
