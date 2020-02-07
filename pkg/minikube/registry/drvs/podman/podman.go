@@ -62,13 +62,19 @@ func status() registry.State {
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Podman is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/podman/"}
 	}
+
+	_, err := exec.Cmd()
+	// if err != nil {
+	// 	return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Podman is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/podman/"}
+	// }
+
 	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	err = exec.CommandContext(ctx, oci.Podman, "info").Run()
 	if err != nil {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Podman is not running. Try: restarting podman."}
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Podman is not running or taking too long to respond. Try: restarting podman."}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
