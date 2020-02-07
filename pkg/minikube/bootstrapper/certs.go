@@ -45,13 +45,6 @@ import (
 	"github.com/juju/mutex"
 )
 
-const (
-	// CACertificatesDir contains CA certificates
-	CACertificatesDir = "/usr/share/ca-certificates"
-	// SSLCertStoreDir contains SSL certificates
-	SSLCertStoreDir = "/etc/ssl/certs"
-)
-
 var (
 	certs = []string{
 		"ca.crt", "ca.key", "apiserver.crt", "apiserver.key", "proxy-client-ca.crt",
@@ -89,7 +82,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 		if strings.HasSuffix(cert, ".key") {
 			perms = "0600"
 		}
-		certFile, err := assets.NewFileAsset(p, vmpath.GuestCertsDir, cert, perms)
+		certFile, err := assets.NewFileAsset(p, vmpath.GuestKubernetesCertsDir, cert, perms)
 		if err != nil {
 			return err
 		}
@@ -112,9 +105,9 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	kcs := &kubeconfig.Settings{
 		ClusterName:          n.Name,
 		ClusterServerAddress: fmt.Sprintf("https://%s", net.JoinHostPort("localhost", fmt.Sprint(n.Port))),
-		ClientCertificate:    path.Join(vmpath.GuestCertsDir, "apiserver.crt"),
-		ClientKey:            path.Join(vmpath.GuestCertsDir, "apiserver.key"),
-		CertificateAuthority: path.Join(vmpath.GuestCertsDir, "ca.crt"),
+		ClientCertificate:    path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.crt"),
+		ClientKey:            path.Join(vmpath.GuestKubernetesCertsDir, "apiserver.key"),
+		CertificateAuthority: path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt"),
 		KeepContext:          false,
 	}
 
@@ -289,7 +282,7 @@ func collectCACerts() (map[string]string, error) {
 				if validPem {
 					filename := filepath.Base(hostpath)
 					dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
-					certFiles[hostpath] = path.Join(CACertificatesDir, dst)
+					certFiles[hostpath] = path.Join(vmpath.GuestCertAuthDir, dst)
 				}
 			}
 		}
@@ -304,7 +297,7 @@ func collectCACerts() (map[string]string, error) {
 	}
 
 	// populates minikube CA
-	certFiles[filepath.Join(localPath, "ca.crt")] = path.Join(CACertificatesDir, "minikubeCA.pem")
+	certFiles[filepath.Join(localPath, "ca.crt")] = path.Join(vmpath.GuestCertAuthDir, "minikubeCA.pem")
 
 	filtered := map[string]string{}
 	for k, v := range certFiles {
@@ -340,7 +333,7 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 
 	for _, caCertFile := range caCerts {
 		dstFilename := path.Base(caCertFile)
-		certStorePath := path.Join(SSLCertStoreDir, dstFilename)
+		certStorePath := path.Join(vmpath.GuestCertStoreDir, dstFilename)
 		cmd := fmt.Sprintf("test -f %s || ln -fs %s %s", caCertFile, certStorePath, caCertFile)
 		if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
 			return errors.Wrapf(err, "create symlink for %s", caCertFile)
@@ -350,7 +343,7 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 			if err != nil {
 				return errors.Wrapf(err, "calculate hash for cacert %s", caCertFile)
 			}
-			subjectHashLink := path.Join(SSLCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
+			subjectHashLink := path.Join(vmpath.GuestCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
 
 			// NOTE: This symlink may exist, but point to a missing file
 			cmd := fmt.Sprintf("test -L %s || ln -fs %s %s", subjectHashLink, certStorePath, subjectHashLink)
