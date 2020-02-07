@@ -60,6 +60,26 @@ unset MINIKUBE_ACTIVE_DOCKERD
 `,
 		},
 		{
+			EnvConfig{profile: "ipv6", shell: "bash", driver: "kvm2", hostIP: "fe80::215:5dff:fe00:a903", certsDir: "/certs"},
+			nil,
+			`export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://[fe80::215:5dff:fe00:a903]:2376"
+export DOCKER_CERT_PATH="/certs"
+export MINIKUBE_ACTIVE_DOCKERD="ipv6"
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p ipv6 docker-env)
+`,
+			`unset DOCKER_TLS_VERIFY
+unset DOCKER_HOST
+unset DOCKER_CERT_PATH
+unset MINIKUBE_ACTIVE_DOCKERD
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p ipv6 docker-env)
+`,
+		},
+		{
 			EnvConfig{profile: "fish", shell: "fish", driver: "kvm2", hostIP: "127.0.0.1", certsDir: "/certs"},
 			nil,
 			`set -gx DOCKER_TLS_VERIFY "1";
