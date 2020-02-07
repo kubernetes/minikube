@@ -68,15 +68,15 @@ func status() registry.State {
 	o, err := cmd.CombinedOutput()
 	output := string(o)
 	if err != nil {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Cant verify mininim required version for podman . See podman website for installation guide.", Doc: "https://docs.docker.com/"}
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Cant verify minimum required version for podman . See podman website for installation guide.", Doc: "https://docs.docker.com/"}
 	}
 
 	v, err := semver.Make(output)
 	if v.LT(constants.MinSuggestDockerVer) {
-		glog.Warningf("Warning ! mininim suggested version for docker is %s. your version is %q. minikube might not work. use at your own risk. To install a more recent version please see https://docs.docker.com/", constants.MinSuggestDockerVer.String(), v.String())
+		glog.Warningf("Warning ! minimum suggested version for docker is %s. your version is %q. minikube might not work. use at your own risk. To install a more recent version please see https://docs.docker.com/", constants.MinSuggestDockerVer.String(), v.String())
 	}
 	if v.LT(constants.MinReqDockerVer) {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: fmt.Sprintf("Your docker version is too old (%s) please the mininim required docker version is %s.", v.String(), constants.MinReqDockerVer.String()), Doc: "https://docs.docker.com/"}
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: fmt.Sprintf("Your docker version is too old (%s) please the minimum required docker version is %s.", v.String(), constants.MinReqDockerVer.String()), Doc: "https://docs.docker.com/"}
 	}
 
 	// Allow no more than 3 seconds for querying state
