@@ -34,6 +34,6 @@ sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboo
 SUDO_PREFIX="sudo -E "
 
 # remove possible left over podman containers
-sudo podman rm -f -v $(sudo podman ps -aq)
+sudo podman rm -f -v $(sudo podman ps -aq) || true
 
 source ./common.sh
