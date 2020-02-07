@@ -127,6 +127,14 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f assets.CopyableFile) error {
+	if k.ociBin == oci.Podman {
+		return copyToPodman(k, f)
+	}
+	return copyToDocker(k, f)
+}
+
+// Podman cp command doesn't match docker and doesn't have -a
+func copyToPodman(k *kicRunner, f assets.CopyableFile) error {
 	assetFullPath := f.GetAssetName()
 	if _, err := os.Stat(f.GetAssetName()); os.IsNotExist(err) {
 		fc := make([]byte, f.GetLength()) // Read  asset file into a []byte
@@ -160,21 +168,55 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	if err := os.Chmod(assetFullPath, os.FileMode(perms)); err != nil {
 		return errors.Wrapf(err, "chmod")
 	}
-	if k.ociBin == oci.Podman { // Podman cp command doesn't match docker and doesn't have -a
-		//example: podman cp file.txt minikube:/home/docker/file.txt
-		// older versions of podman (for example 1.4) has a bug that creates a directory for the file !
-		// TODO:medyagh add a check to not allow using old podmans (works on 1.7)
-		destination := fmt.Sprintf("%s:%s%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
-		if out, err := exec.Command(oci.Podman, "cp", assetFullPath, destination).CombinedOutput(); err != nil {
-			return errors.Wrapf(err, "copying %s into node, output: %s", f.GetAssetName(), string(out))
-		}
-		if out, err := exec.Command(oci.Podman, "exec", "-it", k.nameOrID, "chmod", fmt.Sprint(perms), fmt.Sprintf("%s/%s", f.GetTargetDir(), f.GetTargetName())).CombinedOutput(); err != nil {
-			return errors.Wrapf(err, "chmod-ing copied file: %s", f.GetAssetName(), string(out))
-
-		}
-
-		return nil
+	//example: podman cp file.txt minikube:/home/docker/file.txt
+	// older versions of podman (for example 1.4) has a bug that creates a directory for the file !
+	// TODO:medyagh add a check to not allow using old podmans (works on 1.7)
+	destination := fmt.Sprintf("%s:%s%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
+	if out, err := exec.Command(oci.Podman, "cp", assetFullPath, destination).CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "copying %s into node, output: %s", f.GetAssetName(), string(out))
 	}
+	if out, err := exec.Command(oci.Podman, "exec", "-it", k.nameOrID, "chmod", fmt.Sprint(perms), fmt.Sprintf("%s/%s", f.GetTargetDir(), f.GetTargetName())).CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "chmod-ing copied file: %s", f.GetAssetName(), string(out))
+
+	}
+	return nil
+}
+
+func copyToDocker(k *kicRunner, f assets.CopyableFile) error {
+	assetFullPath := f.GetAssetName()
+	if _, err := os.Stat(f.GetAssetName()); os.IsNotExist(err) {
+		fc := make([]byte, f.GetLength()) // Read  asset file into a []byte
+		if _, err := f.Read(fc); err != nil {
+			return errors.Wrap(err, "can't copy non-existing file")
+		} // we have a MemoryAsset, will write to disk before copying
+
+		tmpFile, err := ioutil.TempFile(os.TempDir(), "tmpf-memory-asset")
+		if err != nil {
+			return errors.Wrap(err, "creating temporary file")
+		}
+		//  clean up the temp file
+		defer os.Remove(tmpFile.Name())
+		if _, err = tmpFile.Write(fc); err != nil {
+			return errors.Wrap(err, "write to temporary file")
+		}
+
+		// Close the file
+		if err := tmpFile.Close(); err != nil {
+			return errors.Wrap(err, "close temporary file")
+		}
+		assetFullPath = tmpFile.Name()
+	}
+
+	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
+	if err != nil {
+		return errors.Wrapf(err, "converting permissions %s to integer", f.GetPermissions())
+	}
+
+	// Rely on cp -a to propagate permissions
+	if err := os.Chmod(assetFullPath, os.FileMode(perms)); err != nil {
+		return errors.Wrapf(err, "chmod")
+	}
+
 	// example "docker cp containerName:destination src"
 	destination := fmt.Sprintf("%s:%s/%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
 	if out, err := exec.Command(k.ociBin, "cp", "-a", assetFullPath, destination).CombinedOutput(); err != nil {

@@ -197,10 +197,10 @@ func ContainerIPs(ociBinary string, name string) (string, string, error) {
 	if ociBinary == Podman {
 		return podomanContinerIP(name)
 	}
-	return docerContainerIP(name)
+	return dockerContainerIP(name)
 }
 
-func podomanContinerIP(name) (string, string, error) {
+func podomanContinerIP(name string) (string, string, error) {
 	cmd := exec.Command(Podman, "inspect",
 		"-f", "{{.NetworkSettings.IPAddress}}",
 		name)
@@ -217,7 +217,7 @@ func podomanContinerIP(name) (string, string, error) {
 	return output, "", nil
 }
 
-func docerContainerIP(name) (string, string, error) {
+func dockerContainerIP(name string) (string, string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return "", "", errors.Wrap(err, "point host docker-daemon")
 	}
