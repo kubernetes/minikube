@@ -47,7 +47,7 @@ echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
-echo "podman:    $(podman version --format '{{.Version}}')"
+echo "podman:    $(sudo podman version --format '{{.Version}}' || true)"
 echo "go:        $(go version || true)"
 
 
