@@ -15,12 +15,12 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 7
-VERSION_BUILD ?= 0
+VERSION_BUILD ?= 1
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
