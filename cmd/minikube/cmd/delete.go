@@ -238,7 +238,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 }
 
 func deleteContext(machineName string) error {
-	if err := kubeconfig.DeleteContext(constants.KubeconfigPath, machineName); err != nil {
+	if err := kubeconfig.DeleteContext(machineName, constants.KubeconfigPath); err != nil {
 		return DeletionError{Err: fmt.Errorf("update config: %v", err), Errtype: Fatal}
 	}
 
