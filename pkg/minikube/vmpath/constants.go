@@ -24,6 +24,7 @@ const (
 	// GuestEphemeralDir is the path where ephemeral data should be stored within the VM
 	GuestEphemeralDir = "/var/tmp/minikube"
 	// GuestPersistentDir is the path where persistent data should be stored within the VM (not tmpfs)
+<<<<<<< HEAD
 	GuestPersistentDir = "/var/lib/minikube"
 	// GuestKubernetesCertsDir are where Kubernetes certificates are stored
 	GuestKubernetesCertsDir = GuestPersistentDir + "/certs"
@@ -33,4 +34,13 @@ const (
 	GuestCertStoreDir = "/etc/ssl/certs"
 	// Where gvisor bootstraps from
 	GuestGvisorDir = "/tmp/gvisor"
+||||||| constructed merge base
+	GuestPersistentDir = "/var/lib/minikube"
+	// GuestCertsDir are where Kubernetes certificates are kept on the guest
+	GuestCertsDir = GuestPersistentDir + "/certs"
+=======
+	GuestPersistentDir = "/usr/local/minikube"
+	// GuestCertsDir are where Kubernetes certificates are kept on the guest
+	GuestCertsDir = GuestPersistentDir + "/certs"
+>>>>>>> refactor all hard-coded var lib path
 )

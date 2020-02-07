@@ -17,8 +17,12 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
+	"path"
 	"strings"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 func TestKubectlCommand(t *testing.T) {
@@ -32,12 +36,12 @@ func TestKubectlCommand(t *testing.T) {
 			description: "enable an addon",
 			files:       []string{"a", "b"},
 			enable:      true,
-			expected:    "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.17.0/kubectl apply -f a -f b",
+			expected:    fmt.Sprintf("sudo KUBECONFIG=%s %s apply -f a -f b", path.Join(vmpath.GuestPersistentDir, "kubeconfig"), path.Join(vmpath.GuestPersistentDir, "v1.17.0".kubectl)),
 		}, {
 			description: "disable an addon",
 			files:       []string{"a", "b"},
 			enable:      false,
-			expected:    "sudo KUBECONFIG=/var/lib/minikube/kubeconfig /var/lib/minikube/binaries/v1.17.0/kubectl delete -f a -f b",
+			expected:    fmt.Sprintf("sudo KUBECONFIG=%s %s apply -f a -f b", path.Join(vmpath.GuestPersistentDir, "kubeconfig"), path.Join(vmpath.GuestPersistentDir, "v1.17.0".kubectl)),
 		},
 	}
 

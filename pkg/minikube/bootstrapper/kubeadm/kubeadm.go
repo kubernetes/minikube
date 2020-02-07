@@ -471,7 +471,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 // applyKicOverlay applies the CNI plugin needed to make kic work
 func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
 	cmd := exec.Command("sudo",
-		path.Join("/var/lib/minikube/binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", "--kubeconfig=/var/lib/minikube/kubeconfig",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"-f", "-")
 	b := bytes.Buffer{}
 	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
