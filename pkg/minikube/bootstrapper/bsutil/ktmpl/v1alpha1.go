@@ -38,7 +38,7 @@ nodeName: {{.NodeName}}
 apiServerCertSANs: ["127.0.0.1", "localhost", "{{.AdvertiseAddress}}"]
 {{if .ImageRepository}}imageRepository: {{.ImageRepository}}
 {{end}}{{if .CRISocket}}criSocket: {{.CRISocket}}
-{{end}}{{range .ExtraArgs}}{{.Component}}ExtraArgs:{{range $i, $val := printMapInOrder .Options ": " }}
+{{end}}{{range .ComponentOptions}}{{.Component}}ExtraArgs:{{range $i, $val := printMapInOrder .ExtraArgs ": " }}
   {{$val}}{{end}}
 {{end}}{{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}
   {{$i}}: {{$val}}{{end}}
