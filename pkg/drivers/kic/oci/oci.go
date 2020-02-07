@@ -195,27 +195,34 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 // ContainerIPs returns ipv4,ipv6, error of a container by their name
 func ContainerIPs(ociBinary string, name string) (string, string, error) {
 	if ociBinary == Podman {
-		cmd := exec.Command(ociBinary, "inspect",
-			"-f", "{{.NetworkSettings.IPAddress}}",
-			name)
-		out, err := cmd.CombinedOutput()
-		output := string(out)
-		output = strings.Trim(output, "\n")
-		output = strings.Trim(output, " ")
-		if err != nil {
-			return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
-		}
-		if err == nil && output == "" { // podman returns empty for 127.0.0.1
-			return "127.0.0.1", "", nil // TODO:medaygh move DefaultBindIP from kic package to here
-		}
-		return output, "", nil
+		return podomanContinerIP(name)
 	}
+	return docerContainerIP(name)
+}
 
+func podomanContinerIP(name) (string, string, error) {
+	cmd := exec.Command(Podman, "inspect",
+		"-f", "{{.NetworkSettings.IPAddress}}",
+		name)
+	out, err := cmd.CombinedOutput()
+	output := string(out)
+	output = strings.Trim(output, "\n")
+	output = strings.Trim(output, " ")
+	if err != nil {
+		return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
+	}
+	if err == nil && output == "" { // podman returns empty for 127.0.0.1
+		return "127.0.0.1", "", nil // TODO:medaygh move DefaultBindIP from kic package to here
+	}
+	return output, "", nil
+}
+
+func docerContainerIP(name) (string, string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return "", "", errors.Wrap(err, "point host docker-daemon")
 	}
 	// retrieve the IP address of the node using docker inspect
-	lines, err := inspect(ociBinary, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
+	lines, err := inspect(Docker, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
 		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
 	}
@@ -227,7 +234,6 @@ func ContainerIPs(ociBinary string, name string) (string, string, error) {
 		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
 	}
 	return ips[0], ips[1], nil
-
 }
 
 // ContainerID returns id of a container name
