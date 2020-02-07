@@ -183,7 +183,7 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 		}
 	}
 
-	o := strings.Trim(string(out), "\n")
+	o := strings.TrimSpace(string(out))
 	o = strings.Trim(o, "'")
 	p, err := strconv.Atoi(o)
 	if err != nil {
@@ -195,24 +195,23 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 // ContainerIPs returns ipv4,ipv6, error of a container by their name
 func ContainerIPs(ociBinary string, name string) (string, string, error) {
 	if ociBinary == Podman {
-		return podomanContinerIP(name)
+		return podomanConttainerIP(name)
 	}
 	return dockerContainerIP(name)
 }
 
-func podomanContinerIP(name string) (string, string, error) {
+func podomanConttainerIP(name string) (string, string, error) {
 	cmd := exec.Command(Podman, "inspect",
 		"-f", "{{.NetworkSettings.IPAddress}}",
 		name)
 	out, err := cmd.CombinedOutput()
-	output := string(out)
-	output = strings.Trim(output, "\n")
-	output = strings.Trim(output, " ")
 	if err != nil {
 		return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
 	}
+	output := string(out)
+	output = strings.TrimSpace(output)
 	if err == nil && output == "" { // podman returns empty for 127.0.0.1
-		return "127.0.0.1", "", nil // TODO:medaygh move DefaultBindIP from kic package to here
+		return DefaultBindIPV4, "", nil
 	}
 	return output, "", nil
 }
