@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -56,7 +56,11 @@ func main() {
 }
 
 func executePreloadImages() error {
-	defer deleteMinikube()
+	defer func() {
+		if err := deleteMinikube(); err != nil {
+			fmt.Println(err)
+		}
+	}()
 	if err := startMinikube(); err != nil {
 		return err
 	}
