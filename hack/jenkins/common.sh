@@ -47,6 +47,7 @@ echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
+echo "podman:    $(podman version --format '{{.Version}}')"
 echo "go:        $(go version || true)"
 
 
@@ -324,7 +325,7 @@ touch "${JSON_OUT}"
 echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 echo ">> Installing gopogh"
-cd /tmp
+cd $(mktemp -d)
 GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.17 || true
 cd -
 echo ">> Running gopogh"
