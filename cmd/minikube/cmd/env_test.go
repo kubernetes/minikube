@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,24 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"reflect"
+	"bytes"
 	"testing"
 
-	"github.com/docker/machine/libmachine/host"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/tests"
+	"github.com/google/go-cmp/cmp"
 )
-
-type FakeShellDetector struct {
-	Shell string
-}
-
-func (f FakeShellDetector) GetShell(_ string) (string, error) {
-	return f.Shell, nil
-}
 
 type FakeNoProxyGetter struct {
 	NoProxyVar   string
@@ -45,297 +32,250 @@ func (f FakeNoProxyGetter) GetNoProxyVar() (string, string) {
 	return f.NoProxyVar, f.NoProxyValue
 }
 
-var defaultAPI = &tests.MockAPI{
-	FakeStore: tests.FakeStore{
-		Hosts: map[string]*host.Host{
-			constants.DefaultMachineName: {
-				Name:   constants.DefaultMachineName,
-				Driver: &tests.MockDriver{},
-			},
-		},
-	},
-}
-
-// Most of the shell cfg isn't configurable
-func newShellCfg(shell, prefix, suffix, delim string) *ShellConfig {
-	return &ShellConfig{
-		DockerCertPath:         localpath.MakeMiniPath("certs"),
-		DockerTLSVerify:        "1",
-		DockerHost:             "tcp://127.0.0.1:2376",
-		UsageHint:              generateUsageHint("minikube", shell),
-		Prefix:                 prefix,
-		Suffix:                 suffix,
-		Delimiter:              delim,
-		MinikubeDockerdProfile: "minikube",
-	}
-}
-
-func TestShellCfgSet(t *testing.T) {
+func TestGenerateScripts(t *testing.T) {
 	var tests = []struct {
-		description      string
-		api              *tests.MockAPI
-		shell            string
-		noProxyVar       string
-		noProxyValue     string
-		expectedShellCfg *ShellConfig
-		shouldErr        bool
-		noProxyFlag      bool
+		config        EnvConfig
+		noProxyGetter *FakeNoProxyGetter
+		wantSet       string
+		wantUnset     string
 	}{
 		{
-			description: "no host specified",
-			api: &tests.MockAPI{
-				FakeStore: tests.FakeStore{
-					Hosts: make(map[string]*host.Host),
-				},
-			},
-			shell:            "bash",
-			expectedShellCfg: nil,
-			shouldErr:        true,
+			EnvConfig{profile: "bash", shell: "bash", driver: "kvm2", hostIP: "127.0.0.1", certsDir: "/certs"},
+			nil,
+			`export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://127.0.0.1:2376"
+export DOCKER_CERT_PATH="/certs"
+export MINIKUBE_ACTIVE_DOCKERD="bash"
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p bash docker-env)
+`,
+			`unset DOCKER_TLS_VERIFY
+unset DOCKER_HOST
+unset DOCKER_CERT_PATH
+unset MINIKUBE_ACTIVE_DOCKERD
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p bash docker-env)
+`,
 		},
 		{
-			description:      "default",
-			api:              defaultAPI,
-			shell:            "bash",
-			expectedShellCfg: newShellCfg("", bashSetPfx, bashSetSfx, bashSetDelim),
-			shouldErr:        false,
+			EnvConfig{profile: "ipv6", shell: "bash", driver: "kvm2", hostIP: "fe80::215:5dff:fe00:a903", certsDir: "/certs"},
+			nil,
+			`export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://[fe80::215:5dff:fe00:a903]:2376"
+export DOCKER_CERT_PATH="/certs"
+export MINIKUBE_ACTIVE_DOCKERD="ipv6"
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p ipv6 docker-env)
+`,
+			`unset DOCKER_TLS_VERIFY
+unset DOCKER_HOST
+unset DOCKER_CERT_PATH
+unset MINIKUBE_ACTIVE_DOCKERD
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p ipv6 docker-env)
+`,
 		},
 		{
-			description:      "bash",
-			api:              defaultAPI,
-			shell:            "bash",
-			expectedShellCfg: newShellCfg("bash", bashSetPfx, bashSetSfx, bashSetDelim),
-			shouldErr:        false,
+			EnvConfig{profile: "fish", shell: "fish", driver: "kvm2", hostIP: "127.0.0.1", certsDir: "/certs"},
+			nil,
+			`set -gx DOCKER_TLS_VERIFY "1";
+set -gx DOCKER_HOST "tcp://127.0.0.1:2376";
+set -gx DOCKER_CERT_PATH "/certs";
+set -gx MINIKUBE_ACTIVE_DOCKERD "fish";
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval (minikube -p fish docker-env)
+`,
+			`set -e DOCKER_TLS_VERIFY;
+set -e DOCKER_HOST;
+set -e DOCKER_CERT_PATH;
+set -e MINIKUBE_ACTIVE_DOCKERD;
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval (minikube -p fish docker-env)
+`,
 		},
 		{
-			description:      "fish",
-			api:              defaultAPI,
-			shell:            "fish",
-			expectedShellCfg: newShellCfg("fish", fishSetPfx, fishSetSfx, fishSetDelim),
-			shouldErr:        false,
+			EnvConfig{profile: "powershell", shell: "powershell", driver: "hyperv", hostIP: "192.168.0.1", certsDir: "/certs"},
+			nil,
+			`$Env:DOCKER_TLS_VERIFY = "1"
+$Env:DOCKER_HOST = "tcp://192.168.0.1:2376"
+$Env:DOCKER_CERT_PATH = "/certs"
+$Env:MINIKUBE_ACTIVE_DOCKERD = "powershell"
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# & minikube -p powershell docker-env | Invoke-Expression
+	`,
+
+			`Remove-Item Env:\\DOCKER_TLS_VERIFY
+Remove-Item Env:\\DOCKER_HOST
+Remove-Item Env:\\DOCKER_CERT_PATH
+Remove-Item Env:\\MINIKUBE_ACTIVE_DOCKERD
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# & minikube -p powershell docker-env | Invoke-Expression
+	`,
 		},
 		{
-			description:      "powershell",
-			api:              defaultAPI,
-			shell:            "powershell",
-			expectedShellCfg: newShellCfg("powershell", psSetPfx, psSetSfx, psSetDelim),
-			shouldErr:        false,
+			EnvConfig{profile: "cmd", shell: "cmd", driver: "hyperv", hostIP: "192.168.0.1", certsDir: "/certs"},
+			nil,
+			`SET DOCKER_TLS_VERIFY=1
+SET DOCKER_HOST=tcp://192.168.0.1:2376
+SET DOCKER_CERT_PATH=/certs
+SET MINIKUBE_ACTIVE_DOCKERD=cmd
+
+REM Please run command bellow to point your shell to minikube's docker-daemon :
+REM @FOR /f "tokens=*" %i IN ('minikube -p cmd docker-env') DO @%i
+	`,
+
+			`SET DOCKER_TLS_VERIFY=
+SET DOCKER_HOST=
+SET DOCKER_CERT_PATH=
+SET MINIKUBE_ACTIVE_DOCKERD=
+
+REM Please run command bellow to point your shell to minikube's docker-daemon :
+REM @FOR /f "tokens=*" %i IN ('minikube -p cmd docker-env') DO @%i
+	`,
 		},
 		{
-			description:      "cmd",
-			api:              defaultAPI,
-			shell:            "cmd",
-			expectedShellCfg: newShellCfg("cmd", cmdSetPfx, cmdSetSfx, cmdSetDelim),
-			shouldErr:        false,
+			EnvConfig{profile: "emacs", shell: "emacs", driver: "hyperv", hostIP: "192.168.0.1", certsDir: "/certs"},
+			nil,
+			`(setenv "DOCKER_TLS_VERIFY" "1")
+(setenv "DOCKER_HOST" "tcp://192.168.0.1:2376")
+(setenv "DOCKER_CERT_PATH" "/certs")
+(setenv "MINIKUBE_ACTIVE_DOCKERD" "emacs")
+
+;; Please run command bellow to point your shell to minikube's docker-daemon :
+;; (with-temp-buffer (shell-command "minikube -p emacs docker-env" (current-buffer)) (eval-buffer))
+	`,
+			`(setenv "DOCKER_TLS_VERIFY" nil)
+(setenv "DOCKER_HOST" nil)
+(setenv "DOCKER_CERT_PATH" nil)
+(setenv "MINIKUBE_ACTIVE_DOCKERD" nil)
+
+;; Please run command bellow to point your shell to minikube's docker-daemon :
+;; (with-temp-buffer (shell-command "minikube -p emacs docker-env" (current-buffer)) (eval-buffer))
+	`,
 		},
 		{
-			description:      "emacs",
-			api:              defaultAPI,
-			shell:            "emacs",
-			expectedShellCfg: newShellCfg("emacs", emacsSetPfx, emacsSetSfx, emacsSetDelim),
-			shouldErr:        false,
+			EnvConfig{profile: "bash-no-proxy", shell: "bash", driver: "kvm2", hostIP: "127.0.0.1", certsDir: "/certs", noProxy: true},
+			&FakeNoProxyGetter{"NO_PROXY", "127.0.0.1"},
+			`export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://127.0.0.1:2376"
+export DOCKER_CERT_PATH="/certs"
+export MINIKUBE_ACTIVE_DOCKERD="bash-no-proxy"
+export NO_PROXY="127.0.0.1"
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p bash-no-proxy docker-env)
+`,
+
+			`unset DOCKER_TLS_VERIFY
+unset DOCKER_HOST
+unset DOCKER_CERT_PATH
+unset MINIKUBE_ACTIVE_DOCKERD
+unset NO_PROXY127.0.0.1
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p bash-no-proxy docker-env)
+`,
 		},
 		{
-			description:  "no proxy add uppercase",
-			api:          defaultAPI,
-			shell:        "bash",
-			noProxyVar:   "NO_PROXY",
-			noProxyValue: "",
-			noProxyFlag:  true,
-			expectedShellCfg: &ShellConfig{
-				DockerCertPath:         localpath.MakeMiniPath("certs"),
-				DockerTLSVerify:        "1",
-				DockerHost:             "tcp://127.0.0.1:2376",
-				UsageHint:              generateUsageHint("minikube", "bash"),
-				Prefix:                 bashSetPfx,
-				Suffix:                 bashSetSfx,
-				Delimiter:              bashSetDelim,
-				NoProxyVar:             "NO_PROXY",
-				NoProxyValue:           "127.0.0.1",
-				MinikubeDockerdProfile: "minikube",
-			},
+			EnvConfig{profile: "bash-no-proxy-lower", shell: "bash", driver: "kvm2", hostIP: "127.0.0.1", certsDir: "/certs", noProxy: true},
+			&FakeNoProxyGetter{"no_proxy", "127.0.0.1"},
+			`export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://127.0.0.1:2376"
+export DOCKER_CERT_PATH="/certs"
+export MINIKUBE_ACTIVE_DOCKERD="bash-no-proxy-lower"
+export no_proxy="127.0.0.1"
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p bash-no-proxy-lower docker-env)
+`,
+
+			`unset DOCKER_TLS_VERIFY
+unset DOCKER_HOST
+unset DOCKER_CERT_PATH
+unset MINIKUBE_ACTIVE_DOCKERD
+unset no_proxy127.0.0.1
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p bash-no-proxy-lower docker-env)
+`,
 		},
 		{
-			description:  "no proxy add lowercase",
-			api:          defaultAPI,
-			shell:        "bash",
-			noProxyVar:   "no_proxy",
-			noProxyValue: "",
-			noProxyFlag:  true,
-			expectedShellCfg: &ShellConfig{
-				DockerCertPath:         localpath.MakeMiniPath("certs"),
-				DockerTLSVerify:        "1",
-				DockerHost:             "tcp://127.0.0.1:2376",
-				UsageHint:              generateUsageHint("minikube", "bash"),
-				Prefix:                 bashSetPfx,
-				Suffix:                 bashSetSfx,
-				Delimiter:              bashSetDelim,
-				NoProxyVar:             "no_proxy",
-				NoProxyValue:           "127.0.0.1",
-				MinikubeDockerdProfile: "minikube",
-			},
+			EnvConfig{profile: "bash-no-proxy-idempotent", shell: "bash", driver: "kvm2", hostIP: "127.0.0.1", certsDir: "/certs", noProxy: true},
+			&FakeNoProxyGetter{"no_proxy", "127.0.0.1"},
+			`export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://127.0.0.1:2376"
+export DOCKER_CERT_PATH="/certs"
+export MINIKUBE_ACTIVE_DOCKERD="bash-no-proxy-idempotent"
+export no_proxy="127.0.0.1"
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p bash-no-proxy-idempotent docker-env)
+`,
+
+			`unset DOCKER_TLS_VERIFY
+unset DOCKER_HOST
+unset DOCKER_CERT_PATH
+unset MINIKUBE_ACTIVE_DOCKERD
+unset no_proxy127.0.0.1
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p bash-no-proxy-idempotent docker-env)
+`,
 		},
 		{
-			description:  "no proxy idempotent",
-			api:          defaultAPI,
-			shell:        "bash",
-			noProxyVar:   "no_proxy",
-			noProxyValue: "127.0.0.1",
-			noProxyFlag:  true,
-			expectedShellCfg: &ShellConfig{
-				DockerCertPath:         localpath.MakeMiniPath("certs"),
-				DockerTLSVerify:        "1",
-				DockerHost:             "tcp://127.0.0.1:2376",
-				UsageHint:              generateUsageHint("minikube", "bash"),
-				Prefix:                 bashSetPfx,
-				Suffix:                 bashSetSfx,
-				Delimiter:              bashSetDelim,
-				NoProxyVar:             "no_proxy",
-				NoProxyValue:           "127.0.0.1",
-				MinikubeDockerdProfile: "minikube",
-			},
-		},
-		{
-			description:  "no proxy list add",
-			api:          defaultAPI,
-			shell:        "bash",
-			noProxyVar:   "no_proxy",
-			noProxyValue: "0.0.0.0",
-			noProxyFlag:  true,
-			expectedShellCfg: &ShellConfig{
-				DockerCertPath:         localpath.MakeMiniPath("certs"),
-				DockerTLSVerify:        "1",
-				DockerHost:             "tcp://127.0.0.1:2376",
-				UsageHint:              generateUsageHint("minikube", "bash"),
-				Prefix:                 bashSetPfx,
-				Suffix:                 bashSetSfx,
-				Delimiter:              bashSetDelim,
-				NoProxyVar:             "no_proxy",
-				NoProxyValue:           "0.0.0.0,127.0.0.1",
-				MinikubeDockerdProfile: "minikube",
-			},
-		},
-		{
-			description:  "no proxy list already present",
-			api:          defaultAPI,
-			shell:        "bash",
-			noProxyVar:   "no_proxy",
-			noProxyValue: "0.0.0.0,127.0.0.1",
-			noProxyFlag:  true,
-			expectedShellCfg: &ShellConfig{
-				DockerCertPath:         localpath.MakeMiniPath("certs"),
-				DockerTLSVerify:        "1",
-				DockerHost:             "tcp://127.0.0.1:2376",
-				UsageHint:              generateUsageHint("minikube", "bash"),
-				Prefix:                 bashSetPfx,
-				Suffix:                 bashSetSfx,
-				Delimiter:              bashSetDelim,
-				NoProxyVar:             "no_proxy",
-				NoProxyValue:           "0.0.0.0,127.0.0.1",
-				MinikubeDockerdProfile: "minikube",
-			},
+			EnvConfig{profile: "sh-no-proxy-add", shell: "bash", driver: "kvm2", hostIP: "127.0.0.1", certsDir: "/certs", noProxy: true},
+			&FakeNoProxyGetter{"NO_PROXY", "192.168.0.1,10.0.0.4"},
+			`export DOCKER_TLS_VERIFY="1"
+export DOCKER_HOST="tcp://127.0.0.1:2376"
+export DOCKER_CERT_PATH="/certs"
+export MINIKUBE_ACTIVE_DOCKERD="sh-no-proxy-add"
+export NO_PROXY="192.168.0.1,10.0.0.4,127.0.0.1"
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p sh-no-proxy-add docker-env)
+`,
+
+			`unset DOCKER_TLS_VERIFY
+unset DOCKER_HOST
+unset DOCKER_CERT_PATH
+unset MINIKUBE_ACTIVE_DOCKERD
+unset NO_PROXY192.168.0.1,10.0.0.4
+
+# Please run command bellow to point your shell to minikube's docker-daemon :
+# eval $(minikube -p sh-no-proxy-add docker-env)
+`,
 		},
 	}
-
-	for _, test := range tests {
-		test := test
-		t.Run(test.description, func(t *testing.T) {
-
-			viper.Set(config.MachineProfile, constants.DefaultMachineName)
-			defaultShellDetector = &FakeShellDetector{test.shell}
-			defaultNoProxyGetter = &FakeNoProxyGetter{test.noProxyVar, test.noProxyValue}
-			noProxy = test.noProxyFlag
-			test.api.T = t
-			shellCfg, err := shellCfgSet(test.api)
-			if !reflect.DeepEqual(shellCfg, test.expectedShellCfg) {
-				t.Errorf("Shell cfgs differ: expected %+v, \n\n got %+v", test.expectedShellCfg, shellCfg)
+	for _, tc := range tests {
+		t.Run(tc.config.profile, func(t *testing.T) {
+			defaultNoProxyGetter = tc.noProxyGetter
+			var b []byte
+			buf := bytes.NewBuffer(b)
+			if err := setScript(tc.config, buf); err != nil {
+				t.Errorf("setScript(%+v) error: %v", tc.config, err)
 			}
-			if err != nil && !test.shouldErr {
-				t.Errorf("Unexpected error occurred: %s, error: %v", test.description, err)
+			got := buf.String()
+			if diff := cmp.Diff(tc.wantSet, got); diff != "" {
+				t.Errorf("setScript(%+v) mismatch (-want +got):\n%s\n\nraw output:\n%s\nquoted: %q", tc.config, diff, got, got)
 			}
-			if err == nil && test.shouldErr {
-				t.Errorf("Test didn't return error but should have: %s", test.description)
+
+			buf = bytes.NewBuffer(b)
+			if err := unsetScript(tc.config, buf); err != nil {
+				t.Errorf("unsetScript(%+v) error: %v", tc.config, err)
 			}
-		})
-	}
-}
-
-func TestShellCfgUnset(t *testing.T) {
-
-	var tests = []struct {
-		description      string
-		shell            string
-		expectedShellCfg *ShellConfig
-	}{
-		{
-			description: "unset default",
-			shell:       "bash",
-			expectedShellCfg: &ShellConfig{
-				Prefix:    bashUnsetPfx,
-				Suffix:    bashUnsetSfx,
-				Delimiter: bashUnsetDelim,
-				UsageHint: generateUsageHint("minikube", "bash"),
-			},
-		},
-		{
-			description: "unset bash",
-			shell:       "bash",
-			expectedShellCfg: &ShellConfig{
-				Prefix:    bashUnsetPfx,
-				Suffix:    bashUnsetSfx,
-				Delimiter: bashUnsetDelim,
-				UsageHint: generateUsageHint("minikube", "bash"),
-			},
-		},
-		{
-			description: "unset fish",
-			shell:       "fish",
-			expectedShellCfg: &ShellConfig{
-				Prefix:    fishUnsetPfx,
-				Suffix:    fishUnsetSfx,
-				Delimiter: fishUnsetDelim,
-				UsageHint: generateUsageHint("minikube", "fish"),
-			},
-		},
-		{
-			description: "unset powershell",
-			shell:       "powershell",
-			expectedShellCfg: &ShellConfig{
-				Prefix:    psUnsetPfx,
-				Suffix:    psUnsetSfx,
-				Delimiter: psUnsetDelim,
-				UsageHint: generateUsageHint("minikube", "powershell"),
-			},
-		},
-		{
-			description: "unset cmd",
-			shell:       "cmd",
-			expectedShellCfg: &ShellConfig{
-				Prefix:    cmdUnsetPfx,
-				Suffix:    cmdUnsetSfx,
-				Delimiter: cmdUnsetDelim,
-				UsageHint: generateUsageHint("minikube", "cmd"),
-			},
-		},
-		{
-			description: "unset emacs",
-			shell:       "emacs",
-			expectedShellCfg: &ShellConfig{
-				Prefix:    emacsUnsetPfx,
-				Suffix:    emacsUnsetSfx,
-				Delimiter: emacsUnsetDelim,
-				UsageHint: generateUsageHint("minikube", "emacs"),
-			},
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.description, func(t *testing.T) {
-			defaultShellDetector = &FakeShellDetector{test.shell}
-			defaultNoProxyGetter = &FakeNoProxyGetter{}
-			actual, _ := shellCfgUnset()
-			if !reflect.DeepEqual(actual, test.expectedShellCfg) {
-				t.Errorf("Actual shell config did not match expected: \n\n actual: \n%+v \n\n expected: \n%+v \n\n", actual, test.expectedShellCfg)
+			got = buf.String()
+			if diff := cmp.Diff(tc.wantUnset, got); diff != "" {
+				t.Errorf("unsetScript(%+v) mismatch (-want +got):\n%s\n\nraw output:\n%s\nquoted: %q", tc.config, diff, got, got)
 			}
+
 		})
 	}
 }
