@@ -60,7 +60,7 @@ func configure(mc config.MachineConfig) interface{} {
 func status() registry.State {
 	_, err := exec.LookPath(oci.Podman)
 	if err != nil {
-		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Podman is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/kic/"}
+		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Podman is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/podman/"}
 	}
 	// Allow no more than 2 seconds for querying state
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

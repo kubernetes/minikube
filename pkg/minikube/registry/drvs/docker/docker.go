@@ -58,7 +58,7 @@ func configure(mc config.MachineConfig) (interface{}, error) {
 func status() registry.State {
 	_, err := exec.LookPath("docker")
 	if err != nil {
-		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/kic/"}
+		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
 	}
 	// Allow no more than 2 seconds for querying state
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)

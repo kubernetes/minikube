@@ -36,7 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
+// Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
