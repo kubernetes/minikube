@@ -28,7 +28,7 @@ controllerManager:
 scheduler:
   extraArgs:
     scheduler-name: "mini-scheduler"
-certificatesDir: /var/lib/minikube/certs
+certificatesDir: /usr/local/minikube/certs
 clusterName: kubernetes
 controlPlaneEndpoint: localhost:8443
 controllerManager: {}
@@ -36,7 +36,7 @@ dns:
   type: CoreDNS
 etcd:
   local:
-    dataDir: /var/lib/minikube/etcd
+    dataDir: /usr/local/minikube/etcd
 kubernetesVersion: v1.18.0
 networking:
   dnsDomain: cluster.local

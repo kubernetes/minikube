@@ -45,7 +45,7 @@ sudo rm -rf /data/*
 # Cleanup old Kubernetes configs
 sudo rm -rf /etc/kubernetes/*
 # Cleanup old minikube files
-sudo rm -rf /var/lib/minikube/*
+sudo rm -rf /usr/local/minikube/*
 sudo rm -rf /usr/local/minikube/*
 
 # Stop any leftover kubelets
