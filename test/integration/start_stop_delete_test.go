@@ -53,6 +53,7 @@ func TestStartStop(t *testing.T) {
 				"--disable-driver-mounts",
 				"--keep-context=false",
 				"--container-runtime=docker",
+				"--install-addons=false",
 			}},
 			{"newest-cni", constants.NewestKubernetesVersion, []string{
 				"--feature-gates",
