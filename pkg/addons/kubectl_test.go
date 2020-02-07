@@ -36,12 +36,12 @@ func TestKubectlCommand(t *testing.T) {
 			description: "enable an addon",
 			files:       []string{"a", "b"},
 			enable:      true,
-			expected:    fmt.Sprintf("sudo KUBECONFIG=%s %s apply -f a -f b", path.Join(vmpath.GuestPersistentDir, "kubeconfig"), path.Join(vmpath.GuestPersistentDir, "v1.17.0", "kubectl")),
+			expected:    fmt.Sprintf("sudo KUBECONFIG=%s %s apply -f a -f b", path.Join(vmpath.GuestPersistentDir, "kubeconfig"), path.Join(vmpath.GuestPersistentDir, "binaries", "v1.17.0", "kubectl")),
 		}, {
 			description: "disable an addon",
 			files:       []string{"a", "b"},
 			enable:      false,
-			expected:    fmt.Sprintf("sudo KUBECONFIG=%s %s apply -f a -f b", path.Join(vmpath.GuestPersistentDir, "kubeconfig"), path.Join(vmpath.GuestPersistentDir, "v1.17.0", "kubectl")),
+			expected:    fmt.Sprintf("sudo KUBECONFIG=%s %s delete -f a -f b", path.Join(vmpath.GuestPersistentDir, "kubeconfig"), path.Join(vmpath.GuestPersistentDir, "binaries", "v1.17.0", "kubectl")),
 		},
 	}
 
