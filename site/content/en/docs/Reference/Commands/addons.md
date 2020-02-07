@@ -52,6 +52,14 @@ Lists all available minikube addons as well as their current statuses (enabled/d
 ```
 minikube addons list [flags]
 ```
+
+### Options
+
+```
+  -h, --help            help for list
+  -o, --output string   minikube addons list --output OUTPUT. json, list (default "list")
+```
+
 ## minikube addons open
 
 Opens the addon w/ADDON_NAME within minikube (example: minikube addons open dashboard). For a list of available addons use: minikube addons list 

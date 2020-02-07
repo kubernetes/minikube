@@ -1,25 +1,25 @@
 ---
-title: "logs"
-linkTitle: "logs"
+title: "unpause"
+linkTitle: "unpause"
 weight: 1
-date: 2019-08-01
+date: 2020-02-05
 description: >
-  Gets the logs of the running instance, used for debugging minikube, not user code
+   unpause the Kubernetes control plane or other namespaces
+
 ---
 
-## Usage
+### Usage
 
 ```
-minikube logs [flags]
+minikube unpause [flags]
 ```
 
 ### Options
 
 ```
-  -f, --follow       Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
-  -h, --help         help for logs
-  -n, --length int   Number of lines back to go within the log (default 60)
-      --problems     Show only log entries which point to known problems
+  -n, ----namespaces strings   namespaces to unpause (default [kube-system,kubernetes-dashboard,storage-gluster,istio-operator])
+  -A, --all-namespaces         If set, unpause all namespaces
+  -h, --help                   help for unpause
 ```
 
 ### Options inherited from parent commands
@@ -35,3 +35,8 @@ minikube logs [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+
+### SEE ALSO
+
+* [pause](pause.md)
+
