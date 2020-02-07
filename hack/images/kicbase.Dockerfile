@@ -51,4 +51,4 @@ COPY out/preloaded-images-k8s-$KUBERNETES_VERSION.tar /preloaded-images.tar
 RUN tar xvf /preloaded-images.tar -C /
 
 FROM base
-COPY --from=1 /var/lib/docker /var/lib/docker 
+COPY --from=1 /var/lib/docker /var/lib/docker
