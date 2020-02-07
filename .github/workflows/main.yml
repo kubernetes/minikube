@@ -148,10 +148,10 @@ jobs:
       - uses: actions/checkout@v2
       - name: install podman
         run: |
-          # Debian 10
-          sudo echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-          sudo wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Debian_10/Release.key -O Release.key
-          sudo apt-key add - < Release.key
+          . /etc/os-release
+          sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
+          wget -q https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_${VERSION_ID}/Release.key -O- | sudo apt-key add -
+          sudo apt-key add - < Release.key || true
           sudo apt-get update -qq
           sudo apt-get -qq -y install podman
       - name: build binaries
