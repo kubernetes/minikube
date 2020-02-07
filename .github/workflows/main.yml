@@ -146,19 +146,18 @@ jobs:
       runs-on: ubuntu-18.04
       steps:
       - uses: actions/checkout@v2
+      - name: install podman
+        run: |
+          # Debian 10
+          sudo echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
+          sudo wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Debian_10/Release.key -O Release.key
+          sudo apt-key add - < Release.key
+          sudo apt-get update -qq
+          sudo apt-get -qq -y install podman
       - name: build binaries
         run : |
           make minikube-linux-amd64
           make e2e-linux-amd64
-      - name: install podman
-        run: |
-          # Debian 10
-          echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/Debian_10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list
-          wget -nv https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/Debian_10/Release.key -O Release.key
-
-          sudo apt-key add - < Release.key
-          sudo apt-get update -qq
-          sudo apt-get -qq -y install podman
       - name: install gopogh
         run: |
           cd /tmp
