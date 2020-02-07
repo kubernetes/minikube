@@ -35,8 +35,6 @@ type LogOptions struct {
 
 // Bootstrapper contains all the methods needed to bootstrap a kubernetes cluster
 type Bootstrapper interface {
-	// PullImages pulls images necessary for a cluster. Success should not be required.
-	PullImages(config.KubernetesConfig) error
 	StartCluster(config.MachineConfig) error
 	UpdateCluster(config.MachineConfig) error
 	DeleteCluster(config.KubernetesConfig) error
