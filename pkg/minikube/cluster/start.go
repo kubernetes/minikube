@@ -51,10 +51,12 @@ var (
 		vmpath.GuestManifestsDir,
 		vmpath.GuestEphemeralDir,
 		vmpath.GuestPersistentDir,
-		vmpath.GuestCertsDir,
+		vmpath.GuestKubernetesCertsDir,
 		path.Join(vmpath.GuestPersistentDir, "images"),
 		path.Join(vmpath.GuestPersistentDir, "binaries"),
-		"/tmp/gvisor",
+		vmpath.GuestGvisorDir,
+		vmpath.GuestCertAuthDir,
+		vmpath.GuestCertStoreDir,
 	}
 )
 
