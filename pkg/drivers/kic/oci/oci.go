@@ -200,6 +200,8 @@ func ContainerIPs(ociBinary string, name string) (string, string, error) {
 			name)
 		out, err := cmd.CombinedOutput()
 		output := string(out)
+		output = strings.Trim(output, "\n")
+		output = strings.Trim(output, " ")
 		if err != nil {
 			return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
 		}
