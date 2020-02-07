@@ -81,7 +81,7 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 		FeatureArgs       map[string]bool
 		NoTaintMaster     bool
 	}{
-		CertDir:           vmpath.GuestCertsDir,
+		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
 		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
 		AdvertiseAddress:  cp.IP,

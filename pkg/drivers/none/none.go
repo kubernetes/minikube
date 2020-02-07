@@ -42,7 +42,7 @@ import (
 var cleanupPaths = []string{
 	vmpath.GuestEphemeralDir,
 	vmpath.GuestManifestsDir,
-	"/var/lib/minikube",
+	vmpath.GuestPersistentDir,
 }
 
 // Driver is a driver designed to run kubeadm w/o VM management, and assumes systemctl.
