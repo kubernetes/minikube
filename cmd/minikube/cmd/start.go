@@ -92,6 +92,7 @@ const (
 	kvmHidden             = "kvm-hidden"
 	minikubeEnvPrefix     = "MINIKUBE"
 	defaultMemorySize     = "2000mb"
+	installAddons         = "install-addons"
 	defaultDiskSize       = "20000mb"
 	keepContext           = "keep-context"
 	createMount           = "mount"
@@ -179,6 +180,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
+	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -369,11 +371,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	configureMounts()
 
 	// enable addons, both old and new!
-	existingAddons := map[string]bool{}
-	if existing != nil && existing.Addons != nil {
-		existingAddons = existing.Addons
+	if viper.GetBool(installAddons) {
+		existingAddons := map[string]bool{}
+		if existing != nil && existing.Addons != nil {
+			existingAddons = existing.Addons
+		}
+		addons.Start(viper.GetString(config.MachineProfile), existingAddons, addonList)
 	}
-	addons.Start(viper.GetString(config.MachineProfile), existingAddons, addonList)
 
 	if err = cacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
