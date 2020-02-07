@@ -58,14 +58,6 @@ var (
 	interval           int
 )
 
-// type serviceNotFoundError struct {
-// 	Err error
-// }
-
-// func (t serviceNotFoundError) Error() string {
-// 	return "Service not found: " + t.Err.Error()
-// }
-
 // serviceCmd represents the service command
 var serviceCmd = &cobra.Command{
 	Use:   "service [flags] SERVICE",
