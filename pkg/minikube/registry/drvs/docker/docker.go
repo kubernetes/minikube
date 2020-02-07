@@ -76,7 +76,7 @@ func status() registry.State {
 		glog.Warningf("Warning ! mininim suggested version for docker is %s. your version is %q. minikube might not work. use at your own risk. To install a more recent version please see https://docs.docker.com/", constants.MinSuggestDockerVer.String(), v.String())
 	}
 	if v.LT(constants.MinReqDockerVer) {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: fmt.Sprint("Your docker version is too old (%s) please the mininim required docker version is %s.", v.String(), constants.MinReqDockerVer.String()), Doc: "https://docs.docker.com/"}
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: fmt.Sprintf("Your docker version is too old (%s) please the mininim required docker version is %s.", v.String(), constants.MinReqDockerVer.String()), Doc: "https://docs.docker.com/"}
 	}
 
 	// Allow no more than 3 seconds for querying state

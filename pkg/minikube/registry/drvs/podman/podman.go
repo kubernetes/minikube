@@ -74,8 +74,12 @@ func status() registry.State {
 	}
 
 	v, err := semver.Make(output)
+	if err != nil {
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Cant verify mininim required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
+	}
+
 	if v.LT(constants.MinReqPodmanVer) {
-		glog.Warningf("Warning ! mininim required version for podman is %s. your version is %q. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html ", constants.MinReqPodmanVer.String(), v.String)
+		glog.Warningf("Warning ! mininim required version for podman is %s. your version is %q. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html ", constants.MinReqPodmanVer.String(), v.String())
 	}
 	// Allow no more than 2 seconds for querying state
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

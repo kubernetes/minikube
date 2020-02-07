@@ -142,7 +142,7 @@ ExecStart=
 ExecStart=%s --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=%s --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.200 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
-`, vmpath.GuestPersistentDir, "binaries", "v1.17.2", "kubelet"), path.Join(vmpath.GuestPersistentDir, "certs", "ca.crt"),
+`, path.Join(vmpath.GuestPersistentDir, "binaries", "v1.17.2", "kubelet"), path.Join(vmpath.GuestPersistentDir, "certs", "ca.crt")),
 		},
 		{
 			description: "docker with custom image repository",
@@ -168,7 +168,7 @@ ExecStart=
 ExecStart=%s --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=%s --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
-`, vmpath.GuestPersistentDir, "binaries", "v1.17.2", "kubelet"), path.Join(vmpath.GuestPersistentDir, "certs", "ca.crt"),
+`, path.Join(vmpath.GuestPersistentDir, "binaries", "v1.17.2", "kubelet"), path.Join(vmpath.GuestPersistentDir, "certs", "ca.crt")),
 		},
 	}
 
