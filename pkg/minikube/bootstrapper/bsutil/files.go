@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// bsutil package will eventually be renamed to kubeadm package after getting rid of older one
+// Package bsutil will eventually be renamed to kubeadm package after getting rid of older one
 package bsutil
 
 import (
@@ -42,7 +42,6 @@ func ConfigFileAssets(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byt
 		assets.NewMemoryAssetTarget(kubeadm, KubeadmYamlPath, "0640"),
 		assets.NewMemoryAssetTarget(kubelet, KubeletSystemdConfFile, "0644"),
 		assets.NewMemoryAssetTarget(kubeletSvc, KubeletServiceFile, "0644"),
-		assets.NewMemoryAssetTarget(defaultCNIConfig, DefaultCNIConfigPath, "0644"),
 	}
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin

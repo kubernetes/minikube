@@ -35,18 +35,18 @@ grep -E "^VERSION_MAJOR \\?=" Makefile | grep "${VERSION_MAJOR}"
 grep -E "^VERSION_MINOR \\?=" Makefile | grep "${VERSION_MINOR}"
 grep -E "^VERSION_BUILD \\?=" Makefile | grep "${VERSION_BUILD}"
 
-# Diagnostics
-go env GOPATH
+# Force go packages to the Jekins home directory
+export GOPATH=$HOME/go
 
 # Build and upload
-env GOPATH=$HOME/go BUILD_IN_DOCKER=y \
+env BUILD_IN_DOCKER=y \
   make -j 16 \
   all \
   out/minikube-installer.exe \
-  "out/minikube_${DEB_VERSION}.deb" \
-  "out/minikube-${RPM_VERSION}.rpm" \
-  "out/docker-machine-driver-kvm2_${DEB_VERSION}.deb" \
-  "out/docker-machine-driver-kvm2-${RPM_VERSION}.rpm"
+  "out/minikube_${DEB_VERSION}-0_amd64.deb" \
+  "out/minikube-${RPM_VERSION}-0.x86_64.rpm" \
+  "out/docker-machine-driver-kvm2_${DEB_VERSION}-0_amd64.deb" \
+  "out/docker-machine-driver-kvm2-${RPM_VERSION}-0.x86_64.rpm"
 
 make checksum
 
@@ -55,7 +55,11 @@ gsutil -m cp out/* "gs://$BUCKET/releases/$TAGNAME/"
 # Update "latest" release for non-beta/non-alpha builds
 if ! [[ ${VERSION_BUILD} =~ ^[0-9]+$ ]]; then
   echo "NOTE: ${VERSION} appears to be a non-standard release, not updating /releases/latest"
-else
-  echo "Updating latest bucket for ${VERSION} release"
-  gsutil cp -r "gs://${BUCKET}/releases/${TAGNAME}/*" "gs://${BUCKET}/releases/latest/"
+  exit 0
 fi
+
+echo "Updating Docker images ..."
+make push-gvisor-addon-image push-storage-provisioner-image
+
+echo "Updating latest bucket for ${VERSION} release ..."
+gsutil cp -r "gs://${BUCKET}/releases/${TAGNAME}/*" "gs://${BUCKET}/releases/latest/"

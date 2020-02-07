@@ -18,11 +18,12 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+
+	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
@@ -52,6 +53,22 @@ var (
 	// ErrKeyNotFound is the error returned when a key doesn't exist in the config file
 	ErrKeyNotFound = errors.New("specified key could not be found in config")
 )
+
+type ErrNotExist struct {
+	s string
+}
+
+func (e *ErrNotExist) Error() string {
+	return e.s
+}
+
+// IsNotExist returns whether the error means a nonexistent configuration
+func IsNotExist(err error) bool {
+	if _, ok := err.(*ErrNotExist); ok {
+		return true
+	}
+	return false
+}
 
 // MinikubeConfig represents minikube config
 type MinikubeConfig map[string]interface{}
@@ -127,6 +144,7 @@ func Load(profile string) (*MachineConfig, error) {
 	return DefaultLoader.LoadConfigFromFile(profile)
 }
 
+// Write writes the kubernetes and machine config for the current machine
 func Write(profile string, cc *MachineConfig) error {
 	return DefaultLoader.WriteConfigToFile(profile, cc)
 }
@@ -147,17 +165,20 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 	// Move to profile package
 	path := profileFilePath(profileName, miniHome...)
 
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, err
+	if _, err := os.Stat(path); err != nil {
+		if os.IsNotExist(err) {
+			return nil, &ErrNotExist{fmt.Sprintf("cluster %q does not exist", profileName)}
+		}
+		return nil, errors.Wrap(err, "stat")
 	}
 
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read")
 	}
 
 	if err := json.Unmarshal(data, &cc); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unmarshal")
 	}
 	return &cc, nil
 }

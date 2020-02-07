@@ -31,33 +31,28 @@ func TestGetKuberneterVersion(t *testing.T) {
 		description     string
 		expectedVersion string
 		paramVersion    string
-		upgrade         bool
 		cfg             *cfg.MachineConfig
 	}{
 		{
 			description:     "kubernetes-version not given, no config",
 			expectedVersion: constants.DefaultKubernetesVersion,
 			paramVersion:    "",
-			upgrade:         false,
 		},
 		{
 			description:     "kubernetes-version not given, config available",
 			expectedVersion: "v1.15.0",
 			paramVersion:    "",
-			upgrade:         false,
 			cfg:             &cfg.MachineConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
 		},
 		{
 			description:     "kubernetes-version given, no config",
 			expectedVersion: "v1.15.0",
 			paramVersion:    "v1.15.0",
-			upgrade:         false,
 		},
 		{
 			description:     "kubernetes-version given, config available",
 			expectedVersion: "v1.16.0",
 			paramVersion:    "v1.16.0",
-			upgrade:         true,
 			cfg:             &cfg.MachineConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
 		},
 	}
@@ -65,16 +60,11 @@ func TestGetKuberneterVersion(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			viper.SetDefault(kubernetesVersion, test.paramVersion)
-			version, upgrade := getKubernetesVersion(test.cfg)
+			version := getKubernetesVersion(test.cfg)
 
 			// check whether we are getting the expected version
 			if version != test.expectedVersion {
 				t.Fatalf("test failed because the expected version %s is not returned", test.expectedVersion)
-			}
-
-			// check whether the upgrade flag is correct
-			if test.upgrade != upgrade {
-				t.Fatalf("test failed expected upgrade is %t", test.upgrade)
 			}
 		})
 	}
@@ -121,7 +111,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 			if err := os.Setenv("HTTP_PROXY", test.proxy); err != nil {
 				t.Fatalf("Unexpected error setting HTTP_PROXY: %v", err)
 			}
-			config, err := generateCfgFromFlags(cmd, k8sVersion, "none")
+			config, _, err := generateCfgFromFlags(cmd, k8sVersion, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}

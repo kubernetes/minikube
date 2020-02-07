@@ -45,7 +45,7 @@ const (
 	Option
 	Command
 	LogEntry
-	Crushed
+	Deleted
 	URL
 	Documentation
 	Issues
@@ -84,4 +84,9 @@ const (
 	Empty
 	Workaround
 	Sparkle
+	Pause
+	Unpause
+	DryRun
+	AddonEnable
+	AddonDisable
 )

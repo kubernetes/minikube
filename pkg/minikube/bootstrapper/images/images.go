@@ -18,43 +18,109 @@ limitations under the License.
 package images
 
 import (
+	"fmt"
 	"path"
 	"runtime"
+
+	"github.com/blang/semver"
 )
 
-// ArchTag returns a CPU architecture suffix for images
-func ArchTag(hasTag bool) string {
+// Pause returns the image name to pull for the pause image
+func Pause(mirror string) string {
+	// Should match `PauseVersion` in:
+	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
+	return path.Join(kubernetesRepo(mirror), "pause"+archTag(false)+"3.1")
+}
+
+// essentials returns images needed too bootstrap a kubenretes
+func essentials(mirror string, v semver.Version) []string {
+	imgs := []string{
+		componentImage("kube-proxy", v, mirror),
+		componentImage("kube-scheduler", v, mirror),
+		componentImage("kube-controller-manager", v, mirror),
+		componentImage("kube-apiserver", v, mirror),
+		coreDNS(v, mirror),
+		etcd(v, mirror),
+		Pause(mirror),
+	}
+	return imgs
+}
+
+// componentImage returns a Kubernetes component image to pull
+func componentImage(name string, v semver.Version, mirror string) string {
+	needsArchSuffix := false
+	ancient := semver.MustParseRange("<1.12.0")
+	if ancient(v) {
+		needsArchSuffix = true
+	}
+
+	return fmt.Sprintf("%sv%s", path.Join(kubernetesRepo(mirror), name+archTag(needsArchSuffix)), v)
+}
+
+// coreDNS returns the images used for CoreDNS
+func coreDNS(v semver.Version, mirror string) string {
+	// Should match `CoreDNSVersion` in
+	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
+	cv := "1.6.5"
+	switch v.Minor {
+	case 16:
+		cv = "1.6.2"
+	case 15, 14:
+		cv = "1.3.1"
+	case 13:
+		cv = "1.2.6"
+	case 12:
+		cv = "1.2.2"
+	case 11:
+		cv = "1.1.3"
+	}
+	return path.Join(kubernetesRepo(mirror), "coredns"+":"+cv)
+}
+
+// etcd returns the image used for etcd
+func etcd(v semver.Version, mirror string) string {
+	needsArchSuffix := false
+	ancient := semver.MustParseRange("<1.12.0")
+	if ancient(v) {
+		needsArchSuffix = true
+	}
+
+	// Should match `DefaultEtcdVersion` in:
+	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
+	ev := "3.4.3-0"
+	switch v.Minor {
+	case 16:
+		ev = "3.3.15-0"
+	case 14, 15:
+		ev = "3.3.10"
+	case 12, 13:
+		ev = "3.2.24"
+	case 11:
+		ev = "3.2.18"
+	}
+	return path.Join(kubernetesRepo(mirror), "etcd"+archTag(needsArchSuffix)+ev)
+}
+
+// archTag returns a CPU architecture suffix for images
+func archTag(hasTag bool) string {
 	if runtime.GOARCH == "amd64" && !hasTag {
 		return ":"
 	}
 	return "-" + runtime.GOARCH + ":"
 }
 
-// Auxiliary returns images that are helpful for running minikube
-func Auxiliary(mirror string) []string {
+// auxiliary returns images that are helpful for running minikube
+func auxiliary(mirror string) []string {
 	return []string{
-		addonManager(mirror),
 		storageProvisioner(mirror),
 		dashboardFrontend(mirror),
 		dashboardMetrics(mirror),
 	}
 }
 
-// Pause returns the image name to pull for the pause image
-func Pause(mirror string) string {
-	// Should match `PauseVersion` in:
-	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	return path.Join(KubernetesRepo(mirror), "pause"+ArchTag(false)+"3.1")
-}
-
 // storageProvisioner returns the minikube storage provisioner image
 func storageProvisioner(mirror string) string {
-	return path.Join(minikubeRepo(mirror), "storage-provisioner"+ArchTag(false)+"v1.8.1")
-}
-
-// addonManager returns the Kubernetes addon manager image
-func addonManager(mirror string) string {
-	return path.Join(KubernetesRepo(mirror), "kube-addon-manager"+ArchTag(false)+"v9.0.2")
+	return path.Join(minikubeRepo(mirror), "storage-provisioner"+archTag(false)+"v1.8.1")
 }
 
 // dashboardFrontend returns the image used for the dashboard frontend

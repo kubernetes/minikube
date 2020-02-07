@@ -25,6 +25,8 @@ import (
 	"k8s.io/minikube/pkg/storage"
 )
 
+var pvDir = "/tmp/hostpath-provisioner"
+
 func main() {
 	// Glog requires that /tmp exists.
 	if err := os.MkdirAll("/tmp", 0755); err != nil {
@@ -33,7 +35,7 @@ func main() {
 	}
 	flag.Parse()
 
-	if err := storage.StartStorageProvisioner(); err != nil {
+	if err := storage.StartStorageProvisioner(pvDir); err != nil {
 		glog.Exit(err)
 	}
 

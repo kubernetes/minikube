@@ -25,8 +25,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/minikube/cluster"
+	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -71,7 +73,8 @@ var serviceCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		if !cluster.IsMinikubeRunning(api) {
+		profileName := viper.GetString(pkg_config.MachineProfile)
+		if !cluster.IsHostRunning(api, profileName) {
 			os.Exit(1)
 		}
 

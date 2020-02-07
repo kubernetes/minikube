@@ -72,7 +72,7 @@ func TestFlagDefaults(t *testing.T) {
 
 	expected = FlagHints{
 		CacheImages:  false,
-		ExtraOptions: fmt.Sprintf("kubelet.resolv-conf=%s", tf.Name()),
+		ExtraOptions: []string{fmt.Sprintf("kubelet.resolv-conf=%s", tf.Name())},
 	}
 	systemdResolvConf = tf.Name()
 	if diff := cmp.Diff(FlagDefaults(None), expected); diff != "" {
@@ -80,14 +80,13 @@ func TestFlagDefaults(t *testing.T) {
 	}
 }
 
-func TestChoices(t *testing.T) {
+func TestSuggest(t *testing.T) {
 
 	tests := []struct {
-		def       registry.DriverDef
-		choices   []string
-		pick      string
-		alts      []string
-		requested string
+		def     registry.DriverDef
+		choices []string
+		pick    string
+		alts    []string
 	}{
 		{
 			def: registry.DriverDef{
@@ -129,12 +128,6 @@ func TestChoices(t *testing.T) {
 			pick:    "preferred",
 			alts:    []string{"default", "discouraged"},
 		},
-		{
-			requested: "unhealthy",
-			choices:   []string{"preferred", "default", "discouraged", "unhealthy"},
-			pick:      "unhealthy",
-			alts:      []string{"preferred", "default", "discouraged"},
-		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.def.Name, func(t *testing.T) {
@@ -154,7 +147,7 @@ func TestChoices(t *testing.T) {
 				t.Errorf("choices mismatch (-want +got):\n%s", diff)
 			}
 
-			pick, alts := Choose(tc.requested, got)
+			pick, alts := Suggest(got)
 			if pick.Name != tc.pick {
 				t.Errorf("pick = %q, expected %q", pick.Name, tc.pick)
 			}

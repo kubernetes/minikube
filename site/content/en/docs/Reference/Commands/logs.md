@@ -18,7 +18,7 @@ minikube logs [flags]
 ```
   -f, --follow       Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
   -h, --help         help for logs
-  -n, --length int   Number of lines back to go within the log (default 50)
+  -n, --length int   Number of lines back to go within the log (default 60)
       --problems     Show only log entries which point to known problems
 ```
 
