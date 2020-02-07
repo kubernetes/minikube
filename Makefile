@@ -502,13 +502,19 @@ storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-pr
 	docker build -t $(STORAGE_PROVISIONER_IMAGE) -f deploy/storage-provisioner/Dockerfile  --build-arg arch=$(GOARCH) .
 
 .PHONY: kic-base-image
-kic-base-image: generate-preloaded-images-tar ## builds the base image used for kic.
+kic-base-image: ## builds the base image used for kic.
+	docker rmi -f $(REGISTRY)/kicbase:v0.0.5-snapshot || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.5-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT)  .
+
+
+.PHONY: kic-preloaded-base-image
+kic-preloaded-base-image: generate-preloaded-images-tar ## builds the base image used for kic.
 	docker rmi -f $(REGISTRY)/kicbase:v0.0.5-k8s-${KUBERNETES_VERSION} || true
 	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v0.0.5-k8s-${KUBERNETES_VERSION}  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg KUBERNETES_VERSION=${KUBERNETES_VERSION} .
 
 .PHONY: generate-preloaded-images-tar
 generate-preloaded-images-tar: out/minikube
-	KUBERNETES_VERSION=${KUBERNETES_VERSION} ./hack/preload-images/generate-preloaded-images-tar.sh
+	KUBERNETES_VERSION=${KUBERNETES_VERSION} go run ./hack/preload-images/preload_images.go
 
 
 .PHONY: push-storage-provisioner-image
