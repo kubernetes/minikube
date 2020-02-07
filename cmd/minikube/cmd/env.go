@@ -388,7 +388,7 @@ func dockerURL(ip string, port int) string {
 	return fmt.Sprintf("tcp://%s", net.JoinHostPort(ip, strconv.Itoa(port)))
 }
 
-// dockerEnvVars gets the necessary docker env variables to allow the use of docker through minikube's vm
+// dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
 func dockerEnvVars(ec EnvConfig) (map[string]string, error) {
 	env := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
