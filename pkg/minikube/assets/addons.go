@@ -299,7 +299,7 @@ var Addons = map[string]*Addon{
 			false),
 		MustBinAsset(
 			"deploy/addons/gvisor/gvisor-config.toml",
-			constants.GvisorFilesPath,
+			vmpath.GuestGvisorDir,
 			constants.GvisorConfigTomlTargetName,
 			"0640",
 			true),
