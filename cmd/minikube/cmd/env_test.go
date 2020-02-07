@@ -47,16 +47,10 @@ export DOCKER_HOST="tcp://127.0.0.1:2376"
 export DOCKER_CERT_PATH="/certs"
 export MINIKUBE_ACTIVE_DOCKERD="bash"
 
-# Please run command bellow to point your shell to minikube's docker-daemon :
+# To point your shell to minikube's docker-daemon, run:
 # eval $(minikube -p bash docker-env)
 `,
-			`unset DOCKER_TLS_VERIFY
-unset DOCKER_HOST
-unset DOCKER_CERT_PATH
-unset MINIKUBE_ACTIVE_DOCKERD
-
-# Please run command bellow to point your shell to minikube's docker-daemon :
-# eval $(minikube -p bash docker-env)
+			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
 `,
 		},
 		{
@@ -67,36 +61,27 @@ export DOCKER_HOST="tcp://[fe80::215:5dff:fe00:a903]:2376"
 export DOCKER_CERT_PATH="/certs"
 export MINIKUBE_ACTIVE_DOCKERD="ipv6"
 
-# Please run command bellow to point your shell to minikube's docker-daemon :
+# To point your shell to minikube's docker-daemon, run:
 # eval $(minikube -p ipv6 docker-env)
 `,
-			`unset DOCKER_TLS_VERIFY
-unset DOCKER_HOST
-unset DOCKER_CERT_PATH
-unset MINIKUBE_ACTIVE_DOCKERD
-
-# Please run command bellow to point your shell to minikube's docker-daemon :
-# eval $(minikube -p ipv6 docker-env)
+			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD
 `,
 		},
 		{
 			EnvConfig{profile: "fish", shell: "fish", driver: "kvm2", hostIP: "127.0.0.1", certsDir: "/certs"},
 			nil,
-			`set -gx DOCKER_TLS_VERIFY "1";
-set -gx DOCKER_HOST "tcp://127.0.0.1:2376";
-set -gx DOCKER_CERT_PATH "/certs";
-set -gx MINIKUBE_ACTIVE_DOCKERD "fish";
+			`set -gx DOCKER_TLS_VERIFY "1"
+set -gx DOCKER_HOST "tcp://127.0.0.1:2376"
+set -gx DOCKER_CERT_PATH "/certs"
+set -gx MINIKUBE_ACTIVE_DOCKERD "fish"
 
-# Please run command bellow to point your shell to minikube's docker-daemon :
+# To point your shell to minikube's docker-daemon, run:
 # eval (minikube -p fish docker-env)
 `,
-			`set -e DOCKER_TLS_VERIFY;
-set -e DOCKER_HOST;
-set -e DOCKER_CERT_PATH;
-set -e MINIKUBE_ACTIVE_DOCKERD;
-
-# Please run command bellow to point your shell to minikube's docker-daemon :
-# eval (minikube -p fish docker-env)
+			`set -e DOCKER_TLS_VERIFY
+set -e DOCKER_HOST
+set -e DOCKER_CERT_PATH
+set -e MINIKUBE_ACTIVE_DOCKERD
 `,
 		},
 		{
@@ -106,19 +91,12 @@ set -e MINIKUBE_ACTIVE_DOCKERD;
 $Env:DOCKER_HOST = "tcp://192.168.0.1:2376"
 $Env:DOCKER_CERT_PATH = "/certs"
 $Env:MINIKUBE_ACTIVE_DOCKERD = "powershell"
-
-# Please run command bellow to point your shell to minikube's docker-daemon :
+# To point your shell to minikube's docker-daemon, run:
 # & minikube -p powershell docker-env | Invoke-Expression
-	`,
+`,
 
-			`Remove-Item Env:\\DOCKER_TLS_VERIFY
-Remove-Item Env:\\DOCKER_HOST
-Remove-Item Env:\\DOCKER_CERT_PATH
-Remove-Item Env:\\MINIKUBE_ACTIVE_DOCKERD
-
-# Please run command bellow to point your shell to minikube's docker-daemon :
-# & minikube -p powershell docker-env | Invoke-Expression
-	`,
+			`Remove-Item Env:\\DOCKER_TLS_VERIFY Env:\\DOCKER_HOST Env:\\DOCKER_CERT_PATH Env:\\MINIKUBE_ACTIVE_DOCKERD
+`,
 		},
 		{
 			EnvConfig{profile: "cmd", shell: "cmd", driver: "hyperv", hostIP: "192.168.0.1", certsDir: "/certs"},
@@ -127,19 +105,15 @@ Remove-Item Env:\\MINIKUBE_ACTIVE_DOCKERD
 SET DOCKER_HOST=tcp://192.168.0.1:2376
 SET DOCKER_CERT_PATH=/certs
 SET MINIKUBE_ACTIVE_DOCKERD=cmd
-
-REM Please run command bellow to point your shell to minikube's docker-daemon :
+REM To point your shell to minikube's docker-daemon, run:
 REM @FOR /f "tokens=*" %i IN ('minikube -p cmd docker-env') DO @%i
-	`,
+`,
 
 			`SET DOCKER_TLS_VERIFY=
 SET DOCKER_HOST=
 SET DOCKER_CERT_PATH=
 SET MINIKUBE_ACTIVE_DOCKERD=
-
-REM Please run command bellow to point your shell to minikube's docker-daemon :
-REM @FOR /f "tokens=*" %i IN ('minikube -p cmd docker-env') DO @%i
-	`,
+`,
 		},
 		{
 			EnvConfig{profile: "emacs", shell: "emacs", driver: "hyperv", hostIP: "192.168.0.1", certsDir: "/certs"},
@@ -148,18 +122,14 @@ REM @FOR /f "tokens=*" %i IN ('minikube -p cmd docker-env') DO @%i
 (setenv "DOCKER_HOST" "tcp://192.168.0.1:2376")
 (setenv "DOCKER_CERT_PATH" "/certs")
 (setenv "MINIKUBE_ACTIVE_DOCKERD" "emacs")
-
-;; Please run command bellow to point your shell to minikube's docker-daemon :
+;; To point your shell to minikube's docker-daemon, run:
 ;; (with-temp-buffer (shell-command "minikube -p emacs docker-env" (current-buffer)) (eval-buffer))
-	`,
+`,
 			`(setenv "DOCKER_TLS_VERIFY" nil)
 (setenv "DOCKER_HOST" nil)
 (setenv "DOCKER_CERT_PATH" nil)
 (setenv "MINIKUBE_ACTIVE_DOCKERD" nil)
-
-;; Please run command bellow to point your shell to minikube's docker-daemon :
-;; (with-temp-buffer (shell-command "minikube -p emacs docker-env" (current-buffer)) (eval-buffer))
-	`,
+`,
 		},
 		{
 			EnvConfig{profile: "bash-no-proxy", shell: "bash", driver: "kvm2", hostIP: "127.0.0.1", certsDir: "/certs", noProxy: true},
@@ -170,18 +140,11 @@ export DOCKER_CERT_PATH="/certs"
 export MINIKUBE_ACTIVE_DOCKERD="bash-no-proxy"
 export NO_PROXY="127.0.0.1"
 
-# Please run command bellow to point your shell to minikube's docker-daemon :
+# To point your shell to minikube's docker-daemon, run:
 # eval $(minikube -p bash-no-proxy docker-env)
 `,
 
-			`unset DOCKER_TLS_VERIFY
-unset DOCKER_HOST
-unset DOCKER_CERT_PATH
-unset MINIKUBE_ACTIVE_DOCKERD
-unset NO_PROXY127.0.0.1
-
-# Please run command bellow to point your shell to minikube's docker-daemon :
-# eval $(minikube -p bash-no-proxy docker-env)
+			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD NO_PROXY
 `,
 		},
 		{
@@ -193,41 +156,26 @@ export DOCKER_CERT_PATH="/certs"
 export MINIKUBE_ACTIVE_DOCKERD="bash-no-proxy-lower"
 export no_proxy="127.0.0.1"
 
-# Please run command bellow to point your shell to minikube's docker-daemon :
+# To point your shell to minikube's docker-daemon, run:
 # eval $(minikube -p bash-no-proxy-lower docker-env)
 `,
 
-			`unset DOCKER_TLS_VERIFY
-unset DOCKER_HOST
-unset DOCKER_CERT_PATH
-unset MINIKUBE_ACTIVE_DOCKERD
-unset no_proxy127.0.0.1
-
-# Please run command bellow to point your shell to minikube's docker-daemon :
-# eval $(minikube -p bash-no-proxy-lower docker-env)
+			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD no_proxy
 `,
 		},
 		{
-			EnvConfig{profile: "bash-no-proxy-idempotent", shell: "bash", driver: "kvm2", hostIP: "127.0.0.1", certsDir: "/certs", noProxy: true},
-			&FakeNoProxyGetter{"no_proxy", "127.0.0.1"},
-			`export DOCKER_TLS_VERIFY="1"
-export DOCKER_HOST="tcp://127.0.0.1:2376"
-export DOCKER_CERT_PATH="/certs"
-export MINIKUBE_ACTIVE_DOCKERD="bash-no-proxy-idempotent"
-export no_proxy="127.0.0.1"
-
-# Please run command bellow to point your shell to minikube's docker-daemon :
-# eval $(minikube -p bash-no-proxy-idempotent docker-env)
+			EnvConfig{profile: "powershell-no-proxy-idempotent", shell: "powershell", driver: "hyperv", hostIP: "192.168.0.1", certsDir: "/certs", noProxy: true},
+			&FakeNoProxyGetter{"no_proxy", "192.168.0.1"},
+			`$Env:DOCKER_TLS_VERIFY = "1"
+$Env:DOCKER_HOST = "tcp://192.168.0.1:2376"
+$Env:DOCKER_CERT_PATH = "/certs"
+$Env:MINIKUBE_ACTIVE_DOCKERD = "powershell-no-proxy-idempotent"
+$Env:no_proxy = "192.168.0.1"
+# To point your shell to minikube's docker-daemon, run:
+# & minikube -p powershell-no-proxy-idempotent docker-env | Invoke-Expression
 `,
 
-			`unset DOCKER_TLS_VERIFY
-unset DOCKER_HOST
-unset DOCKER_CERT_PATH
-unset MINIKUBE_ACTIVE_DOCKERD
-unset no_proxy127.0.0.1
-
-# Please run command bellow to point your shell to minikube's docker-daemon :
-# eval $(minikube -p bash-no-proxy-idempotent docker-env)
+			`Remove-Item Env:\\DOCKER_TLS_VERIFY Env:\\DOCKER_HOST Env:\\DOCKER_CERT_PATH Env:\\MINIKUBE_ACTIVE_DOCKERD Env:\\no_proxy
 `,
 		},
 		{
@@ -239,18 +187,11 @@ export DOCKER_CERT_PATH="/certs"
 export MINIKUBE_ACTIVE_DOCKERD="sh-no-proxy-add"
 export NO_PROXY="192.168.0.1,10.0.0.4,127.0.0.1"
 
-# Please run command bellow to point your shell to minikube's docker-daemon :
+# To point your shell to minikube's docker-daemon, run:
 # eval $(minikube -p sh-no-proxy-add docker-env)
 `,
 
-			`unset DOCKER_TLS_VERIFY
-unset DOCKER_HOST
-unset DOCKER_CERT_PATH
-unset MINIKUBE_ACTIVE_DOCKERD
-unset NO_PROXY192.168.0.1,10.0.0.4
-
-# Please run command bellow to point your shell to minikube's docker-daemon :
-# eval $(minikube -p sh-no-proxy-add docker-env)
+			`unset DOCKER_TLS_VERIFY DOCKER_HOST DOCKER_CERT_PATH MINIKUBE_ACTIVE_DOCKERD NO_PROXY
 `,
 		},
 	}
