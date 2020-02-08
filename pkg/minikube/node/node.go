@@ -51,26 +51,17 @@ func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, 
 		return err
 	}
 
-	return Start(cc, name)
+	return Start(cc, &n, false)
 }
 
 // Delete stops and deletes the given node from the given cluster
 func Delete(cc *config.MachineConfig, name string) error {
-	var nd *config.Node
-	index := 0
-	for i, n := range cc.Nodes {
-		if n.Name == name {
-			nd = &n
-			index = i
-			break
-		}
+	nd, index, err := Retrieve(cc, name)
+	if err != nil {
+		return err
 	}
 
-	if nd == nil {
-		return errors.New("Could not find node " + name)
-	}
-
-	err := Stop(cc, name)
+	err = Stop(cc, nd)
 	if err != nil {
 		glog.Warningf("Failed to stop node %s. Will still try to delete.", name)
 	}
@@ -80,13 +71,23 @@ func Delete(cc *config.MachineConfig, name string) error {
 }
 
 // Stop stops the node in the given cluster
-func Stop(cc *config.MachineConfig, name string) error {
+func Stop(cc *config.MachineConfig, n *config.Node) error {
 	return nil
 }
 
 // Start spins up a guest and starts the kubernetes node.
-func Start(cc *config.MachineConfig, name string) error {
+func Start(cc *config.MachineConfig, n *config.Node, primary bool) error {
 	// Throw all the slop from cmd.start in here
-	// Add the node if it doesn't already exist
 	return nil
+}
+
+// Retrieve finds the node by name in the given cluster
+func Retrieve(cc *config.MachineConfig, name string) (*config.Node, int, error) {
+	for i, n := range cc.Nodes {
+		if n.Name == name {
+			return &n, i, nil
+		}
+	}
+
+	return nil, -1, errors.New("Could not find node " + name)
 }
