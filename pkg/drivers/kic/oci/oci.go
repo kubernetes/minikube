@@ -52,8 +52,6 @@ func CreateContainerNode(p CreateParams) error {
 		"--security-opt", "seccomp=unconfined", // also ignore seccomp
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
-		// logs,pods be stroed on  filesystem vs inside container,
-		"--volume", "/var",
 		// some k8s things want /lib/modules
 		"-v", "/lib/modules:/lib/modules:ro",
 		"--hostname", p.Name, // make hostname match container name
