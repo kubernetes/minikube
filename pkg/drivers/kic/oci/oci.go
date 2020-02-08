@@ -50,6 +50,7 @@ func CreateContainerNode(p CreateParams) error {
 		"--security-opt", "seccomp=unconfined", // also ignore seccomp
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
+		// logs,pods be stroed on  filesystem vs inside container,
 		// some k8s things want /lib/modules
 		"-v", "/lib/modules:/lib/modules:ro",
 		"--hostname", p.Name, // make hostname match container name
@@ -59,9 +60,15 @@ func CreateContainerNode(p CreateParams) error {
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleKey, p.Role),
 	}
-	// Podman does not allow setting resources when cgroup is specified
-	// exact podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
-	if p.OCIBinary != Podman {
+
+	if p.OCIBinary == Podman { // enable execing in /var
+		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
+		runArgs = append(runArgs, "--volume", "/var:/var:exec")
+	}
+	if p.OCIBinary == Docker {
+		runArgs = append(runArgs, "--volume", "/var")
+		// setting resource limit in privileged mode is only supported by docker
+		// podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
 		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs), fmt.Sprintf("--memory=%s", p.Memory))
 	}
 
