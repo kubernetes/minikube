@@ -748,7 +748,7 @@ func validateUser(drvName string) {
 		exit.WithCodeT(exit.Permissions, `The "{{.driver_name}}" driver requires root privileges. Please run minikube using 'sudo minikube --vm-driver={{.driver_name}}'.`, out.V{"driver_name": drvName})
 	}
 
-	if driver.BareMetal(drvName) || u.Uid != "0" {
+	if driver.NeedsRoot(drvName) || u.Uid != "0" {
 		return
 	}
 
