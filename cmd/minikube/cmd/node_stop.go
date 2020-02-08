@@ -53,7 +53,7 @@ var nodeStopCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("loading config", err)
 		}
-		// Start it up baby
+
 		node.Stop(cc, name)
 	},
 }
