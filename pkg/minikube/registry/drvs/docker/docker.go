@@ -64,7 +64,11 @@ func status() registry.State {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
 	}
 
-	cmd := exec.Command(oci.Docker, "version", "-f", "'{{.Server.Version}}'")
+	// Allow no more than 2 seconds for getting version
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, oci.Docker, "version", "-f", "'{{.Server.Version}}'")
 	o, err := cmd.CombinedOutput()
 	output := string(o)
 	if err != nil {
@@ -79,11 +83,11 @@ func status() registry.State {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: fmt.Sprintf("Your docker version is too old (%s) please the minimum required docker version is %s.", v.String(), constants.MinReqDockerVer.String()), Doc: "https://docs.docker.com/"}
 	}
 
-	// Allow no more than 3 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	// Allow no more than 3 seconds for docker info
+	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err = exec.CommandContext(ctx, "docker", "info").Run()
+	err = exec.CommandContext(ctx, oci.Docker, "info").Run()
 	if err != nil {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is not running or is responding too slow. Try: restarting docker desktop."}
 	}

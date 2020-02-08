@@ -66,7 +66,11 @@ func status() registry.State {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Podman is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/podman/"}
 	}
 
-	cmd := exec.Command(oci.Podman, "version", "-f", "{{.Version}}")
+	// Allow no more than 2 seconds for version command
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, oci.Podman, "version", "-f", "{{.Version}}")
 	o, err := cmd.CombinedOutput()
 	output := string(o)
 	if err != nil {
@@ -81,10 +85,9 @@ func status() registry.State {
 	if v.LT(constants.MinReqPodmanVer) {
 		glog.Warningf("Warning ! mininim required version for podman is %s. your version is %q. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html ", constants.MinReqPodmanVer.String(), v.String())
 	}
-	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	// Allow no more than 3 seconds for querying state
+	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-
 	err = exec.CommandContext(ctx, oci.Podman, "info").Run()
 	if err != nil {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Podman is not running or taking too long to respond. Try: restarting podman."}
