@@ -48,7 +48,7 @@ func (r *Docker) Style() out.StyleEnum {
 // Version retrieves the current version of this runtime
 func (r *Docker) Version() (string, error) {
 	// Note: the server daemon has to be running, for this call to return successfully
-	c := exec.Command("docker", "version", "--format", "'{{.Server.Version}}'")
+	c := exec.Command("docker", "version", "--format", "{{.Server.Version}}")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return "", err
@@ -105,7 +105,7 @@ func (r *Docker) Disable() error {
 // ImageExists checks if an image exists
 func (r *Docker) ImageExists(name string, sha string) bool {
 	// expected output looks like [SHA_ALGO:SHA]
-	c := exec.Command("docker", "inspect", "--format='{{.Id}}'", name)
+	c := exec.Command("docker", "inspect", "--format", "{{.Id}}", name)
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return false
@@ -130,7 +130,7 @@ func (r *Docker) LoadImage(path string) error {
 // CGroupDriver returns cgroup driver ("cgroupfs" or "systemd")
 func (r *Docker) CGroupDriver() (string, error) {
 	// Note: the server daemon has to be running, for this call to return successfully
-	c := exec.Command("docker", "info", "--format", "'{{.CgroupDriver}}'")
+	c := exec.Command("docker", "info", "--format", "{{.CgroupDriver}}")
 	rr, err := r.Runner.RunCmd(c)
 	if err != nil {
 		return "", err

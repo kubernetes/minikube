@@ -111,9 +111,6 @@ var KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
 var ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 
 const (
-	// GvisorFilesPath is the path to the gvisor files saved by go-bindata
-	GvisorFilesPath = "/tmp/gvisor"
-
 	// GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
 	GvisorConfigTomlTargetName = "gvisor-config.toml"
 )

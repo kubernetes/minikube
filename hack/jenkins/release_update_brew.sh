@@ -19,66 +19,39 @@
 #   VERSION_MAJOR
 #   VERSION_MINOR
 #   VERSION_BUILD
-#   BOT_PASSWORD
+#   access_token
 
 set -eux -o pipefail
 
 readonly REPO_DIR=$PWD
 readonly NEW_VERSION=${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_BUILD}
-readonly NEW_SHA256=$(awk '{ print $1 }' "${REPO_DIR}/out/minikube-darwin-amd64.sha256")
-readonly BUILD_DIR=$(mktemp -d)
-readonly GITHUB_USER="minikube-bot"
+readonly SRC_DIR=$(mktemp -d)
+readonly TAG="v${NEW_VERSION}"
 
 if ! [[ "${VERSION_BUILD}" =~ ^[0-9]+$ ]]; then
-  echo "NOTE: ${NEW_VERSION} appears to be a non-standard release, not updating releases.json"
+  echo "NOTE: ${NEW_VERSION} appears to be a non-standard release, not updating brew"
   exit 0
 fi
 
-if [ -z "${NEW_SHA256}" ]; then
-  echo "SHA256 is empty :("
-  exit 1
-fi
+cd "${SRC_DIR}"
+git clone https://github.com/kubernetes/minikube
+cd minikube
+readonly revision=$(git rev-list -n1 "${TAG}")
 
-echo "***********************************************************************"
-echo "Sorry, this script has not yet been updated to support non-cask updates"
-echo "See https://github.com/kubernetes/minikube/issues/5779"
-echo "***********************************************************************"
-exit 99
+# Required for the brew command
+export HOMEBREW_GITHUB_API_TOKEN="${access_token}"
 
-git config --global user.name "${GITHUB_USER}"
-git config --global user.email "${GITHUB_USER}@google.com"
+# brew installed as the Jenkins user using:
+# sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
+export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
 
-cd "${BUILD_DIR}"
-git clone --depth 1 "git@github.com:${GITHUB_USER}/homebrew-cask.git"
-cd homebrew-cask
-git remote add upstream https://github.com/Homebrew/homebrew-cask.git
-git fetch upstream
+brew bump-formula-pr \
+  --strict minikube \
+  --revision="${revision}" \
+  --message="This PR was automatically created by minikube release scripts. Contact @tstromberg with any questions." \
+  --no-browse \
+  --tag="${TAG}" \
+  && status=0 || status=$?
 
-git checkout upstream/master
-git checkout -b "${NEW_VERSION}"
-sed -e "s/\$PKG_VERSION/${NEW_VERSION}/g" \
-    -e "s/\$MINIKUBE_DARWIN_SHA256/${NEW_SHA256}/g" \
-    "${REPO_DIR}/installers/darwin/brew-cask/minikube.rb.tmpl" > Casks/minikube.rb
-git add Casks/minikube.rb
-git commit -F- <<EOF
-Update minikube to ${NEW_VERSION}
-
-- [x] brew cask audit --download {{cask_file}} is error-free.
-- [x] brew cask style --fix {{cask_file}} reports no offenses.
-- [x] The commit message includes the cask’s name and version.
-
-EOF
-
-git push origin "${NEW_VERSION}"
-curl -v -k -u "${GITHUB_USER}:${BOT_PASSWORD}" -X POST https://api.github.com/repos/Homebrew/homebrew-cask/pulls \
--d @- <<EOF
-
-{
-    "title": "Update minikube to ${NEW_VERSION}",
-    "head": "${GITHUB_USER}:${NEW_VERSION}",
-    "base": "master",
-    "body": "cc @balopat"
-}
-EOF
-
-rm -Rf "${BUILD_DIR}"
+rm -Rf "${SRC_DIR}"
+exit $status

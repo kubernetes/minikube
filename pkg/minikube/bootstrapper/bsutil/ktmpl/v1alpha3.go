@@ -41,7 +41,7 @@ nodeRegistration:
 apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
 {{if .ImageRepository}}imageRepository: {{.ImageRepository}}
-{{end}}{{range .ExtraArgs}}{{.Component}}ExtraArgs:{{range $i, $val := printMapInOrder .Options ": " }}
+{{end}}{{range .ComponentOptions}}{{.Component}}ExtraArgs:{{range $i, $val := printMapInOrder .ExtraArgs ": " }}
   {{$val}}{{end}}
 {{end -}}
 {{if .FeatureArgs}}featureGates: {{range $i, $val := .FeatureArgs}}

@@ -94,6 +94,7 @@ const (
 	kvmHidden               = "kvm-hidden"
 	minikubeEnvPrefix       = "MINIKUBE"
 	defaultMemorySize       = "2000mb"
+	installAddons           = "install-addons"
 	defaultDiskSize         = "20000mb"
 	keepContext             = "keep-context"
 	createMount             = "mount"
@@ -181,6 +182,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
+	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -320,7 +322,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		updateDriver(driverName)
 	}
 
-	k8sVersion, isUpgrade := getKubernetesVersion(existing)
+	k8sVersion := getKubernetesVersion(existing)
 	mc, n, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
@@ -369,15 +371,17 @@ func runStart(cmd *cobra.Command, args []string) {
 	bs := setupKubeAdm(machineAPI, mc, n)
 
 	// pull images or restart cluster
-	bootstrapCluster(bs, cr, mRunner, mc, preExists, isUpgrade)
+	bootstrapCluster(bs, cr, mRunner, mc)
 	configureMounts()
 
 	// enable addons, both old and new!
-	existingAddons := map[string]bool{}
-	if existing != nil && existing.Addons != nil {
-		existingAddons = existing.Addons
+	if viper.GetBool(installAddons) {
+		existingAddons := map[string]bool{}
+		if existing != nil && existing.Addons != nil {
+			existingAddons = existing.Addons
+		}
+		addons.Start(viper.GetString(config.MachineProfile), existingAddons, addonList)
 	}
-	addons.Start(viper.GetString(config.MachineProfile), existingAddons, addonList)
 
 	if err = cacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
@@ -1193,9 +1197,8 @@ func tryRegistry(r command.Runner) {
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable
-func getKubernetesVersion(old *config.MachineConfig) (string, bool) {
+func getKubernetesVersion(old *config.MachineConfig) string {
 	paramVersion := viper.GetString(kubernetesVersion)
-	isUpgrade := false
 
 	if paramVersion == "" { // if the user did not specify any version then ...
 		if old != nil { // .. use the old version from config (if any)
@@ -1213,7 +1216,7 @@ func getKubernetesVersion(old *config.MachineConfig) (string, bool) {
 	nv := version.VersionPrefix + nvs.String()
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
-		return nv, isUpgrade
+		return nv
 	}
 
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
@@ -1255,11 +1258,7 @@ func getKubernetesVersion(old *config.MachineConfig) (string, bool) {
 	if defaultVersion.GT(nvs) {
 		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
-
-	if nvs.GT(ovs) {
-		isUpgrade = true
-	}
-	return nv, isUpgrade
+	return nv
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
@@ -1302,14 +1301,7 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 }
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
-func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, mc config.MachineConfig, preexisting bool, isUpgrade bool) {
-	if isUpgrade || !preexisting {
-		out.T(out.Pulling, "Pulling images ...")
-		if err := bs.PullImages(mc.KubernetesConfig); err != nil {
-			out.T(out.FailureType, "Unable to pull images, which may be OK: {{.error}}", out.V{"error": err})
-		}
-	}
-
+func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, mc config.MachineConfig) {
 	out.T(out.Launch, "Launching Kubernetes ... ")
 	if err := bs.StartCluster(mc); err != nil {
 		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))

@@ -18,7 +18,6 @@ package cluster
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -336,73 +335,6 @@ func TestGetHostStatus(t *testing.T) {
 		t.Errorf("StopHost failed: %v", err)
 	}
 	checkState(state.Stopped.String())
-}
-
-func TestGetNodeDockerEnv(t *testing.T) {
-	RegisterMockDriver(t)
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	api := tests.NewMockAPI(t)
-	h, err := createHost(api, defaultMachineConfig)
-	if err != nil {
-		t.Fatalf("Error creating host: %v", err)
-	}
-	d := &tests.MockDriver{
-		BaseDriver: drivers.BaseDriver{
-			IPAddress: "127.0.0.1",
-		},
-		T: t,
-	}
-	h.Driver = d
-
-	envMap, err := GetNodeDockerEnv(api)
-	if err != nil {
-		t.Fatalf("Unexpected error getting env: %v", err)
-	}
-
-	dockerEnvKeys := [...]string{
-		constants.DockerTLSVerifyEnv,
-		constants.DockerHostEnv,
-		constants.DockerCertPathEnv,
-		constants.MinikubeActiveDockerdEnv,
-	}
-	for _, dockerEnvKey := range dockerEnvKeys {
-		if _, hasKey := envMap[dockerEnvKey]; !hasKey {
-			t.Fatalf("Expected envMap[\"%s\"] key to be defined", dockerEnvKey)
-		}
-	}
-}
-
-func TestGetNodeDockerEnvIPv6(t *testing.T) {
-	RegisterMockDriver(t)
-
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	api := tests.NewMockAPI(t)
-	h, err := createHost(api, defaultMachineConfig)
-	if err != nil {
-		t.Fatalf("Error creating host: %v", err)
-	}
-	d := &tests.MockDriver{
-		BaseDriver: drivers.BaseDriver{
-			IPAddress: "fe80::215:5dff:fe00:a903",
-		},
-		T: t,
-	}
-	h.Driver = d
-
-	envMap, err := GetNodeDockerEnv(api)
-	if err != nil {
-		t.Fatalf("Unexpected error getting env: %v", err)
-	}
-
-	expected := "tcp://[fe80::215:5dff:fe00:a903]:2376"
-	v := envMap["DOCKER_HOST"]
-	if v != expected {
-		t.Fatalf("Expected DOCKER_HOST to be defined as %s but was %s", expected, v)
-	}
 }
 
 func TestCreateSSHShell(t *testing.T) {
