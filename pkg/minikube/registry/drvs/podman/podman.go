@@ -47,7 +47,7 @@ func init() {
 	}
 }
 
-func configure(mc config.MachineConfig) interface{} {
+func configure(mc config.MachineConfig) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
 		MachineName:   mc.Name,
 		StorePath:     localpath.MiniPath(),
@@ -56,8 +56,7 @@ func configure(mc config.MachineConfig) interface{} {
 		Memory:        mc.Memory,
 		OCIBinary:     oci.Podman,
 		APIServerPort: mc.Nodes[0].Port,
-	})
-
+	}), nil
 }
 
 func status() registry.State {
