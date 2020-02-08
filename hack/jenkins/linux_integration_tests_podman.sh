@@ -33,6 +33,8 @@ mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cro
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
 SUDO_PREFIX="sudo -E "
 
+EXTRA_TEST_ARGS="-test.parallel=1"
+
 # remove possible left over podman containers
 sudo podman rm -f -v $(sudo podman ps -aq) || true
 
