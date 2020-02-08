@@ -31,14 +31,14 @@ scheduler:
   extraArgs:
     feature-gates: "a=b"
     scheduler-name: "mini-scheduler"
-certificatesDir: /usr/local/minikube/certs
+certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
 controlPlaneEndpoint: localhost:8443
 dns:
   type: CoreDNS
 etcd:
   local:
-    dataDir: /usr/local/minikube/etcd
+    dataDir: /var/lib/minikube/etcd
     extraArgs:
       listen-metrics-urls: http://127.0.0.1:2381,http://1.1.1.1:2381
 kubernetesVersion: v1.16.0

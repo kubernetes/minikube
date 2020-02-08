@@ -45,8 +45,6 @@ sudo rm -rf /data/*
 # Cleanup old Kubernetes configs
 sudo rm -rf /etc/kubernetes/*
 sudo rm -rf /var/lib/minikube/* 
-# Cleanup pre minikube 1.7.2 files
-sudo rm -rf /usr/local/minikube/*
 
 # Stop any leftover kubelets
 systemctl is-active --quiet kubelet \

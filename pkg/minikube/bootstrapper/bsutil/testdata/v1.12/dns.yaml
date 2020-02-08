@@ -19,13 +19,13 @@ apiVersion: kubeadm.k8s.io/v1alpha3
 kind: ClusterConfiguration
 apiServerExtraArgs:
   enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-certificatesDir: /usr/local/minikube/certs
+certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
 apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 controlPlaneEndpoint: localhost:8443
 etcd:
   local:
-    dataDir: /usr/local/minikube/etcd
+    dataDir: /var/lib/minikube/etcd
 kubernetesVersion: v1.12.0
 networking:
   dnsDomain: 1.1.1.1

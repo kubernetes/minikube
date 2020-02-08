@@ -6,11 +6,11 @@ api:
   bindPort: 8443
   controlPlaneEndpoint: localhost
 kubernetesVersion: v1.11.0
-certificatesDir: /usr/local/minikube/certs
+certificatesDir: /var/lib/minikube/certs
 networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
-  dataDir: /usr/local/minikube/etcd
+  dataDir: /var/lib/minikube/etcd
 nodeName: mk
 apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 imageRepository: test/repo

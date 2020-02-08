@@ -91,7 +91,7 @@ var (
 	// DefaultISOSHAURL is the default location of the minikube.iso.sha256 file
 	DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
-	//  has list of environment variables to control docker daemon shell is using
+	// DockerDaemonEnvs is list of docker-daemon related environment variables.
 	DockerDaemonEnvs = [3]string{DockerHostEnv, DockerTLSVerifyEnv, DockerCertPathEnv}
 
 	// DefaultMinipath is the default Minikube path (under the home directory)

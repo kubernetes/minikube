@@ -21,7 +21,7 @@ apiServer:
   certSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
   extraArgs:
     enable-admission-plugins: "NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
-certificatesDir: /usr/local/minikube/certs
+certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
 controlPlaneEndpoint: localhost:8443
 controllerManager: {}
@@ -29,7 +29,7 @@ dns:
   type: CoreDNS
 etcd:
   local:
-    dataDir: /usr/local/minikube/etcd
+    dataDir: /var/lib/minikube/etcd
 kubernetesVersion: v1.19.0
 networking:
   dnsDomain: 1.1.1.1

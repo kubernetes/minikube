@@ -27,13 +27,13 @@ controllerManagerExtraArgs:
 schedulerExtraArgs:
   feature-gates: "a=b"
   scheduler-name: "mini-scheduler"
-certificatesDir: /usr/local/minikube/certs
+certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
 apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 controlPlaneEndpoint: localhost:8443
 etcd:
   local:
-    dataDir: /usr/local/minikube/etcd
+    dataDir: /var/lib/minikube/etcd
 kubernetesVersion: v1.12.0
 networking:
   dnsDomain: cluster.local
