@@ -72,7 +72,7 @@ jobs:
         export PATH=${PATH}:`go env GOPATH`/bin
         go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
         STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "docker ubuntu" -repo github.com/kubernetes/minikube/)  || true
-        report="${STAT} in ${env.elapsed}"
+        report="${STAT} in ${env.elapsed} ti"
         echo ${report}
     - uses: actions/upload-artifact@v1
       with:
