@@ -65,6 +65,7 @@ jobs:
         go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
         STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "docker ubuntu" -repo github.com/kubernetes/minikube/)  || true
         echo ${STAT}
+        
     - uses: actions/upload-artifact@v1
       with:
         name: docker_on_ubuntu_18_04_report
