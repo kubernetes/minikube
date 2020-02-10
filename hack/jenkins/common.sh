@@ -29,10 +29,8 @@ readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$
 export GOPATH="$HOME/go"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
-
-chmod +x check_install_golang.sh
-# installing golang so we could go-get gopogh
-sudo ./check_install_golang.sh "1.13.4" "/usr/local" || true
+# installing golang so we could do go get for gopogh
+sudo ./installers/check_install_golang.sh "1.13.4" "/usr/local" || true
 
 echo ">> Starting at $(date)"
 echo ""
