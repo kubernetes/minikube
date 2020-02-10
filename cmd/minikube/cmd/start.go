@@ -1089,6 +1089,13 @@ func startHost(api libmachine.API, mc config.MachineConfig) (*host.Host, bool) {
 
 	host, err := cluster.StartHost(api, mc)
 	if err != nil {
+		// If virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C), initialize exists flag
+		if err == cluster.ErrorMachineNotExist {
+			// If Machine does not exist, of course the machine does not have kubeadm config files
+			// In order not to determine the machine has kubeadm config files, initialize exists flag
+			// ※ If exists flag is true, minikube determines the machine has kubeadm config files
+			return host, false
+		}
 		exit.WithError("Unable to start VM. Please investigate and run 'minikube delete' if possible", err)
 	}
 	return host, exists
