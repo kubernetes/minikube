@@ -146,6 +146,49 @@ func TestStartHostExists(t *testing.T) {
 	}
 }
 
+func TestStartHostErrMachineNotExist(t *testing.T) {
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
+	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
+	api.NotExistError = true
+	h, err := createHost(api, defaultMachineConfig)
+	if err != nil {
+		t.Fatalf("Error creating host: %v", err)
+	}
+
+	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	provision.SetDetector(md)
+
+	mc := defaultMachineConfig
+	mc.Name = h.Name
+
+	// This should pass with creating host, while machine does not exist.
+	h, err = StartHost(api, mc)
+	if err != nil {
+		if err != ErrorMachineNotExist {
+			t.Fatalf("Error starting host: %v", err)
+		}
+	}
+
+	mc.Name = h.Name
+
+	// Second call. This should pass without calling Create because the host exists already.
+	h, err = StartHost(api, mc)
+	if err != nil {
+		t.Fatalf("Error starting host: %v", err)
+	}
+
+	if h.Name != viper.GetString("profile") {
+		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
+	}
+	if s, _ := h.Driver.GetState(); s != state.Running {
+		t.Fatalf("Machine not started.")
+	}
+	if !md.Provisioner.Provisioned {
+		t.Fatalf("Expected provision to be called")
+	}
+}
+
 func TestStartStoppedHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -301,6 +344,21 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	api := tests.NewMockAPI(t)
 	api.RemoveError = true
 	if _, err := createHost(api, defaultMachineConfig); err != nil {
+		t.Errorf("createHost failed: %v", err)
+	}
+
+	if err := DeleteHost(api, viper.GetString("profile")); err == nil {
+		t.Fatal("Expected error deleting host.")
+	}
+}
+
+func TestDeleteHostErrMachineNotExist(t *testing.T) {
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
+	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
+	api.NotExistError = true
+	_, err := createHost(api, defaultMachineConfig)
+	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
