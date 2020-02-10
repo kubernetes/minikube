@@ -213,7 +213,7 @@ func podmanBridge(client *ssh.ExternalClient) string {
 }
 
 // podmanEnvVars gets the necessary podman env variables to allow the use of minikube's podman service
-func podmanEnvVars(ec PodmanEnvConfig) (map[string]string, error) {
+func podmanEnvVars(ec PodmanEnvConfig) (map[string]string, error) { // nolint result 1 (error) is always nil
 	env := map[string]string{
 		constants.PodmanVarlinkBridgeEnv: podmanBridge(ec.client),
 	}

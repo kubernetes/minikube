@@ -82,7 +82,6 @@ type Config struct {
 var (
 	// ForceShell forces a shell name
 	ForceShell string
-	unset      bool
 )
 
 // Detect detects user's current shell.
