@@ -18,8 +18,6 @@ limitations under the License.
 package bsutil
 
 import (
-	"fmt"
-	"path"
 	"testing"
 
 	"github.com/pmezard/go-difflib/difflib"
@@ -27,7 +25,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 func TestGenerateKubeletConfig(t *testing.T) {
@@ -52,15 +49,15 @@ func TestGenerateKubeletConfig(t *testing.T) {
 					},
 				},
 			},
-			expected: fmt.Sprintf(`[Unit]
+			expected: `[Unit]
 Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=%s --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=%s --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/var/lib/minikube/binaries/v1.11.10/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
-`, path.Join(vmpath.GuestPersistentDir, "binaries", "v1.11.10", "kubelet"), path.Join(vmpath.GuestPersistentDir, "certs", "ca.crt")),
+`,
 		},
 		{
 			description: "newest cri runtime",
@@ -77,15 +74,15 @@ ExecStart=%s --allow-privileged=true --authorization-mode=Webhook --bootstrap-ku
 					},
 				},
 			},
-			expected: fmt.Sprintf(`[Unit]
+			expected: `[Unit]
 Wants=crio.service
 
 [Service]
 ExecStart=
-ExecStart=%s --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=%s --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=/var/run/crio/crio.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=/var/run/crio/crio.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=/var/run/crio/crio.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=/var/run/crio/crio.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
-`, path.Join(vmpath.GuestPersistentDir, "binaries", "v1.17.2", "kubelet"), path.Join(vmpath.GuestPersistentDir, "certs", "ca.crt")),
+`,
 		},
 		{
 			description: "default containerd runtime",
@@ -102,15 +99,15 @@ ExecStart=%s --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes
 					},
 				},
 			},
-			expected: fmt.Sprintf(`[Unit]
+			expected: `[Unit]
 Wants=containerd.service
 
 [Service]
 ExecStart=
-ExecStart=%s --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=%s --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
-`, path.Join(vmpath.GuestPersistentDir, "binaries", "v1.17.2", "kubelet"), path.Join(vmpath.GuestPersistentDir, "certs", "ca.crt")),
+`,
 		},
 		{
 			description: "default containerd runtime with IP override",
@@ -134,15 +131,15 @@ ExecStart=%s --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes
 					},
 				},
 			},
-			expected: fmt.Sprintf(`[Unit]
+			expected: `[Unit]
 Wants=containerd.service
 
 [Service]
 ExecStart=
-ExecStart=%s --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=%s --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.200 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.200 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
-`, path.Join(vmpath.GuestPersistentDir, "binaries", "v1.17.2", "kubelet"), path.Join(vmpath.GuestPersistentDir, "certs", "ca.crt")),
+`,
 		},
 		{
 			description: "docker with custom image repository",
@@ -160,15 +157,15 @@ ExecStart=%s --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes
 					},
 				},
 			},
-			expected: fmt.Sprintf(`[Unit]
+			expected: `[Unit]
 Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=%s --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=%s --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
-`, path.Join(vmpath.GuestPersistentDir, "binaries", "v1.17.2", "kubelet"), path.Join(vmpath.GuestPersistentDir, "certs", "ca.crt")),
+`,
 		},
 	}
 
