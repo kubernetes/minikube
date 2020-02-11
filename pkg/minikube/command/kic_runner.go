@@ -164,7 +164,7 @@ func copyToPodman(k *kicRunner, f assets.CopyableFile) error {
 		return errors.Wrapf(err, "copying %s into node, output: %s", f.GetAssetName(), string(out))
 	}
 	// till podman cp bugs are fixed I add this noisy log
-	glog.Infof("podman cp: applying permission %s for copied file %ws", f, f.GetPermissions(), f.GetTargetName())
+	glog.Infof("podman cp: applying permission %s for copied file %s", f.GetPermissions(), f.GetTargetName())
 	if out, err := exec.Command(oci.Podman, "exec", "-it", k.nameOrID, "chmod", f.GetPermissions(), fmt.Sprintf("%s/%s", f.GetTargetDir(), f.GetTargetName())).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "chmod-ing copied file: %s output: %s", f.GetAssetName(), string(out))
 
