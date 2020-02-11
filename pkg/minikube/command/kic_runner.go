@@ -160,23 +160,23 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 	if err := os.Chmod(src, os.FileMode(perms)); err != nil {
 		return errors.Wrapf(err, "chmod")
 	}
-	dest := fmt.Sprintf("%s:%s%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
+	dest := fmt.Sprintf("%s:%s", k.nameOrID, path.Join(f.GetTargetDir(), f.GetTargetName()))
 	if k.ociBin == oci.Podman {
-		return copyToPodman(k, dest, dest)
+		return copyToPodman(src, dest)
 	}
-	return copyToDocker(k, dest, dest)
+	return copyToDocker(src, dest)
 }
 
 // Podman cp command doesn't match docker and doesn't have -a
-func copyToPodman(k *kicRunner, src string, dest string) error {
-	if out, err := exec.Command(k.ociBin, "cp", src, dest).CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "docker copy %s into %s, output: %s", src, dest, string(out))
+func copyToPodman(src string, dest string) error {
+	if out, err := exec.Command(oci.Podman, "cp", src, dest).CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "podman copy %s into %s, output: %s", src, dest, string(out))
 	}
 	return nil
 }
 
-func copyToDocker(k *kicRunner, src string, dest string) error {
-	if out, err := exec.Command(k.ociBin, "cp", "-a", src, dest).CombinedOutput(); err != nil {
+func copyToDocker(src string, dest string) error {
+	if out, err := exec.Command(oci.Docker, "cp", "-a", src, dest).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "docker copy %s into %s, output: %s", src, dest, string(out))
 	}
 	return nil
