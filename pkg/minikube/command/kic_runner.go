@@ -127,15 +127,7 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f assets.CopyableFile) error {
-	if k.ociBin == oci.Podman {
-		return copyToPodman(k, f)
-	}
-	return copyToDocker(k, f)
-}
-
-// Podman cp command doesn't match docker and doesn't have -a
-func copyToPodman(k *kicRunner, f assets.CopyableFile) error {
-	assetFullPath := f.GetAssetName()
+	src := f.GetAssetName()
 	if _, err := os.Stat(f.GetAssetName()); os.IsNotExist(err) {
 		fc := make([]byte, f.GetLength()) // Read  asset file into a []byte
 		if _, err := f.Read(fc); err != nil {
@@ -156,45 +148,7 @@ func copyToPodman(k *kicRunner, f assets.CopyableFile) error {
 		if err := tmpFile.Close(); err != nil {
 			return errors.Wrap(err, "close temporary file")
 		}
-		assetFullPath = tmpFile.Name()
-	}
-
-	destination := fmt.Sprintf("%s:%s%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
-	if out, err := exec.Command(oci.Podman, "cp", assetFullPath, destination).CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "copying %s into node, output: %s", f.GetAssetName(), string(out))
-	}
-	// till podman cp bugs are fixed I add this noisy log
-	glog.Infof("podman cp: applying permission %s for copied file %s", f.GetPermissions(), f.GetTargetName())
-	if out, err := exec.Command(oci.Podman, "exec", "-it", k.nameOrID, "chmod", f.GetPermissions(), fmt.Sprintf("%s/%s", f.GetTargetDir(), f.GetTargetName())).CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "chmod-ing copied file: %s output: %s", f.GetAssetName(), string(out))
-
-	}
-	return nil
-}
-
-func copyToDocker(k *kicRunner, f assets.CopyableFile) error {
-	assetFullPath := f.GetAssetName()
-	if _, err := os.Stat(f.GetAssetName()); os.IsNotExist(err) {
-		fc := make([]byte, f.GetLength()) // Read  asset file into a []byte
-		if _, err := f.Read(fc); err != nil {
-			return errors.Wrap(err, "can't copy non-existing file")
-		} // we have a MemoryAsset, will write to disk before copying
-
-		tmpFile, err := ioutil.TempFile(os.TempDir(), "tmpf-memory-asset")
-		if err != nil {
-			return errors.Wrap(err, "creating temporary file")
-		}
-		//  clean up the temp file
-		defer os.Remove(tmpFile.Name())
-		if _, err = tmpFile.Write(fc); err != nil {
-			return errors.Wrap(err, "write to temporary file")
-		}
-
-		// Close the file
-		if err := tmpFile.Close(); err != nil {
-			return errors.Wrap(err, "close temporary file")
-		}
-		assetFullPath = tmpFile.Name()
+		src = tmpFile.Name()
 	}
 
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
@@ -203,15 +157,27 @@ func copyToDocker(k *kicRunner, f assets.CopyableFile) error {
 	}
 
 	// Rely on cp -a to propagate permissions
-	if err := os.Chmod(assetFullPath, os.FileMode(perms)); err != nil {
+	if err := os.Chmod(src, os.FileMode(perms)); err != nil {
 		return errors.Wrapf(err, "chmod")
 	}
+	dest := fmt.Sprintf("%s:%s%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
+	if k.ociBin == oci.Podman {
+		return copyToPodman(k, dest, dest)
+	}
+	return copyToDocker(k, dest, dest)
+}
 
-	// example "docker cp containerName:destination src"
-	destination := fmt.Sprintf("%s:%s/%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
-	if out, err := exec.Command(k.ociBin, "cp", "-a", assetFullPath, destination).CombinedOutput(); err != nil {
+// Podman cp command doesn't match docker and doesn't have -a
+func copyToPodman(k *kicRunner, src string, dest string) error {
+	if out, err := exec.Command(k.ociBin, "cp", src, dest).CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "docker copy %s into %s, output: %s", src, dest, string(out))
+	}
+	return nil
+}
 
-		return errors.Wrapf(err, "copying %s into node, output: %s", f.GetAssetName(), string(out))
+func copyToDocker(k *kicRunner, src string, dest string) error {
+	if out, err := exec.Command(k.ociBin, "cp", "-a", src, dest).CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "docker copy %s into %s, output: %s", src, dest, string(out))
 	}
 	return nil
 }
