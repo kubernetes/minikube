@@ -277,6 +277,18 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 endif
 	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
+ifeq ($(OS),Windows_NT)
+	echo "%cd%"
+	echo "$(GOPATH)"
+	dir
+	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin"
+	"$(GOPATH)\bin\go-bindata.exe" -nomemcopy -o $@ -pkg assets deploy/addons/...
+	-gofmt -s -w $@
+	@#golint: Dns should be DNS (compat sed)
+	@sed -i -e 's/Dns/DNS/g' $@ && rm -f ./-e
+	@#golint: Html should be HTML (compat sed)
+	@sed -i -e 's/Html/HTML/g' $@ && rm -f ./-e
+else
 	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg assets deploy/addons/...
 	-gofmt -s -w $@
 	@#golint: Dns should be DNS (compat sed)
@@ -284,15 +296,26 @@ endif
 	@#golint: Html should be HTML (compat sed)
 	@sed -i -e 's/Html/HTML/g' $@ && rm -f ./-e
 
+endif
+
 pkg/minikube/translate/translations.go: $(shell find "translations/" -type f)
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),/usr/bin/make $@)
 endif
+ifeq ($(OS),Windows_NT)
+	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
+	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin"
+	"$(GOPATH)\bin\go-bindata.exe" -nomemcopy -o $@ -pkg translate translations/...
+	-gofmt -s -w $@
+	@#golint: Json should be JSON (compat sed)
+	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
+else
 	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
 	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin" go-bindata -nomemcopy -o $@ -pkg translate translations/...
 	-gofmt -s -w $@
 	@#golint: Json should be JSON (compat sed)
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
+endif
 
 .PHONY: cross
 cross: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
