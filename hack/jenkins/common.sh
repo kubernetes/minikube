@@ -27,10 +27,12 @@
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
 export GOPATH="$HOME/go"
+export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 # installing golang so we could do go get for gopogh
 sudo ./installers/check_install_golang.sh "1.13.4" "/usr/local" || true
+
 
 echo ">> Starting at $(date)"
 echo ""
@@ -239,7 +241,6 @@ cleanup_stale_routes || true
 
 mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
-export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
 
 # Build the gvisor image so that we can integration test changes to pkg/gvisor
