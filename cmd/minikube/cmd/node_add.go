@@ -45,12 +45,15 @@ var nodeAddCmd = &cobra.Command{
 		out.T(out.SuccessType, "Adding node {{.name}} to cluster {{.profile}}", out.V{"name": name, "profile": profile})
 		cp := viper.GetBool("control-plane")
 		worker := viper.GetBool("worker")
-		err = node.Add(mc, name, cp, worker, "", profile)
+		n, err := node.Add(mc, name, cp, worker, "", profile)
 		if err != nil {
 			exit.WithError("Error adding node to cluster", err)
 		}
 
-		node.Start(mc, name)
+		_, err = node.Start(mc, n, false)
+		if err != nil {
+			exit.WithError("Error starting node", err)
+		}
 	},
 }
 

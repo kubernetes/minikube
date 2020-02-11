@@ -44,7 +44,6 @@ import (
 	gopshost "github.com/shirou/gopsutil/host"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
@@ -131,8 +130,6 @@ const (
 
 var (
 	registryMirror   []string
-	dockerEnv        []string
-	dockerOpt        []string
 	insecureRegistry []string
 	apiServerNames   []string
 	addonList        []string
@@ -239,8 +236,8 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
 	startCmd.Flags().String(imageMirrorCountry, "", "Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn.")
 	startCmd.Flags().String(serviceCIDR, constants.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
-	startCmd.Flags().StringArrayVar(&dockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
-	startCmd.Flags().StringArrayVar(&dockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().StringArrayVar(&node.DockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().StringArrayVar(&node.DockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 }
 
 // startCmd represents the start command
@@ -341,7 +338,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	node.Start(&mc, &n, true, isUpgrade)
+	kubeconfig, err := node.Start(&mc, &n, true)
+	if err != nil {
+		exit.WithError("Starting node", err)
+	}
 
 	if err := showKubectlInfo(kubeconfig, k8sVersion, mc.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
@@ -421,17 +421,6 @@ func setupKubeconfig(h *host.Host, c *config.MachineConfig, n *config.Node, clus
 	return kcs, nil
 }
 
-func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
-	version, _ := cr.Version()
-	out.T(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
-	for _, v := range dockerOpt {
-		out.T(out.Option, "opt {{.docker_option}}", out.V{"docker_option": v})
-	}
-	for _, v := range dockerEnv {
-		out.T(out.Option, "env {{.docker_env}}", out.V{"docker_env": v})
-	}
-}
-
 func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
 	if kcs.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
@@ -487,8 +476,8 @@ func selectDriver(existing *config.MachineConfig) registry.DriverState {
 	}
 
 	// By default, the driver is whatever we used last time
-	if existing != nil && existing.VMDriver != "" {
-		ds := driver.Status(existing.VMDriver)
+	if existing != nil && existing.Driver != "" {
+		ds := driver.Status(existing.Driver)
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
 		return ds
 	}
@@ -532,7 +521,7 @@ func validateDriver(ds registry.DriverState, existing *config.MachineConfig) {
 		out.ErrLn("")
 
 		if !st.Installed && !viper.GetBool(force) {
-			if existing != nil && name == existing.VMDriver {
+			if existing != nil && name == existing.Driver {
 				exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
 			}
 			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
@@ -761,21 +750,6 @@ func validateRegistryMirror() {
 	}
 }
 
-// doCacheBinaries caches Kubernetes binaries in the foreground
-func doCacheBinaries(k8sVersion string) error {
-	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
-}
-
-// waitCacheRequiredImages blocks until the required images are all cached.
-func waitCacheRequiredImages(g *errgroup.Group) {
-	if !viper.GetBool(cacheImages) {
-		return
-	}
-	if err := g.Wait(); err != nil {
-		glog.Errorln("Error caching images: ", err)
-	}
-}
-
 // generateCfgFromFlags generates config.Config based on flags and supplied arguments
 func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) (config.MachineConfig, config.Node, error) {
 	r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
@@ -843,13 +817,13 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		Memory:                  pkgutil.CalculateSizeInMB(viper.GetString(memory)),
 		CPUs:                    viper.GetInt(cpus),
 		DiskSize:                pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
-		VMDriver:                drvName,
+		Driver:                  drvName,
 		HyperkitVpnKitSock:      viper.GetString(vpnkitSock),
 		HyperkitVSockPorts:      viper.GetStringSlice(vsockPorts),
 		NFSShare:                viper.GetStringSlice(nfsShare),
 		NFSSharesRoot:           viper.GetString(nfsSharesRoot),
-		DockerEnv:               dockerEnv,
-		DockerOpt:               dockerOpt,
+		DockerEnv:               node.DockerEnv,
+		DockerOpt:               node.DockerOpt,
 		InsecureRegistry:        insecureRegistry,
 		RegistryMirror:          registryMirror,
 		HostOnlyCIDR:            viper.GetString(hostOnlyCIDR),
@@ -903,7 +877,7 @@ func setDockerProxy() {
 					continue
 				}
 			}
-			dockerEnv = append(dockerEnv, fmt.Sprintf("%s=%s", k, v))
+			node.DockerEnv = append(node.DockerEnv, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
 }
@@ -1051,26 +1025,6 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.MachineConfig, node config.Nod
 		exit.WithError("Failed to setup certs", err)
 	}
 	return bs
-}
-
-// configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig) cruntime.Manager {
-	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner, ImageRepository: k8s.ImageRepository, KubernetesVersion: k8s.KubernetesVersion}
-	cr, err := cruntime.New(config)
-	if err != nil {
-		exit.WithError("Failed runtime", err)
-	}
-
-	disableOthers := true
-	if driver.BareMetal(drvName) {
-		disableOthers = false
-	}
-	err = cr.Enable(disableOthers)
-	if err != nil {
-		exit.WithError("Failed to enable container runtime", err)
-	}
-
-	return cr
 }
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper

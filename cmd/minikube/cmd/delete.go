@@ -192,7 +192,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		return DeletionError{Err: delErr, Errtype: MissingProfile}
 	}
 
-	if err == nil && driver.BareMetal(cc.VMDriver) {
+	if err == nil && driver.BareMetal(cc.Driver) {
 		if err := uninstallKubernetes(api, profile.Name, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
 			if ok {

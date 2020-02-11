@@ -25,11 +25,16 @@ import (
 )
 
 const (
-	imageRepository = "image-repository"
+	imageRepository     = "image-repository"
+	force               = "force"
+	cacheImages         = "cache-images"
+	waitUntilHealthy    = "wait"
+	cacheImageConfigKey = "cache"
+	containerRuntime    = "container-runtime"
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, k8sVersion string, profileName string) error {
+func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, k8sVersion string, profileName string) (*config.Node, error) {
 	n := config.Node{
 		Name:   name,
 		Worker: true,
@@ -52,10 +57,11 @@ func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, 
 	cc.Nodes = append(cc.Nodes, n)
 	err := config.SaveProfile(profileName, cc)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return Start(cc, &n, false, false)
+	_, err = Start(cc, &n, false)
+	return &n, err
 }
 
 // Delete stops and deletes the given node from the given cluster
