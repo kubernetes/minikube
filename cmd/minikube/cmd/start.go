@@ -46,7 +46,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -61,6 +60,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
@@ -68,7 +68,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/translate"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
-	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -100,7 +99,6 @@ const (
 	apiServerPort         = "apiserver-port"
 	dnsDomain             = "dns-domain"
 	serviceCIDR           = "service-cluster-ip-range"
-	imageRepository       = "image-repository"
 	imageMirrorCountry    = "image-mirror-country"
 	mountString           = "mount-string"
 	disableDriverMounts   = "disable-driver-mounts"
@@ -336,60 +334,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	// Now that the ISO is downloaded, pull images in the background while the VM boots.
-	var cacheGroup errgroup.Group
-	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	node.Start(&mc, &n, true, isUpgrade)
 
-	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
-	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := saveConfig(&mc); err != nil {
-		exit.WithError("Failed to save config", err)
-	}
-
-	// exits here in case of --download-only option.
-	handleDownloadOnly(&cacheGroup, k8sVersion)
-	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
-	defer machineAPI.Close()
-	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig)
-	showVersionInfo(k8sVersion, cr)
-	waitCacheRequiredImages(&cacheGroup)
-
-	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-	kubeconfig, err := setupKubeconfig(host, &mc, &n, mc.Name)
-	if err != nil {
-		exit.WithError("Failed to setup kubeconfig", err)
-	}
-
-	// setup kubeadm (must come after setupKubeconfig)
-	bs := setupKubeAdm(machineAPI, mc, n)
-
-	// pull images or restart cluster
-	bootstrapCluster(bs, cr, mRunner, mc, preExists, isUpgrade)
-	configureMounts()
-
-	// enable addons, both old and new!
-	existingAddons := map[string]bool{}
-	if existing != nil && existing.Addons != nil {
-		existingAddons = existing.Addons
-	}
-	addons.Start(viper.GetString(config.MachineProfile), existingAddons, addonList)
-
-	if err = cacheAndLoadImagesInConfig(); err != nil {
-		out.T(out.FailureType, "Unable to load cached images from config file.")
-	}
-
-	// special ops for none , like change minikube directory.
-	if driverName == driver.None {
-		prepareNone()
-	}
-
-	// Skip pre-existing, because we already waited for health
-	if viper.GetBool(waitUntilHealthy) && !preExists {
-		if err := bs.WaitForCluster(mc, viper.GetDuration(waitTimeout)); err != nil {
-			exit.WithError("Wait failed", err)
-		}
-	}
 	if err := showKubectlInfo(kubeconfig, k8sVersion, mc.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
 	}
@@ -466,51 +412,6 @@ func setupKubeconfig(h *host.Host, c *config.MachineConfig, n *config.Node, clus
 		return kcs, err
 	}
 	return kcs, nil
-}
-
-func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
-	// If --download-only, complete the remaining downloads and exit.
-	if !viper.GetBool(downloadOnly) {
-		return
-	}
-	if err := doCacheBinaries(k8sVersion); err != nil {
-		exit.WithError("Failed to cache binaries", err)
-	}
-	waitCacheRequiredImages(cacheGroup)
-	if err := saveImagesToTarFromConfig(); err != nil {
-		exit.WithError("Failed to cache images to tar", err)
-	}
-	out.T(out.Check, "Download complete!")
-	os.Exit(0)
-
-}
-
-func startMachine(cfg *config.MachineConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
-	m, err := machine.NewAPIClient()
-	if err != nil {
-		exit.WithError("Failed to get machine client", err)
-	}
-	host, preExists = startHost(m, *cfg)
-	runner, err = machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
-	}
-
-	ip := validateNetwork(host, runner)
-
-	// Bypass proxy for minikube's vm host ip
-	err = proxy.ExcludeIP(ip)
-	if err != nil {
-		out.ErrT(out.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
-	}
-	// Save IP to configuration file for subsequent use
-	node.IP = ip
-
-	if err := saveNodeToConfig(cfg, node); err != nil {
-		exit.WithError("Failed to save config", err)
-	}
-
-	return runner, preExists, m, host
 }
 
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
@@ -858,17 +759,6 @@ func doCacheBinaries(k8sVersion string) error {
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 }
 
-// beginCacheRequiredImages caches images required for kubernetes version in the background
-func beginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
-	if !viper.GetBool(cacheImages) {
-		return
-	}
-
-	g.Go(func() error {
-		return machine.CacheImagesForBootstrapper(imageRepository, k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
-	})
-}
-
 // waitCacheRequiredImages blocks until the required images are all cached.
 func waitCacheRequiredImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
@@ -1070,122 +960,6 @@ func prepareNone() {
 	}
 }
 
-// startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, mc config.MachineConfig) (*host.Host, bool) {
-	exists, err := api.Exists(mc.Name)
-	if err != nil {
-		exit.WithError("Failed to check if machine exists", err)
-	}
-
-	host, err := cluster.StartHost(api, mc)
-	if err != nil {
-		exit.WithError("Unable to start VM. Please investigate and run 'minikube delete' if possible", err)
-	}
-	return host, exists
-}
-
-// validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner) string {
-	ip, err := h.Driver.GetIP()
-	if err != nil {
-		exit.WithError("Unable to get VM IP address", err)
-	}
-
-	optSeen := false
-	warnedOnce := false
-	for _, k := range proxy.EnvVars {
-		if v := os.Getenv(k); v != "" {
-			if !optSeen {
-				out.T(out.Internet, "Found network options:")
-				optSeen = true
-			}
-			out.T(out.Option, "{{.key}}={{.value}}", out.V{"key": k, "value": v})
-			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
-			k = strings.ToUpper(k)               // for http_proxy & https_proxy
-			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
-				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details", out.V{"ip_address": ip, "documentation_url": "https://minikube.sigs.k8s.io/docs/reference/networking/proxy/"})
-				warnedOnce = true
-			}
-		}
-	}
-
-	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
-		trySSH(h, ip)
-	}
-
-	tryLookup(r)
-	tryRegistry(r)
-	return ip
-}
-
-func trySSH(h *host.Host, ip string) {
-	if viper.GetBool(force) {
-		return
-	}
-
-	sshAddr := net.JoinHostPort(ip, "22")
-
-	dial := func() (err error) {
-		d := net.Dialer{Timeout: 3 * time.Second}
-		conn, err := d.Dial("tcp", sshAddr)
-		if err != nil {
-			out.WarningT("Unable to verify SSH connectivity: {{.error}}. Will retry...", out.V{"error": err})
-			return err
-		}
-		_ = conn.Close()
-		return nil
-	}
-
-	if err := retry.Expo(dial, time.Second, 13*time.Second); err != nil {
-		exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
-
-	This is likely due to one of two reasons:
-
-	- VPN or firewall interference
-	- {{.hypervisor}} network configuration issue
-
-	Suggested workarounds:
-
-	- Disable your local VPN or firewall software
-	- Configure your local VPN or firewall to allow access to {{.ip}}
-	- Restart or reinstall {{.hypervisor}}
-	- Use an alternative --vm-driver
-	- Use --force to override this connectivity check
-	`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
-	}
-}
-
-func tryLookup(r command.Runner) {
-	// DNS check
-	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io", "-type=ns")); err != nil {
-		glog.Infof("%s failed: %v which might be okay will retry nslookup without query type", rr.Args, err)
-		// will try with without query type for ISOs with different busybox versions.
-		if _, err = r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
-			glog.Warningf("nslookup failed: %v", err)
-			out.WarningT("Node may be unable to resolve external DNS records")
-		}
-	}
-}
-func tryRegistry(r command.Runner) {
-	// Try an HTTPS connection to the image repository
-	proxy := os.Getenv("HTTPS_PROXY")
-	opts := []string{"-sS"}
-	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
-		opts = append([]string{"-x", proxy}, opts...)
-	}
-
-	repo := viper.GetString(imageRepository)
-	if repo == "" {
-		repo = images.DefaultKubernetesRepo
-	}
-
-	opts = append(opts, fmt.Sprintf("https://%s/", repo))
-	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
-		glog.Warningf("%s failed: %v", rr.Args, err)
-		out.WarningT("VM is unable to access {{.repository}}, you may need to configure a proxy or set --image-repository", out.V{"repository": repo})
-	}
-}
-
 // getKubernetesVersion ensures that the requested version is reasonable
 func getKubernetesVersion(old *config.MachineConfig) (string, bool) {
 	paramVersion := viper.GetString(kubernetesVersion)
@@ -1339,14 +1113,4 @@ func configureMounts() {
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func saveConfig(clusterCfg *config.MachineConfig) error {
 	return config.SaveProfile(viper.GetString(config.MachineProfile), clusterCfg)
-}
-
-func saveNodeToConfig(cfg *config.MachineConfig, node *config.Node) error {
-	for i, n := range cfg.Nodes {
-		if n.Name == node.Name {
-			cfg.Nodes[i] = *node
-			break
-		}
-	}
-	return saveConfig(cfg)
 }
