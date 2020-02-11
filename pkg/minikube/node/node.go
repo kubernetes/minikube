@@ -24,6 +24,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
+const (
+	imageRepository = "image-repository"
+)
+
 // Add adds a new node config to an existing cluster.
 func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, k8sVersion string, profileName string) error {
 	n := config.Node{
@@ -51,7 +55,7 @@ func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, 
 		return err
 	}
 
-	return Start(cc, &n, false)
+	return Start(cc, &n, false, false)
 }
 
 // Delete stops and deletes the given node from the given cluster
@@ -75,12 +79,6 @@ func Stop(cc *config.MachineConfig, n *config.Node) error {
 	return nil
 }
 
-// Start spins up a guest and starts the kubernetes node.
-func Start(cc *config.MachineConfig, n *config.Node, primary bool) error {
-	// Throw all the slop from cmd.start in here
-	return nil
-}
-
 // Retrieve finds the node by name in the given cluster
 func Retrieve(cc *config.MachineConfig, name string) (*config.Node, int, error) {
 	for i, n := range cc.Nodes {
@@ -90,4 +88,21 @@ func Retrieve(cc *config.MachineConfig, name string) (*config.Node, int, error) 
 	}
 
 	return nil, -1, errors.New("Could not find node " + name)
+}
+
+// Save saves a node to a cluster
+func Save(cfg *config.MachineConfig, node *config.Node) error {
+	update := false
+	for i, n := range cfg.Nodes {
+		if n.Name == node.Name {
+			cfg.Nodes[i] = *node
+			update = true
+			break
+		}
+	}
+
+	if !update {
+		cfg.Nodes = append(cfg.Nodes, *node)
+	}
+	return config.SaveProfile(viper.GetString(config.MachineProfile), cfg)
 }
