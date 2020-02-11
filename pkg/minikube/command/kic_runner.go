@@ -175,7 +175,8 @@ func copyToPodman(k *kicRunner, f assets.CopyableFile) error {
 	if out, err := exec.Command(oci.Podman, "cp", assetFullPath, destination).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "copying %s into node, output: %s", f.GetAssetName(), string(out))
 	}
-	if out, err := exec.Command(oci.Podman, "exec", "-it", k.nameOrID, "chmod", fmt.Sprint(perms), fmt.Sprintf("%s/%s", f.GetTargetDir(), f.GetTargetName())).CombinedOutput(); err != nil {
+	// only for podman trying with 777 till bugs with podman cp are fixed.
+	if out, err := exec.Command(oci.Podman, "exec", "-it", k.nameOrID, "chmod", "777", fmt.Sprintf("%s/%s", f.GetTargetDir(), f.GetTargetName())).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "chmod-ing copied file: %s output: %s", f.GetAssetName(), string(out))
 
 	}
