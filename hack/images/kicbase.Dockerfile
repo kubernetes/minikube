@@ -52,3 +52,4 @@ RUN tar xvf /preloaded-images.tar -C /
 
 FROM base
 COPY --from=1 /var/lib/docker /var/lib/docker
+COPY --from=1 /var/lib/minikube/binaries /var/lib/minikube/binaries

@@ -72,7 +72,7 @@ func startMinikube() error {
 }
 
 func createImageTarball() error {
-	cmd := exec.Command(minikubePath, "ssh", "-p", profile, "--", "sudo", "tar", "cvf", tarballFilename, "/var/lib/docker")
+	cmd := exec.Command(minikubePath, "ssh", "-p", profile, "--", "sudo", "tar", "cvf", tarballFilename, "/var/lib/docker", "/var/lib/minikube/binaries")
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
 }
