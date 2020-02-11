@@ -54,6 +54,33 @@ func TestName(t *testing.T) {
 	}
 }
 
+func TestImageExists(t *testing.T) {
+	var tests = []struct {
+		runtime string
+		name    string
+		sha     string
+		want    bool
+	}{
+		{"docker", "missing", "0000000000000000000000000000000000000000000000000000000000000000", false},
+		{"docker", "image", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
+		{"crio", "missing", "0000000000000000000000000000000000000000000000000000000000000000", false},
+		{"crio", "image", "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.runtime, func(t *testing.T) {
+			r, err := New(Config{Type: tc.runtime, Runner: NewFakeRunner(t)})
+			if err != nil {
+				t.Fatalf("New(%s): %v", tc.runtime, err)
+			}
+
+			got := r.ImageExists(tc.name, tc.sha)
+			if diff := cmp.Diff(tc.want, got); diff != "" {
+				t.Errorf("ImageExists(%s) returned diff (-want +got):\n%s", tc.runtime, diff)
+			}
+		})
+	}
+}
+
 func TestCGroupDriver(t *testing.T) {
 	var tests = []struct {
 		runtime string
@@ -174,6 +201,8 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		return buffer(f.which(args, root))
 	case "docker":
 		return buffer(f.docker(args, root))
+	case "podman":
+		return buffer(f.podman(args, root))
 	case "crictl", "/usr/bin/crictl":
 		return buffer(f.crictl(args, root))
 	case "crio":
@@ -225,15 +254,43 @@ func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 		}
 	case "version":
 
-		if args[1] == "--format" && args[2] == "'{{.Server.Version}}'" {
+		if args[1] == "--format" && args[2] == "{{.Server.Version}}" {
 			return "18.06.2-ce", nil
+		}
+
+	case "inspect":
+
+		if args[1] == "--format" && args[2] == "{{.Id}}" {
+			if args[3] == "missing" {
+				return "", &exec.ExitError{Stderr: []byte("Error: No such object: missing")}
+			}
+			return "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", nil
 		}
 
 	case "info":
 
-		if args[1] == "--format" && args[2] == "'{{.CgroupDriver}}'" {
+		if args[1] == "--format" && args[2] == "{{.CgroupDriver}}" {
 			return "cgroupfs", nil
 		}
+	}
+	return "", nil
+}
+
+// podman is a fake implementation of podman
+func (f *FakeRunner) podman(args []string, _ bool) (string, error) {
+	switch cmd := args[0]; cmd {
+	case "--version":
+		return "podman version 1.6.4", nil
+
+	case "inspect":
+
+		if args[1] == "--format" && args[2] == "{{.Id}}" {
+			if args[3] == "missing" {
+				return "", &exec.ExitError{Stderr: []byte("Error: error getting image \"missing\": unable to find a name and tag match for missing in repotags: no such image")}
+			}
+			return "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", nil
+		}
+
 	}
 	return "", nil
 }

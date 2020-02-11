@@ -153,6 +153,14 @@ func TestStartStop(t *testing.T) {
 					if err != nil {
 						t.Errorf("%s failed: %v", rr.Args, err)
 					}
+
+					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts", profile))
+					if err != nil {
+						t.Logf("config context error: %v (may be ok)", err)
+					}
+					if rr.ExitCode != 1 {
+						t.Errorf("wanted exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
+					}
 				}
 			})
 		}

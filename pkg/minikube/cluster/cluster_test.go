@@ -18,7 +18,6 @@ package cluster
 
 import (
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -42,8 +41,8 @@ type MockDownloader struct{}
 func (d MockDownloader) GetISOFileURI(isoURL string) string          { return "" }
 func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return nil }
 
-func createMockDriverHost(c config.MachineConfig) interface{} {
-	return nil
+func createMockDriverHost(c config.MachineConfig) (interface{}, error) {
+	return nil, nil
 }
 
 func RegisterMockDriver(t *testing.T) {
@@ -136,6 +135,49 @@ func TestStartHostExists(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
+	if h.Name != viper.GetString("profile") {
+		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
+	}
+	if s, _ := h.Driver.GetState(); s != state.Running {
+		t.Fatalf("Machine not started.")
+	}
+	if !md.Provisioner.Provisioned {
+		t.Fatalf("Expected provision to be called")
+	}
+}
+
+func TestStartHostErrMachineNotExist(t *testing.T) {
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
+	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
+	api.NotExistError = true
+	h, err := createHost(api, defaultMachineConfig)
+	if err != nil {
+		t.Fatalf("Error creating host: %v", err)
+	}
+
+	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	provision.SetDetector(md)
+
+	mc := defaultMachineConfig
+	mc.Name = h.Name
+
+	// This should pass with creating host, while machine does not exist.
+	h, err = StartHost(api, mc)
+	if err != nil {
+		if err != ErrorMachineNotExist {
+			t.Fatalf("Error starting host: %v", err)
+		}
+	}
+
+	mc.Name = h.Name
+
+	// Second call. This should pass without calling Create because the host exists already.
+	h, err = StartHost(api, mc)
+	if err != nil {
+		t.Fatalf("Error starting host: %v", err)
+	}
+
 	if h.Name != viper.GetString("profile") {
 		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
 	}
@@ -310,6 +352,21 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	}
 }
 
+func TestDeleteHostErrMachineNotExist(t *testing.T) {
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
+	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
+	api.NotExistError = true
+	_, err := createHost(api, defaultMachineConfig)
+	if err != nil {
+		t.Errorf("createHost failed: %v", err)
+	}
+
+	if err := DeleteHost(api, viper.GetString("profile")); err == nil {
+		t.Fatal("Expected error deleting host.")
+	}
+}
+
 func TestGetHostStatus(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -336,73 +393,6 @@ func TestGetHostStatus(t *testing.T) {
 		t.Errorf("StopHost failed: %v", err)
 	}
 	checkState(state.Stopped.String())
-}
-
-func TestGetNodeDockerEnv(t *testing.T) {
-	RegisterMockDriver(t)
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	api := tests.NewMockAPI(t)
-	h, err := createHost(api, defaultMachineConfig)
-	if err != nil {
-		t.Fatalf("Error creating host: %v", err)
-	}
-	d := &tests.MockDriver{
-		BaseDriver: drivers.BaseDriver{
-			IPAddress: "127.0.0.1",
-		},
-		T: t,
-	}
-	h.Driver = d
-
-	envMap, err := GetNodeDockerEnv(api)
-	if err != nil {
-		t.Fatalf("Unexpected error getting env: %v", err)
-	}
-
-	dockerEnvKeys := [...]string{
-		constants.DockerTLSVerifyEnv,
-		constants.DockerHostEnv,
-		constants.DockerCertPathEnv,
-		constants.MinikubeActiveDockerdEnv,
-	}
-	for _, dockerEnvKey := range dockerEnvKeys {
-		if _, hasKey := envMap[dockerEnvKey]; !hasKey {
-			t.Fatalf("Expected envMap[\"%s\"] key to be defined", dockerEnvKey)
-		}
-	}
-}
-
-func TestGetNodeDockerEnvIPv6(t *testing.T) {
-	RegisterMockDriver(t)
-
-	tempDir := tests.MakeTempDir()
-	defer os.RemoveAll(tempDir)
-
-	api := tests.NewMockAPI(t)
-	h, err := createHost(api, defaultMachineConfig)
-	if err != nil {
-		t.Fatalf("Error creating host: %v", err)
-	}
-	d := &tests.MockDriver{
-		BaseDriver: drivers.BaseDriver{
-			IPAddress: "fe80::215:5dff:fe00:a903",
-		},
-		T: t,
-	}
-	h.Driver = d
-
-	envMap, err := GetNodeDockerEnv(api)
-	if err != nil {
-		t.Fatalf("Unexpected error getting env: %v", err)
-	}
-
-	expected := "tcp://[fe80::215:5dff:fe00:a903]:2376"
-	v := envMap["DOCKER_HOST"]
-	if v != expected {
-		t.Fatalf("Expected DOCKER_HOST to be defined as %s but was %s", expected, v)
-	}
 }
 
 func TestCreateSSHShell(t *testing.T) {
