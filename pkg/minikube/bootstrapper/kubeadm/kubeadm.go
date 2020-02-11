@@ -390,23 +390,6 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 	return nil
 }
 
-// PullImages downloads images that will be used by Kubernetes
-func (k *Bootstrapper) PullImages(k8s config.KubernetesConfig) error {
-	version, err := bsutil.ParseKubernetesVersion(k8s.KubernetesVersion)
-	if err != nil {
-		return errors.Wrap(err, "parsing kubernetes version")
-	}
-	if version.LT(semver.MustParse("1.11.0")) {
-		return fmt.Errorf("pull command is not supported by kubeadm v%s", version)
-	}
-
-	rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s config images pull --config %s", bsutil.InvokeKubeadm(k8s.KubernetesVersion), bsutil.KubeadmYamlPath)))
-	if err != nil {
-		return errors.Wrapf(err, "running cmd: %q", rr.Command())
-	}
-	return nil
-}
-
 // SetupCerts sets up certificates within the cluster.
 func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) error {
 	return bootstrapper.SetupCerts(k.c, k8s, n)

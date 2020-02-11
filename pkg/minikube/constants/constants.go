@@ -50,6 +50,8 @@ const (
 	// DockerDaemonEnvs has list of environment variables to control docker daemon shell is using
 
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
+	// PodmanVarlinkBridgeEnv is used for podman settings
+	PodmanVarlinkBridgeEnv = "PODMAN_VARLINK_BRIDGE"
 )
 
 var DockerDaemonEnvs = [3]string{DockerHostEnv, DockerTLSVerifyEnv, DockerCertPathEnv}
@@ -111,9 +113,6 @@ var KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
 var ImageCacheDir = localpath.MakeMiniPath("cache", "images")
 
 const (
-	// GvisorFilesPath is the path to the gvisor files saved by go-bindata
-	GvisorFilesPath = "/tmp/gvisor"
-
 	// GvisorConfigTomlTargetName is the go-bindata target name for the gvisor config.toml
 	GvisorConfigTomlTargetName = "gvisor-config.toml"
 )

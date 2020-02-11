@@ -90,7 +90,7 @@ var versionSpecificOpts = []config.VersionedExtraOption{
 
 	// Auth args
 	config.NewUnversionedOption(Kubelet, "authorization-mode", "Webhook"),
-	config.NewUnversionedOption(Kubelet, "client-ca-file", path.Join(vmpath.GuestCertsDir, "ca.crt")),
+	config.NewUnversionedOption(Kubelet, "client-ca-file", path.Join(vmpath.GuestKubernetesCertsDir, "ca.crt")),
 
 	// Cgroup args
 	config.NewUnversionedOption(Kubelet, "cgroup-driver", "cgroupfs"),

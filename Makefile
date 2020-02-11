@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 7
-VERSION_BUILD ?= 1
+VERSION_BUILD ?= 2
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
@@ -63,9 +63,6 @@ GOLINT_OPTIONS = --timeout 4m \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain' \
 	  --skip-files "pkg/minikube/translate/translations.go|pkg/minikube/assets/assets.go"
 
-# Major version of gvisor image. Increment when there are breaking changes.
-GVISOR_IMAGE_VERSION ?= 2
-
 export GO111MODULE := on
 
 GOOS ?= $(shell go env GOOS)
@@ -81,7 +78,14 @@ BUILD_OS := $(shell uname -s)
 
 SHA512SUM=$(shell command -v sha512sum || echo "shasum -a 512")
 
-STORAGE_PROVISIONER_TAG := v1.8.1
+# gvisor tag to automatically push changes to
+# to update minikubes default, update deploy/addons/gvisor
+GVISOR_TAG ?= latest
+
+# storage provisioner tag to push changes to
+# to update minikubes default, update pkg/minikube/bootstrapper/images
+STORAGE_PROVISIONER_TAG ?= latest
+
 # TODO: multi-arch manifest
 ifeq ($(GOARCH),amd64)
 STORAGE_PROVISIONER_IMAGE ?= $(REGISTRY)/storage-provisioner:$(STORAGE_PROVISIONER_TAG)
@@ -516,11 +520,11 @@ out/gvisor-addon: pkg/minikube/assets/assets.go pkg/minikube/translate/translati
 
 .PHONY: gvisor-addon-image
 gvisor-addon-image: out/gvisor-addon  ## Build docker image for gvisor
-	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_IMAGE_VERSION) -f deploy/gvisor/Dockerfile .
+	docker build -t $(REGISTRY)/gvisor-addon:$(GVISOR_TAG) -f deploy/gvisor/Dockerfile .
 
 .PHONY: push-gvisor-addon-image
 push-gvisor-addon-image: gvisor-addon-image
-	gcloud docker -- push $(REGISTRY)/gvisor-addon:$(GVISOR_IMAGE_VERSION)
+	gcloud docker -- push $(REGISTRY)/gvisor-addon:$(GVISOR_TAG)
 
 .PHONY: release-iso
 release-iso: minikube_iso checksum  ## Build and release .iso file

@@ -72,57 +72,61 @@ import (
 )
 
 const (
-	isoURL                = "iso-url"
-	memory                = "memory"
-	cpus                  = "cpus"
-	humanReadableDiskSize = "disk-size"
-	nfsSharesRoot         = "nfs-shares-root"
-	nfsShare              = "nfs-share"
-	kubernetesVersion     = "kubernetes-version"
-	hostOnlyCIDR          = "host-only-cidr"
-	containerRuntime      = "container-runtime"
-	criSocket             = "cri-socket"
-	networkPlugin         = "network-plugin"
-	enableDefaultCNI      = "enable-default-cni"
-	hypervVirtualSwitch   = "hyperv-virtual-switch"
-	kvmNetwork            = "kvm-network"
-	kvmQemuURI            = "kvm-qemu-uri"
-	kvmGPU                = "kvm-gpu"
-	kvmHidden             = "kvm-hidden"
-	minikubeEnvPrefix     = "MINIKUBE"
-	defaultMemorySize     = "2000mb"
-	defaultDiskSize       = "20000mb"
-	keepContext           = "keep-context"
-	createMount           = "mount"
-	featureGates          = "feature-gates"
-	apiServerName         = "apiserver-name"
-	apiServerPort         = "apiserver-port"
-	dnsDomain             = "dns-domain"
-	serviceCIDR           = "service-cluster-ip-range"
-	imageMirrorCountry    = "image-mirror-country"
-	mountString           = "mount-string"
-	disableDriverMounts   = "disable-driver-mounts"
-	cacheImages           = "cache-images"
-	uuid                  = "uuid"
-	vpnkitSock            = "hyperkit-vpnkit-sock"
-	vsockPorts            = "hyperkit-vsock-ports"
-	embedCerts            = "embed-certs"
-	noVTXCheck            = "no-vtx-check"
-	downloadOnly          = "download-only"
-	dnsProxy              = "dns-proxy"
-	hostDNSResolver       = "host-dns-resolver"
-	waitUntilHealthy      = "wait"
-	force                 = "force"
-	dryRun                = "dry-run"
-	interactive           = "interactive"
-	waitTimeout           = "wait-timeout"
-	nativeSSH             = "native-ssh"
-	minimumMemorySize     = "1024mb"
-	minimumCPUS           = 2
-	minimumDiskSize       = "2000mb"
-	autoUpdate            = "auto-update-drivers"
-	hostOnlyNicType       = "host-only-nic-type"
-	natNicType            = "nat-nic-type"
+	isoURL                  = "iso-url"
+	memory                  = "memory"
+	cpus                    = "cpus"
+	humanReadableDiskSize   = "disk-size"
+	nfsSharesRoot           = "nfs-shares-root"
+	nfsShare                = "nfs-share"
+	kubernetesVersion       = "kubernetes-version"
+	hostOnlyCIDR            = "host-only-cidr"
+	containerRuntime        = "container-runtime"
+	criSocket               = "cri-socket"
+	networkPlugin           = "network-plugin"
+	enableDefaultCNI        = "enable-default-cni"
+	hypervVirtualSwitch     = "hyperv-virtual-switch"
+	hypervUseExternalSwitch = "hyperv-use-external-switch"
+	hypervExternalAdapter   = "hyperv-external-adapter"
+	kvmNetwork              = "kvm-network"
+	kvmQemuURI              = "kvm-qemu-uri"
+	kvmGPU                  = "kvm-gpu"
+	kvmHidden               = "kvm-hidden"
+	minikubeEnvPrefix       = "MINIKUBE"
+	defaultMemorySize       = "2000mb"
+	installAddons           = "install-addons"
+	defaultDiskSize         = "20000mb"
+	keepContext             = "keep-context"
+	createMount             = "mount"
+	featureGates            = "feature-gates"
+	apiServerName           = "apiserver-name"
+	apiServerPort           = "apiserver-port"
+	dnsDomain               = "dns-domain"
+	serviceCIDR             = "service-cluster-ip-range"
+	imageRepository         = "image-repository"
+	imageMirrorCountry      = "image-mirror-country"
+	mountString             = "mount-string"
+	disableDriverMounts     = "disable-driver-mounts"
+	cacheImages             = "cache-images"
+	uuid                    = "uuid"
+	vpnkitSock              = "hyperkit-vpnkit-sock"
+	vsockPorts              = "hyperkit-vsock-ports"
+	embedCerts              = "embed-certs"
+	noVTXCheck              = "no-vtx-check"
+	downloadOnly            = "download-only"
+	dnsProxy                = "dns-proxy"
+	hostDNSResolver         = "host-dns-resolver"
+	waitUntilHealthy        = "wait"
+	force                   = "force"
+	dryRun                  = "dry-run"
+	interactive             = "interactive"
+	waitTimeout             = "wait-timeout"
+	nativeSSH               = "native-ssh"
+	minimumMemorySize       = "1024mb"
+	minimumCPUS             = 2
+	minimumDiskSize         = "2000mb"
+	autoUpdate              = "auto-update-drivers"
+	hostOnlyNicType         = "host-only-nic-type"
+	natNicType              = "nat-nic-type"
 )
 
 var (
@@ -177,6 +181,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
+	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -223,6 +228,8 @@ func initDriverFlags() {
 
 	// hyperv
 	startCmd.Flags().String(hypervVirtualSwitch, "", "The hyperv virtual switch name. Defaults to first found. (hyperv driver only)")
+	startCmd.Flags().Bool(hypervUseExternalSwitch, false, "Whether to use external switch over Default Switch if virtual switch not explicitly specified. (hyperv driver only)")
+	startCmd.Flags().String(hypervExternalAdapter, "", "External Adapter on which external switch will be created if no external switch is found. (hyperv driver only)")
 }
 
 // initNetworkingFlags inits the commandline flags for connectivity related flags for start
@@ -314,7 +321,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		updateDriver(driverName)
 	}
 
-	k8sVersion, isUpgrade := getKubernetesVersion(existing)
+	k8sVersion := getKubernetesVersion(existing)
 	mc, n, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
@@ -829,36 +836,38 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	}
 
 	cfg := config.MachineConfig{
-		Name:                viper.GetString(config.MachineProfile),
-		KeepContext:         viper.GetBool(keepContext),
-		EmbedCerts:          viper.GetBool(embedCerts),
-		MinikubeISO:         viper.GetString(isoURL),
-		Memory:              pkgutil.CalculateSizeInMB(viper.GetString(memory)),
-		CPUs:                viper.GetInt(cpus),
-		DiskSize:            pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
-		VMDriver:            drvName,
-		HyperkitVpnKitSock:  viper.GetString(vpnkitSock),
-		HyperkitVSockPorts:  viper.GetStringSlice(vsockPorts),
-		NFSShare:            viper.GetStringSlice(nfsShare),
-		NFSSharesRoot:       viper.GetString(nfsSharesRoot),
-		DockerEnv:           dockerEnv,
-		DockerOpt:           dockerOpt,
-		InsecureRegistry:    insecureRegistry,
-		RegistryMirror:      registryMirror,
-		HostOnlyCIDR:        viper.GetString(hostOnlyCIDR),
-		HypervVirtualSwitch: viper.GetString(hypervVirtualSwitch),
-		KVMNetwork:          viper.GetString(kvmNetwork),
-		KVMQemuURI:          viper.GetString(kvmQemuURI),
-		KVMGPU:              viper.GetBool(kvmGPU),
-		KVMHidden:           viper.GetBool(kvmHidden),
-		Downloader:          pkgutil.DefaultDownloader{},
-		DisableDriverMounts: viper.GetBool(disableDriverMounts),
-		UUID:                viper.GetString(uuid),
-		NoVTXCheck:          viper.GetBool(noVTXCheck),
-		DNSProxy:            viper.GetBool(dnsProxy),
-		HostDNSResolver:     viper.GetBool(hostDNSResolver),
-		HostOnlyNicType:     viper.GetString(hostOnlyNicType),
-		NatNicType:          viper.GetString(natNicType),
+		Name:                    viper.GetString(config.MachineProfile),
+		KeepContext:             viper.GetBool(keepContext),
+		EmbedCerts:              viper.GetBool(embedCerts),
+		MinikubeISO:             viper.GetString(isoURL),
+		Memory:                  pkgutil.CalculateSizeInMB(viper.GetString(memory)),
+		CPUs:                    viper.GetInt(cpus),
+		DiskSize:                pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
+		VMDriver:                drvName,
+		HyperkitVpnKitSock:      viper.GetString(vpnkitSock),
+		HyperkitVSockPorts:      viper.GetStringSlice(vsockPorts),
+		NFSShare:                viper.GetStringSlice(nfsShare),
+		NFSSharesRoot:           viper.GetString(nfsSharesRoot),
+		DockerEnv:               dockerEnv,
+		DockerOpt:               dockerOpt,
+		InsecureRegistry:        insecureRegistry,
+		RegistryMirror:          registryMirror,
+		HostOnlyCIDR:            viper.GetString(hostOnlyCIDR),
+		HypervVirtualSwitch:     viper.GetString(hypervVirtualSwitch),
+		HypervUseExternalSwitch: viper.GetBool(hypervUseExternalSwitch),
+		HypervExternalAdapter:   viper.GetString(hypervExternalAdapter),
+		KVMNetwork:              viper.GetString(kvmNetwork),
+		KVMQemuURI:              viper.GetString(kvmQemuURI),
+		KVMGPU:                  viper.GetBool(kvmGPU),
+		KVMHidden:               viper.GetBool(kvmHidden),
+		Downloader:              pkgutil.DefaultDownloader{},
+		DisableDriverMounts:     viper.GetBool(disableDriverMounts),
+		UUID:                    viper.GetString(uuid),
+		NoVTXCheck:              viper.GetBool(noVTXCheck),
+		DNSProxy:                viper.GetBool(dnsProxy),
+		HostDNSResolver:         viper.GetBool(hostDNSResolver),
+		HostOnlyNicType:         viper.GetString(hostOnlyNicType),
+		NatNicType:              viper.GetString(natNicType),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
 			ClusterName:            viper.GetString(config.MachineProfile),
@@ -961,9 +970,8 @@ func prepareNone() {
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable
-func getKubernetesVersion(old *config.MachineConfig) (string, bool) {
+func getKubernetesVersion(old *config.MachineConfig) string {
 	paramVersion := viper.GetString(kubernetesVersion)
-	isUpgrade := false
 
 	if paramVersion == "" { // if the user did not specify any version then ...
 		if old != nil { // .. use the old version from config (if any)
@@ -981,7 +989,7 @@ func getKubernetesVersion(old *config.MachineConfig) (string, bool) {
 	nv := version.VersionPrefix + nvs.String()
 
 	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
-		return nv, isUpgrade
+		return nv
 	}
 
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
@@ -1023,11 +1031,7 @@ func getKubernetesVersion(old *config.MachineConfig) (string, bool) {
 	if defaultVersion.GT(nvs) {
 		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
-
-	if nvs.GT(ovs) {
-		isUpgrade = true
-	}
-	return nv, isUpgrade
+	return nv
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
@@ -1070,14 +1074,7 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 }
 
 // bootstrapCluster starts Kubernetes using the chosen bootstrapper
-func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, mc config.MachineConfig, preexisting bool, isUpgrade bool) {
-	if isUpgrade || !preexisting {
-		out.T(out.Pulling, "Pulling images ...")
-		if err := bs.PullImages(mc.KubernetesConfig); err != nil {
-			out.T(out.FailureType, "Unable to pull images, which may be OK: {{.error}}", out.V{"error": err})
-		}
-	}
-
+func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, mc config.MachineConfig) {
 	out.T(out.Launch, "Launching Kubernetes ... ")
 	if err := bs.StartCluster(mc); err != nil {
 		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))

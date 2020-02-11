@@ -1,5 +1,25 @@
 # Release Notes
 
+## Version 1.7.2 - 2020-02-07
+
+* Fix to delete context when delete minikube [#6541](https://github.com/kubernetes/minikube/pull/6541)
+* Fix usage of quotes in cruntime format strings [#6549](https://github.com/kubernetes/minikube/pull/6549)
+* Add ca-certificates directory for distros that do not include it [#6545](https://github.com/kubernetes/minikube/pull/6545)
+* kubeadm template: Combine apiserver certSANs with extraArgs [#6547](https://github.com/kubernetes/minikube/pull/6547)
+* Add --install-addons=false toggle for users who don't want them [#6536](https://github.com/kubernetes/minikube/pull/6536)
+* Fix a variety of bugs in `docker-env` output [#6540](https://github.com/kubernetes/minikube/pull/6540)
+* Remove kubeadm pull images [#6514](https://github.com/kubernetes/minikube/pull/6514)
+
+Special thanks go out to our contributors for these fixes:
+
+- Anders F Björklund
+- anencore94
+- David Taylor
+- Priya Wadhwa
+- Ruben
+- Sharif Elgamal
+- Thomas Strömberg
+
 ## Version 1.7.1 - 2020-02-05
 
 * Create directory using os.MkDirAll, as mkdir -p does not work on windows [#6508](https://github.com/kubernetes/minikube/pull/6508)
