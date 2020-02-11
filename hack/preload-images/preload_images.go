@@ -17,9 +17,8 @@ limitations under the License.
 package main
 
 import (
-	"bytes"
+	"flag"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -39,12 +38,8 @@ var (
 )
 
 func init() {
-	if kv := os.Getenv("KUBERNETES_VERSION"); kv != "" {
-		kubernetesVersion = kv
-	} else {
-		fmt.Println("Please pass in kubernetes version via the KUBERNETES_VERSION environment variable")
-		os.Exit(1)
-	}
+	flag.StringVar(&kubernetesVersion, "kubernetes-version", "", "desired kubernetes version, for example `v1.17.2`")
+	flag.Parse()
 	tarballFilename = fmt.Sprintf("preloaded-images-k8s-%s.tar", kubernetesVersion)
 }
 
@@ -71,7 +66,7 @@ func executePreloadImages() error {
 }
 
 func startMinikube() error {
-	cmd := exec.Command(minikubePath, "start", "-p", profile, "--memory", "10000", "--kubernetes-version", kubernetesVersion)
+	cmd := exec.Command(minikubePath, "start", "-p", profile, "--memory", "4000", "--kubernetes-version", kubernetesVersion, "--wait=false")
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
 }
@@ -83,19 +78,19 @@ func createImageTarball() error {
 }
 
 func copyTarballToHost() error {
-	sshKey, err := runCmdCaptureStdout([]string{minikubePath, "ssh-key", "-p", profile})
+	sshKey, err := runCmd([]string{minikubePath, "ssh-key", "-p", profile})
 	if err != nil {
 		return errors.Wrap(err, "getting ssh-key")
 	}
 
-	ip, err := runCmdCaptureStdout([]string{minikubePath, "ip", "-p", profile})
+	ip, err := runCmd([]string{minikubePath, "ip", "-p", profile})
 	if err != nil {
 		return errors.Wrap(err, "getting ip")
 	}
 
 	dest := filepath.Join("out/", tarballFilename)
-	args := fmt.Sprintf("scp -o StrictHostKeyChecking=no -i %s docker@%s:/home/docker/%s %s", sshKey, ip, tarballFilename, dest)
-	_, err = runCmdCaptureStdout(strings.Split(args, " "))
+	args := []string{"scp", "-o", "StrictHostKeyChecking=no", "-i", string(sshKey), fmt.Sprintf("docker@%s:/home/docker/%s", ip, tarballFilename), dest}
+	_, err = runCmd(args)
 	return err
 }
 
@@ -105,16 +100,8 @@ func deleteMinikube() error {
 	return cmd.Run()
 }
 
-func runCmdCaptureStdout(command []string) (string, error) {
+func runCmd(command []string) (string, error) {
 	cmd := exec.Command(command[0], command[1:]...)
-	buf := bytes.NewBuffer([]byte{})
-	cmd.Stdout = buf
-	if err := cmd.Run(); err != nil {
-		return "", err
-	}
-	stdout, err := ioutil.ReadAll(buf)
-	if err != nil {
-		return "", err
-	}
-	return strings.Trim(string(stdout), "\n "), nil
+	output, err := cmd.Output()
+	return strings.Trim(string(output), "\n "), err
 }
