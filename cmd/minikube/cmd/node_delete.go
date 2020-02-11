@@ -47,8 +47,13 @@ var nodeDeleteCmd = &cobra.Command{
 			exit.WithError("loading config", err)
 		}
 
+		n, _, err := node.Retrieve(cc, name)
+		if err != nil {
+			exit.WithError("retrieving node", err)
+		}
+
 		if cluster.IsHostRunning(api, name) {
-			node.Stop(cc, name)
+			node.Stop(cc, n)
 		}
 
 		node.Delete(cc, name)

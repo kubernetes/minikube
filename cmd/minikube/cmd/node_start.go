@@ -54,8 +54,14 @@ var nodeStartCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("loading config", err)
 		}
+
+		n, _, err := node.Retrieve(cc, name)
+		if err != nil {
+			exit.WithError("retrieving node", err)
+		}
+
 		// Start it up baby
-		node.Start(cc, name)
+		node.Start(cc, n, false)
 	},
 }
 

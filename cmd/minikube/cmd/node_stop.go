@@ -54,7 +54,12 @@ var nodeStopCmd = &cobra.Command{
 			exit.WithError("loading config", err)
 		}
 
-		node.Stop(cc, name)
+		n, _, err := node.Retrieve(cc, name)
+		if err != nil {
+			exit.WithError("retrieving node", err)
+		}
+
+		node.Stop(cc, n)
 	},
 }
 

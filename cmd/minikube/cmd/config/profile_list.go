@@ -85,7 +85,7 @@ var printProfilesTable = func() {
 			glog.Errorf("%q has no control plane: %v", p.Name, err)
 			// Print the data we know about anyways
 		}
-		validData = append(validData, []string{p.Name, p.Config.VMDriver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
+		validData = append(validData, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
 	}
 
 	table.AppendBulk(validData)

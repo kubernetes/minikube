@@ -40,7 +40,7 @@ func (p *Profile) IsValid() bool {
 	if p.Config == nil {
 		return false
 	}
-	if p.Config.VMDriver == "" {
+	if p.Config.Driver == "" {
 		return false
 	}
 	for _, n := range p.Config.Nodes {
