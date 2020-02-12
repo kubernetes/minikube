@@ -28,7 +28,6 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -55,19 +54,14 @@ minikube kubectl -- get pods --namespace kube-system`,
 			out.ErrLn("Error loading profile config: %v", err)
 		}
 
-		binary := "kubectl"
-		if runtime.GOOS == "windows" {
-			binary = "kubectl.exe"
-		}
-
 		version := constants.DefaultKubernetesVersion
 		if cc != nil {
 			version = cc.KubernetesConfig.KubernetesVersion
 		}
 
-		path, err := machine.CacheBinary(binary, version, runtime.GOOS, runtime.GOARCH)
+		path, err := cacheKubectlBinary(version)
 		if err != nil {
-			exit.WithError("Failed to download kubectl", err)
+			out.ErrLn("Error caching kubectl: %v", err)
 		}
 
 		glog.Infof("Running %s %v", path, args)
@@ -87,4 +81,13 @@ minikube kubectl -- get pods --namespace kube-system`,
 			os.Exit(rc)
 		}
 	},
+}
+
+func cacheKubectlBinary(k8sVerison string) (string, error) {
+	binary := "kubectl"
+	if runtime.GOOS == "windows" {
+		binary = "kubectl.exe"
+	}
+
+	return machine.CacheBinary(binary, k8sVerison, runtime.GOOS, runtime.GOARCH)
 }
