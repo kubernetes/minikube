@@ -18,6 +18,7 @@ package oci
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"bufio"
@@ -26,6 +27,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 
 	"fmt"
 	"os/exec"
@@ -63,7 +65,8 @@ func CreateContainerNode(p CreateParams) error {
 
 	if p.OCIBinary == Podman { // enable execing in /var
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
-		runArgs = append(runArgs, "--volume", "/var:/var:exec")
+		hostVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name)
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVolPath))
 	}
 	if p.OCIBinary == Docker {
 		runArgs = append(runArgs, "--volume", "/var")
