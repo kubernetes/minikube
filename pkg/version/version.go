@@ -46,7 +46,7 @@ func GetVersion() string {
 	return version
 }
 
-// GetKicVersion returns the current kic version
+// GetKicVersion returns the current kic image version
 func GetKicVersion() string {
 	return kicVersion
 }
