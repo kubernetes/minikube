@@ -8,21 +8,25 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
+
+	"k8s.io/minikube/pkg/minikube/tunnel"
 )
 
 // Tunnel ...
 type Tunnel struct {
-	sshPort string
-	sshKey  string
-	v1Core  typed_core.CoreV1Interface
+	sshPort              string
+	sshKey               string
+	v1Core               typed_core.CoreV1Interface
+	LoadBalancerEmulator tunnel.LoadBalancerEmulator
 }
 
 // NewTunnel ...
 func NewTunnel(sshPort, sshKey string, v1Core typed_core.CoreV1Interface) *Tunnel {
 	return &Tunnel{
-		sshPort: sshPort,
-		sshKey:  sshKey,
-		v1Core:  v1Core,
+		sshPort:              sshPort,
+		sshKey:               sshKey,
+		v1Core:               v1Core,
+		LoadBalancerEmulator: tunnel.NewLoadBalancerEmulator(v1Core),
 	}
 }
 
@@ -52,6 +56,10 @@ func (t *Tunnel) Start() error {
 
 				newSSHTunnel := createSSHTunnel(name, t.sshPort, t.sshKey, s)
 				sshTunnels[newSSHTunnel.name] = newSSHTunnel
+				_, err := t.LoadBalancerEmulator.PatchServicesIP("127.0.0.1")
+				if err != nil {
+					fmt.Println(err)
+				}
 			}
 		}
 
