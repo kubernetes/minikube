@@ -28,23 +28,27 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
+var (
+	nodeName string
+	cp       bool
+	worker   bool
+)
 var nodeAddCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Adds a node to the given cluster.",
 	Long:  "Adds a node to the given cluster config, and starts it.",
 	Run: func(cmd *cobra.Command, args []string) {
-		name := viper.GetString("name")
 		profile := viper.GetString(config.MachineProfile)
 		mc, err := config.Load(profile)
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		if name == "" {
+		name := nodeName
+		if nodeName == "" {
 			name = profile + strconv.Itoa(len(mc.Nodes)+1)
 		}
-		out.T(out.SuccessType, "Adding node {{.name}} to cluster {{.profile}}", out.V{"name": name, "profile": profile})
-		cp := viper.GetBool("control-plane")
-		worker := viper.GetBool("worker")
+		out.T(out.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": profile})
+
 		n, err := node.Add(mc, name, cp, worker, "", profile)
 		if err != nil {
 			exit.WithError("Error adding node to cluster", err)
@@ -54,13 +58,15 @@ var nodeAddCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error starting node", err)
 		}
+
+		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": profile})
 	},
 }
 
 func init() {
-	nodeAddCmd.Flags().String("name", "", "The name of the node to add.")
-	nodeAddCmd.Flags().Bool("control-plane", false, "If true, the node added will also be a control plane in addition to a worker.")
-	nodeAddCmd.Flags().Bool("worker", true, "If true, the added node will be marked for work. Defaults to true.")
+	nodeAddCmd.Flags().StringVar(&nodeName, "name", "", "The name of the node to add.")
+	nodeAddCmd.Flags().BoolVar(&cp, "control-plane", false, "If true, the node added will also be a control plane in addition to a worker.")
+	nodeAddCmd.Flags().BoolVar(&worker, "worker", true, "If true, the added node will be marked for work. Defaults to true.")
 	//We should figure out which of these flags to actually import
 	startCmd.Flags().Visit(
 		func(f *pflag.Flag) {

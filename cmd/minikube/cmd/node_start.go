@@ -34,10 +34,11 @@ var nodeStartCmd = &cobra.Command{
 	Short: "Starts a node.",
 	Long:  "Starts an existing stopped node in a cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
-		name := viper.GetString("name")
-		if name == "" {
-			exit.UsageT("name is required")
+		if len(args) == 0 {
+			exit.UsageT("Usage: minikube node start [name]")
 		}
+
+		name := args[0]
 
 		// Make sure it's not running
 		api, err := machine.NewAPIClient()
@@ -69,6 +70,6 @@ var nodeStartCmd = &cobra.Command{
 }
 
 func init() {
-	nodeStartCmd.Flags().String("name", "", "The name of the node to delete")
+	nodeStartCmd.Flags().String("name", "", "The name of the node to start")
 	nodeCmd.AddCommand(nodeStartCmd)
 }
