@@ -513,7 +513,7 @@ kic-base-image: ## builds the base image used for kic.
 
 
 .PHONY: kic-preloaded-base-image
-kic-preloaded-base-image: generate-preloaded-images-tar ## builds the base image used for kic.
+kic-preloaded-base-image: generate-preloaded-images-tar ## Builds base image with preloaded k8s images. Run `KUBERNETES_VERSION=vx.y.z make kic-preloaded-base-image`
 	docker rmi -f $(REGISTRY)/kicbase:$(KIC_VERSION)-k8s-${KUBERNETES_VERSION} || true
 	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-k8s-${KUBERNETES_VERSION}  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg KUBERNETES_VERSION=${KUBERNETES_VERSION} .
 
