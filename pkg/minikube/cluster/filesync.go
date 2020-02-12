@@ -44,7 +44,7 @@ func syncLocalAssets(cr command.Runner) error {
 	}
 
 	args := []string{"mkdir", "-p"}
-	for k, _ := range dirs {
+	for k := range dirs {
 		args = append(args, k)
 	}
 	cmd := exec.Command("sudo", args...)
