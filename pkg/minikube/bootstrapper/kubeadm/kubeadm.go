@@ -194,12 +194,12 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 
 	// Allow older kubeadm versions to function with newer Docker releases.
 	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
-	if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.VMDriver) {
+	if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.Driver) {
 		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
 		ignore = append(ignore, "SystemVerification")
 	}
 
-	if driver.IsKIC(cfg.VMDriver) { // to bypass this error: /proc/sys/net/bridge/bridge-nf-call-iptables does not exist
+	if driver.IsKIC(cfg.Driver) { // to bypass this error: /proc/sys/net/bridge/bridge-nf-call-iptables does not exist
 		ignore = append(ignore, "FileContent--proc-sys-net-bridge-bridge-nf-call-iptables")
 
 	}
@@ -210,13 +210,13 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
 	}
 
-	if driver.IsKIC(cfg.VMDriver) {
+	if driver.IsKIC(cfg.Driver) {
 		if err := k.applyKicOverlay(cfg); err != nil {
 			return errors.Wrap(err, "applying kic overlay network")
 		}
 	}
 
-	if !driver.IsKIC(cfg.VMDriver) { // TODO: skip for both after verifications https://github.com/kubernetes/minikube/issues/6239
+	if !driver.IsKIC(cfg.Driver) { // TODO: skip for both after verifications https://github.com/kubernetes/minikube/issues/6239
 		glog.Infof("Configuring cluster permissions ...")
 		elevate := func() error {
 			client, err := k.client(cp.IP, cp.Port)
@@ -275,9 +275,9 @@ func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Dur
 
 	ip := cp.IP
 	port := cp.Port
-	if driver.IsKIC(cfg.VMDriver) {
+	if driver.IsKIC(cfg.Driver) {
 		ip = kic.DefaultBindIPV4
-		port, err = oci.HostPortBinding(cfg.VMDriver, cfg.Name, port)
+		port, err = oci.HostPortBinding(cfg.Driver, cfg.Name, port)
 		if err != nil {
 			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 		}
@@ -343,9 +343,9 @@ func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
 	for _, n := range cfg.Nodes {
 		ip := n.IP
 		port := n.Port
-		if driver.IsKIC(cfg.VMDriver) {
+		if driver.IsKIC(cfg.Driver) {
 			ip = kic.DefaultBindIPV4
-			port, err = oci.HostPortBinding(cfg.VMDriver, cfg.Name, port)
+			port, err = oci.HostPortBinding(cfg.Driver, cfg.Name, port)
 			if err != nil {
 				return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 			}

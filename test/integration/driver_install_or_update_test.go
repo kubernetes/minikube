@@ -29,7 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
-func TestKVMDriverInstallOrUpdate(t *testing.T) {
+func TestKDriverInstallOrUpdate(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("Skip none driver.")
 	}

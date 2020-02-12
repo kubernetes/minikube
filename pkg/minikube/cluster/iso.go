@@ -23,7 +23,7 @@ import (
 
 // CacheISO downloads and caches ISO.
 func CacheISO(cfg config.MachineConfig) error {
-	if driver.BareMetal(cfg.VMDriver) {
+	if driver.BareMetal(cfg.Driver) {
 		return nil
 	}
 	return cfg.Downloader.CacheMinikubeISOFromURL(cfg.MinikubeISO)

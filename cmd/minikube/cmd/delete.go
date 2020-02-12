@@ -41,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -276,7 +277,7 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 
 func uninstallKubernetes(api libmachine.API, profile string, kc pkg_config.KubernetesConfig, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := getClusterBootstrapper(api, bsName)
+	clusterBootstrapper, err := node.Bootstrapper(api, bsName)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}

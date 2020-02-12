@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 )
 
 const (
@@ -66,7 +67,7 @@ var logsCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("command runner", err)
 		}
-		bs, err := getClusterBootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+		bs, err := node.Bootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
 		if err != nil {
 			exit.WithError("Error getting cluster bootstrapper", err)
 		}
