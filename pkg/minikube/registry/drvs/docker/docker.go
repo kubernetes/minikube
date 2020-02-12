@@ -23,12 +23,15 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/version"
 )
 
 func init() {
@@ -44,10 +47,11 @@ func init() {
 }
 
 func configure(mc config.MachineConfig) (interface{}, error) {
+	baseImage, _ := PreloadedBaseImage(mc.KubernetesConfig.KubernetesVersion)
 	return kic.NewDriver(kic.Config{
 		MachineName:   mc.Name,
 		StorePath:     localpath.MiniPath(),
-		ImageDigest:   kic.BaseImage,
+		ImageDigest:   baseImage,
 		CPU:           mc.CPUs,
 		Memory:        mc.Memory,
 		OCIBinary:     oci.Docker,
@@ -70,4 +74,20 @@ func status() registry.State {
 	}
 
 	return registry.State{Installed: true, Healthy: true}
+}
+
+// PreloadedBaseImage returns a base image with k8s images preloaded if available
+// otherwise, it returns the default base image
+func PreloadedBaseImage(kv string) (string, bool) {
+	image := fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s-k8s-%s", version.GetKicVersion(), kv)
+	// Check if image exists remotely
+	ref, err := name.NewTag(image, name.WeakValidation)
+	if err != nil {
+		return kic.BaseImage, false
+	}
+	_, err = remote.Image(ref)
+	if err == nil {
+		return image, true
+	}
+	return kic.BaseImage, false
 }

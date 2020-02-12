@@ -65,6 +65,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/minikube/registry/drvs/docker"
 	"k8s.io/minikube/pkg/minikube/translate"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
@@ -344,7 +345,11 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
-	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	if !imagesArePreloaded(&mc, driverName) {
+		beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	} else {
+		mc.KubernetesConfig.ShouldLoadCachedImages = false
+	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
@@ -1342,6 +1347,14 @@ func configureMounts() {
 	if err := lock.WriteFile(filepath.Join(localpath.MiniPath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
 		exit.WithError("Error writing mount pid", err)
 	}
+}
+
+func imagesArePreloaded(clusterCfg *config.MachineConfig, driverName string) bool {
+	if !driver.IsKIC(driverName) {
+		return false
+	}
+	_, preloaded := docker.PreloadedBaseImage(clusterCfg.KubernetesConfig.KubernetesVersion)
+	return preloaded
 }
 
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
