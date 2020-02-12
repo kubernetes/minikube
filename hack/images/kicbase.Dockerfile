@@ -4,7 +4,7 @@ ARG COMMIT_SHA
 # could be changed to any debian that can run systemd
 FROM kindest/base:v20200122-2dfe64b2
 USER root
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
   sudo \
   dnsutils \
   openssh-server \

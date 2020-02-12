@@ -180,6 +180,7 @@ func init() {
 			Message: translate.T("Images Commands:"),
 			Commands: []*cobra.Command{
 				dockerEnvCmd,
+				podmanEnvCmd,
 				cacheCmd,
 			},
 		},
