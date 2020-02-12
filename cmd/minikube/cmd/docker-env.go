@@ -234,10 +234,7 @@ type DockerEnvConfig struct {
 
 // dockerSetScript writes out a shell-compatible 'docker-env' script
 func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
-	envVars, err := dockerEnvVars(ec)
-	if err != nil {
-		return err
-	}
+	envVars := dockerEnvVars(ec)
 	return shell.SetScript(ec.EnvConfig, w, dockerEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
@@ -266,7 +263,7 @@ func dockerURL(ip string, port int) string {
 }
 
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
-func dockerEnvVars(ec DockerEnvConfig) (map[string]string, error) {
+func dockerEnvVars(ec DockerEnvConfig) map[string]string {
 	env := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
 		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
@@ -274,7 +271,7 @@ func dockerEnvVars(ec DockerEnvConfig) (map[string]string, error) {
 		constants.MinikubeActiveDockerdEnv: ec.profile,
 	}
 
-	return env, nil
+	return env
 }
 
 func init() {

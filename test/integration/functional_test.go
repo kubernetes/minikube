@@ -104,6 +104,7 @@ func TestFunctional(t *testing.T) {
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
 			{"UpdateContextCmd", validateUpdateContextCmd},
+			{"DockerEnv", validateDockerEnv},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -113,6 +114,32 @@ func TestFunctional(t *testing.T) {
 			})
 		}
 	})
+}
+
+// check functionality of minikube after evaling docker-env
+func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
+	mctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
+	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker ps")
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Fatalf("Failed to test eval docker-evn %s", err)
+	}
+
+	expectedContInside := "k8s_POD_kube-apiserver-minikube_kube-system_"
+	if !strings.Contains(rr.Output(), expectedContInside) {
+		t.Fatalf("Expected 'docker ps' to have %q from docker-daemon inside minikube. the docker ps output is:\n%q\n", expectedContInside, rr.Output())
+	}
+
+	// we should be able to get minikube status with a bash which evaled docker-env
+	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
+	rr, err = Run(t, c)
+	if err != nil {
+		t.Fatalf("Failed to do minikube status after eval-ing docker-env %s", err)
+	}
+
 }
 
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
