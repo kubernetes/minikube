@@ -53,7 +53,7 @@ func CreateContainerNode(p CreateParams) error {
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// logs,pods be stroed on  filesystem vs inside container,
-		"--volume", "/var",
+		// "--volume", "/var",
 		// some k8s things want /lib/modules
 		"-v", "/lib/modules:/lib/modules:ro",
 		"--hostname", p.Name, // make hostname match container name
