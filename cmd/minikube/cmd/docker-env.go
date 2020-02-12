@@ -256,20 +256,23 @@ func dockerURL(ip string, port int) string {
 
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
 func dockerEnvVars(ec DockerEnvConfig) (map[string]string, error) {
+	ip := ec.hostIP
+	port := constants.DockerDaemonPort
+	var err error
+	if driver.IsKIC(ec.driver) { // for kic we need to find what port docker/podman chose for us
+		ip = kic.DefaultBindIPV4
+		port, err = oci.HostPortBinding(ec.driver, ec.profile, port)
+		if err != nil {
+			return nil, errors.Wrapf(err, "get hostbind port for %d", port)
+		}
+	}
 	env := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
-		constants.DockerHostEnv:            dockerURL(ec.hostIP, constants.DockerDaemonPort),
+		constants.DockerHostEnv:            dockerURL(ip, port),
 		constants.DockerCertPathEnv:        ec.certsDir,
 		constants.MinikubeActiveDockerdEnv: ec.profile,
 	}
 
-	if driver.IsKIC(ec.driver) { // for kic we need to find out what port docker allocated during creation
-		port, err := oci.HostPortBinding(ec.driver, ec.profile, constants.DockerDaemonPort)
-		if err != nil {
-			return nil, errors.Wrapf(err, "get hostbind port for %d", constants.DockerDaemonPort)
-		}
-		env[constants.DockerCertPathEnv] = dockerURL(oci.DefaultBindIPV4, port)
-	}
 	return env, nil
 }
 
