@@ -484,6 +484,9 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 	if err := doCacheBinaries(k8sVersion); err != nil {
 		exit.WithError("Failed to cache binaries", err)
 	}
+	if _, err := cacheKubectlBinary(k8sVersion); err != nil {
+		exit.WithError("Failed to cache kubectl", err)
+	}
 	waitCacheRequiredImages(cacheGroup)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.WithError("Failed to cache images to tar", err)

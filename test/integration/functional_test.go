@@ -64,11 +64,12 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"CopySyncFile", setupFileSync},            // Set file for the file sync test case
-			{"StartWithProxy", validateStartWithProxy}, // Set everything else up for success
-			{"KubeContext", validateKubeContext},       // Racy: must come immediately after "minikube start"
-			{"KubectlGetPods", validateKubectlGetPods}, // Make sure apiserver is up
-			{"CacheCmd", validateCacheCmd},             // Caches images needed for subsequent tests because of proxy
+			{"CopySyncFile", setupFileSync},                 // Set file for the file sync test case
+			{"StartWithProxy", validateStartWithProxy},      // Set everything else up for success
+			{"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
+			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
+			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
+			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -166,6 +167,15 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 	}
 	if !strings.Contains(rr.Stdout.String(), "kube-system") {
 		t.Errorf("%s = %q, want *kube-system*", rr.Command(), rr.Stdout)
+	}
+}
+
+// validateMinikubeKubectl validates that the `minikube kubectl` command returns content
+func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) {
+	kubectlArgs := []string{"kubectl", "--", "get", "pods"}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), kubectlArgs...))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 }
 
