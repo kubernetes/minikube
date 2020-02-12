@@ -87,7 +87,7 @@ func TestEmptyListOfServicesDoesNothing(t *testing.T) {
 	client := newStubCoreClient(&core.ServiceList{
 		Items: []core.Service{}})
 
-	patcher := newLoadBalancerEmulator(client)
+	patcher := NewLoadBalancerEmulator(client)
 
 	serviceNames, err := patcher.PatchServices()
 
@@ -113,7 +113,7 @@ func TestServicesWithNoLoadbalancerType(t *testing.T) {
 		},
 	})
 
-	patcher := newLoadBalancerEmulator(client)
+	patcher := NewLoadBalancerEmulator(client)
 
 	serviceNames, err := patcher.PatchServices()
 
@@ -214,7 +214,7 @@ func TestServicesWithLoadbalancerType(t *testing.T) {
 	requestSender := &countingRequestSender{}
 	patchConverter := &recordingPatchConverter{}
 
-	patcher := newLoadBalancerEmulator(client)
+	patcher := NewLoadBalancerEmulator(client)
 	patcher.requestSender = requestSender
 	patcher.patchConverter = patchConverter
 
@@ -328,7 +328,7 @@ func TestCleanupPatchedIPs(t *testing.T) {
 	requestSender := &countingRequestSender{}
 	patchConverter := &recordingPatchConverter{}
 
-	patcher := newLoadBalancerEmulator(client)
+	patcher := NewLoadBalancerEmulator(client)
 	patcher.requestSender = requestSender
 	patcher.patchConverter = patchConverter
 
