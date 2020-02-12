@@ -63,13 +63,18 @@ func CreateContainerNode(p CreateParams) error {
 		"--label", fmt.Sprintf("%s=%s", nodeRoleKey, p.Role),
 	}
 
+	// volume path in minikube home folder to mount to /var
+	hostVarVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name, "var")
+	if err := os.MkdirAll(hostVarVolPath, 0777); err != nil {
+		return errors.Wrapf(err, "create var dir %s", hostVarVolPath)
+	}
+
 	if p.OCIBinary == Podman { // enable execing in /var
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
-		hostVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name)
-		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVolPath))
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
 	}
 	if p.OCIBinary == Docker {
-		runArgs = append(runArgs, "--volume", "/var")
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", hostVarVolPath))
 		// setting resource limit in privileged mode is only supported by docker
 		// podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
 		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs), fmt.Sprintf("--memory=%s", p.Memory))
