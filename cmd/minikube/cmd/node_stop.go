@@ -17,15 +17,10 @@ limitations under the License.
 package cmd
 
 import (
-	"os"
-
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -34,32 +29,18 @@ var nodeStopCmd = &cobra.Command{
 	Short: "Stops a node in a cluster.",
 	Long:  "Stops a node in a cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
-		name := viper.GetString("name")
-		if name == "" {
-			exit.UsageT("name is required")
+		if len(args) == 0 {
+			exit.UsageT("Usage: minikube node stop [name]")
 		}
+
+		name := args[0]
 
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			exit.WithError("creating api client", err)
 		}
 
-		if !cluster.IsHostRunning(api, name) {
-			out.T(out.Check, "{{.name}} is already stopped", out.V{"name": name})
-			os.Exit(0)
-		}
-
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
-		if err != nil {
-			exit.WithError("loading config", err)
-		}
-
-		n, _, err := node.Retrieve(cc, name)
-		if err != nil {
-			exit.WithError("retrieving node", err)
-		}
-
-		err = node.Stop(cc, n)
+		err = cluster.StopHost(api, name)
 		if err != nil {
 			out.FatalT("Failed to stop node {{.name}}", out.V{"name": name})
 		}

@@ -53,7 +53,7 @@ func runStop(cmd *cobra.Command, args []string) {
 
 	nonexistent := false
 	stop := func() (err error) {
-		err = cluster.StopHost(api)
+		err = cluster.StopHost(api, profile)
 		if err == nil {
 			return nil
 		}
@@ -61,7 +61,7 @@ func runStop(cmd *cobra.Command, args []string) {
 
 		switch err := errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.profile_name}}" VM does not exist, nothing to stop`, out.V{"profile_name": profile})
+			out.T(out.Meh, `"{{.profile_name}}" does not exist, nothing to stop`, out.V{"profile_name": profile})
 			nonexistent = true
 			return nil
 		default:

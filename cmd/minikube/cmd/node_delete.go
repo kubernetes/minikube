@@ -17,13 +17,10 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -33,42 +30,29 @@ var nodeDeleteCmd = &cobra.Command{
 	Short: "Deletes a node from a cluster.",
 	Long:  "Deletes a node from a cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
-		name := viper.GetString("name")
-		if name == "" {
-			exit.UsageT("name is required")
-		}
 
-		// Make sure it's not running
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("creating api client", err)
+		if len(args) == 0 {
+			exit.UsageT("Usage: minikube node delete [name]")
 		}
+		name := args[0]
 
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		profile := viper.GetString(config.MachineProfile)
+		out.T(out.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": profile})
+
+		cc, err := config.Load(profile)
 		if err != nil {
 			exit.WithError("loading config", err)
-		}
-
-		n, _, err := node.Retrieve(cc, name)
-		if err != nil {
-			exit.WithError("retrieving node", err)
-		}
-
-		if cluster.IsHostRunning(api, name) {
-			err := node.Stop(cc, n)
-			if err != nil {
-				glog.Warningf("Failed to stop node, will still try to delete")
-			}
 		}
 
 		err = node.Delete(cc, name)
 		if err != nil {
 			out.FatalT("Failed to delete node {{.name}}", out.V{"name": name})
 		}
+
+		out.T(out.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})
 	},
 }
 
 func init() {
-	nodeDeleteCmd.Flags().String("name", "", "The name of the node to delete")
 	nodeCmd.AddCommand(nodeDeleteCmd)
 }

@@ -19,9 +19,10 @@ package node
 import (
 	"errors"
 
-	"github.com/golang/glog"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 const (
@@ -70,23 +71,25 @@ func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, 
 
 // Delete stops and deletes the given node from the given cluster
 func Delete(cc *config.MachineConfig, name string) error {
-	nd, index, err := Retrieve(cc, name)
+	_, index, err := Retrieve(cc, name)
 	if err != nil {
 		return err
 	}
 
-	err = Stop(cc, nd)
+	/*err = Stop(cc, nd)
 	if err != nil {
 		glog.Warningf("Failed to stop node %s. Will still try to delete.", name)
+	}*/
+
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		return err
 	}
+
+	cluster.DeleteHost(api, name)
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
 	return config.SaveProfile(viper.GetString(config.MachineProfile), cc)
-}
-
-// Stop stops the node in the given cluster
-func Stop(cc *config.MachineConfig, n *config.Node) error {
-	return nil
 }
 
 // Retrieve finds the node by name in the given cluster
