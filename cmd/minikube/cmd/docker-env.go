@@ -29,7 +29,6 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -182,11 +181,22 @@ var dockerEnvCmd = &cobra.Command{
 		sh := shell.EnvConfig{
 			Shell: shell.ForceShell,
 		}
+
+		port := constants.DockerDaemonPort
+		if driver.IsKIC(host.DriverName) { // for kic we need to find what port docker/podman chose for us
+			hostIP = kic.DefaultBindIPV4
+			port, err = oci.HostPortBinding(host.DriverName, profile, port)
+			if err != nil {
+				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": host.DriverName, "error": err})
+			}
+		}
+
 		ec := DockerEnvConfig{
 			EnvConfig: sh,
 			profile:   profile,
 			driver:    host.DriverName,
 			hostIP:    hostIP,
+			port:      port,
 			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,
 		}
@@ -217,6 +227,7 @@ type DockerEnvConfig struct {
 	profile  string
 	driver   string
 	hostIP   string
+	port     int
 	certsDir string
 	noProxy  bool
 }
@@ -256,19 +267,9 @@ func dockerURL(ip string, port int) string {
 
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
 func dockerEnvVars(ec DockerEnvConfig) (map[string]string, error) {
-	ip := ec.hostIP
-	port := constants.DockerDaemonPort
-	var err error
-	if driver.IsKIC(ec.driver) { // for kic we need to find what port docker/podman chose for us
-		ip = kic.DefaultBindIPV4
-		port, err = oci.HostPortBinding(ec.driver, ec.profile, port)
-		if err != nil {
-			return nil, errors.Wrapf(err, "get hostbind port for %d", port)
-		}
-	}
 	env := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
-		constants.DockerHostEnv:            dockerURL(ip, port),
+		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
 		constants.DockerCertPathEnv:        ec.certsDir,
 		constants.MinikubeActiveDockerdEnv: ec.profile,
 	}
