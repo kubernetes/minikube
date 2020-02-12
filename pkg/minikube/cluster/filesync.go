@@ -19,6 +19,7 @@ package cluster
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 
@@ -34,6 +35,20 @@ import (
 func syncLocalAssets(cr command.Runner) error {
 	fs, err := localAssets()
 	if err != nil {
+		return err
+	}
+
+	dirs := map[string]bool{}
+	for _, f := range fs {
+		dirs[f.GetTargetDir()] = true
+	}
+
+	args := []string{"mkdir", "-p"}
+	for k, _ := range dirs {
+		args = append(args, k)
+	}
+	cmd := exec.Command("sudo", args...)
+	if _, err := cr.RunCmd(cmd); err != nil {
 		return err
 	}
 
@@ -78,6 +93,9 @@ func assetsFromDir(localRoot string, destRoot string, flatten bool) ([]assets.Co
 		if err != nil {
 			return err
 		}
+
+		// On Windows, rel will be separated by \, which is not correct inside the VM
+		rel = filepath.ToSlash(rel)
 
 		// The conversion will strip the leading 0 if present, so add it back if necessary
 		ps := fmt.Sprintf("%o", fi.Mode().Perm())
