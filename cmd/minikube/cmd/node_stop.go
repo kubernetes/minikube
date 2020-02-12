@@ -59,7 +59,10 @@ var nodeStopCmd = &cobra.Command{
 			exit.WithError("retrieving node", err)
 		}
 
-		node.Stop(cc, n)
+		err = node.Stop(cc, n)
+		if err != nil {
+			out.FatalT("Failed to stop node {{.name}}", out.V{"name": name})
+		}
 	},
 }
 

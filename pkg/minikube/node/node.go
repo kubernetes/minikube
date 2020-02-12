@@ -26,7 +26,6 @@ import (
 
 const (
 	imageRepository     = "image-repository"
-	force               = "force"
 	cacheImages         = "cache-images"
 	waitUntilHealthy    = "wait"
 	cacheImageConfigKey = "cache"

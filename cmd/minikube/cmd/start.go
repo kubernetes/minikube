@@ -942,8 +942,3 @@ func getKubernetesVersion(old *config.MachineConfig) string {
 	}
 	return nv
 }
-
-// saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func saveConfig(clusterCfg *config.MachineConfig) error {
-	return config.SaveProfile(viper.GetString(config.MachineProfile), clusterCfg)
-}

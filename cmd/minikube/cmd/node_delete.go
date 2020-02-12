@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -24,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/node"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 var nodeDeleteCmd = &cobra.Command{
@@ -53,10 +55,16 @@ var nodeDeleteCmd = &cobra.Command{
 		}
 
 		if cluster.IsHostRunning(api, name) {
-			node.Stop(cc, n)
+			err := node.Stop(cc, n)
+			if err != nil {
+				glog.Warningf("Failed to stop node, will still try to delete")
+			}
 		}
 
-		node.Delete(cc, name)
+		err = node.Delete(cc, name)
+		if err != nil {
+			out.FatalT("Failed to delete node {{.name}}", out.V{"name": name})
+		}
 	},
 }
 
