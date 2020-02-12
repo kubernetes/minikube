@@ -129,12 +129,12 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 		return path, fmt.Errorf("%s: unable to extract version from %q", executable, output)
 	}
 
-	DriverVersion, err := semver.Make(ev)
+	driverVersion, err := semver.Make(ev)
 	if err != nil {
 		return path, errors.Wrap(err, "can't parse driver version")
 	}
-	if DriverVersion.LT(v) {
-		return path, fmt.Errorf("%s is version %s, want %s", executable, DriverVersion, v)
+	if driverVersion.LT(v) {
+		return path, fmt.Errorf("%s is version %s, want %s", executable, driverVersion, v)
 	}
 	return path, nil
 }
