@@ -51,14 +51,14 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 	return g.Wait()
 }
 
-// KubernetesReleaseURL gets the location of a kubernetes client
-func KubernetesReleaseURL(binaryName, version, osName, archName string) string {
+// releaseURL gets the location of a Kubernetes binary
+func releaseURL(binaryName, version, osName, archName string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
 }
 
-// KubernetesReleaseURLSHA1 gets the location of a kubernetes client checksum
-func KubernetesReleaseURLSHA1(binaryName, version, osName, archName string) string {
-	return fmt.Sprintf("%s.sha1", KubernetesReleaseURL(binaryName, version, osName, archName))
+// checksumURL gets the location of a kubernetes client checksum
+func checksumURL(binaryName, version, osName, archName string) string {
+	return fmt.Sprintf("%s.sha256", releaseURL(binaryName, version, osName, archName))
 }
 
 // CacheBinary will cache a binary on the host
@@ -66,7 +66,7 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 	targetDir := localpath.MakeMiniPath("cache", version)
 	targetFilepath := path.Join(targetDir, binary)
 
-	url := KubernetesReleaseURL(binary, version, osName, archName)
+	url := releaseURL(binary, version, osName, archName)
 
 	_, err := os.Stat(targetFilepath)
 	// If it exists, do no verification and continue
@@ -86,12 +86,14 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 		Mkdirs: download.MkdirAll,
 	}
 
-	options.Checksum = KubernetesReleaseURLSHA1(binary, version, osName, archName)
-	options.ChecksumHash = crypto.SHA1
+	options.Checksum = checksumURL(binary, version, osName, archName)
+	options.ChecksumHash = crypto.SHA256
+
+	glog.Infof("Downloading %s: options: %+v", url, options)
 
 	out.T(out.FileDownload, "Downloading {{.name}} {{.version}}", out.V{"name": binary, "version": version})
 	if err := download.ToFile(url, targetFilepath, options); err != nil {
-		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
+		return "", errors.Wrapf(err, url)
 	}
 	if osName == runtime.GOOS && archName == runtime.GOARCH {
 		if err = os.Chmod(targetFilepath, 0755); err != nil {
