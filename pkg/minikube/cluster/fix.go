@@ -198,8 +198,8 @@ func adjustGuestClock(h hostRunner, t time.Time) error {
 
 // machineExists checks if virtual machine does not exist
 // if the virtual machine exists, return true
-func machineExists(Driver string, s state.State, err error) (bool, error) {
-	switch Driver {
+func machineExists(d string, s state.State, err error) (bool, error) {
+	switch d {
 	case driver.HyperKit:
 		if s == state.Stopped || err.Error() == "connection is shut down" {
 			return false, ErrorMachineNotExist
