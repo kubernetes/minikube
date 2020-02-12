@@ -31,6 +31,11 @@ const (
 	waitUntilHealthy    = "wait"
 	cacheImageConfigKey = "cache"
 	containerRuntime    = "container-runtime"
+	embedCerts          = "embed-certs"
+	keepContext         = "keep-context"
+	mountString         = "mount-string"
+	createMount         = "mount"
+	waitTimeout         = "wait-timeout"
 )
 
 // Add adds a new node config to an existing cluster.
@@ -60,7 +65,7 @@ func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, 
 		return nil, err
 	}
 
-	_, err = Start(cc, &n, false)
+	_, err = Start(cc, &n, false, nil)
 	return &n, err
 }
 

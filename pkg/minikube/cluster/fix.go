@@ -101,9 +101,9 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": mc.VMDriver, "profile_name": mc.Name})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": mc.Driver, "profile_name": mc.Name})
 	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": mc.VMDriver, "profile_name": mc.Name})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": mc.Driver, "profile_name": mc.Name})
 		if err := h.Driver.Start(); err != nil {
 			return h, errors.Wrap(err, "driver start")
 		}
@@ -142,7 +142,7 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 	if err := h.ConfigureAuth(); err != nil {
 		return h, &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 	}
-	return h, ensureSyncedGuestClock(h, mc.VMDriver)
+	return h, ensureSyncedGuestClock(h, mc.Driver)
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
@@ -198,8 +198,8 @@ func adjustGuestClock(h hostRunner, t time.Time) error {
 
 // machineExists checks if virtual machine does not exist
 // if the virtual machine exists, return true
-func machineExists(vmDriver string, s state.State, err error) (bool, error) {
-	switch vmDriver {
+func machineExists(Driver string, s state.State, err error) (bool, error) {
+	switch Driver {
 	case driver.HyperKit:
 		if s == state.Stopped || err.Error() == "connection is shut down" {
 			return false, ErrorMachineNotExist

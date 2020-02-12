@@ -25,15 +25,11 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path/filepath"
 	"runtime"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/blang/semver"
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -45,11 +41,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -57,7 +51,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/notify"
@@ -66,7 +59,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
 	pkgutil "k8s.io/minikube/pkg/util"
-	"k8s.io/minikube/pkg/util/lock"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -132,9 +124,7 @@ var (
 	registryMirror   []string
 	insecureRegistry []string
 	apiServerNames   []string
-	addonList        []string
 	apiServerIPs     []net.IP
-	extraOptions     config.ExtraOptionSlice
 )
 
 func init() {
@@ -170,7 +160,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
-	startCmd.Flags().StringArrayVar(&addonList, "addons", nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
+	startCmd.Flags().StringArrayVar(&node.AddonList, "addons", nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
@@ -184,7 +174,7 @@ func initMinikubeFlags() {
 // initKubernetesFlags inits the commandline flags for kubernetes related options
 func initKubernetesFlags() {
 	startCmd.Flags().String(kubernetesVersion, "", "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
-	startCmd.Flags().Var(&extraOptions, "extra-config",
+	startCmd.Flags().Var(&node.ExtraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
@@ -338,7 +328,11 @@ func runStart(cmd *cobra.Command, args []string) {
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	kubeconfig, err := node.Start(&mc, &n, true)
+	existingAddons := map[string]bool{}
+	if existing != nil && existing.Addons != nil {
+		existingAddons = existing.Addons
+	}
+	kubeconfig, err := node.Start(&mc, &n, true, existingAddons)
 	if err != nil {
 		exit.WithError("Starting node", err)
 	}
@@ -389,36 +383,6 @@ func displayEnviron(env []string) {
 			out.T(out.Option, "{{.key}}={{.value}}", out.V{"key": k, "value": v})
 		}
 	}
-}
-
-func setupKubeconfig(h *host.Host, c *config.MachineConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
-	addr, err := h.Driver.GetURL()
-	if err != nil {
-		exit.WithError("Failed to get driver URL", err)
-	}
-	if !driver.IsKIC(h.DriverName) {
-		addr = strings.Replace(addr, "tcp://", "https://", -1)
-		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(n.Port), -1)
-	}
-
-	if c.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, n.IP, c.KubernetesConfig.APIServerName, -1)
-	}
-	kcs := &kubeconfig.Settings{
-		ClusterName:          clusterName,
-		ClusterServerAddress: addr,
-		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
-		ClientKey:            localpath.MakeMiniPath("client.key"),
-		CertificateAuthority: localpath.MakeMiniPath("ca.crt"),
-		KeepContext:          viper.GetBool(keepContext),
-		EmbedCerts:           viper.GetBool(embedCerts),
-	}
-
-	kcs.SetPath(kubeconfig.PathFromEnv())
-	if err := kubeconfig.Update(kcs); err != nil {
-		return kcs, err
-	}
-	return kcs, nil
 }
 
 func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
@@ -722,7 +686,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateCPUCount(driver.BareMetal(drvName))
 
 	// check that kubeadm extra args contain only whitelisted parameters
-	for param := range extraOptions.AsMap().Get(bsutil.Kubeadm) {
+	for param := range node.ExtraOptions.AsMap().Get(bsutil.Kubeadm) {
 		if !config.ContainsParam(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmCmdParam], param) &&
 			!config.ContainsParam(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmConfigParam], param) {
 			exit.UsageT("Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config", out.V{"parameter_name": param})
@@ -855,7 +819,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 			NetworkPlugin:          selectedNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
 			ImageRepository:        repository,
-			ExtraOptions:           extraOptions,
+			ExtraOptions:           node.ExtraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,
 		},
@@ -889,7 +853,7 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	if !cmd.Flags().Changed("extra-config") && len(hints.ExtraOptions) > 0 {
 		for _, eo := range hints.ExtraOptions {
 			glog.Infof("auto setting extra-config to %q.", eo)
-			err = extraOptions.Set(eo)
+			err = node.ExtraOptions.Set(eo)
 			if err != nil {
 				err = errors.Wrapf(err, "setting extra option %s", eo)
 			}
@@ -912,35 +876,6 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	}
 
 	return err
-}
-
-// prepareNone prepares the user and host for the joy of the "none" driver
-func prepareNone() {
-	out.T(out.StartingNone, "Configuring local host environment ...")
-	if viper.GetBool(config.WantNoneDriverWarning) {
-		out.T(out.Empty, "")
-		out.WarningT("The 'none' driver provides limited isolation and may reduce system security and reliability.")
-		out.WarningT("For more information, see:")
-		out.T(out.URL, "https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
-		out.T(out.Empty, "")
-	}
-
-	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
-		home := os.Getenv("HOME")
-		out.WarningT("kubectl and minikube configuration will be stored in {{.home_folder}}", out.V{"home_folder": home})
-		out.WarningT("To use kubectl or minikube commands as your own user, you may need to relocate them. For example, to overwrite your own settings, run:")
-
-		out.T(out.Empty, "")
-		out.T(out.Command, "sudo mv {{.home_folder}}/.kube {{.home_folder}}/.minikube $HOME", out.V{"home_folder": home})
-		out.T(out.Command, "sudo chown -R $USER $HOME/.kube $HOME/.minikube")
-		out.T(out.Empty, "")
-
-		out.T(out.Tip, "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
-	}
-
-	if err := pkgutil.MaybeChownDirRecursiveToMinikubeUser(localpath.MiniPath()); err != nil {
-		exit.WithCodeT(exit.Permissions, "Failed to change permissions for {{.minikube_dir_path}}: {{.error}}", out.V{"minikube_dir_path": localpath.MiniPath(), "error": err})
-	}
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable
@@ -1006,59 +941,6 @@ func getKubernetesVersion(old *config.MachineConfig) string {
 		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
 	return nv
-}
-
-// setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, cfg config.MachineConfig, node config.Node) bootstrapper.Bootstrapper {
-	bs, err := getClusterBootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
-	if err != nil {
-		exit.WithError("Failed to get bootstrapper", err)
-	}
-	for _, eo := range extraOptions {
-		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
-	}
-	// Loads cached images, generates config files, download binaries
-	if err := bs.UpdateCluster(cfg); err != nil {
-		exit.WithError("Failed to update cluster", err)
-	}
-	if err := bs.SetupCerts(cfg.KubernetesConfig, node); err != nil {
-		exit.WithError("Failed to setup certs", err)
-	}
-	return bs
-}
-
-// bootstrapCluster starts Kubernetes using the chosen bootstrapper
-func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, mc config.MachineConfig) {
-	out.T(out.Launch, "Launching Kubernetes ... ")
-	if err := bs.StartCluster(mc); err != nil {
-		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
-	}
-}
-
-// configureMounts configures any requested filesystem mounts
-func configureMounts() {
-	if !viper.GetBool(createMount) {
-		return
-	}
-
-	out.T(out.Mounting, "Creating mount {{.name}} ...", out.V{"name": viper.GetString(mountString)})
-	path := os.Args[0]
-	mountDebugVal := 0
-	if glog.V(8) {
-		mountDebugVal = 1
-	}
-	mountCmd := exec.Command(path, "mount", fmt.Sprintf("--v=%d", mountDebugVal), viper.GetString(mountString))
-	mountCmd.Env = append(os.Environ(), constants.IsMinikubeChildProcess+"=true")
-	if glog.V(8) {
-		mountCmd.Stdout = os.Stdout
-		mountCmd.Stderr = os.Stderr
-	}
-	if err := mountCmd.Start(); err != nil {
-		exit.WithError("Error starting mount", err)
-	}
-	if err := lock.WriteFile(filepath.Join(localpath.MiniPath(), constants.MountProcessFileName), []byte(strconv.Itoa(mountCmd.Process.Pid)), 0644); err != nil {
-		exit.WithError("Error writing mount pid", err)
-	}
 }
 
 // saveConfig saves profile cluster configuration in $MINIKUBE_HOME/profiles/<profilename>/config.json
