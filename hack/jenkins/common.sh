@@ -29,6 +29,10 @@ readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$
 export GOPATH="$HOME/go"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
+docker rm -f $(docker ps -aq) >/dev/null 2>&1 || true
+docker volume prune || true
+docker system df || true
+
 echo ">> Starting at $(date)"
 echo ""
 echo "arch:      ${OS_ARCH}"

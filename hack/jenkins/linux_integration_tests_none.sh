@@ -38,7 +38,6 @@ export KUBECONFIG="/root/.kube/config"
 # "none" driver specific cleanup from previous runs.
 sudo kubeadm reset -f || true
 # kubeadm reset may not stop pods immediately
-docker rm -f $(docker ps -aq) >/dev/null 2>&1 || true
 
 # Cleanup data directory
 sudo rm -rf /data/*
