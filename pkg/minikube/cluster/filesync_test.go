@@ -158,3 +158,33 @@ func TestAssetsFromDir(t *testing.T) {
 	}
 
 }
+
+func TestSyncDest(t *testing.T) {
+	tests := []struct {
+		description string
+		localParts  []string
+		destRoot    string
+		flatten     bool
+		want        string
+	}{
+		{"simple", []string{"etc", "hosts"}, "/", false, "/etc/hosts"},
+		{"nested", []string{"etc", "nested", "hosts"}, "/", false, "/etc/nested/hosts"},
+		{"flat", []string{"etc", "nested", "hosts"}, "/test", true, "/test/hosts"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			// Generate paths using filepath to mimic OS-specific issues
+			localRoot := localpath.MakeMiniPath("sync")
+			localParts := append([]string{localRoot}, test.localParts...)
+			localPath := filepath.Join(localParts...)
+			got, err := syncDest(localRoot, localPath, test.destRoot, test.flatten)
+			if err != nil {
+				t.Fatalf("syncDest(%s, %s, %v) unexpected err: %v", localRoot, localPath, test.flatten, err)
+			}
+			if got != test.want {
+				t.Errorf("syncDest(%s, %s, %v) = %s, want: %s", localRoot, localPath, test.flatten, got, test.want)
+			}
+		})
+	}
+}
