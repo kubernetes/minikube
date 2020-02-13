@@ -27,7 +27,12 @@
 readonly TEST_ROOT="${HOME}/minikube-integration"
 readonly TEST_HOME="${TEST_ROOT}/${OS_ARCH}-${VM_DRIVER}-${MINIKUBE_LOCATION}-$$-${COMMIT}"
 export GOPATH="$HOME/go"
+export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
+
+# installing golang so we could do go get for gopogh
+sudo ./installers/check_install_golang.sh "1.13.4" "/usr/local" || true
+
 
 echo ">> Starting at $(date)"
 echo ""
@@ -42,6 +47,7 @@ echo "uptime:    $(uptime)"
 # Setting KUBECONFIG prevents the version ceck from erroring out due to permission issues
 echo "kubectl:   $(env KUBECONFIG=${TEST_HOME} kubectl version --client --short=true)"
 echo "docker:    $(docker version --format '{{ .Client.Version }}')"
+echo "podman:    $(sudo podman version --format '{{.Version}}' || true)"
 echo "go:        $(go version || true)"
 
 
@@ -235,7 +241,6 @@ cleanup_stale_routes || true
 
 mkdir -p "${TEST_HOME}"
 export MINIKUBE_HOME="${TEST_HOME}/.minikube"
-export KUBECONFIG="${TEST_HOME}/kubeconfig"
 
 
 # Build the gvisor image so that we can integration test changes to pkg/gvisor
@@ -303,7 +308,8 @@ min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}"
+SHORT_COMMIT=${COMMIT:0:7}
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_NAME}"
 echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
 gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
 
@@ -319,7 +325,7 @@ touch "${JSON_OUT}"
 echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 echo ">> Installing gopogh"
-cd /tmp
+cd $(mktemp -d)
 GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.17 || true
 cd -
 echo ">> Running gopogh"
@@ -340,6 +346,7 @@ gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 
+
 public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
 if grep -q html "$HTML_OUT"; then
   public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
@@ -347,7 +354,7 @@ fi
 
 echo ">> Cleaning up after ourselves ..."
 ${SUDO_PREFIX}${MINIKUBE_BIN} tunnel --cleanup || true
-${SUDO_PREFIX}${MINIKUBE_BIN} delete --all >/dev/null 2>/dev/null || true
+${SUDO_PREFIX}${MINIKUBE_BIN} delete --all --purge >/dev/null 2>/dev/null || true
 cleanup_stale_routes || true
 
 ${SUDO_PREFIX} rm -Rf "${MINIKUBE_HOME}" || true

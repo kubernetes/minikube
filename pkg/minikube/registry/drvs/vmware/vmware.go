@@ -39,7 +39,7 @@ func init() {
 	}
 }
 
-func configure(mc config.MachineConfig) interface{} {
+func configure(mc config.MachineConfig) (interface{}, error) {
 	d := vmwcfg.NewConfig(mc.Name, localpath.MiniPath())
 	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
 	d.Memory = mc.Memory
@@ -49,7 +49,7 @@ func configure(mc config.MachineConfig) interface{} {
 	// TODO(frapposelli): push these defaults upstream to fixup this driver
 	d.SSHPort = 22
 	d.ISO = d.ResolveStorePath("boot2docker.iso")
-	return d
+	return d, nil
 }
 
 func status() registry.State {

@@ -36,7 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-// Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/kic/
+// Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
 type Driver struct {
 	*drivers.BaseDriver
 	*pkgdrivers.CommonDriver
@@ -76,15 +76,15 @@ func (d *Driver) Create() error {
 
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings, oci.PortMapping{
-		ListenAddress: DefaultBindIPV4,
+		ListenAddress: oci.DefaultBindIPV4,
 		ContainerPort: constants.APIServerPort,
 	},
 		oci.PortMapping{
-			ListenAddress: DefaultBindIPV4,
+			ListenAddress: oci.DefaultBindIPV4,
 			ContainerPort: constants.SSHPort,
 		},
 		oci.PortMapping{
-			ListenAddress: DefaultBindIPV4,
+			ListenAddress: oci.DefaultBindIPV4,
 			ContainerPort: constants.DockerDaemonPort,
 		},
 	)
@@ -138,12 +138,12 @@ func (d *Driver) GetIP() (string, error) {
 
 // GetExternalIP returns an IP which is accissble from outside
 func (d *Driver) GetExternalIP() (string, error) {
-	return DefaultBindIPV4, nil
+	return oci.DefaultBindIPV4, nil
 }
 
 // GetSSHHostname returns hostname for use with ssh
 func (d *Driver) GetSSHHostname() (string, error) {
-	return DefaultBindIPV4, nil
+	return oci.DefaultBindIPV4, nil
 }
 
 // GetSSHPort returns port for use with ssh
@@ -186,7 +186,7 @@ func (d *Driver) GetState() (state.State, error) {
 
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
 	out, err := cmd.CombinedOutput()
-	o := strings.Trim(string(out), "\n")
+	o := strings.TrimSpace(string(out))
 	if err != nil {
 		return state.Error, errors.Wrapf(err, "get container %s status", d.MachineName)
 	}
@@ -222,7 +222,7 @@ func (d *Driver) Remove() error {
 	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "rm", "-f", "-v", d.MachineName)
 	o, err := cmd.CombinedOutput()
-	out := strings.Trim(string(o), "\n")
+	out := strings.TrimSpace(string(o))
 	if err != nil {
 		if strings.Contains(out, "is already in progress") {
 			log.Warnf("Docker engine is stuck. please restart docker daemon on your computer.", d.MachineName)

@@ -33,10 +33,11 @@ import (
 // MockAPI is a struct used to mock out libmachine.API
 type MockAPI struct {
 	FakeStore
-	CreateError bool
-	RemoveError bool
-	SaveCalled  bool
-	t           *testing.T
+	CreateError   bool
+	RemoveError   bool
+	NotExistError bool
+	SaveCalled    bool
+	t             *testing.T
 }
 
 // NewMockAPI returns a new MockAPI
@@ -108,6 +109,12 @@ func (api *MockAPI) Create(h *host.Host) error {
 	drv, ok := h.Driver.(*MockDriver)
 	if ok {
 		drv.T = api.t
+	}
+	if api.NotExistError {
+		// initialize api.NotExistError
+		api.NotExistError = false
+		// reproduce ErrMachineNotExist
+		drv.NotExistError = true
 	}
 	return h.Driver.Create()
 }
