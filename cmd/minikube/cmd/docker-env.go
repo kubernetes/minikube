@@ -184,7 +184,7 @@ var dockerEnvCmd = &cobra.Command{
 
 		port := constants.DockerDaemonPort
 		if driver.IsKIC(host.DriverName) { // for kic we need to find what port docker/podman chose for us
-			hostIP = kic.DefaultBindIPV4
+			hostIP = oci.DefaultBindIPV4
 			port, err = oci.HostPortBinding(host.DriverName, profile, port)
 			if err != nil {
 				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": host.DriverName, "error": err})
