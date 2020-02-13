@@ -24,6 +24,9 @@ const (
 	// DefaultPodCIDR is The CIDR to be used for pods inside the node.
 	DefaultPodCIDR = "10.244.0.0/16"
 
+	// KicVersion is the current version of kic
+	KicVersion = "v0.0.6"
+
 	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
 	BaseImage = "gcr.io/k8s-minikube/kicbase:v0.0.6@sha256:851d1ba89c2e865c059eafcf5befa88b2b322751c5bbabd54cc97592231c574d"
 	// OverlayImage is the cni plugin used for overlay image, created by kind.
