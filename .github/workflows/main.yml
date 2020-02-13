@@ -37,7 +37,7 @@ jobs:
       run: |
         export PATH=${PATH}:`go env GOPATH`/bin
         go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-        STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "docker driver on ubuntu 16.04" -repo github.com/kubernetes/minikube/)  || true
+        STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "docker driver on ubuntu 16.04" -repo github.com/kubernetes/minikube/)  -details "${GITHUB_SHA}" || true
         report="Docker_Ubuntu_16_04 : Completed with ${STAT} in ${ELAPSED}"
         echo ${report}
     - uses: actions/upload-artifact@v1
