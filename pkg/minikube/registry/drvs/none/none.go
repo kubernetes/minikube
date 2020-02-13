@@ -42,12 +42,12 @@ func init() {
 	}
 }
 
-func configure(mc config.MachineConfig) interface{} {
+func configure(mc config.MachineConfig) (interface{}, error) {
 	return none.NewDriver(none.Config{
 		MachineName:      mc.Name,
 		StorePath:        localpath.MiniPath(),
 		ContainerRuntime: mc.KubernetesConfig.ContainerRuntime,
-	})
+	}), nil
 }
 
 func status() registry.State {

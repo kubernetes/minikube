@@ -63,7 +63,7 @@ func KubernetesReleaseURLSHA1(binaryName, version, osName, archName string) stri
 
 // CacheBinary will cache a binary on the host
 func CacheBinary(binary, version, osName, archName string) (string, error) {
-	targetDir := localpath.MakeMiniPath("cache", version)
+	targetDir := localpath.MakeMiniPath("cache", osName, version)
 	targetFilepath := path.Join(targetDir, binary)
 
 	url := KubernetesReleaseURL(binary, version, osName, archName)

@@ -83,22 +83,36 @@ func TestCopyBinary(t *testing.T) {
 }
 
 func TestCacheBinariesForBootstrapper(t *testing.T) {
+	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
+	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
+
+	minikubeHome, err := ioutil.TempDir("/tmp", "")
+	if err != nil {
+		t.Fatalf("error during creating tmp dir: %v", err)
+	}
+	defer os.RemoveAll(minikubeHome)
+
 	var tc = []struct {
 		version, clusterBootstrapper string
+		minikubeHome                 string
 		err                          bool
 	}{
 		{
 			version:             "v1.16.0",
 			clusterBootstrapper: bootstrapper.Kubeadm,
+			err:                 false,
+			minikubeHome:        minikubeHome,
 		},
 		{
 			version:             "invalid version",
 			clusterBootstrapper: bootstrapper.Kubeadm,
 			err:                 true,
+			minikubeHome:        minikubeHome,
 		},
 	}
 	for _, test := range tc {
 		t.Run(test.version, func(t *testing.T) {
+			os.Setenv("MINIKUBE_HOME", test.minikubeHome)
 			err := CacheBinariesForBootstrapper(test.version, test.clusterBootstrapper)
 			if err != nil && !test.err {
 				t.Fatalf("Got unexpected error %v", err)
