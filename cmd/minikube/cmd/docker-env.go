@@ -32,7 +32,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -269,7 +268,7 @@ func dockerEnvVars(ec DockerEnvConfig) (map[string]string, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "get hostbind port for %d", constants.DockerDaemonPort)
 		}
-		env[constants.DockerCertPathEnv] = dockerURL(kic.DefaultBindIPV4, port)
+		env[constants.DockerCertPathEnv] = dockerURL(oci.DefaultBindIPV4, port)
 	}
 	return env, nil
 }

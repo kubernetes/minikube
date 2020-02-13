@@ -41,6 +41,7 @@ jobs=(
      'KVM_Linux'
      'none_Linux'
      'Docker_Linux'
+     'Podman_Linux'
 )
 
 # retry_github_status provides reliable github status updates

@@ -17,11 +17,13 @@ limitations under the License.
 package addons
 
 import (
+	"fmt"
 	"os/exec"
 	"path"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 var (
@@ -41,7 +43,7 @@ func kubectlCommand(profile string, files []string, enable bool) (*exec.Cmd, err
 		kubectlAction = "delete"
 	}
 
-	args := []string{"KUBECONFIG=/var/lib/minikube/kubeconfig", kubectlBinary, kubectlAction}
+	args := []string{fmt.Sprintf("KUBECONFIG=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")), kubectlBinary, kubectlAction}
 	for _, f := range files {
 		args = append(args, []string{"-f", f}...)
 	}
@@ -63,5 +65,5 @@ func kubernetesVersion(profile string) (string, error) {
 }
 
 func kubectlBinaryPath(version string) string {
-	return path.Join("/var/lib/minikube/binaries", version, "kubectl")
+	return path.Join(vmpath.GuestPersistentDir, "binaries", version, "kubectl")
 }

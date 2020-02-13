@@ -142,3 +142,37 @@ jobs:
       with:
         name: none_on_ubuntu_latest_report
         path: report
+  podman_ubuntu_18_04:
+      runs-on: ubuntu-18.04
+      steps:
+      - uses: actions/checkout@v2
+      - name: install podman
+        run: |
+          . /etc/os-release
+          sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
+          wget -q https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_${VERSION_ID}/Release.key -O- | sudo apt-key add -
+          sudo apt-key add - < Release.key || true
+          sudo apt-get update -qq
+          sudo apt-get -qq -y install podman
+      - name: build binaries
+        run : |
+          make minikube-linux-amd64
+          make e2e-linux-amd64
+      - name: install gopogh
+        run: |
+          cd /tmp
+          GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
+          cd -
+      - name: run integration test
+        run: |
+          mkdir -p /tmp/testhome
+          MINIKUBE_HOME=/tmp/testhome sudo -E ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=podman -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+      - name: generate gopogh report
+        run: |
+          export PATH=${PATH}:`go env GOPATH`/bin
+          go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+          gopogh -in ./report/testout.json -out ./report/testout.html -name "docker ubuntu" -repo github.com/kubernetes/minikube/  || true
+      - uses: actions/upload-artifact@v1
+        with:
+          name: podman_on_ubuntu_latest_report
+          path: report
