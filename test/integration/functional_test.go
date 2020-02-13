@@ -140,7 +140,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("Failed to do minikube status after eval-ing docker-env %s", err)
 	}
 	if !strings.Contains(rr.Output(), "Running") {
-		t.Fatalf("Expected minikube status output to include Running after but got \n%s", expectedContInside, rr.Output())
+		t.Fatalf("Expected status output to include 'Running' after eval docker-env but got \n%s", rr.Output())
 	}
 
 }
