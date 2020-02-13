@@ -345,9 +345,10 @@ gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 
-public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
+short_commit=${COMMIT:0:7}
+public_log_url="https://storage.googleapis.com/${short_commit}/${JOB_GCS_BUCKET}.txt"
 if grep -q html "$HTML_OUT"; then
-  public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.html"
+  public_log_url="https://storage.googleapis.com/${short_commit}/${JOB_GCS_BUCKET}.html"
 fi
 
 echo ">> Cleaning up after ourselves ..."
