@@ -23,6 +23,7 @@ import (
 	"path"
 	"runtime"
 
+	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
@@ -56,13 +57,24 @@ func releaseURL(binaryName, version, osName, archName string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
 }
 
-// checksumURL gets the location of a kubernetes client checksum
-func checksumURL(binaryName, version, osName, archName string) string {
-	return fmt.Sprintf("%s.sha256", releaseURL(binaryName, version, osName, archName))
+// checksumVerifier returns the binary checksum URL and hash method
+func checksumVerifier(binaryName, version, osName, archName string) (string, crypto.Hash, error) {
+	binURL := releaseURL(binaryName, version, osName, archName)
+
+	v, err := semver.Make(version[1:])
+	if err != nil {
+		return "", 0, err
+	}
+
+	if v.GTE(semver.MustParse("1.17.0")) {
+		return binURL + ".sha256", crypto.SHA256, nil
+	}
+	return binURL + ".sha1", crypto.SHA1, nil
 }
 
 // CacheBinary will cache a binary on the host
 func CacheBinary(binary, version, osName, archName string) (string, error) {
+
 	targetDir := localpath.MakeMiniPath("cache", osName, version)
 	targetFilepath := path.Join(targetDir, binary)
 
@@ -86,8 +98,12 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 		Mkdirs: download.MkdirAll,
 	}
 
-	options.Checksum = checksumURL(binary, version, osName, archName)
-	options.ChecksumHash = crypto.SHA256
+	ckURL, ckAlgo, err := checksumVerifier(binary, version, osName, archName)
+	if err != nil {
+		return "", errors.Wrap(err, "verifier")
+	}
+	options.Checksum = ckURL
+	options.ChecksumHash = ckAlgo
 
 	glog.Infof("Downloading %s: options: %+v", url, options)
 
