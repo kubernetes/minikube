@@ -78,9 +78,9 @@ function retry_github_status() {
   done
 }
 
-SHORT_COMMIT=${COMMIT:0:7}
+SHORT_COMMIT=${ghprbActualCommit:0:7}
 for j in ${jobs[@]}; do	for j in ${jobs[@]}; do
   retry_github_status "${ghprbActualCommit}" "${j}" "pending" "${access_token}" \	  retry_github_status "${ghprbActualCommit}" "${j}" "pending" "${access_token}" \
-    "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${j}.pending"	    "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/${j}.pending"
+  "https://storage.googleapis.com/minikube-builds/logs/${ghprbPullId}/${SHORT_COMMIT}/${j}.pending"
 done	done
 
