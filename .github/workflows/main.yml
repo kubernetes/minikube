@@ -3,7 +3,8 @@ on: [pull_request]
 jobs:
   docker_ubuntu_16_04:
     env:
-      ELAPSED: time
+      TIME_ELAPSED: time
+      COMMIT_STATUS: "Docker_Ubuntu_16_04"
     runs-on: ubuntu-16.04
     steps:
     - uses: actions/checkout@v2
@@ -18,6 +19,13 @@ jobs:
         cp -r test/integration/testdata ./
         ls -lah
         whoami
+        echo github ref $GITHUB_REF
+        echo workflow $GITHUB_WORKFLOW
+        echo home $HOME
+        echo event name $GITHUB_EVENT_NAME
+        echo workspace $GITHUB_WORKSPACE
+        echo "end of debug stuff"
+        
     - name: install gopogh
       run: |
         cd /tmp
@@ -28,25 +36,28 @@ jobs:
         START_TIME=$(date -u +%s)
         KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
-        ELAPSED=$(($END_TIME-$START_TIME)) 
-        min=$((${ELAPSED}/60))
-        sec=$((${ELAPSED}%60))
-        ELAPSED="${min} min $sec seconds "
-        echo ::set-env name=ELAPSED::${ELAPSED}
+        TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
+        min=$((${TIME_ELAPSED}/60))
+        sec=$((${TIME_ELAPSED}%60))
+        TIME_ELAPSED="${min} min $sec seconds "
     - name: generate gopogh report
       run: |
         export PATH=${PATH}:`go env GOPATH`/bin
         go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-        STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "docker driver on ubuntu 16.04" -repo github.com/kubernetes/minikube/)  -details "${GITHUB_SHA}" || true
-        report="Docker_Ubuntu_16_04 : Completed with ${STAT} in ${ELAPSED}"
-        echo ${report}
+        STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "docker driver on ubuntu 16.04" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+        COMMIT_STATUS="${COMMIT_STATUS} : Completed with ${STAT} in ${TIME_ELAPSED}"
+        echo ${COMMIT_STATUS}
     - uses: actions/upload-artifact@v1
       with:
         name: docker_on_ubuntu_16_04_report
         path: report
+    - name: end result
+      run: |
+        echo END RESULT IS ${COMMIT_STATUS}
   docker_ubuntu_18_04:
     env:
-      ELAPSED: time
+      TIME_ELAPSED: time
+      COMMIT_STATUS: "Docker_Ubuntu_18_04"
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
@@ -71,25 +82,26 @@ jobs:
         START_TIME=$(date -u +%s)
         KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
-        ELAPSED=$(($END_TIME-$START_TIME)) 
-        min=$((${ELAPSED}/60))
-        sec=$((${ELAPSED}%60))
-        ELAPSED="${min} min $sec seconds"
-        echo ::set-env name=ELAPSED::${ELAPSED}
+        TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
+        min=$((${TIME_ELAPSED}/60))
+        sec=$((${TIME_ELAPSED}%60))
+        TIME_ELAPSED="${min} min $sec seconds"
+        echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
     - name: generate gopogh report
       run: |
         export PATH=${PATH}:`go env GOPATH`/bin
         go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-        STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "docker driver on ubuntu 18.04" -repo github.com/kubernetes/minikube/)  || true
-        report="Docker_Ubuntu_18_04 : Completed with ${STAT} in ${ELAPSED}"
-        echo ${report}
+        STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "docker driver on ubuntu 18.04" -repo "${GITHUB_REPOSITORY}")  || true
+        COMMIT_STATUS="${COMMIT_STATUS} : Completed with ${STAT} in ${TIME_ELAPSED}"
+        echo ${COMMIT_STATUS}
     - uses: actions/upload-artifact@v1
       with:
         name: docker_on_ubuntu_18_04_report
         path: report
   none_ubuntu16_04:
     env:
-      ELAPSED: time
+      TIME_ELAPSED: time
+      COMMIT_STATUS: "None_Ubuntu_16_04"
     runs-on: ubuntu-16.04
     steps:
     - uses: actions/checkout@v2
@@ -115,18 +127,18 @@ jobs:
         KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=none -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
 
         END_TIME=$(date -u +%s)
-        ELAPSED=$(($END_TIME-$START_TIME)) 
-        min=$((${ELAPSED}/60))
-        sec=$((${ELAPSED}%60))
-        ELAPSED="${min} min $sec seconds"
+        TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
+        min=$((${TIME_ELAPSED}/60))
+        sec=$((${TIME_ELAPSED}%60))
+        TIME_ELAPSED="${min} min $sec seconds"
 
-        echo ::set-env name=ELAPSED::${ELAPSED}
+        echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
     - name: generate gopogh report
       run: |
         export PATH=${PATH}:`go env GOPATH`/bin
         go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-        STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "None Driver on Ubuntu 16 04" -repo github.com/kubernetes/minikube/) -details "${GITHUB_SHA}" || true
-        report="None_Ubuntu_16_04 : Completed with ${STAT} in ${ELAPSED}"
+        STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "None Driver on Ubuntu 16 04" -repo "${GITHUB_REPOSITORY}" -details "${GITHUB_SHA}") || true
+        CommitStatus="None_Ubuntu_16_04 : Completed with ${STAT} in ${TIME_ELAPSED}"
         echo ${report}
     - uses: actions/upload-artifact@v1
       with:
@@ -134,7 +146,8 @@ jobs:
         path: report
   podman_ubuntu_18_04:
       env:
-        ELAPSED: time
+        TIME_ELAPSED: time
+        COMMIT_STATUS: "Podman_Ubuntu_18_04"
       runs-on: ubuntu-18.04
       steps:
       - uses: actions/checkout@v2
@@ -170,65 +183,10 @@ jobs:
         run: |
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "Prodman Driver on Ubuntu 18 04" -repo github.com/kubernetes/minikube/) -details "${GITHUB_SHA}" || true
-          report="None_Ubuntu_16_04 : Completed with ${STAT} in ${ELAPSED}"
-          echo ${report}
+          STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "Prodman Driver on Ubuntu 18 04" -repo "${GITHUB_REPOSITORY}" -details "${GITHUB_SHA}") || true
+          COMMIT_STATUS="${COMMIT_STATUS} : Completed with ${STAT} in ${TIME_ELAPSED}"
+          echo ${COMMIT_STATUS}
       - uses: actions/upload-artifact@v1
         with:
           name: podman_on_ubuntu_18_04
           path: report
-
-  # commenting docker on mac os out till this issue is solved.
-  # https://github.community/t5/GitHub-Actions/Is-it-possible-to-install-and-configure-Docker-on-MacOS-runner/td-p/39002
-  # docker_macos:
-  #   env:
-  #     ELAPSED: time
-  #   runs-on: macos-latest
-  #   steps:
-  #   - uses: actions/checkout@v2
-  #   - name: build binaries
-  #     run : |
-  #       make minikube-darwin-amd64
-  #       make e2e-darwin-amd64
-  #       mkdir -p report
-  #       mkdir -p testhome
-  #   - name: install docker
-  #     run: |
-  #         brew install docker-machine docker || true
-  #         brew services start docker-machine || true
-  #         brew services list || true
-  #         docker-machine start || true
-  #         docker version || true
-  #         docker info || true
-  #         docker version || true
-  #         docker ps || true
-  #         docker rm -f $(docker ps -aq) || true
-  #         docker volume prune || true
-  #         docker system df || true
-
-  #   - name: install gopogh
-  #     run: |
-  #       cd /tmp
-  #       GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
-  #       cd -
-  #   - name: run integration test
-  #     run: |
-  #       START_TIME=$(date -u +%s)
-  #       KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./out/e2e-darwin-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./out/minikube-darwin-amd64 2>&1 | tee ./report/testout.txt
-  #       END_TIME=$(date -u +%s)
-  #       ELAPSED=$(($END_TIME-$START_TIME)) 
-  #       min=$((${ELAPSED}/60))
-  #       sec=$((${ELAPSED}%60))
-  #       ELAPSED="${min} min $sec seconds"
-  #       echo ::set-env name=ELAPSED::${ELAPSED}
-  #   - name: generate gopogh report
-  #     run: |
-  #       export PATH=${PATH}:`go env GOPATH`/bin
-  #       go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-  #       STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "Docker Driver on MacOs" -repo github.com/kubernetes/minikube/) -details "${GITHUB_SHA}" || true
-  #       report="None_Ubuntu_16_04 : Completed with ${STAT} in ${ELAPSED}"
-  #       echo ${report}
-  #   - uses: actions/upload-artifact@v1
-  #     with:
-  #       name: docker_on_macos_report
-  #       path: ./report
