@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 )
 
 const (
@@ -86,10 +85,4 @@ func deleteMinikube() error {
 	cmd := exec.Command(minikubePath, "delete", "-p", profile)
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
-}
-
-func runCmd(command []string) (string, error) {
-	cmd := exec.Command(command[0], command[1:]...)
-	output, err := cmd.Output()
-	return strings.Trim(string(output), "\n "), err
 }
