@@ -365,7 +365,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	t.Run("cache", func(t *testing.T) {
 		t.Run("add", func(t *testing.T) {
-			for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "k8s.gcr.io/pause:latest"} {
+			for _, img := range []string{"busybox:latest", "busybox:1.28.4-glibc", "k8s.gcr.io/pause:latest"} {
 				_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 				if err != nil {
 					t.Errorf("Failed to cache image %q", img)
