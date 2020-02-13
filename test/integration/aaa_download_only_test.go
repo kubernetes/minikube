@@ -163,6 +163,10 @@ func TestDownloadOnly(t *testing.T) {
 }
 
 func TestDownloadOnlyDocker(t *testing.T) {
+	if NoneDriver() {
+		t.Skip("skipping: none driver does not support ssh or bundle docker")
+	}
+
 	tests := []struct {
 		description   string
 		k8sVersion    string
