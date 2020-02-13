@@ -57,6 +57,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/logs"
@@ -358,7 +359,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	// exits here in case of --download-only option.
-	handleDownloadOnly(&cacheGroup, k8sVersion)
+	handleDownloadOnly(&cacheGroup, k8sVersion, driverName)
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
@@ -481,7 +482,7 @@ func setupKubeconfig(h *host.Host, c *config.MachineConfig, n *config.Node, clus
 	return kcs, nil
 }
 
-func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
+func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion, driverName string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool(downloadOnly) {
 		return
@@ -492,13 +493,19 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 	if _, err := cacheKubectlBinary(k8sVersion); err != nil {
 		exit.WithError("Failed to cache kubectl", err)
 	}
+	if driver.IsKIC(driverName) {
+		kicBaseImage, _ := docker.PreloadedBaseImage(k8sVersion)
+		// Download kicBaseImage
+		if err := image.DockerPull(kicBaseImage); err != nil {
+			exit.WithError("Failed to cache kic base image", err)
+		}
+	}
 	waitCacheRequiredImages(cacheGroup)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.WithError("Failed to cache images to tar", err)
 	}
 	out.T(out.Check, "Download complete!")
 	os.Exit(0)
-
 }
 
 func startMachine(cfg *config.MachineConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {

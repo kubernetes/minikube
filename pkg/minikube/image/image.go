@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -30,6 +31,8 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -44,6 +47,30 @@ func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 		return ""
 	}
 	return img.ID
+}
+
+// DockerPull checks if img exists in local docker daemon
+// If it doesn't, it pulls img
+func DockerPull(img string) error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker-daemon")
+	}
+	// Check if image exists locally
+	ref, err := name.ParseReference(img)
+	if err != nil {
+		return errors.Wrap(err, "parsing reference")
+	}
+	if _, err := daemon.Image(ref); err == nil {
+		glog.Infof("Found %s in local docker daemon, skipping pull", img)
+		return nil
+	}
+	// Try to pull image from remote registry
+	imgClient, err := client.NewClientWithOpts(client.FromEnv) // image client
+	if err != nil {
+		return err
+	}
+	_, err = imgClient.ImagePull(context.Background(), img, types.ImagePullOptions{})
+	return err
 }
 
 // DigestByGoLib gets image digest uses go-containerregistry lib

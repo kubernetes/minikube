@@ -30,10 +30,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/version"
 )
 
 func TestDownloadOnly(t *testing.T) {
@@ -156,5 +159,47 @@ func TestDownloadOnly(t *testing.T) {
 			}
 		})
 	})
+
+}
+
+func TestDownloadOnlyDocker(t *testing.T) {
+	tests := []struct {
+		description   string
+		k8sVersion    string
+		expectedImage string
+	}{
+		{
+			description:   "regular kic base image",
+			k8sVersion:    "v1.11.0",
+			expectedImage: fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s", version.GetKicVersion()),
+		}, {
+			description:   "preloaded kic base image",
+			k8sVersion:    constants.DefaultKubernetesVersion,
+			expectedImage: fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s-k8s-%s", version.GetKicVersion(), constants.DefaultKubernetesVersion),
+		},
+	}
+
+	profile := UniqueProfileName("download-docker")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer Cleanup(t, profile, cancel)
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", test.k8sVersion), "--vm-driver=docker"}
+
+			if _, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
+				t.Errorf("%s failed: %v", args, err)
+			}
+
+			// Make sure this image exists in the docker daemon
+			ref, err := name.ParseReference(test.expectedImage)
+			if err != nil {
+				t.Errorf("parsing reference failed: %v", err)
+			}
+			if _, err := daemon.Image(ref); err != nil {
+				t.Errorf("expected image %s does not exist in local daemon: %v. If upgrading kubernetes version, you may need to build and push a new preloaded kic base image for that kubernetes version via `make kic-preloaded-base-image`", test.expectedImage, err)
+			}
+		})
+	}
 
 }
