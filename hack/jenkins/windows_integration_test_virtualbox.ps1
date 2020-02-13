@@ -26,7 +26,7 @@ If($env:result -eq 0){$env:status="success"}
 Else {$env:status="failure"}
 
 $env:SHORT_COMMIT=$env:COMMIT.substring(0, 7)
-$env:target_url="https://storage.googleapis.com/minikube-builds/logs/$env:MINIKUBE_LOCATION/$env:SHORT_COMMIT/VirtualBox_Windows.txt"
+$env:target_url="https://storage.googleapis.com/minikube-builds/logs/$env:MINIKUBE_LOCATION$env:SHORT_COMMIT/VirtualBox_Windows.txt"
 $json = "{`"state`": `"$env:status`", `"description`": `"Jenkins`", `"target_url`": `"$env:target_url`", `"context`": `"VirtualBox_Windows`"}"
 Invoke-WebRequest -Uri "https://api.github.com/repos/kubernetes/minikube/statuses/$env:COMMIT`?access_token=$env:access_token" -Body $json -ContentType "application/json" -Method Post -usebasicparsing
 
