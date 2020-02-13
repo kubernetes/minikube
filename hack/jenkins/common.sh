@@ -308,7 +308,8 @@ min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}"
+SHORT_COMMIT=${COMMIT:0:7}
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_NAME}/"
 echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
 gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
 
@@ -345,10 +346,10 @@ gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
 
-short_commit=${COMMIT:0:7}
-public_log_url="https://storage.googleapis.com/${short_commit}/${JOB_GCS_BUCKET}.txt"
+
+public_log_url="https://storage.googleapis.com/${SHORT_COMMIT}/${JOB_GCS_BUCKET}.txt"
 if grep -q html "$HTML_OUT"; then
-  public_log_url="https://storage.googleapis.com/${short_commit}/${JOB_GCS_BUCKET}.html"
+  public_log_url="https://storage.googleapis.com/${SHORT_COMMIT}/${JOB_GCS_BUCKET}.html"
 fi
 
 echo ">> Cleaning up after ourselves ..."
