@@ -39,7 +39,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-func startMachine(cfg *config.MachineConfig, n *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(cfg *config.MachineConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
@@ -58,9 +58,9 @@ func startMachine(cfg *config.MachineConfig, n *config.Node) (runner command.Run
 		out.ErrT(out.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
 	// Save IP to configuration file for subsequent use
-	n.IP = ip
+	node.IP = ip
 
-	if err := Save(cfg, n); err != nil {
+	if err := Save(cfg, node); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
