@@ -201,7 +201,7 @@ func adjustGuestClock(h hostRunner, t time.Time) error {
 func machineExists(d string, s state.State, err error) (bool, error) {
 	switch d {
 	case driver.HyperKit:
-		if s == state.Stopped || err.Error() == "connection is shut down" {
+		if s == state.None || (err != nil && err.Error() == "connection is shut down") {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
@@ -211,17 +211,17 @@ func machineExists(d string, s state.State, err error) (bool, error) {
 		}
 		return true, err
 	case driver.KVM2:
-		if s == state.None || s == state.Stopped {
+		if s == state.None {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
 	case driver.None:
-		if s == state.Stopped {
+		if s == state.None {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
 	case driver.Parallels:
-		if err.Error() == "machine does not exist" {
+		if err != nil && err.Error() == "machine does not exist" {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
@@ -231,12 +231,12 @@ func machineExists(d string, s state.State, err error) (bool, error) {
 		}
 		return true, err
 	case driver.VMware:
-		if s == state.None || s == state.Stopped {
+		if s == state.None {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
 	case driver.VMwareFusion:
-		if s == state.Stopped {
+		if s == state.None {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
