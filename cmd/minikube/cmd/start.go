@@ -812,7 +812,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateDiskSize()
 	validateMemorySize()
 
-	if driver.NeedsRoot(drvName) { // both podman and none need root and they both cant specify resources
+	if !driver.HasResourceLimits(drvName) { // both podman and none need root and they both cant specify resources
 		if cmd.Flags().Changed(cpus) {
 			out.WarningT("The '{{.name}}' driver does not respect the --cpus flag", out.V{"name": drvName})
 		}
@@ -823,7 +823,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 
 	if driver.BareMetal(drvName) {
 		if viper.GetString(config.MachineProfile) != constants.DefaultMachineName {
-			exit.WithCodeT(exit.Config, "The 'none' driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+			exit.WithCodeT(exit.Config, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 		}
 
 		runtime := viper.GetString(containerRuntime)

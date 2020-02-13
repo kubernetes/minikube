@@ -113,6 +113,11 @@ func NeedsRoot(name string) bool {
 	return name == None || name == Podman
 }
 
+// HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
+func HasResourceLimits(name string) bool {
+	return name == None || name == Podman
+}
+
 // FlagHints are hints for what default options should be used for this driver
 type FlagHints struct {
 	ExtraOptions     []string

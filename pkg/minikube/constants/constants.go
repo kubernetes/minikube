@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/blang/semver"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -78,13 +77,6 @@ var (
 )
 
 var (
-	// MinReqPodmanVer is required the mininum version of podman to be installed for podman driver.
-	MinReqPodmanVer = semver.Version{Major: 1, Minor: 7, Patch: 0}
-	// MinReqDockerVer is required the mininum version of docker server to be installed for docker driver.
-	MinReqDockerVer = semver.Version{Major: 16, Minor: 0, Patch: 0}
-	// MinSuggestDockerVer is the suggsted the mininum version of docker server to be installed for docker driver.
-	MinSuggestDockerVer = semver.Version{Major: 19, Minor: 0, Patch: 0}
-
 	SHASuffix = ".sha256"
 	// DefaultISOURL is the default location of the minikube.iso file
 	DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetISOPath(), minikubeVersion.GetISOVersion())

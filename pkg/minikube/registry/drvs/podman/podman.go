@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -29,11 +29,13 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
+
+// minReqPodmanVer is required the mininum version of podman to be installed for podman driver.
+var minReqPodmanVer = semver.Version{Major: 1, Minor: 7, Patch: 0}
 
 func init() {
 	if err := registry.Register(registry.DriverDef{
@@ -81,8 +83,8 @@ func status() registry.State {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Cant verify mininim required version for podman . See podman website for installation guide.", Doc: "https://podman.io/getting-started/installation.html"}
 	}
 
-	if v.LT(constants.MinReqPodmanVer) {
-		glog.Warningf("Warning ! mininim required version for podman is %s. your version is %q. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html ", constants.MinReqPodmanVer.String(), v.String())
+	if v.LT(minReqPodmanVer) {
+		glog.Warningf("Warning ! mininim required version for podman is %s. your version is %q. minikube might not work. use at your own risk. To install latest version please see https://podman.io/getting-started/installation.html ", minReqPodmanVer.String(), v.String())
 	}
 	// Allow no more than 3 seconds for querying state
 	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)

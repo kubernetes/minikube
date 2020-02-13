@@ -65,7 +65,7 @@ func CreateContainerNode(p CreateParams) error {
 
 	// volume path in minikube home folder to mount to /var
 	hostVarVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name, "var")
-	if err := os.MkdirAll(hostVarVolPath, 0777); err != nil {
+	if err := os.MkdirAll(hostVarVolPath, 0711); err != nil {
 		return errors.Wrapf(err, "create var dir %s", hostVarVolPath)
 	}
 
@@ -208,12 +208,13 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 // ContainerIPs returns ipv4,ipv6, error of a container by their name
 func ContainerIPs(ociBinary string, name string) (string, string, error) {
 	if ociBinary == Podman {
-		return podomanConttainerIP(name)
+		return podmanConttainerIP(name)
 	}
 	return dockerContainerIP(name)
 }
 
-func podomanConttainerIP(name string) (string, string, error) {
+// podmanConttainerIP returns ipv4, ipv6 of container or error
+func podmanConttainerIP(name string) (string, string, error) {
 	cmd := exec.Command(Podman, "inspect",
 		"-f", "{{.NetworkSettings.IPAddress}}",
 		name)
@@ -221,14 +222,14 @@ func podomanConttainerIP(name string) (string, string, error) {
 	if err != nil {
 		return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
 	}
-	output := string(out)
-	output = strings.TrimSpace(output)
+	output := strings.TrimSpace(string(out))
 	if err == nil && output == "" { // podman returns empty for 127.0.0.1
 		return DefaultBindIPV4, "", nil
 	}
 	return output, "", nil
 }
 
+// dockerContainerIP returns ipv4, ipv6 of container or error
 func dockerContainerIP(name string) (string, string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return "", "", errors.Wrap(err, "point host docker-daemon")

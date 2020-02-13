@@ -20,16 +20,12 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
-	"strings"
 	"time"
 
-	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -65,26 +61,8 @@ func status() registry.State {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
 	}
 
-	// Allow no more than 1 seconds for getting version
-	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, oci.Docker, "version", "-f", "'{{.Server.Version}}'")
-	o, err := cmd.CombinedOutput()
-	if err != nil {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Cant verify minimum required version for docker . See docker website for installation guide.", Doc: "https://docs.docker.com/"}
-	}
-	output := strings.TrimSpace(string(o))
-	v, err := semver.Make(output)
-	if v.LT(constants.MinSuggestDockerVer) {
-		glog.Warningf("Warning ! minimum suggested version for docker is %s. your version is %q. minikube might not work. use at your own risk. To install a more recent version please see https://docs.docker.com/", constants.MinSuggestDockerVer.String(), v.String())
-	}
-	if v.LT(constants.MinReqDockerVer) {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: fmt.Sprintf("Your docker version is too old (%s) please the minimum required docker version is %s.", v.String(), constants.MinReqDockerVer.String()), Doc: "https://docs.docker.com/"}
-	}
-
 	// Allow no more than 3 seconds for docker info
-	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	err = exec.CommandContext(ctx, oci.Docker, "info").Run()
