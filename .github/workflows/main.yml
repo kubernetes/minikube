@@ -220,8 +220,8 @@ jobs:
       run: |
         pwd
         ls -lah
-        ls -lah docker_ubuntu_18_04
-        ls -lah docker_ubuntu_18_04/report
+        ls -lah docker_ubuntu_16_04
+        ls -lah docker_ubuntu_16_04/report
         mkdir -p all_reports
         cp -r docker_ubuntu_18_04 ./all_reports/
     - name: download results docker_ubuntu_18_04
@@ -267,4 +267,4 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: all_reports
-        path: report
+        path: all_reports
