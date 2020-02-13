@@ -18,6 +18,7 @@ package node
 
 import (
 	"os"
+	"runtime"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
@@ -51,6 +52,9 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 	if err := doCacheBinaries(k8sVersion); err != nil {
 		exit.WithError("Failed to cache binaries", err)
 	}
+	if _, err := CacheKubectlBinary(k8sVersion); err != nil {
+		exit.WithError("Failed to cache kubectl", err)
+	}
 	waitCacheRequiredImages(cacheGroup)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.WithError("Failed to cache images to tar", err)
@@ -58,6 +62,16 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 	out.T(out.Check, "Download complete!")
 	os.Exit(0)
 
+}
+
+// CacheKubectlBinary caches the kubectl binary
+func CacheKubectlBinary(k8sVerison string) (string, error) {
+	binary := "kubectl"
+	if runtime.GOOS == "windows" {
+		binary = "kubectl.exe"
+	}
+
+	return machine.CacheBinary(binary, k8sVerison, runtime.GOOS, runtime.GOARCH)
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground
