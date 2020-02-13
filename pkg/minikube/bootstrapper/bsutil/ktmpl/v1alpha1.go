@@ -34,7 +34,7 @@ networking:
   serviceSubnet: {{.ServiceCIDR}}
 etcd:
   dataDir: {{.EtcdDataDir}}
-nodeName: {{.NodeName}}
+nodeName: "{{.NodeName}}"
 apiServerCertSANs: ["127.0.0.1", "localhost", "{{.AdvertiseAddress}}"]
 {{if .ImageRepository}}imageRepository: {{.ImageRepository}}
 {{end}}{{if .CRISocket}}criSocket: {{.CRISocket}}

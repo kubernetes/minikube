@@ -11,7 +11,7 @@ description: >
 
 The pause command allows you to freeze containers using the Linux [cgroup freezer](https://www.kernel.org/doc/Documentation/cgroup-v1/freezer-subsystem.txt). Once frozen, processes will no longer consume CPU cycles, but will remain in memory.
 
-By default, the pause command will pause the Kubernetes control plane (kube-system namespace), leaving your applications running. This reduces the background CPU usage of a minikube cluster to a negligable 2-3% of a CPU.
+By default, the pause command will pause the Kubernetes control plane (kube-system namespace), leaving your applications running. This reduces the background CPU usage of a minikube cluster to a negligible 2-3% of a CPU.
 
 ### Usage
 

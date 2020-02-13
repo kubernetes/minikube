@@ -12,7 +12,7 @@ bootstrapTokens:
       - authentication
 nodeRegistration:
   criSocket: /var/run/dockershim.sock
-  name: mk
+  name: "mk"
   taints: []
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
