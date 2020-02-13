@@ -5,6 +5,7 @@ jobs:
     env:
       TIME_ELAPSED: time
       JOB_NAME: "Docker_Ubuntu_16_04"
+      COMMIT_STATUS: ""
     runs-on: ubuntu-16.04
     steps:
     - uses: actions/checkout@v2
@@ -50,15 +51,16 @@ jobs:
         echo commit status: ${COMMIT_STATUS}
     - uses: actions/upload-artifact@v1
       with:
-        name: docker_on_ubuntu_16_04_report
+        name: docker_ubuntu_16_04
         path: report
-    - name: The End Result ${COMMIT_STATUS}
+    - name: The End Result
       run: |
         echo END RESULT IS ${COMMIT_STATUS}
   docker_ubuntu_18_04:
     env:
       TIME_ELAPSED: time
       JOB_NAME: "Docker_Ubuntu_18_04"
+      COMMIT_STATUS: ""
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
@@ -98,12 +100,16 @@ jobs:
         echo commit status: ${COMMIT_STATUS}
     - uses: actions/upload-artifact@v1
       with:
-        name: docker_on_ubuntu_18_04_report
+        name: docker_ubuntu_18_04
         path: report
+    - name: The End Result
+      run: |
+        echo END RESULT IS ${COMMIT_STATUS}
   none_ubuntu16_04:
     env:
       TIME_ELAPSED: time
       JOB_NAME: "None_Ubuntu_16_04"
+      COMMIT_STATUS: ""
     runs-on: ubuntu-16.04
     steps:
     - uses: actions/checkout@v2
@@ -145,12 +151,16 @@ jobs:
         echo commit status: ${COMMIT_STATUS}
     - uses: actions/upload-artifact@v1
       with:
-        name: none_on_ubuntu_16_04
+        name: none_ubuntu16_04
         path: report
+    - name: The End Result
+      run: |
+        echo END RESULT IS ${COMMIT_STATUS}
   podman_ubuntu_18_04:
       env:
         TIME_ELAPSED: time
         JOB_NAME: "Podman_Ubuntu_18_04"
+        COMMIT_STATUS: ""
       runs-on: ubuntu-18.04
       steps:
       - uses: actions/checkout@v2
@@ -192,5 +202,69 @@ jobs:
           echo commit status: ${COMMIT_STATUS}
       - uses: actions/upload-artifact@v1
         with:
-          name: podman_on_ubuntu_18_04
+          name: podman_ubuntu_18_04
           path: report
+      - name: The End Result
+        run: |
+          echo END RESULT IS ${COMMIT_STATUS}
+  upload_all_reports:
+    needs: [docker_ubuntu_16_04,docker_ubuntu_18_04,none_ubuntu16_04,podman_ubuntu_18_04]
+    runs-on: ubuntu-18.04
+    steps:
+    - name: download results docker_ubuntu_16_04
+      uses: actions/download-artifact@v1
+      with:
+        name: docker_ubuntu_16_04
+    - name: see if report is there
+      shell: bash
+      run: |
+        pwd
+        ls -lah
+        ls -lah docker_ubuntu_18_04
+        ls -lah docker_ubuntu_18_04/report
+        mkdir -p all_reports
+        cp -r docker_ubuntu_18_04 ./all_reports/
+    - name: download results docker_ubuntu_18_04
+      uses: actions/download-artifact@v1
+      with:
+        name: docker_ubuntu_18_04
+    - name: see if report is there
+      shell: bash
+      run: |
+        pwd
+        ls -lah
+        ls -lah docker_ubuntu_18_04
+        ls -lah docker_ubuntu_18_04
+        mkdir -p all_reports
+        cp -r docker_ubuntu_18_04 ./all_reports/
+    - name: download results none_ubuntu16_04
+      uses: actions/download-artifact@v1
+      with:
+        name: none_ubuntu16_04
+    - name: see if report is there
+      shell: bash
+      run: |
+        pwd
+        ls -lah
+        ls -lah none_ubuntu16_04
+        ls -lah none_ubuntu16_04
+        mkdir -p all_reports
+        cp -r none_ubuntu16_04 ./all_reports/
+
+    - name: download results podman_ubuntu_18_04
+      uses: actions/download-artifact@v1
+      with:
+        name: podman_ubuntu_18_04
+    - name: see if report is there
+      shell: bash
+      run: |
+        pwd
+        ls -lah
+        ls -lah podman_ubuntu_18_04
+        ls -lah podman_ubuntu_18_04
+        mkdir -p all_reports
+        cp -r podman_ubuntu_18_04 ./all_reports/
+    - uses: actions/upload-artifact@v1
+      with:
+        name: all_reports
+        path: report
