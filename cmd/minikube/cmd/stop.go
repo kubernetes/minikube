@@ -24,7 +24,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -53,7 +52,7 @@ func runStop(cmd *cobra.Command, args []string) {
 
 	nonexistent := false
 	stop := func() (err error) {
-		err = cluster.StopHost(api, profile)
+		err = machine.StopHost(api, profile)
 		if err == nil {
 			return nil
 		}

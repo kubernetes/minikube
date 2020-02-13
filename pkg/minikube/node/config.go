@@ -27,12 +27,10 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
-	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -40,7 +38,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -85,7 +82,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
 func setupKubeAdm(mAPI libmachine.API, cfg config.MachineConfig, node config.Node) bootstrapper.Bootstrapper {
-	bs, err := Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
+	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}
@@ -130,30 +127,6 @@ func setupKubeconfig(h *host.Host, c *config.MachineConfig, n *config.Node, clus
 		return kcs, err
 	}
 	return kcs, nil
-}
-
-// Bootstrapper returns a new bootstrapper for the node
-func Bootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
-	var b bootstrapper.Bootstrapper
-	var err error
-	switch bootstrapperName {
-	case bootstrapper.Kubeadm:
-		b, err = kubeadm.NewBootstrapper(api)
-		if err != nil {
-			return nil, errors.Wrap(err, "getting a new kubeadm bootstrapper")
-		}
-	default:
-		return nil, fmt.Errorf("unknown bootstrapper: %s", bootstrapperName)
-	}
-	return b, nil
-}
-
-// bootstrapCluster starts Kubernetes using the chosen bootstrapper
-func bootstrapCluster(bs bootstrapper.Bootstrapper, r cruntime.Manager, runner command.Runner, mc config.MachineConfig) {
-	out.T(out.Launch, "Launching Kubernetes ... ")
-	if err := bs.StartCluster(mc); err != nil {
-		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(r, bs, runner))
-	}
 }
 
 // configureMounts configures any requested filesystem mounts

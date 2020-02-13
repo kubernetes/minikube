@@ -18,7 +18,6 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -40,7 +39,7 @@ var nodeStopCmd = &cobra.Command{
 			exit.WithError("creating api client", err)
 		}
 
-		err = cluster.StopHost(api, name)
+		err = machine.StopHost(api, name)
 		if err != nil {
 			out.FatalT("Failed to stop node {{.name}}", out.V{"name": name})
 		}

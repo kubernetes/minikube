@@ -332,7 +332,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	if existing != nil && existing.Addons != nil {
 		existingAddons = existing.Addons
 	}
-	kubeconfig, err := node.Start(&mc, &n, true, existingAddons)
+	kubeconfig, err := node.Start(mc, n, true, existingAddons)
 	if err != nil {
 		exit.WithError("Starting node", err)
 	}
