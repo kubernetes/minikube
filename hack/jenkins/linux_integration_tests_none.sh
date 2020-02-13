@@ -44,8 +44,8 @@ docker rm -f $(docker ps -aq) >/dev/null 2>&1 || true
 sudo rm -rf /data/*
 # Cleanup old Kubernetes configs
 sudo rm -rf /etc/kubernetes/*
-# Cleanup old minikube files
-sudo rm -rf /var/lib/minikube/*
+sudo rm -rf /var/lib/minikube/* 
+
 # Stop any leftover kubelets
 systemctl is-active --quiet kubelet \
   && echo "stopping kubelet" \

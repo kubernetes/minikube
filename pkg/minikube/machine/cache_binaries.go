@@ -63,7 +63,7 @@ func checksumURL(binaryName, version, osName, archName string) string {
 
 // CacheBinary will cache a binary on the host
 func CacheBinary(binary, version, osName, archName string) (string, error) {
-	targetDir := localpath.MakeMiniPath("cache", version)
+	targetDir := localpath.MakeMiniPath("cache", osName, version)
 	targetFilepath := path.Join(targetDir, binary)
 
 	url := releaseURL(binary, version, osName, archName)

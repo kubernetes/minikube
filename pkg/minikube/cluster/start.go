@@ -114,7 +114,10 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.VMDriver)
 	}
-	dd := def.Config(cfg)
+	dd, err := def.Config(cfg)
+	if err != nil {
+		return nil, errors.Wrap(err, "config")
+	}
 	data, err := json.Marshal(dd)
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal")
@@ -195,7 +198,7 @@ func commandRunner(h *host.Host) (command.Runner, error) {
 	}
 	if driver.IsKIC(d) {
 		glog.Infof("Returning KICRunner for %q driver", d)
-		return command.NewKICRunner(h.Name, "docker"), nil
+		return command.NewKICRunner(h.Name, d), nil
 	}
 
 	glog.Infof("Creating SSH client and returning SSHRunner for %q driver", d)
