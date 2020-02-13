@@ -44,7 +44,7 @@ var nodeDeleteCmd = &cobra.Command{
 			exit.WithError("loading config", err)
 		}
 
-		err = node.Delete(cc, name)
+		err = node.Delete(*cc, name)
 		if err != nil {
 			out.FatalT("Failed to delete node {{.name}}", out.V{"name": name})
 		}

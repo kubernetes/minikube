@@ -21,7 +21,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -46,7 +45,7 @@ var nodeStartCmd = &cobra.Command{
 			exit.WithError("creating api client", err)
 		}
 
-		if cluster.IsHostRunning(api, name) {
+		if machine.IsHostRunning(api, name) {
 			out.T(out.Check, "{{.name}} is already running", out.V{"name": name})
 			os.Exit(0)
 		}
@@ -62,7 +61,7 @@ var nodeStartCmd = &cobra.Command{
 		}
 
 		// Start it up baby
-		_, err = node.Start(cc, n, false, nil)
+		_, err = node.Start(*cc, *n, false, nil)
 		if err != nil {
 			out.FatalT("Failed to start node {{.name}}", out.V{"name": name})
 		}

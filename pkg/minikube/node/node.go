@@ -20,7 +20,6 @@ import (
 	"errors"
 
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -65,13 +64,13 @@ func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, 
 		return nil, err
 	}
 
-	_, err = Start(cc, &n, false, nil)
+	_, err = Start(*cc, n, false, nil)
 	return &n, err
 }
 
 // Delete stops and deletes the given node from the given cluster
-func Delete(cc *config.MachineConfig, name string) error {
-	_, index, err := Retrieve(cc, name)
+func Delete(cc config.MachineConfig, name string) error {
+	_, index, err := Retrieve(&cc, name)
 	if err != nil {
 		return err
 	}
@@ -86,10 +85,13 @@ func Delete(cc *config.MachineConfig, name string) error {
 		return err
 	}
 
-	cluster.DeleteHost(api, name)
+	err = machine.DeleteHost(api, name)
+	if err != nil {
+		return err
+	}
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return config.SaveProfile(viper.GetString(config.MachineProfile), cc)
+	return config.SaveProfile(viper.GetString(config.MachineProfile), &cc)
 }
 
 // Retrieve finds the node by name in the given cluster

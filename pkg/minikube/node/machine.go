@@ -29,7 +29,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -75,7 +74,7 @@ func startHost(api libmachine.API, mc config.MachineConfig) (*host.Host, bool) {
 		exit.WithError("Failed to check if machine exists", err)
 	}
 
-	host, err := cluster.StartHost(api, mc)
+	host, err := machine.StartHost(api, mc)
 	if err != nil {
 		exit.WithError("Unable to start VM. Please investigate and run 'minikube delete' if possible", err)
 	}

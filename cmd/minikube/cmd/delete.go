@@ -42,7 +42,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -207,7 +206,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	if err = cluster.DeleteHost(api, profile.Name); err != nil {
+	if err = machine.DeleteHost(api, profile.Name); err != nil {
 		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
 			glog.Infof("%s cluster does not exist. Proceeding ahead with cleanup.", profile.Name)
@@ -275,12 +274,12 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 
 func uninstallKubernetes(api libmachine.API, profile string, kc pkg_config.KubernetesConfig, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := node.Bootstrapper(api, bsName)
+	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}
 
-	host, err := cluster.CheckIfHostExistsAndLoad(api, profile)
+	host, err := machine.CheckIfHostExistsAndLoad(api, profile)
 	if err != nil {
 		exit.WithError("Error getting host", err)
 	}
