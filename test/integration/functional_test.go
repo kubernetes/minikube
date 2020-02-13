@@ -118,21 +118,8 @@ func TestFunctional(t *testing.T) {
 
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
-	mctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	mctx, cancel = context.WithTimeout(ctx, 13*time.Second)
 	defer cancel()
-
-	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
-	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker ps")
-	rr, err := Run(t, c)
-	if err != nil {
-		t.Fatalf("Failed to test eval docker-evn %s", err)
-	}
-
-	expectedContInside := "k8s_POD_kube-apiserver-minikube_kube-system_"
-	if !strings.Contains(rr.Output(), expectedContInside) {
-		t.Fatalf("Expected 'docker ps' to have %q from docker-daemon inside minikube. the docker ps output is:\n%q\n", expectedContInside, rr.Output())
-	}
-
 	// we should be able to get minikube status with a bash which evaled docker-env
 	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
 	rr, err = Run(t, c)
@@ -141,6 +128,20 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	}
 	if !strings.Contains(rr.Output(), "Running") {
 		t.Fatalf("Expected status output to include 'Running' after eval docker-env but got \n%s", rr.Output())
+	}
+
+	mctx, cancel := context.WithTimeout(ctx, 13*time.Second)
+	defer cancel()
+	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
+	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Fatalf("Failed to test eval docker-evn %s", err)
+	}
+
+	expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
+	if !strings.Contains(rr.Output(), expectedContInside) {
+		t.Fatalf("Expected 'docker ps' to have %q from docker-daemon inside minikube. the docker ps output is:\n%q\n", expectedImgInside, rr.Output())
 	}
 
 }
