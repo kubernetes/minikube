@@ -92,11 +92,13 @@ jobs:
         mkdir -p testhome
     - name: install docker
       run: |
-          sudo brew install docker-machine docker || true
-          sudo brew services start docker-machine || true
-          sudo brew services list || true
+          brew install docker-machine docker || true
+          brew services start docker-machine || true
+          brew services list || true
           sudo docker-machine start || true
           docker version || true
+          sudo docker version || true
+          docker info || true
 
     - name: install gopogh
       run: |
