@@ -104,6 +104,7 @@ func TestFunctional(t *testing.T) {
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
 			{"UpdateContextCmd", validateUpdateContextCmd},
+			{"DockerEnv", validateDockerEnv},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -113,6 +114,36 @@ func TestFunctional(t *testing.T) {
 			})
 		}
 	})
+}
+
+// check functionality of minikube after evaling docker-env
+func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
+	mctx, cancel := context.WithTimeout(ctx, 13*time.Second)
+	defer cancel()
+	// we should be able to get minikube status with a bash which evaled docker-env
+	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Fatalf("Failed to do minikube status after eval-ing docker-env %s", err)
+	}
+	if !strings.Contains(rr.Output(), "Running") {
+		t.Fatalf("Expected status output to include 'Running' after eval docker-env but got \n%s", rr.Output())
+	}
+
+	mctx, cancel = context.WithTimeout(ctx, 13*time.Second)
+	defer cancel()
+	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
+	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
+	rr, err = Run(t, c)
+	if err != nil {
+		t.Fatalf("Failed to test eval docker-evn %s", err)
+	}
+
+	expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
+	if !strings.Contains(rr.Output(), expectedImgInside) {
+		t.Fatalf("Expected 'docker ps' to have %q from docker-daemon inside minikube. the docker ps output is:\n%q\n", expectedImgInside, rr.Output())
+	}
+
 }
 
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
@@ -334,14 +365,14 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	t.Run("cache", func(t *testing.T) {
 		t.Run("add", func(t *testing.T) {
-			for _, img := range []string{"busybox", "busybox:1.28.4-glibc", "k8s.gcr.io/pause:latest"} {
+			for _, img := range []string{"busybox:latest", "busybox:1.28.4-glibc", "k8s.gcr.io/pause:latest"} {
 				_, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 				if err != nil {
 					t.Errorf("Failed to cache image %q", img)
 				}
 			}
 		})
-		t.Run("delete busybox:1.28.4-glibc", func(t *testing.T) {
+		t.Run("delete_busybox:1.28.4-glibc", func(t *testing.T) {
 			_, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "busybox:1.28.4-glibc"))
 			if err != nil {
 				t.Errorf("failed to delete image busybox:1.28.4-glibc from cache: %v", err)
@@ -361,7 +392,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			}
 		})
 
-		t.Run("verify cache inside node", func(t *testing.T) {
+		t.Run("verify_cache_inside_node", func(t *testing.T) {
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
 			if err != nil {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
@@ -372,7 +403,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 		})
 
-		t.Run("cache reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
+		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
 			img := "busybox:latest"
 			// deleting image inside minikube node manually
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img)) // for some reason crictl rmi doesn't work

@@ -198,7 +198,7 @@ func commandRunner(h *host.Host) (command.Runner, error) {
 	}
 	if driver.IsKIC(d) {
 		glog.Infof("Returning KICRunner for %q driver", d)
-		return command.NewKICRunner(h.Name, "docker"), nil
+		return command.NewKICRunner(h.Name, d), nil
 	}
 
 	glog.Infof("Creating SSH client and returning SSHRunner for %q driver", d)

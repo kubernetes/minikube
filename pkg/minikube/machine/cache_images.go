@@ -75,7 +75,7 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 		return errors.Wrap(err, "runtime")
 	}
 
-	imgClient, err := client.NewEnvClient() // image client
+	imgClient, err := client.NewClientWithOpts(client.FromEnv) // image client
 	if err != nil {
 		glog.Infof("couldn't get a local image daemon which might be ok: %v", err)
 		imgClient = nil

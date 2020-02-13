@@ -2,9 +2,9 @@ ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind
 # which is an ubuntu 19.10 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
-FROM kindest/base:v20200122-2dfe64b2
+FROM kindest/base:v20200122-2dfe64b2 as base
 USER root
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
   sudo \
   dnsutils \
   openssh-server \
@@ -34,12 +34,22 @@ USER root
 # https://github.com/kubernetes-sigs/kind/blob/master/images/base/files/usr/local/bin/entrypoint
 RUN mkdir -p /kind
 RUN rm -rf \
-    /var/cache/debconf/* \
-    /var/lib/apt/lists/* \
-    /var/log/* \
-    /tmp/* \
-    /var/tmp/* \
-    /usr/share/doc/* \
-    /usr/share/man/* \
-    /usr/share/local/* \
-RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+  /var/cache/debconf/* \
+  /var/lib/apt/lists/* \
+  /var/log/* \
+  /tmp/* \
+  /var/tmp/* \
+  /usr/share/doc/* \
+  /usr/share/man/* \
+  /usr/share/local/* \
+  RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+
+
+FROM busybox
+ARG KUBERNETES_VERSION
+COPY out/preloaded-images-k8s-$KUBERNETES_VERSION.tar /preloaded-images.tar
+RUN tar xvf /preloaded-images.tar -C /
+
+FROM base
+COPY --from=1 /var/lib/docker /var/lib/docker
+COPY --from=1 /var/lib/minikube/binaries /var/lib/minikube/binaries
