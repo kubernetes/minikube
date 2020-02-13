@@ -56,17 +56,18 @@ func configure(mc config.MachineConfig) (interface{}, error) {
 }
 
 func status() registry.State {
-	_, err := exec.LookPath("docker")
+	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
-		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/kic/"}
+		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
 	}
-	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+
+	// Allow no more than 3 seconds for docker info
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err = exec.CommandContext(ctx, "docker", "info").Run()
+	err = exec.CommandContext(ctx, oci.Docker, "info").Run()
 	if err != nil {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is not running. Try: restarting docker desktop."}
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is not running or is responding too slow. Try: restarting docker desktop."}
 	}
 
 	return registry.State{Installed: true, Healthy: true}

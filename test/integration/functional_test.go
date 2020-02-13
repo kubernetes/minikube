@@ -341,7 +341,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				}
 			}
 		})
-		t.Run("delete busybox:1.28.4-glibc", func(t *testing.T) {
+		t.Run("delete_busybox:1.28.4-glibc", func(t *testing.T) {
 			_, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "busybox:1.28.4-glibc"))
 			if err != nil {
 				t.Errorf("failed to delete image busybox:1.28.4-glibc from cache: %v", err)
@@ -361,7 +361,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			}
 		})
 
-		t.Run("verify cache inside node", func(t *testing.T) {
+		t.Run("verify_cache_inside_node", func(t *testing.T) {
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "images"))
 			if err != nil {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
@@ -372,7 +372,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 
 		})
 
-		t.Run("cache reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
+		t.Run("cache_reload", func(t *testing.T) { // deleting image inside minikube node manually and expecting reload to bring it back
 			img := "busybox:latest"
 			// deleting image inside minikube node manually
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "docker", "rmi", img)) // for some reason crictl rmi doesn't work
