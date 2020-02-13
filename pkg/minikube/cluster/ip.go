@@ -25,7 +25,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
@@ -85,7 +85,7 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 		return nil, errors.Wrap(err, "getting IP")
 	}
 	if driver.IsKIC(host.DriverName) {
-		ipStr = kic.DefaultBindIPV4
+		ipStr = oci.DefaultBindIPV4
 	}
 	ip := net.ParseIP(ipStr)
 	if ip == nil {
