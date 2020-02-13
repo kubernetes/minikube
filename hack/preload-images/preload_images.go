@@ -89,7 +89,7 @@ func copyTarballToHost() error {
 	}
 
 	dest := filepath.Join("out/", tarballFilename)
-	args := []string{"scp", "-o", "StrictHostKeyChecking=no", "-i", string(sshKey), fmt.Sprintf("docker@%s:/home/docker/%s", ip, tarballFilename), dest}
+	args := []string{"scp", "-o", "StrictHostKeyChecking=no", "-i", sshKey, fmt.Sprintf("docker@%s:/home/docker/%s", ip, tarballFilename), dest}
 	_, err = runCmd(args)
 	return err
 }
