@@ -29,12 +29,13 @@ import (
 // MockDriver is a struct used to mock out libmachine.Driver
 type MockDriver struct {
 	drivers.BaseDriver
-	CurrentState state.State
-	RemoveError  bool
-	HostError    bool
-	Port         int
-	IP           string
-	T            *testing.T
+	CurrentState  state.State
+	RemoveError   bool
+	NotExistError bool
+	HostError     bool
+	Port          int
+	IP            string
+	T             *testing.T
 }
 
 // Logf logs mock interactions
@@ -49,6 +50,11 @@ func (d *MockDriver) Logf(format string, args ...interface{}) {
 // Create creates a MockDriver instance
 func (d *MockDriver) Create() error {
 	d.Logf("MockDriver.Create")
+	if d.NotExistError {
+		d.Logf("MockDriver.Create but machine does not exist")
+		d.CurrentState = state.Error
+		return nil
+	}
 	d.CurrentState = state.Running
 	return nil
 }
@@ -91,6 +97,11 @@ func (d *MockDriver) GetSSHKeyPath() string {
 // GetState returns the state of the driver
 func (d *MockDriver) GetState() (state.State, error) {
 	d.Logf("MockDriver.GetState: %v", d.CurrentState)
+	if d.NotExistError {
+		d.CurrentState = state.Error
+		// don't use cluster.ErrorMachineNotExist to avoid import cycle
+		return d.CurrentState, errors.New("machine does not exist")
+	}
 	return d.CurrentState, nil
 }
 

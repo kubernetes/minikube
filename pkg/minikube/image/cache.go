@@ -139,7 +139,7 @@ func saveToTarFile(iname, rawDest string) error {
 	if err != nil {
 		return errors.Wrap(err, "newtag")
 	}
-	err = tarball.Write(tag, img, &tarball.WriteOptions{}, f)
+	err = tarball.Write(tag, img, f)
 	if err != nil {
 		return errors.Wrap(err, "write")
 	}

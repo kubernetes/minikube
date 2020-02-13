@@ -18,6 +18,7 @@ package oci
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"bufio"
@@ -26,6 +27,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 
 	"fmt"
 	"os/exec"
@@ -39,8 +41,6 @@ func CreateContainerNode(p CreateParams) error {
 	}
 
 	runArgs := []string{
-		fmt.Sprintf("--cpus=%s", p.CPUs),
-		fmt.Sprintf("--memory=%s", p.Memory),
 		"-d", // run the container detached
 		"-t", // allocate a tty for entrypoint logs
 		// running containers in a container requires privileged
@@ -53,7 +53,6 @@ func CreateContainerNode(p CreateParams) error {
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// logs,pods be stroed on  filesystem vs inside container,
-		"--volume", "/var",
 		// some k8s things want /lib/modules
 		"-v", "/lib/modules:/lib/modules:ro",
 		"--hostname", p.Name, // make hostname match container name
@@ -62,6 +61,23 @@ func CreateContainerNode(p CreateParams) error {
 		"--label", p.ClusterLabel,
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleKey, p.Role),
+	}
+
+	// volume path in minikube home folder to mount to /var
+	hostVarVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name, "var")
+	if err := os.MkdirAll(hostVarVolPath, 0711); err != nil {
+		return errors.Wrapf(err, "create var dir %s", hostVarVolPath)
+	}
+
+	if p.OCIBinary == Podman { // enable execing in /var
+		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
+	}
+	if p.OCIBinary == Docker {
+		runArgs = append(runArgs, "--volume", "/var")
+		// setting resource limit in privileged mode is only supported by docker
+		// podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
+		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs), fmt.Sprintf("--memory=%s", p.Memory))
 	}
 
 	for key, val := range p.Envs {
@@ -113,6 +129,10 @@ func createContainer(ociBinary string, image string, opts ...createOpt) ([]strin
 	}
 	// construct the actual docker run argv
 	args := []string{"run"}
+	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
+	if ociBinary == Podman {
+		args = append(args, "--cgroup-manager", "cgroupfs")
+	}
 	args = append(args, runArgs...)
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
@@ -159,12 +179,24 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 	if err := PointToHostDockerDaemon(); err != nil {
 		return 0, errors.Wrap(err, "point host docker-daemon")
 	}
-	cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return 0, errors.Wrapf(err, "getting host-bind port %d for container ID %q, output %s", contPort, ociID, out)
+	var out []byte
+	var err error
+	if ociBinary == Podman {
+		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
+		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID)
+		out, err = cmd.CombinedOutput()
+		if err != nil {
+			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
+		}
+	} else {
+		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
+		out, err = cmd.CombinedOutput()
+		if err != nil {
+			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
+		}
 	}
-	o := strings.Trim(string(out), "\n")
+
+	o := strings.TrimSpace(string(out))
 	o = strings.Trim(o, "'")
 	p, err := strconv.Atoi(o)
 	if err != nil {
@@ -175,11 +207,35 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 
 // ContainerIPs returns ipv4,ipv6, error of a container by their name
 func ContainerIPs(ociBinary string, name string) (string, string, error) {
+	if ociBinary == Podman {
+		return podmanConttainerIP(name)
+	}
+	return dockerContainerIP(name)
+}
+
+// podmanConttainerIP returns ipv4, ipv6 of container or error
+func podmanConttainerIP(name string) (string, string, error) {
+	cmd := exec.Command(Podman, "inspect",
+		"-f", "{{.NetworkSettings.IPAddress}}",
+		name)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
+	}
+	output := strings.TrimSpace(string(out))
+	if err == nil && output == "" { // podman returns empty for 127.0.0.1
+		return DefaultBindIPV4, "", nil
+	}
+	return output, "", nil
+}
+
+// dockerContainerIP returns ipv4, ipv6 of container or error
+func dockerContainerIP(name string) (string, string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return "", "", errors.Wrap(err, "point host docker-daemon")
 	}
 	// retrieve the IP address of the node using docker inspect
-	lines, err := inspect(ociBinary, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
+	lines, err := inspect(Docker, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
 		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
 	}
@@ -191,7 +247,6 @@ func ContainerIPs(ociBinary string, name string) (string, string, error) {
 		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
 	}
 	return ips[0], ips[1], nil
-
 }
 
 // ContainerID returns id of a container name

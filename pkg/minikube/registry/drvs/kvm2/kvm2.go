@@ -67,7 +67,7 @@ type kvmDriver struct {
 	ConnectionURI  string
 }
 
-func configure(mc config.MachineConfig) interface{} {
+func configure(mc config.MachineConfig) (interface{}, error) {
 	name := mc.Name
 	return kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
@@ -86,7 +86,7 @@ func configure(mc config.MachineConfig) interface{} {
 		GPU:            mc.KVMGPU,
 		Hidden:         mc.KVMHidden,
 		ConnectionURI:  mc.KVMQemuURI,
-	}
+	}, nil
 }
 
 // defaultURI returns the QEMU URI to connect to for health checks

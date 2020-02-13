@@ -154,12 +154,12 @@ func TestStartStop(t *testing.T) {
 						t.Errorf("%s failed: %v", rr.Args, err)
 					}
 
-					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts"))
+					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts", profile))
 					if err != nil {
-						t.Fatalf("%s failed: %v", rr.Args, err)
+						t.Logf("config context error: %v (may be ok)", err)
 					}
-					if notDeleted := strings.Contains(rr.Output(), profile); notDeleted {
-						t.Errorf(" kubeconfig of %s is not deleted = %t; want = %t", profile, notDeleted, false)
+					if rr.ExitCode != 1 {
+						t.Errorf("wanted exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
 					}
 				}
 			})
