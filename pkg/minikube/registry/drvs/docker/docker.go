@@ -31,7 +31,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/version"
 )
 
 func init() {
@@ -80,7 +79,7 @@ func status() registry.State {
 // PreloadedBaseImage returns a base image with k8s images preloaded if available
 // otherwise, it returns the default base image
 func PreloadedBaseImage(kv string) (string, bool) {
-	image := fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s-k8s-%s", version.GetKicVersion(), kv)
+	image := fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s-k8s-%s", kic.Version, kv)
 	// Check if image exists remotely
 	ref, err := name.NewTag(image, name.WeakValidation)
 	if err != nil {
