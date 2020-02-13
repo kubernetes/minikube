@@ -25,7 +25,7 @@ minikube follows the [Kubernetes Version and Version Skew Support Policy](https:
 
 As of September 2019, this means that minikube supports and actively tests against the latest builds of:
 
-* v1.16 (default
+* v1.16 (default)
 * v1.15
 * v1.14
 * v1.13
