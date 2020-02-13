@@ -210,9 +210,9 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
 	}
 
-	if driver.IsKIC(cfg.VMDriver) {
+	if cfg.VMDriver == driver.Docker {
 		if err := k.applyKicOverlay(cfg); err != nil {
-			return errors.Wrap(err, "applying kic overlay network")
+			return errors.Wrap(err, "apply kic overlay")
 		}
 	}
 
@@ -276,7 +276,7 @@ func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Dur
 	ip := cp.IP
 	port := cp.Port
 	if driver.IsKIC(cfg.VMDriver) {
-		ip = kic.DefaultBindIPV4
+		ip = oci.DefaultBindIPV4
 		port, err = oci.HostPortBinding(cfg.VMDriver, cfg.Name, port)
 		if err != nil {
 			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
@@ -344,7 +344,7 @@ func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
 		ip := n.IP
 		port := n.Port
 		if driver.IsKIC(cfg.VMDriver) {
-			ip = kic.DefaultBindIPV4
+			ip = oci.DefaultBindIPV4
 			port, err = oci.HostPortBinding(cfg.VMDriver, cfg.Name, port)
 			if err != nil {
 				return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
@@ -471,7 +471,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 // applyKicOverlay applies the CNI plugin needed to make kic work
 func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
 	cmd := exec.Command("sudo",
-		path.Join("/var/lib/minikube/binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", "--kubeconfig=/var/lib/minikube/kubeconfig",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"-f", "-")
 	b := bytes.Buffer{}
 	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {

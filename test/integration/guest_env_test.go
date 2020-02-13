@@ -24,6 +24,8 @@ import (
 	"os/exec"
 	"testing"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 func TestGuestEnvironment(t *testing.T) {
@@ -59,7 +61,7 @@ func TestGuestEnvironment(t *testing.T) {
 			"/var/lib/docker",
 			"/var/lib/cni",
 			"/var/lib/kubelet",
-			"/var/lib/minikube",
+			vmpath.GuestPersistentDir,
 			"/var/lib/toolbox",
 			"/var/lib/boot2docker",
 		} {

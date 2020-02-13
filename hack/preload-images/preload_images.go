@@ -23,8 +23,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-
-	"github.com/pkg/errors"
 )
 
 const (
@@ -66,7 +64,7 @@ func executePreloadImages() error {
 }
 
 func startMinikube() error {
-	cmd := exec.Command(minikubePath, "start", "-p", profile, "--memory", "4000", "--kubernetes-version", kubernetesVersion, "--wait=false")
+	cmd := exec.Command(minikubePath, "start", "-p", profile, "--memory", "4000", "--kubernetes-version", kubernetesVersion, "--wait=false", "--vm-driver=docker")
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
 }
@@ -78,20 +76,10 @@ func createImageTarball() error {
 }
 
 func copyTarballToHost() error {
-	sshKey, err := runCmd([]string{minikubePath, "ssh-key", "-p", profile})
-	if err != nil {
-		return errors.Wrap(err, "getting ssh-key")
-	}
-
-	ip, err := runCmd([]string{minikubePath, "ip", "-p", profile})
-	if err != nil {
-		return errors.Wrap(err, "getting ip")
-	}
-
 	dest := filepath.Join("out/", tarballFilename)
-	args := []string{"scp", "-o", "StrictHostKeyChecking=no", "-i", sshKey, fmt.Sprintf("docker@%s:/home/docker/%s", ip, tarballFilename), dest}
-	_, err = runCmd(args)
-	return err
+	cmd := exec.Command("docker", "cp", fmt.Sprintf("%s:/home/docker/%s", profile, tarballFilename), dest)
+	cmd.Stdout = os.Stdout
+	return cmd.Run()
 }
 
 func deleteMinikube() error {
