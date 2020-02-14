@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"os/exec"
@@ -43,7 +43,7 @@ func DeleteHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
 	if err != nil && host == nil {
 		deleteOrphanedKIC(machineName)
-		// keep going even if minikube  does not know about the host
+		// Keep going even if minikube does not know about the host
 	}
 
 	// Get the status of the host. Ensure that it exists before proceeding ahead.

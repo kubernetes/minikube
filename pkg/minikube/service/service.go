@@ -38,8 +38,8 @@ import (
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util/retry"
@@ -119,7 +119,7 @@ type URLs []SvcURL
 // GetServiceURLs returns a SvcURL object for every service in a particular namespace.
 // Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
-	host, err := cluster.CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
+	host, err := machine.CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 // GetServiceURLsForService returns a SvcUrl object for a service in a namespace. Supports optional formatting.
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) (SvcURL, error) {
-	host, err := cluster.CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
+	host, err := machine.CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
 	if err != nil {
 		return SvcURL{}, errors.Wrap(err, "Error checking if api exist and loading it")
 	}

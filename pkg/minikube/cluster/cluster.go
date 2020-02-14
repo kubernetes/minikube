@@ -18,9 +18,14 @@ package cluster
 
 import (
 	"flag"
+	"fmt"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/ssh"
+	"github.com/pkg/errors"
 
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
@@ -34,4 +39,20 @@ func init() {
 
 	// Setting the default client to native gives much better performance.
 	ssh.SetDefaultClient(ssh.Native)
+}
+
+// Bootstrapper returns a new bootstrapper for the cluster
+func Bootstrapper(api libmachine.API, bootstrapperName string) (bootstrapper.Bootstrapper, error) {
+	var b bootstrapper.Bootstrapper
+	var err error
+	switch bootstrapperName {
+	case bootstrapper.Kubeadm:
+		b, err = kubeadm.NewBootstrapper(api)
+		if err != nil {
+			return nil, errors.Wrap(err, "getting a new kubeadm bootstrapper")
+		}
+	default:
+		return nil, fmt.Errorf("unknown bootstrapper: %s", bootstrapperName)
+	}
+	return b, nil
 }

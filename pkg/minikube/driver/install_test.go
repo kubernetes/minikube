@@ -20,25 +20,25 @@ import (
 	"testing"
 )
 
-func TestExtractVMDriverVersion(t *testing.T) {
-	v := extractVMDriverVersion("")
+func TestExtractDriverVersion(t *testing.T) {
+	v := extractDriverVersion("")
 	if len(v) != 0 {
 		t.Error("Expected empty string")
 	}
 
-	v = extractVMDriverVersion("random text")
+	v = extractDriverVersion("random text")
 	if len(v) != 0 {
 		t.Error("Expected empty string")
 	}
 
 	expectedVersion := "1.2.3"
 
-	v = extractVMDriverVersion("version: v1.2.3")
+	v = extractDriverVersion("version: v1.2.3")
 	if expectedVersion != v {
 		t.Errorf("Expected version: %s, got: %s", expectedVersion, v)
 	}
 
-	v = extractVMDriverVersion("version: 1.2.3")
+	v = extractDriverVersion("version: 1.2.3")
 	if expectedVersion != v {
 		t.Errorf("Expected version: %s, got: %s", expectedVersion, v)
 	}
