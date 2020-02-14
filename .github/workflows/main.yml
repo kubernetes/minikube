@@ -63,15 +63,15 @@ jobs:
       COMMIT_STATUS: ""
     runs-on: ubuntu-16.04
     steps:
-    - name: install gopogh
+    - name: Install gopogh
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.22/gopogh-linux-amd64
-        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+        sudo Install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: download binaries
       uses: actions/download-artifact@v1
       with:
         name: minikube_binaries
-    - name: run integration test
+    - name: Run integration test
       continue-on-error: true
       # bash {0} to allow test to continue to next step. in case of
       shell: bash {0}
@@ -117,15 +117,15 @@ jobs:
       COMMIT_STATUS: ""
     needs: [build_minikube]
     steps:
-    - name: install gopogh
+    - name: Install gopogh
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.22/gopogh-linux-amd64
-        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+        sudo Install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: download binaries
       uses: actions/download-artifact@v1
       with:
         name: minikube_binaries
-    - name: run integration test
+    - name: Run integration test
       continue-on-error: true
       # bash {0} to allow test to continue to next step. in case of
       shell: bash {0}
@@ -171,15 +171,15 @@ jobs:
       COMMIT_STATUS: ""
     runs-on: ubuntu-16.04
     steps:
-    - name: install gopogh
+    - name: Install gopogh
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.22/gopogh-linux-amd64
-        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+        sudo Install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: download binaries
       uses: actions/download-artifact@v1
       with:
         name: minikube_binaries
-    - name: run integration test
+    - name: Run integration test
       continue-on-error: true
       # bash {0} to allow test to continue to next step. in case of
       shell: bash {0}
@@ -225,15 +225,15 @@ jobs:
       COMMIT_STATUS: ""
     runs-on: ubuntu-18.04
     steps:
-    - name: install gopogh
+    - name: Install gopogh
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.22/gopogh-linux-amd64
-        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh    
+        sudo Install gopogh-linux-amd64 /usr/local/bin/gopogh    
     - name: download binaries
       uses: actions/download-artifact@v1
       with:
         name: minikube_binaries
-    - name: run integration test
+    - name: Run integration test
       continue-on-error: true
       # bash {0} to allow test to continue to next step. in case of
       shell: bash {0}
@@ -269,7 +269,7 @@ jobs:
         echo END RESULT IS ${COMMIT_STATUS}
     - uses: actions/upload-artifact@v1
       with:
-        name: none_ubuntu16_04
+        name: none_ubuntu18_04
         path: minikube_binaries/report
   podman_ubuntu_18_04:
       needs: [build_minikube]
@@ -289,15 +289,15 @@ jobs:
           sudo apt-get -qq -y install podman
           sudo podman version || true 
           sudo podman info || true 
-      - name: install gopogh
+      - name: Install gopogh
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.22/gopogh-linux-amd64
-          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+          sudo Install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: download binaries
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
-      - name: run integration test
+      - name: Run integration test
         continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
