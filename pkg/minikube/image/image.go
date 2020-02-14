@@ -49,6 +49,7 @@ func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 	return img.ID
 }
 
+// WriteImageToDaemon write img to the local docker daemon
 func WriteImageToDaemon(img string) error {
 	if err := oci.PointToHostDockerDaemon(); err != nil {
 		return errors.Wrap(err, "point host docker-daemon")

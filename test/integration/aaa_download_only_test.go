@@ -174,7 +174,7 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	}{
 		{
 			description:   "regular kic base image",
-			k8sVersion:    "v1.11.0",
+			k8sVersion:    "v1.11.10",
 			expectedImage: fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s", kic.Version),
 		}, {
 			description:   "preloaded kic base image",
