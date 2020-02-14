@@ -60,7 +60,7 @@ GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint
 GOLINT_GOGC ?= 100
 # options for lint (golangci-lint)
-GOLINT_OPTIONS = --timeout 4m \
+GOLINT_OPTIONS = --timeout 7m \
 	  --build-tags "${MINIKUBE_INTEGRATION_BUILD_TAGS}" \
 	  --enable goimports,gocritic,golint,gocyclo,misspell,nakedret,stylecheck,unconvert,unparam,dogsled \
 	  --exclude 'variable on range scope.*in function literal|ifElseChain' \

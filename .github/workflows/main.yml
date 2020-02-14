@@ -42,13 +42,17 @@ jobs:
       run : | 
         sudo apt-get update
         sudo apt-get install -y libvirt-dev
-    # does not include lint, because lint times out in github actions
-    # lint is done in travis
-    - name: only unit test
-      run : |
-        export TESTSUITE = "unittest"
+    - name: lint
+      env:
+        TESTSUITE: lintall
+      run : make test
+      continue-on-error: false
+    - name: unit test
+      env:
+        TESTSUITE: unittest
+      run :
         make test
-        continue-on-error: false
+      continue-on-error: false
   # Run the following integration tests after the build_minikube
   # They will run in parallel and use the binaries in previous step
   docker_ubuntu_16_04:
