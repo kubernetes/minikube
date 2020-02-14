@@ -124,17 +124,17 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 		return path, err
 	}
 
-	ev := extractVMDriverVersion(string(output))
+	ev := extractDriverVersion(string(output))
 	if len(ev) == 0 {
 		return path, fmt.Errorf("%s: unable to extract version from %q", executable, output)
 	}
 
-	vmDriverVersion, err := semver.Make(ev)
+	driverVersion, err := semver.Make(ev)
 	if err != nil {
 		return path, errors.Wrap(err, "can't parse driver version")
 	}
-	if vmDriverVersion.LT(v) {
-		return path, fmt.Errorf("%s is version %s, want %s", executable, vmDriverVersion, v)
+	if driverVersion.LT(v) {
+		return path, fmt.Errorf("%s is version %s, want %s", executable, driverVersion, v)
 	}
 	return path, nil
 }
@@ -164,12 +164,12 @@ func download(name string, destination string, v semver.Version) error {
 	return os.Chmod(destination, 0755)
 }
 
-// extractVMDriverVersion extracts the driver version.
+// extractDriverVersion extracts the driver version.
 // KVM and Hyperkit drivers support the 'version' command, that display the information as:
 // version: vX.X.X
 // commit: XXXX
 // This method returns the version 'vX.X.X' or empty if the version isn't found.
-func extractVMDriverVersion(s string) string {
+func extractDriverVersion(s string) string {
 	versionRegex := regexp.MustCompile(`version:(.*)`)
 	matches := versionRegex.FindStringSubmatch(s)
 

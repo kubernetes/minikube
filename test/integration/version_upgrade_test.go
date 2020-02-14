@@ -37,9 +37,9 @@ import (
 	pkgutil "k8s.io/minikube/pkg/util"
 )
 
-// TestVersionUpgrade downloads latest version of minikube and runs with
-// the odlest supported k8s version and then runs the current head minikube
-// and it tries to upgrade from the older supported k8s to news supported k8s
+// TestVersionUpgrade downloads the latest version of minikube and runs with
+// the oldest supported k8s version and then runs the current head minikube
+// and tries to upgrade from the oldest supported k8s to newest supported k8s
 func TestVersionUpgrade(t *testing.T) {
 	MaybeParallel(t)
 	profile := UniqueProfileName("vupgrade")

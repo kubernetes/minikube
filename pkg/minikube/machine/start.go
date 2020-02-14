@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"encoding/json"
@@ -97,22 +97,22 @@ func engineOptions(cfg config.MachineConfig) *engine.Options {
 }
 
 func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error) {
-	glog.Infof("createHost starting for %q (driver=%q)", cfg.Name, cfg.VMDriver)
+	glog.Infof("createHost starting for %q (driver=%q)", cfg.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
 		glog.Infof("createHost completed in %s", time.Since(start))
 	}()
 
-	if cfg.VMDriver == driver.VMwareFusion && viper.GetBool(config.ShowDriverDeprecationNotification) {
+	if cfg.Driver == driver.VMwareFusion && viper.GetBool(config.ShowDriverDeprecationNotification) {
 		out.WarningT(`The vmwarefusion driver is deprecated and support for it will be removed in a future release.
 			Please consider switching to the new vmware unified driver, which is intended to replace the vmwarefusion driver.
 			See https://minikube.sigs.k8s.io/docs/reference/drivers/vmware/ for more information.
 			To disable this message, run [minikube config set ShowDriverDeprecationNotification false]`)
 	}
 	showHostInfo(cfg)
-	def := registry.Driver(cfg.VMDriver)
+	def := registry.Driver(cfg.Driver)
 	if def.Empty() {
-		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.VMDriver)
+		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.Driver)
 	}
 	dd, err := def.Config(cfg)
 	if err != nil {
@@ -123,7 +123,7 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "marshal")
 	}
 
-	h, err := api.NewHost(cfg.VMDriver, data)
+	h, err := api.NewHost(cfg.Driver, data)
 	if err != nil {
 		return nil, errors.Wrap(err, "new host")
 	}
@@ -133,7 +133,7 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 	h.HostOptions.EngineOptions = engineOptions(cfg)
 
 	cstart := time.Now()
-	glog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.VMDriver)
+	glog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.Driver)
 	if err := api.Create(h); err != nil {
 		// Wait for all the logs to reach the client
 		time.Sleep(2 * time.Second)
@@ -174,10 +174,10 @@ func postStartSetup(h *host.Host, mc config.MachineConfig) error {
 		return errors.Wrapf(err, "sudo mkdir (%s)", h.DriverName)
 	}
 
-	if driver.BareMetal(mc.VMDriver) {
+	if driver.BareMetal(mc.Driver) {
 		showLocalOsRelease()
 	}
-	if driver.IsVM(mc.VMDriver) {
+	if driver.IsVM(mc.Driver) {
 		logRemoteOsRelease(h.Driver)
 	}
 	return syncLocalAssets(r)
@@ -222,4 +222,23 @@ func acquireMachinesLock(name string) (mutex.Releaser, error) {
 		glog.Infof("acquired machines lock for %q in %s", name, time.Since(start))
 	}
 	return r, err
+}
+
+// showHostInfo shows host information
+func showHostInfo(cfg config.MachineConfig) {
+	if driver.BareMetal(cfg.Driver) {
+		info, err := getHostInfo()
+		if err == nil {
+			out.T(out.StartingNone, "Running on localhost (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"number_of_cpus": info.CPUs, "memory_size": info.Memory, "disk_size": info.DiskSize})
+		}
+		return
+	}
+	if driver.IsKIC(cfg.Driver) {
+		info, err := getHostInfo() // TODO medyagh: get docker-machine info for non linux
+		if err == nil {
+			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": cfg.Memory, "host_memory_size": info.Memory})
+		}
+		return
+	}
+	out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize})
 }

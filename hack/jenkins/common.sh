@@ -311,7 +311,8 @@ min=$(($elapsed/60))
 sec=$(tail -c 3 <<< $((${elapsed}00/60)))
 elapsed=$min.$sec
 
-JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${JOB_NAME}"
+SHORT_COMMIT=${COMMIT:0:7}
+JOB_GCS_BUCKET="minikube-builds/logs/${MINIKUBE_LOCATION}/${SHORT_COMMIT}/${JOB_NAME}"
 echo ">> Copying ${TEST_OUT} to gs://${JOB_GCS_BUCKET}out.txt"
 gsutil -qm cp "${TEST_OUT}" "gs://${JOB_GCS_BUCKET}out.txt"
 
@@ -347,6 +348,7 @@ echo ">> uploading ${JSON_OUT}"
 gsutil -qm cp "${JSON_OUT}" "gs://${JOB_GCS_BUCKET}.json" || true
 echo ">> uploading ${HTML_OUT}"
 gsutil -qm cp "${HTML_OUT}" "gs://${JOB_GCS_BUCKET}.html" || true
+
 
 public_log_url="https://storage.googleapis.com/${JOB_GCS_BUCKET}.txt"
 if grep -q html "$HTML_OUT"; then
