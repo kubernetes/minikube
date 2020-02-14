@@ -20,7 +20,7 @@ jobs:
         pwd
         ls -lah
         cp -r test/integration/testdata ./out
-        ls -lah/out
+        ls -lah /out
         whoami
         echo github ref $GITHUB_REF
         echo workflow $GITHUB_WORKFLOW
