@@ -90,13 +90,18 @@ var tunnelCmd = &cobra.Command{
 		}()
 
 		if runtime.GOOS == "darwin" && cfg.VMDriver == "docker" {
-			// do not ignore error
-			port, _ := oci.HostPortBinding("docker", "minikube", 22)
+			port, err := oci.HostPortBinding("docker", "minikube", 22)
+			if err != nil {
+				exit.WithError("error getting ssh port", err)
+			}
 			sshPort := strconv.Itoa(port)
 			sshKey := filepath.Join(localpath.MiniPath(), "machines", cfg.Name, "id_rsa")
 
 			kicTunnel := kic.NewTunnel(ctx, sshPort, sshKey, clientset.CoreV1())
-			kicTunnel.Start()
+			err = kicTunnel.Start()
+			if err != nil {
+				exit.WithError("error starting tunnel", err)
+			}
 
 			return
 		}
