@@ -32,6 +32,16 @@ jobs:
       with:
         name: minikube_binaries
         path: out
+  unit_test:
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "unit_test"
+      COMMIT_STATUS: ""
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: unit test
+      run : make test
   # Run the following integration tests after the build_minikube
   # They will run in parallel and use the binaries in previous step
   docker_ubuntu_16_04:
@@ -60,6 +70,9 @@ jobs:
       shell: bash
       run: |
         mkdir -p report
+        chmod a+x e2e-*
+        chmod a+x minikube-*
+        ls -lah
         START_TIME=$(date -u +%s)
         KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
@@ -110,6 +123,9 @@ jobs:
       shell: bash
       run: |
         mkdir -p report
+        chmod a+x e2e-*
+        chmod a+x minikube-*
+        ls -lah
         START_TIME=$(date -u +%s)
         KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
@@ -160,6 +176,9 @@ jobs:
       shell: bash
       run: |
         mkdir -p report
+        chmod a+x e2e-*
+        chmod a+x minikube-*
+        ls -lah        
         START_TIME=$(date -u +%s)
         KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
@@ -220,6 +239,9 @@ jobs:
         shell: bash
         run: |
           mkdir -p report
+          chmod a+x e2e-*
+          chmod a+x minikube-*
+          ls -lah
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
