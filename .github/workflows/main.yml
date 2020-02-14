@@ -67,7 +67,8 @@ jobs:
         name: minikube_binaries
     - name: run integration test
       continue-on-error: true
-      shell: bash
+      # bash {0} to allow test to continue to next step. in case of
+      shell: bash {0}
       run: |
         cd minikube_binaries
         mkdir -p report
@@ -120,7 +121,8 @@ jobs:
         name: minikube_binaries
     - name: run integration test
       continue-on-error: true
-      shell: bash
+      # bash {0} to allow test to continue to next step. in case of
+      shell: bash {0}
       run: |
         pwd
         cd minikube_binaries
@@ -173,7 +175,8 @@ jobs:
         name: minikube_binaries
     - name: run integration test
       continue-on-error: true
-      shell: bash
+      # bash {0} to allow test to continue to next step. in case of
+      shell: bash {0}
       run: |
         pwd
         cd minikube_binaries
@@ -226,7 +229,8 @@ jobs:
         name: minikube_binaries
     - name: run integration test
       continue-on-error: true
-      shell: bash
+      # bash {0} to allow test to continue to next step. in case of
+      shell: bash {0}
       run: |
         pwd
         cd minikube_binaries
@@ -289,7 +293,8 @@ jobs:
           name: minikube_binaries
       - name: run integration test
         continue-on-error: true
-        shell: bash
+        # bash {0} to allow test to continue to next step. in case of
+        shell: bash {0}
         run: |
           cd minikube_binaries
           mkdir -p report
