@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"fmt"
@@ -62,7 +62,7 @@ func localAssets() ([]assets.CopyableFile, error) {
 	return fs, nil
 }
 
-// assetsFromDir generates assets from a local filepath, with/without a flattened hierarchy
+// AssetsFromDir generates assets from a local filepath, with/without a flattened hierarchy
 func assetsFromDir(localRoot string, destRoot string, flatten bool) ([]assets.CopyableFile, error) {
 	glog.Infof("Scanning %s for local assets ...", localRoot)
 	fs := []assets.CopyableFile{}

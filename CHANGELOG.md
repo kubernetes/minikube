@@ -775,7 +775,7 @@ Thank you to the contributors whose work made v1.1 into something we could all b
 * Add port name to service struct used in minikube service [#4011](https://github.com/kubernetes/minikube/pull/4011)
 * Update Hyper-V daemons [#4030](https://github.com/kubernetes/minikube/pull/4030)
 * Avoid surfacing "error: no objects passed to apply" non-error from addon-manager [#4076](https://github.com/kubernetes/minikube/pull/4076)
-* Don't cache images when --vmdriver=none [#4059](https://github.com/kubernetes/minikube/pull/4059)
+* Don't cache images when --vm-driver=none [#4059](https://github.com/kubernetes/minikube/pull/4059)
 * Enable CONFIG_NF_CONNTRACK_ZONES  [#3755](https://github.com/kubernetes/minikube/pull/3755)
 * Fixed status checking with non-default apiserver-port. [#4058](https://github.com/kubernetes/minikube/pull/4058)
 * Escape systemd special chars in docker-env [#3997](https://github.com/kubernetes/minikube/pull/3997)

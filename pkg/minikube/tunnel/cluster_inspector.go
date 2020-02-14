@@ -24,8 +24,8 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -37,7 +37,7 @@ type clusterInspector struct {
 
 func (m *clusterInspector) getStateAndHost() (HostState, *host.Host, error) {
 
-	h, err := cluster.CheckIfHostExistsAndLoad(m.machineAPI, m.machineName)
+	h, err := machine.CheckIfHostExistsAndLoad(m.machineAPI, m.machineName)
 
 	if err != nil {
 		err = errors.Wrapf(err, "error loading docker-machine host for: %s", m.machineName)
