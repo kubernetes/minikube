@@ -89,7 +89,6 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	
-	exec.CommandContext(ctx, path, "Enable-WindowsOptionalFeature",  "-Online", "-FeatureName", "Microsoft-Hyper-V -All")
 	cmd := exec.CommandContext(ctx, path, "Get-WindowsOptionalFeature", "-FeatureName", "Microsoft-Hyper-V-All", "-Online")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
