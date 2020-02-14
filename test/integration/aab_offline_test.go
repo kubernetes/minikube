@@ -37,6 +37,9 @@ func TestOffline(t *testing.T) {
 				if runtime != "docker" && NoneDriver() {
 					t.Skipf("skipping %s - incompatible with none driver", t.Name())
 				}
+				if runtime == "crio" && runningDockerDriver(StartArgs()) {
+					t.Skipf("skipping %s - incompatible with docker driver", t.Name())
+				}
 
 				profile := UniqueProfileName(fmt.Sprintf("offline-%s", runtime))
 				ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
@@ -59,4 +62,13 @@ func TestOffline(t *testing.T) {
 			})
 		}
 	})
+}
+
+func runningDockerDriver(startArgs []string) bool {
+	for _, s := range startArgs {
+		if s == "--vm-driver=docker" {
+			return true
+		}
+	}
+	return false
 }

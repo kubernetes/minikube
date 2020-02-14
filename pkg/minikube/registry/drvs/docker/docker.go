@@ -24,6 +24,7 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -80,10 +81,16 @@ func status() registry.State {
 // otherwise, it returns the default base image
 func PreloadedBaseImage(kv string) (string, bool) {
 	image := fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s-k8s-%s", kic.Version, kv)
-	// Check if image exists remotely
+	// Check if image exists locally or remotely
 	ref, err := name.NewTag(image, name.WeakValidation)
 	if err != nil {
 		return kic.BaseImage, false
+	}
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return kic.BaseImage, false
+	}
+	if _, err := daemon.Image(ref); err == nil {
+		return image, true
 	}
 	_, err = remote.Image(ref)
 	if err == nil {
