@@ -48,10 +48,10 @@ func (l *LoadBalancerEmulator) PatchServices() ([]string, error) {
 	return l.applyOnLBServices(l.updateService)
 }
 
-func (l *LoadBalancerEmulator) PatchServicesIP(ip string) ([]string, error) {
-	return l.applyOnLBServices(func(restClient rest.Interface, svc core.Service) ([]byte, error) {
-		return l.updateServiceIP(restClient, svc, ip)
-	})
+func (l *LoadBalancerEmulator) PatchServiceIP(restClient rest.Interface, svc core.Service, ip string) error {
+	// TODO: do not ignore result
+	_, err := l.updateServiceIP(restClient, svc, ip)
+	return err
 }
 
 func (l *LoadBalancerEmulator) Cleanup() ([]string, error) {
