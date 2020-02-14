@@ -30,6 +30,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh/terminal"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 )
 
@@ -126,7 +127,7 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f assets.CopyableFile) error {
-	assetName := f.GetAssetName()
+	src := f.GetAssetName()
 	if _, err := os.Stat(f.GetAssetName()); os.IsNotExist(err) {
 		fc := make([]byte, f.GetLength()) // Read  asset file into a []byte
 		if _, err := f.Read(fc); err != nil {
@@ -147,25 +148,37 @@ func (k *kicRunner) Copy(f assets.CopyableFile) error {
 		if err := tmpFile.Close(); err != nil {
 			return errors.Wrap(err, "close temporary file")
 		}
-		assetName = tmpFile.Name()
+		src = tmpFile.Name()
 	}
-
-	// based of format of "docker cp containerName:destination"
-	destination := fmt.Sprintf("%s:%s/%s", k.nameOrID, f.GetTargetDir(), f.GetTargetName())
 
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
 	if err != nil {
-		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
+		return errors.Wrapf(err, "converting permissions %s to integer", f.GetPermissions())
 	}
 
 	// Rely on cp -a to propagate permissions
-	if err := os.Chmod(assetName, os.FileMode(perms)); err != nil {
+	if err := os.Chmod(src, os.FileMode(perms)); err != nil {
 		return errors.Wrapf(err, "chmod")
 	}
-	if out, err := exec.Command(k.ociBin, "cp", "-a", assetName, destination).CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "error copying %s into node, output: %s", f.GetAssetName(), string(out))
+	dest := fmt.Sprintf("%s:%s", k.nameOrID, path.Join(f.GetTargetDir(), f.GetTargetName()))
+	if k.ociBin == oci.Podman {
+		return copyToPodman(src, dest)
 	}
+	return copyToDocker(src, dest)
+}
 
+// Podman cp command doesn't match docker and doesn't have -a
+func copyToPodman(src string, dest string) error {
+	if out, err := exec.Command(oci.Podman, "cp", src, dest).CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "podman copy %s into %s, output: %s", src, dest, string(out))
+	}
+	return nil
+}
+
+func copyToDocker(src string, dest string) error {
+	if out, err := exec.Command(oci.Docker, "cp", "-a", src, dest).CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "docker copy %s into %s, output: %s", src, dest, string(out))
+	}
 	return nil
 }
 
