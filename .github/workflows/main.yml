@@ -1,12 +1,14 @@
 name: CI
 on: [pull_request]
 jobs:
-  docker_ubuntu_16_04:
+  # Runs before all other jobs
+  # builds the minikube binaries 
+  build_minikube:
     env:
       TIME_ELAPSED: time
       JOB_NAME: "Docker_Ubuntu_16_04"
       COMMIT_STATUS: ""
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
     - name: build binaries
@@ -17,8 +19,8 @@ jobs:
         mkdir -p testhome
         pwd
         ls -lah
-        cp -r test/integration/testdata ./
-        ls -lah
+        cp -r test/integration/testdata ./out
+        ls -lah/out
         whoami
         echo github ref $GITHUB_REF
         echo workflow $GITHUB_WORKFLOW
@@ -26,16 +28,40 @@ jobs:
         echo event name $GITHUB_EVENT_NAME
         echo workspace $GITHUB_WORKSPACE
         echo "end of debug stuff"
-        
+    - uses: actions/upload-artifact@v1
+      with:
+        name: minikube_binaries
+        path: out
+  # Run the following integration tests after the build_minikube
+  docker_ubuntu_16_04:
+    needs: [build_minikube]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "Docker_Ubuntu_16_04"
+      COMMIT_STATUS: ""
+    runs-on: ubuntu-16.04
+    steps:
     - name: install gopogh
       run: |
         cd /tmp
         GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
         cd -
-    - name: run integration test
+    - name: download binaries
+      uses: actions/download-artifact@v1
+      with:
+        name: minikube_binaries
+    - name: see if report is there
+      shell: bash
       run: |
+        pwd
+        ls -lah minikube_binaries
+    - name: run integration test
+      shell: bash
+      run: |
+        cd minikube_binaries/out
+        mkdir -p report
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
@@ -44,6 +70,7 @@ jobs:
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
     - name: generate gopogh report
       run: |
+        cd minikube_binaries/out
         export PATH=${PATH}:`go env GOPATH`/bin
         go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
         STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name " $GITHUB_REF" -repo "${JOB_NAME} ${GITHUB_REF} ${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
@@ -57,43 +84,45 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: docker_ubuntu_16_04
-        path: report
+        path: minikube_binaries/out/report
   docker_ubuntu_18_04:
+    runs-on: ubuntu-18.04
     env:
       TIME_ELAPSED: time
       JOB_NAME: "Docker_Ubuntu_18_04"
       COMMIT_STATUS: ""
-    runs-on: ubuntu-18.04
+    needs: [build_minikube]
     steps:
-    - uses: actions/checkout@v2
-    - name: build binaries
-      run : |
-        make minikube-linux-amd64
-        make e2e-linux-amd64
-        mkdir -p report
-        mkdir -p testhome
-        pwd
-        ls -lah
-        cp -r test/integration/testdata ./
-        ls -lah
-        whoami
     - name: install gopogh
       run: |
         cd /tmp
         GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
         cd -
-    - name: run integration test
+    - name: download binaries
+      uses: actions/download-artifact@v1
+      with:
+        name: minikube_binaries
+    - name: see if report is there
+      shell: bash
       run: |
+        pwd
+        ls -lah minikube_binaries
+    - name: run integration test
+      shell: bash
+      run: |
+        cd minikube_binaries/out
+        mkdir -p report
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
         sec=$((${TIME_ELAPSED}%60))
-        TIME_ELAPSED="${min} min $sec seconds"
+        TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
     - name: generate gopogh report
       run: |
+        cd minikube_binaries/out
         export PATH=${PATH}:`go env GOPATH`/bin
         go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
         STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name " $GITHUB_REF" -repo "${JOB_NAME} ${GITHUB_REF} ${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
@@ -107,43 +136,45 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: docker_ubuntu_18_04
-        path: report
+        path: minikube_binaries/out/report
   none_ubuntu16_04:
+    needs: [build_minikube]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "None_Ubuntu_16_04"
       COMMIT_STATUS: ""
     runs-on: ubuntu-16.04
     steps:
-    - uses: actions/checkout@v2
-    - name: build binaries
-      run : |
-        make minikube-linux-amd64
-        make e2e-linux-amd64
-        mkdir -p report
-        mkdir -p testhome
-        pwd
-        ls -lah
-        cp -r test/integration/testdata ./
-        ls -lah
-        whoami
     - name: install gopogh
       run: |
         cd /tmp
         GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
         cd -
-    - name: run integration test
+    - name: download binaries
+      uses: actions/download-artifact@v1
+      with:
+        name: minikube_binaries
+    - name: see if report is there
+      shell: bash
       run: |
+        pwd
+        ls -lah minikube_binaries
+    - name: run integration test
+      shell: bash
+      run: |
+        cd minikube_binaries/out
+        mkdir -p report
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=none -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
         sec=$((${TIME_ELAPSED}%60))
-        TIME_ELAPSED="${min} min $sec seconds"
+        TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
     - name: generate gopogh report
       run: |
+        cd minikube_binaries/out
         export PATH=${PATH}:`go env GOPATH`/bin
         go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
         STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name " $GITHUB_REF" -repo "${JOB_NAME} ${GITHUB_REF} ${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
@@ -157,15 +188,15 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: none_ubuntu16_04
-        path: report
+        path: minikube_binaries/out/report
   podman_ubuntu_18_04:
+      needs: [build_minikube]
       env:
         TIME_ELAPSED: time
         JOB_NAME: "Podman_Ubuntu_18_04"
         COMMIT_STATUS: ""
       runs-on: ubuntu-18.04
       steps:
-      - uses: actions/checkout@v2
       - name: install podman
         run: |
           . /etc/os-release
@@ -174,35 +205,36 @@ jobs:
           sudo apt-key add - < Release.key || true
           sudo apt-get update -qq
           sudo apt-get -qq -y install podman
-      - name: build binaries
-        run : |
-          make minikube-linux-amd64
-          make e2e-linux-amd64
-          mkdir -p report
-          mkdir -p testhome
-          pwd
-          ls -lah
-          cp -r test/integration/testdata ./
-          cp -r test/integration/testdata ./
-          ls -lah
-          whoami
       - name: install gopogh
         run: |
           cd /tmp
           GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
           cd -
-      - name: run integration test
+      - name: download binaries
+        uses: actions/download-artifact@v1
+        with:
+          name: minikube_binaries
+      - name: see if report is there
+        shell: bash
         run: |
+          pwd
+          ls -lah minikube_binaries
+      - name: run integration test
+        shell: bash
+        run: |
+          cd minikube_binaries/out
+          mkdir -p report
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./out/e2e-linux-amd64 -minikube-start-args=--vm-driver=podman -expected-default-driver= -test.timeout=70m -test.v -binary=out/minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
-          TIME_ELAPSED="${min} min $sec seconds"
+          TIME_ELAPSED="${min} min $sec seconds "
           echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
       - name: generate gopogh report
         run: |
+          cd minikube_binaries/out
           export PATH=${PATH}:`go env GOPATH`/bin
           go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
           STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name " $GITHUB_REF" -repo "${JOB_NAME} ${GITHUB_REF} ${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
@@ -216,7 +248,9 @@ jobs:
       - uses: actions/upload-artifact@v1
         with:
           name: podman_ubuntu_18_04
-          path: report
+          path: minikube_binaries/out/report  
+  # After all 4 integration tests finished 
+  # collect all the reports and upload
   upload_all_reports:
     needs: [docker_ubuntu_16_04,docker_ubuntu_18_04,none_ubuntu16_04,podman_ubuntu_18_04]
     runs-on: ubuntu-18.04
