@@ -15,8 +15,6 @@ jobs:
       run : |
         make minikube-linux-amd64
         make e2e-linux-amd64
-        mkdir -p report
-        mkdir -p testhome
         pwd
         ls -lah
         cp -r test/integration/testdata ./out
@@ -70,6 +68,8 @@ jobs:
       shell: bash
       run: |
         mkdir -p report
+        mkdir -p testhome
+        ls -lah
         chmod a+x e2e-*
         chmod a+x minikube-*
         ls -lah
@@ -123,6 +123,8 @@ jobs:
       shell: bash
       run: |
         mkdir -p report
+        mkdir -p testhome
+        ls -lah
         chmod a+x e2e-*
         chmod a+x minikube-*
         ls -lah
@@ -176,6 +178,8 @@ jobs:
       shell: bash
       run: |
         mkdir -p report
+        mkdir -p testhome
+        ls -lah
         chmod a+x e2e-*
         chmod a+x minikube-*
         ls -lah        
@@ -239,6 +243,8 @@ jobs:
         shell: bash
         run: |
           mkdir -p report
+          mkdir -p testhome
+          ls -lah
           chmod a+x e2e-*
           chmod a+x minikube-*
           ls -lah
