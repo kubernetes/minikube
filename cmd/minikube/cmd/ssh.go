@@ -23,7 +23,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -46,7 +45,7 @@ var sshCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := cluster.CheckIfHostExistsAndLoad(api, cc.Name)
+		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
@@ -59,7 +58,7 @@ var sshCmd = &cobra.Command{
 			ssh.SetDefaultClient(ssh.External)
 		}
 
-		err = cluster.CreateSSHShell(api, args)
+		err = machine.CreateSSHShell(api, args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)

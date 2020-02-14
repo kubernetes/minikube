@@ -54,6 +54,7 @@ var (
 	ErrKeyNotFound = errors.New("specified key could not be found in config")
 )
 
+// ErrNotExist is the error returned when a config does not exist
 type ErrNotExist struct {
 	s string
 }

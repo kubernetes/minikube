@@ -14,17 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package cmd
 
 import (
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
-// CacheISO downloads and caches ISO.
-func CacheISO(cfg config.MachineConfig) error {
-	if driver.BareMetal(cfg.Driver) {
-		return nil
-	}
-	return cfg.Downloader.CacheMinikubeISOFromURL(cfg.MinikubeISO)
+// nodeCmd represents the set of node subcommands
+var nodeCmd = &cobra.Command{
+	Use:    "node",
+	Short:  "Node operations",
+	Long:   "Operations on nodes",
+	Hidden: true, // This won't be fully functional and thus should not be documented yet
+	Run: func(cmd *cobra.Command, args []string) {
+		exit.UsageT("Usage: minikube node [add|start|stop|delete]")
+	},
 }
