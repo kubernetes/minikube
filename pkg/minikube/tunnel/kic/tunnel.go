@@ -37,6 +37,8 @@ func NewTunnel(ctx context.Context, sshPort, sshKey string, v1Core typed_core.Co
 func (t *Tunnel) Start() error {
 	sshTunnels := make(map[string]*sshTunnel)
 
+	restClient := t.v1Core.RESTClient()
+
 	for {
 		select {
 		case <-t.ctx.Done():
@@ -70,8 +72,7 @@ func (t *Tunnel) Start() error {
 				newSSHTunnel := createSSHTunnel(name, t.sshPort, t.sshKey, s)
 				sshTunnels[newSSHTunnel.name] = newSSHTunnel
 
-				// PatchServicesIP maybe can receive the svc here, instead of listing inside again
-				_, err := t.LoadBalancerEmulator.PatchServicesIP("127.0.0.1")
+				err := t.LoadBalancerEmulator.PatchServiceIP(restClient, s, "127.0.0.1")
 				if err != nil {
 					fmt.Println(err)
 				}
