@@ -18,6 +18,7 @@ package oci
 
 import (
 	"fmt"
+	"net"
 	"os/exec"
 	"runtime"
 	"strings"
@@ -27,33 +28,45 @@ import (
 
 // RoutableHostIPFromInside returns the ip/dns of the host that container lives on
 // is routable from inside the container
-func RoutableHostIPFromInside(ociBin string, containerName string) (string, error) {
+func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, error) {
 	if ociBin != Docker {
-		return "", fmt.Errorf("RoutableHostIPFromInside is currently only implemented for docker https://github.com/containers/libpod/issues/5205")
+		return nil, fmt.Errorf("RoutableHostIPFromInside is currently only implemented for docker https://github.com/containers/libpod/issues/5205")
 	}
 	if runtime.GOOS == "linux" {
-		return dockerGatewayBridgeIP()
+		return dockerGatewayIP()
 	}
-	// for winows and mac, the gateway ip is not routable so we use dns trick.
-	return "host.docker.internal", nil
+	// for windows and mac, the gateway ip is not routable so we use dns trick.
+	return digDNS(ociBin, containerName, "host.docker.internal")
 }
 
-// dockerGatewayBridgeIP gets the default gateway ip for the docker bridge on the user's host machine
-func dockerGatewayBridgeIP() (string, error) {
-	cmd := exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}")
+// digDNS will get the IP record for a dns
+func digDNS(ociBin, containerName, dns string) (net.IP, error) {
+	PointToHostDockerDaemon()
+	cmd := exec.Command(ociBin, "exec", "-t", containerName, "dig", "+short", dns)
+	out, err := cmd.CombinedOutput()
+	ip := net.ParseIP(strings.TrimSpace(string(out)))
+	if err != nil {
+		return ip, errors.Wrapf(err, "resolve dns to ip", string(out))
+	}
+	return ip, nil
+}
 
+// dockerGatewayIP gets the default gateway ip for the docker bridge on the user's host machine
+// gets the ip from user's host docker
+func dockerGatewayIP() (net.IP, error) {
+	PointToHostDockerDaemon()
+	cmd := exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return "", errors.Wrapf(err, "get network bridge. output: %s", string(out))
+		return nil, errors.Wrapf(err, "get network bridge. output: %s", string(out))
 	}
-
 	bridgeID := strings.TrimSpace(string(out))
 	cmd = exec.Command(Docker, "inspect",
 		"--format", "{{(index .IPAM.Config 0).Gateway}}", bridgeID)
 	out, err = cmd.CombinedOutput()
 	if err != nil {
-		return "", errors.Wrapf(err, "inspect IP gatway for bridge network: %q. output: %s", string(out), bridgeID)
+		return nil, errors.Wrapf(err, "inspect IP gatway for bridge network: %q. output: %s", string(out), bridgeID)
 	}
-	return strings.TrimSpace(string(out)), nil
+	return net.ParseIP(strings.TrimSpace(string(out))), nil
 
 }
