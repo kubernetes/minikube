@@ -26,11 +26,13 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/registry/drvs/docker"
 )
 
 // beginCacheRequiredImages caches images required for kubernetes version in the background
@@ -44,7 +46,7 @@ func beginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVers
 	})
 }
 
-func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
+func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion, driverName string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool("download-only") {
 		return
@@ -54,6 +56,13 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 	}
 	if _, err := CacheKubectlBinary(k8sVersion); err != nil {
 		exit.WithError("Failed to cache kubectl", err)
+	}
+	if driver.IsKIC(driverName) {
+		preloaded, _ := docker.PreloadedBaseImage(k8sVersion)
+		if err := image.WriteImageToDaemon(preloaded); err != nil {
+			exit.WithError("Failed to cache docker driver base image", err)
+		}
+		glog.Infof("Successfully downloaded %s", preloaded)
 	}
 	waitCacheRequiredImages(cacheGroup)
 	if err := saveImagesToTarFromConfig(); err != nil {

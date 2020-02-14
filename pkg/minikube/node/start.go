@@ -54,7 +54,7 @@ func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons 
 	}
 
 	// exits here in case of --download-only option.
-	handleDownloadOnly(&cacheGroup, k8sVersion)
+	handleDownloadOnly(&cacheGroup, k8sVersion, driverName)
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)

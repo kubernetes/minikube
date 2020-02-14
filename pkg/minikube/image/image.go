@@ -21,9 +21,9 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/authn"
@@ -49,9 +49,7 @@ func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 	return img.ID
 }
 
-// DockerPull checks if img exists in local docker daemon
-// If it doesn't, it pulls img
-func DockerPull(img string) error {
+func WriteImageToDaemon(img string) error {
 	if err := oci.PointToHostDockerDaemon(); err != nil {
 		return errors.Wrap(err, "point host docker-daemon")
 	}
@@ -64,12 +62,15 @@ func DockerPull(img string) error {
 		glog.Infof("Found %s in local docker daemon, skipping pull", img)
 		return nil
 	}
-	// Try to pull image from remote registry
-	imgClient, err := client.NewClientWithOpts(client.FromEnv) // image client
+	i, err := remote.Image(ref)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "getting remote image")
 	}
-	_, err = imgClient.ImagePull(context.Background(), img, types.ImagePullOptions{})
+	tag, err := name.NewTag(strings.Split(img, "@")[0])
+	if err != nil {
+		return errors.Wrap(err, "getting tag")
+	}
+	_, err = daemon.Write(tag, i)
 	return err
 }
 
