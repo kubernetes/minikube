@@ -54,8 +54,8 @@ func TestListProfiles(t *testing.T) {
 		if val[tt.index].Name != tt.expectName {
 			t.Errorf("expected %s got %v", tt.expectName, val[tt.index].Name)
 		}
-		if val[tt.index].Config.VMDriver != tt.vmDriver {
-			t.Errorf("expected %s got %v", tt.vmDriver, val[tt.index].Config.VMDriver)
+		if val[tt.index].Config.Driver != tt.vmDriver {
+			t.Errorf("expected %s got %v", tt.vmDriver, val[tt.index].Config.Driver)
 		}
 
 	}

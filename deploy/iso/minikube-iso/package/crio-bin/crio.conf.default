@@ -99,7 +99,7 @@ no_pivot = false
 conmon = ""
 
 # Cgroup setting for conmon
-conmon_cgroup = "pod"
+conmon_cgroup = "system.slice"
 
 # Environment variable list for the conmon process, used for passing necessary
 # environment variables to conmon or the runtime.
@@ -117,7 +117,7 @@ seccomp_profile = ""
 
 # Used to change the name of the default AppArmor profile of CRI-O. The default
 # profile name is "crio-default-" followed by the version string of CRI-O.
-apparmor_profile = "crio-default-1.16.0"
+apparmor_profile = "crio-default-1.16.1"
 
 # Cgroup management implementation used for the runtime.
 cgroup_manager = "cgroupfs"

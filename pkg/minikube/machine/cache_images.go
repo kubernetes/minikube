@@ -31,7 +31,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -76,7 +75,7 @@ func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string
 		return errors.Wrap(err, "runtime")
 	}
 
-	imgClient, err := client.NewEnvClient() // image client
+	imgClient, err := client.NewClientWithOpts(client.FromEnv) // image client
 	if err != nil {
 		glog.Infof("couldn't get a local image daemon which might be ok: %v", err)
 		imgClient = nil
@@ -139,7 +138,7 @@ func CacheAndLoadImages(images []string) error {
 	}
 	for _, p := range profiles { // loading images to all running profiles
 		pName := p.Name // capture the loop variable
-		status, err := cluster.GetHostStatus(api, pName)
+		status, err := GetHostStatus(api, pName)
 		if err != nil {
 			glog.Warningf("skipping loading cache for profile %s", pName)
 			glog.Errorf("error getting status for %s: %v", pName, err)

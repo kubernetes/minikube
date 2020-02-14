@@ -25,8 +25,9 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 // GetVMHostIP gets the ip address to be used for mapping host -> VM and VM -> host
@@ -74,7 +75,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 
 // GetHostDriverIP gets the ip address of the current minikube cluster
 func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
-	host, err := CheckIfHostExistsAndLoad(api, machineName)
+	host, err := machine.CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +85,7 @@ func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
 		return nil, errors.Wrap(err, "getting IP")
 	}
 	if driver.IsKIC(host.DriverName) {
-		ipStr = kic.DefaultBindIPV4
+		ipStr = oci.DefaultBindIPV4
 	}
 	ip := net.ParseIP(ipStr)
 	if ip == nil {

@@ -29,12 +29,9 @@ import (
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -151,7 +148,7 @@ var dockerEnvCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := cluster.CheckIfHostExistsAndLoad(api, cc.Name)
+		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
@@ -159,7 +156,7 @@ var dockerEnvCmd = &cobra.Command{
 			exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
 		}
 
-		hostSt, err := cluster.GetHostStatus(api, cc.Name)
+		hostSt, err := machine.GetHostStatus(api, cc.Name)
 		if err != nil {
 			exit.WithError("Error getting host status", err)
 		}
@@ -183,11 +180,22 @@ var dockerEnvCmd = &cobra.Command{
 		sh := shell.EnvConfig{
 			Shell: shell.ForceShell,
 		}
+
+		port := constants.DockerDaemonPort
+		if driver.IsKIC(host.DriverName) { // for kic we need to find what port docker/podman chose for us
+			hostIP = oci.DefaultBindIPV4
+			port, err = oci.HostPortBinding(host.DriverName, profile, port)
+			if err != nil {
+				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": host.DriverName, "error": err})
+			}
+		}
+
 		ec := DockerEnvConfig{
 			EnvConfig: sh,
 			profile:   profile,
 			driver:    host.DriverName,
 			hostIP:    hostIP,
+			port:      port,
 			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,
 		}
@@ -218,16 +226,14 @@ type DockerEnvConfig struct {
 	profile  string
 	driver   string
 	hostIP   string
+	port     int
 	certsDir string
 	noProxy  bool
 }
 
 // dockerSetScript writes out a shell-compatible 'docker-env' script
 func dockerSetScript(ec DockerEnvConfig, w io.Writer) error {
-	envVars, err := dockerEnvVars(ec)
-	if err != nil {
-		return err
-	}
+	envVars := dockerEnvVars(ec)
 	return shell.SetScript(ec.EnvConfig, w, dockerEnvTmpl, dockerShellCfgSet(ec, envVars))
 }
 
@@ -256,22 +262,15 @@ func dockerURL(ip string, port int) string {
 }
 
 // dockerEnvVars gets the necessary docker env variables to allow the use of minikube's docker daemon
-func dockerEnvVars(ec DockerEnvConfig) (map[string]string, error) {
+func dockerEnvVars(ec DockerEnvConfig) map[string]string {
 	env := map[string]string{
 		constants.DockerTLSVerifyEnv:       "1",
-		constants.DockerHostEnv:            dockerURL(ec.hostIP, constants.DockerDaemonPort),
+		constants.DockerHostEnv:            dockerURL(ec.hostIP, ec.port),
 		constants.DockerCertPathEnv:        ec.certsDir,
 		constants.MinikubeActiveDockerdEnv: ec.profile,
 	}
 
-	if driver.IsKIC(ec.driver) { // for kic we need to find out what port docker allocated during creation
-		port, err := oci.HostPortBinding(ec.driver, ec.profile, constants.DockerDaemonPort)
-		if err != nil {
-			return nil, errors.Wrapf(err, "get hostbind port for %d", constants.DockerDaemonPort)
-		}
-		env[constants.DockerCertPathEnv] = dockerURL(kic.DefaultBindIPV4, port)
-	}
-	return env, nil
+	return env
 }
 
 func init() {
