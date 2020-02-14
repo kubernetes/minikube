@@ -42,6 +42,9 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 	$(INSTALL) -Dm755 \
 		$(@D)/bin/crio \
 		$(TARGET_DIR)/usr/bin/crio
+	$(INSTALL) -Dm755 \
+		$(@D)/bin/pinns \
+		$(TARGET_DIR)/usr/bin/pinns
 	$(INSTALL) -Dm644 \
 		$(CRIO_BIN_PKGDIR)/crio.conf \
 		$(TARGET_DIR)/etc/crio/crio.conf
