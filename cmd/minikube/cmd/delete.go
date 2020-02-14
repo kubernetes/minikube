@@ -32,6 +32,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
@@ -97,7 +98,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
 	profilesToDelete := append(validProfiles, invalidProfiles...)
-
+	glog.Infof("error listing profiless %v", err)
 	// If the purge flag is set, go ahead and delete the .minikube directory.
 	if purge && len(profilesToDelete) > 1 && !deleteAll {
 		out.ErrT(out.Notice, "Multiple minikube profiles were found - ")
@@ -112,8 +113,9 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.UsageT("usage: minikube delete --all")
 		}
 
-		if err != nil {
-			exit.WithError("Error getting profiles to delete", err)
+		err := oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "=true"))
+		if err != nil { // if there is no volume there won't be any error
+			glog.Warningf("error deleting left docker volumes. To see the list of volumes run: 'docker volume ls' \n:", err)
 		}
 
 		errs := DeleteProfiles(profilesToDelete)
@@ -177,6 +179,10 @@ func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 
 func deleteProfile(profile *pkg_config.Profile) error {
 	viper.Set(pkg_config.MachineProfile, profile.Name)
+	err := oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name))
+	if err != nil { // if there is no volume there wont be any error
+		glog.Warningf("error deleting left docker volumes. To see the list of volumes run: 'docker volume ls' \n:%v", err)
+	}
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
