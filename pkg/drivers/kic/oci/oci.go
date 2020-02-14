@@ -113,20 +113,6 @@ func CreateContainerNode(p CreateParams) error {
 	return nil
 }
 
-// createDockerVolume creates a docker volume to be attached to the container with correct labels and prefixes based on profile name
-// Caution ! if volume already exists does NOT return an error and will not apply the minikube labels on it.
-// TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
-func createDockerVolume(name string) error {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker-daemon")
-	}
-	cmd := exec.Command(Docker, "volume", "create", name, "--label", "name.minikube.sigs.k8s.io="+name, "--label", "craeted_by_minikube.minikube.sigs.k8s.io=true")
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "output %s", string(out))
-	}
-	return nil
-}
-
 // CreateContainer creates a container with "docker/podman run"
 func createContainer(ociBinary string, image string, opts ...createOpt) ([]string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
