@@ -42,9 +42,11 @@ jobs:
       run : | 
         sudo apt-get update
         sudo apt-get install -y libvirt-dev
+    # does not include lint, because lint times out in github actions
+    # lint is done in travis
     - name: only unit test
       run : |
-        export TESTSUITE" = "unittest"
+        export TESTSUITE = "unittest"
         make test
         continue-on-error: false
   # Run the following integration tests after the build_minikube
@@ -85,7 +87,7 @@ jobs:
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-    - name: generate gopogh report
+    - name: Generate html report
       run: |
         pwd
         cd minikube_binaries
@@ -102,7 +104,7 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: docker_ubuntu_16_04
-        path: report
+        path: minikube_binaries/report
   docker_ubuntu_18_04:
     runs-on: ubuntu-18.04
     env:
@@ -140,7 +142,7 @@ jobs:
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-    - name: generate gopogh report
+    - name: Generate html report
       run: |
         cd minikube_binaries
         export PATH=${PATH}:`go env GOPATH`/bin
@@ -156,7 +158,7 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: docker_ubuntu_18_04
-        path: report
+        path: minikube_binaries/report
   none_ubuntu16_04:
     needs: [build_minikube]
     env:
@@ -194,7 +196,7 @@ jobs:
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-    - name: generate gopogh report
+    - name: Generate html report
       run: |
         cd minikube_binaries
         export PATH=${PATH}:`go env GOPATH`/bin
@@ -210,7 +212,7 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: none_ubuntu16_04
-        path: report
+        path: minikube_binaries/report
   none_ubuntu18_04:
     needs: [build_minikube]
     env:
@@ -248,7 +250,7 @@ jobs:
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-    - name: generate gopogh report
+    - name: Generate html report
       run: |
         cd minikube_binaries
         export PATH=${PATH}:`go env GOPATH`/bin
@@ -264,7 +266,7 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: none_ubuntu16_04
-        path: report
+        path: minikube_binaries/report
   podman_ubuntu_18_04:
       needs: [build_minikube]
       env:
@@ -328,7 +330,7 @@ jobs:
       - uses: actions/upload-artifact@v1
         with:
           name: podman_ubuntu_18_04
-          path: report  
+          path: minikube_binaries/report
   # After all 4 integration tests finished 
   # collect all the reports and upload
   upload_all_reports:
@@ -397,5 +399,5 @@ jobs:
         cp -r podman_ubuntu_18_04 ./all_reports/
     - uses: actions/upload-artifact@v1
       with:
-        name: all_reports
+        name: all_reports_${GITHUB_REF}
         path: all_reports
