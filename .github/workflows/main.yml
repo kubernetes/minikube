@@ -57,9 +57,8 @@ jobs:
     steps:
     - name: install gopogh
       run: |
-        cd /tmp
-        GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
-        cd -
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.18/gopogh-linux-amd64
+        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: download binaries
       uses: actions/download-artifact@v1
       with:
@@ -111,9 +110,8 @@ jobs:
     steps:
     - name: install gopogh
       run: |
-        cd /tmp
-        GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
-        cd -
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.18/gopogh-linux-amd64
+        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: download binaries
       uses: actions/download-artifact@v1
       with:
@@ -165,9 +163,8 @@ jobs:
     steps:
     - name: install gopogh
       run: |
-        cd /tmp
-        GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
-        cd -
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.18/gopogh-linux-amd64
+        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: download binaries
       uses: actions/download-artifact@v1
       with:
@@ -219,10 +216,8 @@ jobs:
     steps:
     - name: install gopogh
       run: |
-        cd /tmp
-        GO111MODULE="on" go get github.com/medyagh/gopogh@v0.0.17 || true
-        cd -
-    - name: download binaries
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.18/gopogh-linux-amd64
+        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh    - name: download binaries
       uses: actions/download-artifact@v1
       with:
         name: minikube_binaries
@@ -283,11 +278,8 @@ jobs:
           sudo podman info || true 
       - name: install gopogh
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.18/gopogh-linux-amd64 
-          ls -lah
-          sudo install gopogh-linux-amd64 gopogh-linux-amd64
-          which gopogh
-          echo $PATH
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.0.18/gopogh-linux-amd64
+          sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: download binaries
         uses: actions/download-artifact@v1
         with:
