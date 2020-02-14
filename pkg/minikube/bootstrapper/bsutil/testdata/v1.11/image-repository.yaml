@@ -11,7 +11,7 @@ networking:
   serviceSubnet: 10.96.0.0/12
 etcd:
   dataDir: /var/lib/minikube/etcd
-nodeName: mk
+nodeName: "mk"
 apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 imageRepository: test/repo
 apiServerExtraArgs:

@@ -28,6 +28,8 @@ import (
 )
 
 const (
+	// Podman is Kubernetes in container using podman driver
+	Podman = "podman"
 	// Docker is Kubernetes in container using docker driver
 	Docker = "docker"
 	// Mock driver
@@ -85,7 +87,7 @@ func Supported(name string) bool {
 
 // IsKIC checks if the driver is a kubernetes in continer
 func IsKIC(name string) bool {
-	return name == Docker
+	return name == Docker || name == Podman
 }
 
 // IsMock checks if the driver is a mock
@@ -104,6 +106,16 @@ func IsVM(name string) bool {
 // BareMetal returns if this driver is unisolated
 func BareMetal(name string) bool {
 	return name == None || name == Mock
+}
+
+// NeedsRoot returns true if driver needs to run with root privileges
+func NeedsRoot(name string) bool {
+	return name == None || name == Podman
+}
+
+// HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
+func HasResourceLimits(name string) bool {
+	return name == None || name == Podman
 }
 
 // FlagHints are hints for what default options should be used for this driver

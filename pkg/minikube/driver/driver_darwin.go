@@ -26,6 +26,7 @@ var supportedDrivers = []string{
 	HyperKit,
 	VMware,
 	Docker,
+	Podman,
 }
 
 func VBoxManagePath() string {

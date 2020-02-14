@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"github.com/docker/machine/libmachine"
@@ -23,16 +23,13 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
 // StopHost stops the host VM, saving state to disk.
-func StopHost(api libmachine.API) error {
-	machineName := viper.GetString(config.MachineProfile)
+func StopHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
 	if err != nil {
 		return errors.Wrapf(err, "load")

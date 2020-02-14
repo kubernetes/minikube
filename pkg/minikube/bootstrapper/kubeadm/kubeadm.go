@@ -194,12 +194,12 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 
 	// Allow older kubeadm versions to function with newer Docker releases.
 	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
-	if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.VMDriver) {
+	if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.Driver) {
 		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
 		ignore = append(ignore, "SystemVerification")
 	}
 
-	if driver.IsKIC(cfg.VMDriver) { // to bypass this error: /proc/sys/net/bridge/bridge-nf-call-iptables does not exist
+	if driver.IsKIC(cfg.Driver) { // to bypass this error: /proc/sys/net/bridge/bridge-nf-call-iptables does not exist
 		ignore = append(ignore, "FileContent--proc-sys-net-bridge-bridge-nf-call-iptables")
 
 	}
@@ -210,13 +210,13 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
 	}
 
-	if driver.IsKIC(cfg.VMDriver) {
+	if cfg.Driver == driver.Docker {
 		if err := k.applyKicOverlay(cfg); err != nil {
-			return errors.Wrap(err, "applying kic overlay network")
+			return errors.Wrap(err, "apply kic overlay")
 		}
 	}
 
-	if !driver.IsKIC(cfg.VMDriver) { // TODO: skip for both after verifications https://github.com/kubernetes/minikube/issues/6239
+	if !driver.IsKIC(cfg.Driver) { // TODO: skip for both after verifications https://github.com/kubernetes/minikube/issues/6239
 		glog.Infof("Configuring cluster permissions ...")
 		elevate := func() error {
 			client, err := k.client(cp.IP, cp.Port)
@@ -275,9 +275,9 @@ func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Dur
 
 	ip := cp.IP
 	port := cp.Port
-	if driver.IsKIC(cfg.VMDriver) {
-		ip = kic.DefaultBindIPV4
-		port, err = oci.HostPortBinding(cfg.VMDriver, cfg.Name, port)
+	if driver.IsKIC(cfg.Driver) {
+		ip = oci.DefaultBindIPV4
+		port, err = oci.HostPortBinding(cfg.Driver, cfg.Name, port)
 		if err != nil {
 			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 		}
@@ -343,9 +343,9 @@ func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
 	for _, n := range cfg.Nodes {
 		ip := n.IP
 		port := n.Port
-		if driver.IsKIC(cfg.VMDriver) {
-			ip = kic.DefaultBindIPV4
-			port, err = oci.HostPortBinding(cfg.VMDriver, cfg.Name, port)
+		if driver.IsKIC(cfg.Driver) {
+			ip = oci.DefaultBindIPV4
+			port, err = oci.HostPortBinding(cfg.Driver, cfg.Name, port)
 			if err != nil {
 				return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 			}
@@ -471,7 +471,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 // applyKicOverlay applies the CNI plugin needed to make kic work
 func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
 	cmd := exec.Command("sudo",
-		path.Join("/var/lib/minikube/binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", "--kubeconfig=/var/lib/minikube/kubeconfig",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"-f", "-")
 	b := bytes.Buffer{}
 	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {

@@ -23,7 +23,6 @@ import (
 	"strconv"
 	"strings"
 
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -76,7 +75,7 @@ var printProfilesTable = func() {
 	defer api.Close()
 
 	for _, p := range validProfiles {
-		p.Status, err = cluster.GetHostStatus(api, p.Name)
+		p.Status, err = machine.GetHostStatus(api, p.Name)
 		if err != nil {
 			glog.Warningf("error getting host status for %s: %v", p.Name, err)
 		}
@@ -85,7 +84,7 @@ var printProfilesTable = func() {
 			glog.Errorf("%q has no control plane: %v", p.Name, err)
 			// Print the data we know about anyways
 		}
-		validData = append(validData, []string{p.Name, p.Config.VMDriver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
+		validData = append(validData, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
 	}
 
 	table.AppendBulk(validData)
@@ -118,7 +117,7 @@ var printProfilesJSON = func() {
 
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 	for _, v := range validProfiles {
-		status, err := cluster.GetHostStatus(api, v.Name)
+		status, err := machine.GetHostStatus(api, v.Name)
 		if err != nil {
 			glog.Warningf("error getting host status for %s: %v", v.Name, err)
 		}

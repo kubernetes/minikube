@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"fmt"
@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/docker/machine/drivers/virtualbox"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -46,6 +48,11 @@ const (
 	maxClockDesyncSeconds = 2.1
 )
 
+var (
+	// ErrorMachineNotExist is returned when virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C)
+	ErrorMachineNotExist = errors.New("machine does not exist")
+)
+
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
 func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 	out.T(out.Waiting, "Reconfiguring existing host ...")
@@ -62,14 +69,41 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 	}
 
 	s, err := h.Driver.GetState()
-	if err != nil {
-		return h, errors.Wrap(err, "Error getting state for host")
+	if err != nil || s == state.Stopped || s == state.None {
+		// If virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C), recreate virtual machine
+		me, err := machineExists(h.Driver.DriverName(), s, err)
+		if !me {
+			// If the error is that virtual machine does not exist error, handle error(recreate virtual machine)
+			if err == ErrorMachineNotExist {
+				// remove virtual machine
+				if err := h.Driver.Remove(); err != nil {
+					// skip returning error since it may be before docker image pulling(so, no host exist)
+					if h.Driver.DriverName() != driver.Docker {
+						return nil, errors.Wrap(err, "host remove")
+					}
+				}
+				// remove machine config directory
+				if err := api.Remove(mc.Name); err != nil {
+					return nil, errors.Wrap(err, "api remove")
+				}
+				// recreate virtual machine
+				out.T(out.Meh, "machine '{{.name}}' does not exist. Proceeding ahead with recreating VM.", out.V{"name": mc.Name})
+				h, err = createHost(api, mc)
+				if err != nil {
+					return nil, errors.Wrap(err, "Error recreating VM")
+				}
+				// return ErrMachineNotExist err to initialize preExists flag
+				return h, ErrorMachineNotExist
+			}
+			// If the error is not that virtual machine does not exist error, return error
+			return nil, errors.Wrap(err, "Error getting state for host")
+		}
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": mc.VMDriver, "profile_name": mc.Name})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": mc.Driver, "profile_name": mc.Name})
 	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": mc.VMDriver, "profile_name": mc.Name})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": mc.Driver, "profile_name": mc.Name})
 		if err := h.Driver.Start(); err != nil {
 			return h, errors.Wrap(err, "driver start")
 		}
@@ -108,7 +142,7 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 	if err := h.ConfigureAuth(); err != nil {
 		return h, &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 	}
-	return h, ensureSyncedGuestClock(h, mc.VMDriver)
+	return h, ensureSyncedGuestClock(h, mc.Driver)
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
@@ -160,4 +194,67 @@ func adjustGuestClock(h hostRunner, t time.Time) error {
 	out, err := h.RunSSHCommand(fmt.Sprintf("sudo date -s @%d", t.Unix()))
 	glog.Infof("clock set: %s (err=%v)", out, err)
 	return err
+}
+
+// machineExists checks if virtual machine does not exist
+// if the virtual machine exists, return true
+func machineExists(d string, s state.State, err error) (bool, error) {
+	switch d {
+	case driver.HyperKit:
+		if s == state.None || (err != nil && err.Error() == "connection is shut down") {
+			return false, ErrorMachineNotExist
+		}
+		return true, err
+	case driver.HyperV:
+		if s == state.None {
+			return false, ErrorMachineNotExist
+		}
+		return true, err
+	case driver.KVM2:
+		if s == state.None {
+			return false, ErrorMachineNotExist
+		}
+		return true, err
+	case driver.None:
+		if s == state.None {
+			return false, ErrorMachineNotExist
+		}
+		return true, err
+	case driver.Parallels:
+		if err != nil && err.Error() == "machine does not exist" {
+			return false, ErrorMachineNotExist
+		}
+		return true, err
+	case driver.VirtualBox:
+		if err == virtualbox.ErrMachineNotExist {
+			return false, ErrorMachineNotExist
+		}
+		return true, err
+	case driver.VMware:
+		if s == state.None {
+			return false, ErrorMachineNotExist
+		}
+		return true, err
+	case driver.VMwareFusion:
+		if s == state.None {
+			return false, ErrorMachineNotExist
+		}
+		return true, err
+	case driver.Docker:
+		if s == state.Error {
+			// if the kic image is not present on the host machine, when user cancel `minikube start`, state.Error will be return
+			return false, ErrorMachineNotExist
+		} else if s == state.None {
+			// if the kic image is present on the host machine, when user cancel `minikube start`, state.None will be return
+			return false, ErrorMachineNotExist
+		}
+		return true, err
+	case driver.Mock:
+		if s == state.Error {
+			return false, ErrorMachineNotExist
+		}
+		return true, err
+	default:
+		return true, err
+	}
 }

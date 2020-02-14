@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"fmt"
@@ -41,8 +41,8 @@ type MockDownloader struct{}
 func (d MockDownloader) GetISOFileURI(isoURL string) string          { return "" }
 func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return nil }
 
-func createMockDriverHost(c config.MachineConfig) interface{} {
-	return nil
+func createMockDriverHost(c config.MachineConfig) (interface{}, error) {
+	return nil, nil
 }
 
 func RegisterMockDriver(t *testing.T) {
@@ -61,7 +61,7 @@ func RegisterMockDriver(t *testing.T) {
 }
 
 var defaultMachineConfig = config.MachineConfig{
-	VMDriver:    driver.Mock,
+	Driver:      driver.Mock,
 	MinikubeISO: constants.DefaultISOURL,
 	Downloader:  MockDownloader{},
 	DockerEnv:   []string{"MOCK_MAKE_IT_PROVISION=true"},
@@ -146,6 +146,49 @@ func TestStartHostExists(t *testing.T) {
 	}
 }
 
+func TestStartHostErrMachineNotExist(t *testing.T) {
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
+	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
+	api.NotExistError = true
+	h, err := createHost(api, defaultMachineConfig)
+	if err != nil {
+		t.Fatalf("Error creating host: %v", err)
+	}
+
+	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
+	provision.SetDetector(md)
+
+	mc := defaultMachineConfig
+	mc.Name = h.Name
+
+	// This should pass with creating host, while machine does not exist.
+	h, err = StartHost(api, mc)
+	if err != nil {
+		if err != ErrorMachineNotExist {
+			t.Fatalf("Error starting host: %v", err)
+		}
+	}
+
+	mc.Name = h.Name
+
+	// Second call. This should pass without calling Create because the host exists already.
+	h, err = StartHost(api, mc)
+	if err != nil {
+		t.Fatalf("Error starting host: %v", err)
+	}
+
+	if h.Name != viper.GetString("profile") {
+		t.Fatalf("GetMachineName()=%q, want %q", viper.GetString("profile"), h.Name)
+	}
+	if s, _ := h.Driver.GetState(); s != state.Running {
+		t.Fatalf("Machine not started.")
+	}
+	if !md.Provisioner.Provisioned {
+		t.Fatalf("Expected provision to be called")
+	}
+}
+
 func TestStartStoppedHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -219,7 +262,7 @@ func TestStartHostConfig(t *testing.T) {
 	provision.SetDetector(md)
 
 	config := config.MachineConfig{
-		VMDriver:   driver.Mock,
+		Driver:     driver.Mock,
 		DockerEnv:  []string{"FOO=BAR"},
 		DockerOpt:  []string{"param=value"},
 		Downloader: MockDownloader{},
@@ -247,7 +290,7 @@ func TestStartHostConfig(t *testing.T) {
 func TestStopHostError(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	if err := StopHost(api); err == nil {
+	if err := StopHost(api, viper.GetString("profile")); err == nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
 }
@@ -260,7 +303,7 @@ func TestStopHost(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := StopHost(api); err != nil {
+	if err := StopHost(api, viper.GetString("profile")); err != nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
 	if s, _ := h.Driver.GetState(); s != state.Stopped {
@@ -309,6 +352,21 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	}
 }
 
+func TestDeleteHostErrMachineNotExist(t *testing.T) {
+	RegisterMockDriver(t)
+	api := tests.NewMockAPI(t)
+	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
+	api.NotExistError = true
+	_, err := createHost(api, defaultMachineConfig)
+	if err != nil {
+		t.Errorf("createHost failed: %v", err)
+	}
+
+	if err := DeleteHost(api, viper.GetString("profile")); err == nil {
+		t.Fatal("Expected error deleting host.")
+	}
+}
+
 func TestGetHostStatus(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
@@ -331,7 +389,7 @@ func TestGetHostStatus(t *testing.T) {
 
 	checkState(state.Running.String())
 
-	if err := StopHost(api); err != nil {
+	if err := StopHost(api, viper.GetString("profile")); err != nil {
 		t.Errorf("StopHost failed: %v", err)
 	}
 	checkState(state.Stopped.String())
