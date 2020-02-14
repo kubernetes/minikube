@@ -81,18 +81,6 @@ var tunnelCmd = &cobra.Command{
 			exit.WithError("Error getting config", err)
 		}
 
-		if runtime.GOOS == "darwin" && cfg.VMDriver == "docker" {
-			// do not ignore error
-			port, _ := oci.HostPortBinding("docker", "minikube", 22)
-			sshPort := strconv.Itoa(port)
-			sshKey := filepath.Join(localpath.MiniPath(), "machines", cfg.Name, "id_rsa")
-
-			kicTunnel := kic.NewTunnel(sshPort, sshKey, clientset.CoreV1())
-			kicTunnel.Start()
-
-			return
-		}
-
 		ctrlC := make(chan os.Signal, 1)
 		signal.Notify(ctrlC, os.Interrupt)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -100,6 +88,18 @@ var tunnelCmd = &cobra.Command{
 			<-ctrlC
 			cancel()
 		}()
+
+		if runtime.GOOS == "darwin" && cfg.VMDriver == "docker" {
+			// do not ignore error
+			port, _ := oci.HostPortBinding("docker", "minikube", 22)
+			sshPort := strconv.Itoa(port)
+			sshKey := filepath.Join(localpath.MiniPath(), "machines", cfg.Name, "id_rsa")
+
+			kicTunnel := kic.NewTunnel(ctx, sshPort, sshKey, clientset.CoreV1())
+			kicTunnel.Start()
+
+			return
+		}
 
 		done, err := manager.StartTunnel(ctx, cfg.Name, api, config.DefaultLoader, clientset.CoreV1())
 		if err != nil {
