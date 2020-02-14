@@ -57,19 +57,26 @@ func releaseURL(binaryName, version, osName, archName string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
 }
 
-// checksumVerifier returns the binary checksum URL and hash method
-func checksumVerifier(binaryName, version, osName, archName string) (string, crypto.Hash, error) {
-	binURL := releaseURL(binaryName, version, osName, archName)
+// downloadOptions returns appropriate download options for a
+func downloadOptions(url string, version string) (download.FileOptions, error) {
+	fo := download.FileOptions{
+		Mkdirs: download.MkdirAll,
+		Options: download.Options{
+			ChecksumHash: crypto.SHA1,
+			Checksum:     url + ".sha1",
+		},
+	}
 
 	v, err := semver.Make(version[1:])
 	if err != nil {
-		return "", 0, err
+		return fo, err
 	}
 
 	if v.GTE(semver.MustParse("1.17.0")) {
-		return binURL + ".sha256", crypto.SHA256, nil
+		fo.ChecksumHash = crypto.SHA256
+		fo.Checksum = url + ".sha256"
 	}
-	return binURL + ".sha1", crypto.SHA1, nil
+	return fo, nil
 }
 
 // CacheBinary will cache a binary on the host
@@ -94,17 +101,10 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 		return "", errors.Wrapf(err, "mkdir %s", targetDir)
 	}
 
-	options := download.FileOptions{
-		Mkdirs: download.MkdirAll,
-	}
-
-	ckURL, ckAlgo, err := checksumVerifier(binary, version, osName, archName)
+	options, err := downloadOptions(url, version)
 	if err != nil {
-		return "", errors.Wrap(err, "verifier")
+		return "", errors.Wrap(err, "options")
 	}
-	options.Checksum = ckURL
-	options.ChecksumHash = ckAlgo
-
 	glog.Infof("Downloading %s: options: %+v", url, options)
 
 	out.T(out.FileDownload, "Downloading {{.name}} {{.version}}", out.V{"name": binary, "version": version})
