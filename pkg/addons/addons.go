@@ -28,7 +28,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -143,8 +142,8 @@ func enableOrDisableAddon(name, val, profile string) error {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
-	host, err := cluster.CheckIfHostExistsAndLoad(api, profile)
-	if err != nil || !cluster.IsHostRunning(api, profile) {
+	host, err := machine.CheckIfHostExistsAndLoad(api, profile)
+	if err != nil || !machine.IsHostRunning(api, profile) {
 		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement (err=%v)", profile, addon.Name(), enable, err)
 		return nil
 	}
@@ -244,7 +243,7 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 	}
 	defer api.Close()
 
-	if !cluster.IsHostRunning(api, profile) {
+	if !machine.IsHostRunning(api, profile) {
 		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", profile, name, val)
 		return enableOrDisableAddon(name, val, profile)
 	}

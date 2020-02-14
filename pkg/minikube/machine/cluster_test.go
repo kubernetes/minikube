@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"fmt"
@@ -61,7 +61,7 @@ func RegisterMockDriver(t *testing.T) {
 }
 
 var defaultMachineConfig = config.MachineConfig{
-	VMDriver:    driver.Mock,
+	Driver:      driver.Mock,
 	MinikubeISO: constants.DefaultISOURL,
 	Downloader:  MockDownloader{},
 	DockerEnv:   []string{"MOCK_MAKE_IT_PROVISION=true"},
@@ -262,7 +262,7 @@ func TestStartHostConfig(t *testing.T) {
 	provision.SetDetector(md)
 
 	config := config.MachineConfig{
-		VMDriver:   driver.Mock,
+		Driver:     driver.Mock,
 		DockerEnv:  []string{"FOO=BAR"},
 		DockerOpt:  []string{"param=value"},
 		Downloader: MockDownloader{},
@@ -290,7 +290,7 @@ func TestStartHostConfig(t *testing.T) {
 func TestStopHostError(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	if err := StopHost(api); err == nil {
+	if err := StopHost(api, viper.GetString("profile")); err == nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
 }
@@ -303,7 +303,7 @@ func TestStopHost(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := StopHost(api); err != nil {
+	if err := StopHost(api, viper.GetString("profile")); err != nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
 	if s, _ := h.Driver.GetState(); s != state.Stopped {
@@ -389,7 +389,7 @@ func TestGetHostStatus(t *testing.T) {
 
 	checkState(state.Running.String())
 
-	if err := StopHost(api); err != nil {
+	if err := StopHost(api, viper.GetString("profile")); err != nil {
 		t.Errorf("StopHost failed: %v", err)
 	}
 	checkState(state.Stopped.String())

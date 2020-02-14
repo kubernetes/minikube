@@ -20,10 +20,13 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
+	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/cluster"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -90,7 +93,7 @@ func Load(name string) (*Machine, error) {
 		return nil, err
 	}
 
-	h, err := cluster.CheckIfHostExistsAndLoad(api, name)
+	h, err := CheckIfHostExistsAndLoad(api, name)
 	if err != nil {
 		return nil, err
 	}
@@ -118,4 +121,28 @@ func machineDirs(miniHome ...string) (dirs []string, err error) {
 		}
 	}
 	return dirs, err
+}
+
+// CreateSSHShell creates a new SSH shell / client
+func CreateSSHShell(api libmachine.API, args []string) error {
+	machineName := viper.GetString(config.MachineProfile)
+	host, err := CheckIfHostExistsAndLoad(api, machineName)
+	if err != nil {
+		return errors.Wrap(err, "host exists and load")
+	}
+
+	currentState, err := host.Driver.GetState()
+	if err != nil {
+		return errors.Wrap(err, "state")
+	}
+
+	if currentState != state.Running {
+		return errors.Errorf("%q is not running", machineName)
+	}
+
+	client, err := host.CreateSSHClient()
+	if err != nil {
+		return errors.Wrap(err, "Creating ssh client")
+	}
+	return client.Shell(args...)
 }

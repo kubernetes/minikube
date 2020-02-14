@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"runtime"
 	"syscall"
 
 	"github.com/golang/glog"
@@ -29,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -59,7 +59,7 @@ minikube kubectl -- get pods --namespace kube-system`,
 			version = cc.KubernetesConfig.KubernetesVersion
 		}
 
-		path, err := cacheKubectlBinary(version)
+		path, err := node.CacheKubectlBinary(version)
 		if err != nil {
 			out.ErrLn("Error caching kubectl: %v", err)
 		}
@@ -81,13 +81,4 @@ minikube kubectl -- get pods --namespace kube-system`,
 			os.Exit(rc)
 		}
 	},
-}
-
-func cacheKubectlBinary(k8sVerison string) (string, error) {
-	binary := "kubectl"
-	if runtime.GOOS == "windows" {
-		binary = "kubectl.exe"
-	}
-
-	return machine.CacheBinary(binary, k8sVerison, runtime.GOOS, runtime.GOARCH)
 }
