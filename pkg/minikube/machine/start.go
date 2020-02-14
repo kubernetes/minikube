@@ -167,6 +167,7 @@ func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
 	select {
 	case <-createFinished:
 		if err != nil {
+			// Wait for all the logs to reach the client
 			time.Sleep(2 * time.Second)
 			return errors.Wrap(err, "create")
 		}
