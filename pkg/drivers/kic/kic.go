@@ -65,7 +65,7 @@ func (d *Driver) Create() error {
 	params := oci.CreateParams{
 		Name:          d.NodeConfig.MachineName,
 		Image:         d.NodeConfig.ImageDigest,
-		ClusterLabel:  oci.ClusterLabelKey + "=" + d.MachineName,
+		ClusterLabel:  oci.ProfileLabelKey + "=" + d.MachineName,
 		CPUs:          strconv.Itoa(d.NodeConfig.CPU),
 		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
 		Envs:          d.NodeConfig.Envs,
