@@ -391,5 +391,5 @@ jobs:
         cp -r podman_ubuntu_18_04 ./all_reports/
     - uses: actions/upload-artifact@v1
       with:
-        name: all_reports_${{ GITHUB_REF }}
+        name: all_reports
         path: all_reports
