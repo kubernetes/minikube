@@ -106,14 +106,12 @@ jobs:
         name: docker_ubuntu_16_04
         path: minikube_binaries/report
     - name: The End Result
-      continue-on-error: false
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
         echo "--------------------------------------------"
         echo $STAT | jq '.FailedTests' || true
         echo "--------------------------------------------"
-        STAT=$(./out/gopogh -name "KVM Linux" -repo "github.com/kubernetes/minikube/" -pr "6096" -in "testdata/minikube-logs.json" -out "./out/output.html" -details "0c07e808219403a7241ee5a0fc6a85a897594339")
         numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
         if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
   docker_ubuntu_18_04:
@@ -169,14 +167,12 @@ jobs:
         name: docker_ubuntu_18_04
         path: minikube_binaries/report
     - name: The End Result
-      continue-on-error: false
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
         echo "--------------------------------------------"
         echo $STAT | jq '.FailedTests' || true
         echo "--------------------------------------------"
-        STAT=$(./out/gopogh -name "KVM Linux" -repo "github.com/kubernetes/minikube/" -pr "6096" -in "testdata/minikube-logs.json" -out "./out/output.html" -details "0c07e808219403a7241ee5a0fc6a85a897594339")
         numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
         if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
   none_ubuntu16_04:
@@ -232,14 +228,12 @@ jobs:
         name: none_ubuntu16_04
         path: minikube_binaries/report
     - name: The End Result
-      continue-on-error: false
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
         echo "--------------------------------------------"
         echo $STAT | jq '.FailedTests' || true
         echo "--------------------------------------------"
-        STAT=$(./out/gopogh -name "KVM Linux" -repo "github.com/kubernetes/minikube/" -pr "6096" -in "testdata/minikube-logs.json" -out "./out/output.html" -details "0c07e808219403a7241ee5a0fc6a85a897594339")
         numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
         if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
   none_ubuntu18_04:
@@ -295,14 +289,12 @@ jobs:
         name: none_ubuntu18_04
         path: minikube_binaries/report
     - name: The End Result
-      continue-on-error: false
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
         echo "--------------------------------------------"
         echo $STAT | jq '.FailedTests' || true
         echo "--------------------------------------------"
-        STAT=$(./out/gopogh -name "KVM Linux" -repo "github.com/kubernetes/minikube/" -pr "6096" -in "testdata/minikube-logs.json" -out "./out/output.html" -details "0c07e808219403a7241ee5a0fc6a85a897594339")
         numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
         if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
   podman_ubuntu_18_04:
@@ -369,20 +361,18 @@ jobs:
           name: podman_ubuntu_18_04
           path: minikube_binaries/report
       - name: The End Result
-        continue-on-error: false
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
           echo "--------------------------------------------"
           echo $STAT | jq '.FailedTests' || true
           echo "--------------------------------------------"
-          STAT=$(./out/gopogh -name "KVM Linux" -repo "github.com/kubernetes/minikube/" -pr "6096" -in "testdata/minikube-logs.json" -out "./out/output.html" -details "0c07e808219403a7241ee5a0fc6a85a897594339")
           numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
           if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
-
   # After all 4 integration tests finished 
   # collect all the reports and upload
   upload_all_reports:
+    if: always()
     needs: [docker_ubuntu_16_04,docker_ubuntu_18_04,none_ubuntu16_04,none_ubuntu18_04,podman_ubuntu_18_04]
     runs-on: ubuntu-18.04
     steps:
