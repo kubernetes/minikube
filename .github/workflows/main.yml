@@ -104,6 +104,8 @@ jobs:
         name: docker_ubuntu_16_04
         path: minikube_binaries/report
     - name: The End Result
+      continue-on-error: false
+      shell: bash
       run: |
         echo ${GOPOGH_RESULT}
         echo "--------------------------------------------"
@@ -163,6 +165,8 @@ jobs:
         name: docker_ubuntu_18_04
         path: minikube_binaries/report
     - name: The End Result
+      continue-on-error: false
+      shell: bash
       run: |
         echo ${GOPOGH_RESULT}
         echo "--------------------------------------------"
@@ -222,6 +226,8 @@ jobs:
         name: none_ubuntu16_04
         path: minikube_binaries/report
     - name: The End Result
+      continue-on-error: false
+      shell: bash
       run: |
         echo ${GOPOGH_RESULT}
         echo "--------------------------------------------"
@@ -281,6 +287,8 @@ jobs:
         name: none_ubuntu18_04
         path: minikube_binaries/report
     - name: The End Result
+      continue-on-error: false
+      shell: bash
       run: |
         echo ${GOPOGH_RESULT}
         echo "--------------------------------------------"
@@ -350,6 +358,8 @@ jobs:
           name: podman_ubuntu_18_04
           path: minikube_binaries/report
       - name: The End Result
+        continue-on-error: false
+        shell: bash
         run: |
           echo ${GOPOGH_RESULT}
           echo "--------------------------------------------"
