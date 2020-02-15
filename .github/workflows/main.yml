@@ -99,15 +99,19 @@ jobs:
         GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
         echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
         echo ::set-env name=STAT::${STAT}
-    - name: The End Result
-      run: |
-        echo ${GOPOGH_RESULT}
-        echo ""
-        echo $STAT | jq '.FailedTests' || true
     - uses: actions/upload-artifact@v1
       with:
         name: docker_ubuntu_16_04
         path: minikube_binaries/report
+    - name: The End Result
+      run: |
+        echo ${GOPOGH_RESULT}
+        echo "--------------------------------------------"
+        echo $STAT | jq '.FailedTests' || true
+        echo "--------------------------------------------"
+        STAT=$(./out/gopogh -name "KVM Linux" -repo "github.com/kubernetes/minikube/" -pr "6096" -in "testdata/minikube-logs.json" -out "./out/output.html" -details "0c07e808219403a7241ee5a0fc6a85a897594339")
+        numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
+        if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
   docker_ubuntu_18_04:
     runs-on: ubuntu-18.04
     env:
@@ -154,15 +158,19 @@ jobs:
         GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
         echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
         echo ::set-env name=STAT::${STAT}
-    - name: The End Result
-      run: |
-        echo ${GOPOGH_RESULT}
-        echo ""
-        echo $STAT | jq '.FailedTests' || true
     - uses: actions/upload-artifact@v1
       with:
         name: docker_ubuntu_18_04
         path: minikube_binaries/report
+    - name: The End Result
+      run: |
+        echo ${GOPOGH_RESULT}
+        echo "--------------------------------------------"
+        echo $STAT | jq '.FailedTests' || true
+        echo "--------------------------------------------"
+        STAT=$(./out/gopogh -name "KVM Linux" -repo "github.com/kubernetes/minikube/" -pr "6096" -in "testdata/minikube-logs.json" -out "./out/output.html" -details "0c07e808219403a7241ee5a0fc6a85a897594339")
+        numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
+        if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
   none_ubuntu16_04:
     needs: [build_minikube]
     env:
@@ -209,15 +217,19 @@ jobs:
         GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
         echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
         echo ::set-env name=STAT::${STAT}
-    - name: The End Result
-      run: |
-        echo ${GOPOGH_RESULT}
-        echo ""
-        echo $STAT | jq '.FailedTests' || true
     - uses: actions/upload-artifact@v1
       with:
         name: none_ubuntu16_04
         path: minikube_binaries/report
+    - name: The End Result
+      run: |
+        echo ${GOPOGH_RESULT}
+        echo "--------------------------------------------"
+        echo $STAT | jq '.FailedTests' || true
+        echo "--------------------------------------------"
+        STAT=$(./out/gopogh -name "KVM Linux" -repo "github.com/kubernetes/minikube/" -pr "6096" -in "testdata/minikube-logs.json" -out "./out/output.html" -details "0c07e808219403a7241ee5a0fc6a85a897594339")
+        numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
+        if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
   none_ubuntu18_04:
     needs: [build_minikube]
     env:
@@ -264,15 +276,19 @@ jobs:
         GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
         echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
         echo ::set-env name=STAT::${STAT}
-    - name: The End Result
-      run: |
-        echo ${GOPOGH_RESULT}
-        echo ""
-        echo $STAT | jq '.FailedTests' || true
     - uses: actions/upload-artifact@v1
       with:
         name: none_ubuntu18_04
         path: minikube_binaries/report
+    - name: The End Result
+      run: |
+        echo ${GOPOGH_RESULT}
+        echo "--------------------------------------------"
+        echo $STAT | jq '.FailedTests' || true
+        echo "--------------------------------------------"
+        STAT=$(./out/gopogh -name "KVM Linux" -repo "github.com/kubernetes/minikube/" -pr "6096" -in "testdata/minikube-logs.json" -out "./out/output.html" -details "0c07e808219403a7241ee5a0fc6a85a897594339")
+        numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
+        if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
   podman_ubuntu_18_04:
       needs: [build_minikube]
       env:
@@ -329,16 +345,20 @@ jobs:
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
           echo ::set-env name=STAT::${STAT}
-      - name: The End Result
-        run: |
-          echo ${GOPOGH_RESULT}
-          echo ""
-          echo $STAT | jq '.FailedTests' || true
-
       - uses: actions/upload-artifact@v1
         with:
           name: podman_ubuntu_18_04
           path: minikube_binaries/report
+      - name: The End Result
+        run: |
+          echo ${GOPOGH_RESULT}
+          echo "--------------------------------------------"
+          echo $STAT | jq '.FailedTests' || true
+          echo "--------------------------------------------"
+          STAT=$(./out/gopogh -name "KVM Linux" -repo "github.com/kubernetes/minikube/" -pr "6096" -in "testdata/minikube-logs.json" -out "./out/output.html" -details "0c07e808219403a7241ee5a0fc6a85a897594339")
+          numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
+          if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
+
   # After all 4 integration tests finished 
   # collect all the reports and upload
   upload_all_reports:
