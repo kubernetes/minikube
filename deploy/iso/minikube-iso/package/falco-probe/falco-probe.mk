@@ -16,7 +16,7 @@ SYSDIG_VERSION = 146a431edf95829ac11bfd9c85ba3ef08789bffe
 FALCO_PROBE_EXTRA_DOWNLOADS = https://github.com/draios/sysdig/archive/${SYSDIG_VERSION}.tar.gz
 
 define FALCO_PROBE_SYSDIG_SRC
-	sed -e 's|URL ".*"|URL "'$(BR2_DL_DIR)/falco-probe/$(SYSDIG_VERSION).tar.gz'"|' -i $(@D)/cmake/modules/sysdig-repo/CMakeLists.txt
+	sed -e 's|URL ".*"|URL "'$(FALCO_PROBE_DL_DIR)/$(SYSDIG_VERSION).tar.gz'"|' -i $(@D)/cmake/modules/sysdig-repo/CMakeLists.txt
 endef
 
 FALCO_PROBE_POST_EXTRACT_HOOKS += FALCO_PROBE_SYSDIG_SRC
