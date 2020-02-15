@@ -62,6 +62,7 @@ jobs:
     runs-on: ubuntu-16.04
     steps:
     - name: Install gopogh
+      shell: bash
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
@@ -88,6 +89,7 @@ jobs:
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
     - name: Generate html report
+      shell: bash
       run: |
         cd minikube_binaries
         export PATH=${PATH}:`go env GOPATH`/bin
@@ -123,6 +125,7 @@ jobs:
     needs: [build_minikube]
     steps:
     - name: Install gopogh
+      shell: bash
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
@@ -149,6 +152,7 @@ jobs:
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
     - name: Generate html report
+      shell: bash
       run: |
         cd minikube_binaries
         export PATH=${PATH}:`go env GOPATH`/bin
@@ -184,6 +188,7 @@ jobs:
     runs-on: ubuntu-16.04
     steps:
     - name: Install gopogh
+      shell: bash
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
@@ -210,6 +215,7 @@ jobs:
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
     - name: Generate html report
+      shell: bash
       run: |
         cd minikube_binaries
         export PATH=${PATH}:`go env GOPATH`/bin
@@ -245,6 +251,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - name: Install gopogh
+      shell: bash
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh    
@@ -271,6 +278,7 @@ jobs:
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
     - name: Generate html report
+      shell: bash
       run: |
         cd minikube_binaries
         export PATH=${PATH}:`go env GOPATH`/bin
@@ -306,6 +314,7 @@ jobs:
       runs-on: ubuntu-18.04
       steps:
       - name: install podman
+        shell: bash
         run: |
           . /etc/os-release
           sudo sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_${VERSION_ID}/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list"
@@ -316,6 +325,7 @@ jobs:
           sudo podman version || true 
           sudo podman info || true 
       - name: Install gopogh
+        shell: bash
         run: |
           curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
@@ -342,6 +352,7 @@ jobs:
           TIME_ELAPSED="${min} min $sec seconds "
           echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
       - name: Generate html report
+        shell: bash
         run: |
           cd minikube_binaries
           export PATH=${PATH}:`go env GOPATH`/bin
