@@ -21,7 +21,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
+	//"runtime"
 	"strconv"
 	"time"
 
@@ -97,8 +97,8 @@ var tunnelCmd = &cobra.Command{
 			sshPort := strconv.Itoa(port)
 			sshKey := filepath.Join(localpath.MiniPath(), "machines", cfg.Name, "id_rsa")
 
-			kicTunnel := kic.NewTunnel(ctx, sshPort, sshKey, clientset.CoreV1())
-			err = kicTunnel.Start()
+			kicSSHTunnel := kic.NewSSHTunnel(ctx, sshPort, sshKey, clientset.CoreV1())
+			err = kicSSHTunnel.Start()
 			if err != nil {
 				exit.WithError("error starting tunnel", err)
 			}
