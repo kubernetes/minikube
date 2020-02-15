@@ -26,14 +26,15 @@ oom_score = 0
   [plugins.cgroups]
     no_prometheus = false
   [plugins.cri]
-    stream_server_address = ""
-    stream_server_port = "10010"
+    stream_server_address = "127.0.0.1"
+    stream_server_port = "0"
     enable_selinux = false
     sandbox_image = "k8s.gcr.io/pause:3.1"
     stats_collect_period = 10
     systemd_cgroup = false
     enable_tls_streaming = false
     max_container_log_line_size = 16384
+    disable_proc_mount = false
     [plugins.cri.containerd]
       snapshotter = "overlayfs"
       no_pivot = false
@@ -53,6 +54,9 @@ oom_score = 0
       [plugins.cri.registry.mirrors]
         [plugins.cri.registry.mirrors."docker.io"]
           endpoint = ["https://registry-1.docker.io"]
+    [plugins.cri.x509_key_pair_streaming]
+      tls_cert_file = ""
+      tls_key_file = ""
   [plugins.diff-service]
     default = ["walking"]
   [plugins.linux]
@@ -61,6 +65,10 @@ oom_score = 0
     runtime_root = ""
     no_shim = false
     shim_debug = false
+  [plugins.opt]
+    path = "/opt/containerd"
+  [plugins.restart]
+    interval = "10s"
   [plugins.scheduler]
     pause_threshold = 0.02
     deletion_threshold = 0
