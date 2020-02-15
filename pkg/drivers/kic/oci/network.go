@@ -42,7 +42,9 @@ func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, erro
 
 // digDNS will get the IP record for a dns
 func digDNS(ociBin, containerName, dns string) (net.IP, error) {
-	PointToHostDockerDaemon()
+	if err := PointToHostDockerDaemon(); err != nil {
+		return nil, errors.Wrap(err, "point host docker-daemon")
+	}
 	cmd := exec.Command(ociBin, "exec", "-t", containerName, "dig", "+short", dns)
 	out, err := cmd.CombinedOutput()
 	ip := net.ParseIP(strings.TrimSpace(string(out)))
@@ -56,7 +58,9 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 // dockerGatewayIP gets the default gateway ip for the docker bridge on the user's host machine
 // gets the ip from user's host docker
 func dockerGatewayIP() (net.IP, error) {
-	PointToHostDockerDaemon()
+	if err := PointToHostDockerDaemon(); err != nil {
+		return nil, errors.Wrap(err, "point host docker-daemon")
+	}
 	cmd := exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
