@@ -135,7 +135,7 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 	cstart := time.Now()
 	glog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.Driver)
 	// Allow two minutes to create host before failing fast
-	if err := timedCreateHost(h, api, 2*time.Minute); err != nil {
+	if err := timedCreateHost(h, api, 5*time.Minute); err != nil {
 		return nil, errors.Wrap(err, "creating host")
 	}
 	glog.Infof("libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
