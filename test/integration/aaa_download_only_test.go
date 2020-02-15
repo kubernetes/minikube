@@ -163,8 +163,8 @@ func TestDownloadOnly(t *testing.T) {
 }
 
 func TestDownloadOnlyDocker(t *testing.T) {
-	if NoneDriver() {
-		t.Skip("skipping: none driver does not support ssh or bundle docker")
+	if !runningDockerDriver(StartArgs()) {
+		t.Skip("this test only runs with the docker driver")
 	}
 
 	tests := []struct {
@@ -174,7 +174,7 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	}{
 		{
 			description:   "regular kic base image",
-			k8sVersion:    "v1.11.10",
+			k8sVersion:    "v1.15.0",
 			expectedImage: fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s", kic.Version),
 		}, {
 			description:   "preloaded kic base image",
@@ -189,9 +189,10 @@ func TestDownloadOnlyDocker(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", test.k8sVersion), "--vm-driver=docker"}
+			args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", test.k8sVersion)}
 
-			if _, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
+			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+			if err != nil {
 				t.Errorf("%s failed: %v", args, err)
 			}
 
@@ -201,9 +202,8 @@ func TestDownloadOnlyDocker(t *testing.T) {
 				t.Errorf("parsing reference failed: %v", err)
 			}
 			if _, err := daemon.Image(ref); err != nil {
-				t.Errorf("expected image %s does not exist in local daemon: %v. If upgrading kubernetes version, you may need to build and push a new preloaded kic base image for that kubernetes version via `make kic-preloaded-base-image`", test.expectedImage, err)
+				t.Errorf("expected image %s does not exist in local daemon: %v. If upgrading kubernetes version, you may need to build and push a new preloaded kic base image for that kubernetes version via `make kic-preloaded-base-image`\n%s", test.expectedImage, err, rr.Output())
 			}
 		})
 	}
-
 }
