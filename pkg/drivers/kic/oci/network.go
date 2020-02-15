@@ -23,6 +23,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
@@ -48,6 +49,7 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 	if err != nil {
 		return ip, errors.Wrapf(err, "resolve dns to ip", string(out))
 	}
+	glog.Infof("got host ip for mount in container by digging dns: %s", ip.String())
 	return ip, nil
 }
 
@@ -67,6 +69,7 @@ func dockerGatewayIP() (net.IP, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect IP gatway for bridge network: %q. output: %s", string(out), bridgeID)
 	}
-	return net.ParseIP(strings.TrimSpace(string(out))), nil
-
+	ip := net.ParseIP(strings.TrimSpace(string(out)))
+	glog.Infof("got host ip for mount in container by inspect docker network: %s", ip.String())
+	return ip, nil
 }
