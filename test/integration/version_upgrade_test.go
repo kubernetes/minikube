@@ -126,4 +126,10 @@ func TestVersionUpgrade(t *testing.T) {
 	if err := retry.Expo(r, 1*time.Second, 30*time.Minute, 3); err == nil {
 		t.Fatalf("downgrading kubernetes should not be allowed: %v", err)
 	}
+
+	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
 }
