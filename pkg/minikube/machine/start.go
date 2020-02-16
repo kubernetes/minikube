@@ -134,10 +134,9 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 
 	cstart := time.Now()
 	glog.Infof("libmachine.API.Create for %q (driver=%q)", cfg.Name, cfg.Driver)
-	if err := api.Create(h); err != nil {
-		// Wait for all the logs to reach the client
-		time.Sleep(2 * time.Second)
-		return nil, errors.Wrap(err, "create")
+	// Allow two minutes to create host before failing fast
+	if err := timedCreateHost(h, api, 2*time.Minute); err != nil {
+		return nil, errors.Wrap(err, "creating host")
 	}
 	glog.Infof("libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
 
@@ -149,6 +148,33 @@ func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error
 		return nil, errors.Wrap(err, "save")
 	}
 	return h, nil
+}
+
+func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
+	timeout := make(chan bool, 1)
+	go func() {
+		time.Sleep(t)
+		timeout <- true
+	}()
+
+	createFinished := make(chan bool, 1)
+	var err error
+	go func() {
+		err = api.Create(h)
+		createFinished <- true
+	}()
+
+	select {
+	case <-createFinished:
+		if err != nil {
+			// Wait for all the logs to reach the client
+			time.Sleep(2 * time.Second)
+			return errors.Wrap(err, "create")
+		}
+		return nil
+	case <-timeout:
+		return fmt.Errorf("create host timed out in %f seconds", t.Seconds())
+	}
 }
 
 // postStart are functions shared between startHost and fixHost

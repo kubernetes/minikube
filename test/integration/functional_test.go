@@ -56,7 +56,13 @@ func TestFunctional(t *testing.T) {
 
 	profile := UniqueProfileName("functional")
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
-	defer CleanupWithLogs(t, profile, cancel)
+	defer func() {
+		p := localSyncTestPath()
+		if err := os.Remove(p); err != nil {
+			t.Logf("unable to remove %s: %v", p, err)
+		}
+		CleanupWithLogs(t, profile, cancel)
+	}()
 
 	// Serial tests
 	t.Run("serial", func(t *testing.T) {
@@ -64,11 +70,12 @@ func TestFunctional(t *testing.T) {
 			name      string
 			validator validateFunc
 		}{
-			{"CopySyncFile", setupFileSync},            // Set file for the file sync test case
-			{"StartWithProxy", validateStartWithProxy}, // Set everything else up for success
-			{"KubeContext", validateKubeContext},       // Racy: must come immediately after "minikube start"
-			{"KubectlGetPods", validateKubectlGetPods}, // Make sure apiserver is up
-			{"CacheCmd", validateCacheCmd},             // Caches images needed for subsequent tests because of proxy
+			{"CopySyncFile", setupFileSync},                 // Set file for the file sync test case
+			{"StartWithProxy", validateStartWithProxy},      // Set everything else up for success
+			{"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
+			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
+			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
+			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -197,6 +204,15 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 	}
 	if !strings.Contains(rr.Stdout.String(), "kube-system") {
 		t.Errorf("%s = %q, want *kube-system*", rr.Command(), rr.Stdout)
+	}
+}
+
+// validateMinikubeKubectl validates that the `minikube kubectl` command returns content
+func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) {
+	kubectlArgs := []string{"kubectl", "--", "get", "pods"}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), kubectlArgs...))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 }
 
@@ -657,11 +673,21 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
+// vmSyncTestPath is where the test file will be synced into the VM
+func vmSyncTestPath() string {
+	return fmt.Sprintf("/etc/test/nested/copy/%d/hosts", os.Getpid())
+}
+
+// localSyncTestPath is where the test file will be synced into the VM
+func localSyncTestPath() string {
+	return filepath.Join(localpath.MiniPath(), "/files", vmSyncTestPath())
+}
+
 // Copy extra file into minikube home folder for file sync test
 func setupFileSync(ctx context.Context, t *testing.T, profile string) {
-	// 1. copy random file to MINIKUBE_HOME/files/etc
-	f := filepath.Join(localpath.MiniPath(), "/files/etc/sync.test")
-	err := copy.Copy("./testdata/sync.test", f)
+	p := localSyncTestPath()
+	t.Logf("local sync path: %s", p)
+	err := copy.Copy("./testdata/sync.test", p)
 	if err != nil {
 		t.Fatalf("copy: %v", err)
 	}
@@ -672,18 +698,22 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
-	// check file existence
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat /etc/sync.test"))
+
+	vp := vmSyncTestPath()
+	t.Logf("Checking for existence of %s within VM", vp)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
+	got := rr.Stdout.String()
+	t.Logf("file sync test content: %s", got)
 
 	expected, err := ioutil.ReadFile("./testdata/sync.test")
 	if err != nil {
 		t.Errorf("test file not found: %v", err)
 	}
 
-	if diff := cmp.Diff(string(expected), rr.Stdout.String()); diff != "" {
+	if diff := cmp.Diff(string(expected), got); diff != "" {
 		t.Errorf("/etc/sync.test content mismatch (-want +got):\n%s", diff)
 	}
 }
