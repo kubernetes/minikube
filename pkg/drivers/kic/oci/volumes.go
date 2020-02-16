@@ -19,12 +19,14 @@ package oci
 import (
 	"os/exec"
 
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 )
 
 // DeleteAllVolumesByLabel delets all volumes that have a specific label
 // example: docker volume prune -f --filter label=name.minikube.sigs.k8s.io=minikube
 func DeleteAllVolumesByLabel(ociBin string, label string) error {
+	glog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
 	if ociBin == Docker {
 		if err := PointToHostDockerDaemon(); err != nil {
 			return errors.Wrap(err, "point host docker-daemon")
