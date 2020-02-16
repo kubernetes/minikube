@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-HYPERV_DAEMONS_VERSION = 4.19.88
+HYPERV_DAEMONS_VERSION = $(call qstrip,$(BR2_LINUX_KERNEL_VERSION))
 HYPERV_DAEMONS_SITE = https://www.kernel.org/pub/linux/kernel/v4.x
 HYPERV_DAEMONS_SOURCE = linux-$(HYPERV_DAEMONS_VERSION).tar.xz
 
