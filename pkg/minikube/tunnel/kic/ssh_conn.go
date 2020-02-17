@@ -8,9 +8,8 @@ import (
 )
 
 type sshConn struct {
-	name    string
-	sigkill bool
-	cmd     *exec.Cmd
+	name string
+	cmd  *exec.Cmd
 }
 
 func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
@@ -38,9 +37,8 @@ func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
 	// TODO: name must be different, because if a service was changed,
 	// we must remove the old process and create the new one
 	s := &sshConn{
-		name:    name,
-		sigkill: false,
-		cmd:     cmd,
+		name: name,
+		cmd:  cmd,
 	}
 
 	// TODO: create should not run
