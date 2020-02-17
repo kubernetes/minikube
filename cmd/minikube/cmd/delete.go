@@ -115,7 +115,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 		err := oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "=true"))
 		if err != nil { // if there is no volume there won't be any error
-			glog.Warningf("error deleting left docker volumes. To see the list of volumes run: 'docker volume ls' \n:", err)
+			glog.Warningf("error deleting left docker volumes. To see the list of volumes run: 'docker volume ls' \n%v:", err)
 		}
 
 		errs := DeleteProfiles(profilesToDelete)
