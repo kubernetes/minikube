@@ -23,7 +23,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// DeleteAllVolumesByLabel delets all volumes that have a specific label
+// DeleteAllVolumesByLabel deletes all volumes that have a specific label
+// if there is no volume to delete it will return nil
 // example: docker volume prune -f --filter label=name.minikube.sigs.k8s.io=minikube
 func DeleteAllVolumesByLabel(ociBin string, label string) error {
 	glog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
