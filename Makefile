@@ -281,9 +281,6 @@ ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 endif
 	which go-bindata || GO111MODULE=off GOBIN="$(GOPATH)$(DIRSEP)bin" go get github.com/jteeuwen/go-bindata/...
 ifeq ($(OS),Windows_NT)
-	echo "%cd%"
-	echo "$(GOPATH)"
-	dir
 	PATH="$(PATH)$(PATHSEP)$(GOPATH)$(DIRSEP)bin"
 	"$(GOPATH)\bin\go-bindata.exe" -nomemcopy -o $@ -pkg assets deploy/addons/...
 	-gofmt -s -w $@
