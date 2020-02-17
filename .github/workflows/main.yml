@@ -200,8 +200,6 @@ jobs:
         set +euo pipefail
         mkdir -p report
         mkdir -p testhome
-        chmod a+x e2e-*
-        chmod a+x minikube-*
         START_TIME=$(date -u +%s)
         KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome minikube_binaries/e2e-windows-amd64.exe --expected-default-driver=hyperv -minikube-start-args=--vm-driver=hyperv -binary=minikube_binaries/minikube-windows-amd64.exe -test.v -test.timeout=65m 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
