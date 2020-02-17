@@ -59,6 +59,7 @@ jobs:
       TIME_ELAPSED: time
       JOB_NAME: "Docker_Ubuntu_16_04"
       GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
     steps:
     - name: Install gopogh
@@ -120,6 +121,7 @@ jobs:
       TIME_ELAPSED: time
       JOB_NAME: "Docker_Ubuntu_18_04"
       GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     needs: [build_minikube]
     steps:
     - name: Install gopogh
@@ -181,6 +183,7 @@ jobs:
       TIME_ELAPSED: time
       JOB_NAME: "None_Ubuntu_16_04"
       GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
     steps:
     - name: Install gopogh
@@ -242,6 +245,7 @@ jobs:
       TIME_ELAPSED: time
       JOB_NAME: "None_Ubuntu_18_04"
       GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-18.04
     steps:
     - name: Install gopogh
@@ -303,6 +307,7 @@ jobs:
         TIME_ELAPSED: time
         JOB_NAME: "Podman_Ubuntu_18_04"
         GOPOGH_RESULT: ""
+        SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
       runs-on: ubuntu-18.04
       steps:
       - name: install podman
