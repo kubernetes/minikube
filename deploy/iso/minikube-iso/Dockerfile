@@ -23,6 +23,7 @@ RUN apt-get update \
 		wget \
 		cpio \
 		python \
+		python3 \
 		unzip \
 		bc \
 		gcc-multilib \
