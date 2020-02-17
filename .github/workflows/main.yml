@@ -460,7 +460,7 @@ jobs:
       shell: bash
       run: |
         mkdir -p all_reports
-        cp -r docker_Windows_NT ./all_reports/
+        cp -r docker_windows_NT ./all_reports/
     - name: download results none_ubuntu16_04
       uses: actions/download-artifact@v1
       with:
