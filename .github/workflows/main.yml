@@ -220,6 +220,10 @@ jobs:
         echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
         echo ::set-env name=STAT::${STAT}
       shell: bash
+    - uses: actions/upload-artifact@v1
+      with:
+        name: docker_windows_NT
+        path: minikube_binaries/report
     - name: The End Result
       run: |
         echo ${GOPOGH_RESULT}
@@ -229,10 +233,6 @@ jobs:
         numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
         if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
       shell: bash
-    - uses: actions/upload-artifact@v1
-      with:
-        name: docker_windows_NT
-        path: minikube_binaries/report
   none_ubuntu16_04:
     needs: [build_minikube]
     env:
