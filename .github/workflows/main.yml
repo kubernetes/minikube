@@ -186,15 +186,9 @@ jobs:
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Install gopogh
+    - name: Download gopogh
       run: |
-        find ~/ -iname gopogh.exe
-        echo $GOPATH
-        echo $GITHUB_WORKSPACE
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh.exe
-        ls
-        find ~/ -iname gopogh.exe
-        pwd
       shell: bash
     - name: Download binaries
       uses: actions/download-artifact@v1
