@@ -97,9 +97,10 @@ func runDelete(cmd *cobra.Command, args []string) {
 	profileFlag := viper.GetString(config.MachineProfile)
 
 	validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
+	glog.Warningf("Couldn't find any profiles in minikube home %q: %v", localpath.MiniPath(), err)
 	profilesToDelete := append(validProfiles, invalidProfiles...)
-	glog.Infof("error listing profiless %v", err)
-	// If the purge flag is set, go ahead and delete the .minikube directory.
+	// in the case user has more than 1 profile and runs --purge
+	// to prevent abandoned VMs/containers, force user to run with delete --all
 	if purge && len(profilesToDelete) > 1 && !deleteAll {
 		out.ErrT(out.Notice, "Multiple minikube profiles were found - ")
 		for _, p := range profilesToDelete {
@@ -115,7 +116,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 		err := oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "=true"))
 		if err != nil { // if there is no volume there won't be any error
-			glog.Warningf("error deleting left docker volumes. To see the list of volumes run: 'docker volume ls' \n%v:", err)
+			glog.Warningf("error deleting left docker volumes. \n%v:\nfor more information please refer to docker documentation: https://docs.docker.com/engine/reference/commandline/volume_prune/", err)
 		}
 
 		errs := DeleteProfiles(profilesToDelete)
