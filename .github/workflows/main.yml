@@ -211,11 +211,8 @@ jobs:
       shell: bash
     - name: Generate html report
       run: |
-        pwd
-        ls
-        echo $GITHUB_WORKSPACE
         go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
-        STAT=$(${GITHUB_WORKSPACE}$(DIRSEP)gopogh.exe -in ./report/testout.json -out ./report/testout.html -name " $GITHUB_REF" -repo "${JOB_NAME} ${GITHUB_REF} ${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+        STAT=$(${GITHUB_WORKSPACE}/gopogh.exe -in ./report/testout.json -out ./report/testout.html -name " $GITHUB_REF" -repo "${JOB_NAME} ${GITHUB_REF} ${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
         echo status: ${STAT}
         FailNum=$(echo $STAT | jq '.NumberOfFail')
         TestsNum=$(echo $STAT | jq '.NumberOfTests')       
