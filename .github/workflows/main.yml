@@ -223,7 +223,7 @@ jobs:
     - uses: actions/upload-artifact@v1
       with:
         name: docker_windows_NT
-        path: minikube_binaries/report
+        path: report
     - name: The End Result
       run: |
         echo ${GOPOGH_RESULT}
