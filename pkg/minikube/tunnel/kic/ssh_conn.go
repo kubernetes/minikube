@@ -34,38 +34,18 @@ func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
 
 	cmd := exec.Command("ssh", sshArgs...)
 
-	// TODO: name must be different, because if a service was changed,
-	// we must remove the old process and create the new one
-	s := &sshConn{
+	return &sshConn{
 		name: name,
 		cmd:  cmd,
 	}
-
-	// TODO: create should not run
-	go s.run()
-
-	return s
 }
 
 func (c *sshConn) run() error {
-	fmt.Println("running", c.name)
-	err := c.cmd.Start()
-	if err != nil {
-		return err
-	}
-
-	// TODO: can we ignore kills and returns not kills?
-	// kilss we have to log nonetheless
-	err = c.cmd.Wait()
-	if err != nil {
-		// TODO: improve logging
-		fmt.Println(err)
-	}
-
-	return nil
+	fmt.Printf("starting tunnel for %s\n", c.name)
+	return c.cmd.Run()
 }
 
 func (c *sshConn) stop() error {
-	fmt.Println("stopping", c.name)
+	fmt.Printf("stopping tunnel for %s\n", c.name)
 	return c.cmd.Process.Kill()
 }
