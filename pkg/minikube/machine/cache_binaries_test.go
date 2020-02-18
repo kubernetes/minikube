@@ -229,33 +229,33 @@ func TestDownloadOptions(t *testing.T) {
 			url:     "https://s/kubernetes-release/release/v1.16.0/bin/amd64/kubectl",
 			version: "v1.16.0",
 			want: download.FileOptions{
-				download.Options{
+				Options: download.Options{
 					Checksum:     "https://s/kubernetes-release/release/v1.16.0/bin/amd64/kubectl.sha1",
 					ChecksumHash: crypto.SHA1,
 				},
-				download.MkdirAll,
+				Mkdirs: download.MkdirAll,
 			},
 		},
 		{
 			url:     "https://s/kubernetes-release/release/v1.10.0/bin/hp9k/kubeadm",
 			version: "v1.10.0",
 			want: download.FileOptions{
-				download.Options{
+				Options: download.Options{
 					Checksum:     "https://s/kubernetes-release/release/v1.10.0/bin/hp9k/kubeadm.sha1",
 					ChecksumHash: crypto.SHA1,
 				},
-				download.MkdirAll,
+				Mkdirs: download.MkdirAll,
 			},
 		},
 		{
 			url:     "https://s/kubernetes-release/release/v1.18.0/bin/arm64/kubelet",
 			version: "v1.18.0",
 			want: download.FileOptions{
-				download.Options{
+				Options: download.Options{
 					Checksum:     "https://s/kubernetes-release/release/v1.18.0/bin/arm64/kubelet.sha256",
 					ChecksumHash: crypto.SHA256,
 				},
-				download.MkdirAll,
+				Mkdirs: download.MkdirAll,
 			},
 		},
 	}
