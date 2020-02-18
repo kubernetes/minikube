@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"fmt"
@@ -101,9 +101,9 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": mc.VMDriver, "profile_name": mc.Name})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": mc.Driver, "profile_name": mc.Name})
 	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": mc.VMDriver, "profile_name": mc.Name})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": mc.Driver, "profile_name": mc.Name})
 		if err := h.Driver.Start(); err != nil {
 			return h, errors.Wrap(err, "driver start")
 		}
@@ -142,7 +142,7 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 	if err := h.ConfigureAuth(); err != nil {
 		return h, &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 	}
-	return h, ensureSyncedGuestClock(h, mc.VMDriver)
+	return h, ensureSyncedGuestClock(h, mc.Driver)
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
@@ -198,10 +198,13 @@ func adjustGuestClock(h hostRunner, t time.Time) error {
 
 // machineExists checks if virtual machine does not exist
 // if the virtual machine exists, return true
-func machineExists(vmDriver string, s state.State, err error) (bool, error) {
-	switch vmDriver {
+func machineExists(d string, s state.State, err error) (bool, error) {
+	if s == state.Running || s == state.Stopped {
+		return true, nil
+	}
+	switch d {
 	case driver.HyperKit:
-		if s == state.Stopped || err.Error() == "connection is shut down" {
+		if s == state.None || (err != nil && err.Error() == "connection is shut down") {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
@@ -211,17 +214,17 @@ func machineExists(vmDriver string, s state.State, err error) (bool, error) {
 		}
 		return true, err
 	case driver.KVM2:
-		if s == state.None || s == state.Stopped {
+		if s == state.None {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
 	case driver.None:
-		if s == state.Stopped {
+		if s == state.None {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
 	case driver.Parallels:
-		if err.Error() == "machine does not exist" {
+		if err != nil && err.Error() == "machine does not exist" {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
@@ -231,12 +234,12 @@ func machineExists(vmDriver string, s state.State, err error) (bool, error) {
 		}
 		return true, err
 	case driver.VMware:
-		if s == state.None || s == state.Stopped {
+		if s == state.None {
 			return false, ErrorMachineNotExist
 		}
 		return true, err
 	case driver.VMwareFusion:
-		if s == state.Stopped {
+		if s == state.None {
 			return false, ErrorMachineNotExist
 		}
 		return true, err

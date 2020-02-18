@@ -63,7 +63,7 @@ func runPause(cmd *cobra.Command, args []string) {
 	}
 
 	glog.Infof("config: %+v", cc)
-	host, err := cluster.CheckIfHostExistsAndLoad(api, cname)
+	host, err := machine.CheckIfHostExistsAndLoad(api, cname)
 	if err != nil {
 		exit.WithError("Error getting host", err)
 	}

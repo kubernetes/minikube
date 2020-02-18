@@ -32,7 +32,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -149,7 +148,7 @@ var dockerEnvCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := cluster.CheckIfHostExistsAndLoad(api, cc.Name)
+		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
@@ -157,7 +156,7 @@ var dockerEnvCmd = &cobra.Command{
 			exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
 		}
 
-		hostSt, err := cluster.GetHostStatus(api, cc.Name)
+		hostSt, err := machine.GetHostStatus(api, cc.Name)
 		if err != nil {
 			exit.WithError("Error getting host status", err)
 		}

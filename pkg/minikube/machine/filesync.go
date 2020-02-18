@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package machine
 
 import (
 	"fmt"
@@ -31,6 +31,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
+// guaranteed are directories we don't need to attempt recreation of
+var guaranteed = map[string]bool{
+	"/":    true,
+	"":     true,
+	"/etc": true,
+	"/var": true,
+	"/tmp": true,
+}
+
 // syncLocalAssets syncs files from MINIKUBE_HOME into the cluster
 func syncLocalAssets(cr command.Runner) error {
 	fs, err := localAssets()
@@ -38,20 +47,30 @@ func syncLocalAssets(cr command.Runner) error {
 		return err
 	}
 
-	dirs := map[string]bool{}
+	if len(fs) == 0 {
+		return nil
+	}
+
+	// Deduplicate the list of directories to create
+	seen := map[string]bool{}
+	create := []string{}
 	for _, f := range fs {
-		dirs[f.GetTargetDir()] = true
+		dir := f.GetTargetDir()
+		if guaranteed[dir] || seen[dir] {
+			continue
+		}
+		create = append(create, dir)
 	}
 
-	args := []string{"mkdir", "-p"}
-	for k := range dirs {
-		args = append(args, k)
-	}
-	cmd := exec.Command("sudo", args...)
-	if _, err := cr.RunCmd(cmd); err != nil {
-		return err
+	// Create directories that are not guaranteed to exist
+	if len(create) > 0 {
+		args := append([]string{"mkdir", "-p"}, create...)
+		if _, err := cr.RunCmd(exec.Command("sudo", args...)); err != nil {
+			return err
+		}
 	}
 
+	// Copy the files into place
 	for _, f := range fs {
 		err := cr.Copy(f)
 		if err != nil {

@@ -32,7 +32,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -92,15 +94,13 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.UsageT("Usage: minikube delete")
 	}
-	profileFlag, err := cmd.Flags().GetString("profile")
-	if err != nil {
-		exit.WithError("Could not get profile flag", err)
-	}
+	profileFlag := viper.GetString(config.MachineProfile)
 
 	validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
+	glog.Warningf("Couldn't find any profiles in minikube home %q: %v", localpath.MiniPath(), err)
 	profilesToDelete := append(validProfiles, invalidProfiles...)
-
-	// If the purge flag is set, go ahead and delete the .minikube directory.
+	// in the case user has more than 1 profile and runs --purge
+	// to prevent abandoned VMs/containers, force user to run with delete --all
 	if purge && len(profilesToDelete) > 1 && !deleteAll {
 		out.ErrT(out.Notice, "Multiple minikube profiles were found - ")
 		for _, p := range profilesToDelete {
@@ -114,8 +114,9 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.UsageT("usage: minikube delete --all")
 		}
 
-		if err != nil {
-			exit.WithError("Error getting profiles to delete", err)
+		err := oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "=true"))
+		if err != nil { // if there is no volume there won't be any error
+			glog.Warningf("error deleting left docker volumes. \n%v:\nfor more information please refer to docker documentation: https://docs.docker.com/engine/reference/commandline/volume_prune/", err)
 		}
 
 		errs := DeleteProfiles(profilesToDelete)
@@ -179,6 +180,10 @@ func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 
 func deleteProfile(profile *pkg_config.Profile) error {
 	viper.Set(pkg_config.MachineProfile, profile.Name)
+	err := oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name))
+	if err != nil { // if there is no volume there wont be any error
+		glog.Warningf("error deleting left docker volumes. To see the list of volumes run: 'docker volume ls' \n:%v", err)
+	}
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -192,7 +197,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		return DeletionError{Err: delErr, Errtype: MissingProfile}
 	}
 
-	if err == nil && driver.BareMetal(cc.VMDriver) {
+	if err == nil && driver.BareMetal(cc.Driver) {
 		if err := uninstallKubernetes(api, profile.Name, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
 			if ok {
@@ -208,7 +213,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	if err = cluster.DeleteHost(api, profile.Name); err != nil {
+	if err = machine.DeleteHost(api, profile.Name); err != nil {
 		switch errors.Cause(err).(type) {
 		case mcnerror.ErrHostDoesNotExist:
 			glog.Infof("%s cluster does not exist. Proceeding ahead with cleanup.", profile.Name)
@@ -276,12 +281,12 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 
 func uninstallKubernetes(api libmachine.API, profile string, kc pkg_config.KubernetesConfig, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := getClusterBootstrapper(api, bsName)
+	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}
 
-	host, err := cluster.CheckIfHostExistsAndLoad(api, profile)
+	host, err := machine.CheckIfHostExistsAndLoad(api, profile)
 	if err != nil {
 		exit.WithError("Error getting host", err)
 	}
