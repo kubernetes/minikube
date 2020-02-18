@@ -494,7 +494,25 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateProfileCmd asserts "profile" command functionality
 func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
+	// Profile command should not create a nonexistent profile
+	nonexistentProfile := "lis"
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", nonexistentProfile))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	for _, word := range []string{fmt.Sprintf("Created a new profile : %s", nonexistentProfile), fmt.Sprintf("minikube profile was successfully set to %s", nonexistentProfile)} {
+		if strings.Contains(rr.Stdout.String(), word) {
+			t.Errorf("minikube profile should not create a nonexistent profile")
+		}
+	}
+	for _, word := range []string{fmt.Sprintf("profile \"%s\" not found", nonexistentProfile), fmt.Sprintf("if you want to create a profile you can by this command: minikube start -p %s", nonexistentProfile)} {
+		if !strings.Contains(rr.Stderr.String(), word) {
+			t.Errorf("minikube profile should provide guidance on how to create a nonexistent profile")
+		}
+	}
+
+	// List profiles
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
