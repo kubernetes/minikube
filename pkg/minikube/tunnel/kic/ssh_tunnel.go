@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/glog"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
@@ -42,18 +43,17 @@ func (t *SSHTunnel) Start() error {
 	for {
 		select {
 		case <-t.ctx.Done():
-			// TODO: extrac to a func
 			_, err := t.LoadBalancerEmulator.Cleanup()
 			if err != nil {
-				fmt.Println(err)
+				glog.Errorf("error cleaning up: %v", err)
 			}
-			return nil
+			return err
 		default:
 		}
 
 		services, err := t.v1Core.Services("").List(metav1.ListOptions{})
 		if err != nil {
-			return err
+			glog.Errorf("error listing services: %v", err)
 		}
 
 		t.markConnectionsToBeStopped()
@@ -77,28 +77,39 @@ func (t *SSHTunnel) markConnectionsToBeStopped() {
 	}
 }
 
-func (t *SSHTunnel) startConnection(svc v1.Service) error {
+func (t *SSHTunnel) startConnection(svc v1.Service) {
 	uniqName := sshConnUniqName(svc)
 	existingSSHConn, ok := t.conns[uniqName]
 
 	if ok {
 		// if the svc still exist we remove the conn from the stopping list
 		delete(t.connsToStop, existingSSHConn.name)
-		return nil
+		return
 	}
 
 	// create new ssh conn
 	newSSHConn := createSSHConn(uniqName, t.sshPort, t.sshKey, svc)
 	t.conns[newSSHConn.name] = newSSHConn
 
-	return t.LoadBalancerEmulator.PatchServiceIP(t.v1Core.RESTClient(), svc, "127.0.0.1")
+	go func() {
+		err := newSSHConn.run()
+		if err != nil {
+			glog.Errorf("error starting ssh tunnel: %v", err)
+		}
+
+	}()
+
+	err := t.LoadBalancerEmulator.PatchServiceIP(t.v1Core.RESTClient(), svc, "127.0.0.1")
+	if err != nil {
+		glog.Errorf("error patching service: %v", err)
+	}
 }
 
 func (t *SSHTunnel) stopMarkedConnections() {
 	for _, sshConn := range t.connsToStop {
 		err := sshConn.stop()
 		if err != nil {
-			// do something
+			glog.Errorf("error stopping ssh tunnel: %v", err)
 		}
 		delete(t.conns, sshConn.name)
 		delete(t.connsToStop, sshConn.name)
