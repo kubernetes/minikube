@@ -4,8 +4,8 @@
 #
 ################################################################################
 
-CRIO_BIN_VERSION = v1.16.1
-CRIO_BIN_COMMIT = bf8fcf34c942ba973a4f694094b46f914c779c0a
+CRIO_BIN_VERSION = v1.17.0
+CRIO_BIN_COMMIT = 6d0ffae63b9b7d8f07e7f9cf50736a67fb31faf3
 CRIO_BIN_SITE = https://github.com/cri-o/cri-o/archive
 CRIO_BIN_SOURCE = $(CRIO_BIN_VERSION).tar.gz
 CRIO_BIN_DEPENDENCIES = host-go libgpgme
@@ -43,8 +43,8 @@ define CRIO_BIN_INSTALL_TARGET_CMDS
 		$(@D)/bin/crio \
 		$(TARGET_DIR)/usr/bin/crio
 	$(INSTALL) -Dm755 \
-		$(@D)/bin/pause \
-		$(TARGET_DIR)/usr/libexec/crio/pause
+		$(@D)/bin/pinns \
+		$(TARGET_DIR)/usr/bin/pinns
 	$(INSTALL) -Dm644 \
 		$(CRIO_BIN_PKGDIR)/crio.conf \
 		$(TARGET_DIR)/etc/crio/crio.conf

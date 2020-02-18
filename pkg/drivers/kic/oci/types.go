@@ -21,12 +21,15 @@ const (
 	DefaultBindIPV4 = "127.0.0.1"
 	Docker          = "docker"
 	Podman          = "podman"
-	// ClusterLabelKey is applied to each node docker container for identification
-	ClusterLabelKey = "io.x-k8s.kic.cluster"
+	// ProfileLabelKey is applied to any container or volume created by a specific minikube profile name.minikube.sigs.k8s.io=PROFILE_NAME
+	ProfileLabelKey = "name.minikube.sigs.k8s.io"
 	// NodeRoleKey is used to identify if it is control plane or worker
-	nodeRoleKey = "io.k8s.sigs.kic.role"
+	nodeRoleLabelKey = "role.minikube.sigs.k8s.io"
+	// CreatedByLabelKey is applied to any container/volume that is created by minikube created_by.minikube.sigs.k8s.io=true
+	CreatedByLabelKey = "created_by.minikube.sigs.k8s.io"
 )
 
+// CreateParams are parameters needed to create a container
 type CreateParams struct {
 	Name          string            // used for container name and hostname
 	Image         string            // container image to use to create the node.

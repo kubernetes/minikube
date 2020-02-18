@@ -5,7 +5,7 @@
         "Memory": 2000,
         "CPUs": 2,
         "DiskSize": 20000,
-        "VMDriver": "hyperkit",
+        "Driver": "hyperkit",
         "ContainerRuntime": "docker",
         "HyperkitVpnKitSock": "",
         "HyperkitVSockPorts": [],
