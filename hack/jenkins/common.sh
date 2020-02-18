@@ -34,7 +34,7 @@ export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 sudo ./installers/check_install_golang.sh "1.13.4" "/usr/local" || true
 
 docker rm -f $(docker ps -aq) >/dev/null 2>&1 || true
-docker volume prune || true
+docker volume prune -f || true
 docker system df || true
 
 echo ">> Starting at $(date)"
