@@ -189,7 +189,7 @@ func TestDownloadOnlyDocker(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", test.k8sVersion)}
+			args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", test.k8sVersion), StartArgs()...}
 
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 			if err != nil {
