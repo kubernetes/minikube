@@ -23,6 +23,7 @@ import (
 	"path"
 	"runtime"
 
+	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/jimmidyson/go-download"
 	"github.com/pkg/errors"
@@ -51,22 +52,40 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 	return g.Wait()
 }
 
-// KubernetesReleaseURL gets the location of a kubernetes client
-func KubernetesReleaseURL(binaryName, version, osName, archName string) string {
+// releaseURL gets the location of a Kubernetes binary
+func releaseURL(binaryName, version, osName, archName string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
 }
 
-// KubernetesReleaseURLSHA1 gets the location of a kubernetes client checksum
-func KubernetesReleaseURLSHA1(binaryName, version, osName, archName string) string {
-	return fmt.Sprintf("%s.sha1", KubernetesReleaseURL(binaryName, version, osName, archName))
+// downloadOptions returns appropriate download options for a
+func downloadOptions(url string, version string) (download.FileOptions, error) {
+	fo := download.FileOptions{
+		Mkdirs: download.MkdirAll,
+		Options: download.Options{
+			ChecksumHash: crypto.SHA1,
+			Checksum:     url + ".sha1",
+		},
+	}
+
+	v, err := semver.Make(version[1:])
+	if err != nil {
+		return fo, err
+	}
+
+	if v.GTE(semver.MustParse("1.17.0")) {
+		fo.ChecksumHash = crypto.SHA256
+		fo.Checksum = url + ".sha256"
+	}
+	return fo, nil
 }
 
 // CacheBinary will cache a binary on the host
 func CacheBinary(binary, version, osName, archName string) (string, error) {
+
 	targetDir := localpath.MakeMiniPath("cache", osName, version)
 	targetFilepath := path.Join(targetDir, binary)
 
-	url := KubernetesReleaseURL(binary, version, osName, archName)
+	url := releaseURL(binary, version, osName, archName)
 
 	_, err := os.Stat(targetFilepath)
 	// If it exists, do no verification and continue
@@ -82,16 +101,15 @@ func CacheBinary(binary, version, osName, archName string) (string, error) {
 		return "", errors.Wrapf(err, "mkdir %s", targetDir)
 	}
 
-	options := download.FileOptions{
-		Mkdirs: download.MkdirAll,
+	options, err := downloadOptions(url, version)
+	if err != nil {
+		return "", errors.Wrap(err, "options")
 	}
-
-	options.Checksum = KubernetesReleaseURLSHA1(binary, version, osName, archName)
-	options.ChecksumHash = crypto.SHA1
+	glog.Infof("Downloading %s: options: %+v", url, options)
 
 	out.T(out.FileDownload, "Downloading {{.name}} {{.version}}", out.V{"name": binary, "version": version})
 	if err := download.ToFile(url, targetFilepath, options); err != nil {
-		return "", errors.Wrapf(err, "Error downloading %s %s", binary, version)
+		return "", errors.Wrapf(err, url)
 	}
 	if osName == runtime.GOOS && archName == runtime.GOARCH {
 		if err = os.Chmod(targetFilepath, 0755); err != nil {
