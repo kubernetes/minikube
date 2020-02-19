@@ -115,7 +115,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 		errs := oci.DeleteAllContainersByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true"))
 		if errs != nil { // it will error if there is no container to delete
-			glog.Infof("no left over minikube  container found.", errs)
+			glog.Infof("no left over minikube  container found. %v", errs)
 		}
 		errs = oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true"))
 		if errs != nil { // it will not error if there is nothing to delete

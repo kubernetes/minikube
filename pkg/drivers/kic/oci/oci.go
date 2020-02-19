@@ -48,8 +48,8 @@ func DeleteAllContainersByLabel(ociBin string, label string) []error {
 	if err != nil {
 		glog.Infof("error listing containers by label %q: %v", label, err)
 	}
-	if cs != nil {
-		for _, c := range cs {
+	for _, c := range cs {
+		if c != "" {
 			cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
 			if out, err := cmd.CombinedOutput(); err != nil {
 				glog.Infof("error deleting container %s: output: %s", c, string(out))
