@@ -65,11 +65,11 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 	cmd := exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}")
 	stdout, err := cmd.Output()
 	outs := strings.Split(strings.Replace(string(stdout), "\r", "", -1), "\n")
-	var tirmOuts []string
+	var vols []string
 	for _, o := range outs {
-		tirmOuts = append(tirmOuts, strings.TrimSpace(o))
+		vols = append(vols, strings.TrimSpace(o))
 	}
-	return tirmOuts, err
+	return vols, err
 }
 
 // createDockerVolume creates a docker volume to be attached to the container with correct labels and prefixes based on profile name
