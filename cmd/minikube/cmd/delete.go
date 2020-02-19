@@ -186,7 +186,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 
 	errs := oci.DeleteAllContainersByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name))
 	if errs != nil { // it will error if there is no container to delete
-		glog.Infof("no left over kic container for %s found to delete.", profile.Name, errs)
+		glog.Infof("no left over kic container for %s found to delete. %+v", profile.Name, errs)
 	}
 	errs = oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name))
 	if errs != nil { // it will not error if there is nothing to delete
