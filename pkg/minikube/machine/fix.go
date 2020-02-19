@@ -54,7 +54,7 @@ var (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
+func fixHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, error) {
 	out.T(out.Waiting, "Reconfiguring existing host ...")
 
 	start := time.Now()

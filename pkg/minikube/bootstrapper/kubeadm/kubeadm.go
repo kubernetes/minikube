@@ -35,7 +35,6 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -64,8 +63,7 @@ type Bootstrapper struct {
 }
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
-func NewBootstrapper(api libmachine.API) (*Bootstrapper, error) {
-	name := viper.GetString(config.MachineProfile)
+func NewBootstrapper(api libmachine.API, name string) (*Bootstrapper, error) {
 	h, err := api.Load(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
@@ -149,7 +147,7 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 }
 
 // StartCluster starts the cluster
-func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
+func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	err := bsutil.ExistingConfig(k.c)
 	if err == nil { // if there is an existing cluster don't reconfigure it
 		return k.restartCluster(cfg)
@@ -262,7 +260,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForCluster blocks until the cluster appears to be healthy
-func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
 	cp, err := config.PrimaryControlPlane(cfg)
@@ -295,7 +293,7 @@ func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Dur
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
-func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
+func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 	glog.Infof("restartCluster start")
 
 	start := time.Now()
@@ -371,6 +369,29 @@ func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
 	return nil
 }
 
+// JoinCluster adds a node to an existing cluster
+func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinCmd string) error {
+	start := time.Now()
+	glog.Infof("JoinCluster: %+v", cc)
+	defer func() {
+		glog.Infof("JoinCluster complete in %s", time.Since(start))
+	}()
+
+	// Join the master by specifying its token
+	joinCmd = fmt.Sprintf("%s --v=10 --node-name=%s", joinCmd, n.Name)
+	fmt.Println(joinCmd)
+	out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
+	if err != nil {
+		return errors.Wrapf(err, "cmd failed: %s\n%s\n", joinCmd, out)
+	}
+
+	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
+		return errors.Wrap(err, "starting kubelet")
+	}
+
+	return nil
+}
+
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 	version, err := bsutil.ParseKubernetesVersion(k8s.KubernetesVersion)
@@ -396,7 +417,7 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) er
 }
 
 // UpdateCluster updates the cluster
-func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
+func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "kubeadm images")
@@ -469,7 +490,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 }
 
 // applyKicOverlay applies the CNI plugin needed to make kic work
-func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
+func (k *Bootstrapper) applyKicOverlay(cfg config.ClusterConfig) error {
 	cmd := exec.Command("sudo",
 		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"-f", "-")

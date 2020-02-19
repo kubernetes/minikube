@@ -88,7 +88,7 @@ func run(name, value, profile string, fns []setFn) error {
 }
 
 // SetBool sets a bool value
-func SetBool(m *config.MachineConfig, name string, val string) error {
+func SetBool(m *config.ClusterConfig, name string, val string) error {
 	b, err := strconv.ParseBool(val)
 	if err != nil {
 		return err
