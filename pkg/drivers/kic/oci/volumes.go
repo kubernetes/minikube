@@ -42,12 +42,10 @@ func DeleteAllVolumesByLabel(ociBin string, label string) []error {
 		glog.Infof("error listing volumes by label %q: %v", label, err)
 	}
 	for _, v := range vs {
-		if v != "" {
-			cmd := exec.Command(ociBin, "volume", "rm", "--force", v)
-			if out, err := cmd.CombinedOutput(); err != nil {
-				glog.Infof("error deleting volume %s: output: %s", v, string(out))
-				deleteErrs = append(deleteErrs, err)
-			}
+		cmd := exec.Command(ociBin, "volume", "rm", "--force", v)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			glog.Infof("error deleting volume %s: output: %s", v, string(out))
+			deleteErrs = append(deleteErrs, err)
 		}
 	}
 
@@ -67,7 +65,10 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 	outs := strings.Split(strings.Replace(string(stdout), "\r", "", -1), "\n")
 	var vols []string
 	for _, o := range outs {
-		vols = append(vols, strings.TrimSpace(o))
+		if strings.TrimSpace(o) != "" {
+			vols = append(vols, strings.TrimSpace(o))
+		}
+
 	}
 	return vols, err
 }

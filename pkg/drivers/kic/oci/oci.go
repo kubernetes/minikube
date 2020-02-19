@@ -49,12 +49,10 @@ func DeleteAllContainersByLabel(ociBin string, label string) []error {
 		glog.Infof("error listing containers by label %q: %v", label, err)
 	}
 	for _, c := range cs {
-		if c != "" {
-			cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
-			if out, err := cmd.CombinedOutput(); err != nil {
-				glog.Infof("error deleting container %s: output: %s", c, string(out))
-				deleteErrs = append(deleteErrs, err)
-			}
+		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			glog.Infof("error deleting container %s: output: %s", c, string(out))
+			deleteErrs = append(deleteErrs, err)
 		}
 	}
 	return deleteErrs
@@ -436,7 +434,9 @@ func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 	outs := strings.Split(strings.Replace(string(stdout), "\r", "", -1), "\n")
 	var names []string
 	for _, o := range outs {
-		names = append(names, strings.TrimSpace(o))
+		if strings.TrimSpace(o) != "" {
+			names = append(names, strings.TrimSpace(o))
+		}
 	}
 	return names, err
 }
