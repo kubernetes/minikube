@@ -19,6 +19,7 @@ package oci
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -27,18 +28,48 @@ import (
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
 // if there is no volume to delete it will return nil
 // example: docker volume prune -f --filter label=name.minikube.sigs.k8s.io=minikube
-func DeleteAllVolumesByLabel(ociBin string, label string) error {
+func DeleteAllVolumesByLabel(ociBin string, label string) []error {
+	var deleteErrs []error
 	glog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
 	if ociBin == Docker {
 		if err := PointToHostDockerDaemon(); err != nil {
-			return errors.Wrap(err, "point host docker-daemon")
+			return []error{errors.Wrap(err, "point host docker-daemon")}
 		}
 	}
-	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", label)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "output %s", string(out))
+
+	vs, err := allVolumesByLabel(ociBin, label)
+	if err != nil {
+		glog.Infof("error listing volumes by label %q: %v", label, err)
 	}
-	return nil
+	if vs != nil {
+		for _, v := range vs {
+			cmd := exec.Command(ociBin, "volume", "rm", "--force", v)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				glog.Infof("error deleting volume %s: output: %s", v, string(out))
+				deleteErrs = append(deleteErrs, err)
+			}
+		}
+	}
+
+	// try to prune afterwards just in case delete didn't go through
+	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", "label="+label)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume %s", string(out)))
+	}
+	return deleteErrs
+}
+
+// allVolumesByLabel returns name of all docker volumes by a specific label
+// will not return error if there is no volume found.
+func allVolumesByLabel(ociBin string, label string) ([]string, error) {
+	cmd := exec.Command(ociBin, "volume", "ls", "--filter", "label="+label, "--format", "{{.Name}}")
+	stdout, err := cmd.Output()
+	outs := strings.Split(strings.Replace(string(stdout), "\r", "", -1), "\n")
+	var tirmOuts []string
+	for _, o := range outs {
+		tirmOuts = append(tirmOuts, strings.TrimSpace(o))
+	}
+	return tirmOuts, err
 }
 
 // createDockerVolume creates a docker volume to be attached to the container with correct labels and prefixes based on profile name
