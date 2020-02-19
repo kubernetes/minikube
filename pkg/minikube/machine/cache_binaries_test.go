@@ -17,12 +17,15 @@ limitations under the License.
 package machine
 
 import (
+	"crypto"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"runtime"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
+	"github.com/jimmidyson/go-download"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -211,6 +214,60 @@ func TestCacheBinary(t *testing.T) {
 			}
 			if err == nil && test.err {
 				t.Fatalf("Expected error but got %v", err)
+			}
+		})
+	}
+}
+
+func TestDownloadOptions(t *testing.T) {
+	var tc = []struct {
+		url     string
+		version string
+		want    download.FileOptions
+	}{
+		{
+			url:     "https://s/kubernetes-release/release/v1.16.0/bin/amd64/kubectl",
+			version: "v1.16.0",
+			want: download.FileOptions{
+				Options: download.Options{
+					Checksum:     "https://s/kubernetes-release/release/v1.16.0/bin/amd64/kubectl.sha1",
+					ChecksumHash: crypto.SHA1,
+				},
+				Mkdirs: download.MkdirAll,
+			},
+		},
+		{
+			url:     "https://s/kubernetes-release/release/v1.10.0/bin/hp9k/kubeadm",
+			version: "v1.10.0",
+			want: download.FileOptions{
+				Options: download.Options{
+					Checksum:     "https://s/kubernetes-release/release/v1.10.0/bin/hp9k/kubeadm.sha1",
+					ChecksumHash: crypto.SHA1,
+				},
+				Mkdirs: download.MkdirAll,
+			},
+		},
+		{
+			url:     "https://s/kubernetes-release/release/v1.18.0/bin/arm64/kubelet",
+			version: "v1.18.0",
+			want: download.FileOptions{
+				Options: download.Options{
+					Checksum:     "https://s/kubernetes-release/release/v1.18.0/bin/arm64/kubelet.sha256",
+					ChecksumHash: crypto.SHA256,
+				},
+				Mkdirs: download.MkdirAll,
+			},
+		},
+	}
+	for _, test := range tc {
+		t.Run(test.version, func(t *testing.T) {
+			got, err := downloadOptions(test.url, test.version)
+			if err != nil {
+				t.Fatalf("unexpected error %v", err)
+			}
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("unexpected options(-want +got):\n%s", diff)
 			}
 		})
 	}
