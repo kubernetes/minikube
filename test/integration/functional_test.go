@@ -76,6 +76,7 @@ func TestFunctional(t *testing.T) {
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
 			{"MinikubeKubectlCmd", validateMinikubeKubectl}, // Make sure `minikube kubectl` works
+			{"DockerEnv", validateDockerEnv},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -111,7 +112,6 @@ func TestFunctional(t *testing.T) {
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
 			{"UpdateContextCmd", validateUpdateContextCmd},
-			{"DockerEnv", validateDockerEnv},
 		}
 		for _, tc := range tests {
 			tc := tc
