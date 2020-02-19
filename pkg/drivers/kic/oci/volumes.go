@@ -17,6 +17,7 @@ limitations under the License.
 package oci
 
 import (
+	"fmt"
 	"os/exec"
 
 	"github.com/golang/glog"
@@ -47,7 +48,7 @@ func createDockerVolume(name string) error {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return errors.Wrap(err, "point host docker-daemon")
 	}
-	cmd := exec.Command(Docker, "volume", "create", name, "--label", "name.minikube.sigs.k8s.io="+name, "--label", "craeted_by_minikube.minikube.sigs.k8s.io=true")
+	cmd := exec.Command(Docker, "volume", "create", name, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, name), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}
