@@ -105,7 +105,9 @@ func mntCmd(source string, target string, c *MountConfig) string {
 	options := map[string]string{
 		"dfltgid": resolveGID(c.GID),
 		"dfltuid": resolveUID(c.UID),
+		"trans":   "tcp",
 	}
+
 	if c.Port != 0 {
 		options["port"] = strconv.Itoa(c.Port)
 	}
