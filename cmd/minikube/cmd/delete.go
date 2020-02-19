@@ -114,7 +114,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.UsageT("usage: minikube delete --all")
 		}
 
-		err := oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "=true"))
+		err := oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true"))
 		if err != nil { // if there is no volume there won't be any error
 			glog.Warningf("error deleting left docker volumes. \n%v:\nfor more information please refer to docker documentation: https://docs.docker.com/engine/reference/commandline/volume_prune/", err)
 		}
