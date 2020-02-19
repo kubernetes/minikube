@@ -19,8 +19,8 @@ VERSION_BUILD ?= 2
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
-KUBERNETES_VERSION ?= $(shell egrep "^var DefaultKubernetesVersion" pkg/minikube/constants/constants.go | cut -d \" -f2)
-KIC_IMAGE_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
+KIC_IMAGE_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2 | tr -d '\n')
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
@@ -513,9 +513,9 @@ kic-base-image: ## builds the base image used for kic.
 
 
 .PHONY: kic-preloaded-base-image
-kic-preloaded-base-image: generate-preloaded-images-tar ## Builds base image with preloaded k8s images. Run `KUBERNETES_VERSION=vx.y.z make kic-preloaded-base-image`
+kic-preloaded-base-image: ## Builds base image with preloaded k8s images. Run `KUBERNETES_VERSION=vx.y.z make kic-preloaded-base-image`
 	docker rmi -f $(REGISTRY)/kicbase:$(KIC_IMAGE_VERSION)-k8s-${KUBERNETES_VERSION} || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_IMAGE_VERSION)-k8s-${KUBERNETES_VERSION}  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg KUBERNETES_VERSION=${KUBERNETES_VERSION} .
+	docker build -f ./hack/images/preloaded_kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_IMAGE_VERSION)-k8s-${KUBERNETES_VERSION}  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg KUBERNETES_VERSION=${KUBERNETES_VERSION} --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg KIC_IMAGE_VERSION=${KIC_IMAGE_VERSION} .
 
 .PHONY: generate-preloaded-images-tar
 generate-preloaded-images-tar: out/minikube
