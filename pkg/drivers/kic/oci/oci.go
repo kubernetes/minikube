@@ -34,6 +34,32 @@ import (
 	"strings"
 )
 
+// DeleteAllContainersByLabel deletes all containers that have a specific label
+// if contatiners founds will not return an error
+// example: docker volume prune -f --filter label=name.minikube.sigs.k8s.io=minikube
+func DeleteAllContainersByLabel(ociBin string, label string) []error {
+	var deleteErrs []error
+	if ociBin == Docker {
+		if err := PointToHostDockerDaemon(); err != nil {
+			return []error{errors.Wrap(err, "point host docker-daemon")}
+		}
+	}
+	cs, err := listContainersByLabel(ociBin, label)
+	if err != nil {
+		glog.Infof("error listing containers by label %q: %v", label, err)
+	}
+	if cs != nil {
+		for _, c := range cs {
+			cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				glog.Infof("error deleting container %s: output: %s", c, string(out))
+				deleteErrs = append(deleteErrs, err)
+			}
+		}
+	}
+	return deleteErrs
+}
+
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	if err := PointToHostDockerDaemon(); err != nil {
@@ -406,16 +432,13 @@ func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 		return nil, errors.Wrap(err, "point host docker-daemon")
 	}
 	cmd := exec.Command(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
-	var b bytes.Buffer
-	cmd.Stdout = &b
-	cmd.Stderr = &b
-	err := cmd.Run()
-	var lines []string
-	sc := bufio.NewScanner(&b)
-	for sc.Scan() {
-		lines = append(lines, sc.Text())
+	stdout, err := cmd.Output()
+	outs := strings.Split(strings.Replace(string(stdout), "\r", "", -1), "\n")
+	var names []string
+	for _, o := range outs {
+		names = append(names, strings.TrimSpace(o))
 	}
-	return lines, err
+	return names, err
 }
 
 // PointToHostDockerDaemon will unset env variables that point to docker inside minikube
