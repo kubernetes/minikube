@@ -113,13 +113,23 @@ func runDelete(cmd *cobra.Command, args []string) {
 		if profileFlag != constants.DefaultMachineName {
 			exit.UsageT("usage: minikube delete --all")
 		}
-
-		err := oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "=true"))
-		if err != nil { // if there is no volume there won't be any error
-			glog.Warningf("error deleting left docker volumes. \n%v:\nfor more information please refer to docker documentation: https://docs.docker.com/engine/reference/commandline/volume_prune/", err)
+		delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
+		errs := oci.DeleteAllContainersByLabel(oci.Docker, delLabel)
+		if len(errs) > 0 { // it will error if there is no container to delete
+			glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, err)
 		}
 
-		errs := DeleteProfiles(profilesToDelete)
+		errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
+		if len(errs) > 0 { // it will not error if there is nothing to delete
+			glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
+		}
+
+		errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+		if len(errs) > 0 { // it will not error if there is nothing to delete
+			glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
+		}
+
+		errs = DeleteProfiles(profilesToDelete)
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		} else {
@@ -180,9 +190,20 @@ func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 
 func deleteProfile(profile *pkg_config.Profile) error {
 	viper.Set(pkg_config.MachineProfile, profile.Name)
-	err := oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name))
-	if err != nil { // if there is no volume there wont be any error
-		glog.Warningf("error deleting left docker volumes. To see the list of volumes run: 'docker volume ls' \n:%v", err)
+
+	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name)
+	errs := oci.DeleteAllContainersByLabel(oci.Docker, delLabel)
+	if errs != nil { // it will error if there is no container to delete
+		glog.Infof("error deleting containers for %s (might be okay):\n%v", profile.Name, errs)
+	}
+	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
+	if errs != nil { // it will not error if there is nothing to delete
+		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
+	}
+
+	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+	if len(errs) > 0 { // it will not error if there is nothing to delete
+		glog.Warningf("error pruning volume (might be okay):\n%v", errs)
 	}
 
 	api, err := machine.NewAPIClient()
