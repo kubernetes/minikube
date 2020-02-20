@@ -33,12 +33,12 @@ Thank you to our wonderful and amazing contributors who contributed to this bug-
 - Thomas Strömberg
 - Medya Ghazizadeh
 - Wietse Muizelaar
-- Sharif Elgamal
 - Zhongcheng Lao
+- Sharif Elgamal
 - Priya Wadhwa
 - Rohan Maity
-- aallbright
 - anencore94
+- aallbright
 - Tam Mach
 - edge0701
 - go_vargo
