@@ -53,7 +53,7 @@ func DeleteAllContainersByLabel(ociBin string, label string) []error {
 	for _, c := range cs {
 		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
 		if out, err := cmd.CombinedOutput(); err != nil {
-			deleteErrs = append(deleteErrs, err)
+			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
 		}
 	}
 	return deleteErrs
