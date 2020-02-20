@@ -231,7 +231,6 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 			return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 		}
 	}
-	fmt.Println("about to apply node labels")
 	if err := k.applyNodeLabels(cfg); err != nil {
 		glog.Warningf("unable to apply node labels: %v", err)
 	}
