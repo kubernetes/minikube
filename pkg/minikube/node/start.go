@@ -74,11 +74,9 @@ func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons 
 	configureMounts()
 
 	// enable addons, both old and new!
-	ea := map[string]bool{}
 	if existingAddons != nil {
-		ea = existingAddons
+		addons.Start(viper.GetString(config.MachineProfile), existingAddons, AddonList)
 	}
-	addons.Start(viper.GetString(config.MachineProfile), ea, AddonList)
 
 	if err = CacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
