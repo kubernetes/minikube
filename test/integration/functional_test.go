@@ -509,7 +509,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 	for profileK := range profileJson {
 		for _, p := range profileJson[profileK] {
 			var name = p["Name"]
-			if (name == nonexistentProfile) {
+			if name == nonexistentProfile {
 				t.Errorf("minikube profile %s should not exist", nonexistentProfile)
 			}
 		}
