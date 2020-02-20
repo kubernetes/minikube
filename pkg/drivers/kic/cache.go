@@ -29,7 +29,7 @@ import (
 // CachePreloadedTarball caches the preloaded images tarball on the host machine
 func CachePreloadedTarball(k8sVersion string) error {
 	targetDir := localpath.MakeMiniPath("cache", "preloaded-tarball")
-	targetFilepath := path.Join(targetDir, fmt.Sprintf("%s-k8s-%s.tar", Version, k8sVersion))
+	targetFilepath := path.Join(targetDir, fmt.Sprintf("%s.tar", k8sVersion))
 
 	if _, err := os.Stat(targetFilepath); err == nil {
 		glog.Infof("Found %s in cache, skipping downloading", targetFilepath)
