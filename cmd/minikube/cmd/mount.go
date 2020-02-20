@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -170,7 +171,11 @@ var mountCmd = &cobra.Command{
 			wg.Add(1)
 			go func() {
 				out.T(out.Fileserver, "Userspace file server: ")
-				ufs.StartServer(net.JoinHostPort(ip.String(), strconv.Itoa(port)), debugVal, hostPath)
+				bindIP := ip.String() // the ip to listen on the user's host machine
+				if driver.IsKIC(Driver.DriverName()) && runtime.GOOS != "linux" {
+					bindIP = "127.0.0.1"
+				}
+				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
 				out.T(out.Stopped, "Userspace file server is shutdown")
 				wg.Done()
 			}()
