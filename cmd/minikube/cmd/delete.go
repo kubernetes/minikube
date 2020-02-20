@@ -113,13 +113,14 @@ func runDelete(cmd *cobra.Command, args []string) {
 		if profileFlag != constants.DefaultMachineName {
 			exit.UsageT("usage: minikube delete --all")
 		}
-		errs := oci.DeleteAllContainersByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true"))
-		if errs != nil { // it will error if there is no container to delete
-			glog.Infof("no left over minikube  container found. %v", errs)
+		delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
+		errs := oci.DeleteAllContainersByLabel(oci.Docker, delLabel)
+		if errs != nil && len(errs) > 0 { // it will error if there is no container to delete
+			glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, err)
 		}
-		errs = oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true"))
-		if errs != nil { // it will not error if there is nothing to delete
-			glog.Warningf("error deleting left docker volumes. To see the list of volumes run: 'docker volume ls' \n:%+v", errs)
+		errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
+		if errs != nil && len(errs) > 0 { // it will not error if there is nothing to delete
+			glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
 		}
 
 		errs = DeleteProfiles(profilesToDelete)
