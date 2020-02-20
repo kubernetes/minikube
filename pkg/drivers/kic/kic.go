@@ -88,7 +88,12 @@ func (d *Driver) Create() error {
 			ContainerPort: constants.DockerDaemonPort,
 		},
 	)
-	err := oci.CreateContainerNode(params)
+	volumeName, err := oci.CreatePreloadedImagesVolume(Version, d.NodeConfig.KubernetesVersion)
+	if err != nil {
+		glog.Infof("Unable to create preloaded images volume: %v", err)
+	}
+	params.PreloadedVolume = volumeName
+	err = oci.CreateContainerNode(params)
 	if err != nil {
 		return errors.Wrap(err, "create kic node")
 	}

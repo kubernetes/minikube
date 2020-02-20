@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+// CachePreloadedTarball caches the preloaded images tarball on the host machine
 func CachePreloadedTarball(k8sVersion string) error {
 	targetDir := localpath.MakeMiniPath("cache", "preloaded-tarball")
 	targetFilepath := path.Join(targetDir, fmt.Sprintf("%s-k8s-%s.tar", Version, k8sVersion))

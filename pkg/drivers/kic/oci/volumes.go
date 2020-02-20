@@ -17,10 +17,14 @@ limitations under the License.
 package oci
 
 import (
+	"fmt"
 	"os/exec"
+	"path"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
@@ -34,6 +38,56 @@ func DeleteAllVolumesByLabel(ociBin string, label string) error {
 		}
 	}
 	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", label)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "output %s", string(out))
+	}
+	return nil
+}
+
+func CreatePreloadedImagesVolume(kicVersion, k8sVersion string) (string, error) {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return "", errors.Wrap(err, "point host docker-daemon")
+	}
+	volumeName := fmt.Sprintf("%s-k8s-%s", kicVersion, k8sVersion)
+	if dockerVolumeExists(volumeName) {
+		return volumeName, nil
+	}
+	if err := createDockerVolume(volumeName); err != nil {
+		return "", errors.Wrap(err, "creating docker volume")
+	}
+	targetDir := localpath.MakeMiniPath("cache", "preloaded-tarball")
+	tarballPath := path.Join(targetDir, fmt.Sprintf("%s-k8s-%s.tar", kicVersion, k8sVersion))
+
+	if err := extractTarballToVolume(tarballPath, volumeName); err != nil {
+		return "", errors.Wrap(err, "extracting tarball to volume")
+	}
+	return volumeName, nil
+}
+
+func dockerVolumeExists(name string) bool {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return false
+	}
+	cmd := exec.Command(Docker, "volume", "ls", "-q")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return false
+	}
+	names := strings.Split(string(out), "\n")
+	for _, n := range names {
+		if n == name {
+			return true
+		}
+	}
+	return false
+}
+
+func extractTarballToVolume(tarballPath, volumeName string) error {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker-daemon")
+	}
+	cmd := exec.Command(Docker, "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), "busybox", "tar", "xvf", "/preloaded.tar", "-C", "/extractDir")
+	fmt.Println(cmd.Args)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}

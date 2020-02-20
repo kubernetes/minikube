@@ -31,18 +31,19 @@ const (
 
 // CreateParams are parameters needed to create a container
 type CreateParams struct {
-	Name          string            // used for container name and hostname
-	Image         string            // container image to use to create the node.
-	ClusterLabel  string            // label the containers we create using minikube so we can clean up
-	Role          string            // currently only role supported is control-plane
-	Mounts        []Mount           // volume mounts
-	APIServerPort int               // kubernetes api server port
-	PortMappings  []PortMapping     // ports to map to container from host
-	CPUs          string            // number of cpu cores assign to container
-	Memory        string            // memory (mbs) to assign to the container
-	Envs          map[string]string // environment variables to pass to the container
-	ExtraArgs     []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
-	OCIBinary     string            // docker or podman
+	Name            string            // used for container name and hostname
+	Image           string            // container image to use to create the node.
+	ClusterLabel    string            // label the containers we create using minikube so we can clean up
+	Role            string            // currently only role supported is control-plane
+	Mounts          []Mount           // volume mounts
+	APIServerPort   int               // kubernetes api server port
+	PortMappings    []PortMapping     // ports to map to container from host
+	CPUs            string            // number of cpu cores assign to container
+	Memory          string            // memory (mbs) to assign to the container
+	Envs            map[string]string // environment variables to pass to the container
+	ExtraArgs       []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
+	OCIBinary       string            // docker or podman
+	PreloadedVolume string            // volume of preloaded images
 }
 
 // createOpt is an option for Create

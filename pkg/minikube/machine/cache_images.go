@@ -62,6 +62,11 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 
 // LoadImages loads previously cached images into the container runtime
 func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string, cacheDir string) error {
+	glog.Info("skipping load images")
+	if true {
+		return nil
+	}
+
 	glog.Infof("LoadImages start: %s", images)
 	start := time.Now()
 

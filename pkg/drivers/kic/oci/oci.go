@@ -74,11 +74,17 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
 	}
 	if p.OCIBinary == Docker {
-		if err := createDockerVolume(p.Name); err != nil {
-			return errors.Wrapf(err, "creating volume for %s container", p.Name)
+		volumeName := p.PreloadedVolume
+		if volumeName == "" {
+			fmt.Println("volume name was empty!!")
+			os.Exit(1)
+			if err := createDockerVolume(p.Name); err != nil {
+				return errors.Wrapf(err, "creating volume for %s container", p.Name)
+			}
+			glog.Infof("Successfully created a docker volume %s", p.Name)
+			volumeName = p.Name
 		}
-		glog.Infof("Successfully created a docker volume %s", p.Name)
-		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", volumeName))
 		// setting resource limit in privileged mode is only supported by docker
 		// podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
 		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs), fmt.Sprintf("--memory=%s", p.Memory))
