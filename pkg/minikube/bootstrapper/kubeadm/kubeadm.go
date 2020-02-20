@@ -491,26 +491,21 @@ func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
 
 // applyNodeLabels applies minikube labels to all the nodes
 func (k *Bootstrapper) applyNodeLabels(cfg config.MachineConfig) error {
-	start := time.Now()
-	// based on ISO 8601 (RFC 3339) except converting - and : to _ because of kubernetes label restriction
-	createdAtLbl := "k8s.minikube.io/updated_at=" + start.Format("2006_01_02T15_04_05_0700")
-	verLbl := "k8s.minikube.io/version=" + version.GetVersion()
-	commitLbl := "k8s.minikube.io/commit=" + version.GetGitCommitID()
-	nameLbl := "k8s.minikube.io/name=" + cfg.Name
+	// timne cluster was created. time format is based on ISO 8601 (RFC 3339)
+	// converting - and : to _ because of kubernetes label restriction
+	createdAtLbl := "minikube.k8s.io/updated_at=" + time.Now().Format("2006_01_02T15_04_05_0700")
+	verLbl := "minikube.k8s.io/version=" + version.GetVersion()
+	commitLbl := "minikube.k8s.io/commit=" + version.GetGitCommitID()
+	nameLbl := "minikube.k8s.io/name=" + cfg.Name
 
 	// example:
-	// /var/lib/minikube/binaries/v1.17.3/kubectl label nodes --kubeconfig /var/lib/minikube/kubeconfig   k8s.minikube.io/version=1.7.3 --all --overwrite
+	// sudo /var/lib/minikube/binaries/v1.17.3/kubectl label nodes minikube.k8s.io/version=v1.7.3 minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
 	cmd := exec.Command("sudo",
 		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
 		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, "--all", "--overwrite",
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 
-	rr, err := k.c.RunCmd(cmd)
-	elapsed := time.Since(start)
-	if elapsed > (1 * time.Second) {
-		glog.Infof("Completed: %s: (%s)", rr.Command(), elapsed)
-	}
-	if err != nil {
+	if _, err := k.c.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "applying node labels")
 	}
 	return nil
