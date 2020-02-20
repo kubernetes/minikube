@@ -35,7 +35,7 @@ import (
 )
 
 // DeleteAllContainersByLabel deletes all containers that have a specific label
-// if there are no containers found with the label, it will return nil
+// if there no containers found with the given 	label, it will return nil
 func DeleteAllContainersByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
 	if ociBin == Docker {
@@ -431,13 +431,15 @@ func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 	}
 	cmd := exec.Command(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
 	stdout, err := cmd.Output()
-	outs := strings.Split(strings.Replace(string(stdout), "\r", "", -1), "\n")
+	s := bufio.NewScanner(bytes.NewReader(stdout))
 	var names []string
-	for _, o := range outs {
-		if strings.TrimSpace(o) != "" {
-			names = append(names, strings.TrimSpace(o))
+	for s.Scan() {
+		n := strings.TrimSpace(s.Text())
+		if n != "" {
+			names = append(names, n)
 		}
 	}
+
 	return names, err
 }
 
