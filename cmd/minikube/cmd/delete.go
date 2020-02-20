@@ -98,7 +98,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
 	if err != nil {
-		glog.Warningf("Couldn't find any profiles in minikube home %q: %v", localpath.MiniPath(), err)
+		glog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)
 	}
 	profilesToDelete := append(validProfiles, invalidProfiles...)
 	// in the case user has more than 1 profile and runs --purge
