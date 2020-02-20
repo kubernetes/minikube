@@ -668,7 +668,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateDiskSize()
 	validateMemorySize()
 
-	if !driver.HasResourceLimits(drvName) { // both podman and none need root and they both cant specify resources
+	if !driver.HasResourceLimits(drvName) {
 		if cmd.Flags().Changed(cpus) {
 			out.WarningT("The '{{.name}}' driver does not respect the --cpus flag", out.V{"name": drvName})
 		}

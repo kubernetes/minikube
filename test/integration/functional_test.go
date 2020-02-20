@@ -494,68 +494,79 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateProfileCmd asserts "profile" command functionality
 func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
-	// Profile command should not create a nonexistent profile
-	nonexistentProfile := "lis"
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", nonexistentProfile))
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	var profileJson map[string][]map[string]interface{}
-	err = json.Unmarshal(rr.Stdout.Bytes(), &profileJson)
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	for profileK := range profileJson {
-		for _, p := range profileJson[profileK] {
-			var name = p["Name"]
-			if (name == nonexistentProfile) {
-				t.Errorf("minikube profile %s should not exist", nonexistentProfile)
+	t.Run("profile_not_create", func(t *testing.T) {
+		// Profile command should not create a nonexistent profile
+		nonexistentProfile := "lis"
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", nonexistentProfile))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+		var profileJSON map[string][]map[string]interface{}
+		err = json.Unmarshal(rr.Stdout.Bytes(), &profileJSON)
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+		for profileK := range profileJSON {
+			for _, p := range profileJSON[profileK] {
+				var name = p["Name"]
+				if name == nonexistentProfile {
+					t.Errorf("minikube profile %s should not exist", nonexistentProfile)
+				}
 			}
 		}
-	}
+	})
 
-	// List profiles
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-
-	// Table output
-	listLines := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-	profileExists := false
-	for i := 3; i < (len(listLines) - 1); i++ {
-		profileLine := listLines[i]
-		if strings.Contains(profileLine, profile) {
-			profileExists = true
-			break
+	t.Run("profile_list", func(t *testing.T) {
+		// List profiles
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
 		}
-	}
-	if !profileExists {
-		t.Errorf("%s failed: Missing profile '%s'. Got '\n%s\n'", rr.Args, profile, rr.Stdout.String())
-	}
 
-	// Json output
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	var jsonObject map[string][]map[string]interface{}
-	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	validProfiles := jsonObject["valid"]
-	profileExists = false
-	for _, profileObject := range validProfiles {
-		if profileObject["Name"] == profile {
-			profileExists = true
-			break
+		// Table output
+		listLines := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
+		profileExists := false
+		for i := 3; i < (len(listLines) - 1); i++ {
+			profileLine := listLines[i]
+			if strings.Contains(profileLine, profile) {
+				profileExists = true
+				break
+			}
 		}
-	}
-	if !profileExists {
-		t.Errorf("%s failed: Missing profile '%s'. Got '\n%s\n'", rr.Args, profile, rr.Stdout.String())
-	}
+		if !profileExists {
+			t.Errorf("%s failed: Missing profile '%s'. Got '\n%s\n'", rr.Args, profile, rr.Stdout.String())
+		}
+
+	})
+
+	t.Run("profile_json_output", func(t *testing.T) {
+		// Json output
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+		var jsonObject map[string][]map[string]interface{}
+		err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+		validProfiles := jsonObject["valid"]
+		profileExists := false
+		for _, profileObject := range validProfiles {
+			if profileObject["Name"] == profile {
+				profileExists = true
+				break
+			}
+		}
+		if !profileExists {
+			t.Errorf("%s failed: Missing profile '%s'. Got '\n%s\n'", rr.Args, profile, rr.Stdout.String())
+		}
+
+	})
 }
 
 // validateServiceCmd asserts basic "service" command functionality
