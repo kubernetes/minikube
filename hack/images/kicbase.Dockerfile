@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
   dnsutils \
   openssh-server \
   docker.io \
+  lz4 \
   && apt-get clean -y 
 # disable containerd by default
 RUN systemctl disable containerd

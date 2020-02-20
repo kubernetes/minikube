@@ -39,7 +39,7 @@ var (
 func init() {
 	flag.StringVar(&kubernetesVersion, "kubernetes-version", "", "desired kubernetes version, for example `v1.17.2`")
 	flag.Parse()
-	tarballFilename = fmt.Sprintf("preloaded-images-k8s-%s.tar", kubernetesVersion)
+	tarballFilename = fmt.Sprintf("preloaded-images-k8s-%s.tar.lz4", kubernetesVersion)
 }
 
 func main() {
@@ -71,7 +71,7 @@ func startMinikube() error {
 }
 
 func createImageTarball() error {
-	cmd := exec.Command(minikubePath, "ssh", "-p", profile, "--", "cd", "/var", "&&", "sudo", "tar", "cvf", tarballFilename, "./lib/docker", "./lib/minikube/binaries")
+	cmd := exec.Command(minikubePath, "ssh", "-p", profile, "--", "cd", "/var", "&&", "sudo", "tar", "-I", "lz4", "-cvf", tarballFilename, "./lib/docker", "./lib/minikube/binaries")
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "creating image tarball")
