@@ -328,9 +328,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	existingAddons := map[string]bool{}
-	if existing != nil && existing.Addons != nil {
-		existingAddons = existing.Addons
+	var existingAddons map[string]bool
+	if viper.GetBool(installAddons) {
+		existingAddons = map[string]bool{}
+		if existing != nil && existing.Addons != nil {
+			existingAddons = existing.Addons
+		}
 	}
 	kubeconfig, err := node.Start(mc, n, true, existingAddons)
 	if err != nil {
@@ -665,7 +668,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateDiskSize()
 	validateMemorySize()
 
-	if !driver.HasResourceLimits(drvName) { // both podman and none need root and they both cant specify resources
+	if !driver.HasResourceLimits(drvName) {
 		if cmd.Flags().Changed(cpus) {
 			out.WarningT("The '{{.name}}' driver does not respect the --cpus flag", out.V{"name": drvName})
 		}
