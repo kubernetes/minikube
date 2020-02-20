@@ -522,7 +522,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 
 	t.Run("profile_list", func(t *testing.T) {
 		// List profiles
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Args, err)
 		}
@@ -545,7 +545,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 
 	t.Run("profile_json_output", func(t *testing.T) {
 		// Json output
-		rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Args, err)
 		}
@@ -555,7 +555,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("%s failed: %v", rr.Args, err)
 		}
 		validProfiles := jsonObject["valid"]
-		profileExists = false
+		profileExists := false
 		for _, profileObject := range validProfiles {
 			if profileObject["Name"] == profile {
 				profileExists = true
