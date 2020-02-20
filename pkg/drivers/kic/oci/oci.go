@@ -45,7 +45,7 @@ func DeleteAllContainersByLabel(ociBin string, label string) []error {
 	}
 	cs, err := listContainersByLabel(ociBin, label)
 	if err != nil {
-		glog.Infof("error listing containers by label %q: %v", label, err)
+		return []error{fmt.Errorf("listing containers by label %q", label)}
 	}
 	if len(cs) == 0 {
 		return nil
@@ -53,7 +53,6 @@ func DeleteAllContainersByLabel(ociBin string, label string) []error {
 	for _, c := range cs {
 		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
 		if out, err := cmd.CombinedOutput(); err != nil {
-			glog.Infof("error deleting container %s: output: %s", c, string(out))
 			deleteErrs = append(deleteErrs, err)
 		}
 	}
