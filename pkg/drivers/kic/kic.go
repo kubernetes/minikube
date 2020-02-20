@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
@@ -88,10 +89,13 @@ func (d *Driver) Create() error {
 			ContainerPort: constants.DockerDaemonPort,
 		},
 	)
-	volumeName, err := oci.CreatePreloadedImagesVolume(d.NodeConfig.KubernetesVersion)
+	t := time.Now()
+	glog.Infof("Starting creating preloaded images volume")
+	volumeName, err := oci.CreatePreloadedImagesVolume(d.NodeConfig.KubernetesVersion, BaseImage)
 	if err != nil {
 		glog.Infof("Unable to create preloaded images volume: %v", err)
 	}
+	glog.Infof("Finished creating preloaded images volume in %d seconds", time.Since(t).Seconds())
 	params.PreloadedVolume = volumeName
 	fmt.Println("Setting params.preloadedvolume = ", volumeName)
 	err = oci.CreateContainerNode(params)

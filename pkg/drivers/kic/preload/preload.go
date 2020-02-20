@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package kic
+package preload
 
 import (
 	"fmt"
@@ -26,17 +26,23 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
-// CachePreloadedTarball caches the preloaded images tarball on the host machine
-func CachePreloadedTarball(k8sVersion string) error {
+// TarballPath returns the path to the preloaded tarball
+func TarballPath(k8sVersion string) string {
 	targetDir := localpath.MakeMiniPath("cache", "preloaded-tarball")
-	targetFilepath := path.Join(targetDir, fmt.Sprintf("%s.tar", k8sVersion))
+	targetFilepath := path.Join(targetDir, fmt.Sprintf("preloaded-images-k8s-%s.tar.lz4", k8sVersion))
+	return targetFilepath
+}
+
+// CacheTarball caches the preloaded images tarball on the host machine
+func CacheTarball(k8sVersion string) error {
+	targetFilepath := TarballPath(k8sVersion)
 
 	if _, err := os.Stat(targetFilepath); err == nil {
 		glog.Infof("Found %s in cache, skipping downloading", targetFilepath)
 		return nil
 	}
 
-	url := fmt.Sprintf("https://storage.googleapis.com/minikube-docker-volume-tarballs/%s-k8s-%s.tar", Version, k8sVersion)
+	url := fmt.Sprintf("https://storage.googleapis.com/minikube-docker-volume-tarballs/preloaded-images-k8s-%s.tar", k8sVersion)
 	glog.Infof("Downloading %s to %s", url, targetFilepath)
 	return download.ToFile(url, targetFilepath, download.FileOptions{Mkdirs: download.MkdirAll})
 }
