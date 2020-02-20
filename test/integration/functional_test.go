@@ -497,17 +497,21 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 	// Profile command should not create a nonexistent profile
 	nonexistentProfile := "lis"
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", nonexistentProfile))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	for _, line := range []string{fmt.Sprintf("Created a new profile : %s", nonexistentProfile), fmt.Sprintf("minikube profile was successfully set to %s", nonexistentProfile)} {
-		if strings.Contains(rr.Stdout.String(), line) {
-			t.Errorf("minikube profile should not create a nonexistent profile")
-		}
+	var profileJson map[string][]map[string]interface{}
+	err = json.Unmarshal(rr.Stdout.Bytes(), &profileJson)
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
-	for _, line := range []string{fmt.Sprintf("profile \"%s\" not found", nonexistentProfile), fmt.Sprintf("if you want to create a profile you can by this command: minikube start -p %s", nonexistentProfile)} {
-		if !strings.Contains(rr.Stderr.String(), line) {
-			t.Errorf("minikube profile should provide guidance on how to create a nonexistent profile")
+	for profileK := range profileJson {
+		for _, p := range profileJson[profileK] {
+			var name = p["Name"]
+			if (name == nonexistentProfile) {
+				t.Errorf("minikube profile %s should not exist", nonexistentProfile)
+			}
 		}
 	}
 
