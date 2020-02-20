@@ -20,13 +20,13 @@ RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
 KUBERNETES_VERSION ?= $(shell egrep "^var DefaultKubernetesVersion" pkg/minikube/constants/constants.go | cut -d \" -f2)
+KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).3
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
-KIC_VERSION ?= 0.0.5
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
 GO_VERSION ?= 1.13.4
@@ -508,14 +508,14 @@ storage-provisioner-image: out/storage-provisioner-$(GOARCH) ## Build storage-pr
 
 .PHONY: kic-base-image
 kic-base-image: ## builds the base image used for kic.
-	docker rmi -f $(REGISTRY)/kicbase:v$(KIC_VERSION)-snapshot || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --target base .
+	docker rmi -f $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --target base .
 
 
 .PHONY: kic-preloaded-base-image
 kic-preloaded-base-image: generate-preloaded-images-tar ## builds the base image used for kic.
-	docker rmi -f $(REGISTRY)/kicbase:v$(KIC_VERSION)-k8s-${KUBERNETES_VERSION} || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:v$(KIC_VERSION)-k8s-${KUBERNETES_VERSION}  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg KUBERNETES_VERSION=${KUBERNETES_VERSION} .
+	docker rmi -f $(REGISTRY)/kicbase:$(KIC_VERSION)-k8s-${KUBERNETES_VERSION} || true
+	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-k8s-${KUBERNETES_VERSION}  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg KUBERNETES_VERSION=${KUBERNETES_VERSION} .
 
 .PHONY: generate-preloaded-images-tar
 generate-preloaded-images-tar: out/minikube
