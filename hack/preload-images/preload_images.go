@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -66,42 +65,32 @@ func executePreloadImages() error {
 }
 
 func startMinikube() error {
-	cmd := exec.Command(minikubePath, "start", "-p", profile, "--memory", "4000", "--kubernetes-version", kubernetesVersion, "--wait=false")
+	cmd := exec.Command(minikubePath, "start", "-p", profile, "--memory", "4000", "--kubernetes-version", kubernetesVersion, "--wait=false", "--vm-driver=docker")
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
 }
 
 func createImageTarball() error {
-	cmd := exec.Command(minikubePath, "ssh", "-p", profile, "--", "sudo", "tar", "cvf", tarballFilename, "/var/lib/docker", "/var/lib/minikube/binaries")
+	cmd := exec.Command(minikubePath, "ssh", "-p", profile, "--", "cd", "/var", "&&", "sudo", "tar", "cvf", tarballFilename, "./lib/docker", "./lib/minikube/binaries")
 	cmd.Stdout = os.Stdout
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "creating image tarball")
+	}
+	return nil
 }
 
 func copyTarballToHost() error {
-	sshKey, err := runCmd([]string{minikubePath, "ssh-key", "-p", profile})
-	if err != nil {
-		return errors.Wrap(err, "getting ssh-key")
-	}
-
-	ip, err := runCmd([]string{minikubePath, "ip", "-p", profile})
-	if err != nil {
-		return errors.Wrap(err, "getting ip")
-	}
-
 	dest := filepath.Join("out/", tarballFilename)
-	args := []string{"scp", "-o", "StrictHostKeyChecking=no", "-i", sshKey, fmt.Sprintf("docker@%s:/home/docker/%s", ip, tarballFilename), dest}
-	_, err = runCmd(args)
-	return err
+	cmd := exec.Command("docker", "cp", fmt.Sprintf("%s:/var/%s", profile, tarballFilename), dest)
+	cmd.Stdout = os.Stdout
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "copying tarball to host")
+	}
+	return nil
 }
 
 func deleteMinikube() error {
 	cmd := exec.Command(minikubePath, "delete", "-p", profile)
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
-}
-
-func runCmd(command []string) (string, error) {
-	cmd := exec.Command(command[0], command[1:]...)
-	output, err := cmd.Output()
-	return strings.Trim(string(output), "\n "), err
 }
