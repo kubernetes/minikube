@@ -118,9 +118,15 @@ func runDelete(cmd *cobra.Command, args []string) {
 		if errs != nil && len(errs) > 0 { // it will error if there is no container to delete
 			glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, err)
 		}
+
 		errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
 		if errs != nil && len(errs) > 0 { // it will not error if there is nothing to delete
 			glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
+		}
+
+		errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+		if errs != nil && len(errs) > 0 { // it will not error if there is nothing to delete
+			glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
 		}
 
 		errs = DeleteProfiles(profilesToDelete)
@@ -185,13 +191,19 @@ func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 func deleteProfile(profile *pkg_config.Profile) error {
 	viper.Set(pkg_config.MachineProfile, profile.Name)
 
-	errs := oci.DeleteAllContainersByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name))
+	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name)
+	errs := oci.DeleteAllContainersByLabel(oci.Docker, delLabel)
 	if errs != nil { // it will error if there is no container to delete
-		glog.Infof("no left over kic container for %s found to delete. %+v", profile.Name, errs)
+		glog.Infof("error deleting containers (might be okay):\n%v", profile.Name, errs)
 	}
-	errs = oci.DeleteAllVolumesByLabel(oci.Docker, fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name))
+	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
-		glog.Warningf("error deleting left docker volumes. To see the list of volumes run: 'docker volume ls' \n:%+v", errs)
+		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
+	}
+
+	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+	if errs != nil && len(errs) > 0 { // it will not error if there is nothing to delete
+		glog.Warningf("error pruning volume (might be okay):\n%v", delLabel, errs)
 	}
 
 	api, err := machine.NewAPIClient()
