@@ -126,7 +126,6 @@ func TestFunctional(t *testing.T) {
 
 // validateNodeLabels checks if minikube cluster is created with correct kubernetes's node label
 func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
-	mctx, cancel := context.WithTimeout(ctx, 13*time.Second)
 	defer cancel()
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "--output", "jsonpath={.items[0].metadata.labels}"))
 	if err != nil {
