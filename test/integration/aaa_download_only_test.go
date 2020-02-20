@@ -28,7 +28,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-	"time"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -38,7 +37,7 @@ import (
 
 func TestDownloadOnly(t *testing.T) {
 	profile := UniqueProfileName("download")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
 
 	// Stores the startup run result for later error messages
