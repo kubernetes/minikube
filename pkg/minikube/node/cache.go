@@ -24,8 +24,10 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -44,7 +46,7 @@ func beginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVers
 	})
 }
 
-func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
+func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion, driverName string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool("download-only") {
 		return
@@ -55,7 +57,13 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 	if _, err := CacheKubectlBinary(k8sVersion); err != nil {
 		exit.WithError("Failed to cache kubectl", err)
 	}
+	var kicArtifactsGroup errgroup.Group
+	if driver.IsKIC(driverName) { // for kic we need to find what port docker/podman chose for us
+		// Download kic base image and preloaded images tarball
+		beginDownloadKicArtifacts(&kicArtifactsGroup, k8sVersion)
+	}
 	waitCacheRequiredImages(cacheGroup)
+	waitDownloadKicArtifacts(&kicArtifactsGroup)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.WithError("Failed to cache images to tar", err)
 	}
@@ -77,6 +85,26 @@ func CacheKubectlBinary(k8sVerison string) (string, error) {
 // doCacheBinaries caches Kubernetes binaries in the foreground
 func doCacheBinaries(k8sVersion string) error {
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
+}
+
+func beginDownloadKicArtifacts(g *errgroup.Group, k8sVersion string) {
+	glog.Info("Beginning downloading kic artifacts")
+	g.Go(func() error {
+		glog.Infof("Downloading %s to local daemon", kic.BaseImage)
+		return image.WriteImageToDaemon(kic.BaseImage)
+	})
+
+	g.Go(func() error {
+		glog.Info("Caching tarball of preloaded images")
+		return kic.CachePreloadedTarball(k8sVersion)
+	})
+}
+
+func waitDownloadKicArtifacts(g *errgroup.Group) {
+	if err := g.Wait(); err != nil {
+		glog.Errorln("Error downloading kic artifacts: ", err)
+	}
+	glog.Info("Succesfully downloaded all kic artifacts")
 }
 
 // waitCacheRequiredImages blocks until the required images are all cached.
