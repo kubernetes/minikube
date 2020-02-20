@@ -22,11 +22,11 @@ import (
 	"fmt"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
@@ -90,19 +90,20 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 	return vols, err
 }
 
-func CreatePreloadedImagesVolume(kicVersion, k8sVersion string) (string, error) {
+// CreatePreloadedImagesVolume creates a volume with preloaded images
+func CreatePreloadedImagesVolume(k8sVersion string) (string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return "", errors.Wrap(err, "point host docker-daemon")
 	}
-	volumeName := fmt.Sprintf("%s-k8s-%s", kicVersion, k8sVersion)
+	volumeName := fmt.Sprintf("k8s-%s", k8sVersion)
 	if dockerVolumeExists(volumeName) {
 		return volumeName, nil
 	}
 	if err := createDockerVolume(volumeName); err != nil {
 		return "", errors.Wrap(err, "creating docker volume")
 	}
-	targetDir := localpath.MakeMiniPath("cache", "preloaded-tarball")
-	tarballPath := path.Join(targetDir, fmt.Sprintf("%s-k8s-%s.tar", kicVersion, k8sVersion))
+	targetDir := filepath.Join("cache", "preloaded-tarball")
+	tarballPath := path.Join(targetDir, fmt.Sprintf("%s.tar", k8sVersion))
 
 	if err := extractTarballToVolume(tarballPath, volumeName); err != nil {
 		return "", errors.Wrap(err, "extracting tarball to volume")
