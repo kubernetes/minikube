@@ -131,7 +131,7 @@ func extractTarballToVolume(tarballPath, volumeName, imageName string) error {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return errors.Wrap(err, "point host docker-daemon")
 	}
-	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/bin/bash", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "tar", "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
+	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
 	fmt.Println(cmd.Args)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))

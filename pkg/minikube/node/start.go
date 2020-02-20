@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/drivers/kic/preload"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -34,9 +35,16 @@ import (
 
 // Start spins up a guest and starts the kubernetes node.
 func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
+	k8sVersion := mc.KubernetesConfig.KubernetesVersion
+	driverName := mc.Driver
+
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
-	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
+	if !preload.UsingPreloadedVolume(k8sVersion) && driver.IsKIC(driverName) {
+		beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	} else {
+		mc.KubernetesConfig.ShouldLoadCachedImages = false
+	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
@@ -44,8 +52,6 @@ func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons 
 		exit.WithError("Failed to save config", err)
 	}
 
-	k8sVersion := mc.KubernetesConfig.KubernetesVersion
-	driverName := mc.Driver
 	// exits here in case of --download-only option.
 	handleDownloadOnly(&cacheGroup, k8sVersion, driverName)
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)

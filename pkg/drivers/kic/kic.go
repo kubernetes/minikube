@@ -95,9 +95,8 @@ func (d *Driver) Create() error {
 	if err != nil {
 		glog.Infof("Unable to create preloaded images volume: %v", err)
 	}
-	glog.Infof("Finished creating preloaded images volume in %d seconds", time.Since(t).Seconds())
+	glog.Infof("Finished creating preloaded images volume in %f seconds", time.Since(t).Seconds())
 	params.PreloadedVolume = volumeName
-	fmt.Println("Setting params.preloadedvolume = ", volumeName)
 	err = oci.CreateContainerNode(params)
 	if err != nil {
 		return errors.Wrap(err, "create kic node")

@@ -40,6 +40,7 @@ import (
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/drivers/kic/preload"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
@@ -436,8 +437,12 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 		glog.Warningf("unable to stop kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
 	}
 
-	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
-		return errors.Wrap(err, "downloading binaries")
+	// Skip transfer if using preloaded kic volume
+	skipTransfer := driver.IsKIC(cfg.Driver) && preload.UsingPreloadedVolume(cfg.KubernetesConfig.KubernetesVersion)
+	if !skipTransfer {
+		if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
+			return errors.Wrap(err, "downloading binaries")
+		}
 	}
 
 	var cniFile []byte
