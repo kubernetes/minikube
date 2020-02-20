@@ -85,8 +85,7 @@ func status() registry.State {
 		return registry.State{Error: err}
 	}
 
-	// Allow no more than 4 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, path, "Get-WindowsOptionalFeature", "-FeatureName", "Microsoft-Hyper-V-All", "-Online")
