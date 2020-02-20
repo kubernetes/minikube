@@ -35,8 +35,7 @@ import (
 )
 
 // DeleteAllContainersByLabel deletes all containers that have a specific label
-// if contatiners founds will not return an error
-// example: docker volume prune -f --filter label=name.minikube.sigs.k8s.io=minikube
+// if there are no containers found with the label, it will return nil
 func DeleteAllContainersByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
 	if ociBin == Docker {
@@ -47,6 +46,9 @@ func DeleteAllContainersByLabel(ociBin string, label string) []error {
 	cs, err := listContainersByLabel(ociBin, label)
 	if err != nil {
 		glog.Infof("error listing containers by label %q: %v", label, err)
+	}
+	if len(cs) == 0 {
+		return nil
 	}
 	for _, c := range cs {
 		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
@@ -423,8 +425,7 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 	}
 }
 
-// listContainersByLabel lists all the containres that kic driver created on user's machine using a label
-// io.x-k8s.kic.cluster
+// listContainersByLabel returns all the container names with a specified label
 func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return nil, errors.Wrap(err, "point host docker-daemon")
