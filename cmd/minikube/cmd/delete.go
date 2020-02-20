@@ -97,7 +97,9 @@ func runDelete(cmd *cobra.Command, args []string) {
 	profileFlag := viper.GetString(config.MachineProfile)
 
 	validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
-	glog.Warningf("Couldn't find any profiles in minikube home %q: %v", localpath.MiniPath(), err)
+	if err != nil {
+		glog.Warningf("Couldn't find any profiles in minikube home %q: %v", localpath.MiniPath(), err)
+	}
 	profilesToDelete := append(validProfiles, invalidProfiles...)
 	// in the case user has more than 1 profile and runs --purge
 	// to prevent abandoned VMs/containers, force user to run with delete --all
