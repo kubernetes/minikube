@@ -202,7 +202,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 
 	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
-	if errs != nil && len(errs) > 0 { // it will not error if there is nothing to delete
+	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volume (might be okay):\n%v", errs)
 	}
 
