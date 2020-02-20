@@ -152,6 +152,15 @@ var mountCmd = &cobra.Command{
 			cfg.Options[parts[0]] = parts[1]
 		}
 
+		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
+		if !supportedFilesystems[cfg.Type] {
+			out.T(out.WarningType, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
+		}
+
+		bindIP := ip.String() // the ip to listen on the user's host machine
+		if driver.IsKIC(host.Driver.DriverName()) && runtime.GOOS != "linux" {
+			bindIP = "127.0.0.1"
+		}
 		out.T(out.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.T(out.Option, "Mount type:   {{.name}}", out.V{"type": cfg.Type})
 		out.T(out.Option, "User ID:      {{.userID}}", out.V{"userID": cfg.UID})
@@ -160,21 +169,13 @@ var mountCmd = &cobra.Command{
 		out.T(out.Option, "Message Size: {{.size}}", out.V{"size": cfg.MSize})
 		out.T(out.Option, "Permissions:  {{.octalMode}} ({{.writtenMode}})", out.V{"octalMode": fmt.Sprintf("%o", cfg.Mode), "writtenMode": cfg.Mode})
 		out.T(out.Option, "Options:      {{.options}}", out.V{"options": cfg.Options})
-
-		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
-		if !supportedFilesystems[cfg.Type] {
-			out.T(out.WarningType, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
-		}
+		out.T(out.Option, "Bind Address: {{.Address}}", out.V{"Address": net.JoinHostPort(bindIP, fmt.Sprint(port))})
 
 		var wg sync.WaitGroup
 		if cfg.Type == nineP {
 			wg.Add(1)
 			go func() {
 				out.T(out.Fileserver, "Userspace file server: ")
-				bindIP := ip.String() // the ip to listen on the user's host machine
-				if driver.IsKIC(host.Driver.DriverName()) && runtime.GOOS != "linux" {
-					bindIP = "127.0.0.1"
-				}
 				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
 				out.T(out.Stopped, "Userspace file server is shutdown")
 				wg.Done()
