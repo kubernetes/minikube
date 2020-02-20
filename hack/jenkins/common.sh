@@ -328,9 +328,12 @@ touch "${JSON_OUT}"
 echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 echo ">> Installing gopogh"
-cd $(mktemp -d)
-GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.17 || true
-cd -
+if [ "$(uname)" != "Darwin" ]; then
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+else
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-darwin-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+fi
+
 echo ">> Running gopogh"
 if test -f "${HTML_OUT}"; then
     rm "${HTML_OUT}" || true # clean up previous runs of same build
