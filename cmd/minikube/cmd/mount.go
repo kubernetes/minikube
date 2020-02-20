@@ -172,7 +172,7 @@ var mountCmd = &cobra.Command{
 			go func() {
 				out.T(out.Fileserver, "Userspace file server: ")
 				bindIP := ip.String() // the ip to listen on the user's host machine
-				if driver.IsKIC(Driver.DriverName()) && runtime.GOOS != "linux" {
+				if driver.IsKIC(host.Driver.DriverName()) && runtime.GOOS != "linux" {
 					bindIP = "127.0.0.1"
 				}
 				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
