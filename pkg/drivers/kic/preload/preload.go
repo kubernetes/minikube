@@ -46,3 +46,10 @@ func CacheTarball(k8sVersion string) error {
 	glog.Infof("Downloading %s to %s", url, targetFilepath)
 	return download.ToFile(url, targetFilepath, download.FileOptions{Mkdirs: download.MkdirAll})
 }
+
+// UsingPreloadedVolume returns true if the preloaded tarball exists
+func UsingPreloadedVolume(k8sVersion string) bool {
+	path := TarballPath(k8sVersion)
+	_, err := os.Stat(path)
+	return err == nil
+}
