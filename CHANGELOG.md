@@ -1,5 +1,49 @@
 # Release Notes
 
+## Version 1.7.3 - 2020-02-20
+
+* Add podman driver [#6515](https://github.com/kubernetes/minikube/pull/6515)
+* Create Hyper-V External Switch [#6264](https://github.com/kubernetes/minikube/pull/6264)
+* Don't allow creating profile by profile command [#6672](https://github.com/kubernetes/minikube/pull/6672)
+* Create the Node subcommands for multi-node refactor [#6556](https://github.com/kubernetes/minikube/pull/6556)
+* Improve docker volume clean up [#6695](https://github.com/kubernetes/minikube/pull/6695)
+* Add podman-env for connecting with podman-remote [#6351](https://github.com/kubernetes/minikube/pull/6351)
+* Update gvisor addon to latest runsc version [#6573](https://github.com/kubernetes/minikube/pull/6573)
+* Fix inverted start resource logic [#6700](https://github.com/kubernetes/minikube/pull/6700)
+* Fix bug in --install-addons flag [#6696](https://github.com/kubernetes/minikube/pull/6696)
+* Fix bug in docker-env and add tests for docker-env command [#6604](https://github.com/kubernetes/minikube/pull/6604)
+* Fix kubeConfigPath  [#6568](https://github.com/kubernetes/minikube/pull/6568)
+* Fix `minikube start` in order to be able to start VM even if machine does not exist [#5730](https://github.com/kubernetes/minikube/pull/5730)
+* Fail fast if waiting for SSH to be available [#6625](https://github.com/kubernetes/minikube/pull/6625)
+* Add RPFilter to ISO kernel - required for modern Calico releases [#6690](https://github.com/kubernetes/minikube/pull/6690)
+* Update Kubernetes default version to v1.17.3 [#6602](https://github.com/kubernetes/minikube/pull/6602)
+* Update crictl to v1.17.0 [#6667](https://github.com/kubernetes/minikube/pull/6667)
+* Add conntrack-tools, needed for kubernetes 1.18 [#6626](https://github.com/kubernetes/minikube/pull/6626)
+* Stopped and running machines should count as existing [#6629](https://github.com/kubernetes/minikube/pull/6629)
+* Upgrade Docker to 19.03.6 [#6618](https://github.com/kubernetes/minikube/pull/6618)
+* Upgrade conmon version for podman [#6622](https://github.com/kubernetes/minikube/pull/6622)
+* Upgrade podman to 1.6.5 [#6623](https://github.com/kubernetes/minikube/pull/6623)
+* Update helm-tiller addon image v2.14.3 → v2.16.1 [#6575](https://github.com/kubernetes/minikube/pull/6575)
+
+Thank you to our wonderful and amazing contributors who contributed to this bug-fix release:
+
+- Anders F Björklund
+- Nguyen Hai Truong
+- Martynas Pumputis
+- Thomas Strömberg
+- Medya Ghazizadeh
+- Wietse Muizelaar
+- Zhongcheng Lao
+- Sharif Elgamal
+- Priya Wadhwa
+- Rohan Maity
+- anencore94
+- aallbright
+- Tam Mach
+- edge0701
+- go_vargo
+- sayboras
+
 ## Version 1.7.2 - 2020-02-07
 
 * Fix to delete context when delete minikube [#6541](https://github.com/kubernetes/minikube/pull/6541)
