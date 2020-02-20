@@ -101,8 +101,6 @@ func CreateContainerNode(p CreateParams) error {
 	if p.OCIBinary == Docker {
 		volumeName := p.PreloadedVolume
 		if volumeName == "" {
-			fmt.Println("volume name was empty!!")
-			os.Exit(1)
 			if err := createDockerVolume(p.Name); err != nil {
 				return errors.Wrapf(err, "creating volume for %s container", p.Name)
 			}

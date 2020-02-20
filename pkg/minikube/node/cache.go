@@ -105,7 +105,7 @@ func waitDownloadKicArtifacts(g *errgroup.Group) {
 	if err := g.Wait(); err != nil {
 		glog.Errorln("Error downloading kic artifacts: ", err)
 	}
-	glog.Info("Succesfully downloaded all kic artifacts")
+	glog.Info("Successfully downloaded all kic artifacts")
 }
 
 // waitCacheRequiredImages blocks until the required images are all cached.
