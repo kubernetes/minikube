@@ -54,6 +54,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/retry"
+	"k8s.io/minikube/pkg/version"
 )
 
 // Bootstrapper is a bootstrapper using kubeadm
@@ -229,6 +230,10 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
 			return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 		}
+	}
+	fmt.Println("about to apply node labels")
+	if err := k.applyNodeLabels(cfg); err != nil {
+		glog.Warningf("unable to apply node labels: %v", err)
 	}
 
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
@@ -480,6 +485,33 @@ func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
 	cmd.Stdin = bytes.NewReader(b.Bytes())
 	if rr, err := k.c.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
+	}
+	return nil
+}
+
+// applyNodeLabels applies minikube labels to all the nodes
+func (k *Bootstrapper) applyNodeLabels(cfg config.MachineConfig) error {
+	start := time.Now()
+	// based on ISO 8601 (RFC 3339) except converting - and : to _ because of kubernetes label restriction
+	createdAtLbl := "k8s.minikube.io/updated_at=" + start.Format("2006_01_02T15_04_05_0700")
+	verLbl := "k8s.minikube.io/version=" + version.GetVersion()
+	commitLbl := "k8s.minikube.io/commit=" + version.GetGitCommitID()
+	nameLbl := "k8s.minikube.io/name=" + cfg.Name
+
+	// example:
+	// /var/lib/minikube/binaries/v1.17.3/kubectl label nodes --kubeconfig /var/lib/minikube/kubeconfig   k8s.minikube.io/version=1.7.3 --all --overwrite
+	cmd := exec.Command("sudo",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, "--all", "--overwrite",
+		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
+
+	rr, err := k.c.RunCmd(cmd)
+	elapsed := time.Since(start)
+	if elapsed > (1 * time.Second) {
+		glog.Infof("Completed: %s: (%s)", rr.Command(), elapsed)
+	}
+	if err != nil {
+		return errors.Wrapf(err, "applying node labels")
 	}
 	return nil
 }
