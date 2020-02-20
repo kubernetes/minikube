@@ -115,17 +115,17 @@ func runDelete(cmd *cobra.Command, args []string) {
 		}
 		delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
 		errs := oci.DeleteAllContainersByLabel(oci.Docker, delLabel)
-		if errs != nil && len(errs) > 0 { // it will error if there is no container to delete
+		if len(errs) > 0 { // it will error if there is no container to delete
 			glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, err)
 		}
 
 		errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
-		if errs != nil && len(errs) > 0 { // it will not error if there is nothing to delete
+		if len(errs) > 0 { // it will not error if there is nothing to delete
 			glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
 		}
 
 		errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
-		if errs != nil && len(errs) > 0 { // it will not error if there is nothing to delete
+		if len(errs) > 0 { // it will not error if there is nothing to delete
 			glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
 		}
 
@@ -194,7 +194,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name)
 	errs := oci.DeleteAllContainersByLabel(oci.Docker, delLabel)
 	if errs != nil { // it will error if there is no container to delete
-		glog.Infof("error deleting containers (might be okay):\n%v", profile.Name, errs)
+		glog.Infof("error deleting containers for %s (might be okay):\n%v", profile.Name, errs)
 	}
 	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
@@ -203,7 +203,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 
 	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
 	if errs != nil && len(errs) > 0 { // it will not error if there is nothing to delete
-		glog.Warningf("error pruning volume (might be okay):\n%v", delLabel, errs)
+		glog.Warningf("error pruning volume (might be okay):\n%v", errs)
 	}
 
 	api, err := machine.NewAPIClient()
