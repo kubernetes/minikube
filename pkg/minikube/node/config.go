@@ -22,31 +22,23 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
-	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
 var (
-	DockerEnv    []string
-	DockerOpt    []string
-	ExtraOptions config.ExtraOptionSlice
-	AddonList    []string
+	DockerEnv []string
+	DockerOpt []string
+	AddonList []string
 )
 
 // configureRuntimes does what needs to happen to get a runtime going.
@@ -78,55 +70,6 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	for _, v := range DockerEnv {
 		out.T(out.Option, "env {{.docker_env}}", out.V{"docker_env": v})
 	}
-}
-
-// setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Node) bootstrapper.Bootstrapper {
-	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
-	if err != nil {
-		exit.WithError("Failed to get bootstrapper", err)
-	}
-	for _, eo := range ExtraOptions {
-		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
-	}
-	// Loads cached images, generates config files, download binaries
-	if err := bs.UpdateCluster(cfg); err != nil {
-		exit.WithError("Failed to update cluster", err)
-	}
-	if err := bs.SetupCerts(cfg.KubernetesConfig, node); err != nil {
-		exit.WithError("Failed to setup certs", err)
-	}
-	return bs
-}
-
-func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
-	addr, err := h.Driver.GetURL()
-	if err != nil {
-		exit.WithError("Failed to get driver URL", err)
-	}
-	if !driver.IsKIC(h.DriverName) {
-		addr = strings.Replace(addr, "tcp://", "https://", -1)
-		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(n.Port), -1)
-	}
-
-	if c.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, n.IP, c.KubernetesConfig.APIServerName, -1)
-	}
-	kcs := &kubeconfig.Settings{
-		ClusterName:          clusterName,
-		ClusterServerAddress: addr,
-		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
-		ClientKey:            localpath.MakeMiniPath("client.key"),
-		CertificateAuthority: localpath.MakeMiniPath("ca.crt"),
-		KeepContext:          viper.GetBool(keepContext),
-		EmbedCerts:           viper.GetBool(embedCerts),
-	}
-
-	kcs.SetPath(kubeconfig.PathFromEnv())
-	if err := kubeconfig.Update(kcs); err != nil {
-		return kcs, err
-	}
-	return kcs, nil
 }
 
 // configureMounts configures any requested filesystem mounts

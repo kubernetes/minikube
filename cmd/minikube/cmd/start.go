@@ -174,7 +174,7 @@ func initMinikubeFlags() {
 // initKubernetesFlags inits the commandline flags for kubernetes related options
 func initKubernetesFlags() {
 	startCmd.Flags().String(kubernetesVersion, "", "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
-	startCmd.Flags().Var(&node.ExtraOptions, "extra-config",
+	startCmd.Flags().Var(&cluster.ExtraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
@@ -688,7 +688,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateCPUCount(driver.BareMetal(drvName))
 
 	// check that kubeadm extra args contain only whitelisted parameters
-	for param := range node.ExtraOptions.AsMap().Get(bsutil.Kubeadm) {
+	for param := range cluster.ExtraOptions.AsMap().Get(bsutil.Kubeadm) {
 		if !config.ContainsParam(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmCmdParam], param) &&
 			!config.ContainsParam(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmConfigParam], param) {
 			exit.UsageT("Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config", out.V{"parameter_name": param})
@@ -821,7 +821,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 			NetworkPlugin:          selectedNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
 			ImageRepository:        repository,
-			ExtraOptions:           node.ExtraOptions,
+			ExtraOptions:           cluster.ExtraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,
 		},
@@ -855,7 +855,7 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	if !cmd.Flags().Changed("extra-config") && len(hints.ExtraOptions) > 0 {
 		for _, eo := range hints.ExtraOptions {
 			glog.Infof("auto setting extra-config to %q.", eo)
-			err = node.ExtraOptions.Set(eo)
+			err = cluster.ExtraOptions.Set(eo)
 			if err != nil {
 				err = errors.Wrapf(err, "setting extra option %s", eo)
 			}
