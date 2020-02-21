@@ -92,7 +92,10 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 // CreatePreloadedImagesVolume creates a volume with preloaded images
 // k8sVersion is used to name the volume and baseImage is the image that is run
 // to extract the preloaded images to the volume
-func CreatePreloadedImagesVolume(k8sVersion, baseImage, profile string) (string, error) {
+func CreatePreloadedImagesVolume(k8sVersion, cRuntime, baseImage, profile string) (string, error) {
+	if cRuntime != "docker" {
+		return "", nil
+	}
 	if err := PointToHostDockerDaemon(); err != nil {
 		return "", errors.Wrap(err, "point host docker-daemon")
 	}

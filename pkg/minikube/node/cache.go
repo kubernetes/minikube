@@ -82,7 +82,7 @@ func doCacheBinaries(k8sVersion string) error {
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 }
 
-func beginDownloadKicArtifacts(g *errgroup.Group, k8sVersion string) {
+func beginDownloadKicArtifacts(g *errgroup.Group, k8sVersion, cRuntime string) {
 	glog.Info("Beginning downloading kic artifacts")
 	g.Go(func() error {
 		glog.Infof("Downloading %s to local daemon", kic.BaseImage)
@@ -91,7 +91,7 @@ func beginDownloadKicArtifacts(g *errgroup.Group, k8sVersion string) {
 
 	g.Go(func() error {
 		glog.Info("Caching tarball of preloaded images")
-		return preload.CacheTarball(k8sVersion)
+		return preload.CacheTarball(k8sVersion, cRuntime)
 	})
 }
 
