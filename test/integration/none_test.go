@@ -28,7 +28,6 @@ import (
 	"strconv"
 	"syscall"
 	"testing"
-	"time"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
 )

@@ -23,7 +23,6 @@ import (
 	"fmt"
 	"os/exec"
 	"testing"
-	"time"
 
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )

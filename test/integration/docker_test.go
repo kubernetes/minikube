@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestDockerFlags(t *testing.T) {
