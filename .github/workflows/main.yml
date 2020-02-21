@@ -28,6 +28,19 @@ jobs:
       with:
         name: minikube_binaries
         path: out
+  lint:
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "lint"
+      GOPOGH_RESULT: ""
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: lint
+      env:
+        TESTSUITE: lintall
+      run : make test
+      continue-on-error: false
   unit_test:
     env:
       TIME_ELAPSED: time
@@ -40,11 +53,6 @@ jobs:
       run : | 
         sudo apt-get update
         sudo apt-get install -y libvirt-dev
-    - name: lint
-      env:
-        TESTSUITE: lintall
-      run : make test
-      continue-on-error: false
     - name: unit test
       env:
         TESTSUITE: unittest
