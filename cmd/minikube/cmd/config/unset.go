@@ -44,10 +44,10 @@ func init() {
 
 // Unset unsets a property
 func Unset(name string) error {
-	m, err := pkgConfig.ReadConfig(localpath.ConfigFile)
+	m, err := pkgConfig.ReadConfig(localpath.ConfigFile())
 	if err != nil {
 		return err
 	}
 	delete(m, name)
-	return pkgConfig.WriteConfig(localpath.ConfigFile, m)
+	return pkgConfig.WriteConfig(localpath.ConfigFile(), m)
 }

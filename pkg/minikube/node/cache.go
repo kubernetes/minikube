@@ -103,7 +103,7 @@ func saveImagesToTarFromConfig() error {
 }
 
 func imagesInConfigFile() ([]string, error) {
-	configFile, err := config.ReadConfig(localpath.ConfigFile)
+	configFile, err := config.ReadConfig(localpath.ConfigFile())
 	if err != nil {
 		return nil, err
 	}
