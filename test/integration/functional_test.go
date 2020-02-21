@@ -126,16 +126,14 @@ func TestFunctional(t *testing.T) {
 
 // validateNodeLabels checks if minikube cluster is created with correct kubernetes's node label
 func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
-	defer cancel()
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "--output", "jsonpath={.items[0].metadata.labels}"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	// json output would look like this
-	// [beta.kubernetes.io/arch:amd64 beta.kubernetes.io/os:linux minikube.k8s.io/commit:aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name:p1 minikube.k8s.io/updated_at:2020_02_20T12_05_35_0700 minikube.k8s.io/version:v1.7.3 kubernetes.io/arch:amd64 kubernetes.io/hostname:p1 kubernetes.io/os:linux node-role.kubernetes.io/master:]
-
 	var labels []string
+	// json output:
+	// [beta.kubernetes.io/arch:amd64 beta.kubernetes.io/os:linux minikube.k8s.io/commit:aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name:p1 minikube.k8s.io/updated_at:2020_02_20T12_05_35_0700 minikube.k8s.io/version:v1.7.3 kubernetes.io/arch:amd64 kubernetes.io/hostname:p1 kubernetes.io/os:linux node-role.kubernetes.io/master:]
 	err = json.Unmarshal(rr.Stdout.Bytes(), &labels)
 	if err != nil {
 		t.Errorf("%s umarshaling node label from json failed: %v", rr.Args, err)
