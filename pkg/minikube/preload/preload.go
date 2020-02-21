@@ -66,7 +66,10 @@ func remoteTarballURL(k8sVersion string) string {
 }
 
 // CacheTarball caches the preloaded images tarball on the host machine
-func CacheTarball(k8sVersion string) error {
+func CacheTarball(k8sVersion, containerRuntime string) error {
+	if containerRuntime != "docker" {
+		return nil
+	}
 	targetFilepath := TarballFilepath(k8sVersion)
 
 	if _, err := os.Stat(targetFilepath); err == nil {

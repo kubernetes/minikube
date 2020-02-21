@@ -93,7 +93,7 @@ func (d *Driver) Create() error {
 	)
 	t := time.Now()
 	glog.Infof("Starting creating preloaded images volume")
-	volumeName, err := oci.CreatePreloadedImagesVolume(d.NodeConfig.KubernetesVersion, BaseImage, viper.GetString(config.MachineProfile))
+	volumeName, err := oci.CreatePreloadedImagesVolume(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime, BaseImage, viper.GetString(config.MachineProfile))
 	if err != nil {
 		glog.Infof("Unable to create preloaded images volume: %v", err)
 	}

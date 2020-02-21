@@ -53,6 +53,7 @@ func configure(mc config.MachineConfig) (interface{}, error) {
 		OCIBinary:         oci.Docker,
 		APIServerPort:     mc.Nodes[0].Port,
 		KubernetesVersion: mc.KubernetesConfig.KubernetesVersion,
+		ContainerRuntime:  mc.KubernetesConfig.ContainerRuntime,
 	}), nil
 }
 

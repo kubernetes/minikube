@@ -41,7 +41,7 @@ func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons 
 	// If not, pull images in the background while the VM boots.
 	var kicGroup errgroup.Group
 	if driver.IsKIC(driverName) {
-		beginDownloadKicArtifacts(&kicGroup, k8sVersion)
+		beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
 		mc.KubernetesConfig.ShouldLoadCachedImages = false
 	}
 	var cacheGroup errgroup.Group
