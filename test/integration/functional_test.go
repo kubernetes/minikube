@@ -327,7 +327,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes)
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4))
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}

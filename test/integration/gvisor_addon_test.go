@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 func TestGvisorAddon(t *testing.T) {

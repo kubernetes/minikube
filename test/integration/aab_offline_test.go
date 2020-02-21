@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"testing"
-	"time"
 )
 
 func TestOffline(t *testing.T) {

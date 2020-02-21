@@ -28,7 +28,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/google/go-cmp/cmp"
