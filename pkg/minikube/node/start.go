@@ -22,18 +22,17 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util"
 )
 
 // Start spins up a guest and starts the kubernetes node.
-func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
+func Start(mc config.ClusterConfig, n config.Node, preExists bool, existingAddons map[string]bool) error {
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
 	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
@@ -44,33 +43,17 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 		exit.WithError("Failed to save config", err)
 	}
 
+	bs, err := cluster.Bootstrapper()
+
 	k8sVersion := mc.KubernetesConfig.KubernetesVersion
 	driverName := mc.Driver
 	// exits here in case of --download-only option.
 	handleDownloadOnly(&cacheGroup, k8sVersion)
-	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
-	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
 	waitCacheRequiredImages(&cacheGroup)
 
-	//TODO(sharifelgamal): Part out the cluster-wide operations, perhaps using the "primary" param
-
-	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-	kubeconfig, err := setupKubeconfig(host, &mc, &n, mc.Name)
-	if err != nil {
-		exit.WithError("Failed to setup kubeconfig", err)
-	}
-
-	// setup kubeadm (must come after setupKubeconfig)
-	bs := setupKubeAdm(machineAPI, mc, n)
-
-	// pull images or restart cluster
-	out.T(out.Launch, "Launching Kubernetes ... ")
-	if err := bs.StartCluster(mc); err != nil {
-		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, mRunner))
-	}
 	configureMounts()
 
 	// enable addons, both old and new!
@@ -80,7 +63,7 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	}
 	addons.Start(viper.GetString(config.MachineProfile), ea, AddonList)
 
-	if err = CacheAndLoadImagesInConfig(); err != nil {
+	if err := CacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}
 
@@ -96,7 +79,7 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 		}
 	}
 
-	return kubeconfig, nil
+	return nil
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver
