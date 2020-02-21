@@ -63,11 +63,11 @@ func Set(name string, value string) error {
 	// Set the value
 	config, err := pkgConfig.ReadConfig(localpath.ConfigFile)
 	if err != nil {
-		return errors.Wrap(err, "read config")
+		return errors.Wrapf(err, "read config file %q", localpath.ConfigFile)
 	}
 	err = s.set(config, name, value)
 	if err != nil {
-		return errors.Wrap(err, "set")
+		return errors.Wrapf(err, "set")
 	}
 
 	// Run any callbacks for this property
