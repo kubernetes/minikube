@@ -25,15 +25,14 @@ import (
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic"
-	"k8s.io/minikube/pkg/drivers/kic/preload"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/preload"
 )
 
 // beginCacheRequiredImages caches images required for kubernetes version in the background
@@ -47,15 +46,10 @@ func beginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVers
 	})
 }
 
-func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion, driverName string) {
+func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, driverName string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool("download-only") {
 		return
-	}
-	var kicArtifactsGroup errgroup.Group
-	if driver.IsKIC(driverName) { // for kic we need to find what port docker/podman chose for us
-		// Download kic base image and preloaded images tarball
-		beginDownloadKicArtifacts(&kicArtifactsGroup, k8sVersion)
 	}
 	if err := doCacheBinaries(k8sVersion); err != nil {
 		exit.WithError("Failed to cache binaries", err)
@@ -64,7 +58,7 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion, driverName strin
 		exit.WithError("Failed to cache kubectl", err)
 	}
 	waitCacheRequiredImages(cacheGroup)
-	waitDownloadKicArtifacts(&kicArtifactsGroup)
+	waitDownloadKicArtifacts(kicGroup)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.WithError("Failed to cache images to tar", err)
 	}
