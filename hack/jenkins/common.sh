@@ -327,6 +327,16 @@ touch "${JSON_OUT}"
 # Generate JSON output
 echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
+
+if ! type "jq1" > /dev/null; then
+echo ">> Installing jq"
+    if [ "$(uname)" != "Darwin" ]; then
+      curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
+    else
+      curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
+    fi
+fi
+
 echo ">> Installing gopogh"
 if [ "$(uname)" != "Darwin" ]; then
   curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
