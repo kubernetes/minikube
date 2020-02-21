@@ -27,16 +27,16 @@ import (
 func TestNotFound(t *testing.T) {
 	createTestConfig(t)
 	err := Set("nonexistent", "10")
-	if err == nil || err.Error() != "property name \"nonexistent\" not found" {
-		t.Fatalf("Set did not return error for unknown property")
+	if err == nil || err.Error() != "find settings for \"nonexistent\" value of \"10\": property name \"nonexistent\" not found" {
+		t.Fatalf("Set did not return error for unknown property: %+v", err)
 	}
 }
 
 func TestSetNotAllowed(t *testing.T) {
 	createTestConfig(t)
 	err := Set("vm-driver", "123456")
-	if err == nil || err.Error() != "[driver \"123456\" is not supported]" {
-		t.Fatalf("Set did not return error for unallowed value")
+	if err == nil || err.Error() != "run validations for \"vm-driver\" with value of \"123456\": [driver \"123456\" is not supported]" {
+		t.Fatalf("Set did not return error for unallowed value: %+v", err)
 	}
 }
 
@@ -76,5 +76,9 @@ func createTestConfig(t *testing.T) {
 	// Not necessary, but it is a handy random alphanumeric
 	if err = os.MkdirAll(localpath.MakeMiniPath("config"), 0777); err != nil {
 		t.Fatalf("error creating temporary directory: %+v", err)
+	}
+
+	if err = os.MkdirAll(localpath.MakeMiniPath("profiles"), 0777); err != nil {
+		t.Fatalf("error creating temporary profiles directory: %+v", err)
 	}
 }
