@@ -43,7 +43,7 @@ import (
 func TestVersionUpgrade(t *testing.T) {
 	MaybeParallel(t)
 	profile := UniqueProfileName("vupgrade")
-	ctx, cancel := context.WithTimeout(context.Background(), 55*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(55))
 
 	defer CleanupWithLogs(t, profile, cancel)
 
@@ -55,7 +55,7 @@ func TestVersionUpgrade(t *testing.T) {
 	tf.Close()
 
 	url := pkgutil.GetBinaryDownloadURL("latest", runtime.GOOS)
-	if err := retry.Expo(func() error { return getter.GetFile(tf.Name(), url) }, 3*time.Second, 3*time.Minute); err != nil {
+	if err := retry.Expo(func() error { return getter.GetFile(tf.Name(), url) }, 3*time.Second, Minutes(3)); err != nil {
 		t.Fatalf("get failed: %v", err)
 	}
 
@@ -73,7 +73,7 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 
 	// Retry to allow flakiness for the previous release
-	if err := retry.Expo(r, 1*time.Second, 30*time.Minute, 3); err != nil {
+	if err := retry.Expo(r, 1*time.Second, Minutes(30), 3); err != nil {
 		t.Fatalf("release start failed: %v", err)
 	}
 
@@ -123,7 +123,7 @@ func TestVersionUpgrade(t *testing.T) {
 		return err
 	}
 
-	if err := retry.Expo(r, 1*time.Second, 30*time.Minute, 3); err == nil {
+	if err := retry.Expo(r, 1*time.Second, Minutes(30), 3); err == nil {
 		t.Fatalf("downgrading kubernetes should not be allowed: %v", err)
 	}
 

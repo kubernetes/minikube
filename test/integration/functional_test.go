@@ -55,7 +55,7 @@ type validateFunc func(context.Context, *testing.T, string)
 func TestFunctional(t *testing.T) {
 
 	profile := UniqueProfileName("functional")
-	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer func() {
 		p := localSyncTestPath()
 		if err := os.Remove(p); err != nil {
@@ -125,7 +125,7 @@ func TestFunctional(t *testing.T) {
 
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
-	mctx, cancel := context.WithTimeout(ctx, 13*time.Second)
+	mctx, cancel := context.WithTimeout(ctx, Seconds(13))
 	defer cancel()
 	// we should be able to get minikube status with a bash which evaled docker-env
 	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
@@ -137,7 +137,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("Expected status output to include 'Running' after eval docker-env but got \n%s", rr.Output())
 	}
 
-	mctx, cancel = context.WithTimeout(ctx, 13*time.Second)
+	mctx, cancel = context.WithTimeout(ctx, Seconds(13))
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
@@ -294,7 +294,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	}()
 
 	start := time.Now()
-	s, err := ReadLineWithTimeout(ss.Stdout, 300*time.Second)
+	s, err := ReadLineWithTimeout(ss.Stdout, Seconds(300))
 	if err != nil {
 		if runtime.GOOS == "windows" {
 			t.Skipf("failed to read url within %s: %v\noutput: %q\n", time.Since(start), err, s)
@@ -327,7 +327,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 5*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4))
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}
@@ -338,7 +338,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// If the coredns process was stable, this retry wouldn't be necessary.
-	if err = retry.Expo(nslookup, 1*time.Second, 1*time.Minute); err != nil {
+	if err = retry.Expo(nslookup, 1*time.Second, Minutes(1)); err != nil {
 		t.Errorf("nslookup failing: %v", err)
 	}
 
@@ -351,7 +351,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 // validateDryRun asserts that the dry-run mode quickly exits with the right code
 func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	// dry-run mode should always be able to finish quickly (<5s)
-	mctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	mctx, cancel := context.WithTimeout(ctx, Seconds(5))
 	defer cancel()
 
 	// Too little memory!
@@ -364,7 +364,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
 	}
 
-	dctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	dctx, cancel := context.WithTimeout(ctx, Seconds(5))
 	defer cancel()
 	startArgs = append([]string{"start", "-p", profile, "--dry-run", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	c = exec.CommandContext(dctx, Target(), startArgs...)
@@ -580,7 +580,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 10*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -691,7 +691,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "app=mysql", 10*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "app=mysql", Minutes(10))
 	if err != nil {
 		t.Fatalf("podwait: %v", err)
 	}
