@@ -29,11 +29,11 @@ func TestGetOK(t *testing.T) {
 	name := "vm-driver"
 	err := Set(name, "virtualbox")
 	if err != nil {
-		t.Fatalf("Set returned error for property %s: %v", err, name)
+		t.Fatalf("Set returned error for property %s: %v", name, err)
 	}
 	val, err := Get(name)
 	if err != nil {
-		t.Fatalf("Get returned error for property %s: %v", err, name)
+		t.Fatalf("Get returned error for property %s: %v", name, err)
 	}
 	if val != "virtualbox" {
 		t.Fatalf("Get returned %s, expected virtualbox", val)

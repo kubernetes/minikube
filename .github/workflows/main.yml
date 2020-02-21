@@ -381,11 +381,11 @@ jobs:
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
-          echo "--------------------------------------------"
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          echo "----------------${numFail} Failures----------------------------"
           echo $STAT | jq '.FailedTests' || true
-          echo "--------------------------------------------"
-          numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
-          if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
+          echo "-------------------------------------------------------"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   # After all 4 integration tests finished 
   # collect all the reports and upload
   upload_all_reports:
