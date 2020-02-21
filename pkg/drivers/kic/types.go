@@ -16,7 +16,11 @@ limitations under the License.
 
 package kic
 
-import "k8s.io/minikube/pkg/drivers/kic/oci"
+import (
+	"fmt"
+
+	"k8s.io/minikube/pkg/drivers/kic/oci"
+)
 
 const (
 	// Docker default bridge network is named "bridge" (https://docs.docker.com/network/bridge/#use-the-default-bridge-network)
@@ -24,11 +28,19 @@ const (
 	// DefaultPodCIDR is The CIDR to be used for pods inside the node.
 	DefaultPodCIDR = "10.244.0.0/16"
 
-	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
-	BaseImage = "gcr.io/k8s-minikube/kicbase:v0.0.5@sha256:3ddd8461dfb5c3e452ccc44d87750b87a574ec23fc425da67dccc1f0c57d428a"
+	// Version is the current version of kic
+	Version = "v0.0.6"
+	// SHA of the kic base image
+	baseImageSHA = "53725be5106d1d797dff4041d8c297383f32ab2edeff0a69fc3f50263cf17c79"
+
 	// OverlayImage is the cni plugin used for overlay image, created by kind.
 	// CNI plugin image used for kic drivers created by kind.
 	OverlayImage = "kindest/kindnetd:0.5.3"
+)
+
+var (
+	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
+	BaseImage = fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s@sha256:%s", Version, baseImageSHA)
 )
 
 // Config is configuration for the kic driver used by registry
