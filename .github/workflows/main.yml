@@ -66,7 +66,7 @@ jobs:
   # Run the following integration tests after the build_minikube
   # They will run in parallel and use the binaries in previous step
   docker_ubuntu_16_04:
-    needs: [build_minikube]
+    needs: [build_minikube, lint, unit_test]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "Docker_Ubuntu_16_04"
@@ -134,7 +134,7 @@ jobs:
       JOB_NAME: "Docker_Ubuntu_18_04"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    needs: [build_minikube]
+    needs: [build_minikube, lint, unit_test]
     steps:
     - name: Install gopogh
       shell: bash
@@ -190,7 +190,7 @@ jobs:
         echo "-------------------------------------------------------"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   none_ubuntu16_04:
-    needs: [build_minikube]
+    needs: [build_minikube, lint, unit_test]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "None_Ubuntu_16_04"
@@ -252,7 +252,7 @@ jobs:
         echo "-------------------------------------------------------"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   none_ubuntu18_04:
-    needs: [build_minikube]
+    needs: [build_minikube, lint, unit_test]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "None_Ubuntu_18_04"
@@ -314,14 +314,14 @@ jobs:
         echo "-------------------------------------------------------"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   podman_ubuntu_18_04:
-      needs: [build_minikube]
-      env:
-        TIME_ELAPSED: time
-        JOB_NAME: "Podman_Ubuntu_18_04"
-        GOPOGH_RESULT: ""
-        SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-      runs-on: ubuntu-18.04
-      steps:
+    needs: [build_minikube, lint, unit_test]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "Podman_Ubuntu_18_04"
+      GOPOGH_RESULT: ""
+      SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
+    runs-on: ubuntu-18.04
+    steps:
       - name: install podman
         shell: bash
         run: |
@@ -331,8 +331,8 @@ jobs:
           sudo apt-key add - < Release.key || true
           sudo apt-get update -qq
           sudo apt-get -qq -y install podman
-          sudo podman version || true 
-          sudo podman info || true 
+          sudo podman version || true
+          sudo podman info || true
       - name: Install gopogh
         shell: bash
         run: |
@@ -355,7 +355,7 @@ jobs:
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
-          TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
@@ -369,7 +369,7 @@ jobs:
           STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
-          TestsNum=$(echo $STAT | jq '.NumberOfTests')       
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
           echo ::set-env name=STAT::${STAT}
