@@ -66,7 +66,7 @@ jobs:
   # Run the following integration tests after the build_minikube
   # They will run in parallel and use the binaries in previous step
   docker_ubuntu_16_04:
-    needs: [build_minikube]
+    needs: [build_minikube, lint, unit_test]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "Docker_Ubuntu_16_04"
@@ -134,7 +134,7 @@ jobs:
       JOB_NAME: "Docker_Ubuntu_18_04"
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
-    needs: [build_minikube]
+    needs: [build_minikube, lint, unit_test]
     steps:
     - name: Install gopogh
       shell: bash
@@ -190,7 +190,7 @@ jobs:
         echo "-------------------------------------------------------"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   none_ubuntu16_04:
-    needs: [build_minikube]
+    needs: [build_minikube, lint, unit_test]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "None_Ubuntu_16_04"
@@ -252,7 +252,7 @@ jobs:
         echo "-------------------------------------------------------"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   none_ubuntu18_04:
-    needs: [build_minikube]
+    needs: [build_minikube, lint, unit_test]
     env:
       TIME_ELAPSED: time
       JOB_NAME: "None_Ubuntu_18_04"
@@ -314,7 +314,7 @@ jobs:
         echo "-------------------------------------------------------"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   podman_ubuntu_18_04:
-      needs: [build_minikube]
+    needs: [build_minikube, lint, unit_test]
       env:
         TIME_ELAPSED: time
         JOB_NAME: "Podman_Ubuntu_18_04"
