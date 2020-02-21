@@ -121,14 +121,6 @@ func saveChecksumFile(k8sVersion string) error {
 	return ioutil.WriteFile(checksumFilepath(k8sVersion), checksum, 0644)
 }
 
-func cachedTarballExists(k8sVersion string) bool {
-	_, err := os.Stat(TarballFilepath(k8sVersion))
-	if err != nil {
-		return false
-	}
-	return false
-}
-
 // verifyChecksum returns true if the checksum of the local binary matches
 // the checksum of the remote binary
 func verifyChecksum(k8sVersion string) error {
@@ -149,8 +141,4 @@ func verifyChecksum(k8sVersion string) error {
 		return fmt.Errorf("checksum of %s does not match remote checksum", TarballFilepath(k8sVersion))
 	}
 	return nil
-}
-
-func UsingPreloadedVolume(k8sVersion string) bool {
-	return true
 }
