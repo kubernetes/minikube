@@ -340,7 +340,10 @@ if test -f "${HTML_OUT}"; then
 fi
 
 touch "${HTML_OUT}"
-pessimistic_status=$(gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+gopogh_status=$(gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
+test_num=$(echo $gopogh_status | jq '.NumberOfTests')       
+pessimistic_status="$completed with ${fail_num} / ${test_num} failures in ${elapsed}"
 description="completed with ${status} in ${elapsed} minute(s)."
 if [ "$status" = "failure" ]; then
   description="completed with ${pessimistic_status} in ${elapsed} minute(s)."
