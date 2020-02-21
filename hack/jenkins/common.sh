@@ -328,7 +328,7 @@ touch "${JSON_OUT}"
 echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
 
-if ! type "jq1" > /dev/null; then
+if ! type "jq" > /dev/null; then
 echo ">> Installing jq"
     if [ "$(uname)" != "Darwin" ]; then
       curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
