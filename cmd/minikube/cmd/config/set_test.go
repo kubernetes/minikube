@@ -48,15 +48,15 @@ func TestSetOK(t *testing.T) {
 	defer func() {
 		err = Unset("vm-driver")
 		if err != nil {
-			t.Errorf("failed to unset vm-driver")
+			t.Errorf("failed to unset vm-driver: %v", err)
 		}
 	}()
 	if err != nil {
-		t.Fatalf("Set returned error for valid property value")
+		t.Fatalf("Set returned error for valid property value: %v", err)
 	}
 	val, err := Get("vm-driver")
 	if err != nil {
-		t.Fatalf("Get returned error for valid property")
+		t.Fatalf("Get returned error for valid property: %v", err)
 	}
 	if val != "virtualbox" {
 		t.Fatalf("Get returned %s, expected \"virtualbox\"", val)
