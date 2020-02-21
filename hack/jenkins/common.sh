@@ -406,10 +406,9 @@ function retry_github_status() {
     echo "HTTP code ${code}! Retrying in ${timeout} .."
     sleep "${timeout}"
     attempt=$(( attempt + 1 ))
-    timeout=$(( timeout * 2 ))
+    timeout=$(( timeout * 5 )) 
   done
 }
-
 
 
 retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
