@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestDockerFlags(t *testing.T) {
@@ -33,7 +32,7 @@ func TestDockerFlags(t *testing.T) {
 	MaybeParallel(t)
 
 	profile := UniqueProfileName("docker-flags")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
