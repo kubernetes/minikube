@@ -49,7 +49,7 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 	out, err := cmd.CombinedOutput()
 	ip := net.ParseIP(strings.TrimSpace(string(out)))
 	if err != nil {
-		return ip, errors.Wrapf(err, "resolve dns to ip", string(out))
+		return ip, errors.Wrapf(err, "resolve dns to ip: %s", string(out))
 	}
 	glog.Infof("got host ip for mount in container by digging dns: %s", ip.String())
 	return ip, nil
