@@ -82,7 +82,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -slow-machine=true -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
@@ -144,7 +144,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -slow-machine=true -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
@@ -206,7 +206,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -slow-machine=true -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
@@ -268,7 +268,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -slow-machine=true -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
@@ -341,7 +341,7 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -slow-machine=true -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
           min=$((${TIME_ELAPSED}/60))
