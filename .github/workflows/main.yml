@@ -36,6 +36,10 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
+    - name: install libvirt
+      run : | 
+        sudo apt-get update
+        sudo apt-get install -y libvirt-dev
     - name: lint
       env:
         TESTSUITE: lintall
