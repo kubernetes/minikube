@@ -52,7 +52,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/preload"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -438,7 +437,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	}
 
 	// Skip transfer if using preloaded kic volume
-	skipTransfer := driver.IsKIC(cfg.Driver) && preload.UsingPreloadedVolume(cfg.KubernetesConfig.KubernetesVersion)
+	skipTransfer := oci.PreloadedVolumeAttached(cfg.KubernetesConfig.KubernetesVersion, viper.GetString(config.MachineProfile))
 	if !skipTransfer {
 		if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
 			return errors.Wrap(err, "downloading binaries")
