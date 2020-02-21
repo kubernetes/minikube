@@ -26,6 +26,8 @@ import (
 	"path"
 
 	"cloud.google.com/go/storage"
+	"google.golang.org/api/option"
+
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
@@ -87,7 +89,7 @@ func CacheTarball(k8sVersion, containerRuntime string) error {
 		return nil
 	}
 
-	out.T(out.FileDownload, "Downloading preloaded images tarball for k8s {{.version}}:", out.V{"version": k8sVersion})
+	out.T(out.FileDownload, "Downloading preloaded images tarball for k8s {{.version}} ...", out.V{"version": k8sVersion})
 	client := &getter.Client{
 		Src:     url,
 		Dst:     targetFilepath,
@@ -112,13 +114,13 @@ func CacheTarball(k8sVersion, containerRuntime string) error {
 
 func saveChecksumFile(k8sVersion string) error {
 	ctx := context.Background()
-	client, err := storage.NewClient(ctx)
+	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
 	if err != nil {
-		return err
+		return errors.Wrap(err, "getting storage client")
 	}
 	attrs, err := client.Bucket(constants.PreloadedVolumeTarballsBucket).Object(tarballName(k8sVersion)).Attrs(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "getting storage object")
 	}
 	checksum := attrs.MD5
 	return ioutil.WriteFile(checksumFilepath(k8sVersion), checksum, 0644)
@@ -141,7 +143,7 @@ func verifyChecksum(k8sVersion string) error {
 
 	// create a slice of checksum, which is [16]byte
 	if string(remoteChecksum) != string(checksum[:]) {
-		return fmt.Errorf("checksum of %s does not match remote checksum", TarballFilepath(k8sVersion))
+		return fmt.Errorf("checksum of %s does not match remote checksum (%s != %s)", TarballFilepath(k8sVersion), string(remoteChecksum), string(checksum[:]))
 	}
 	return nil
 }
