@@ -30,10 +30,12 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -91,7 +93,7 @@ func (d *Driver) Create() error {
 	)
 	t := time.Now()
 	glog.Infof("Starting creating preloaded images volume")
-	volumeName, err := oci.CreatePreloadedImagesVolume(d.NodeConfig.KubernetesVersion, BaseImage)
+	volumeName, err := oci.CreatePreloadedImagesVolume(d.NodeConfig.KubernetesVersion, BaseImage, viper.GetString(config.MachineProfile))
 	if err != nil {
 		glog.Infof("Unable to create preloaded images volume: %v", err)
 	}

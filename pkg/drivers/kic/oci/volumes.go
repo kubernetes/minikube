@@ -25,7 +25,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/drivers/kic/preload"
+	"k8s.io/minikube/pkg/minikube/preload"
 )
 
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
@@ -90,18 +90,20 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 }
 
 // CreatePreloadedImagesVolume creates a volume with preloaded images
-func CreatePreloadedImagesVolume(k8sVersion, baseImage string) (string, error) {
+// k8sVersion is used to name the volume and baseImage is the image that is run
+// to extract the preloaded images to the volume
+func CreatePreloadedImagesVolume(k8sVersion, baseImage, profile string) (string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return "", errors.Wrap(err, "point host docker-daemon")
 	}
-	volumeName := fmt.Sprintf("k8s-%s", k8sVersion)
+	volumeName := fmt.Sprintf("k8s-%s-%s", k8sVersion, profile)
 	if dockerVolumeExists(volumeName) {
 		return volumeName, nil
 	}
 	if err := createDockerVolume(volumeName); err != nil {
 		return "", errors.Wrap(err, "creating docker volume")
 	}
-	tarballPath := preload.TarballPath(k8sVersion)
+	tarballPath := preload.TarballFilepath(k8sVersion)
 
 	if err := extractTarballToVolume(tarballPath, volumeName, baseImage); err != nil {
 		return "", errors.Wrap(err, "extracting tarball to volume")
@@ -109,6 +111,7 @@ func CreatePreloadedImagesVolume(k8sVersion, baseImage string) (string, error) {
 	return volumeName, nil
 }
 
+// dockerVolumeExists returns true if a docker volume with the passed in name exists
 func dockerVolumeExists(name string) bool {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return false
@@ -120,19 +123,20 @@ func dockerVolumeExists(name string) bool {
 	}
 	names := strings.Split(string(out), "\n")
 	for _, n := range names {
-		if n == name {
+		if strings.TrimSpace(n) == name {
 			return true
 		}
 	}
 	return false
 }
 
+// extractTarballToVolume runs a docker image imageName which extracts the tarball at tarballPath
+// to the volume named volumeName
 func extractTarballToVolume(tarballPath, volumeName, imageName string) error {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return errors.Wrap(err, "point host docker-daemon")
 	}
 	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
-	fmt.Println(cmd.Args)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}

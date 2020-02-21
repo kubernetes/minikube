@@ -63,6 +63,9 @@ const (
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
 	// PodmanVarlinkBridgeEnv is used for podman settings
 	PodmanVarlinkBridgeEnv = "PODMAN_VARLINK_BRIDGE"
+
+	// PreloadedVolumeTarballsBucket is the name of the GCS bucket where preloaded volume tarballs exist
+	PreloadedVolumeTarballsBucket = "minikube-preloaded-volume-tarballs"
 )
 
 var (

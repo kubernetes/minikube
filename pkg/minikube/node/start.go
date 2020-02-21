@@ -22,7 +22,6 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/addons"
-	"k8s.io/minikube/pkg/drivers/kic/preload"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -38,13 +37,15 @@ func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons 
 	k8sVersion := mc.KubernetesConfig.KubernetesVersion
 	driverName := mc.Driver
 
-	// Now that the ISO is downloaded, pull images in the background while the VM boots.
-	var cacheGroup errgroup.Group
-	if !preload.UsingPreloadedVolume(k8sVersion) && driver.IsKIC(driverName) {
-		beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
-	} else {
+	// See if we can create a volume of preloaded images
+	// If not, pull images in the background while the VM boots.
+	var kicGroup errgroup.Group
+	if driver.IsKIC(driverName) {
+		beginDownloadKicArtifacts(&kicGroup, k8sVersion)
 		mc.KubernetesConfig.ShouldLoadCachedImages = false
 	}
+	var cacheGroup errgroup.Group
+	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
@@ -53,13 +54,14 @@ func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons 
 	}
 
 	// exits here in case of --download-only option.
-	handleDownloadOnly(&cacheGroup, k8sVersion, driverName)
+	handleDownloadOnly(&cacheGroup, &kicGroup, k8sVersion, driverName)
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
 	waitCacheRequiredImages(&cacheGroup)
+	waitDownloadKicArtifacts(&kicGroup)
 
 	//TODO(sharifelgamal): Part out the cluster-wide operations, perhaps using the "primary" param
 

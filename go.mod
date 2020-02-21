@@ -3,6 +3,7 @@ module k8s.io/minikube
 go 1.13
 
 require (
+	cloud.google.com/go v0.45.1
 	github.com/Parallels/docker-machine-parallels v1.3.0
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/blang/semver v3.5.0+incompatible
