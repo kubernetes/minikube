@@ -106,6 +106,10 @@ func CreatePreloadedImagesVolume(k8sVersion, baseImage, profile string) (string,
 	tarballPath := preload.TarballFilepath(k8sVersion)
 
 	if err := extractTarballToVolume(tarballPath, volumeName, baseImage); err != nil {
+		// If the extraction didn't work, delete the corrupt docker volume
+		if err := deleteDockerVolume(volumeName); err != nil {
+			glog.Warningf("Corrupt docker volume %s was not deleted successfully. You may need to delete it manually via `docker volume rm %s` for minikube to continue to work.", volumeName, volumeName)
+		}
 		return "", errors.Wrap(err, "extracting tarball to volume")
 	}
 	return volumeName, nil
@@ -151,6 +155,18 @@ func createDockerVolume(name string) error {
 		return errors.Wrap(err, "point host docker-daemon")
 	}
 	cmd := exec.Command(Docker, "volume", "create", name, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, name), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "output %s", string(out))
+	}
+	return nil
+}
+
+// deleteDockerVolume deletes a docker volume with the given name
+func deleteDockerVolume(name string) error {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker-daemon")
+	}
+	cmd := exec.Command(Docker, "volume", "rm", name)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}
