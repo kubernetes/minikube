@@ -43,7 +43,7 @@ import (
 func TestVersionUpgrade(t *testing.T) {
 	MaybeParallel(t)
 	profile := UniqueProfileName("vupgrade")
-	ctx, cancel := context.WithTimeout(context.Background(), 55*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(55))
 
 	defer CleanupWithLogs(t, profile, cancel)
 

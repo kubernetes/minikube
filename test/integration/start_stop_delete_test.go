@@ -84,7 +84,7 @@ func TestStartStop(t *testing.T) {
 				}
 
 				profile := UniqueProfileName(tc.name)
-				ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
+				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
 				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)

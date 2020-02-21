@@ -32,7 +32,7 @@ func TestGuestEnvironment(t *testing.T) {
 	MaybeParallel(t)
 
 	profile := UniqueProfileName("guest")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer CleanupWithLogs(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--install-addons=false", "--wait=false"}, StartArgs()...)

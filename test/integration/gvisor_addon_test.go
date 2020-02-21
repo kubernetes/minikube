@@ -36,7 +36,7 @@ func TestGvisorAddon(t *testing.T) {
 
 	MaybeParallel(t)
 	profile := UniqueProfileName("gvisor")
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(60))
 	defer func() {
 		if t.Failed() {
 			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "gvisor", "-n", "kube-system"))

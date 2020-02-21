@@ -37,7 +37,7 @@ import (
 // TestAddons tests addons that require no special environment -- in parallel
 func TestAddons(t *testing.T) {
 	profile := UniqueProfileName("addons")
-	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1", "--addons=ingress", "--addons=registry", "--addons=metrics-server"}, StartArgs()...)
