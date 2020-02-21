@@ -72,7 +72,7 @@ require (
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
 	k8s.io/api v0.17.3
 	k8s.io/apimachinery v0.17.3
-	k8s.io/client-go v11.0.0+incompatible
+	k8s.io/client-go v0.17.3
 	k8s.io/kubectl v0.0.0
 	k8s.io/kubernetes v1.17.3
 	k8s.io/utils v0.0.0-20200122174043-1e243dd1a584 // indirect
