@@ -38,7 +38,7 @@ import (
 )
 
 func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
-	ctx, cancel := context.WithTimeout(ctx, 20*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, Minutes(20))
 	defer cancel()
 
 	if runtime.GOOS != "windows" {
