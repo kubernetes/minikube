@@ -85,7 +85,6 @@ func CacheTarball(k8sVersion string) error {
 	}
 
 	out.T(out.FileDownload, "Downloading preloaded images tarball for k8s {{.version}}:", out.V{"version": k8sVersion})
-	os.Remove(targetFilepath)
 	client := &getter.Client{
 		Src:     url,
 		Dst:     targetFilepath,
