@@ -327,7 +327,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 5*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes)
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}
@@ -338,7 +338,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// If the coredns process was stable, this retry wouldn't be necessary.
-	if err = retry.Expo(nslookup, 1*time.Second, 1*time.Minute); err != nil {
+	if err = retry.Expo(nslookup, 1*time.Second, Minutes(1)); err != nil {
 		t.Errorf("nslookup failing: %v", err)
 	}
 
@@ -580,7 +580,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 10*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -691,7 +691,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "app=mysql", 10*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "app=mysql", Minutes(10))
 	if err != nil {
 		t.Fatalf("podwait: %v", err)
 	}

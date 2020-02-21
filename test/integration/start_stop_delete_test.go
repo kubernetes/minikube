@@ -128,10 +128,10 @@ func TestStartStop(t *testing.T) {
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
 				} else {
-					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute); err != nil {
+					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4)); err != nil {
 						t.Fatalf("post-stop-start pod wait: %v", err)
 					}
-					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", 4*time.Minute); err != nil {
+					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(4)); err != nil {
 						t.Fatalf("post-stop-start addon wait: %v", err)
 					}
 				}
@@ -178,7 +178,7 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// 8 minutes, because 4 is not enough for images to pull in all cases.
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 8*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(8))
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}
