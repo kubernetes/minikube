@@ -61,9 +61,9 @@ func Set(name string, value string) error {
 	}
 
 	// Set the value
-	config, err := pkgConfig.ReadConfig(localpath.ConfigFile)
+	config, err := pkgConfig.ReadConfig(localpath.ConfigFile())
 	if err != nil {
-		return errors.Wrapf(err, "read config file %q", localpath.ConfigFile)
+		return errors.Wrapf(err, "read config file %q", localpath.ConfigFile())
 	}
 	err = s.set(config, name, value)
 	if err != nil {
@@ -77,5 +77,5 @@ func Set(name string, value string) error {
 	}
 
 	// Write the value
-	return pkgConfig.WriteConfig(localpath.ConfigFile, config)
+	return pkgConfig.WriteConfig(localpath.ConfigFile(), config)
 }
