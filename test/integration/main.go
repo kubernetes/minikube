@@ -34,7 +34,7 @@ var forceProfile = flag.String("profile", "", "force tests to run against a part
 var cleanup = flag.Bool("cleanup", true, "cleanup failed test run")
 var enableGvisor = flag.Bool("gvisor", false, "run gvisor integration test (slow)")
 var postMortemLogs = flag.Bool("postmortem-logs", true, "show logs after a failed test run")
-var slowMachine = flag.Bool("slow-machine", false, "double the timeout for tests to finish")
+var timeOutMultiplier = flag.Float64("timeout-multiplier", 1, "multiply the timeout for the tests")
 
 // Paths to files - normally set for CI
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
@@ -81,16 +81,10 @@ func CanCleanup() bool {
 
 // Minutes will return timeout in minutes based on how slow the machine is
 func Minutes(n int) time.Duration {
-	if *slowMachine { // double time out for slow machines
-		return time.Duration(2) * time.Duration(n) * time.Minute
-	}
-	return time.Duration(n) * time.Minute
+	return time.Duration(*timeOutMultiplier) * time.Duration(n) * time.Minute
 }
 
 // Seconds will return timeout in minutes based on how slow the machine is
 func Seconds(n int) time.Duration {
-	if *slowMachine { // double time out for slow machines
-		return time.Duration(3) * time.Duration(n) * time.Second
-	}
-	return time.Duration(n) * time.Second
+	return time.Duration(*timeOutMultiplier) * time.Duration(n) * time.Second
 }
