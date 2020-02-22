@@ -53,12 +53,12 @@ func TestDownloadOnly(t *testing.T) {
 
 		origMinikubeHome := os.Getenv(localpath.MinikubeHome)
 		defer func() {
-			os.Setenv(localpath.MinikubeHome, origMinikubeHome)
+			_ = os.Setenv(localpath.MinikubeHome, origMinikubeHome)
 		}()
 
 		for _, v := range versions {
 			t.Run(v, func(t *testing.T) {
-				createTestConfig(t)
+				createTempConfig(t)
 
 				// Explicitly does not pass StartArgs() to test driver default
 				// --force to avoid uid check

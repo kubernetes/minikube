@@ -63,7 +63,7 @@ func UniqueProfileName(prefix string) string {
 	return fmt.Sprintf("%s-%s-%d", prefix, time.Now().Format("20060102T150405.999999999"), os.Getpid())
 }
 
-func createTestConfig(t *testing.T) {
+func createTempConfig(t *testing.T) {
 	t.Helper()
 	td, err := ioutil.TempDir("", "config")
 	if err != nil {
@@ -78,5 +78,14 @@ func createTestConfig(t *testing.T) {
 	// Not necessary, but it is a handy random alphanumeric
 	if err = os.MkdirAll(localpath.MakeMiniPath("config"), 0777); err != nil {
 		t.Fatalf("error creating temporary directory: %+v", err)
+	}
+	if err = os.MkdirAll(localpath.MakeMiniPath("caches"), 0777); err != nil {
+		t.Fatalf("error creating temporary directory: %+v", err)
+	}
+	if err = os.MkdirAll(localpath.MakeMiniPath("profiles"), 0777); err != nil {
+		t.Fatalf("error creating temporary directory: %+v", err)
+	}
+	if _, err = os.Create(localpath.ConfigFile()); err != nil {
+		t.Fatalf("error creating temporary config file: %+v", err)
 	}
 }
