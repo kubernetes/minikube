@@ -23,7 +23,7 @@ type setFn func(string, string, string) error
 // Addon represents an addon
 type Addon struct {
 	name        string
-	set         func(*config.MachineConfig, string, string) error
+	set         func(*config.ClusterConfig, string, string) error
 	validations []setFn
 	callbacks   []setFn
 }

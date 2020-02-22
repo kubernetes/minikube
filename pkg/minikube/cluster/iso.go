@@ -22,7 +22,7 @@ import (
 )
 
 // CacheISO downloads and caches ISO.
-func CacheISO(cfg config.MachineConfig) error {
+func CacheISO(cfg config.ClusterConfig) error {
 	if driver.BareMetal(cfg.Driver) {
 		return nil
 	}

@@ -30,13 +30,13 @@ import (
 func TestGenerateKubeletConfig(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         config.MachineConfig
+		cfg         config.ClusterConfig
 		expected    string
 		shouldErr   bool
 	}{
 		{
 			description: "old docker",
-			cfg: config.MachineConfig{
+			cfg: config.ClusterConfig{
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.OldestKubernetesVersion,
 					ContainerRuntime:  "docker",
@@ -61,7 +61,7 @@ ExecStart=/var/lib/minikube/binaries/v1.11.10/kubelet --allow-privileged=true --
 		},
 		{
 			description: "newest cri runtime",
-			cfg: config.MachineConfig{
+			cfg: config.ClusterConfig{
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.NewestKubernetesVersion,
 					ContainerRuntime:  "cri-o",
@@ -86,7 +86,7 @@ ExecStart=/var/lib/minikube/binaries/v1.17.3/kubelet --authorization-mode=Webhoo
 		},
 		{
 			description: "default containerd runtime",
-			cfg: config.MachineConfig{
+			cfg: config.ClusterConfig{
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.DefaultKubernetesVersion,
 					ContainerRuntime:  "containerd",
@@ -111,7 +111,7 @@ ExecStart=/var/lib/minikube/binaries/v1.17.3/kubelet --authorization-mode=Webhoo
 		},
 		{
 			description: "default containerd runtime with IP override",
-			cfg: config.MachineConfig{
+			cfg: config.ClusterConfig{
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.DefaultKubernetesVersion,
 					ContainerRuntime:  "containerd",
@@ -143,7 +143,7 @@ ExecStart=/var/lib/minikube/binaries/v1.17.3/kubelet --authorization-mode=Webhoo
 		},
 		{
 			description: "docker with custom image repository",
-			cfg: config.MachineConfig{
+			cfg: config.ClusterConfig{
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.DefaultKubernetesVersion,
 					ContainerRuntime:  "docker",

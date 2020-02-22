@@ -35,10 +35,10 @@ type LogOptions struct {
 
 // Bootstrapper contains all the methods needed to bootstrap a kubernetes cluster
 type Bootstrapper interface {
-	StartCluster(config.MachineConfig) error
-	UpdateCluster(config.MachineConfig) error
+	StartCluster(config.ClusterConfig) error
+	UpdateCluster(config.ClusterConfig) error
 	DeleteCluster(config.KubernetesConfig) error
-	WaitForCluster(config.MachineConfig, time.Duration) error
+	WaitForCluster(config.ClusterConfig, time.Duration) error
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(LogOptions) map[string]string
 	SetupCerts(config.KubernetesConfig, config.Node) error
