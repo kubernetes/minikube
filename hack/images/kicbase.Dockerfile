@@ -1,18 +1,18 @@
 ARG COMMIT_SHA
-# using base image created by kind https://github.com/kubernetes-sigs/kind
+# using base image created by kind https://github.com/kubernetes-sigs/kind/blob/master/images/base/Dockerfile
 # which is an ubuntu 19.10 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
 FROM kindest/base:v20200122-2dfe64b2 as base
 USER root
-# specify version of everything explcitly using apt-cache policy
+# specify version of everything explicitly using 'apt-cache policy'
 RUN apt-get update && apt-get install -y --no-install-recommends \
-  lz4=1.9.1-1 \
-  sudo=1.8.27-1ubuntu4.1 \
-  gnupg=2.2.12-1ubuntu3 \ 
-  dnsutils=1:9.11.5.P4+dfsg-5.1ubuntu2.1 \
-  docker.io=19.03.2-0ubuntu1 \
-  openssh-server=1:8.0p1-6build1 \
-  && rm /etc/crictl.yaml
+    lz4=1.9.1-1 \
+    gnupg=2.2.12-1ubuntu3 \ 
+    sudo=1.8.27-1ubuntu4.1 \
+    docker.io=19.03.2-0ubuntu1 \
+    openssh-server=1:8.0p1-6build1 \
+    dnsutils=1:9.11.5.P4+dfsg-5.1ubuntu2.1 \
+    && rm /etc/crictl.yaml
 # install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
 RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \    
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
