@@ -412,7 +412,9 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
-	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, r)
+
+	// TODO: multiple nodes
+	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, r, cfg.Nodes[0])
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
