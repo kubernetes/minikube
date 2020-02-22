@@ -54,6 +54,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/retry"
+	"k8s.io/minikube/pkg/version"
 )
 
 // Bootstrapper is a bootstrapper using kubeadm
@@ -149,7 +150,7 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 }
 
 // StartCluster starts the cluster
-func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
+func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	err := bsutil.ExistingConfig(k.c)
 	if err == nil { // if there is an existing cluster don't reconfigure it
 		return k.restartCluster(cfg)
@@ -230,6 +231,9 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 			return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
 		}
 	}
+	if err := k.applyNodeLabels(cfg); err != nil {
+		glog.Warningf("unable to apply node labels: %v", err)
+	}
 
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
@@ -262,7 +266,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForCluster blocks until the cluster appears to be healthy
-func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
 	cp, err := config.PrimaryControlPlane(cfg)
@@ -295,7 +299,7 @@ func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Dur
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
-func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
+func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 	glog.Infof("restartCluster start")
 
 	start := time.Now()
@@ -396,7 +400,7 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) er
 }
 
 // UpdateCluster updates the cluster
-func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
+func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "kubeadm images")
@@ -471,7 +475,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 }
 
 // applyKicOverlay applies the CNI plugin needed to make kic work
-func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
+func (k *Bootstrapper) applyKicOverlay(cfg config.ClusterConfig) error {
 	cmd := exec.Command("sudo",
 		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"-f", "-")
@@ -482,6 +486,28 @@ func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
 	cmd.Stdin = bytes.NewReader(b.Bytes())
 	if rr, err := k.c.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
+	}
+	return nil
+}
+
+// applyNodeLabels applies minikube labels to all the nodes
+func (k *Bootstrapper) applyNodeLabels(cfg config.MachineConfig) error {
+	// time cluster was created. time format is based on ISO 8601 (RFC 3339)
+	// converting - and : to _ because of kubernetes label restriction
+	createdAtLbl := "minikube.k8s.io/updated_at=" + time.Now().Format("2006_01_02T15_04_05_0700")
+	verLbl := "minikube.k8s.io/version=" + version.GetVersion()
+	commitLbl := "minikube.k8s.io/commit=" + version.GetGitCommitID()
+	nameLbl := "minikube.k8s.io/name=" + cfg.Name
+
+	// example:
+	// sudo /var/lib/minikube/binaries/v1.17.3/kubectl label nodes minikube.k8s.io/version=v1.7.3 minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
+	cmd := exec.Command("sudo",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, "--all", "--overwrite",
+		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
+
+	if _, err := k.c.RunCmd(cmd); err != nil {
+		return errors.Wrapf(err, "applying node labels")
 	}
 	return nil
 }

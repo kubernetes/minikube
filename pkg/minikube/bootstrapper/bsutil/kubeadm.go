@@ -36,7 +36,7 @@ import (
 const remoteContainerRuntime = "remote"
 
 // GenerateKubeadmYAML generates the kubeadm.yaml file
-func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager, n config.Node) ([]byte, error) {
+func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.Node) ([]byte, error) {
 	k8s := mc.KubernetesConfig
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
