@@ -31,7 +31,7 @@ func TestGetKuberneterVersion(t *testing.T) {
 		description     string
 		expectedVersion string
 		paramVersion    string
-		cfg             *cfg.MachineConfig
+		cfg             *cfg.ClusterConfig
 	}{
 		{
 			description:     "kubernetes-version not given, no config",
@@ -42,7 +42,7 @@ func TestGetKuberneterVersion(t *testing.T) {
 			description:     "kubernetes-version not given, config available",
 			expectedVersion: "v1.15.0",
 			paramVersion:    "",
-			cfg:             &cfg.MachineConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
+			cfg:             &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
 		},
 		{
 			description:     "kubernetes-version given, no config",
@@ -53,7 +53,7 @@ func TestGetKuberneterVersion(t *testing.T) {
 			description:     "kubernetes-version given, config available",
 			expectedVersion: "v1.16.0",
 			paramVersion:    "v1.16.0",
-			cfg:             &cfg.MachineConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
+			cfg:             &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
 		},
 	}
 

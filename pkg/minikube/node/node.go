@@ -38,7 +38,7 @@ const (
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, k8sVersion string, profileName string) (*config.Node, error) {
+func Add(cc *config.ClusterConfig, name string, controlPlane bool, worker bool, k8sVersion string, profileName string) (*config.Node, error) {
 	n := config.Node{
 		Name:   name,
 		Worker: true,
@@ -69,7 +69,7 @@ func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, 
 }
 
 // Delete stops and deletes the given node from the given cluster
-func Delete(cc config.MachineConfig, name string) error {
+func Delete(cc config.ClusterConfig, name string) error {
 	_, index, err := Retrieve(&cc, name)
 	if err != nil {
 		return err
@@ -95,7 +95,7 @@ func Delete(cc config.MachineConfig, name string) error {
 }
 
 // Retrieve finds the node by name in the given cluster
-func Retrieve(cc *config.MachineConfig, name string) (*config.Node, int, error) {
+func Retrieve(cc *config.ClusterConfig, name string) (*config.Node, int, error) {
 	for i, n := range cc.Nodes {
 		if n.Name == name {
 			return &n, i, nil
@@ -106,7 +106,7 @@ func Retrieve(cc *config.MachineConfig, name string) (*config.Node, int, error) 
 }
 
 // Save saves a node to a cluster
-func Save(cfg *config.MachineConfig, node *config.Node) error {
+func Save(cfg *config.ClusterConfig, node *config.Node) error {
 	update := false
 	for i, n := range cfg.Nodes {
 		if n.Name == node.Name {
