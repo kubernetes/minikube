@@ -22,9 +22,9 @@ For more information on the `docker build` command, read the [Docker documentati
 
 ## Podman (cri-o)
 
-For Podman, there is no daemon running. The processes are started by the user, monitored by `conmon`.
+For Podman, you can either set up your host `podman-remote` client to communicate with Podman service within minikube, by [reusing the Podman service]({{< ref "/docs/tasks/podman_service" >}}).
 
-So you need to use `minikube ssh`, and you will also make sure to run the command as the root user:
+Or you can use `minikube ssh`; you will also make sure to run the command as the root user:
 
 ```shell
 sudo -E podman build
