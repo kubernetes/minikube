@@ -491,7 +491,7 @@ func (k *Bootstrapper) applyKicOverlay(cfg config.ClusterConfig) error {
 }
 
 // applyNodeLabels applies minikube labels to all the nodes
-func (k *Bootstrapper) applyNodeLabels(cfg config.MachineConfig) error {
+func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	// time cluster was created. time format is based on ISO 8601 (RFC 3339)
 	// converting - and : to _ because of kubernetes label restriction
 	createdAtLbl := "minikube.k8s.io/updated_at=" + time.Now().Format("2006_01_02T15_04_05_0700")
