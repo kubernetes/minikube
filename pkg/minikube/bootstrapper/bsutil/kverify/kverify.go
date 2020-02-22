@@ -182,6 +182,7 @@ func apiServerHealthz(ip net.IP, port int) (state.State, error) {
 	return state.Running, nil
 }
 
+// KubeletStatus checks the kubelet status
 func KubeletStatus(cr command.Runner) (state.State, error) {
 	glog.Infof("Checking kubelet status ...")
 	rr, err := cr.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
