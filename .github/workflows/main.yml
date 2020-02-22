@@ -74,6 +74,10 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
     steps:
+    - name: install libvirt
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libvirt-dev
     - name: Install gopogh
       shell: bash
       run: |
@@ -136,6 +140,10 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     needs: [build_minikube]
     steps:
+    - name: install libvirt
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libvirt-dev
     - name: Install gopogh
       shell: bash
       run: |
@@ -198,6 +206,10 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
     steps:
+    - name: install libvirt
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libvirt-dev
     - name: Install gopogh
       shell: bash
       run: |
@@ -260,6 +272,10 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-18.04
     steps:
+    - name: install libvirt
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libvirt-dev
     - name: Install gopogh
       shell: bash
       run: |
@@ -322,6 +338,10 @@ jobs:
         SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
       runs-on: ubuntu-18.04
       steps:
+      - name: install libvirt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libvirt-dev
       - name: install podman
         shell: bash
         run: |
