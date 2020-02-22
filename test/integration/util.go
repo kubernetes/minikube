@@ -79,13 +79,13 @@ func createTempConfig(t *testing.T) {
 	if err = os.MkdirAll(localpath.MakeMiniPath("config"), 0777); err != nil {
 		t.Fatalf("error creating temporary directory: %+v", err)
 	}
+	if err = ioutil.WriteFile(localpath.ConfigFile(), []byte("{}"), 0777); err != nil {
+		t.Fatalf("error creating config file: %+v", err)
+	}
 	if err = os.MkdirAll(localpath.MakeMiniPath("caches"), 0777); err != nil {
 		t.Fatalf("error creating temporary directory: %+v", err)
 	}
 	if err = os.MkdirAll(localpath.MakeMiniPath("profiles"), 0777); err != nil {
 		t.Fatalf("error creating temporary directory: %+v", err)
-	}
-	if _, err = os.Create(localpath.ConfigFile()); err != nil {
-		t.Fatalf("error creating temporary config file: %+v", err)
 	}
 }
