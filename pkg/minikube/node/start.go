@@ -55,13 +55,14 @@ func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons 
 
 	// exits here in case of --download-only option.
 	handleDownloadOnly(&cacheGroup, &kicGroup, k8sVersion, driverName)
+	waitDownloadKicArtifacts(&kicGroup)
+
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
 	waitCacheRequiredImages(&cacheGroup)
-	waitDownloadKicArtifacts(&kicGroup)
 
 	//TODO(sharifelgamal): Part out the cluster-wide operations, perhaps using the "primary" param
 
