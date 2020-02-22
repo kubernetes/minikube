@@ -43,10 +43,14 @@ import (
 )
 
 var (
-	DockerEnv    []string
-	DockerOpt    []string
+	// DockerEnv contains the environment variables
+	DockerEnv []string
+	// DockerOpt contains the option parameters
+	DockerOpt []string
+	// ExtraOptions contains extra options (if any)
 	ExtraOptions config.ExtraOptionSlice
-	AddonList    []string
+	// AddonList contains the list of addons
+	AddonList []string
 )
 
 // configureRuntimes does what needs to happen to get a runtime going.

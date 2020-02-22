@@ -27,11 +27,15 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
+// ContainerState is the run state of a container
 type ContainerState int
 
 const (
+	// All is all of the states
 	All ContainerState = iota
+	// Running is only running
 	Running
+	// Paused is only paused
 	Paused
 )
 
@@ -106,6 +110,7 @@ type Config struct {
 	KubernetesVersion string
 }
 
+// ListOptions are the options to use for listing containers
 type ListOptions struct {
 	// State is the container state to filter by (All, Running, Paused)
 	State ContainerState
