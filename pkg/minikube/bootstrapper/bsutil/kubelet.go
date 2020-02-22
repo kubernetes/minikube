@@ -30,7 +30,7 @@ import (
 
 // NewKubeletConfig generates a new systemd unit containing a configured kubelet
 // based on the options present in the KubernetesConfig.
-func NewKubeletConfig(mc config.MachineConfig, nc config.Node, r cruntime.Manager) ([]byte, error) {
+func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) ([]byte, error) {
 	k8s := mc.KubernetesConfig
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
