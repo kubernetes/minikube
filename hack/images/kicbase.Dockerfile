@@ -21,7 +21,7 @@ RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/lib
 # install podman
 RUN apt-get install -y --no-install-recommends podman=1.8.0~7
 # disable non-docker runtimes by default
-RUN systemctl disable containerd && systemctl disable crio
+RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
 # enable docker which is default
 RUN systemctl enable docker
 # making SSH work for docker container 
