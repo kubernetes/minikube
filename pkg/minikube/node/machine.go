@@ -39,7 +39,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-func startMachine(cfg *config.MachineConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
@@ -68,7 +68,7 @@ func startMachine(cfg *config.MachineConfig, node *config.Node) (runner command.
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, mc config.MachineConfig) (*host.Host, bool) {
+func startHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, bool) {
 	exists, err := api.Exists(mc.Name)
 	if err != nil {
 		exit.WithError("Failed to check if machine exists", err)
