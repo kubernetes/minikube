@@ -50,8 +50,16 @@ func TestDownloadOnly(t *testing.T) {
 			constants.DefaultKubernetesVersion,
 			constants.NewestKubernetesVersion,
 		}
+
+		origMinikubeHome := os.Getenv(localpath.MinikubeHome)
+		defer func() {
+			os.Setenv(localpath.MinikubeHome, origMinikubeHome)
+		}()
+
 		for _, v := range versions {
 			t.Run(v, func(t *testing.T) {
+				createTestConfig(t)
+
 				// Explicitly does not pass StartArgs() to test driver default
 				// --force to avoid uid check
 				args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v)}

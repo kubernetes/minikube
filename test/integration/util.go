@@ -19,8 +19,12 @@ package integration
 import (
 	"bufio"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"testing"
 	"time"
+
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // ReadLineWithTimeout reads a line of text from a buffer with a timeout
@@ -57,4 +61,22 @@ func UniqueProfileName(prefix string) string {
 		return "minikube"
 	}
 	return fmt.Sprintf("%s-%s-%d", prefix, time.Now().Format("20060102T150405.999999999"), os.Getpid())
+}
+
+func createTestConfig(t *testing.T) {
+	t.Helper()
+	td, err := ioutil.TempDir("", "config")
+	if err != nil {
+		t.Fatalf("tempdir: %v", err)
+	}
+
+	err = os.Setenv(localpath.MinikubeHome, td)
+	if err != nil {
+		t.Fatalf("error setting up test environment. could not set %s due to %+v", localpath.MinikubeHome, err)
+	}
+
+	// Not necessary, but it is a handy random alphanumeric
+	if err = os.MkdirAll(localpath.MakeMiniPath("config"), 0777); err != nil {
+		t.Fatalf("error creating temporary directory: %+v", err)
+	}
 }
