@@ -85,7 +85,7 @@ func init() {
     })
 }
 
-func createVMwareFusionHost(config cfg.MachineConfig) interface{} {
+func createVMwareFusionHost(config cfg.ClusterConfig) interface{} {
     d := vmwarefusion.NewDriver(config.Name, localpath.MiniPath()).(*vmwarefusion.Driver)
     d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
     d.Memory = config.Memory

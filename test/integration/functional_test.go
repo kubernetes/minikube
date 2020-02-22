@@ -112,6 +112,7 @@ func TestFunctional(t *testing.T) {
 			{"FileSync", validateFileSync},
 			{"UpdateContextCmd", validateUpdateContextCmd},
 			{"DockerEnv", validateDockerEnv},
+			{"NodeLabels", validateNodeLabels},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -121,6 +122,20 @@ func TestFunctional(t *testing.T) {
 			})
 		}
 	})
+}
+
+// validateNodeLabels checks if minikube cluster is created with correct kubernetes's node label
+func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "--output=go-template", "--template='{{range $k, $v := (index .items 0).metadata.labels}}{{$k}} {{end}}'"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	expectedLabels := []string{"minikube.k8s.io/commit", "minikube.k8s.io/version", "minikube.k8s.io/updated_at", "minikube.k8s.io/name"}
+	for _, el := range expectedLabels {
+		if !strings.Contains(rr.Output(), el) {
+			t.Errorf("expected to have label %q in node labels: %q", expectedLabels, rr.Output())
+		}
+	}
 }
 
 // check functionality of minikube after evaling docker-env
