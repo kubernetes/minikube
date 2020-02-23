@@ -201,7 +201,7 @@ func (r *CRIO) PauseContainers(ids []string) error {
 	return pauseCRIContainers(r.Runner, "", ids)
 }
 
-// PauseContainers pauses a running container based on ID
+// UnpauseContainers unpauses a running container based on ID
 func (r *CRIO) UnpauseContainers(ids []string) error {
 	return unpauseCRIContainers(r.Runner, "", ids)
 }

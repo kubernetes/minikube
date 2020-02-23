@@ -36,14 +36,14 @@ func TestMntCmd(t *testing.T) {
 			source: "src",
 			target: "target",
 			cfg:    &MountConfig{Type: "9p", Mode: os.FileMode(0700)},
-			want:   "sudo mount -t 9p -o dfltgid=0,dfltuid=0 src target",
+			want:   "sudo mount -t 9p -o dfltgid=0,dfltuid=0,trans=tcp src target",
 		},
 		{
 			name:   "named uid",
 			source: "src",
 			target: "target",
 			cfg:    &MountConfig{Type: "9p", Mode: os.FileMode(0700), UID: "docker", GID: "docker"},
-			want:   "sudo mount -t 9p -o dfltgid=$(grep ^docker: /etc/group | cut -d: -f3),dfltuid=$(id -u docker) src target",
+			want:   "sudo mount -t 9p -o dfltgid=$(grep ^docker: /etc/group | cut -d: -f3),dfltuid=$(id -u docker),trans=tcp src target",
 		},
 		{
 			name:   "everything",
@@ -53,7 +53,7 @@ func TestMntCmd(t *testing.T) {
 				"noextend": "",
 				"cache":    "fscache",
 			}},
-			want: "sudo mount -t 9p -o cache=fscache,dfltgid=72,dfltuid=82,noextend,version=9p2000.u 10.0.0.1 /target",
+			want: "sudo mount -t 9p -o cache=fscache,dfltgid=72,dfltuid=82,noextend,trans=tcp,version=9p2000.u 10.0.0.1 /target",
 		},
 		{
 			name:   "version-conflict",
@@ -62,7 +62,7 @@ func TestMntCmd(t *testing.T) {
 			cfg: &MountConfig{Type: "9p", Mode: os.FileMode(0700), Version: "9p2000.u", Options: map[string]string{
 				"version": "9p2000.L",
 			}},
-			want: "sudo mount -t 9p -o dfltgid=0,dfltuid=0,version=9p2000.L src tgt",
+			want: "sudo mount -t 9p -o dfltgid=0,dfltuid=0,trans=tcp,version=9p2000.L src tgt",
 		},
 	}
 

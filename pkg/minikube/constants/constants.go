@@ -28,9 +28,9 @@ import (
 
 const (
 	// DefaultKubernetesVersion is the default kubernetes version
-	DefaultKubernetesVersion = "v1.17.2"
+	DefaultKubernetesVersion = "v1.17.3"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
-	NewestKubernetesVersion = "v1.17.2"
+	NewestKubernetesVersion = "v1.17.3"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.11.10"
 	// DefaultMachineName is the default name for the VM
@@ -72,11 +72,8 @@ var (
 	GvisorConfigTomlTargetName = "gvisor-config.toml"
 	// MountProcessFileName is the filename of the mount process
 	MountProcessFileName = ".mount-process"
+
 	// SHASuffix is the suffix of a SHA-256 checksum file
-
-)
-
-var (
 	SHASuffix = ".sha256"
 	// DefaultISOURL is the default location of the minikube.iso file
 	DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetISOPath(), minikubeVersion.GetISOVersion())
@@ -88,13 +85,13 @@ var (
 
 	// DefaultMinipath is the default Minikube path (under the home directory)
 	DefaultMinipath = filepath.Join(homedir.HomeDir(), ".minikube")
-	// KubeconfigEnvVar is the env var to check for the Kubernetes client config
 
+	// KubeconfigEnvVar is the env var to check for the Kubernetes client config
 	KubeconfigEnvVar = clientcmd.RecommendedConfigPathEnvVar
 	// KubeconfigPath is the path to the Kubernetes client config
 	KubeconfigPath = clientcmd.RecommendedHomeFile
-	// ImageRepositories contains all known image repositories
 
+	// ImageRepositories contains all known image repositories
 	ImageRepositories = map[string][]string{
 		"global": {""},
 		"cn":     {"registry.cn-hangzhou.aliyuncs.com/google_containers"},

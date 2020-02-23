@@ -32,7 +32,9 @@ import (
 const MinikubeHome = "MINIKUBE_HOME"
 
 // ConfigFile is the path of the config file
-var ConfigFile = MakeMiniPath("config", "config.json")
+func ConfigFile() string {
+	return MakeMiniPath("config", "config.json")
+}
 
 // MiniPath returns the path to the user's minikube dir
 func MiniPath() string {

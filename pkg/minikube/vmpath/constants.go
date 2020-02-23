@@ -31,6 +31,6 @@ const (
 	GuestCertAuthDir = "/usr/share/ca-certificates"
 	// GuestCertStoreDir is where system SSL certificates are installed
 	GuestCertStoreDir = "/etc/ssl/certs"
-	// Where gvisor bootstraps from
+	// GuestGvisorDir is where gvisor bootstraps from
 	GuestGvisorDir = "/tmp/gvisor"
 )

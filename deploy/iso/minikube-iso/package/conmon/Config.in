@@ -1,5 +1,5 @@
-config BR2_PACKAGE_CONMON_MASTER
-	bool "conmon-master"
+config BR2_PACKAGE_CONMON
+	bool "conmon"
 	depends on BR2_PACKAGE_HOST_GO_ARCH_SUPPORTS
 	depends on BR2_PACKAGE_HOST_GO_CGO_LINKING_SUPPORTS
 	depends on BR2_TOOLCHAIN_HAS_THREADS

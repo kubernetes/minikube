@@ -24,7 +24,6 @@ import (
 	"os"
 	"os/exec"
 	"testing"
-	"time"
 )
 
 func TestOffline(t *testing.T) {
@@ -39,7 +38,7 @@ func TestOffline(t *testing.T) {
 				}
 
 				profile := UniqueProfileName(fmt.Sprintf("offline-%s", runtime))
-				ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+				ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 				defer CleanupWithLogs(t, profile, cancel)
 
 				startArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=1", "--wait=true", "--container-runtime", runtime}

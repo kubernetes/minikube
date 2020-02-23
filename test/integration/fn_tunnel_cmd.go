@@ -38,7 +38,7 @@ import (
 )
 
 func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
-	ctx, cancel := context.WithTimeout(ctx, 20*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, Minutes(20))
 	defer cancel()
 
 	if runtime.GOOS != "windows" {
@@ -71,17 +71,17 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", 4*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", Minutes(4)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
-	if err := kapi.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, 2*time.Minute); err != nil {
+	if err := kapi.WaitForService(client, "default", "nginx-svc", true, 1*time.Second, Minutes(2)); err != nil {
 		t.Fatal(errors.Wrap(err, "Error waiting for nginx service to be up"))
 	}
 
 	// Wait until the nginx-svc has a loadbalancer ingress IP
 	nginxIP := ""
-	err = wait.PollImmediate(1*time.Second, 3*time.Minute, func() (bool, error) {
+	err = wait.PollImmediate(1*time.Second, Minutes(3), func() (bool, error) {
 		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
 		if err != nil {
 			return false, err
@@ -119,7 +119,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 		return nil
 	}
-	if err = retry.Expo(fetch, time.Millisecond*500, 2*time.Minute, 6); err != nil {
+	if err = retry.Expo(fetch, time.Millisecond*500, Minutes(2), 6); err != nil {
 		t.Errorf("failed to contact nginx at %s: %v", nginxIP, err)
 	}
 

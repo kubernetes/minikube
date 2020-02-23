@@ -34,6 +34,31 @@ import (
 	"strings"
 )
 
+// DeleteAllContainersByLabel deletes all containers that have a specific label
+// if there no containers found with the given 	label, it will return nil
+func DeleteAllContainersByLabel(ociBin string, label string) []error {
+	var deleteErrs []error
+	if ociBin == Docker {
+		if err := PointToHostDockerDaemon(); err != nil {
+			return []error{errors.Wrap(err, "point host docker-daemon")}
+		}
+	}
+	cs, err := listContainersByLabel(ociBin, label)
+	if err != nil {
+		return []error{fmt.Errorf("listing containers by label %q", label)}
+	}
+	if len(cs) == 0 {
+		return nil
+	}
+	for _, c := range cs {
+		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
+		}
+	}
+	return deleteErrs
+}
+
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	if err := PointToHostDockerDaemon(); err != nil {
@@ -57,24 +82,28 @@ func CreateContainerNode(p CreateParams) error {
 		"-v", "/lib/modules:/lib/modules:ro",
 		"--hostname", p.Name, // make hostname match container name
 		"--name", p.Name, // ... and set the container name
+		"--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"),
 		// label the node with the cluster ID
 		"--label", p.ClusterLabel,
 		// label the node with the role ID
-		"--label", fmt.Sprintf("%s=%s", nodeRoleKey, p.Role),
-	}
-
-	// volume path in minikube home folder to mount to /var
-	hostVarVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name, "var")
-	if err := os.MkdirAll(hostVarVolPath, 0711); err != nil {
-		return errors.Wrapf(err, "create var dir %s", hostVarVolPath)
+		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, p.Role),
 	}
 
 	if p.OCIBinary == Podman { // enable execing in /var
+		// volume path in minikube home folder to mount to /var
+		hostVarVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name, "var")
+		if err := os.MkdirAll(hostVarVolPath, 0711); err != nil {
+			return errors.Wrapf(err, "create var dir %s", hostVarVolPath)
+		}
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
 	}
 	if p.OCIBinary == Docker {
-		runArgs = append(runArgs, "--volume", "/var")
+		if err := createDockerVolume(p.Name); err != nil {
+			return errors.Wrapf(err, "creating volume for %s container", p.Name)
+		}
+		glog.Infof("Successfully created a docker volume %s", p.Name)
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// setting resource limit in privileged mode is only supported by docker
 		// podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
 		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs), fmt.Sprintf("--memory=%s", p.Memory))
@@ -264,7 +293,7 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
 func ListOwnedContainers(ociBinary string) ([]string, error) {
-	return listContainersByLabel(ociBinary, ClusterLabelKey)
+	return listContainersByLabel(ociBinary, ProfileLabelKey)
 }
 
 // inspect return low-level information on containers
@@ -395,23 +424,23 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 	}
 }
 
-// listContainersByLabel lists all the containres that kic driver created on user's machine using a label
-// io.x-k8s.kic.cluster
+// listContainersByLabel returns all the container names with a specified label
 func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return nil, errors.Wrap(err, "point host docker-daemon")
 	}
 	cmd := exec.Command(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
-	var b bytes.Buffer
-	cmd.Stdout = &b
-	cmd.Stderr = &b
-	err := cmd.Run()
-	var lines []string
-	sc := bufio.NewScanner(&b)
-	for sc.Scan() {
-		lines = append(lines, sc.Text())
+	stdout, err := cmd.Output()
+	s := bufio.NewScanner(bytes.NewReader(stdout))
+	var names []string
+	for s.Scan() {
+		n := strings.TrimSpace(s.Text())
+		if n != "" {
+			names = append(names, n)
+		}
 	}
-	return lines, err
+
+	return names, err
 }
 
 // PointToHostDockerDaemon will unset env variables that point to docker inside minikube
