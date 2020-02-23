@@ -53,7 +53,7 @@ func TestAddons(t *testing.T) {
 			validator validateFunc
 		}{
 			{"Registry", validateRegistryAddon},
-			{"Ingress", validateIngressAddon},
+			// {"Ingress", validateIngressAddon},
 			{"MetricsServer", validateMetricsServerAddon},
 		}
 		for _, tc := range tests {

@@ -217,20 +217,19 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		}
 	}
 
-	if !driver.IsKIC(cfg.Driver) { // TODO: skip for both after verifications https://github.com/kubernetes/minikube/issues/6239
-		glog.Infof("Configuring cluster permissions ...")
-		elevate := func() error {
-			client, err := k.client(cp.IP, cp.Port)
-			if err != nil {
-				return err
-			}
-			return bsutil.ElevateKubeSystemPrivileges(client)
+	glog.Infof("Configuring cluster permissions ...")
+	elevate := func() error {
+		client, err := k.client(cp.IP, cp.Port)
+		if err != nil {
+			return err
 		}
-
-		if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
-			return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
-		}
+		return bsutil.ElevateKubeSystemPrivileges(client)
 	}
+
+	if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
+		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
+	}
+
 	if err := k.applyNodeLabels(cfg); err != nil {
 		glog.Warningf("unable to apply node labels: %v", err)
 	}
