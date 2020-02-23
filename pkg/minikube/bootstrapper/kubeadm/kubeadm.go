@@ -225,8 +225,13 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	}
 
 	glog.Infof("Configuring cluster permissions ...")
-	if err := bsutil.ElevateKubeSystemPrivileges(client); err != nil {
-		glog.Warningf("unable to elevate kube system privileges, some addons might not work : %v. ", err)
+	client, err := k.client(cp.IP, cp.Port)
+	if err != nil {
+		glog.Warningf("failed to get kube client to eleveate permissions, some addons might not work. : %v. ", err)
+	} else {
+		if err := bsutil.ElevateKubeSystemPrivileges(client); err != nil {
+			glog.Warningf("unable to elevate kube system privileges, some addons might not work : %v. ", err)
+		}
 	}
 
 	return nil
