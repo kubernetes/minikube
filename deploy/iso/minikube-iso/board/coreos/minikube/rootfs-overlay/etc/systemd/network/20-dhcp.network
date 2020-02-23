@@ -3,6 +3,7 @@ Name=eth*
 
 [Network]
 DHCP=ipv4
+LinkLocalAddressing=no
 
 [DHCP]
 ClientIdentifier=mac

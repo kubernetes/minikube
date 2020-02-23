@@ -36,8 +36,13 @@ import (
 )
 
 var (
+	// DockerEnv contains the environment variables
 	DockerEnv []string
+	// DockerOpt contains the option parameters
 	DockerOpt []string
+	// ExtraOptions contains extra options (if any)
+	ExtraOptions config.ExtraOptionSlice
+	// AddonList contains the list of addons
 	AddonList []string
 )
 
@@ -72,6 +77,58 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	}
 }
 
+<<<<<<< HEAD
+=======
+// setupKubeAdm adds any requested files into the VM before Kubernetes is started
+func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Node) bootstrapper.Bootstrapper {
+	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
+	if err != nil {
+		exit.WithError("Failed to get bootstrapper", err)
+	}
+	for _, eo := range ExtraOptions {
+		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
+	}
+	// Loads cached images, generates config files, download binaries
+	if err := bs.UpdateCluster(cfg); err != nil {
+		exit.WithError("Failed to update cluster", err)
+	}
+	if err := bs.SetupCerts(cfg.KubernetesConfig, node); err != nil {
+		exit.WithError("Failed to setup certs", err)
+	}
+	return bs
+}
+
+func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
+	addr, err := h.Driver.GetURL()
+	if err != nil {
+		exit.WithError("Failed to get driver URL", err)
+	}
+	if !driver.IsKIC(h.DriverName) {
+		addr = strings.Replace(addr, "tcp://", "https://", -1)
+		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(n.Port), -1)
+	}
+
+	if c.KubernetesConfig.APIServerName != constants.APIServerName {
+		addr = strings.Replace(addr, n.IP, c.KubernetesConfig.APIServerName, -1)
+	}
+	kcs := &kubeconfig.Settings{
+		ClusterName:          clusterName,
+		ClusterServerAddress: addr,
+		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
+		ClientKey:            localpath.MakeMiniPath("client.key"),
+		CertificateAuthority: localpath.MakeMiniPath("ca.crt"),
+		KeepContext:          viper.GetBool(keepContext),
+		EmbedCerts:           viper.GetBool(embedCerts),
+	}
+
+	kcs.SetPath(kubeconfig.PathFromEnv())
+	if err := kubeconfig.Update(kcs); err != nil {
+		return kcs, err
+	}
+	return kcs, nil
+}
+
+>>>>>>> c4e2236e2b2966cb05fa11b3bdc8cf1d060a270c
 // configureMounts configures any requested filesystem mounts
 func configureMounts() {
 	if !viper.GetBool(createMount) {

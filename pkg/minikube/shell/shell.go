@@ -97,7 +97,7 @@ func generateUsageHint(sh, usgPlz, usgCmd string) string {
 `, usgPlz, usgCmd),
 		"fish": fmt.Sprintf(`
 # %s
-# eval (%s)
+# %s | source
 `, usgPlz, usgCmd),
 		"powershell": fmt.Sprintf(`# %s
 # & %s | Invoke-Expression

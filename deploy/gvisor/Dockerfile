@@ -14,5 +14,6 @@
 
 # Need an image with chroot
 FROM alpine:3
+RUN apk -U add ca-certificates
 COPY out/gvisor-addon /gvisor-addon
 CMD ["/gvisor-addon"]

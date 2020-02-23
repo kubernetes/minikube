@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"testing"
-	"time"
 )
 
 func TestGvisorAddon(t *testing.T) {
@@ -36,7 +35,7 @@ func TestGvisorAddon(t *testing.T) {
 
 	MaybeParallel(t)
 	profile := UniqueProfileName("gvisor")
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(60))
 	defer func() {
 		if t.Failed() {
 			rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "gvisor", "-n", "kube-system"))
@@ -65,7 +64,7 @@ func TestGvisorAddon(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 4*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", Minutes(4)); err != nil {
 		t.Fatalf("waiting for gvisor controller to be up: %v", err)
 	}
 
@@ -80,10 +79,10 @@ func TestGvisorAddon(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", 4*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", Minutes(4)); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", 4*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", Minutes(4)); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
 
@@ -97,13 +96,13 @@ func TestGvisorAddon(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
-	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", 4*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", Minutes(4)); err != nil {
 		t.Errorf("waiting for gvisor controller to be up: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", 4*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", Minutes(4)); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", 4*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", Minutes(4)); err != nil {
 		t.Errorf("nginx: %v", err)
 	}
 }

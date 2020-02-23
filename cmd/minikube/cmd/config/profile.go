@@ -65,11 +65,7 @@ var ProfileCmd = &cobra.Command{
 		}
 
 		if !pkgConfig.ProfileExists(profile) {
-			err := pkgConfig.CreateEmptyProfile(profile)
-			if err != nil {
-				exit.WithError("Creating a new profile failed", err)
-			}
-			out.SuccessT("Created a new profile : {{.profile_name}}", out.V{"profile_name": profile})
+			out.FailureT("if you want to create a profile you can by this command: minikube start -p {{.profile_name}}", out.V{"profile_name": profile})
 		}
 
 		err := Set(pkgConfig.MachineProfile, profile)
@@ -91,7 +87,7 @@ var ProfileCmd = &cobra.Command{
 					out.ErrT(out.Sad, `Error while setting kubectl current context :  {{.error}}`, out.V{"error": err})
 				}
 			}
+			out.SuccessT("minikube profile was successfully set to {{.profile_name}}", out.V{"profile_name": profile})
 		}
-		out.SuccessT("minikube profile was successfully set to {{.profile_name}}", out.V{"profile_name": profile})
 	},
 }
