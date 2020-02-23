@@ -18,6 +18,7 @@ package kubeadm
 
 import (
 	"bytes"
+	"context"
 	"os/exec"
 	"path"
 
@@ -173,11 +174,6 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return err
 	}
 
-	cp, err := config.PrimaryControlPlane(cfg)
-	if err != nil {
-		return err
-	}
-
 	ignore := []string{
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestManifestsDir, "/", "-", -1)),
 		fmt.Sprintf("DirAvailable-%s", strings.Replace(vmpath.GuestPersistentDir, "/", "-", -1)),
@@ -224,14 +220,8 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
 
-	glog.Infof("Configuring cluster permissions ...")
-	client, err := k.client(cp.IP, cp.Port)
-	if err != nil {
-		glog.Warningf("failed to get kube client to eleveate permissions, some addons might not work. : %v. ", err)
-	} else {
-		if err := bsutil.ElevateKubeSystemPrivileges(client); err != nil {
-			glog.Warningf("unable to elevate kube system privileges, some addons might not work : %v. ", err)
-		}
+	if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
+		glog.Warningf("unable to create cluster role binding, some addons might not work : %v. ", err)
 	}
 
 	return nil
@@ -471,7 +461,10 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 
 // applyKicOverlay applies the CNI plugin needed to make kic work
 func (k *Bootstrapper) applyKicOverlay(cfg config.ClusterConfig) error {
-	cmd := exec.Command("sudo",
+	// Allow no more than 5 seconds for apply kic overlay
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "sudo",
 		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"-f", "-")
 	b := bytes.Buffer{}
@@ -494,9 +487,12 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	commitLbl := "minikube.k8s.io/commit=" + version.GetGitCommitID()
 	nameLbl := "minikube.k8s.io/name=" + cfg.Name
 
+	// Allow no more than 5 seconds for applying labels
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 	// example:
 	// sudo /var/lib/minikube/binaries/v1.17.3/kubectl label nodes minikube.k8s.io/version=v1.7.3 minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
-	cmd := exec.Command("sudo",
+	cmd := exec.CommandContext(ctx, "sudo",
 		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
 		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, "--all", "--overwrite",
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
@@ -505,4 +501,28 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 		return errors.Wrapf(err, "applying node labels")
 	}
 	return nil
+}
+
+// elevateKubeSystemPrivileges gives the kube-system service account cluster admin privileges to work with RBAC.
+func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) error {
+	start := time.Now()
+	// Allow no more than 5 seconds for creating cluster role bindings
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	rbacName := "minikube-rbac"
+	// kubectl create clusterrolebinding minikube-rbac --clusterrole=cluster-admin --serviceaccount=kube-system:default
+	cmd := exec.CommandContext(ctx, "sudo",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+		"create", "clusterrolebinding", rbacName, "--clusterrole=cluster-admin", "--serviceaccount=kube-system:default",
+		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
+	rr, err := k.c.RunCmd(cmd)
+	if err != nil {
+		// Error from server (AlreadyExists): clusterrolebindings.rbac.authorization.k8s.io "minikube-rbac" already exists
+		if strings.Contains(rr.Output(), fmt.Sprintf("Error from server (AlreadyExists)")) {
+			glog.Infof("rbac %q already exists not need to re-create.", rbacName)
+			return nil
+		}
+	}
+	glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
+	return err
 }
