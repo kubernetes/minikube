@@ -72,12 +72,15 @@ func TestDownloadOnly(t *testing.T) {
 					t.Errorf("kubeadm images: %v %+v", v, err)
 				}
 
-				for _, img := range imgs {
-					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
-					fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
-					_, err := os.Stat(fp)
-					if err != nil {
-						t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+				// skip verify for cache images if --vm-driver=none
+				if !strings.Contains(strings.Join(StartArgs(), " "), "--vm-driver=none") {
+					for _, img := range imgs {
+						img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
+						fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
+						_, err := os.Stat(fp)
+						if err != nil {
+							t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+						}
 					}
 				}
 
