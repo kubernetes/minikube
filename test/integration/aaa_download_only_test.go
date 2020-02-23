@@ -54,7 +54,7 @@ func TestDownloadOnly(t *testing.T) {
 			t.Run(v, func(t *testing.T) {
 				// Explicitly does not pass StartArgs() to test driver default
 				// --force to avoid uid check
-				args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v)}
+				args := append([]string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v)}, StartArgs()...)
 
 				// Preserve the initial run-result for debugging
 				if rrr == nil {
@@ -69,7 +69,7 @@ func TestDownloadOnly(t *testing.T) {
 
 				imgs, err := images.Kubeadm("", v)
 				if err != nil {
-					t.Errorf("kubeadm images: %v", v)
+					t.Errorf("kubeadm images: %v %+v", v, err)
 				}
 
 				for _, img := range imgs {
