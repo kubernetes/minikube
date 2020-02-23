@@ -53,7 +53,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -217,25 +216,17 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		}
 	}
 
-	glog.Infof("Configuring cluster permissions ...")
-	elevate := func() error {
-		client, err := k.client(cp.IP, cp.Port)
-		if err != nil {
-			return err
-		}
-		return bsutil.ElevateKubeSystemPrivileges(client)
-	}
-
-	if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
-		return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
-	}
-
 	if err := k.applyNodeLabels(cfg); err != nil {
 		glog.Warningf("unable to apply node labels: %v", err)
 	}
 
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
+	}
+
+	glog.Infof("Configuring cluster permissions ...")
+	if err := bsutil.ElevateKubeSystemPrivileges(client); err != nil {
+		glog.Warningf("unable to elevate kube system privileges: %v", err)
 	}
 
 	return nil
