@@ -89,8 +89,8 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if runtime.GOOS == "darwin" && cfg.VMDriver == "docker" {
-			port, err := oci.HostPortBinding("docker", "minikube", 22)
+		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
+			port, err := oci.HostPortBinding(oci.Docker, cfg.Name, 22)
 			if err != nil {
 				exit.WithError("error getting ssh port", err)
 			}
