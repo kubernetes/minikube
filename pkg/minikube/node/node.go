@@ -38,29 +38,9 @@ const (
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.ClusterConfig, name string, controlPlane bool, worker bool, k8sVersion string, profileName string) error {
-	n := config.Node{
-		Name:   name,
-		Worker: true,
-	}
-
-	// TODO: Deal with parameters better. Ideally we should be able to acceot any node-specific minikube start params here.
-	if controlPlane {
-		n.ControlPlane = true
-	}
-
-	if !worker {
-		n.Worker = false
-	}
-
-	if k8sVersion != "" {
-		n.KubernetesVersion = k8sVersion
-	} else {
-		n.KubernetesVersion = cc.KubernetesConfig.KubernetesVersion
-	}
-
+func Add(cc *config.ClusterConfig, n config.Node) error {
 	cc.Nodes = append(cc.Nodes, n)
-	err := config.SaveProfile(profileName, cc)
+	err := config.SaveProfile(cc.Name, cc)
 	if err != nil {
 		return err
 	}
