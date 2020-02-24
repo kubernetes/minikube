@@ -54,16 +54,16 @@ var (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, error) {
+func fixHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.Host, error) {
 	out.T(out.Waiting, "Reconfiguring existing host ...")
 
 	start := time.Now()
-	glog.Infof("fixHost starting: %s", mc.Name)
+	glog.Infof("fixHost starting: %s", n.Name)
 	defer func() {
 		glog.Infof("fixHost completed within %s", time.Since(start))
 	}()
 
-	h, err := api.Load(mc.Name)
+	h, err := api.Load(n.Name)
 	if err != nil {
 		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}

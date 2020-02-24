@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
@@ -88,6 +89,23 @@ func ProfileExists(name string, miniHome ...string) bool {
 func CreateEmptyProfile(name string, miniHome ...string) error {
 	cfg := &ClusterConfig{}
 	return SaveProfile(name, cfg, miniHome...)
+}
+
+// SaveNodeToProfile saves a node to a cluster
+func SaveNodeToProfile(cfg *ClusterConfig, node *Node) error {
+	update := false
+	for i, n := range cfg.Nodes {
+		if n.Name == node.Name {
+			cfg.Nodes[i] = *node
+			update = true
+			break
+		}
+	}
+
+	if !update {
+		cfg.Nodes = append(cfg.Nodes, *node)
+	}
+	return SaveProfile(viper.GetString(MachineProfile), cfg)
 }
 
 // SaveProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json

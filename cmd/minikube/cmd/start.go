@@ -118,6 +118,7 @@ const (
 	autoUpdate              = "auto-update-drivers"
 	hostOnlyNicType         = "host-only-nic-type"
 	natNicType              = "nat-nic-type"
+	nodes                   = "nodes"
 )
 
 var (
@@ -160,7 +161,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
 	startCmd.Flags().Bool(createMount, false, "This will start the mount daemon and automatically mount files into minikube.")
 	startCmd.Flags().String(mountString, constants.DefaultMountDir+":/minikube-host", "The argument to pass the minikube mount command on start.")
-	startCmd.Flags().StringArrayVar(&node.AddonList, "addons", nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
+	startCmd.Flags().StringArrayVar(&config.AddonList, "addons", nil, "Enable addons. see `minikube addons list` for a list of valid addon names.")
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
@@ -169,12 +170,13 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
+	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
 func initKubernetesFlags() {
 	startCmd.Flags().String(kubernetesVersion, "", "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
-	startCmd.Flags().Var(&cluster.ExtraOptions, "extra-config",
+	startCmd.Flags().Var(&config.ExtraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
 		Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
@@ -226,8 +228,8 @@ func initNetworkingFlags() {
 	startCmd.Flags().String(imageRepository, "", "Alternative image repository to pull docker images from. This can be used when you have limited access to gcr.io. Set it to \"auto\" to let minikube decide one for you. For Chinese mainland users, you may use local gcr.io mirrors such as registry.cn-hangzhou.aliyuncs.com/google_containers")
 	startCmd.Flags().String(imageMirrorCountry, "", "Country code of the image mirror to be used. Leave empty to use the global one. For Chinese mainland users, set it to cn.")
 	startCmd.Flags().String(serviceCIDR, constants.DefaultServiceCIDR, "The CIDR to be used for service cluster IPs.")
-	startCmd.Flags().StringArrayVar(&node.DockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
-	startCmd.Flags().StringArrayVar(&node.DockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().StringArrayVar(&config.DockerEnv, "docker-env", nil, "Environment variables to pass to the Docker daemon. (format: key=value)")
+	startCmd.Flags().StringArrayVar(&config.DockerOpt, "docker-opt", nil, "Specify arbitrary flags to pass to the Docker daemon. (format: key=value)")
 }
 
 // startCmd represents the start command
@@ -335,13 +337,28 @@ func runStart(cmd *cobra.Command, args []string) {
 			existingAddons = existing.Addons
 		}
 	}
-	kubeconfig, err := node.Start(mc, n, true, existingAddons)
+
+	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
+	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
+	if err := config.SaveProfile(viper.GetString(config.MachineProfile), &mc); err != nil {
+		exit.WithError("Failed to save config", err)
+	}
+
+	kubeconfig, err := cluster.InitialSetup(mc, n, existingAddons)
 	if err != nil {
 		exit.WithError("Starting node", err)
 	}
 
 	if err := showKubectlInfo(kubeconfig, k8sVersion, mc.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
+	}
+
+	numNodes := viper.GetInt(nodes)
+	if numNodes > 1 {
+		for i := 0; i < numNodes-1; i++ {
+			nodeName := fmt.Sprintf("%s%d", n.Name, i+1)
+			node.Add(&mc, nodeName, false, true, "", "")
+		}
 	}
 }
 
@@ -691,7 +708,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	validateCPUCount(driver.BareMetal(drvName))
 
 	// check that kubeadm extra args contain only whitelisted parameters
-	for param := range cluster.ExtraOptions.AsMap().Get(bsutil.Kubeadm) {
+	for param := range config.ExtraOptions.AsMap().Get(bsutil.Kubeadm) {
 		if !config.ContainsParam(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmCmdParam], param) &&
 			!config.ContainsParam(bsutil.KubeadmExtraArgsWhitelist[bsutil.KubeadmConfigParam], param) {
 			exit.UsageT("Sorry, the kubeadm.{{.parameter_name}} parameter is currently not supported by --extra-config", out.V{"parameter_name": param})
@@ -791,8 +808,8 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		HyperkitVSockPorts:      viper.GetStringSlice(vsockPorts),
 		NFSShare:                viper.GetStringSlice(nfsShare),
 		NFSSharesRoot:           viper.GetString(nfsSharesRoot),
-		DockerEnv:               node.DockerEnv,
-		DockerOpt:               node.DockerOpt,
+		DockerEnv:               config.DockerEnv,
+		DockerOpt:               config.DockerOpt,
 		InsecureRegistry:        insecureRegistry,
 		RegistryMirror:          registryMirror,
 		HostOnlyCIDR:            viper.GetString(hostOnlyCIDR),
@@ -824,7 +841,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 			NetworkPlugin:          selectedNetworkPlugin,
 			ServiceCIDR:            viper.GetString(serviceCIDR),
 			ImageRepository:        repository,
-			ExtraOptions:           cluster.ExtraOptions,
+			ExtraOptions:           config.ExtraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,
 		},
@@ -846,7 +863,7 @@ func setDockerProxy() {
 					continue
 				}
 			}
-			node.DockerEnv = append(node.DockerEnv, fmt.Sprintf("%s=%s", k, v))
+			config.DockerEnv = append(config.DockerEnv, fmt.Sprintf("%s=%s", k, v))
 		}
 	}
 }
@@ -858,7 +875,7 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 	if !cmd.Flags().Changed("extra-config") && len(hints.ExtraOptions) > 0 {
 		for _, eo := range hints.ExtraOptions {
 			glog.Infof("auto setting extra-config to %q.", eo)
-			err = cluster.ExtraOptions.Set(eo)
+			err = config.ExtraOptions.Set(eo)
 			if err != nil {
 				err = errors.Wrapf(err, "setting extra option %s", eo)
 			}

@@ -26,11 +26,8 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
-
-var ExtraOptions config.ExtraOptionSlice
 
 // This init function is used to set the logtostderr variable to false so that INFO level log info does not clutter the CLI
 // INFO lvl logging is displayed due to the kubernetes api calling flag.Set("logtostderr", "true") in its init()

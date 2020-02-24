@@ -49,14 +49,9 @@ var nodeAddCmd = &cobra.Command{
 		}
 		out.T(out.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": profile})
 
-		n, err := node.Add(mc, name, cp, worker, "", profile)
+		err = node.Add(mc, name, cp, worker, "", profile)
 		if err != nil {
 			exit.WithError("Error adding node to cluster", err)
-		}
-
-		err = node.Start(*mc, *n, false, nil)
-		if err != nil {
-			exit.WithError("Error starting node", err)
 		}
 
 		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": profile})

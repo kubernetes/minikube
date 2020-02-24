@@ -16,6 +16,17 @@ limitations under the License.
 
 package config
 
+var (
+	// DockerEnv contains the environment variables
+	DockerEnv []string
+	// DockerOpt contains the option parameters
+	DockerOpt []string
+	// ExtraOptions contains extra options (if any)
+	ExtraOptions ExtraOptionSlice
+	// AddonList contains the list of addons
+	AddonList []string
+)
+
 // AddNode adds a new node config to an existing cluster.
 func AddNode(cc *ClusterConfig, name string, controlPlane bool, k8sVersion string, profileName string) error {
 	node := Node{

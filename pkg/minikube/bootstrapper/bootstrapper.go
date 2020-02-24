@@ -23,6 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
 // LogOptions are options to be passed to LogCommands
@@ -40,7 +41,8 @@ type Bootstrapper interface {
 	DeleteCluster(config.KubernetesConfig) error
 	WaitForCluster(config.ClusterConfig, time.Duration) error
 	JoinCluster(config.ClusterConfig, config.Node, string) error
-	UpdateNode(config.ClusterConfig)
+	UpdateNode(config.ClusterConfig, config.Node, cruntime.Manager) error
+	GenerateToken(config.KubernetesConfig) (string, error)
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(LogOptions) map[string]string
 	SetupCerts(config.KubernetesConfig, config.Node) error
