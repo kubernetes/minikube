@@ -56,16 +56,19 @@ var ProfileCmd = &cobra.Command{
 
 		if profile == "default" {
 			profile = "minikube"
-		} else {
-			// not validating when it is default profile
+		}
+		if !pkgConfig.ProfileExists(profile) {
+			out.FailureT("if you want to create a profile you can by this command: minikube start -p {{.profile_name}}", out.V{"profile_name": profile})
+			os.Exit(0)
+		}
+
+		// not validating when it is default profile
+		if profile != "minikube" {
 			errProfile, ok := ValidateProfile(profile)
 			if !ok && errProfile != nil {
 				out.FailureT(errProfile.Msg)
+				os.Exit(0)
 			}
-		}
-
-		if !pkgConfig.ProfileExists(profile) {
-			out.FailureT("if you want to create a profile you can by this command: minikube start -p {{.profile_name}}", out.V{"profile_name": profile})
 		}
 
 		err := Set(pkgConfig.MachineProfile, profile)
