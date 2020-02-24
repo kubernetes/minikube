@@ -28,10 +28,10 @@ jobs:
       with:
         name: minikube_binaries
         path: out
-  unit_test:
+  lint:
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "unit_test"
+      JOB_NAME: "lint"
       GOPOGH_RESULT: ""
     runs-on: ubuntu-18.04
     steps:
@@ -45,6 +45,18 @@ jobs:
         TESTSUITE: lintall
       run : make test
       continue-on-error: false
+  unit_test:
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "unit_test"
+      GOPOGH_RESULT: ""
+    runs-on: ubuntu-18.04
+    steps:
+    - uses: actions/checkout@v2
+    - name: install libvirt
+      run : | 
+        sudo apt-get update
+        sudo apt-get install -y libvirt-dev
     - name: unit test
       env:
         TESTSUITE: unittest
@@ -82,7 +94,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -test.timeout=70m -test.v -timeout-multiplier=3 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
@@ -106,15 +118,15 @@ jobs:
       with:
         name: docker_ubuntu_16_04
         path: minikube_binaries/report
-    - name: The End Result
+    - name: The End Result Docker on ubuntu 16:04
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
-        echo "--------------------------------------------"
+        numFail=$(echo $STAT | jq '.NumberOfFail')
+        echo "----------------${numFail} Failures----------------------------"
         echo $STAT | jq '.FailedTests' || true
-        echo "--------------------------------------------"
-        numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
-        if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
+        echo "-------------------------------------------------------"
+        if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   docker_ubuntu_18_04:
     runs-on: ubuntu-18.04
     env:
@@ -144,7 +156,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -test.timeout=70m -test.v -timeout-multiplier=3 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
@@ -168,15 +180,15 @@ jobs:
       with:
         name: docker_ubuntu_18_04
         path: minikube_binaries/report
-    - name: The End Result
+    - name: The End Result - Docker On Ubuntu 18:04
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
-        echo "--------------------------------------------"
+        numFail=$(echo $STAT | jq '.NumberOfFail')
+        echo "----------------${numFail} Failures----------------------------"
         echo $STAT | jq '.FailedTests' || true
-        echo "--------------------------------------------"
-        numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
-        if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
+        echo "-------------------------------------------------------"
+        if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   none_ubuntu16_04:
     needs: [build_minikube]
     env:
@@ -206,7 +218,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--vm-driver=none -test.timeout=70m -test.v -timeout-multiplier=3 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
@@ -230,15 +242,15 @@ jobs:
       with:
         name: none_ubuntu16_04
         path: minikube_binaries/report
-    - name: The End Result
+    - name: The End Result - None On Ubuntu 16:04
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
-        echo "--------------------------------------------"
+        numFail=$(echo $STAT | jq '.NumberOfFail')
+        echo "----------------${numFail} Failures----------------------------"
         echo $STAT | jq '.FailedTests' || true
-        echo "--------------------------------------------"
-        numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
-        if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
+        echo "-------------------------------------------------------"
+        if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   none_ubuntu18_04:
     needs: [build_minikube]
     env:
@@ -268,7 +280,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--vm-driver=none -test.timeout=70m -test.v -timeout-multiplier=3 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
@@ -292,15 +304,15 @@ jobs:
       with:
         name: none_ubuntu18_04
         path: minikube_binaries/report
-    - name: The End Result
+    - name: The End Result - None on Ubuntu 18:04
       shell: bash
       run: |
         echo ${GOPOGH_RESULT}
-        echo "--------------------------------------------"
+        numFail=$(echo $STAT | jq '.NumberOfFail')
+        echo "----------------${numFail} Failures----------------------------"
         echo $STAT | jq '.FailedTests' || true
-        echo "--------------------------------------------"
-        numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
-        if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
+        echo "-------------------------------------------------------"
+        if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   podman_ubuntu_18_04:
       needs: [build_minikube]
       env:
@@ -341,7 +353,7 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -expected-default-driver= -test.timeout=70m -test.v -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--vm-driver=podman -test.timeout=70m -test.v -timeout-multiplier=3 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
           min=$((${TIME_ELAPSED}/60))
@@ -365,15 +377,15 @@ jobs:
         with:
           name: podman_ubuntu_18_04
           path: minikube_binaries/report
-      - name: The End Result
+      - name: The End Result - Podman On Ubuntu 18:04
         shell: bash
         run: |
           echo ${GOPOGH_RESULT}
-          echo "--------------------------------------------"
+          numFail=$(echo $STAT | jq '.NumberOfFail')
+          echo "----------------${numFail} Failures----------------------------"
           echo $STAT | jq '.FailedTests' || true
-          echo "--------------------------------------------"
-          numberOfFailures=$(echo $STAT | jq '.NumberOfFail')
-          if [ "$numberOfFailures" -gt 0 ];then echo "*** $numberOfFailures Failed ***";exit 2;fi
+          echo "-------------------------------------------------------"
+          if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
   # After all 4 integration tests finished 
   # collect all the reports and upload
   upload_all_reports:
@@ -385,8 +397,9 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: docker_ubuntu_16_04
-    - name: cp to all_report
-      shell: bash
+    - name: cp docker_ubuntu_16_04 to all_report
+      continue-on-error: true
+      shell: bash {0}
       run: |
         mkdir -p all_reports
         cp -r docker_ubuntu_16_04 ./all_reports/
@@ -394,8 +407,9 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: docker_ubuntu_18_04
-    - name: cp to all_report
-      shell: bash
+    - name: cp docker_ubuntu_18_04 to all_report
+      continue-on-error: true
+      shell: bash {0}
       run: |
         mkdir -p all_reports
         cp -r docker_ubuntu_18_04 ./all_reports/
@@ -403,8 +417,9 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: none_ubuntu16_04
-    - name: cp to all_report
-      shell: bash
+    - name: cp none_ubuntu16_04 to all_report
+      continue-on-error: true
+      shell: bash {0}
       run: |
         mkdir -p all_reports
         cp -r none_ubuntu16_04 ./all_reports/
@@ -412,8 +427,9 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: none_ubuntu18_04
-    - name: cp to all_report
-      shell: bash
+    - name: cp none_ubuntu18_04 to all_report
+      continue-on-error: true
+      shell: bash {0}
       run: |
         mkdir -p all_reports
         cp -r none_ubuntu18_04 ./all_reports/
@@ -421,8 +437,9 @@ jobs:
       uses: actions/download-artifact@v1
       with:
         name: podman_ubuntu_18_04
-    - name: cp to all_report
-      shell: bash
+    - name: cp podman_ubuntu_18_04 to all_report
+      continue-on-error: true
+      shell: bash {0}
       run: |
         mkdir -p all_reports
         cp -r podman_ubuntu_18_04 ./all_reports/

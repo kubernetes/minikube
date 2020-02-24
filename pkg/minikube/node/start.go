@@ -33,7 +33,7 @@ import (
 )
 
 // Start spins up a guest and starts the kubernetes node.
-func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
+func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
 	k8sVersion := mc.KubernetesConfig.KubernetesVersion
 	driverName := mc.Driver
 
@@ -42,8 +42,8 @@ func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons 
 	var kicGroup errgroup.Group
 	if driver.IsKIC(driverName) {
 		beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
-		mc.KubernetesConfig.ShouldLoadCachedImages = false
 	}
+	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
 	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
 

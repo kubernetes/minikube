@@ -17,6 +17,7 @@ limitations under the License.
 package config
 
 import (
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	pkgConfig "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -51,30 +52,30 @@ func init() {
 func Set(name string, value string) error {
 	s, err := findSetting(name)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "find settings for %q value of %q", name, value)
 	}
 	// Validate the new value
 	err = run(name, value, s.validations)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "run validations for %q with value of %q", name, value)
 	}
 
 	// Set the value
-	config, err := pkgConfig.ReadConfig(localpath.ConfigFile)
+	config, err := pkgConfig.ReadConfig(localpath.ConfigFile())
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "read config file %q", localpath.ConfigFile())
 	}
 	err = s.set(config, name, value)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "set")
 	}
 
 	// Run any callbacks for this property
 	err = run(name, value, s.callbacks)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "run callbacks for %q with value of %q", name, value)
 	}
 
 	// Write the value
-	return pkgConfig.WriteConfig(localpath.ConfigFile, config)
+	return pkgConfig.WriteConfig(localpath.ConfigFile(), config)
 }

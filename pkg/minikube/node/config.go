@@ -43,10 +43,14 @@ import (
 )
 
 var (
-	DockerEnv    []string
-	DockerOpt    []string
+	// DockerEnv contains the environment variables
+	DockerEnv []string
+	// DockerOpt contains the option parameters
+	DockerOpt []string
+	// ExtraOptions contains extra options (if any)
 	ExtraOptions config.ExtraOptionSlice
-	AddonList    []string
+	// AddonList contains the list of addons
+	AddonList []string
 )
 
 // configureRuntimes does what needs to happen to get a runtime going.
@@ -81,7 +85,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, cfg config.MachineConfig, node config.Node) bootstrapper.Bootstrapper {
+func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Node) bootstrapper.Bootstrapper {
 	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
@@ -99,7 +103,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.MachineConfig, node config.Nod
 	return bs
 }
 
-func setupKubeconfig(h *host.Host, c *config.MachineConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
+func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
 	addr, err := h.Driver.GetURL()
 	if err != nil {
 		exit.WithError("Failed to get driver URL", err)

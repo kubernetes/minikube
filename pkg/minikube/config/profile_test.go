@@ -164,13 +164,13 @@ func TestCreateProfile(t *testing.T) {
 
 	var testCases = []struct {
 		name      string
-		cfg       *MachineConfig
+		cfg       *ClusterConfig
 		expectErr bool
 	}{
-		{"p_empty_config", &MachineConfig{}, false},
-		{"p_partial_config", &MachineConfig{KubernetesConfig: KubernetesConfig{
+		{"p_empty_config", &ClusterConfig{}, false},
+		{"p_partial_config", &ClusterConfig{KubernetesConfig: KubernetesConfig{
 			ShouldLoadCachedImages: false}}, false},
-		{"p_partial_config2", &MachineConfig{
+		{"p_partial_config2", &ClusterConfig{
 			KeepContext: false, KubernetesConfig: KubernetesConfig{
 				ShouldLoadCachedImages: false}}, false},
 	}

@@ -61,7 +61,7 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 }
 
 // LoadImages loads previously cached images into the container runtime
-func LoadImages(cc *config.MachineConfig, runner command.Runner, images []string, cacheDir string) error {
+func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
 	glog.Infof("LoadImages start: %s", images)
 	start := time.Now()
 

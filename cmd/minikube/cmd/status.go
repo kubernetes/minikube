@@ -44,10 +44,16 @@ var statusFormat string
 var output string
 
 const (
-	// Additional states used by kubeconfig
-	Configured    = "Configured"    // ~state.Saved
+	// # Additional states used by kubeconfig:
+
+	// Configured means configured
+	Configured = "Configured" // ~state.Saved
+	// Misconfigured means misconfigured
 	Misconfigured = "Misconfigured" // ~state.Error
-	// Additional states used for clarity
+
+	// # Additional states used for clarity:
+
+	// Nonexistent means nonexistent
 	Nonexistent = "Nonexistent" // ~state.None
 )
 
