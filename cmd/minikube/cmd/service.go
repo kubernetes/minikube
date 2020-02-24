@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"runtime"
 	"text/template"
 
 	"github.com/golang/glog"
@@ -27,6 +28,8 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
+	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -77,9 +80,19 @@ var serviceCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
+		cfg, err := config.Load(profileName)
+		if err != nil {
+			exit.WithError("Error getting config", err)
+		}
+
 		urls, err := service.WaitForService(api, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
 			exit.WithError("Error opening service", err)
+		}
+
+		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
+			out.FailureT("Opening service in browser is not implemented yet for docker driver on Mac.\nThe following issue is tracking the in progress work:\nhttps://github.com/kubernetes/minikube/issues/6778")
+			exit.WithCodeT(exit.Unavailable, "Not yet implemented for docker driver on MacOS.")
 		}
 
 		for _, u := range urls {
@@ -94,6 +107,7 @@ var serviceCmd = &cobra.Command{
 				out.String(fmt.Sprintf("%s\n", u))
 				continue
 			}
+
 			out.T(out.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
 			if err := browser.OpenURL(u); err != nil {
 				exit.WithError(fmt.Sprintf("open url failed: %s", u), err)
