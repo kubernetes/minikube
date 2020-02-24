@@ -1,5 +1,5 @@
 {
-    "MachineConfig": {
+    "ClusterConfig": {
         "KeepContext": false,
         "MinikubeISO": "https://storage.googleapis.com/minikube/iso/minikube-v1.2.0.iso",
         "Memory": 2000,

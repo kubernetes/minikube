@@ -354,7 +354,7 @@ func updateDriver(driverName string) {
 	}
 }
 
-func cacheISO(cfg *config.MachineConfig, driverName string) {
+func cacheISO(cfg *config.ClusterConfig, driverName string) {
 	if !driver.BareMetal(driverName) && !driver.IsKIC(driverName) {
 		if err := cluster.CacheISO(*cfg); err != nil {
 			exit.WithError("Failed to cache ISO", err)
@@ -432,7 +432,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	return nil
 }
 
-func selectDriver(existing *config.MachineConfig) registry.DriverState {
+func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	// Technically unrelated, but important to perform before detection
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 
@@ -467,7 +467,7 @@ func selectDriver(existing *config.MachineConfig) registry.DriverState {
 }
 
 // validateDriver validates that the selected driver appears sane, exits if not
-func validateDriver(ds registry.DriverState, existing *config.MachineConfig) {
+func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
 	glog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
@@ -720,10 +720,10 @@ func validateRegistryMirror() {
 }
 
 // generateCfgFromFlags generates config.Config based on flags and supplied arguments
-func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) (config.MachineConfig, config.Node, error) {
+func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
 	r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
 	if err != nil {
-		return config.MachineConfig{}, config.Node{}, err
+		return config.ClusterConfig{}, config.Node{}, err
 	}
 
 	// Pick good default values for --network-plugin and --enable-default-cni based on runtime.
@@ -778,7 +778,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		Worker:            true,
 	}
 
-	cfg := config.MachineConfig{
+	cfg := config.ClusterConfig{
 		Name:                    viper.GetString(config.MachineProfile),
 		KeepContext:             viper.GetBool(keepContext),
 		EmbedCerts:              viper.GetBool(embedCerts),
@@ -884,7 +884,7 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 }
 
 // getKubernetesVersion ensures that the requested version is reasonable
-func getKubernetesVersion(old *config.MachineConfig) string {
+func getKubernetesVersion(old *config.ClusterConfig) string {
 	paramVersion := viper.GetString(kubernetesVersion)
 
 	if paramVersion == "" { // if the user did not specify any version then ...

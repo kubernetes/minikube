@@ -17,7 +17,7 @@ limitations under the License.
 package config
 
 // AddNode adds a new node config to an existing cluster.
-func AddNode(cc *MachineConfig, name string, controlPlane bool, k8sVersion string, profileName string) error {
+func AddNode(cc *ClusterConfig, name string, controlPlane bool, k8sVersion string, profileName string) error {
 	node := Node{
 		Name:   name,
 		Worker: true,

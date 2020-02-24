@@ -19,8 +19,10 @@ package oci
 const (
 	// DefaultBindIPV4 is The default IP the container will listen on.
 	DefaultBindIPV4 = "127.0.0.1"
-	Docker          = "docker"
-	Podman          = "podman"
+	// Docker is docker
+	Docker = "docker"
+	// Podman is podman
+	Podman = "podman"
 	// ProfileLabelKey is applied to any container or volume created by a specific minikube profile name.minikube.sigs.k8s.io=PROFILE_NAME
 	ProfileLabelKey = "name.minikube.sigs.k8s.io"
 	// NodeRoleKey is used to identify if it is control plane or worker

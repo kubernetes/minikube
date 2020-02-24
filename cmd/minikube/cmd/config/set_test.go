@@ -19,68 +19,66 @@ package config
 import (
 	"io/ioutil"
 	"os"
-	"path/filepath"
 	"testing"
 
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 func TestNotFound(t *testing.T) {
-	createTestProfile(t)
+	createTestConfig(t)
 	err := Set("nonexistent", "10")
-	if err == nil {
-		t.Fatalf("Set did not return error for unknown property")
+	if err == nil || err.Error() != "find settings for \"nonexistent\" value of \"10\": property name \"nonexistent\" not found" {
+		t.Fatalf("Set did not return error for unknown property: %+v", err)
 	}
 }
 
 func TestSetNotAllowed(t *testing.T) {
-	createTestProfile(t)
+	createTestConfig(t)
 	err := Set("vm-driver", "123456")
-	if err == nil || err.Error() != "[driver \"123456\" is not supported]" {
-		t.Fatalf("Set did not return error for unallowed value")
+	if err == nil || err.Error() != "run validations for \"vm-driver\" with value of \"123456\": [driver \"123456\" is not supported]" {
+		t.Fatalf("Set did not return error for unallowed value: %+v", err)
 	}
 }
 
 func TestSetOK(t *testing.T) {
-	createTestProfile(t)
+	createTestConfig(t)
 	err := Set("vm-driver", "virtualbox")
 	defer func() {
 		err = Unset("vm-driver")
 		if err != nil {
-			t.Errorf("failed to unset vm-driver")
+			t.Errorf("failed to unset vm-driver: %+v", err)
 		}
 	}()
 	if err != nil {
-		t.Fatalf("Set returned error for valid property value")
+		t.Fatalf("Set returned error for valid property value: %+v", err)
 	}
 	val, err := Get("vm-driver")
 	if err != nil {
-		t.Fatalf("Get returned error for valid property")
+		t.Fatalf("Get returned error for valid property: %+v", err)
 	}
 	if val != "virtualbox" {
 		t.Fatalf("Get returned %s, expected \"virtualbox\"", val)
 	}
 }
 
-func createTestProfile(t *testing.T) {
+func createTestConfig(t *testing.T) {
 	t.Helper()
-	td, err := ioutil.TempDir("", "profile")
+	td, err := ioutil.TempDir("", "config")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
 
 	err = os.Setenv(localpath.MinikubeHome, td)
 	if err != nil {
-		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
+		t.Fatalf("error setting up test environment. could not set %s due to %+v", localpath.MinikubeHome, err)
 	}
 
 	// Not necessary, but it is a handy random alphanumeric
-	name := filepath.Base(td)
-	if err := os.MkdirAll(config.ProfileFolderPath(name), 0777); err != nil {
-		t.Fatalf("error creating temporary directory")
+	if err = os.MkdirAll(localpath.MakeMiniPath("config"), 0777); err != nil {
+		t.Fatalf("error creating temporary directory: %+v", err)
 	}
-	if err := config.DefaultLoader.WriteConfigToFile(name, &config.MachineConfig{}); err != nil {
-		t.Fatalf("error creating temporary profile config: %v", err)
+
+	if err = os.MkdirAll(localpath.MakeMiniPath("profiles"), 0777); err != nil {
+		t.Fatalf("error creating temporary profiles directory: %+v", err)
 	}
 }

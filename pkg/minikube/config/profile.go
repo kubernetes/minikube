@@ -52,7 +52,7 @@ func (p *Profile) IsValid() bool {
 }
 
 // PrimaryControlPlane gets the node specific config for the first created control plane
-func PrimaryControlPlane(cc MachineConfig) (Node, error) {
+func PrimaryControlPlane(cc ClusterConfig) (Node, error) {
 	for _, n := range cc.Nodes {
 		if n.ControlPlane {
 			return n, nil
@@ -86,12 +86,12 @@ func ProfileExists(name string, miniHome ...string) bool {
 
 // CreateEmptyProfile creates an empty profile and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func CreateEmptyProfile(name string, miniHome ...string) error {
-	cfg := &MachineConfig{}
+	cfg := &ClusterConfig{}
 	return SaveProfile(name, cfg, miniHome...)
 }
 
 // SaveProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
-func SaveProfile(name string, cfg *MachineConfig, miniHome ...string) error {
+func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 	data, err := json.MarshalIndent(cfg, "", "    ")
 	if err != nil {
 		return err

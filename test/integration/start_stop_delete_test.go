@@ -28,7 +28,6 @@ import (
 	"strconv"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/google/go-cmp/cmp"
@@ -84,7 +83,7 @@ func TestStartStop(t *testing.T) {
 				}
 
 				profile := UniqueProfileName(tc.name)
-				ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
+				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
 				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
@@ -128,10 +127,10 @@ func TestStartStop(t *testing.T) {
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
 				} else {
-					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 4*time.Minute); err != nil {
+					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4)); err != nil {
 						t.Fatalf("post-stop-start pod wait: %v", err)
 					}
-					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", 4*time.Minute); err != nil {
+					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(4)); err != nil {
 						t.Fatalf("post-stop-start addon wait: %v", err)
 					}
 				}
@@ -178,7 +177,7 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// 8 minutes, because 4 is not enough for images to pull in all cases.
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 8*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(8))
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}

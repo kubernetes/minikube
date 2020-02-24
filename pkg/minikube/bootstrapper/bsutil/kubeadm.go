@@ -36,7 +36,7 @@ import (
 const remoteContainerRuntime = "remote"
 
 // GenerateKubeadmYAML generates the kubeadm.yaml file
-func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, error) {
+func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.Node) ([]byte, error) {
 	k8s := mc.KubernetesConfig
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -80,6 +80,8 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 		ComponentOptions  []componentOptions
 		FeatureArgs       map[string]bool
 		NoTaintMaster     bool
+		NodeIP            string
+		ControlPlaneIP    string
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
@@ -96,6 +98,8 @@ func GenerateKubeadmYAML(mc config.MachineConfig, r cruntime.Manager) ([]byte, e
 		FeatureArgs:       kubeadmFeatureArgs,
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
 		DNSDomain:         k8s.DNSDomain,
+		NodeIP:            n.IP,
+		ControlPlaneIP:    cp.IP,
 	}
 
 	if k8s.ServiceCIDR != "" {

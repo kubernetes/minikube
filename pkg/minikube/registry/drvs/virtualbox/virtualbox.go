@@ -49,7 +49,7 @@ func init() {
 	}
 }
 
-func configure(mc config.MachineConfig) (interface{}, error) {
+func configure(mc config.ClusterConfig) (interface{}, error) {
 	d := virtualbox.NewDriver(mc.Name, localpath.MiniPath())
 	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
 	d.Memory = mc.Memory

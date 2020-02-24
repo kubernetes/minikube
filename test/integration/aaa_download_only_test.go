@@ -28,7 +28,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-	"time"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -38,7 +37,7 @@ import (
 
 func TestDownloadOnly(t *testing.T) {
 	profile := UniqueProfileName("download")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
 
 	// Stores the startup run result for later error messages
@@ -55,7 +54,7 @@ func TestDownloadOnly(t *testing.T) {
 			t.Run(v, func(t *testing.T) {
 				// Explicitly does not pass StartArgs() to test driver default
 				// --force to avoid uid check
-				args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v)}
+				args := append([]string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v)}, StartArgs()...)
 
 				// Preserve the initial run-result for debugging
 				if rrr == nil {
@@ -70,15 +69,18 @@ func TestDownloadOnly(t *testing.T) {
 
 				imgs, err := images.Kubeadm("", v)
 				if err != nil {
-					t.Errorf("kubeadm images: %v", v)
+					t.Errorf("kubeadm images: %v %+v", v, err)
 				}
 
-				for _, img := range imgs {
-					img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
-					fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
-					_, err := os.Stat(fp)
-					if err != nil {
-						t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+				// skip verify for cache images if --vm-driver=none
+				if !NoneDriver() {
+					for _, img := range imgs {
+						img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
+						fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
+						_, err := os.Stat(fp)
+						if err != nil {
+							t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+						}
 					}
 				}
 

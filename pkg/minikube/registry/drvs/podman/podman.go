@@ -49,7 +49,7 @@ func init() {
 	}
 }
 
-func configure(mc config.MachineConfig) (interface{}, error) {
+func configure(mc config.ClusterConfig) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
 		MachineName:   mc.Name,
 		StorePath:     localpath.MiniPath(),
