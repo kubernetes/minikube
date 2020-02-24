@@ -130,8 +130,10 @@ func TestStartHostExists(t *testing.T) {
 
 	mc := defaultClusterConfig
 	mc.Name = ih.Name
+
+	n := config.Node{Name: ih.Name}
 	// This should pass without calling Create because the host exists already.
-	h, err := StartHost(api, mc)
+	h, err := StartHost(api, mc, n)
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
@@ -162,8 +164,10 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	mc := defaultClusterConfig
 	mc.Name = h.Name
 
+	n := config.Node{Name: h.Name}
+
 	// This should pass with creating host, while machine does not exist.
-	h, err = StartHost(api, mc)
+	h, err = StartHost(api, mc, n)
 	if err != nil {
 		if err != ErrorMachineNotExist {
 			t.Fatalf("Error starting host: %v", err)
@@ -172,8 +176,10 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 
 	mc.Name = h.Name
 
+	n.Name = h.Name
+
 	// Second call. This should pass without calling Create because the host exists already.
-	h, err = StartHost(api, mc)
+	h, err = StartHost(api, mc, n)
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
@@ -205,7 +211,10 @@ func TestStartStoppedHost(t *testing.T) {
 	provision.SetDetector(md)
 	mc := defaultClusterConfig
 	mc.Name = h.Name
-	h, err = StartHost(api, mc)
+
+	n := config.Node{Name: h.Name}
+
+	h, err = StartHost(api, mc, n)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -233,7 +242,9 @@ func TestStartHost(t *testing.T) {
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
-	h, err := StartHost(api, defaultClusterConfig)
+	n := config.Node{Name: viper.GetString("profile")}
+
+	h, err := StartHost(api, defaultClusterConfig, n)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -261,14 +272,16 @@ func TestStartHostConfig(t *testing.T) {
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
-	config := config.ClusterConfig{
+	cfg := config.ClusterConfig{
 		Driver:     driver.Mock,
 		DockerEnv:  []string{"FOO=BAR"},
 		DockerOpt:  []string{"param=value"},
 		Downloader: MockDownloader{},
 	}
 
-	h, err := StartHost(api, config)
+	n := config.Node{Name: viper.GetString("profile")}
+
+	h, err := StartHost(api, cfg, n)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}

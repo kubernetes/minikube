@@ -121,8 +121,10 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 		return errors.Wrap(err, "encoding kubeconfig")
 	}
 
-	kubeCfgFile := assets.NewMemoryAsset(data, vmpath.GuestPersistentDir, "kubeconfig", "0644")
-	copyableFiles = append(copyableFiles, kubeCfgFile)
+	if n.ControlPlane {
+		kubeCfgFile := assets.NewMemoryAsset(data, vmpath.GuestPersistentDir, "kubeconfig", "0644")
+		copyableFiles = append(copyableFiles, kubeCfgFile)
+	}
 
 	for _, f := range copyableFiles {
 		if err := cmd.Copy(f); err != nil {

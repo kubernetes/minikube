@@ -381,6 +381,20 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	return nil
 }
 
+// GenerateToken creates a token and returns the appropriate kubeadm join command to run
+func (k *Bootstrapper) GenerateToken(k8s config.KubernetesConfig) (string, error) {
+	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(k8s.KubernetesVersion)))
+	r, err := k.c.RunCmd(tokenCmd)
+	if err != nil {
+		return "", errors.Wrap(err, "generating bootstrap token")
+	}
+	joinCmd := r.Stdout.String()
+	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(k8s.KubernetesVersion), 1)
+	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
+
+	return joinCmd, nil
+}
+
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 	version, err := bsutil.ParseKubernetesVersion(k8s.KubernetesVersion)
@@ -405,7 +419,7 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) er
 	return bootstrapper.SetupCerts(k.c, k8s, n)
 }
 
-// UpdateCluster updates the cluster
+// UpdateCluster updates the cluster.
 func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
@@ -423,14 +437,24 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "runtime")
 	}
 
-	// TODO: multiple nodes
-	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, r, cfg.Nodes[0])
+	for _, n := range cfg.Nodes {
+		err := k.UpdateNode(cfg, n, r)
+		if err != nil {
+			return errors.Wrap(err, "updating node")
+		}
+	}
+
+	return nil
+}
+
+// UpdateNode updates a node.
+func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.Manager) error {
+	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, r, n)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
 
-	// TODO: multiple nodes
-	kubeletCfg, err := bsutil.NewKubeletConfig(cfg, cfg.Nodes[0], r)
+	kubeletCfg, err := bsutil.NewKubeletConfig(cfg, n, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubelet config")
 	}

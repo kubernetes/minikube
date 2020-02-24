@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -32,25 +33,25 @@ import (
 )
 
 // Start spins up a guest and starts the kubernetes node.
-func Start(mc config.ClusterConfig, n config.Node, preExists bool, existingAddons map[string]bool) error {
+func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool) error {
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
-	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
+	beginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
 
-	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
-	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := config.SaveProfile(viper.GetString(config.MachineProfile), &mc); err != nil {
-		exit.WithError("Failed to save config", err)
+	runner, preExists, mAPI, _ := cluster.StartMachine(&cc, &n)
+	defer mAPI.Close()
+
+	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), n.Name)
+	if err != nil {
+		exit.WithError("Failed to get bootstrapper", err)
 	}
 
-	bs, err := cluster.Bootstrapper()
-
-	k8sVersion := mc.KubernetesConfig.KubernetesVersion
-	driverName := mc.Driver
+	k8sVersion := cc.KubernetesConfig.KubernetesVersion
+	driverName := cc.Driver
 	// exits here in case of --download-only option.
 	handleDownloadOnly(&cacheGroup, k8sVersion)
 	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig)
+	cr := configureRuntimes(runner, driverName, cc.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
 	waitCacheRequiredImages(&cacheGroup)
 
@@ -58,7 +59,11 @@ func Start(mc config.ClusterConfig, n config.Node, preExists bool, existingAddon
 
 	// enable addons, both old and new!
 	if existingAddons != nil {
-		addons.Start(viper.GetString(config.MachineProfile), existingAddons, AddonList)
+		addons.Start(viper.GetString(config.MachineProfile), existingAddons, config.AddonList)
+	}
+
+	if err := bs.UpdateNode(cc, n, cr); err != nil {
+		exit.WithError("Failed to update node", err)
 	}
 
 	if err := CacheAndLoadImagesInConfig(); err != nil {
@@ -66,18 +71,30 @@ func Start(mc config.ClusterConfig, n config.Node, preExists bool, existingAddon
 	}
 
 	// special ops for none , like change minikube directory.
-	if driverName == driver.None {
+	// multinode super doesn't work on the none driver
+	if driverName == driver.None && len(cc.Nodes) == 1 {
 		prepareNone()
 	}
 
 	// Skip pre-existing, because we already waited for health
 	if viper.GetBool(waitUntilHealthy) && !preExists {
-		if err := bs.WaitForCluster(mc, viper.GetDuration(waitTimeout)); err != nil {
+		if err := bs.WaitForCluster(cc, viper.GetDuration(waitTimeout)); err != nil {
 			exit.WithError("Wait failed", err)
 		}
 	}
 
-	return nil
+	bs.SetupCerts(cc.KubernetesConfig, n)
+
+	cp, err := config.PrimaryControlPlane(cc)
+	if err != nil {
+		exit.WithError("Getting primary control plane", err)
+	}
+	cpBs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cp.Name)
+	if err != nil {
+		exit.WithError("Getting bootstrapper", err)
+	}
+	joinCmd, err := cpBs.GenerateToken(cc.KubernetesConfig)
+	return bs.JoinCluster(cc, n, joinCmd)
 }
 
 // prepareNone prepares the user and host for the joy of the "none" driver
