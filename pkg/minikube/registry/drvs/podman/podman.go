@@ -49,15 +49,15 @@ func init() {
 	}
 }
 
-func configure(mc config.ClusterConfig) (interface{}, error) {
+func configure(mc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
-		MachineName:   mc.Name,
+		MachineName:   n.Name,
 		StorePath:     localpath.MiniPath(),
 		ImageDigest:   strings.Split(kic.BaseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
 		CPU:           mc.CPUs,
 		Memory:        mc.Memory,
 		OCIBinary:     oci.Podman,
-		APIServerPort: mc.Nodes[0].Port,
+		APIServerPort: n.Port,
 	}), nil
 }
 

@@ -69,7 +69,7 @@ func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*ho
 	}
 	start := time.Now()
 	defer func() {
-		glog.Infof("releasing machines lock for %q, held for %s", cfg.Name, time.Since(start))
+		glog.Infof("releasing machines lock for %q, held for %s", n.Name, time.Since(start))
 		releaser.Release()
 	}()
 
@@ -78,8 +78,8 @@ func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*ho
 		return nil, errors.Wrapf(err, "exists: %s", n.Name)
 	}
 	if !exists {
-		glog.Infof("Provisioning new machine with config: %+v", n)
-		return createHost(api, cfg)
+		glog.Infof("Provisioning new machine with config: %+v %+v", cfg, n)
+		return createHost(api, cfg, n)
 	}
 	glog.Infoln("Skipping create...Using existing machine configuration")
 	return fixHost(api, cfg, n)
@@ -96,8 +96,8 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 	return &o
 }
 
-func createHost(api libmachine.API, cfg config.ClusterConfig) (*host.Host, error) {
-	glog.Infof("createHost starting for %q (driver=%q)", cfg.Name, cfg.Driver)
+func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, error) {
+	glog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
 		glog.Infof("createHost completed in %s", time.Since(start))
@@ -114,7 +114,7 @@ func createHost(api libmachine.API, cfg config.ClusterConfig) (*host.Host, error
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.Driver)
 	}
-	dd, err := def.Config(cfg)
+	dd, err := def.Config(cfg, n)
 	if err != nil {
 		return nil, errors.Wrap(err, "config")
 	}

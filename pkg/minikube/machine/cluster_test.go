@@ -41,7 +41,7 @@ type MockDownloader struct{}
 func (d MockDownloader) GetISOFileURI(isoURL string) string          { return "" }
 func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return nil }
 
-func createMockDriverHost(c config.ClusterConfig) (interface{}, error) {
+func createMockDriverHost(c config.ClusterConfig, n config.Node) (interface{}, error) {
 	return nil, nil
 }
 
@@ -67,28 +67,35 @@ var defaultClusterConfig = config.ClusterConfig{
 	DockerEnv:   []string{"MOCK_MAKE_IT_PROVISION=true"},
 }
 
+var defaultNodeConfig = config.Node{
+	Name: viper.GetString("profile"),
+}
+
 func TestCreateHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
-	exists, _ := api.Exists(viper.GetString("profile"))
+	profile := viper.GetString("profile")
+	exists, _ := api.Exists(profile)
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
 
-	_, err := createHost(api, defaultClusterConfig)
+	n := config.Node{Name: profile}
+
+	_, err := createHost(api, defaultClusterConfig, n)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	exists, err = api.Exists(viper.GetString("profile"))
+	exists, err = api.Exists(profile)
 	if err != nil {
-		t.Fatalf("exists failed for %q: %v", viper.GetString("profile"), err)
+		t.Fatalf("exists failed for %q: %v", profile, err)
 	}
 	if !exists {
-		t.Fatalf("%q does not exist, but should.", viper.GetString("profile"))
+		t.Fatalf("%q does not exist, but should.", profile)
 	}
 
-	h, err := api.Load(viper.GetString("profile"))
+	h, err := api.Load(profile)
 	if err != nil {
 		t.Fatalf("Error loading machine: %v", err)
 	}
@@ -113,8 +120,9 @@ func TestCreateHost(t *testing.T) {
 func TestStartHostExists(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
+
 	// Create an initial host.
-	ih, err := createHost(api, defaultClusterConfig)
+	ih, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -131,9 +139,8 @@ func TestStartHostExists(t *testing.T) {
 	mc := defaultClusterConfig
 	mc.Name = ih.Name
 
-	n := config.Node{Name: ih.Name}
 	// This should pass without calling Create because the host exists already.
-	h, err := StartHost(api, mc, n)
+	h, err := StartHost(api, mc, defaultNodeConfig)
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
@@ -153,7 +160,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	api := tests.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
 	api.NotExistError = true
-	h, err := createHost(api, defaultClusterConfig)
+	h, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -199,7 +206,7 @@ func TestStartStoppedHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	// Create an initial host.
-	h, err := createHost(api, defaultClusterConfig)
+	h, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -311,7 +318,7 @@ func TestStopHostError(t *testing.T) {
 func TestStopHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	h, err := createHost(api, defaultClusterConfig)
+	h, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
@@ -327,7 +334,7 @@ func TestStopHost(t *testing.T) {
 func TestDeleteHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	if _, err := createHost(api, defaultClusterConfig); err != nil {
+	if _, err := createHost(api, defaultClusterConfig, defaultNodeConfig); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
@@ -339,7 +346,7 @@ func TestDeleteHost(t *testing.T) {
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	h, err := createHost(api, defaultClusterConfig)
+	h, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
@@ -356,7 +363,7 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	api.RemoveError = true
-	if _, err := createHost(api, defaultClusterConfig); err != nil {
+	if _, err := createHost(api, defaultClusterConfig, defaultNodeConfig); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
@@ -370,7 +377,7 @@ func TestDeleteHostErrMachineNotExist(t *testing.T) {
 	api := tests.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
 	api.NotExistError = true
-	_, err := createHost(api, defaultClusterConfig)
+	_, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
@@ -396,7 +403,7 @@ func TestGetHostStatus(t *testing.T) {
 
 	checkState(state.None.String())
 
-	if _, err := createHost(api, defaultClusterConfig); err != nil {
+	if _, err := createHost(api, defaultClusterConfig, defaultNodeConfig); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 

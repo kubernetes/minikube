@@ -47,6 +47,10 @@ var nodeAddCmd = &cobra.Command{
 		if nodeName == "" {
 			name = profile + strconv.Itoa(len(mc.Nodes)+1)
 		}
+		_, _, err = node.Retrieve(mc, name)
+		if err == nil {
+			exit.WithCodeT(100, "{{.nodeName}} already exists in cluster {{.cluster}}. Choose a different name.", out.V{"nodeName": name, "cluster": mc.Name})
+		}
 		out.T(out.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": profile})
 
 		err = node.Add(mc, name, cp, worker, "", profile)
