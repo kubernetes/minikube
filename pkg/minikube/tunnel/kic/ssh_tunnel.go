@@ -108,11 +108,10 @@ func (t *SSHTunnel) startConnection(svc v1.Service) {
 	t.conns[newSSHConn.name] = newSSHConn
 
 	go func() {
-		err := newSSHConn.run()
+		err := newSSHConn.startAndWait()
 		if err != nil {
 			glog.Errorf("error starting ssh tunnel: %v", err)
 		}
-
 	}()
 
 	err := t.LoadBalancerEmulator.PatchServiceIP(t.v1Core.RESTClient(), svc, "127.0.0.1")
