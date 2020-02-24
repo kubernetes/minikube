@@ -53,7 +53,15 @@ var nodeAddCmd = &cobra.Command{
 		}
 		out.T(out.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": profile})
 
-		err = node.Add(mc, name, cp, worker, "", profile)
+		// TODO: Deal with parameters better. Ideally we should be able to acceot any node-specific minikube start params here.
+		n := config.Node{
+			Name:              name,
+			Worker:            worker,
+			ControlPlane:      cp,
+			KubernetesVersion: mc.KubernetesConfig.KubernetesVersion,
+		}
+
+		err = node.Add(mc, n)
 		if err != nil {
 			exit.WithError("Error adding node to cluster", err)
 		}

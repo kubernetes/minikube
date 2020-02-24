@@ -357,7 +357,13 @@ func runStart(cmd *cobra.Command, args []string) {
 	if numNodes > 1 {
 		for i := 0; i < numNodes-1; i++ {
 			nodeName := fmt.Sprintf("%s%d", n.Name, i+1)
-			node.Add(&mc, nodeName, false, true, "", "")
+			n := config.Node{
+				Name:              nodeName,
+				Worker:            true,
+				ControlPlane:      false,
+				KubernetesVersion: mc.KubernetesConfig.KubernetesVersion,
+			}
+			node.Add(&mc, n)
 		}
 	}
 }
