@@ -73,7 +73,7 @@ var serviceListCmd = &cobra.Command{
 		}
 		service.PrintServiceList(os.Stdout, data)
 		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
-			out.FailureT("Accessing service on docker driver for mac is not implemented yet.Please follow the work in progress and the workarround to solve this issue:\n\thttps://github.com/kubernetes/minikube/issues/6778")
+			out.FailureT("Accessing service on docker driver for mac is not fully implemented yet.\nTo read about workarroudns on mac and update on the work in progress, please reffer to this link:\nhttps://github.com/kubernetes/minikube/issues/6778")
 			exit.WithCodeT(exit.Failure, "not implemented for docker on mac driver yet.")
 		}
 
