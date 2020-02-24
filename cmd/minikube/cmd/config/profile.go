@@ -66,6 +66,7 @@ var ProfileCmd = &cobra.Command{
 
 		if !pkgConfig.ProfileExists(profile) {
 			out.FailureT("if you want to create a profile you can by this command: minikube start -p {{.profile_name}}", out.V{"profile_name": profile})
+			os.Exit(0)
 		}
 
 		err := Set(pkgConfig.MachineProfile, profile)
