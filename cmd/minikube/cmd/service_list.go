@@ -48,7 +48,7 @@ var serviceListCmd = &cobra.Command{
 		defer api.Close()
 		profileName := viper.GetString(pkg_config.MachineProfile)
 		if !machine.IsHostRunning(api, profileName) {
-			exit.WithCodeT(exit.Unavailable, "profile {{.name}} is not running. ", out.V{"name": profileName})
+			exit.WithCodeT(exit.Unavailable, "profile {{.name}} is not running.", out.V{"name": profileName})
 		}
 		serviceURLs, err := service.GetServiceURLs(api, serviceListNamespace, serviceURLTemplate)
 		if err != nil {
@@ -73,8 +73,8 @@ var serviceListCmd = &cobra.Command{
 		}
 		service.PrintServiceList(os.Stdout, data)
 		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
-			out.FailureT("Accessing service on docker driver for mac is not fully implemented yet.\nTo read about workarroudns on mac and update on the work in progress, please reffer to this link:\nhttps://github.com/kubernetes/minikube/issues/6778")
-			exit.WithCodeT(exit.Failure, "not implemented for docker on mac driver yet.")
+			out.FailureT("Accessing service is not implemented yet for docker driver on Mac.\nThe following issue is tracking the in progress work::\nhttps://github.com/kubernetes/minikube/issues/6778")
+			exit.WithCodeT(exit.Failure, "Not yet implemented for docker driver on MacOS.")
 		}
 
 	},
