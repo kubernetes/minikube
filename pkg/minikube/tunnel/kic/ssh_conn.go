@@ -31,6 +31,7 @@ type sshConn struct {
 func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
 	// extract sshArgs
 	sshArgs := []string{
+		"-o", "StrictHostKeyChecking no",
 		"-N",
 		"docker@127.0.0.1",
 		"-p", sshPort,
