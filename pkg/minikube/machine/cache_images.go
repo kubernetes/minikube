@@ -137,29 +137,31 @@ func CacheAndLoadImages(images []string) error {
 		return errors.Wrap(err, "list profiles")
 	}
 	for _, p := range profiles { // loading images to all running profiles
-		pName := p.Name // capture the loop variable
-		status, err := GetHostStatus(api, pName)
-		if err != nil {
-			glog.Warningf("skipping loading cache for profile %s", pName)
-			glog.Errorf("error getting status for %s: %v", pName, err)
-			continue // try next machine
-		}
-		if status == state.Running.String() { // the not running hosts will load on next start
-			h, err := api.Load(pName)
+		for _, n := range p.Config.Nodes {
+			pName := n.Name // capture the loop variable
+			status, err := GetHostStatus(api, pName)
 			if err != nil {
-				return err
+				glog.Warningf("skipping loading cache for profile %s", pName)
+				glog.Errorf("error getting status for %s: %v", pName, err)
+				continue // try next machine
 			}
-			cr, err := CommandRunner(h)
-			if err != nil {
-				return err
-			}
-			c, err := config.Load(pName)
-			if err != nil {
-				return err
-			}
-			err = LoadImages(c, cr, images, constants.ImageCacheDir)
-			if err != nil {
-				glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+			if status == state.Running.String() { // the not running hosts will load on next start
+				h, err := api.Load(pName)
+				if err != nil {
+					return err
+				}
+				cr, err := CommandRunner(h)
+				if err != nil {
+					return err
+				}
+				c, err := config.Load(pName)
+				if err != nil {
+					return err
+				}
+				err = LoadImages(c, cr, images, constants.ImageCacheDir)
+				if err != nil {
+					glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+				}
 			}
 		}
 	}

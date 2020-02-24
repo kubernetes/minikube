@@ -19,6 +19,7 @@ package node
 import (
 	"errors"
 
+	"github.com/golang/glog"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -76,10 +77,9 @@ func Delete(cc config.ClusterConfig, name string) error {
 		return err
 	}
 
-	/*err = Stop(cc, nd)
 	if err != nil {
 		glog.Warningf("Failed to stop node %s. Will still try to delete.", name)
-	}*/
+	}
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -104,21 +104,4 @@ func Retrieve(cc *config.ClusterConfig, name string) (*config.Node, int, error) 
 	}
 
 	return nil, -1, errors.New("Could not find node " + name)
-}
-
-// Save saves a node to a cluster
-func Save(cfg *config.ClusterConfig, node *config.Node) error {
-	update := false
-	for i, n := range cfg.Nodes {
-		if n.Name == node.Name {
-			cfg.Nodes[i] = *node
-			update = true
-			break
-		}
-	}
-
-	if !update {
-		cfg.Nodes = append(cfg.Nodes, *node)
-	}
-	return config.SaveProfile(viper.GetString(config.MachineProfile), cfg)
 }

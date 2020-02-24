@@ -46,7 +46,7 @@ var nodeDeleteCmd = &cobra.Command{
 
 		err = node.Delete(*cc, name)
 		if err != nil {
-			out.FatalT("Failed to delete node {{.name}}", out.V{"name": name})
+			exit.WithError("deleting node", err)
 		}
 
 		out.T(out.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})

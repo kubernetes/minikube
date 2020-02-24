@@ -38,6 +38,11 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	var cacheGroup errgroup.Group
 	beginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
 
+	// Why do we need this?
+	if cc.Downloader == nil {
+		cc.Downloader = util.DefaultDownloader{}
+	}
+
 	runner, preExists, mAPI, _ := cluster.StartMachine(&cc, &n)
 	defer mAPI.Close()
 

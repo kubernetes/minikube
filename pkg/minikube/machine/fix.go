@@ -88,7 +88,7 @@ func fixHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.
 				}
 				// recreate virtual machine
 				out.T(out.Meh, "machine '{{.name}}' does not exist. Proceeding ahead with recreating VM.", out.V{"name": mc.Name})
-				h, err = createHost(api, mc)
+				h, err = createHost(api, mc, n)
 				if err != nil {
 					return nil, errors.Wrap(err, "Error recreating VM")
 				}
