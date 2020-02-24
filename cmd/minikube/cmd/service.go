@@ -91,7 +91,7 @@ var serviceCmd = &cobra.Command{
 		}
 
 		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
-			out.T(out.Sad, "openning service in browser is not yet implemented in docker driver on mac.\nPlease track the URL bellow to see updates for in progress work.\nhttps://github.com/kubernetes/minikube/issues/6778")
+			out.FailureT("openning service in browser is not implemented yet for \"docker driver on mac\".\nPlease track the URL bellow to see updates for in progress work:\nhttps://github.com/kubernetes/minikube/issues/6778")
 			exit.WithCodeT(exit.Unavailable, "not implemented for docker driver on MacOs yet")
 		}
 
