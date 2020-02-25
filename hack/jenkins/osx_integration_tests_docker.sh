@@ -33,6 +33,9 @@ EXTRA_START_ARGS=""
 EXPECTED_DEFAULT_DRIVER="hyperkit"
 
 
+# restart docker on mac for a fresh test
+osascript -e 'quit app "Docker"'; open -a Docker ; while [ -z "$(docker info 2> /dev/null )" ]; do printf "."; sleep 1; done; echo "" || true
+
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "FAILED TO INSTALL CLEANUP"
 echo "*/30 * * * * $HOME/cleanup_and_reboot.sh" | crontab
