@@ -30,8 +30,6 @@ const (
 	waitUntilHealthy    = "wait"
 	cacheImageConfigKey = "cache"
 	containerRuntime    = "container-runtime"
-	embedCerts          = "embed-certs"
-	keepContext         = "keep-context"
 	mountString         = "mount-string"
 	createMount         = "mount"
 	waitTimeout         = "wait-timeout"

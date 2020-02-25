@@ -88,7 +88,10 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		}
 	}
 
-	bs.SetupCerts(cc.KubernetesConfig, n)
+	err = bs.SetupCerts(cc.KubernetesConfig, n)
+	if err != nil {
+		exit.WithError("setting up certs", err)
+	}
 
 	cp, err := config.PrimaryControlPlane(cc)
 	if err != nil {
@@ -99,6 +102,9 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		exit.WithError("Getting bootstrapper", err)
 	}
 	joinCmd, err := cpBs.GenerateToken(cc.KubernetesConfig)
+	if err != nil {
+		exit.WithError("generating join token", err)
+	}
 	return bs.JoinCluster(cc, n, joinCmd)
 }
 

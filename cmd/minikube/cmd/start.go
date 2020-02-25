@@ -355,7 +355,10 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	numNodes := viper.GetInt(nodes)
 	if numNodes > 1 {
-		for i := 0; i < numNodes-1; i++ {
+		if driver.IsKIC(driverName) {
+			out.T(out.Meh, "The none driver is not compatible with multi-node clusters.")
+		}
+		for i := 1; i < numNodes; i++ {
 			nodeName := fmt.Sprintf("%s%d", n.Name, i+1)
 			n := config.Node{
 				Name:              nodeName,
@@ -363,7 +366,10 @@ func runStart(cmd *cobra.Command, args []string) {
 				ControlPlane:      false,
 				KubernetesVersion: mc.KubernetesConfig.KubernetesVersion,
 			}
-			node.Add(&mc, n)
+			err := node.Add(&mc, n)
+			if err != nil {
+				exit.WithError("adding node", err)
+			}
 		}
 	}
 }

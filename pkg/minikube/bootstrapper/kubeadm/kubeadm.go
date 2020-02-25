@@ -371,7 +371,7 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 	fmt.Println(joinCmd)
 	out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
 	if err != nil {
-		return errors.Wrapf(err, "cmd failed: %s\n%s\n", joinCmd, out)
+		return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out)
 	}
 
 	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl enable kubelet && sudo systemctl start kubelet")); err != nil {
