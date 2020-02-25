@@ -24,8 +24,9 @@ import (
 )
 
 type sshConn struct {
-	name string
-	cmd  *exec.Cmd
+	name    string
+	service string
+	cmd     *exec.Cmd
 }
 
 func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
@@ -53,17 +54,26 @@ func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
 	cmd := exec.Command("ssh", sshArgs...)
 
 	return &sshConn{
-		name: name,
-		cmd:  cmd,
+		name:    name,
+		service: svc.Name,
+		cmd:     cmd,
 	}
 }
 
-func (c *sshConn) run() error {
-	fmt.Printf("starting tunnel for %s\n", c.name)
-	return c.cmd.Run()
+func (c *sshConn) startAndWait() error {
+	fmt.Printf("starting tunnel for %s\n", c.service)
+	err := c.cmd.Start()
+	if err != nil {
+		return err
+	}
+
+	// we ignore wait error because the process will be killed
+	_ = c.cmd.Wait()
+
+	return nil
 }
 
 func (c *sshConn) stop() error {
-	fmt.Printf("stopping tunnel for %s\n", c.name)
+	fmt.Printf("stopping tunnel for %s\n", c.service)
 	return c.cmd.Process.Kill()
 }
