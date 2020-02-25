@@ -41,6 +41,7 @@ jobs=(
      'KVM_Linux'
      'none_Linux'
      'Docker_Linux'
+     'Docker_macOS'
      'Podman_Linux'
 )
 
