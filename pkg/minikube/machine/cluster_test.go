@@ -75,27 +75,26 @@ func TestCreateHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
-	profile := viper.GetString("profile")
-	exists, _ := api.Exists(profile)
+	exists, _ := api.Exists(viper.GetString("profile"))
 	if exists {
 		t.Fatal("Machine already exists.")
 	}
 
-	n := config.Node{Name: profile}
+	n := config.Node{Name: viper.GetString("profile")}
 
 	_, err := createHost(api, defaultClusterConfig, n)
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
-	exists, err = api.Exists(profile)
+	exists, err = api.Exists(viper.GetString("profile"))
 	if err != nil {
-		t.Fatalf("exists failed for %q: %v", profile, err)
+		t.Fatalf("exists failed for %q: %v", viper.GetString("profile"), err)
 	}
 	if !exists {
-		t.Fatalf("%q does not exist, but should.", profile)
+		t.Fatalf("%q does not exist, but should.", viper.GetString("profile"))
 	}
 
-	h, err := api.Load(profile)
+	h, err := api.Load(viper.GetString("profile"))
 	if err != nil {
 		t.Fatalf("Error loading machine: %v", err)
 	}
@@ -121,6 +120,8 @@ func TestStartHostExists(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
+	n := defaultNodeConfig
+
 	// Create an initial host.
 	ih, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
 	if err != nil {
@@ -139,8 +140,10 @@ func TestStartHostExists(t *testing.T) {
 	mc := defaultClusterConfig
 	mc.Name = ih.Name
 
+	n.Name = ih.Name
+
 	// This should pass without calling Create because the host exists already.
-	h, err := StartHost(api, mc, defaultNodeConfig)
+	h, err := StartHost(api, mc, n)
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
@@ -294,13 +297,13 @@ func TestStartHostConfig(t *testing.T) {
 	}
 
 	for i := range h.HostOptions.EngineOptions.Env {
-		if h.HostOptions.EngineOptions.Env[i] != config.DockerEnv[i] {
+		if h.HostOptions.EngineOptions.Env[i] != cfg.DockerEnv[i] {
 			t.Fatal("Docker env variables were not set!")
 		}
 	}
 
 	for i := range h.HostOptions.EngineOptions.ArbitraryFlags {
-		if h.HostOptions.EngineOptions.ArbitraryFlags[i] != config.DockerOpt[i] {
+		if h.HostOptions.EngineOptions.ArbitraryFlags[i] != cfg.DockerOpt[i] {
 			t.Fatal("Docker flags were not set!")
 		}
 	}
