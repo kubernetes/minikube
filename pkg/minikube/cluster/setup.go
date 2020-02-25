@@ -52,7 +52,6 @@ const (
 	embedCerts       = "embed-certs"
 	keepContext      = "keep-context"
 	imageRepository  = "image-repository"
-	containerRuntime = "container-runtime"
 )
 
 // InitialSetup performs all necessary operations on the initial control plane node when first spinning up a cluster
@@ -165,7 +164,10 @@ func StartMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 	}
 
 	node.IP = ip
-	config.SaveNode(cfg, node)
+	err = config.SaveNode(cfg, node)
+	if err != nil {
+		exit.WithError("saving node", err)
+	}
 
 	return runner, preExists, m, host
 }

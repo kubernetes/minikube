@@ -229,8 +229,9 @@ func deleteProfile(profile *pkg_config.Profile) error {
 					delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
 					deletionError.Err = delErr
 					e = deletionError
+				} else {
+					e = err
 				}
-				e = err
 			}
 		}
 		if e != nil {
