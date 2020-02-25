@@ -66,7 +66,7 @@ func (c *sshConn) startAndWait() error {
 	}
 
 	// we ignore wait error because the process will be killed
-	c.cmd.Wait()
+	_ = c.cmd.Wait()
 
 	return nil
 }
