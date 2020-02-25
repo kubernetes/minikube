@@ -39,14 +39,13 @@ const (
 
 // Add adds a new node config to an existing cluster.
 func Add(cc *config.ClusterConfig, n config.Node) error {
-	cc.Nodes = append(cc.Nodes, n)
-	err := config.SaveProfile(cc.Name, cc)
+
+	err := config.SaveNode(cc, &n)
 	if err != nil {
 		return err
 	}
 
 	err = Start(*cc, n, nil)
-
 	return err
 }
 
