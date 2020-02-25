@@ -165,7 +165,7 @@ func StartMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 	}
 
 	node.IP = ip
-	config.SaveNodeToProfile(cfg, node)
+	config.SaveNode(cfg, node)
 
 	return runner, preExists, m, host
 }

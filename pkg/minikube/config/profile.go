@@ -91,8 +91,8 @@ func CreateEmptyProfile(name string, miniHome ...string) error {
 	return SaveProfile(name, cfg, miniHome...)
 }
 
-// SaveNodeToProfile saves a node to a cluster
-func SaveNodeToProfile(cfg *ClusterConfig, node *Node) error {
+// SaveNode saves a node to a cluster
+func SaveNode(cfg *ClusterConfig, node *Node) error {
 	update := false
 	for i, n := range cfg.Nodes {
 		if n.Name == node.Name {
