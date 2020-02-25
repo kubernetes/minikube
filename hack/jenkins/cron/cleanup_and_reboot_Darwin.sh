@@ -41,6 +41,11 @@ logger "cleanup_and_reboot is happening!"
 # kill jenkins to avoid an incoming request
 killall java
 
+# clean docker left overs
+docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
+docker volume prune -f || true
+docker system df || true
+
 # macOS specific cleanup
 sudo rm /var/db/dhcpd_leases || echo "could not clear dhcpd leases"
 sudo softwareupdate -i -a -R
