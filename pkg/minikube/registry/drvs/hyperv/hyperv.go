@@ -85,14 +85,22 @@ func status() registry.State {
 		return registry.State{Error: err}
 	}
 
-	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, path, "Get-WindowsOptionalFeature", "-FeatureName", "Microsoft-Hyper-V-All", "-Online")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return registry.State{Installed: false, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'", Doc: docURL}
+		errorMessage := fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out)
+		fixMessage := "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'"
+
+		// If timed out, prompt different error and suggestion messages
+		// See https://github.com/kubernetes/minikube/issues/6579
+		if ctx.Err() != nil {
+			errorMessage = fmt.Errorf("%s exited unexpectedly:\n%s", strings.Join(cmd.Args, " "), ctx.Err())
+			fixMessage = "If you have Hyper-V configured correctly, please try start again with `--force` specified"
+		}
+		return registry.State{Installed: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
 	}
 	return registry.State{Installed: true, Healthy: true}
 }
