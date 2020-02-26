@@ -26,6 +26,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
@@ -47,7 +48,7 @@ func Bootstrapper(api libmachine.API, bootstrapperName string, cluster string, n
 	var err error
 	switch bootstrapperName {
 	case bootstrapper.Kubeadm:
-		b, err = kubeadm.NewBootstrapper(api, fmt.Sprintf("%s-%s", cluster, nodeName))
+		b, err = kubeadm.NewBootstrapper(api, driver.MachineName(cluster, nodeName))
 		if err != nil {
 			return nil, errors.Wrap(err, "getting a new kubeadm bootstrapper")
 		}

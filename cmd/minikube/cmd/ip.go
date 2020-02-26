@@ -17,13 +17,12 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -45,7 +44,7 @@ var ipCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		machineName := fmt.Sprintf("%s-%s", cc.Name, cc.Nodes[0].Name)
+		machineName := driver.MachineName(cc.Name, cc.Nodes[0].Name)
 		host, err := api.Load(machineName)
 		if err != nil {
 			switch err := errors.Cause(err).(type) {

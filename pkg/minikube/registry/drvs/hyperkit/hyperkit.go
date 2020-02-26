@@ -65,7 +65,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	return &hyperkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: fmt.Sprintf("%s-%s", cfg.Name, n.Name),
+			MachineName: driver.MachineName(cfg.Name, n.Name),
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},

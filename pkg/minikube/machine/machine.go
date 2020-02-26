@@ -25,8 +25,6 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -124,8 +122,7 @@ func machineDirs(miniHome ...string) (dirs []string, err error) {
 }
 
 // CreateSSHShell creates a new SSH shell / client
-func CreateSSHShell(api libmachine.API, args []string) error {
-	machineName := viper.GetString(config.MachineProfile)
+func CreateSSHShell(api libmachine.API, machineName string, args []string) error {
 	host, err := CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return errors.Wrap(err, "host exists and load")

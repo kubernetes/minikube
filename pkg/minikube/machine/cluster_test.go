@@ -427,19 +427,22 @@ func TestCreateSSHShell(t *testing.T) {
 		t.Fatalf("Error starting ssh server: %v", err)
 	}
 
+	m := viper.GetString("profile")
+
 	d := &tests.MockDriver{
 		Port:         port,
 		CurrentState: state.Running,
 		BaseDriver: drivers.BaseDriver{
-			IPAddress:  "127.0.0.1",
-			SSHKeyPath: "",
+			IPAddress:   "127.0.0.1",
+			SSHKeyPath:  "",
+			MachineName: m,
 		},
 		T: t,
 	}
-	api.Hosts[viper.GetString("profile")] = &host.Host{Driver: d}
+	api.Hosts[m] = &host.Host{Driver: d}
 
 	cliArgs := []string{"exit"}
-	if err := CreateSSHShell(api, cliArgs); err != nil {
+	if err := CreateSSHShell(api, m, cliArgs); err != nil {
 		t.Fatalf("Error running ssh command: %v", err)
 	}
 
