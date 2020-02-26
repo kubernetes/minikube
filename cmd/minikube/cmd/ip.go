@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
+
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -43,11 +45,12 @@ var ipCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := api.Load(cc.Name)
+		machineName := fmt.Sprintf("%s-%s", cc.Name, cc.Nodes[0].Name)
+		host, err := api.Load(machineName)
 		if err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
-				exit.WithCodeT(exit.NoInput, `"{{.profile_name}}" host does not exist, unable to show an IP`, out.V{"profile_name": cc.Name})
+				exit.WithCodeT(exit.NoInput, `"{{.profile_name}}" host does not exist, unable to show an IP`, out.V{"profile_name": machineName})
 			default:
 				exit.WithError("Error getting host", err)
 			}
