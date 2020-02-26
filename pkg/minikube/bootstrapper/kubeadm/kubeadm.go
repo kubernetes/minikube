@@ -249,16 +249,19 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 	return c, err
 }
 
-// WaitForCluster blocks until the node appears to be healthy
+// WaitForNode blocks until the node appears to be healthy
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
-	out.T(out.Waiting, "Waiting for cluster to come online ...")
+	out.T(out.Waiting, "Waiting for node {{.name}} to come online ...", out.V{"name": n.Name})
 	cp, err := config.PrimaryControlPlane(cfg)
 	if err != nil {
 		return err
 	}
-	if err := kverify.APIServerProcess(k.c, start, timeout); err != nil {
-		return err
+
+	if n.ControlPlane {
+		if err := kverify.APIServerProcess(k.c, start, timeout); err != nil {
+			return err
+		}
 	}
 
 	ip := cp.IP
@@ -270,8 +273,10 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 		}
 	}
-	if err := kverify.APIServerIsRunning(start, ip, port, timeout); err != nil {
-		return err
+	if n.ControlPlane {
+		if err := kverify.APIServerIsRunning(start, ip, port, timeout); err != nil {
+			return err
+		}
 	}
 
 	c, err := k.client(ip, port)
@@ -369,7 +374,6 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 
 	// Join the master by specifying its token
 	joinCmd = fmt.Sprintf("%s --v=10 --node-name=%s", joinCmd, n.Name)
-	fmt.Println(joinCmd)
 	out, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", joinCmd))
 	if err != nil {
 		return errors.Wrapf(err, "cmd failed: %s\n%+v\n", joinCmd, out)
