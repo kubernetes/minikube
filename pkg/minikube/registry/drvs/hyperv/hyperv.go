@@ -53,7 +53,7 @@ func init() {
 }
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := hyperv.NewDriver(fmt.Sprintf("%s-%s", mc.Name, n.Name), localpath.MiniPath())
+	d := hyperv.NewDriver(driver.MachineName(mc.Name, n.Name), localpath.MiniPath())
 	d.Boot2DockerURL = cfg.Downloader.GetISOFileURI(cfg.MinikubeISO)
 	d.VSwitch = cfg.HypervVirtualSwitch
 	if d.VSwitch == "" && cfg.HypervUseExternalSwitch {

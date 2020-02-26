@@ -45,7 +45,15 @@ var sshCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
+
+		if nodeName == "" {
+			cp, err := config.PrimaryControlPlane(*cc)
+			if err != nil {
+				exit.WithError("Getting primary control plane", err)
+			}
+			nodeName = cp.Name
+		}
+		host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(cc.Name, nodeName))
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
@@ -58,7 +66,7 @@ var sshCmd = &cobra.Command{
 			ssh.SetDefaultClient(ssh.External)
 		}
 
-		err = machine.CreateSSHShell(api, args)
+		err = machine.CreateSSHShell(api, driver.MachineName(cc.Name, nodeName), args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)
@@ -70,4 +78,5 @@ var sshCmd = &cobra.Command{
 
 func init() {
 	sshCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
+	sshCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to ssh into. Defaults to the primary control plane.")
 }

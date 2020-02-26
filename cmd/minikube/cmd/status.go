@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -107,7 +108,7 @@ var statusCmd = &cobra.Command{
 
 		var st *Status
 		for _, n := range cc.Nodes {
-			machineName := fmt.Sprintf("%s-%s", cluster, n.Name)
+			machineName := driver.MachineName(cluster, n.Name)
 			st, err = status(api, machineName, n.ControlPlane)
 			if err != nil {
 				glog.Errorf("status error: %v", err)

@@ -45,7 +45,7 @@ func init() {
 }
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := vmwarefusion.NewDriver(fmt.Sprintf("%s-%s", cfg.Name, n.Name), localpath.MiniPath()).(*vmwarefusion.Driver)
+	d := vmwarefusion.NewDriver(driver.MachineName(cfg.Name, n.Name), localpath.MiniPath()).(*vmwarefusion.Driver)
 	d.Boot2DockerURL = cfg.Downloader.GetISOFileURI(cfg.MinikubeISO)
 	d.Memory = cfg.Memory
 	d.CPU = cfg.CPUs

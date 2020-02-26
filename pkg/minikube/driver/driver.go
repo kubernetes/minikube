@@ -108,6 +108,11 @@ func BareMetal(name string) bool {
 	return name == None || name == Mock
 }
 
+// MachineName return the name of the machine given proper config
+func MachineName(cluster string, node string) string {
+	return fmt.Sprintf("%s-%s", cluster, node)
+}
+
 // NeedsRoot returns true if driver needs to run with root privileges
 func NeedsRoot(name string) bool {
 	return name == None || name == Podman
