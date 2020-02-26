@@ -209,7 +209,7 @@ func DaemonInfo(ociBin string) (SysInfo, error) {
 func dockerSystemInfo() (SysInfo, error) {
 	var ds dockerSysInfo
 	var s SysInfo
-	cmd := exec.Command(Docker, "system", "info", "--format", "'{{json .}}'")
+	cmd := exec.Command(Docker, "system", "info", "--format", "{{json .}}")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return s, errors.Wrap(err, "get docker system info")
