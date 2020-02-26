@@ -29,7 +29,7 @@ type sshConn struct {
 	cmd     *exec.Cmd
 }
 
-func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
+func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 	// extract sshArgs
 	sshArgs := []string{
 		// TODO: document the options here
