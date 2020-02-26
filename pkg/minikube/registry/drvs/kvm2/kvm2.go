@@ -68,7 +68,7 @@ type kvmDriver struct {
 }
 
 func configure(mc config.ClusterConfig, n config.Node) (interface{}, error) {
-	name := n.Name
+	name := fmt.Sprintf("%s-%s", mc.Name, n.Name)
 	return kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,

@@ -65,7 +65,6 @@ type Driver struct {
 	UUID           string
 	VpnKitSock     string
 	VSockPorts     []string
-	ClusterName    string
 }
 
 // NewDriver creates a new driver for a host
@@ -200,7 +199,7 @@ func (d *Driver) Restart() error {
 }
 
 func (d *Driver) createHost() (*hyperkit.HyperKit, error) {
-	stateDir := filepath.Join(d.StorePath, "machines", d.ClusterName, d.MachineName)
+	stateDir := filepath.Join(d.StorePath, "machines", d.MachineName)
 	h, err := hyperkit.New("", d.VpnKitSock, stateDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "new-ing Hyperkit")

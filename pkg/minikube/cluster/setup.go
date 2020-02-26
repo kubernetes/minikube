@@ -103,7 +103,7 @@ func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[str
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
 func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node) bootstrapper.Bootstrapper {
-	bs, err := Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), n.Name)
+	bs, err := Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg.Name, n.Name)
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}
