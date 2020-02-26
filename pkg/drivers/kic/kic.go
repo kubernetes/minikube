@@ -17,11 +17,13 @@ limitations under the License.
 package kic
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
@@ -181,11 +183,18 @@ func (d *Driver) GetURL() (string, error) {
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		return state.Error, errors.Wrap(err, "point host docker-daemon")
+		return state.Error, errors.Wrap(err, "point host docker daemon")
 	}
+	// allow no more than 2 seconds for this. when this takes long this means deadline passed
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
+	cmd := exec.CommandContext(ctx, d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
 	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		glog.Errorf("GetState for %s took longer than normal. Restarting your %s daemon might fix this issue.", d.MachineName, d.OCIBinary)
+		return state.Error, fmt.Errorf("inspect %s timeout", d.MachineName)
+	}
 	o := strings.TrimSpace(string(out))
 	if err != nil {
 		return state.Error, errors.Wrapf(err, "get container %s status", d.MachineName)
