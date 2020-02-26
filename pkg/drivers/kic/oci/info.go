@@ -31,6 +31,21 @@ type SysInfo struct {
 	TotalMemory int64 // TotalMemory Total available ram
 }
 
+// DaemonInfo returns common docker/podman daemon system info that minikube cares about
+func DaemonInfo(ociBin string) (SysInfo, error) {
+	var info SysInfo
+	if ociBin == Podman {
+		p, err := podmanSystemInfo()
+		info.CPUs = p.Host.Cpus
+		info.TotalMemory = p.Host.MemTotal
+		return info, err
+	}
+	d, err := dockerSystemInfo()
+	info.CPUs = d.NCPU
+	info.TotalMemory = d.MemTotal
+	return info, err
+}
+
 // dockerSysInfo represents the output of docker system info --format '{{json .}}'
 type dockerSysInfo struct {
 	ID                string      `json:"ID"`
@@ -198,42 +213,33 @@ type podmanSysInfo struct {
 	} `json:"store"`
 }
 
-// DaemonInfo returns docker system info
-func DaemonInfo(ociBin string) (SysInfo, error) {
-	if ociBin == Podman {
-		return podmanSystemInfo()
-	}
-	return dockerSystemInfo()
-}
-
-func dockerSystemInfo() (SysInfo, error) {
+// dockerSystemInfo returns docker system info --format '{{json .}}'
+func dockerSystemInfo() (dockerSysInfo, error) {
 	var ds dockerSysInfo
-	var s SysInfo
+	if err := PointToHostDockerDaemon(); err != nil {
+		return ds, errors.Wrap(err, "point host docker-daemon")
+	}
 	cmd := exec.Command(Docker, "system", "info", "--format", "{{json .}}")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return s, errors.Wrap(err, "get docker system info")
+		return ds, errors.Wrap(err, "get docker system info")
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(string(out))), &ds); err != nil {
-		return s, errors.Wrapf(err, "unmarshal docker system info")
+		return ds, errors.Wrapf(err, "unmarshal docker system info")
 	}
-	s.CPUs = ds.NCPU
-	s.TotalMemory = ds.MemTotal
-	return s, nil
+	return ds, nil
 }
 
-func podmanSystemInfo() (SysInfo, error) {
+// podmanSysInfo returns podman system info --format '{{json .}}'
+func podmanSystemInfo() (podmanSysInfo, error) {
 	var ps podmanSysInfo
-	var s SysInfo
 	cmd := exec.Command(Podman, "system", "info", "--format", "'{{json .}}'")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return s, errors.Wrap(err, "get podman system info")
+		return ps, errors.Wrap(err, "get podman system info")
 	}
 	if err := json.Unmarshal([]byte(strings.TrimSpace(string(out))), &ps); err != nil {
-		return s, errors.Wrapf(err, "unmarshal podman system info")
+		return ps, errors.Wrapf(err, "unmarshal podman system info")
 	}
-	s.CPUs = ps.Host.Cpus
-	s.TotalMemory = ps.Host.MemTotal
-	return s, nil
+	return ps, nil
 }
