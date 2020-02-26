@@ -65,11 +65,10 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	return &hyperkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: cfg.Name,
+			MachineName: fmt.Sprintf("%s-%s", cfg.Name, n.Name),
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},
-		ClusterName:    cfg.Name,
 		Boot2DockerURL: cfg.Downloader.GetISOFileURI(cfg.MinikubeISO),
 		DiskSize:       cfg.DiskSize,
 		Memory:         cfg.Memory,

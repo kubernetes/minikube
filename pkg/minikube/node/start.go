@@ -42,7 +42,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	runner, preExists, mAPI, _ := cluster.StartMachine(&cc, &n)
 	defer mAPI.Close()
 
-	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), n.Name)
+	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cc.Name, n.Name)
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}
@@ -87,7 +87,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	if err != nil {
 		exit.WithError("Getting primary control plane", err)
 	}
-	cpBs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cp.Name)
+	cpBs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cc.Name, cp.Name)
 	if err != nil {
 		exit.WithError("Getting bootstrapper", err)
 	}

@@ -40,7 +40,7 @@ func init() {
 }
 
 func configure(mc config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := vmwcfg.NewConfig(n.Name, localpath.MiniPath())
+	d := vmwcfg.NewConfig(fmt.Sprintf("%s-%s", mc.Name, n.Name), localpath.MiniPath())
 	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
 	d.Memory = mc.Memory
 	d.CPU = mc.CPUs

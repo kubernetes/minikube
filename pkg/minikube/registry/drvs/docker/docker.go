@@ -45,7 +45,7 @@ func init() {
 
 func configure(mc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
-		MachineName:   n.Name,
+		MachineName:   fmt.Sprintf("%s-%s", mc.Name, n.Name),
 		StorePath:     localpath.MiniPath(),
 		ImageDigest:   kic.BaseImage,
 		CPU:           mc.CPUs,

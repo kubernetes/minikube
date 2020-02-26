@@ -36,6 +36,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -73,7 +74,7 @@ func NewBootstrapper(api libmachine.API, name string) (*Bootstrapper, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "command runner")
 	}
-	return &Bootstrapper{c: runner, contextName: name, k8sClient: nil}, nil
+	return &Bootstrapper{c: runner, contextName: viper.GetString(config.MachineProfile), k8sClient: nil}, nil
 }
 
 // GetKubeletStatus returns the kubelet status

@@ -221,21 +221,14 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 
 	if err == nil && driver.BareMetal(cc.Driver) {
-		var e error
-		for _, n := range cc.Nodes {
-			if err := uninstallKubernetes(api, profile.Name, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper), n.Name); err != nil {
-				deletionError, ok := err.(DeletionError)
-				if ok {
-					delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
-					deletionError.Err = delErr
-					e = deletionError
-				} else {
-					e = err
-				}
+		if err := uninstallKubernetes(api, profile.Name, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper), cc.Nodes[0].Name); err != nil {
+			deletionError, ok := err.(DeletionError)
+			if ok {
+				delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
+				deletionError.Err = delErr
+				return deletionError
 			}
-		}
-		if e != nil {
-			return e
+			return err
 		}
 	}
 
@@ -243,13 +236,15 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	if err = machine.DeleteHost(api, profile.Name); err != nil {
-		switch errors.Cause(err).(type) {
-		case mcnerror.ErrHostDoesNotExist:
-			glog.Infof("%s cluster does not exist. Proceeding ahead with cleanup.", profile.Name)
-		default:
-			out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
-			out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
+	for _, n := range cc.Nodes {
+		if err = machine.DeleteHost(api, n.Name); err != nil {
+			switch errors.Cause(err).(type) {
+			case mcnerror.ErrHostDoesNotExist:
+				glog.Infof("%s cluster does not exist. Proceeding ahead with cleanup.", profile.Name)
+			default:
+				out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
+				out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
+			}
 		}
 	}
 
@@ -311,7 +306,7 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 
 func uninstallKubernetes(api libmachine.API, profile string, kc pkg_config.KubernetesConfig, bsName string, nodeName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, nodeName)
+	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, profile, nodeName)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}
