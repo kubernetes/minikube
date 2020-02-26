@@ -147,33 +147,3 @@ func sshConnUniqName(service v1.Service) string {
 
 	return strings.Join(n, "")
 }
-
-// StartServiceTunnel ...
-func (t *SSHTunnel) StartServiceTunnel(svcName string) error {
-	svc, err := t.v1Core.Services("default").Get(svcName, metav1.GetOptions{})
-	if err != nil {
-		glog.Errorf("error listing services: %v", err)
-	}
-
-	newSSHConn := createSSHConn(svcName, t.sshPort, t.sshKey, svc)
-
-	go func() {
-		err := newSSHConn.startAndWait()
-		if err != nil {
-			glog.Errorf("error starting ssh tunnel: %v", err)
-		}
-	}()
-
-	//err = t.LoadBalancerEmulator.PatchServiceIP(t.v1Core.RESTClient(), svc, "127.0.0.1")
-	//if err != nil {
-	//	glog.Errorf("error patching service: %v", err)
-	//}
-
-	<-t.ctx.Done()
-	_, err = t.LoadBalancerEmulator.Cleanup()
-	if err != nil {
-		glog.Errorf("error cleaning up: %v", err)
-	}
-
-	return err
-}
