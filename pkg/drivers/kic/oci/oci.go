@@ -59,13 +59,13 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 		if err != nil {
 			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: %s daemon is stuck. please try again!", c, ociBin))
 			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s.", ociBin, ociBin)
-		} else {
-			cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
-			if out, err := cmd.CombinedOutput(); err != nil {
-				deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
-			}
-
+			continue
 		}
+		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
+		}
+
 	}
 	return deleteErrs
 }
