@@ -71,10 +71,17 @@ Some hypervisors, have built-in host folder sharing. Driver mounts are reliable 
 | VirtualBox | macOS | /Users | /Users |
 | VirtualBox | Windows | C://Users | /c/Users |
 | VMware Fusion | macOS | /Users | /Users |
+| Xhyve | macOS | /Users | /Users |
 | KVM | Linux | Unsupported | | 
 | HyperKit | Linux | Unsupported (see NFS mounts) | | 
 
-These mounts can be disabled by passing `--disable-driver-mounts` to `minikube start`.
+Host folder sharing is disabled by default, it can be enabled by passing `--disable-driver-mounts=false` to `minikube start`.
+
+For Example
+
+```
+minikube start --disable-driver-mounts=false --vm-driver='virtualbox'
+```
 
 ## File Sync
 

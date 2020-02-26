@@ -190,7 +190,7 @@ func initKubernetesFlags() {
 // initDriverFlags inits the commandline flags for vm drivers
 func initDriverFlags() {
 	startCmd.Flags().String("vm-driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.DisplaySupportedDrivers()))
-	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
+	startCmd.Flags().Bool(disableDriverMounts, true, "Disables the filesystem mounts provided by the hypervisors")
 
 	// kvm2
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (kvm2 driver only)")
