@@ -142,10 +142,9 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.UsageT("usage: minikube delete")
 		}
 
-		profileName := viper.GetString(pkg_config.MachineProfile)
-		profile, err := pkg_config.LoadProfile(profileName)
+		profile, err := pkg_config.LoadProfile(profileFlag)
 		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": profileName})
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": profileFlag})
 		}
 
 		errs := DeleteProfiles([]*pkg_config.Profile{profile})
@@ -237,7 +236,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 
 	for _, n := range cc.Nodes {
-		if err = machine.DeleteHost(api, n.Name); err != nil {
+		if err = machine.DeleteHost(api, driver.MachineName(profile.Name, n.Name)); err != nil {
 			switch errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
 				glog.Infof("%s cluster does not exist. Proceeding ahead with cleanup.", profile.Name)

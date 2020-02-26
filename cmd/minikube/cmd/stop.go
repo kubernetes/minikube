@@ -17,19 +17,15 @@ limitations under the License.
 package cmd
 
 import (
-	"time"
-
-	"github.com/docker/machine/libmachine/mcnerror"
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 // stopCmd represents the stop command
@@ -50,31 +46,23 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 	defer api.Close()
 
-	nonexistent := false
-	stop := func() (err error) {
-		err = machine.StopHost(api, profile)
-		if err == nil {
-			return nil
+	cc, err := config.Load(profile)
+	if err != nil {
+		exit.WithError("Error retrieving config", err)
+	}
+
+	// TODO replace this back with expo backoff
+	for _, n := range cc.Nodes {
+		err := machine.StopHost(api, driver.MachineName(profile, n.Name))
+		if err != nil {
+			exit.WithError("Unable to stop VM", err)
 		}
-		glog.Warningf("stop host returned error: %v", err)
-
-		switch err := errors.Cause(err).(type) {
-		case mcnerror.ErrHostDoesNotExist:
-			out.T(out.Meh, `"{{.profile_name}}" does not exist, nothing to stop`, out.V{"profile_name": profile})
-			nonexistent = true
-			return nil
-		default:
-			return err
-		}
+		/*if err := retry.Expo(fn, 5*time.Second, 3*time.Minute, 5); err != nil {
+			exit.WithError("Unable to stop VM", err)
+		}*/
 	}
 
-	if err := retry.Expo(stop, 5*time.Second, 3*time.Minute, 5); err != nil {
-		exit.WithError("Unable to stop VM", err)
-	}
-
-	if !nonexistent {
-		out.T(out.Stopped, `"{{.profile_name}}" stopped.`, out.V{"profile_name": profile})
-	}
+	out.T(out.Stopped, `"{{.profile_name}}" stopped.`, out.V{"profile_name": profile})
 
 	if err := killMountProcess(); err != nil {
 		out.T(out.WarningType, "Unable to kill mount process: {{.error}}", out.V{"error": err})

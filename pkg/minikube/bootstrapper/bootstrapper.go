@@ -39,7 +39,7 @@ type Bootstrapper interface {
 	StartCluster(config.ClusterConfig) error
 	UpdateCluster(config.ClusterConfig) error
 	DeleteCluster(config.KubernetesConfig) error
-	WaitForCluster(config.ClusterConfig, time.Duration) error
+	WaitForNode(config.ClusterConfig, config.Node, time.Duration) error
 	JoinCluster(config.ClusterConfig, config.Node, string) error
 	UpdateNode(config.ClusterConfig, config.Node, cruntime.Manager) error
 	GenerateToken(config.KubernetesConfig) (string, error)

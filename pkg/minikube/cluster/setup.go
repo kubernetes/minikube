@@ -92,7 +92,7 @@ func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[str
 
 	// Skip pre-existing, because we already waited for health
 	if viper.GetBool(waitUntilHealthy) && !preExists {
-		if err := bs.WaitForCluster(cc, viper.GetDuration(waitTimeout)); err != nil {
+		if err := bs.WaitForNode(cc, n, viper.GetDuration(waitTimeout)); err != nil {
 			exit.WithError("Wait failed", err)
 		}
 	}
