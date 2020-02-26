@@ -12,7 +12,7 @@ matrix:
     - language: go
       arch: s390x
       name: Code Lint
-      go: 1.13.4
+      go: 1.13.6
       env:
         - TESTSUITE=lintall
       before_install:
@@ -22,7 +22,7 @@ matrix:
     - language: go
       arch: s390x 
       name: Unit Test
-      go: 1.13.4
+      go: 1.13.6
       env:
         - TESTSUITE=unittest
       before_install:
@@ -32,7 +32,7 @@ matrix:
     - language: go
       arch: s390x
       name: Build
-      go: 1.13.4
+      go: 1.13.6
       script: make
 
     - language: go
