@@ -79,6 +79,10 @@ func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[str
 		exit.WithError("Error starting cluster", err)
 	}
 
+	if err := config.CacheAndLoadImagesInConfig(); err != nil {
+		out.T(out.FailureType, "Unable to load cached images from config file.")
+	}
+
 	// enable addons, both old and new!
 	if existingAddons != nil {
 		addons.Start(viper.GetString(config.MachineProfile), existingAddons, config.AddonList)

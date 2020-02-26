@@ -26,6 +26,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/machine"
 )
 
 const (
@@ -200,4 +201,17 @@ func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *ClusterCo
 		return err
 	}
 	return ioutil.WriteFile(path, contents, 0644)
+}
+
+// CacheAndLoadImagesInConfig loads the images currently in the config file
+// called by 'start' and 'cache reload' commands.
+func CacheAndLoadImagesInConfig() error {
+	images, err := imagesInConfigFile()
+	if err != nil {
+		return err
+	}
+	if len(images) == 0 {
+		return nil
+	}
+	return machine.CacheAndLoadImages(images)
 }

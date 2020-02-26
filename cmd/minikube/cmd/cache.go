@@ -19,10 +19,10 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	cmdConfig "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/node"
 )
 
 // cacheImageConfigKey is the config field name used to store which images we have previously cached
@@ -75,7 +75,7 @@ var reloadCacheCmd = &cobra.Command{
 	Short: "reload cached images.",
 	Long:  "reloads images previously added using the 'cache add' subcommand",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := node.CacheAndLoadImagesInConfig()
+		err := config.CacheAndLoadImagesInConfig()
 		if err != nil {
 			exit.WithError("Failed to reload cached images", err)
 		}
