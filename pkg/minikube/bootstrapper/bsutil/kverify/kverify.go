@@ -67,7 +67,7 @@ func apiServerPID(cr command.Runner) (int, error) {
 	return strconv.Atoi(s)
 }
 
-// SystemPods verifies essential pods for running kurnetes is running
+// SystemPods verifies essential pods for running kubernetes is running
 func SystemPods(client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
 	glog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()

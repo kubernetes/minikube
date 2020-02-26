@@ -519,7 +519,6 @@ func (d *Driver) sendSignal(s os.Signal) error {
 func (d *Driver) getPid() int {
 	pidPath := d.ResolveStorePath(machineFileName)
 
-	log.Debugf("PIDPATH=%s", pidPath)
 	f, err := os.Open(pidPath)
 	if err != nil {
 		log.Warnf("Error reading pid file: %v", err)
