@@ -18,4 +18,9 @@ limitations under the License.
 
 package constants
 
-var DefaultMountDir = "$HOME"
+import (
+	"k8s.io/client-go/util/homedir"
+)
+
+// DefaultMountDir is the default mount dir
+var DefaultMountDir = homedir.HomeDir()

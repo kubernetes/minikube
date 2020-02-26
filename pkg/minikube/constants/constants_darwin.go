@@ -18,5 +18,9 @@ limitations under the License.
 
 package constants
 
-// DefaultMountDir is the default mounting directory for Darwin
-var DefaultMountDir = "/Users"
+import (
+	"k8s.io/client-go/util/homedir"
+)
+
+// DefaultMountDir is the default mount directory for Darwin
+var DefaultMountDir = homedir.HomeDir()
