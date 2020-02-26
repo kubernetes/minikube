@@ -36,7 +36,7 @@ func DeleteAllVolumesByLabel(ociBin string, label string) []error {
 	glog.Infof("trying to delete all %s volumes with label %s", ociBin, label)
 	if ociBin == Docker {
 		if err := PointToHostDockerDaemon(); err != nil {
-			return []error{errors.Wrap(err, "point host docker-daemon")}
+			return []error{errors.Wrap(err, "point host docker daemon")}
 		}
 	}
 
@@ -68,21 +68,21 @@ func PruneAllVolumesByLabel(ociBin string, label string) []error {
 	glog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
 	if ociBin == Docker {
 		if err := PointToHostDockerDaemon(); err != nil {
-			return []error{errors.Wrap(err, "point host docker-daemon")}
+			return []error{errors.Wrap(err, "point host docker daemon")}
 		}
 	}
-	// allow no more than 5 seconds for this. when this takes long this means deadline passed
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	// allow no more than 3 seconds for this. when this takes long this means deadline passed
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
 	// try to prune afterwards just in case delete didn't go through
 	cmd := exec.CommandContext(ctx, ociBin, "volume", "prune", "-f", "--filter", "label="+label)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s: %s", label, string(out)))
+	}
 	if ctx.Err() == context.DeadlineExceeded {
 		glog.Warningf("pruning volume with label %s took longer than normal. Restarting your %s daemon might fix this issue.", label, ociBin)
 		deleteErrs = append(deleteErrs, fmt.Errorf("prune deadline exceeded for %s", label))
-	}
-	if out, err := cmd.CombinedOutput(); err != nil {
-		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s: %s", label, string(out)))
 	}
 	return deleteErrs
 }
@@ -108,7 +108,7 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 // TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
 func createDockerVolume(name string) error {
 	if err := PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker-daemon")
+		return errors.Wrap(err, "point host docker daemon")
 	}
 	cmd := exec.Command(Docker, "volume", "create", name, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, name), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))
 	if out, err := cmd.CombinedOutput(); err != nil {
