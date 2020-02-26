@@ -116,16 +116,3 @@ func imagesInConfigFile() ([]string, error) {
 	}
 	return []string{}, nil
 }
-
-// CacheAndLoadImagesInConfig loads the images currently in the config file
-// called by 'start' and 'cache reload' commands.
-func CacheAndLoadImagesInConfig() error {
-	images, err := imagesInConfigFile()
-	if err != nil {
-		return err
-	}
-	if len(images) == 0 {
-		return nil
-	}
-	return machine.CacheAndLoadImages(images)
-}

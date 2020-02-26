@@ -67,7 +67,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		exit.WithError("Failed to update node", err)
 	}
 
-	if err := CacheAndLoadImagesInConfig(); err != nil {
+	if err := config.CacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}
 
