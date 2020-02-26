@@ -17,9 +17,11 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"os"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"bufio"
 	"bytes"
@@ -51,9 +53,18 @@ func DeleteAllContainersByLabel(ociBin string, label string) []error {
 		return nil
 	}
 	for _, c := range cs {
-		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
-		if out, err := cmd.CombinedOutput(); err != nil {
-			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
+		_, err := containerStatus(ociBin, c)
+		// only try to delete if docker/podman inspect returns
+		// if it doesn't it means docker-daemon is stuck and needs restart
+		if err != nil {
+			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: -daemon is stuck.", c, ociBin))
+			glog.Errorf("%s-daemon seems to be stuck. Please try restarting your %s.", ociBin, ociBin)
+		} else {
+			cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
+			}
+
 		}
 	}
 	return deleteErrs
@@ -429,7 +440,10 @@ func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return nil, errors.Wrap(err, "point host docker-daemon")
 	}
-	cmd := exec.Command(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
+	// allow no more than 5 seconds for docker ps
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
 	stdout, err := cmd.Output()
 	s := bufio.NewScanner(bytes.NewReader(stdout))
 	var names []string
@@ -439,7 +453,6 @@ func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 			names = append(names, n)
 		}
 	}
-
 	return names, err
 }
 
@@ -460,4 +473,26 @@ func PointToHostDockerDaemon() error {
 
 	}
 	return nil
+}
+
+// containerStatus returns status of a container running,exited,...
+func containerStatus(ociBin string, name string) (string, error) {
+	if ociBin == Docker {
+		if err := PointToHostDockerDaemon(); err != nil {
+			return "", errors.Wrap(err, "point host docker-daemon")
+		}
+	}
+	// allow no more than 2 seconds for this. when this takes long this means deadline passed
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, ociBin, "inspect", name, "--format={{.State.Status}}")
+	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		glog.Warningf("%s inspect %s took longer than normal. Restarting your docker daemon might fix this issue.")
+		return strings.TrimSpace(string(out)), fmt.Errorf("inspect %s timeout", name)
+	}
+	if err != nil {
+		return string(out), errors.Wrapf(err, "inspecting container: output %s", out)
+	}
+	return strings.TrimSpace(string(out)), nil
 }

@@ -19,9 +19,11 @@ package oci
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -42,9 +44,15 @@ func DeleteAllVolumesByLabel(ociBin string, label string) []error {
 	if err != nil {
 		return []error{fmt.Errorf("listing volumes by label %q: %v", label, err)}
 	}
-
 	for _, v := range vs {
-		cmd := exec.Command(ociBin, "volume", "rm", "--force", v)
+		// allow no more than 3 seconds for this. when this takes long this means deadline passed
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		cmd := exec.CommandContext(ctx, ociBin, "volume", "rm", "--force", v)
+		if ctx.Err() == context.DeadlineExceeded {
+			glog.Warningf("removing volume with label %s took longer than normal. Restarting your %s daemon might fix this issue.", label, ociBin)
+			deleteErrs = append(deleteErrs, fmt.Errorf("delete deadline exceeded for %s", label))
+		}
 		if out, err := cmd.CombinedOutput(); err != nil {
 			deleteErrs = append(deleteErrs, fmt.Errorf("deleting volume %s: output: %s", v, string(out)))
 		}
@@ -63,9 +71,16 @@ func PruneAllVolumesByLabel(ociBin string, label string) []error {
 			return []error{errors.Wrap(err, "point host docker-daemon")}
 		}
 	}
+	// allow no more than 5 seconds for this. when this takes long this means deadline passed
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	// try to prune afterwards just in case delete didn't go through
-	cmd := exec.Command(ociBin, "volume", "prune", "-f", "--filter", "label="+label)
+	cmd := exec.CommandContext(ctx, ociBin, "volume", "prune", "-f", "--filter", "label="+label)
+	if ctx.Err() == context.DeadlineExceeded {
+		glog.Warningf("pruning volume with label %s took longer than normal. Restarting your %s daemon might fix this issue.", label, ociBin)
+		deleteErrs = append(deleteErrs, fmt.Errorf("prune deadline exceeded for %s", label))
+	}
 	if out, err := cmd.CombinedOutput(); err != nil {
 		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s: %s", label, string(out)))
 	}
