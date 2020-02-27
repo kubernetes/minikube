@@ -109,6 +109,12 @@ var vmProblems = map[string]match{
 		Issues: []int{4511},
 		GOOS:   []string{"windows"},
 	},
+	"HYPERV_FILE_DELETE_FAILURE": {
+		Regexp: re(`Unable to remove machine directory`),
+		Advice: "Stop the  Hyper-V Manager and and run 'minikube delete'.",
+		Issues: []int{6804},
+		GOOS:   []string{"windows"},
+	},
 
 	// KVM
 	"KVM2_NOT_FOUND": {
