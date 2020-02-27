@@ -25,14 +25,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
+// TODO: Share these between cluster and node packages
 const (
-	cacheImages         = "cache-images"
-	waitUntilHealthy    = "wait"
-	cacheImageConfigKey = "cache"
-	containerRuntime    = "container-runtime"
-	mountString         = "mount-string"
-	createMount         = "mount"
-	waitTimeout         = "wait-timeout"
+	waitUntilHealthy = "wait"
+	containerRuntime = "container-runtime"
+	mountString      = "mount-string"
+	createMount      = "mount"
+	waitTimeout      = "wait-timeout"
 )
 
 // Add adds a new node config to an existing cluster.

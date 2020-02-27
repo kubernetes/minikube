@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package node
+package cluster
 
 import (
 	"os"
@@ -33,8 +33,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// beginCacheRequiredImages caches images required for kubernetes version in the background
-func beginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
+const (
+	cacheImages         = "cache-images"
+	cacheImageConfigKey = "cache"
+)
+
+// BeginCacheRequiredImages caches images required for kubernetes version in the background
+func BeginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
 	if !viper.GetBool("cache-images") {
 		return
 	}
@@ -44,7 +49,8 @@ func beginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVers
 	})
 }
 
-func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
+// HandleDownloadOnly handles the download-only parameter
+func HandleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool("download-only") {
 		return
@@ -55,7 +61,7 @@ func handleDownloadOnly(cacheGroup *errgroup.Group, k8sVersion string) {
 	if _, err := CacheKubectlBinary(k8sVersion); err != nil {
 		exit.WithError("Failed to cache kubectl", err)
 	}
-	waitCacheRequiredImages(cacheGroup)
+	WaitCacheRequiredImages(cacheGroup)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.WithError("Failed to cache images to tar", err)
 	}
@@ -79,8 +85,8 @@ func doCacheBinaries(k8sVersion string) error {
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 }
 
-// waitCacheRequiredImages blocks until the required images are all cached.
-func waitCacheRequiredImages(g *errgroup.Group) {
+// WaitCacheRequiredImages blocks until the required images are all cached.
+func WaitCacheRequiredImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return
 	}
@@ -100,6 +106,19 @@ func saveImagesToTarFromConfig() error {
 		return nil
 	}
 	return image.SaveToDir(images, constants.ImageCacheDir)
+}
+
+// CacheAndLoadImagesInConfig loads the images currently in the config file
+// called by 'start' and 'cache reload' commands.
+func CacheAndLoadImagesInConfig() error {
+	images, err := imagesInConfigFile()
+	if err != nil {
+		return err
+	}
+	if len(images) == 0 {
+		return nil
+	}
+	return machine.CacheAndLoadImages(images)
 }
 
 func imagesInConfigFile() ([]string, error) {

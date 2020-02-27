@@ -32,7 +32,7 @@ import (
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool) error {
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
-	beginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
+	cluster.BeginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
 
 	// Why do we need this?
 	if cc.Downloader == nil {
@@ -50,11 +50,11 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	k8sVersion := cc.KubernetesConfig.KubernetesVersion
 	driverName := cc.Driver
 	// exits here in case of --download-only option.
-	handleDownloadOnly(&cacheGroup, k8sVersion)
+	cluster.HandleDownloadOnly(&cacheGroup, k8sVersion)
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(runner, driverName, cc.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
-	waitCacheRequiredImages(&cacheGroup)
+	cluster.WaitCacheRequiredImages(&cacheGroup)
 
 	configureMounts()
 
@@ -67,7 +67,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		exit.WithError("Failed to update node", err)
 	}
 
-	if err := config.CacheAndLoadImagesInConfig(); err != nil {
+	if err := cluster.CacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}
 
