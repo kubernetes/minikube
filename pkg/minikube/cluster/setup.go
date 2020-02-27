@@ -29,6 +29,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
+	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -57,6 +58,9 @@ const (
 
 // InitialSetup performs all necessary operations on the initial control plane node when first spinning up a cluster
 func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
+	var cacheGroup errgroup.Group
+	BeginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
+
 	_, preExists, machineAPI, host := StartMachine(&cc, &n)
 	defer machineAPI.Close()
 
