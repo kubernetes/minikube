@@ -153,8 +153,6 @@ func startKicServiceTunnel(svc, configName string) {
 	if err != nil {
 		exit.WithError("error stopping tunnel", err)
 	}
-
-	return
 }
 
 func openURLs(svc string, urls []string) {
