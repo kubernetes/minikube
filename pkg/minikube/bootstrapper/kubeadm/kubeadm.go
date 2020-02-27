@@ -268,7 +268,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	port := cp.Port
 	if driver.IsKIC(cfg.Driver) {
 		ip = oci.DefaultBindIPV4
-		port, err = oci.HostPortBinding(cfg.Driver, cfg.Name, port)
+		port, err = oci.HostPortBinding(cfg.Driver, driver.MachineName(cfg.Name, n.Name), port)
 		if err != nil {
 			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 		}
@@ -338,9 +338,9 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		port := n.Port
 		if driver.IsKIC(cfg.Driver) {
 			ip = oci.DefaultBindIPV4
-			port, err = oci.HostPortBinding(cfg.Driver, cfg.Name, port)
+			port, err = oci.HostPortBinding(cfg.Driver, driver.MachineName(cfg.Name, n.Name), port)
 			if err != nil {
-				return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
+				return errors.Wrapf(err, "get host-bind port %d for container %s", port, driver.MachineName(cfg.Name, n.Name))
 			}
 		}
 		client, err := k.client(ip, port)
