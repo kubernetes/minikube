@@ -20,8 +20,13 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"os/signal"
+	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
 	"text/template"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/browser"
@@ -32,9 +37,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
+	"k8s.io/minikube/pkg/minikube/tunnel/kic"
 )
 
 const defaultServiceFormatTemplate = "http://{{.IP}}:{{.Port}}"
@@ -85,34 +92,17 @@ var serviceCmd = &cobra.Command{
 			exit.WithError("Error getting config", err)
 		}
 
+		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
+			startKicServiceTunnel(svc, cfg.Name)
+			return
+		}
+
 		urls, err := service.WaitForService(api, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
 			exit.WithError("Error opening service", err)
 		}
 
-		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
-			out.FailureT("Opening service in browser is not implemented yet for docker driver on Mac.\nThe following issue is tracking the in progress work:\nhttps://github.com/kubernetes/minikube/issues/6778")
-			exit.WithCodeT(exit.Unavailable, "Not yet implemented for docker driver on MacOS.")
-		}
-
-		for _, u := range urls {
-			_, err := url.Parse(u)
-			if err != nil {
-				glog.Warningf("failed to parse url %q: %v (will not open)", u, err)
-				out.String(fmt.Sprintf("%s\n", u))
-				continue
-			}
-
-			if serviceURLMode {
-				out.String(fmt.Sprintf("%s\n", u))
-				continue
-			}
-
-			out.T(out.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
-			if err := browser.OpenURL(u); err != nil {
-				exit.WithError(fmt.Sprintf("open url failed: %s", u), err)
-			}
-		}
+		openURLs(svc, urls)
 	},
 }
 
@@ -124,5 +114,67 @@ func init() {
 	serviceCmd.Flags().IntVar(&interval, "interval", service.DefaultInterval, "The initial time interval for each check that wait performs in seconds")
 
 	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time.")
+
+}
+
+func startKicServiceTunnel(svc, configName string) {
+	ctrlC := make(chan os.Signal, 1)
+	signal.Notify(ctrlC, os.Interrupt)
+
+	clientset, err := service.K8s.GetClientset(1 * time.Second)
+	if err != nil {
+		exit.WithError("error creating clientset", err)
+	}
+
+	port, err := oci.HostPortBinding(oci.Docker, configName, 22)
+	if err != nil {
+		exit.WithError("error getting ssh port", err)
+	}
+	sshPort := strconv.Itoa(port)
+	sshKey := filepath.Join(localpath.MiniPath(), "machines", configName, "id_rsa")
+
+	serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1())
+	urls, err := serviceTunnel.Start(svc, namespace)
+	if err != nil {
+		exit.WithError("error starting tunnel", err)
+	}
+
+	// wait for tunnel to come up
+	time.Sleep(1 * time.Second)
+
+	data := [][]string{{namespace, svc, "", strings.Join(urls, "\n")}}
+	service.PrintServiceList(os.Stdout, data)
+
+	openURLs(svc, urls)
+
+	<-ctrlC
+
+	err = serviceTunnel.Stop()
+	if err != nil {
+		exit.WithError("error stopping tunnel", err)
+	}
+}
+
+func openURLs(svc string, urls []string) {
+	for _, u := range urls {
+		_, err := url.Parse(u)
+		if err != nil {
+			glog.Warningf("failed to parse url %q: %v (will not open)", u, err)
+			out.String(fmt.Sprintf("%s\n", u))
+			continue
+		}
+
+		if serviceURLMode {
+			out.String(fmt.Sprintf("%s\n", u))
+			continue
+		}
+
+		out.T(out.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+		if err := browser.OpenURL(u); err != nil {
+			exit.WithError(fmt.Sprintf("open url failed: %s", u), err)
+		}
+
+		out.T(out.WarningType, "Because you are using docker driver on Mac, the terminal needs to be open to run it.")
+	}
 
 }
