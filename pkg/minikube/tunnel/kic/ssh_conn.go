@@ -20,6 +20,8 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/phayes/freeport"
+
 	v1 "k8s.io/api/core/v1"
 )
 
@@ -27,6 +29,7 @@ type sshConn struct {
 	name    string
 	service string
 	cmd     *exec.Cmd
+	ports   []int
 }
 
 func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
@@ -59,6 +62,47 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 		service: svc.Name,
 		cmd:     cmd,
 	}
+}
+
+func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service) (*sshConn, error) {
+	// extract sshArgs
+	sshArgs := []string{
+		// TODO: document the options here
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "StrictHostKeyChecking no",
+		"-N",
+		"docker@127.0.0.1",
+		"-p", sshPort,
+		"-i", sshKey,
+	}
+
+	usedPorts := make([]int, 0, len(svc.Spec.Ports))
+
+	for _, port := range svc.Spec.Ports {
+		freeport, err := freeport.GetFreePort()
+		if err != nil {
+			return nil, err
+		}
+
+		arg := fmt.Sprintf(
+			"-L %d:%s:%d",
+			freeport,
+			svc.Spec.ClusterIP,
+			port.Port,
+		)
+
+		sshArgs = append(sshArgs, arg)
+		usedPorts = append(usedPorts, freeport)
+	}
+
+	cmd := exec.Command("ssh", sshArgs...)
+
+	return &sshConn{
+		name:    name,
+		service: svc.Name,
+		cmd:     cmd,
+		ports:   usedPorts,
+	}, nil
 }
 
 func (c *sshConn) startAndWait() error {

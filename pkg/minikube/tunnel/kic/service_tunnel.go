@@ -49,7 +49,11 @@ func (t *ServiceTunnel) Start(svcName, namespace string) ([]string, error) {
 		return nil, err
 	}
 
-	t.sshConn = createSSHConn(svcName, t.sshPort, t.sshKey, svc)
+	t.sshConn, err = createSSHConnWithRandomPorts(svcName, t.sshPort, t.sshKey, svc)
+	if err != nil {
+		glog.Errorf("error creating ssh conn: %v", err)
+		return nil, err
+	}
 
 	go func() {
 		err = t.sshConn.startAndWait()
@@ -59,8 +63,8 @@ func (t *ServiceTunnel) Start(svcName, namespace string) ([]string, error) {
 	}()
 
 	urls := make([]string, 0, len(svc.Spec.Ports))
-	for _, port := range svc.Spec.Ports {
-		urls = append(urls, fmt.Sprintf("http://127.0.0.1:%d", port.Port))
+	for _, port := range t.sshConn.ports {
+		urls = append(urls, fmt.Sprintf("http://127.0.0.1:%d", port))
 	}
 
 	return urls, nil
