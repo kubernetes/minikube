@@ -534,7 +534,11 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		return
 	}
 
-	machineName := viper.GetString(config.MachineProfile)
+	cp, err := config.PrimaryControlPlane(*existing)
+	if err != nil {
+		glog.Warningf("selectDriver PrimaryControlPlane: %v", err)
+	}
+	machineName := driver.MachineName(viper.GetString(config.MachineProfile), cp.Name)
 	h, err := api.Load(machineName)
 	if err != nil {
 		glog.Warningf("selectDriver api.Load: %v", err)
