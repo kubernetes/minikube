@@ -175,6 +175,8 @@ func openURLs(svc string, urls []string) {
 		if err := browser.OpenURL(u); err != nil {
 			exit.WithError(fmt.Sprintf("open url failed: %s", u), err)
 		}
+
+		out.T(out.WarningType, "Because you are using docker driver on Mac, the terminal needs to be open to run it.")
 	}
 
 }
