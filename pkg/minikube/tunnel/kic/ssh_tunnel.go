@@ -104,7 +104,7 @@ func (t *SSHTunnel) startConnection(svc v1.Service) {
 	}
 
 	// create new ssh conn
-	newSSHConn := createSSHConn(uniqName, t.sshPort, t.sshKey, svc)
+	newSSHConn := createSSHConn(uniqName, t.sshPort, t.sshKey, &svc)
 	t.conns[newSSHConn.name] = newSSHConn
 
 	go func() {
