@@ -109,6 +109,13 @@ var vmProblems = map[string]match{
 		Issues: []int{4511},
 		GOOS:   []string{"windows"},
 	},
+	"HYPERV_FILE_ACCESS_DENIED": {
+		Regexp: re(`The process cannot access the file because it is being used by another process`),
+		Advice: "Hyper-V Manager locked the file. Please stop the Hyper-V Manager, and run 'minikube delete'.",
+		URL:    "https://docs.docker.com/machine/drivers/hyper-v/",
+		Issues: []int{6804},
+		GOOS:   []string{"windows"},
+	},
 
 	// KVM
 	"KVM2_NOT_FOUND": {
