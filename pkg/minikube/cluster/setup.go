@@ -79,7 +79,7 @@ func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[str
 		exit.WithError("Error starting cluster", err)
 	}
 
-	if err := config.CacheAndLoadImagesInConfig(); err != nil {
+	if err := CacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}
 
