@@ -20,6 +20,8 @@ import (
 	"fmt"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 )
@@ -45,14 +47,12 @@ func NewServiceTunnel(sshPort, sshKey string, v1Core typed_core.CoreV1Interface)
 func (t *ServiceTunnel) Start(svcName, namespace string) ([]string, error) {
 	svc, err := t.v1Core.Services(namespace).Get(svcName, metav1.GetOptions{})
 	if err != nil {
-		glog.Errorf("error listing services: %v", err)
-		return nil, err
+		return nil, errors.Wrap(err, "getting service")
 	}
 
 	t.sshConn, err = createSSHConnWithRandomPorts(svcName, t.sshPort, t.sshKey, svc)
 	if err != nil {
-		glog.Errorf("error creating ssh conn: %v", err)
-		return nil, err
+		return nil, errors.Wrap(err, "creating ssh conn")
 	}
 
 	go func() {
@@ -74,8 +74,7 @@ func (t *ServiceTunnel) Start(svcName, namespace string) ([]string, error) {
 func (t *ServiceTunnel) Stop() error {
 	err := t.sshConn.stop()
 	if err != nil {
-		glog.Errorf("error stopping ssh tunnel: %v", err)
-		return err
+		return errors.Wrap(err, "stopping ssh tunnel")
 	}
 
 	return nil
