@@ -36,6 +36,7 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 	// extract sshArgs
 	sshArgs := []string{
 		// TODO: document the options here
+		"ssh",
 		"-o", "UserKnownHostsFile=/dev/null",
 		"-o", "StrictHostKeyChecking no",
 		"-N",
@@ -55,7 +56,7 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 		sshArgs = append(sshArgs, arg)
 	}
 
-	cmd := exec.Command("ssh", sshArgs...)
+	cmd := exec.Command("sudo", sshArgs...)
 
 	return &sshConn{
 		name:    name,
