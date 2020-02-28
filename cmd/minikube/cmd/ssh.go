@@ -45,7 +45,9 @@ var sshCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
+		// TODO: allow choice of node to ssh into
+		cp, err := config.PrimaryControlPlane(*cc)
+		host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(cc.Name, cp.Name))
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}

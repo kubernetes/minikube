@@ -60,7 +60,7 @@ type Registry interface {
 }
 
 // Configurator emits a struct to be marshalled into JSON for Machine Driver
-type Configurator func(config.ClusterConfig) (interface{}, error)
+type Configurator func(config.ClusterConfig, config.Node) (interface{}, error)
 
 // Loader is a function that loads a byte stream and creates a driver.
 type Loader func() drivers.Driver

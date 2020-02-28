@@ -148,74 +148,77 @@ var dockerEnvCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
-		if err != nil {
-			exit.WithError("Error getting host", err)
-		}
-		if host.Driver.DriverName() == driver.None {
-			exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
-		}
-
-		hostSt, err := machine.GetHostStatus(api, cc.Name)
-		if err != nil {
-			exit.WithError("Error getting host status", err)
-		}
-		if hostSt != state.Running.String() {
-			exit.WithCodeT(exit.Unavailable, `'{{.profile}}' is not running`, out.V{"profile": profile})
-		}
-		ok, err := isDockerActive(host.Driver)
-		if err != nil {
-			exit.WithError("Error getting service status", err)
-		}
-
-		if !ok {
-			exit.WithCodeT(exit.Unavailable, `The docker service within '{{.profile}}' is not active`, out.V{"profile": profile})
-		}
-
-		hostIP, err := host.Driver.GetIP()
-		if err != nil {
-			exit.WithError("Error getting host IP", err)
-		}
-
-		sh := shell.EnvConfig{
-			Shell: shell.ForceShell,
-		}
-
-		port := constants.DockerDaemonPort
-		if driver.IsKIC(host.DriverName) { // for kic we need to find what port docker/podman chose for us
-			hostIP = oci.DefaultBindIPV4
-			port, err = oci.HostPortBinding(host.DriverName, profile, port)
+		for _, n := range cc.Nodes {
+			machineName := driver.MachineName(cc.Name, n.Name)
+			host, err := machine.CheckIfHostExistsAndLoad(api, machineName)
 			if err != nil {
-				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": host.DriverName, "error": err})
+				exit.WithError("Error getting host", err)
 			}
-		}
+			if host.Driver.DriverName() == driver.None {
+				exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
+			}
 
-		ec := DockerEnvConfig{
-			EnvConfig: sh,
-			profile:   profile,
-			driver:    host.DriverName,
-			hostIP:    hostIP,
-			port:      port,
-			certsDir:  localpath.MakeMiniPath("certs"),
-			noProxy:   noProxy,
-		}
-
-		if ec.Shell == "" {
-			ec.Shell, err = shell.Detect()
+			hostSt, err := machine.GetHostStatus(api, machineName)
 			if err != nil {
-				exit.WithError("Error detecting shell", err)
+				exit.WithError("Error getting host status", err)
 			}
-		}
-
-		if dockerUnset {
-			if err := dockerUnsetScript(ec, os.Stdout); err != nil {
-				exit.WithError("Error generating unset output", err)
+			if hostSt != state.Running.String() {
+				exit.WithCodeT(exit.Unavailable, `'{{.profile}}' is not running`, out.V{"profile": profile})
 			}
-			return
-		}
+			ok, err := isDockerActive(host.Driver)
+			if err != nil {
+				exit.WithError("Error getting service status", err)
+			}
 
-		if err := dockerSetScript(ec, os.Stdout); err != nil {
-			exit.WithError("Error generating set output", err)
+			if !ok {
+				exit.WithCodeT(exit.Unavailable, `The docker service within '{{.profile}}' is not active`, out.V{"profile": profile})
+			}
+
+			hostIP, err := host.Driver.GetIP()
+			if err != nil {
+				exit.WithError("Error getting host IP", err)
+			}
+
+			sh := shell.EnvConfig{
+				Shell: shell.ForceShell,
+			}
+
+			port := constants.DockerDaemonPort
+			if driver.IsKIC(host.DriverName) { // for kic we need to find what port docker/podman chose for us
+				hostIP = oci.DefaultBindIPV4
+				port, err = oci.HostPortBinding(host.DriverName, profile, port)
+				if err != nil {
+					exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": host.DriverName, "error": err})
+				}
+			}
+
+			ec := DockerEnvConfig{
+				EnvConfig: sh,
+				profile:   profile,
+				driver:    host.DriverName,
+				hostIP:    hostIP,
+				port:      port,
+				certsDir:  localpath.MakeMiniPath("certs"),
+				noProxy:   noProxy,
+			}
+
+			if ec.Shell == "" {
+				ec.Shell, err = shell.Detect()
+				if err != nil {
+					exit.WithError("Error detecting shell", err)
+				}
+			}
+
+			if dockerUnset {
+				if err := dockerUnsetScript(ec, os.Stdout); err != nil {
+					exit.WithError("Error generating unset output", err)
+				}
+				return
+			}
+
+			if err := dockerSetScript(ec, os.Stdout); err != nil {
+				exit.WithError("Error generating set output", err)
+			}
 		}
 	},
 }

@@ -67,8 +67,8 @@ type kvmDriver struct {
 	ConnectionURI  string
 }
 
-func configure(mc config.ClusterConfig) (interface{}, error) {
-	name := mc.Name
+func configure(mc config.ClusterConfig, n config.Node) (interface{}, error) {
+	name := driver.MachineName(mc.Name, n.Name)
 	return kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,

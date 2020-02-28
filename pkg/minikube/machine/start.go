@@ -62,7 +62,7 @@ var (
 )
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, cfg config.ClusterConfig) (*host.Host, error) {
+func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, error) {
 	// Prevent machine-driver boot races, as well as our own certificate race
 	releaser, err := acquireMachinesLock(cfg.Name)
 	if err != nil {
@@ -80,10 +80,10 @@ func StartHost(api libmachine.API, cfg config.ClusterConfig) (*host.Host, error)
 	}
 	if !exists {
 		glog.Infof("Provisioning new machine with config: %+v", cfg)
-		return createHost(api, cfg)
+		return createHost(api, cfg, n)
 	}
 	glog.Infoln("Skipping create...Using existing machine configuration")
-	return fixHost(api, cfg)
+	return fixHost(api, cfg, n)
 }
 
 func engineOptions(cfg config.ClusterConfig) *engine.Options {
@@ -97,7 +97,7 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 	return &o
 }
 
-func createHost(api libmachine.API, cfg config.ClusterConfig) (*host.Host, error) {
+func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, error) {
 	glog.Infof("createHost starting for %q (driver=%q)", cfg.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
@@ -115,7 +115,7 @@ func createHost(api libmachine.API, cfg config.ClusterConfig) (*host.Host, error
 	if def.Empty() {
 		return nil, fmt.Errorf("unsupported/missing driver: %s", cfg.Driver)
 	}
-	dd, err := def.Config(cfg)
+	dd, err := def.Config(cfg, n)
 	if err != nil {
 		return nil, errors.Wrap(err, "config")
 	}

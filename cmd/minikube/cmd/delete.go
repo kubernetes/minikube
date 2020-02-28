@@ -235,13 +235,16 @@ func deleteProfile(profile *pkg_config.Profile) error {
 		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	if err = machine.DeleteHost(api, profile.Name); err != nil {
-		switch errors.Cause(err).(type) {
-		case mcnerror.ErrHostDoesNotExist:
-			glog.Infof("%s cluster does not exist. Proceeding ahead with cleanup.", profile.Name)
-		default:
-			out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
-			out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
+	for _, n := range cc.Nodes {
+		machineName := driver.MachineName(profile.Name, n.Name)
+		if err = machine.DeleteHost(api, machineName); err != nil {
+			switch errors.Cause(err).(type) {
+			case mcnerror.ErrHostDoesNotExist:
+				glog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
+			default:
+				out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
+				out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
+			}
 		}
 	}
 
@@ -308,7 +311,7 @@ func uninstallKubernetes(api libmachine.API, profile string, nodeName string, kc
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}
 
-	host, err := machine.CheckIfHostExistsAndLoad(api, profile)
+	host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(profile, nodeName))
 	if err != nil {
 		exit.WithError("Error getting host", err)
 	}

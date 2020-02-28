@@ -18,6 +18,9 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -39,7 +42,9 @@ var nodeStopCmd = &cobra.Command{
 			exit.WithError("creating api client", err)
 		}
 
-		err = machine.StopHost(api, name)
+		machineName := driver.MachineName(viper.GetString(config.MachineProfile), name)
+
+		err = machine.StopHost(api, machineName)
 		if err != nil {
 			out.FatalT("Failed to stop node {{.name}}", out.V{"name": name})
 		}
