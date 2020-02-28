@@ -22,5 +22,5 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-// DefaultMountDir is the default mount directory for Darwin
+// DefaultMountDir is the default mount directory
 var DefaultMountDir = homedir.HomeDir()
