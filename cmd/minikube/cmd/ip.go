@@ -22,6 +22,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -43,19 +44,22 @@ var ipCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := api.Load(cc.Name)
-		if err != nil {
-			switch err := errors.Cause(err).(type) {
-			case mcnerror.ErrHostDoesNotExist:
-				exit.WithCodeT(exit.NoInput, `"{{.profile_name}}" host does not exist, unable to show an IP`, out.V{"profile_name": cc.Name})
-			default:
-				exit.WithError("Error getting host", err)
+		for _, n := range cc.Nodes {
+			machineName := driver.MachineName(cc.Name, n.Name)
+			host, err := api.Load(machineName)
+			if err != nil {
+				switch err := errors.Cause(err).(type) {
+				case mcnerror.ErrHostDoesNotExist:
+					exit.WithCodeT(exit.NoInput, `"{{.profile_name}}" host does not exist, unable to show an IP`, out.V{"profile_name": cc.Name})
+				default:
+					exit.WithError("Error getting host", err)
+				}
 			}
+			ip, err := host.Driver.GetIP()
+			if err != nil {
+				exit.WithError("Error getting IP", err)
+			}
+			out.Ln(ip)
 		}
-		ip, err := host.Driver.GetIP()
-		if err != nil {
-			exit.WithError("Error getting IP", err)
-		}
-		out.Ln(ip)
 	},
 }

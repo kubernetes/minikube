@@ -34,7 +34,9 @@ const (
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.11.10"
 	// DefaultMachineName is the default name for the VM
-	DefaultMachineName = "minikube"
+	DefaultMachineName = "minikube-minikube"
+	// DefaultClusterName is the default nane for the k8s cluster
+	DefaultClusterName = "minikube"
 	// DefaultNodeName is the default name for the kubeadm node within the VM
 	DefaultNodeName = "minikube"
 
