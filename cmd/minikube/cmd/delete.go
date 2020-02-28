@@ -112,7 +112,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if deleteAll {
-		if profileFlag != constants.DefaultMachineName {
+		if profileFlag != constants.DefaultClusterName {
 			exit.UsageT("usage: minikube delete --all")
 		}
 		delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
@@ -220,7 +220,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 
 	if err == nil && driver.BareMetal(cc.Driver) {
-		if err := uninstallKubernetes(api, profile.Name, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+		if err := uninstallKubernetes(api, profile.Name, profile.Name, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
 			if ok {
 				delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
@@ -301,9 +301,9 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
 }
 
-func uninstallKubernetes(api libmachine.API, profile string, kc pkg_config.KubernetesConfig, bsName string) error {
+func uninstallKubernetes(api libmachine.API, profile string, nodeName string, kc pkg_config.KubernetesConfig, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName)
+	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, nodeName)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}

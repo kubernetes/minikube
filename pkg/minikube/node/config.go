@@ -86,7 +86,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
 func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Node) bootstrapper.Bootstrapper {
-	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
+	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), node.Name)
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}

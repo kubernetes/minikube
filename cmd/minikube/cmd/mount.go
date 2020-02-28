@@ -108,7 +108,12 @@ var mountCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := api.Load(cc.Name)
+
+		cp, err := config.PrimaryControlPlane(*cc)
+		if err != nil {
+			exit.WithError("Error getting primary cp", err)
+		}
+		host, err := api.Load(driver.MachineName(cc.Name, cp.Name))
 		if err != nil {
 			exit.WithError("Error loading api", err)
 		}

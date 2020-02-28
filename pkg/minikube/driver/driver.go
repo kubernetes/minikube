@@ -212,3 +212,8 @@ func SetLibvirtURI(v string) {
 	os.Setenv("LIBVIRT_DEFAULT_URI", v)
 
 }
+
+//MachineName returns the name of the machine given the cluster and node names
+func MachineName(clusterName string, nodeName string) string {
+	return fmt.Sprintf("%s-%s", clusterName, nodeName)
+}
