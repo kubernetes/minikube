@@ -14,7 +14,7 @@ A LoadBalancer service is the standard way to expose a service to the internet. 
 
 ## Using `minikube tunnel`
 
-Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. It must be continuously run in a terminal to keep the `LoadBalancer` running.  Ctrl-C in the terminal can be used to terminate the process at which time the network routes will be cleaned up.
+Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. It must be run in a separate terminal window to keep the `LoadBalancer` running.  Ctrl-C in the terminal can be used to terminate the process at which time the network routes will be cleaned up.
 
 ## Example
 
