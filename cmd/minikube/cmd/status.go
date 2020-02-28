@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -95,7 +96,7 @@ var statusCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		machineName := viper.GetString(config.MachineProfile)
+		machineName := driver.MachineName(viper.GetString(config.MachineProfile), viper.GetString(config.MachineProfile))
 		st, err := status(api, machineName)
 		if err != nil {
 			glog.Errorf("status error: %v", err)

@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -75,17 +76,12 @@ func Delete(cc config.ClusterConfig, name string) error {
 		return err
 	}
 
-	/*err = Stop(cc, nd)
-	if err != nil {
-		glog.Warningf("Failed to stop node %s. Will still try to delete.", name)
-	}*/
-
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return err
 	}
 
-	err = machine.DeleteHost(api, name)
+	err = machine.DeleteHost(api, driver.MachineName(cc.Name, name))
 	if err != nil {
 		return err
 	}

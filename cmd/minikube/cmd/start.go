@@ -771,7 +771,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 
 	var kubeNodeName string
 	if drvName != driver.None {
-		kubeNodeName = viper.GetString(config.MachineProfile)
+		kubeNodeName = constants.DefaultNodeName
 	}
 
 	// Create the initial node, which will necessarily be a control plane

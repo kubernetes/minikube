@@ -54,7 +54,7 @@ var (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, error) {
+func fixHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.Host, error) {
 	out.T(out.Waiting, "Reconfiguring existing host ...")
 
 	start := time.Now()
@@ -63,7 +63,7 @@ func fixHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, error) {
 		glog.Infof("fixHost completed within %s", time.Since(start))
 	}()
 
-	h, err := api.Load(mc.Name)
+	h, err := api.Load(driver.MachineName(mc.Name, n.Name))
 	if err != nil {
 		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
@@ -88,7 +88,7 @@ func fixHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, error) {
 				}
 				// recreate virtual machine
 				out.T(out.Meh, "machine '{{.name}}' does not exist. Proceeding ahead with recreating VM.", out.V{"name": mc.Name})
-				h, err = createHost(api, mc)
+				h, err = createHost(api, mc, n)
 				if err != nil {
 					return nil, errors.Wrap(err, "Error recreating VM")
 				}

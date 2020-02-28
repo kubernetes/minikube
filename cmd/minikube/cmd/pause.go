@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -63,37 +64,40 @@ func runPause(cmd *cobra.Command, args []string) {
 	}
 
 	glog.Infof("config: %+v", cc)
-	host, err := machine.CheckIfHostExistsAndLoad(api, cname)
-	if err != nil {
-		exit.WithError("Error getting host", err)
-	}
 
-	r, err := machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
-	}
+	for _, n := range cc.Nodes {
+		host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(cname, n.Name))
+		if err != nil {
+			exit.WithError("Error getting host", err)
+		}
 
-	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
-	if err != nil {
-		exit.WithError("Failed runtime", err)
-	}
+		r, err := machine.CommandRunner(host)
+		if err != nil {
+			exit.WithError("Failed to get command runner", err)
+		}
 
-	glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
-	if allNamespaces {
-		namespaces = nil //all
-	} else if len(namespaces) == 0 {
-		exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
-	}
+		cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
+		if err != nil {
+			exit.WithError("Failed runtime", err)
+		}
 
-	ids, err := cluster.Pause(cr, r, namespaces)
-	if err != nil {
-		exit.WithError("Pause", err)
-	}
+		glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
+		if allNamespaces {
+			namespaces = nil //all
+		} else if len(namespaces) == 0 {
+			exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
+		}
 
-	if namespaces == nil {
-		out.T(out.Unpause, "Paused kubelet and {{.count}} containers", out.V{"count": len(ids)})
-	} else {
-		out.T(out.Unpause, "Paused kubelet and {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+		ids, err := cluster.Pause(cr, r, namespaces)
+		if err != nil {
+			exit.WithError("Pause", err)
+		}
+
+		if namespaces == nil {
+			out.T(out.Unpause, "Paused kubelet and {{.count}} containers", out.V{"count": len(ids)})
+		} else {
+			out.T(out.Unpause, "Paused kubelet and {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+		}
 	}
 }
 

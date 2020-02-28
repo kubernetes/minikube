@@ -215,5 +215,6 @@ func SetLibvirtURI(v string) {
 
 //MachineName returns the name of the machine given the cluster and node names
 func MachineName(clusterName string, nodeName string) string {
+	// TODO change to form minikube-clusterName-suffix
 	return fmt.Sprintf("%s-%s", clusterName, nodeName)
 }
