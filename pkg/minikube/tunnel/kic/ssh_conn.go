@@ -44,6 +44,8 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 		"-i", sshKey,
 	}
 
+	askForSudo := false
+	var privilegedPorts []int32
 	for _, port := range svc.Spec.Ports {
 		arg := fmt.Sprintf(
 			"-L %d:%s:%d",
@@ -52,10 +54,27 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 			port.Port,
 		)
 
+		// check if any port is privileged
+		if port.Port < 1024 {
+			privilegedPorts = append(privilegedPorts, port.Port)
+			askForSudo = true
+		}
+
 		sshArgs = append(sshArgs, arg)
 	}
 
-	cmd := exec.Command("ssh", sshArgs...)
+	command := "ssh"
+
+	if askForSudo {
+		// TODO: use out package
+		fmt.Printf("The service %s requires priviledged ports to be exposed: %v\n", svc.Name, privilegedPorts)
+		fmt.Printf("sudo permission will be asked for it.\n")
+
+		command = "sudo"
+		sshArgs = append([]string{"ssh"}, sshArgs...)
+	}
+
+	cmd := exec.Command(command, sshArgs...)
 
 	return &sshConn{
 		name:    name,
