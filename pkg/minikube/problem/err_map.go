@@ -111,7 +111,7 @@ var vmProblems = map[string]match{
 	},
 	"HYPERV_FILE_DELETE_FAILURE": {
 		Regexp: re(`Unable to remove machine directory`),
-		Advice: "Stop the  Hyper-V Manager and run 'minikube delete'.",
+		Advice: "You may need to stop the  Hyper-V Manager and run `minikube delete` again.",
 		Issues: []int{6804},
 		GOOS:   []string{"windows"},
 	},
