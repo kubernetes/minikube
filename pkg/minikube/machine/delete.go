@@ -17,7 +17,9 @@ limitations under the License.
 package machine
 
 import (
+	"context"
 	"os/exec"
+	"time"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -29,10 +31,30 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// deleteOrphanedKIC attempts to delete an orphaned docker instance
-func deleteOrphanedKIC(name string) {
-	cmd := exec.Command(oci.Docker, "rm", "-f", "-v", name)
-	err := cmd.Run()
+// deleteOrphanedKIC attempts to delete an orphaned docker instance for machines without a config file
+// used as last effort clean up not returning errors, wont warn user.
+func deleteOrphanedKIC(ociBin string, name string) {
+	if !(ociBin == oci.Podman || ociBin == oci.Docker) {
+		return
+	}
+	if ociBin == oci.Docker {
+		if err := oci.PointToHostDockerDaemon(); err != nil {
+			glog.Infof("Failed to point to host docker-damon: %v", err)
+			return
+		}
+	}
+
+	_, err := oci.ContainerStatus(ociBin, name)
+	if err != nil {
+		glog.Infof("couldn't inspect container %q before deleting, %s-daemon might needs a restart!: %v", name, ociBin, err)
+		return
+	}
+	// allow no more than 5 seconds for delting the container
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)
+	err = cmd.Run()
 	if err == nil {
 		glog.Infof("Found stale kic container and successfully cleaned it up!")
 	}
@@ -42,7 +64,8 @@ func deleteOrphanedKIC(name string) {
 func DeleteHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
 	if err != nil && host == nil {
-		deleteOrphanedKIC(machineName)
+		deleteOrphanedKIC(oci.Docker, machineName)
+		deleteOrphanedKIC(oci.Podman, machineName)
 		// Keep going even if minikube does not know about the host
 	}
 

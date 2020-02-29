@@ -20,16 +20,23 @@ import (
 	"context"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"runtime"
+	"strconv"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/tunnel"
+	"k8s.io/minikube/pkg/minikube/tunnel/kic"
 )
 
 var cleanup bool
@@ -69,6 +76,11 @@ var tunnelCmd = &cobra.Command{
 			exit.WithError("error creating clientset", err)
 		}
 
+		cfg, err := config.Load(viper.GetString(config.MachineProfile))
+		if err != nil {
+			exit.WithError("Error getting config", err)
+		}
+
 		ctrlC := make(chan os.Signal, 1)
 		signal.Notify(ctrlC, os.Interrupt)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -77,10 +89,23 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		cfg, err := config.Load(viper.GetString(config.MachineProfile))
-		if err != nil {
-			exit.WithError("Error getting config", err)
+		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
+			port, err := oci.HostPortBinding(oci.Docker, cfg.Name, 22)
+			if err != nil {
+				exit.WithError("error getting ssh port", err)
+			}
+			sshPort := strconv.Itoa(port)
+			sshKey := filepath.Join(localpath.MiniPath(), "machines", cfg.Name, "id_rsa")
+
+			kicSSHTunnel := kic.NewSSHTunnel(ctx, sshPort, sshKey, clientset.CoreV1())
+			err = kicSSHTunnel.Start()
+			if err != nil {
+				exit.WithError("error starting tunnel", err)
+			}
+
+			return
 		}
+
 		done, err := manager.StartTunnel(ctx, cfg.Name, api, config.DefaultLoader, clientset.CoreV1())
 		if err != nil {
 			exit.WithError("error starting tunnel", err)
