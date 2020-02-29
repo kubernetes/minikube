@@ -16,6 +16,21 @@ WARNING: For this to work repeatedly, the test must be written so that it cleans
 
 See `main.go` for details.
 
+## Run integration test for a specific driver in parallel with HTML report
+
+for html report install gopogh https://github.com/medyagh/gopogh/releases/latest
+
+```
+make integration -e TEST_ARGS="-minikube-start-args=--vm-driver=docker"  2>&1 | tee ./out/testout.txt
+
+```
+
+```
+go tool test2json -t < ./out/testout.txt > ./out/testout.json || true
+medya@~/workspace/minikube (gopogh_kic) $ gopogh_status=$(gopogh -in "./out/testout.json" -out "./out/testout.html" -name "whatver" -pr "whatever" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+```
+
+
 ## Disabling parallelism
 
 `make integration -e TEST_ARGS="-test.parallel=1"`
