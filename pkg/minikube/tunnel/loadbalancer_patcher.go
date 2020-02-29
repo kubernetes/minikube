@@ -37,22 +37,28 @@ type patchConverter interface {
 	convert(restClient rest.Interface, patch *Patch) *rest.Request
 }
 
-// loadBalancerEmulator is the main struct for emulating the loadbalancer behavior. it sets the ingress to the cluster IP
-type loadBalancerEmulator struct {
+// LoadBalancerEmulator is the main struct for emulating the loadbalancer behavior. it sets the ingress to the cluster IP
+type LoadBalancerEmulator struct {
 	coreV1Client   typed_core.CoreV1Interface
 	requestSender  requestSender
 	patchConverter patchConverter
 }
 
-func (l *loadBalancerEmulator) PatchServices() ([]string, error) {
+func (l *LoadBalancerEmulator) PatchServices() ([]string, error) {
 	return l.applyOnLBServices(l.updateService)
 }
 
-func (l *loadBalancerEmulator) Cleanup() ([]string, error) {
+func (l *LoadBalancerEmulator) PatchServiceIP(restClient rest.Interface, svc core.Service, ip string) error {
+	// TODO: do not ignore result
+	_, err := l.updateServiceIP(restClient, svc, ip)
+	return err
+}
+
+func (l *LoadBalancerEmulator) Cleanup() ([]string, error) {
 	return l.applyOnLBServices(l.cleanupService)
 }
 
-func (l *loadBalancerEmulator) applyOnLBServices(action func(restClient rest.Interface, svc core.Service) ([]byte, error)) ([]string, error) {
+func (l *LoadBalancerEmulator) applyOnLBServices(action func(restClient rest.Interface, svc core.Service) ([]byte, error)) ([]string, error) {
 	services := l.coreV1Client.Services("")
 	serviceList, err := services.List(meta.ListOptions{})
 	if err != nil {
@@ -79,14 +85,22 @@ func (l *loadBalancerEmulator) applyOnLBServices(action func(restClient rest.Int
 	}
 	return managedServices, nil
 }
-func (l *loadBalancerEmulator) updateService(restClient rest.Interface, svc core.Service) ([]byte, error) {
+
+func (l *LoadBalancerEmulator) updateService(restClient rest.Interface, svc core.Service) ([]byte, error) {
 	clusterIP := svc.Spec.ClusterIP
 	ingresses := svc.Status.LoadBalancer.Ingress
 	if len(ingresses) == 1 && ingresses[0].IP == clusterIP {
 		return nil, nil
 	}
+	return l.updateServiceIP(restClient, svc, clusterIP)
+}
+
+func (l *LoadBalancerEmulator) updateServiceIP(restClient rest.Interface, svc core.Service, ip string) ([]byte, error) {
+	if len(ip) == 0 {
+		return nil, nil
+	}
 	glog.V(3).Infof("[%s] setting ClusterIP as the LoadBalancer Ingress", svc.Name)
-	jsonPatch := fmt.Sprintf(`[{"op": "add", "path": "/status/loadBalancer/ingress", "value":  [ { "ip": "%s" } ] }]`, clusterIP)
+	jsonPatch := fmt.Sprintf(`[{"op": "add", "path": "/status/loadBalancer/ingress", "value":  [ { "ip": "%s" } ] }]`, ip)
 	patch := &Patch{
 		Type:         types.JSONPatchType,
 		ResourceName: svc.Name,
@@ -99,14 +113,14 @@ func (l *loadBalancerEmulator) updateService(restClient rest.Interface, svc core
 	request := l.patchConverter.convert(restClient, patch)
 	result, err := l.requestSender.send(request)
 	if err != nil {
-		glog.Errorf("error patching %s with IP %s: %s", svc.Name, clusterIP, err)
+		glog.Errorf("error patching %s with IP %s: %s", svc.Name, ip, err)
 	} else {
-		glog.Infof("Patched %s with IP %s", svc.Name, clusterIP)
+		glog.Infof("Patched %s with IP %s", svc.Name, ip)
 	}
 	return result, err
 }
 
-func (l *loadBalancerEmulator) cleanupService(restClient rest.Interface, svc core.Service) ([]byte, error) {
+func (l *LoadBalancerEmulator) cleanupService(restClient rest.Interface, svc core.Service) ([]byte, error) {
 	ingresses := svc.Status.LoadBalancer.Ingress
 	if len(ingresses) == 0 {
 		return nil, nil
@@ -129,8 +143,8 @@ func (l *loadBalancerEmulator) cleanupService(restClient rest.Interface, svc cor
 
 }
 
-func newLoadBalancerEmulator(corev1Client typed_core.CoreV1Interface) loadBalancerEmulator {
-	return loadBalancerEmulator{
+func NewLoadBalancerEmulator(corev1Client typed_core.CoreV1Interface) LoadBalancerEmulator {
+	return LoadBalancerEmulator{
 		coreV1Client:   corev1Client,
 		requestSender:  &defaultRequestSender{},
 		patchConverter: &defaultPatchConverter{},
