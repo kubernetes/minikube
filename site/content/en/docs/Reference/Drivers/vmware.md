@@ -19,7 +19,13 @@ The vmware driver supports virtualization across all VMware based hypervisors.
 No documentation is available yet.
 {{% /tab %}}
 {{% tab "Windows" %}}
-No documentation is available yet.
+1. Download docker-machine-driver-vmware from below link.
+https://github.com/machine-drivers/docker-machine-driver-vmware/releases/download/v0.1.0/docker-machine-driver-vmware_windows_amd64.exe
+2. Rename it to docker-machine-driver-vmware (without .exe)
+3. Copy it to system32 folder or add existing folder(where file is) to environment variable.
+4. Add C:\Program Files (x86)\VMware\VMware Workstation to environment variable (otherwise you get vmrun error)
+5. now open new command prompt and run "minikube start --vm-driver=vmware"
+That's it
 {{% /tab %}}
 {{% /tabs %}}
 
