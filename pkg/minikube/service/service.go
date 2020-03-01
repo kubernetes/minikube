@@ -48,9 +48,9 @@ import (
 const (
 	defaultK8sClientTimeout = 60 * time.Second
 	// DefaultWait is the default wait time, in seconds
-	DefaultWait = 20
+	DefaultWait = 2
 	// DefaultInterval is the default interval, in seconds
-	DefaultInterval = 6
+	DefaultInterval = 1
 )
 
 // K8sClient represents a kubernetes client
