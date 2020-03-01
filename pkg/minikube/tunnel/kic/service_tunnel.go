@@ -47,7 +47,7 @@ func NewServiceTunnel(sshPort, sshKey string, v1Core typed_core.CoreV1Interface)
 func (t *ServiceTunnel) Start(svcName, namespace string) ([]string, error) {
 	svc, err := t.v1Core.Services(namespace).Get(svcName, metav1.GetOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, "getting service")
+		return nil, errors.Wrapf(err, "Service %s was not found in %q namespace. You may select another namespace by using 'minikube service %s -n <namespace>", svcName, namespace, svcName)
 	}
 
 	t.sshConn, err = createSSHConnWithRandomPorts(svcName, t.sshPort, t.sshKey, svc)
