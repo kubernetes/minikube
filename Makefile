@@ -366,7 +366,8 @@ out/linters/golangci-lint-$(GOLINT_VERSION):
 .PHONY: lint
 lint: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go out/linters/golangci-lint-$(GOLINT_VERSION) ## Run lint
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
-	docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) golangci-lint run ${GOLINT_OPTIONS} ./...
+	docker run --rm -v $(pwd):/app -w /app golangci/golangci-lint:$(GOLINT_VERSION) \
+	golangci-lint run ${GOLINT_OPTIONS} --skip-dirs "cmd/drivers/kvm|cmd/drivers/hyperkit|pkg/drivers/kvm|pkg/drivers/hyperkit" ./...
 else
 	./out/linters/golangci-lint-$(GOLINT_VERSION) run ${GOLINT_OPTIONS} ./...
 endif
