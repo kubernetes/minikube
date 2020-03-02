@@ -49,16 +49,16 @@ var logsCmd = &cobra.Command{
 	Short: "Gets the logs of the running instance, used for debugging minikube, not user code.",
 	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg, err := config.Load(viper.GetString(config.MachineProfile))
+		cfg, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
 
 		if nodeName == "" {
-			nodeName = viper.GetString(config.MachineProfile)
+			nodeName = viper.GetString(config.ProfileName)
 		}
 
-		machineName := driver.MachineName(viper.GetString(config.MachineProfile), nodeName)
+		machineName := driver.MachineName(viper.GetString(config.ProfileName), nodeName)
 
 		api, err := machine.NewAPIClient()
 		if err != nil {

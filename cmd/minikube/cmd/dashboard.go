@@ -59,7 +59,7 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		profileName := viper.GetString(pkg_config.MachineProfile)
+		profileName := viper.GetString(pkg_config.ProfileName)
 		cc, err := pkg_config.Load(profileName)
 		if err != nil && !pkg_config.IsNotExist(err) {
 			exit.WithError("Error loading profile config", err)

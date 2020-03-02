@@ -47,7 +47,7 @@ var serviceListCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		profileName := viper.GetString(pkg_config.MachineProfile)
+		profileName := viper.GetString(pkg_config.ProfileName)
 		cfg, err := config.Load(profileName)
 		if err != nil {
 			exit.WithError("Error getting config", err)

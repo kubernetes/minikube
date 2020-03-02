@@ -66,7 +66,7 @@ type Bootstrapper struct {
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
 func NewBootstrapper(api libmachine.API, nodeName string) (*Bootstrapper, error) {
-	name := driver.MachineName(viper.GetString(config.MachineProfile), nodeName)
+	name := driver.MachineName(viper.GetString(config.ProfileName), nodeName)
 	h, err := api.Load(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
@@ -75,7 +75,7 @@ func NewBootstrapper(api libmachine.API, nodeName string) (*Bootstrapper, error)
 	if err != nil {
 		return nil, errors.Wrap(err, "command runner")
 	}
-	return &Bootstrapper{c: runner, contextName: viper.GetString(config.MachineProfile), k8sClient: nil}, nil
+	return &Bootstrapper{c: runner, contextName: viper.GetString(config.ProfileName), k8sClient: nil}, nil
 }
 
 // GetKubeletStatus returns the kubelet status

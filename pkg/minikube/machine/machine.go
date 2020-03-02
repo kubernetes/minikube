@@ -125,7 +125,7 @@ func machineDirs(miniHome ...string) (dirs []string, err error) {
 
 // CreateSSHShell creates a new SSH shell / client
 func CreateSSHShell(api libmachine.API, args []string) error {
-	machineName := viper.GetString(config.MachineProfile)
+	machineName := viper.GetString(config.ProfileName)
 	host, err := CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return errors.Wrap(err, "host exists and load")

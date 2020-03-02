@@ -42,7 +42,7 @@ var nodeStopCmd = &cobra.Command{
 			exit.WithError("creating api client", err)
 		}
 
-		machineName := driver.MachineName(viper.GetString(config.MachineProfile), name)
+		machineName := driver.MachineName(viper.GetString(config.ProfileName), name)
 
 		err = machine.StopHost(api, machineName)
 		if err != nil {

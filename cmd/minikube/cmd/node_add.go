@@ -38,7 +38,7 @@ var nodeAddCmd = &cobra.Command{
 	Short: "Adds a node to the given cluster.",
 	Long:  "Adds a node to the given cluster config, and starts it.",
 	Run: func(cmd *cobra.Command, args []string) {
-		profile := viper.GetString(config.MachineProfile)
+		profile := viper.GetString(config.ProfileName)
 		mc, err := config.Load(profile)
 		if err != nil {
 			exit.WithError("Error getting config", err)

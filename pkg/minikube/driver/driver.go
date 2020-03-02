@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -214,7 +215,10 @@ func SetLibvirtURI(v string) {
 }
 
 //MachineName returns the name of the machine given the cluster and node names
-func MachineName(clusterName string, nodeName string) string {
-	// TODO change to form minikube-clusterName-suffix
-	return fmt.Sprintf("%s-%s", clusterName, nodeName)
+func MachineName(cc config.ClusterConfig, nodeName string) string {
+	// For single node cluster, default to back to old naming
+	if len(cc.Nodes) == 1 {
+		return cc.Name
+	}
+	return fmt.Sprintf("%s-%s", cc.Name, nodeName)
 }

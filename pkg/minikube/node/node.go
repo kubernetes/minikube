@@ -87,7 +87,7 @@ func Delete(cc config.ClusterConfig, name string) error {
 	}
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return config.SaveProfile(viper.GetString(config.MachineProfile), &cc)
+	return config.SaveProfile(viper.GetString(config.ProfileName), &cc)
 }
 
 // Retrieve finds the node by name in the given cluster
@@ -115,5 +115,5 @@ func Save(cfg *config.ClusterConfig, node *config.Node) error {
 	if !update {
 		cfg.Nodes = append(cfg.Nodes, *node)
 	}
-	return config.SaveProfile(viper.GetString(config.MachineProfile), cfg)
+	return config.SaveProfile(viper.GetString(config.ProfileName), cfg)
 }

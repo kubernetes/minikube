@@ -156,7 +156,7 @@ func setFlagsUsingViper() {
 
 func init() {
 	translate.DetermineLocale()
-	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
+	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
 
 	groups := templates.CommandGroups{

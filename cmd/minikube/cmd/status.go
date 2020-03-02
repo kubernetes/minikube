@@ -96,7 +96,7 @@ var statusCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		machineName := driver.MachineName(viper.GetString(config.MachineProfile), viper.GetString(config.MachineProfile))
+		machineName := driver.MachineName(viper.GetString(config.ProfileName), viper.GetString(config.ProfileName))
 		st, err := status(api, machineName)
 		if err != nil {
 			glog.Errorf("status error: %v", err)
