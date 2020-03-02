@@ -129,31 +129,3 @@ func createDockerVolume(name string) error {
 	}
 	return nil
 }
-
-func preloadedVolumeName(k8sVersion, profile string) string {
-	return fmt.Sprintf("k8s-%s-%s", k8sVersion, profile)
-}
-
-// PreloadedVolumeAttached returns true if the preloaded volume is attached
-// to the running profile
-func PreloadedVolumeAttached(k8sVersion, profile string) bool {
-	glog.Infof("Checking if preloaded volume is attached to %s", profile)
-	if err := PointToHostDockerDaemon(); err != nil {
-		glog.Infof("error pointing host to docker daemon: %v", err)
-		return false
-	}
-	volumeName := preloadedVolumeName(k8sVersion, profile)
-	cmd := exec.Command(Docker, "inspect", "-f", "{{range .Mounts}} {{.Name}} {{end}}", profile)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		glog.Infof("error inspecting mounted volumes: %v", err)
-		return false
-	}
-	vols := strings.Split(string(out), " ")
-	for _, v := range vols {
-		if strings.TrimSpace(v) == volumeName {
-			return true
-		}
-	}
-	return false
-}
