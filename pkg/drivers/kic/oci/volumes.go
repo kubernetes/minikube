@@ -27,7 +27,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/preload"
 )
 
 // DeleteAllVolumesByLabel deletes all volumes that have a specific label
@@ -104,54 +103,6 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 	return vols, err
 }
 
-// CreatePreloadedImagesVolume creates a volume with preloaded images
-// k8sVersion is used to name the volume and baseImage is the image that is run
-// to extract the preloaded images to the volume
-func CreatePreloadedImagesVolume(k8sVersion, cRuntime, baseImage, profile string) (string, error) {
-	if cRuntime != "docker" {
-		return "", nil
-	}
-	if err := PointToHostDockerDaemon(); err != nil {
-		return "", errors.Wrap(err, "point host docker-daemon")
-	}
-	volumeName := preloadedVolumeName(k8sVersion, profile)
-	if dockerVolumeExists(volumeName) {
-		return volumeName, nil
-	}
-	if err := createDockerVolume(volumeName); err != nil {
-		return "", errors.Wrap(err, "creating docker volume")
-	}
-	tarballPath := preload.TarballFilepath(k8sVersion)
-
-	if err := ExtractTarballToVolume(tarballPath, volumeName, baseImage); err != nil {
-		// If the extraction didn't work, delete the corrupt docker volume
-		if err := deleteDockerVolume(volumeName); err != nil {
-			glog.Warningf("Corrupt docker volume %s was not deleted successfully. You may need to delete it manually via `docker volume rm %s` for minikube to continue to work.", volumeName, volumeName)
-		}
-		return "", errors.Wrap(err, "extracting tarball to volume")
-	}
-	return volumeName, nil
-}
-
-// dockerVolumeExists returns true if a docker volume with the passed in name exists
-func dockerVolumeExists(name string) bool {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return false
-	}
-	cmd := exec.Command(Docker, "volume", "ls", "-q")
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return false
-	}
-	names := strings.Split(string(out), "\n")
-	for _, n := range names {
-		if strings.TrimSpace(n) == name {
-			return true
-		}
-	}
-	return false
-}
-
 // ExtractTarballToVolume runs a docker image imageName which extracts the tarball at tarballPath
 // to the volume named volumeName
 func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
@@ -173,18 +124,6 @@ func createDockerVolume(name string) error {
 		return errors.Wrap(err, "point host docker daemon")
 	}
 	cmd := exec.Command(Docker, "volume", "create", name, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, name), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))
-	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "output %s", string(out))
-	}
-	return nil
-}
-
-// deleteDockerVolume deletes a docker volume with the given name
-func deleteDockerVolume(name string) error {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker-daemon")
-	}
-	cmd := exec.Command(Docker, "volume", "rm", name)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}
