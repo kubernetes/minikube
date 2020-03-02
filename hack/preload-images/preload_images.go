@@ -147,12 +147,6 @@ func executePreloadImages() error {
 	return copyTarballToHost()
 }
 
-func startMinikube() error {
-	cmd := exec.Command(minikubePath, "start", "-p", profile, "--memory", "4000", "--kubernetes-version", kubernetesVersion, "--vm-driver=docker")
-	cmd.Stdout = os.Stdout
-	return cmd.Run()
-}
-
 func createImageTarball() error {
 	cmd := exec.Command("docker", "exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var/lib/docker", "-cvf", tarballFilename, "./")
 	cmd.Stdout = os.Stdout

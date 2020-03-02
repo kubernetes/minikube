@@ -85,7 +85,7 @@ func CacheTarball(k8sVersion, containerRuntime string) error {
 
 	// Make sure we support this k8s version
 	if _, err := http.Get(url); err != nil {
-		glog.Infof("Unable to get response from %s, skipping downloading: %v", err)
+		glog.Infof("Unable to get response from %s, skipping downloading: %v", url, err)
 		return nil
 	}
 

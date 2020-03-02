@@ -46,7 +46,7 @@ func beginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVers
 	})
 }
 
-func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion, driverName string) {
+func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool("download-only") {
 		return
