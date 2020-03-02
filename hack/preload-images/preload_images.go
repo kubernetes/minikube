@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -37,17 +38,24 @@ const (
 )
 
 var (
-	kubernetesVersion = ""
-	tarballFilename   = ""
+	kubernetesVersion   = ""
+	tarballFilename     = ""
+	dockerStorageDriver = ""
 )
 
 func init() {
 	flag.StringVar(&kubernetesVersion, "kubernetes-version", "", "desired kubernetes version, for example `v1.17.2`")
+	flag.StringVar(&dockerStorageDriver, "docker-storage-driver", "overlay2", "docker storage driver backend")
+
 	flag.Parse()
-	tarballFilename = fmt.Sprintf("preloaded-images-k8s-%s.tar.lz4", kubernetesVersion)
+	tarballFilename = fmt.Sprintf("preloaded-images-k8s-%s-%s.tar.lz4", kubernetesVersion, dockerStorageDriver)
 }
 
 func main() {
+	if err := verifyDockerStorage(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	if err := executePreloadImages(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -142,4 +150,17 @@ func deleteMinikube() error {
 	cmd := exec.Command(minikubePath, "delete", "-p", profile)
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
+}
+
+func verifyDockerStorage() error {
+	cmd := exec.Command("docker", "info", "-f", "{{.Info.Driver}}")
+	output, err := cmd.Output()
+	if err != nil {
+		return err
+	}
+	driver := strings.Trim(string(output), " \n")
+	if driver != dockerStorageDriver {
+		return fmt.Errorf("docker storage driver %s does not match requested %s", driver, dockerStorageDriver)
+	}
+	return nil
 }
