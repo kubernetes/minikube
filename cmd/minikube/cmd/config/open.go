@@ -69,7 +69,7 @@ var addonsOpenCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		profileName := viper.GetString(pkg_config.MachineProfile)
+		profileName := viper.GetString(pkg_config.ProfileName)
 		cc, err := config.Load(profileName)
 		if err != nil {
 			exit.WithError("Error getting cluster", err)

@@ -41,7 +41,7 @@ var sshCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		cc, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}

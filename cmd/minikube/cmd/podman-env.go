@@ -114,7 +114,7 @@ var podmanEnvCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		profile := viper.GetString(config.MachineProfile)
+		profile := viper.GetString(config.ProfileName)
 		cc, err := config.Load(profile)
 		if err != nil {
 			exit.WithError("Error getting config", err)

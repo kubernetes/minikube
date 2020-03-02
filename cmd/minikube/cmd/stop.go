@@ -46,7 +46,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
-	profile := viper.GetString(pkg_config.MachineProfile)
+	profile := viper.GetString(pkg_config.ProfileName)
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Error getting client", err)

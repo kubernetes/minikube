@@ -37,7 +37,7 @@ var unpauseCmd = &cobra.Command{
 	Use:   "unpause",
 	Short: "unpause Kubernetes",
 	Run: func(cmd *cobra.Command, args []string) {
-		cname := viper.GetString(config.MachineProfile)
+		cname := viper.GetString(config.ProfileName)
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			exit.WithError("Error getting client", err)

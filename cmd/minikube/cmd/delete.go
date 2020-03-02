@@ -94,7 +94,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.UsageT("Usage: minikube delete")
 	}
-	profileFlag := viper.GetString(config.MachineProfile)
+	profileFlag := viper.GetString(config.ProfileName)
 
 	validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
 	if err != nil {
@@ -142,7 +142,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.UsageT("usage: minikube delete")
 		}
 
-		profileName := viper.GetString(pkg_config.MachineProfile)
+		profileName := viper.GetString(pkg_config.ProfileName)
 		profile, err := pkg_config.LoadProfile(profileName)
 		if err != nil {
 			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": profileName})
@@ -191,7 +191,7 @@ func DeleteProfiles(profiles []*pkg_config.Profile) []error {
 }
 
 func deleteProfile(profile *pkg_config.Profile) error {
-	viper.Set(pkg_config.MachineProfile, profile.Name)
+	viper.Set(pkg_config.ProfileName, profile.Name)
 
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name)
 	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
@@ -272,7 +272,7 @@ func deleteContext(machineName string) error {
 		return DeletionError{Err: fmt.Errorf("update config: %v", err), Errtype: Fatal}
 	}
 
-	if err := cmdcfg.Unset(pkg_config.MachineProfile); err != nil {
+	if err := cmdcfg.Unset(pkg_config.ProfileName); err != nil {
 		return DeletionError{Err: fmt.Errorf("unset minikube profile: %v", err), Errtype: Fatal}
 	}
 	return nil
