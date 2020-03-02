@@ -21,20 +21,14 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
-	"runtime"
 
 	"github.com/pkg/errors"
-	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 const (
@@ -102,37 +96,6 @@ func executePreloadImages() error {
 		if err := cmd.Run(); err != nil {
 			return errors.Wrapf(err, "downloading %s", img)
 		}
-	}
-	// Transfer in binaries
-	var g errgroup.Group
-	dir := filepath.Join(vmpath.GuestPersistentDir, "binaries")
-	mkdirCmd := exec.Command("docker", "exec", profile, "mkdir", "-p", dir)
-	if err := mkdirCmd.Run(); err != nil {
-		return err
-	}
-
-	for _, name := range constants.KubernetesReleaseBinaries {
-		name := name
-		g.Go(func() error {
-			src, err := machine.CacheBinary(name, kubernetesVersion, "linux", runtime.GOARCH)
-			if err != nil {
-				return errors.Wrapf(err, "downloading %s", name)
-			}
-
-			dst := path.Join(dir, name)
-			copyCmd := exec.Command("docker", "cp", src, fmt.Sprintf("%s:%s", profile, dst))
-			copyCmd.Stdout = os.Stdout
-			copyCmd.Stderr = os.Stderr
-			fmt.Println(copyCmd.Args)
-			if err := copyCmd.Run(); err != nil {
-				return errors.Wrapf(err, "copybinary %s -> %s", src, dst)
-			}
-			return nil
-		})
-	}
-
-	if err := g.Wait(); err != nil {
-		return errors.Wrap(err, "pulling binaries")
 	}
 
 	// Delete /var/lib/docker/network
