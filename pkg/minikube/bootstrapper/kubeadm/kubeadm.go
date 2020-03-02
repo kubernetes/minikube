@@ -427,12 +427,8 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		glog.Warningf("unable to stop kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
 	}
 
-	// Skip transfer if using preloaded kic volume
-	skipTransfer := oci.PreloadedVolumeAttached(cfg.KubernetesConfig.KubernetesVersion, viper.GetString(config.MachineProfile))
-	if !skipTransfer {
-		if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
-			return errors.Wrap(err, "downloading binaries")
-		}
+	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
+		return errors.Wrap(err, "downloading binaries")
 	}
 
 	var cniFile []byte
