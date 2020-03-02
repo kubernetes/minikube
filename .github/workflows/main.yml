@@ -74,6 +74,12 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
     steps:
+    - name: Info
+      shell: bash
+      run: |
+        docker info
+        docker version
+        docker ps
     - name: Install gopogh
       shell: bash
       run: |
@@ -136,6 +142,12 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     needs: [build_minikube]
     steps:
+    - name: Info
+      shell: bash
+      run: |
+        docker info
+        docker version
+        docker ps
     - name: Install gopogh
       shell: bash
       run: |
@@ -322,7 +334,7 @@ jobs:
         SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
       runs-on: ubuntu-18.04
       steps:
-      - name: install podman
+      - name: Install podman
         shell: bash
         run: |
           . /etc/os-release
