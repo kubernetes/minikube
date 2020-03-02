@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -36,11 +37,17 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
+var defaultPlatform = v1.Platform{
+	Architecture: runtime.GOARCH,
+	OS:           "linux",
+}
+
 // DigestByDockerLib uses client by docker lib to return image digest
 // img.ID in as same as image digest
 func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
+	imgClient.NegotiateAPIVersion(ctx)
 	img, _, err := imgClient.ImageInspectWithRaw(ctx, imgName)
 	if err != nil && !client.IsErrNotFound(err) {
 		glog.Infof("couldn't find image digest %s from local daemon: %v ", imgName, err)
@@ -111,7 +118,8 @@ func retrieveImage(ref name.Reference) (v1.Image, error) {
 		glog.Infof("daemon lookup for %+v: %v", ref, err)
 	}
 
-	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain))
+	platform := defaultPlatform
+	img, err = remote.Image(ref, remote.WithAuthFromKeychain(authn.DefaultKeychain), remote.WithPlatform(platform))
 	if err == nil {
 		return img, nil
 	}

@@ -519,9 +519,10 @@ kic-base-image: ## builds the base image used for kic.
 .PHONY: upload-preloaded-images-tar
 upload-preloaded-images-tar: generate-preloaded-images-tar # Upload the preloaded images tar to the GCS bucket. Specify a specific kubernetes version to build via `KUBERNETES_VERSION=vx.y.z make upload-preloaded-images-tar`.
 	gsutil cp out/preloaded-images-k8s-${KUBERNETES_VERSION}.tar.lz4 gs://${PRELOADED_VOLUMES_GCS_BUCKET}
+	gsutil acl ch -u AllUsers:R gs://${PRELOADED_VOLUMES_GCS_BUCKET}/preloaded-images-k8s-${KUBERNETES_VERSION}.tar.lz4 
 
 .PHONY: generate-preloaded-images-tar
-generate-preloaded-images-tar: out/minikube
+generate-preloaded-images-tar:
 	go run ./hack/preload-images/preload_images.go -kubernetes-version ${KUBERNETES_VERSION} 
 
 

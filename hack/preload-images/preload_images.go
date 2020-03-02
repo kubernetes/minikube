@@ -21,9 +21,20 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
+	"runtime"
 
 	"github.com/pkg/errors"
+	"golang.org/x/sync/errgroup"
+	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 const (
@@ -55,9 +66,81 @@ func executePreloadImages() error {
 			fmt.Println(err)
 		}
 	}()
-	if err := startMinikube(); err != nil {
+
+	driver := kic.NewDriver(kic.Config{
+		KubernetesVersion: kubernetesVersion,
+		ContainerRuntime:  driver.Docker,
+		OCIBinary:         oci.Docker,
+		MachineName:       profile,
+		ImageDigest:       kic.BaseImage,
+		StorePath:         localpath.MiniPath(),
+		CPU:               2,
+		Memory:            4000,
+		APIServerPort:     8080,
+	})
+
+	baseDir := filepath.Dir(driver.GetSSHKeyPath())
+	defer os.Remove(baseDir)
+
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
 		return err
 	}
+	if err := driver.Create(); err != nil {
+		return errors.Wrap(err, "creating kic driver")
+	}
+
+	// Now, get images to pull
+	imgs, err := images.Kubeadm("", kubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "kubeadm images")
+	}
+
+	for _, img := range append(imgs, kic.OverlayImage) {
+		cmd := exec.Command("docker", "exec", profile, "docker", "pull", img)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return errors.Wrapf(err, "downloading %s", img)
+		}
+	}
+	// Transfer in binaries
+	var g errgroup.Group
+	dir := filepath.Join(vmpath.GuestPersistentDir, "binaries")
+	mkdirCmd := exec.Command("docker", "exec", profile, "mkdir", "-p", dir)
+	if err := mkdirCmd.Run(); err != nil {
+		return err
+	}
+
+	for _, name := range constants.KubernetesReleaseBinaries {
+		name := name
+		g.Go(func() error {
+			src, err := machine.CacheBinary(name, kubernetesVersion, "linux", runtime.GOARCH)
+			if err != nil {
+				return errors.Wrapf(err, "downloading %s", name)
+			}
+
+			dst := path.Join(dir, name)
+			copyCmd := exec.Command("docker", "cp", src, fmt.Sprintf("%s:%s", profile, dst))
+			copyCmd.Stdout = os.Stdout
+			copyCmd.Stderr = os.Stderr
+			fmt.Println(copyCmd.Args)
+			if err := copyCmd.Run(); err != nil {
+				return errors.Wrapf(err, "copybinary %s -> %s", src, dst)
+			}
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return errors.Wrap(err, "pulling binaries")
+	}
+
+	// Delete /var/lib/docker/network
+	if err := deleteDirInMinikube("/var/lib/docker/network"); err != nil {
+		return errors.Wrap(err, "deleting dir")
+	}
+
+	// Create image tarball
 	if err := createImageTarball(); err != nil {
 		return err
 	}
@@ -65,13 +148,13 @@ func executePreloadImages() error {
 }
 
 func startMinikube() error {
-	cmd := exec.Command(minikubePath, "start", "-p", profile, "--memory", "4000", "--kubernetes-version", kubernetesVersion, "--wait=false", "--vm-driver=docker")
+	cmd := exec.Command(minikubePath, "start", "-p", profile, "--memory", "4000", "--kubernetes-version", kubernetesVersion, "--vm-driver=docker")
 	cmd.Stdout = os.Stdout
 	return cmd.Run()
 }
 
 func createImageTarball() error {
-	cmd := exec.Command(minikubePath, "ssh", "-p", profile, "--", "cd", "/var", "&&", "sudo", "tar", "-I", "lz4", "-cvf", tarballFilename, "./lib/docker", "./lib/minikube/binaries")
+	cmd := exec.Command("docker", "exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var/lib/docker", "-cvf", tarballFilename, "./")
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "creating image tarball")
@@ -79,9 +162,18 @@ func createImageTarball() error {
 	return nil
 }
 
+func deleteDirInMinikube(dir string) error {
+	cmd := exec.Command("docker", "exec", profile, "sudo", "rm", "-rf", dir)
+	cmd.Stdout = os.Stdout
+	if err := cmd.Run(); err != nil {
+		return errors.Wrapf(err, "deleting %s", dir)
+	}
+	return nil
+}
+
 func copyTarballToHost() error {
 	dest := filepath.Join("out/", tarballFilename)
-	cmd := exec.Command("docker", "cp", fmt.Sprintf("%s:/var/%s", profile, tarballFilename), dest)
+	cmd := exec.Command("docker", "cp", fmt.Sprintf("%s:/%s", profile, tarballFilename), dest)
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "copying tarball to host")

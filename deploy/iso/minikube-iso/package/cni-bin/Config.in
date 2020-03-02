@@ -1,4 +1,0 @@
-config BR2_PACKAGE_CNI_BIN
-	bool "cni-bin"
-	default y
-	depends on BR2_x86_64
