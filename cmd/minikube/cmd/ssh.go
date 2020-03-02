@@ -30,6 +30,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
+var (
+	nativeSSHClient bool
+)
+
 // sshCmd represents the docker-ssh command
 var sshCmd = &cobra.Command{
 	Use:   "ssh",
@@ -52,7 +56,7 @@ var sshCmd = &cobra.Command{
 		if host.Driver.DriverName() == driver.None {
 			exit.UsageT("'none' driver does not support 'minikube ssh' command")
 		}
-		if viper.GetBool(nativeSSH) {
+		if nativeSSHClient {
 			ssh.SetDefaultClient(ssh.Native)
 		} else {
 			ssh.SetDefaultClient(ssh.External)
@@ -69,5 +73,5 @@ var sshCmd = &cobra.Command{
 }
 
 func init() {
-	sshCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
+	sshCmd.Flags().BoolVar(&nativeSSHClient, nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 }
