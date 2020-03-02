@@ -36,6 +36,12 @@ logger "cleanup_and_reboot is happening!"
 # kill jenkins to avoid an incoming request
 killall java
 
+# clean docker left overs
+docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
+docker volume prune -f || true
+docker volume ls || true
+docker system df || true
+
 # Linux-specific cleanup
 
 # disable localkube, kubelet

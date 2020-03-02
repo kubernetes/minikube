@@ -1,3 +1,19 @@
+/*
+Copyright 2020 The Kubernetes Authors All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+*/
+
 package kic
 
 import (
@@ -88,15 +104,14 @@ func (t *SSHTunnel) startConnection(svc v1.Service) {
 	}
 
 	// create new ssh conn
-	newSSHConn := createSSHConn(uniqName, t.sshPort, t.sshKey, svc)
+	newSSHConn := createSSHConn(uniqName, t.sshPort, t.sshKey, &svc)
 	t.conns[newSSHConn.name] = newSSHConn
 
 	go func() {
-		err := newSSHConn.run()
+		err := newSSHConn.startAndWait()
 		if err != nil {
 			glog.Errorf("error starting ssh tunnel: %v", err)
 		}
-
 	}()
 
 	err := t.LoadBalancerEmulator.PatchServiceIP(t.v1Core.RESTClient(), svc, "127.0.0.1")
@@ -118,7 +133,7 @@ func (t *SSHTunnel) stopMarkedConnections() {
 
 // sshConnName creates a uniq name for the tunnel, using its name/clusterIP/ports.
 // This allows a new process to be created if an existing service was changed,
-// the new process will support the IP/Ports change ocurred.
+// the new process will support the IP/Ports change occurred.
 func sshConnUniqName(service v1.Service) string {
 	n := []string{
 		service.Name,

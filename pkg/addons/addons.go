@@ -118,6 +118,9 @@ func enableOrDisableAddon(name, val, profile string) error {
 
 	if alreadySet {
 		glog.Warningf("addon %s should already be in state %v", name, val)
+		if !enable {
+			return nil
+		}
 	}
 
 	if name == "istio" && enable {

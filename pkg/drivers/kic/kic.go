@@ -17,6 +17,7 @@ limitations under the License.
 package kic
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os/exec"
@@ -30,13 +31,12 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/preload"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -91,22 +91,22 @@ func (d *Driver) Create() error {
 			ContainerPort: constants.DockerDaemonPort,
 		},
 	)
-	t := time.Now()
-	glog.Infof("Starting creating preloaded images volume")
-	volumeName, err := oci.CreatePreloadedImagesVolume(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime, BaseImage, viper.GetString(config.MachineProfile))
-	if err != nil {
-		glog.Infof("Unable to create preloaded images volume: %v", err)
-	}
-	glog.Infof("Finished creating preloaded images volume in %f seconds", time.Since(t).Seconds())
-	params.PreloadedVolume = volumeName
-	err = oci.CreateContainerNode(params)
-	if err != nil {
+	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
 	}
 
 	if err := d.prepareSSH(); err != nil {
 		return errors.Wrap(err, "prepare kic ssh")
 	}
+
+	t := time.Now()
+	glog.Infof("Starting extracting preloaded images to volume")
+	// Extract preloaded images to container
+	if err := oci.ExtractTarballToVolume(preload.TarballFilepath(d.NodeConfig.KubernetesVersion), params.Name, BaseImage); err != nil {
+		return errors.Wrap(err, "extracting tarball to volume")
+	}
+	glog.Infof("Took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
+
 	return nil
 }
 
@@ -192,11 +192,18 @@ func (d *Driver) GetURL() (string, error) {
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		return state.Error, errors.Wrap(err, "point host docker-daemon")
+		return state.Error, errors.Wrap(err, "point host docker daemon")
 	}
+	// allow no more than 2 seconds for this. when this takes long this means deadline passed
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
+	cmd := exec.CommandContext(ctx, d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
 	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		glog.Errorf("GetState for %s took longer than normal. Restarting your %s daemon might fix this issue.", d.MachineName, d.OCIBinary)
+		return state.Error, fmt.Errorf("inspect %s timeout", d.MachineName)
+	}
 	o := strings.TrimSpace(string(out))
 	if err != nil {
 		return state.Error, errors.Wrapf(err, "get container %s status", d.MachineName)
