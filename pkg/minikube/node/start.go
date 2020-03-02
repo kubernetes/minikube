@@ -54,7 +54,7 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	}
 
 	// exits here in case of --download-only option.
-	handleDownloadOnly(&cacheGroup, &kicGroup, k8sVersion, driverName)
+	handleDownloadOnly(&cacheGroup, &kicGroup, k8sVersion)
 	waitDownloadKicArtifacts(&kicGroup)
 
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
