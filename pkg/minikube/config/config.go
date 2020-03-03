@@ -41,7 +41,7 @@ const (
 	WantKubectlDownloadMsg = "WantKubectlDownloadMsg"
 	// WantNoneDriverWarning is the key for WantNoneDriverWarning
 	WantNoneDriverWarning = "WantNoneDriverWarning"
-	// ProfileName represents the key for the global profile paramter
+	// ProfileName represents the key for the global profile parameter
 	ProfileName = "profile"
 	// ShowDriverDeprecationNotification is the key for ShowDriverDeprecationNotification
 	ShowDriverDeprecationNotification = "ShowDriverDeprecationNotification"
