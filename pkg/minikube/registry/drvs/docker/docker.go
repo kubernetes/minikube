@@ -45,13 +45,15 @@ func init() {
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
-		MachineName:   driver.MachineName(cc, n.Name),
-		StorePath:     localpath.MiniPath(),
-		ImageDigest:   kic.BaseImage,
-		CPU:           cc.CPUs,
-		Memory:        cc.Memory,
-		OCIBinary:     oci.Docker,
-		APIServerPort: cc.Nodes[0].Port,
+		MachineName:       driver.MachineName(cc, n.Name),
+		StorePath:         localpath.MiniPath(),
+		ImageDigest:       kic.BaseImage,
+		CPU:               cc.CPUs,
+		Memory:            cc.Memory,
+		OCIBinary:         oci.Docker,
+		APIServerPort:     cc.Nodes[0].Port,
+		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 	}), nil
 }
 

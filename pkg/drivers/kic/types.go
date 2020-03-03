@@ -46,14 +46,16 @@ var (
 
 // Config is configuration for the kic driver used by registry
 type Config struct {
-	MachineName   string            // maps to the container name being created
-	CPU           int               // Number of CPU cores assigned to the container
-	Memory        int               // max memory in MB
-	StorePath     string            // libmachine store path
-	OCIBinary     string            // oci tool to use (docker, podman,...)
-	ImageDigest   string            // image name with sha to use for the node
-	Mounts        []oci.Mount       // mounts
-	APIServerPort int               // kubernetes api server port inside the container
-	PortMappings  []oci.PortMapping // container port mappings
-	Envs          map[string]string // key,value of environment variables passed to the node
+	MachineName       string            // maps to the container name being created
+	CPU               int               // Number of CPU cores assigned to the container
+	Memory            int               // max memory in MB
+	StorePath         string            // libmachine store path
+	OCIBinary         string            // oci tool to use (docker, podman,...)
+	ImageDigest       string            // image name with sha to use for the node
+	Mounts            []oci.Mount       // mounts
+	APIServerPort     int               // kubernetes api server port inside the container
+	PortMappings      []oci.PortMapping // container port mappings
+	Envs              map[string]string // key,value of environment variables passed to the node
+	KubernetesVersion string            // kubernetes version to install
+	ContainerRuntime  string            // container runtime kic is running
 }

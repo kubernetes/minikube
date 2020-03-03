@@ -154,12 +154,15 @@ func trySSH(h *host.Host, ip string) {
 
 func tryLookup(r command.Runner) {
 	// DNS check
-	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io", "-type=ns")); err != nil {
+	if rr, err := r.RunCmd(exec.Command("nslookup", "-type=ns", "kubernetes.io")); err != nil {
 		glog.Infof("%s failed: %v which might be okay will retry nslookup without query type", rr.Args, err)
 		// will try with without query type for ISOs with different busybox versions.
 		if _, err = r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
 			glog.Warningf("nslookup failed: %v", err)
-			out.WarningT("Node may be unable to resolve external DNS records")
+			// try with the older "host" command, instead of the newer "nslookup"
+			if _, err = r.RunCmd(exec.Command("host", "kubernetes.io")); err != nil {
+				out.WarningT("Node may be unable to resolve external DNS records")
+			}
 		}
 	}
 }

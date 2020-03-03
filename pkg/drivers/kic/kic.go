@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/preload"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -91,14 +92,23 @@ func (d *Driver) Create() error {
 			ContainerPort: constants.DockerDaemonPort,
 		},
 	)
-	err := oci.CreateContainerNode(params)
-	if err != nil {
+	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
 	}
 
 	if err := d.prepareSSH(); err != nil {
 		return errors.Wrap(err, "prepare kic ssh")
 	}
+
+	t := time.Now()
+	glog.Infof("Starting extracting preloaded images to volume")
+	// Extract preloaded images to container
+	if err := oci.ExtractTarballToVolume(preload.TarballFilepath(d.NodeConfig.KubernetesVersion), params.Name, BaseImage); err != nil {
+		glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
+	} else {
+		glog.Infof("Took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
+	}
+
 	return nil
 }
 

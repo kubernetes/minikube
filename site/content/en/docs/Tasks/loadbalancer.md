@@ -14,7 +14,7 @@ A LoadBalancer service is the standard way to expose a service to the internet. 
 
 ## Using `minikube tunnel`
 
-Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. It will run in a separate terminal until Ctrl-C is hit.
+Services of type `LoadBalancer` can be exposed via the `minikube tunnel` command. It must be run in a separate terminal window to keep the `LoadBalancer` running.  Ctrl-C in the terminal can be used to terminate the process at which time the network routes will be cleaned up.
 
 ## Example
 
@@ -25,7 +25,7 @@ it will ask for password.
 minikube tunnel
 ```
 
-`minikube tunnel` runs as a separate daemon, creating a network route on the host to the service CIDR of the cluster using the cluster's IP address as a gateway.  The tunnel command exposes the external IP directly to any program running on the host operating system.
+`minikube tunnel` runs as a process, creating a network route on the host to the service CIDR of the cluster using the cluster's IP address as a gateway.  The tunnel command exposes the external IP directly to any program running on the host operating system.
 
 
 <details>
