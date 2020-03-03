@@ -39,12 +39,12 @@ import (
 
 // returns name of the tarball
 func tarballName(k8sVersion string) string {
-	return fmt.Sprintf("preloaded-images-k8s-%s-overlay2.tar.lz4", k8sVersion)
+	return fmt.Sprintf("preloaded-images-k8s-%s-%s-docker-overlay2.tar.lz4", Version, k8sVersion)
 }
 
 // returns the name of the checksum file
 func checksumName(k8sVersion string) string {
-	return fmt.Sprintf("preloaded-images-k8s-%s-overlay2.tar.lz4.checksum", k8sVersion)
+	return fmt.Sprintf("%s.checksum", tarballName(k8sVersion))
 }
 
 // returns target dir for all cached items related to preloading
