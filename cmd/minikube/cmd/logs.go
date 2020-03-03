@@ -57,7 +57,11 @@ var logsCmd = &cobra.Command{
 		}
 
 		if nodeName == "" {
-			nodeName = viper.GetString(config.ProfileName)
+			cp, err := config.PrimaryControlPlane(*cfg)
+			if err != nil {
+				exit.WithError("Error getting primary control plane", err)
+			}
+			nodeName = cp.Name
 		}
 
 		n, _, err := node.Retrieve(cfg, nodeName)
