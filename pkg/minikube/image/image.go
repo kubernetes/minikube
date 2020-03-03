@@ -20,6 +20,7 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -86,13 +87,17 @@ func WriteImageToDaemon(img string) error {
 		return errors.Wrap(err, "point host docker-daemon")
 	}
 	// Check if image exists locally
+	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
+	if output, err := cmd.Output(); err == nil {
+		if strings.Contains(string(output), img) {
+			glog.Infof("Found %s in local docker daemon, skipping pull", img)
+			return nil
+		}
+	}
+	// Else, pull it
 	ref, err := name.ParseReference(img)
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
-	}
-	if _, err := daemon.Image(ref); err == nil {
-		glog.Infof("Found %s in local docker daemon, skipping pull", img)
-		return nil
 	}
 	i, err := remote.Image(ref)
 	if err != nil {
