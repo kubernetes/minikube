@@ -38,17 +38,21 @@ const (
 )
 
 var (
-	kubernetesVersion   = ""
-	tarballFilename     = ""
-	dockerStorageDriver = ""
+	kubernetesVersion       = ""
+	tarballFilename         = ""
+	dockerStorageDriver     = ""
+	preloadedTarballVersion = ""
+	containerRuntime        = ""
 )
 
 func init() {
 	flag.StringVar(&kubernetesVersion, "kubernetes-version", "", "desired kubernetes version, for example `v1.17.2`")
 	flag.StringVar(&dockerStorageDriver, "docker-storage-driver", "overlay2", "docker storage driver backend")
+	flag.StringVar(&preloadedTarballVersion, "preloaded-tarball-version", "", "preloaded tarball version")
+	flag.StringVar(&containerRuntime, "container-runtime", "docker", "container runtime")
 
 	flag.Parse()
-	tarballFilename = fmt.Sprintf("preloaded-images-k8s-%s-%s.tar.lz4", kubernetesVersion, dockerStorageDriver)
+	tarballFilename = fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s.tar.lz4", preloadedTarballVersion, kubernetesVersion, containerRuntime, dockerStorageDriver)
 }
 
 func main() {
