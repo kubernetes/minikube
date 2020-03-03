@@ -32,8 +32,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -199,12 +197,12 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	}
 
 	// Make sure this image exists in the docker daemon
-	ref, err := name.ParseReference(kic.BaseImage)
+	images, err := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}").Output()
 	if err != nil {
-		t.Errorf("parsing reference failed: %v", err)
+		t.Errorf("getting list of docker images failed: %v\nOutput: %s", err, string(images))
 	}
-	if _, err := daemon.Image(ref); err != nil {
-		t.Errorf("expected image does not exist in local daemon: %v", err)
+	if !strings.Contains(string(images), kic.BaseImage) {
+		t.Errorf("expected image does not exist in local daemon; got %s wanted %s", string(images), kic.BaseImage)
 	}
 }
 
