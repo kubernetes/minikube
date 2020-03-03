@@ -392,29 +392,37 @@ func TestGetHostStatus(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
-	checkState := func(expected string) {
-		s, err := GetHostStatus(api, driver.MachineName(defaultClusterConfig, viper.GetString("profile")))
+	cc := defaultClusterConfig
+	cc.Name = viper.GetString("profile")
+
+	m := driver.MachineName(cc, viper.GetString("profile"))
+
+	checkState := func(expected string, machineName string) {
+		s, err := GetHostStatus(api, machineName)
 		if err != nil {
 			t.Fatalf("Unexpected error getting status: %v", err)
 		}
 		if s != expected {
-			t.Fatalf("Expected status: %s, got %s", s, expected)
+			t.Fatalf("Expected status: %s, got: %s", expected, s)
 		}
 	}
 
-	checkState(state.None.String())
+	checkState(state.None.String(), m)
 
-	if _, err := createHost(api, defaultClusterConfig, defaultNodeConfig); err != nil {
+	if _, err := createHost(api, cc, defaultNodeConfig); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	checkState(state.Running.String())
+	cc.Name = viper.GetString("profile")
 
-	m := driver.MachineName(defaultClusterConfig, viper.GetString("profile"))
+	m = driver.MachineName(cc, viper.GetString("profile"))
+
+	checkState(state.Running.String(), m)
+
 	if err := StopHost(api, m); err != nil {
 		t.Errorf("StopHost failed: %v", err)
 	}
-	checkState(state.Stopped.String())
+	checkState(state.Stopped.String(), m)
 }
 
 func TestCreateSSHShell(t *testing.T) {
@@ -437,8 +445,11 @@ func TestCreateSSHShell(t *testing.T) {
 	}
 	api.Hosts[viper.GetString("profile")] = &host.Host{Driver: d}
 
+	cc := defaultClusterConfig
+	cc.Name = viper.GetString("profile")
+
 	cliArgs := []string{"exit"}
-	if err := CreateSSHShell(api, cliArgs); err != nil {
+	if err := CreateSSHShell(api, cc, defaultNodeConfig.Name, cliArgs); err != nil {
 		t.Fatalf("Error running ssh command: %v", err)
 	}
 

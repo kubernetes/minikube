@@ -67,7 +67,7 @@ var sshCmd = &cobra.Command{
 			ssh.SetDefaultClient(ssh.External)
 		}
 
-		err = machine.CreateSSHShell(api, args)
+		err = machine.CreateSSHShell(api, *cc, cp.Name, args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)
