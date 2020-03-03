@@ -52,8 +52,8 @@ func targetDir() string {
 	return localpath.MakeMiniPath("cache", "preloaded-tarball")
 }
 
-// returns path to checksum file
-func checksumFilepath(k8sVersion string) string {
+// ChecksumFilepath returns path to checksum file
+func ChecksumFilepath(k8sVersion string) string {
 	return path.Join(targetDir(), checksumName(k8sVersion))
 }
 
@@ -123,7 +123,7 @@ func saveChecksumFile(k8sVersion string) error {
 		return errors.Wrap(err, "getting storage object")
 	}
 	checksum := attrs.MD5
-	return ioutil.WriteFile(checksumFilepath(k8sVersion), checksum, 0644)
+	return ioutil.WriteFile(ChecksumFilepath(k8sVersion), checksum, 0644)
 }
 
 // verifyChecksum returns true if the checksum of the local binary matches
@@ -136,7 +136,7 @@ func verifyChecksum(k8sVersion string) error {
 	}
 	checksum := md5.Sum(contents)
 
-	remoteChecksum, err := ioutil.ReadFile(checksumFilepath(k8sVersion))
+	remoteChecksum, err := ioutil.ReadFile(ChecksumFilepath(k8sVersion))
 	if err != nil {
 		return errors.Wrap(err, "reading checksum file")
 	}
