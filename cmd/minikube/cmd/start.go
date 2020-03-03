@@ -436,16 +436,16 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	// Technically unrelated, but important to perform before detection
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 
-	if viper.GetString("vm-driver") != "" {
-		ds := driver.Status(viper.GetString("vm-driver"))
-		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
-		return ds
-	}
-
 	// By default, the driver is whatever we used last time
 	if existing != nil && existing.Driver != "" {
 		ds := driver.Status(existing.Driver)
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
+		return ds
+	}
+
+	if viper.GetString("vm-driver") != "" {
+		ds := driver.Status(viper.GetString("vm-driver"))
+		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds
 	}
 

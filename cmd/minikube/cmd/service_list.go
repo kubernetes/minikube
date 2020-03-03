@@ -71,17 +71,18 @@ var serviceListCmd = &cobra.Command{
 			if len(serviceURL.URLs) == 0 {
 				data = append(data, []string{serviceURL.Namespace, serviceURL.Name, "No node port"})
 			} else {
-				data = append(data, []string{serviceURL.Namespace, serviceURL.Name, "", strings.Join(serviceURL.URLs, "\n")})
+				serviceURLs := strings.Join(serviceURL.URLs, "\n")
 
+				// if we are running Docker on OSX we empty the internal service URLs
+				if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
+					serviceURLs = ""
+				}
+
+				data = append(data, []string{serviceURL.Namespace, serviceURL.Name, "", serviceURLs})
 			}
-
 		}
+
 		service.PrintServiceList(os.Stdout, data)
-		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
-			out.FailureT("Accessing service is not implemented yet for docker driver on Mac.\nThe following issue is tracking the in progress work::\nhttps://github.com/kubernetes/minikube/issues/6778")
-			exit.WithCodeT(exit.Failure, "Not yet implemented for docker driver on MacOS.")
-		}
-
 	},
 }
 
