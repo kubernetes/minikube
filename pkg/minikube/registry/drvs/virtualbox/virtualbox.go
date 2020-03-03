@@ -50,7 +50,7 @@ func init() {
 }
 
 func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := virtualbox.NewDriver(driver.MachineName(cc, n.Name), localpath.MiniPath())
+	d := virtualbox.NewDriver(driver.MachineName(cc, n), localpath.MiniPath())
 	d.Boot2DockerURL = cc.Downloader.GetISOFileURI(cc.MinikubeISO)
 	d.Memory = cc.Memory
 	d.CPU = cc.CPUs

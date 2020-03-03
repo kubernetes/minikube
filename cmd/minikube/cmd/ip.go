@@ -45,7 +45,7 @@ var ipCmd = &cobra.Command{
 			exit.WithError("Error getting config", err)
 		}
 		for _, n := range cc.Nodes {
-			machineName := driver.MachineName(*cc, n.Name)
+			machineName := driver.MachineName(*cc, n)
 			host, err := api.Load(machineName)
 			if err != nil {
 				switch err := errors.Cause(err).(type) {

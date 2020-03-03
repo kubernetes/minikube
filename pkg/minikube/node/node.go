@@ -71,7 +71,7 @@ func Add(cc *config.ClusterConfig, name string, controlPlane bool, worker bool, 
 
 // Delete stops and deletes the given node from the given cluster
 func Delete(cc config.ClusterConfig, name string) error {
-	_, index, err := Retrieve(&cc, name)
+	n, index, err := Retrieve(&cc, name)
 	if err != nil {
 		return err
 	}
@@ -81,7 +81,7 @@ func Delete(cc config.ClusterConfig, name string) error {
 		return err
 	}
 
-	err = machine.DeleteHost(api, driver.MachineName(cc, name))
+	err = machine.DeleteHost(api, driver.MachineName(cc, *n))
 	if err != nil {
 		return err
 	}

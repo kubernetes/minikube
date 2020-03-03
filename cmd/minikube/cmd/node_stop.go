@@ -23,6 +23,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -47,7 +48,12 @@ var nodeStopCmd = &cobra.Command{
 			exit.WithError("getting config", err)
 		}
 
-		machineName := driver.MachineName(*cc, name)
+		n, _, err := node.Retrieve(cc, name)
+		if err != nil {
+			exit.WithError("retrieving node", err)
+		}
+
+		machineName := driver.MachineName(*cc, *n)
 
 		err = machine.StopHost(api, machineName)
 		if err != nil {

@@ -149,7 +149,7 @@ var dockerEnvCmd = &cobra.Command{
 			exit.WithError("Error getting config", err)
 		}
 		for _, n := range cc.Nodes {
-			machineName := driver.MachineName(*cc, n.Name)
+			machineName := driver.MachineName(*cc, n)
 			host, err := machine.CheckIfHostExistsAndLoad(api, machineName)
 			if err != nil {
 				exit.WithError("Error getting host", err)

@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 )
 
 const (
@@ -59,7 +60,12 @@ var logsCmd = &cobra.Command{
 			nodeName = viper.GetString(config.ProfileName)
 		}
 
-		machineName := driver.MachineName(*cfg, nodeName)
+		n, _, err := node.Retrieve(cfg, nodeName)
+		if err != nil {
+			exit.WithError("Error retrieving node", err)
+		}
+
+		machineName := driver.MachineName(*cfg, *n)
 
 		api, err := machine.NewAPIClient()
 		if err != nil {
@@ -75,7 +81,7 @@ var logsCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("command runner", err)
 		}
-		bs, err := cluster.Bootstrapper(api, viper.GetString(cmdcfg.Bootstrapper), *cfg, nodeName)
+		bs, err := cluster.Bootstrapper(api, viper.GetString(cmdcfg.Bootstrapper), *cfg, *n)
 		if err != nil {
 			exit.WithError("Error getting cluster bootstrapper", err)
 		}

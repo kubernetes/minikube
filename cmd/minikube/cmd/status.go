@@ -106,7 +106,7 @@ var statusCmd = &cobra.Command{
 			exit.WithError("getting primary control plane", err)
 		}
 
-		machineName := driver.MachineName(*cc, cp.Name)
+		machineName := driver.MachineName(*cc, cp)
 		st, err := status(api, machineName)
 		if err != nil {
 			glog.Errorf("status error: %v", err)

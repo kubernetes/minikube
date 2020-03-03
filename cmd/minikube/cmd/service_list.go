@@ -56,7 +56,7 @@ var serviceListCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting primary control plane", err)
 		}
-		if !machine.IsHostRunning(api, driver.MachineName(*cfg, cp.Name)) {
+		if !machine.IsHostRunning(api, driver.MachineName(*cfg, cp)) {
 			exit.WithCodeT(exit.Unavailable, "profile {{.name}} is not running.", out.V{"name": profileName})
 		}
 		serviceURLs, err := service.GetServiceURLs(api, serviceListNamespace, serviceURLTemplate)

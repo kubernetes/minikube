@@ -78,7 +78,7 @@ var addonsOpenCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting control plane", err)
 		}
-		if !machine.IsHostRunning(api, driver.MachineName(*cc, cp.Name)) {
+		if !machine.IsHostRunning(api, driver.MachineName(*cc, cp)) {
 			os.Exit(1)
 		}
 		addon, ok := assets.Addons[addonName] // validate addon input
