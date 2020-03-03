@@ -103,6 +103,19 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 	return vols, err
 }
 
+// ExtractTarballToVolume runs a docker image imageName which extracts the tarball at tarballPath
+// to the volume named volumeName
+func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker-daemon")
+	}
+	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "output %s", string(out))
+	}
+	return nil
+}
+
 // createDockerVolume creates a docker volume to be attached to the container with correct labels and prefixes based on profile name
 // Caution ! if volume already exists does NOT return an error and will not apply the minikube labels on it.
 // TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
