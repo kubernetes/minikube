@@ -113,7 +113,7 @@ var mountCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting primary cp", err)
 		}
-		host, err := api.Load(driver.MachineName(cc.Name, cp.Name))
+		host, err := api.Load(driver.MachineName(*cc, cp.Name))
 		if err != nil {
 			exit.WithError("Error loading api", err)
 		}

@@ -35,7 +35,6 @@ const (
 	OldestKubernetesVersion = "v1.11.10"
 	// DefaultClusterName is the default nane for the k8s cluster
 	DefaultClusterName = "minikube"
-
 	// DockerDaemonPort is the port Docker daemon listening inside a minikube node (vm or container).
 	DockerDaemonPort = 2376
 	// APIServerPort is the default API server port

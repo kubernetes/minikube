@@ -43,15 +43,15 @@ func init() {
 	}
 }
 
-func configure(mc config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
-		MachineName:   driver.MachineName(mc.Name, n.Name),
+		MachineName:   driver.MachineName(cc, n.Name),
 		StorePath:     localpath.MiniPath(),
 		ImageDigest:   kic.BaseImage,
-		CPU:           mc.CPUs,
-		Memory:        mc.Memory,
+		CPU:           cc.CPUs,
+		Memory:        cc.Memory,
 		OCIBinary:     oci.Docker,
-		APIServerPort: mc.Nodes[0].Port,
+		APIServerPort: cc.Nodes[0].Port,
 	}), nil
 }
 

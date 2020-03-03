@@ -39,12 +39,12 @@ func init() {
 	}
 }
 
-func configure(mc config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := vmwcfg.NewConfig(driver.MachineName(mc.Name, n.Name), localpath.MiniPath())
-	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
-	d.Memory = mc.Memory
-	d.CPU = mc.CPUs
-	d.DiskSize = mc.DiskSize
+func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+	d := vmwcfg.NewConfig(driver.MachineName(cc, n.Name), localpath.MiniPath())
+	d.Boot2DockerURL = cc.Downloader.GetISOFileURI(cc.MinikubeISO)
+	d.Memory = cc.Memory
+	d.CPU = cc.CPUs
+	d.DiskSize = cc.DiskSize
 
 	// TODO(frapposelli): push these defaults upstream to fixup this driver
 	d.SSHPort = 22

@@ -35,6 +35,7 @@ const (
 )
 
 var (
+	nodeName string
 	// followLogs triggers tail -f mode
 	followLogs bool
 	// numberOfLines is how many lines to output, set via -n
@@ -58,7 +59,7 @@ var logsCmd = &cobra.Command{
 			nodeName = viper.GetString(config.ProfileName)
 		}
 
-		machineName := driver.MachineName(viper.GetString(config.ProfileName), nodeName)
+		machineName := driver.MachineName(*cfg, nodeName)
 
 		api, err := machine.NewAPIClient()
 		if err != nil {
@@ -74,7 +75,7 @@ var logsCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("command runner", err)
 		}
-		bs, err := cluster.Bootstrapper(api, viper.GetString(cmdcfg.Bootstrapper), nodeName)
+		bs, err := cluster.Bootstrapper(api, viper.GetString(cmdcfg.Bootstrapper), *cfg, nodeName)
 		if err != nil {
 			exit.WithError("Error getting cluster bootstrapper", err)
 		}
@@ -106,5 +107,5 @@ func init() {
 	logsCmd.Flags().BoolVarP(&followLogs, "follow", "f", false, "Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.")
 	logsCmd.Flags().BoolVar(&showProblems, "problems", false, "Show only log entries which point to known problems")
 	logsCmd.Flags().IntVarP(&numberOfLines, "length", "n", 60, "Number of lines back to go within the log")
-	logsCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to get logs from. Defaults to the primary control plane.")
+	logsCmd.Flags().StringVar(&nodeName, "node", "", "The node to get logs from. Defaults to the primary control plane.")
 }

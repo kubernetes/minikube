@@ -49,19 +49,19 @@ func init() {
 	}
 }
 
-func configure(mc config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := virtualbox.NewDriver(driver.MachineName(mc.Name, n.Name), localpath.MiniPath())
-	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
-	d.Memory = mc.Memory
-	d.CPU = mc.CPUs
-	d.DiskSize = mc.DiskSize
-	d.HostOnlyCIDR = mc.HostOnlyCIDR
-	d.NoShare = mc.DisableDriverMounts
-	d.NoVTXCheck = mc.NoVTXCheck
-	d.NatNicType = mc.NatNicType
-	d.HostOnlyNicType = mc.HostOnlyNicType
-	d.DNSProxy = mc.DNSProxy
-	d.HostDNSResolver = mc.HostDNSResolver
+func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+	d := virtualbox.NewDriver(driver.MachineName(cc, n.Name), localpath.MiniPath())
+	d.Boot2DockerURL = cc.Downloader.GetISOFileURI(cc.MinikubeISO)
+	d.Memory = cc.Memory
+	d.CPU = cc.CPUs
+	d.DiskSize = cc.DiskSize
+	d.HostOnlyCIDR = cc.HostOnlyCIDR
+	d.NoShare = cc.DisableDriverMounts
+	d.NoVTXCheck = cc.NoVTXCheck
+	d.NatNicType = cc.NatNicType
+	d.HostOnlyNicType = cc.HostOnlyNicType
+	d.DNSProxy = cc.DNSProxy
+	d.HostDNSResolver = cc.HostDNSResolver
 	return d, nil
 }
 

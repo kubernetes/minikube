@@ -96,7 +96,17 @@ var statusCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		machineName := driver.MachineName(viper.GetString(config.ProfileName), viper.GetString(config.ProfileName))
+		cc, err := config.Load(viper.GetString(config.ProfileName))
+		if err != nil {
+			exit.WithError("getting config", err)
+		}
+
+		cp, err := config.PrimaryControlPlane(*cc)
+		if err != nil {
+			exit.WithError("getting primary control plane", err)
+		}
+
+		machineName := driver.MachineName(*cc, cp.Name)
 		st, err := status(api, machineName)
 		if err != nil {
 			glog.Errorf("status error: %v", err)

@@ -106,11 +106,11 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 // createDockerVolume creates a docker volume to be attached to the container with correct labels and prefixes based on profile name
 // Caution ! if volume already exists does NOT return an error and will not apply the minikube labels on it.
 // TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
-func createDockerVolume(name string) error {
+func createDockerVolume(profile string, nodeName string) error {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return errors.Wrap(err, "point host docker daemon")
 	}
-	cmd := exec.Command(Docker, "volume", "create", name, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, name), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))
+	cmd := exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}

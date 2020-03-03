@@ -28,8 +28,6 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 
@@ -114,7 +112,7 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
 	}
 	if p.OCIBinary == Docker {
-		if err := createDockerVolume(viper.GetString(config.ProfileName), p.Name); err != nil {
+		if err := createDockerVolume(p.Name, p.Name); err != nil {
 			return errors.Wrapf(err, "creating volume for %s container", p.Name)
 		}
 		glog.Infof("Successfully created a docker volume %s", p.Name)

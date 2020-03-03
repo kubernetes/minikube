@@ -81,7 +81,7 @@ func Delete(cc config.ClusterConfig, name string) error {
 		return err
 	}
 
-	err = machine.DeleteHost(api, driver.MachineName(cc.Name, name))
+	err = machine.DeleteHost(api, driver.MachineName(cc, name))
 	if err != nil {
 		return err
 	}

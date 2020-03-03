@@ -145,7 +145,7 @@ func CacheAndLoadImages(images []string) error {
 		}
 		for _, n := range c.Nodes {
 			nodeName := n.Name
-			m := driver.MachineName(pName, nodeName)
+			m := driver.MachineName(*c, nodeName)
 			status, err := GetHostStatus(api, m)
 			if err != nil {
 				glog.Warningf("skipping loading cache for profile %s", pName)
