@@ -19,8 +19,10 @@ VERSION_BUILD ?= 3
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
-KUBERNETES_VERSION ?= $(shell egrep "^var DefaultKubernetesVersion" pkg/minikube/constants/constants.go | cut -d \" -f2)
+KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
+PRELOADED_TARBALL_VERSION ?= $(shell egrep "Version =" pkg/minikube/preload/constants.go | cut -d \" -f2)
+PRELOADED_VOLUMES_GCS_BUCKET ?= $(shell egrep "PreloadedVolumeTarballsBucket =" pkg/minikube/constants/constants.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).3
@@ -521,15 +523,14 @@ kic-base-image: ## builds the base image used for kic.
 	docker rmi -f $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot || true
 	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --target base .
 
-
-.PHONY: kic-preloaded-base-image
-kic-preloaded-base-image: generate-preloaded-images-tar ## builds the base image used for kic.
-	docker rmi -f $(REGISTRY)/kicbase:$(KIC_VERSION)-k8s-${KUBERNETES_VERSION} || true
-	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-k8s-${KUBERNETES_VERSION}  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --build-arg KUBERNETES_VERSION=${KUBERNETES_VERSION} .
+.PHONY: upload-preloaded-images-tar
+upload-preloaded-images-tar: generate-preloaded-images-tar # Upload the preloaded images tar to the GCS bucket. Specify a specific kubernetes version to build via `KUBERNETES_VERSION=vx.y.z make upload-preloaded-images-tar`.
+	gsutil cp out/preloaded-images-k8s-${PRELOADED_TARBALL_VERSION}-${KUBERNETES_VERSION}-docker-overlay2.tar.lz4 gs://${PRELOADED_VOLUMES_GCS_BUCKET}
+	gsutil acl ch -u AllUsers:R gs://${PRELOADED_VOLUMES_GCS_BUCKET}/preloaded-images-k8s-${PRELOADED_TARBALL_VERSION}-${KUBERNETES_VERSION}-docker-overlay2.tar.lz4 
 
 .PHONY: generate-preloaded-images-tar
-generate-preloaded-images-tar: out/minikube
-	go run ./hack/preload-images/preload_images.go -kubernetes-version ${KUBERNETES_VERSION} 
+generate-preloaded-images-tar:
+	go run ./hack/preload-images/preload_images.go -kubernetes-version ${KUBERNETES_VERSION} -preloaded-tarball-version ${PRELOADED_TARBALL_VERSION}
 
 
 .PHONY: push-storage-provisioner-image

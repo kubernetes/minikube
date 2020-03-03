@@ -25,6 +25,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 const (
@@ -33,17 +38,28 @@ const (
 )
 
 var (
-	kubernetesVersion = ""
-	tarballFilename   = ""
+	kubernetesVersion       = ""
+	tarballFilename         = ""
+	dockerStorageDriver     = ""
+	preloadedTarballVersion = ""
+	containerRuntime        = ""
 )
 
 func init() {
 	flag.StringVar(&kubernetesVersion, "kubernetes-version", "", "desired kubernetes version, for example `v1.17.2`")
+	flag.StringVar(&dockerStorageDriver, "docker-storage-driver", "overlay2", "docker storage driver backend")
+	flag.StringVar(&preloadedTarballVersion, "preloaded-tarball-version", "", "preloaded tarball version")
+	flag.StringVar(&containerRuntime, "container-runtime", "docker", "container runtime")
+
 	flag.Parse()
-	tarballFilename = fmt.Sprintf("preloaded-images-k8s-%s.tar", kubernetesVersion)
+	tarballFilename = fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s.tar.lz4", preloadedTarballVersion, kubernetesVersion, containerRuntime, dockerStorageDriver)
 }
 
 func main() {
+	if err := verifyDockerStorage(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
+	}
 	if err := executePreloadImages(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -56,42 +72,74 @@ func executePreloadImages() error {
 			fmt.Println(err)
 		}
 	}()
-	if err := startMinikube(); err != nil {
+
+	driver := kic.NewDriver(kic.Config{
+		KubernetesVersion: kubernetesVersion,
+		ContainerRuntime:  driver.Docker,
+		OCIBinary:         oci.Docker,
+		MachineName:       profile,
+		ImageDigest:       kic.BaseImage,
+		StorePath:         localpath.MiniPath(),
+		CPU:               2,
+		Memory:            4000,
+		APIServerPort:     8080,
+	})
+
+	baseDir := filepath.Dir(driver.GetSSHKeyPath())
+	defer os.Remove(baseDir)
+
+	if err := os.MkdirAll(baseDir, 0755); err != nil {
 		return err
 	}
+	if err := driver.Create(); err != nil {
+		return errors.Wrap(err, "creating kic driver")
+	}
+
+	// Now, get images to pull
+	imgs, err := images.Kubeadm("", kubernetesVersion)
+	if err != nil {
+		return errors.Wrap(err, "kubeadm images")
+	}
+
+	for _, img := range append(imgs, kic.OverlayImage) {
+		cmd := exec.Command("docker", "exec", profile, "docker", "pull", img)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return errors.Wrapf(err, "downloading %s", img)
+		}
+	}
+
+	// Create image tarball
 	if err := createImageTarball(); err != nil {
 		return err
 	}
 	return copyTarballToHost()
 }
 
-func startMinikube() error {
-	cmd := exec.Command(minikubePath, "start", "-p", profile, "--memory", "4000", "--kubernetes-version", kubernetesVersion, "--wait=false")
-	cmd.Stdout = os.Stdout
-	return cmd.Run()
-}
-
 func createImageTarball() error {
-	cmd := exec.Command(minikubePath, "ssh", "-p", profile, "--", "sudo", "tar", "cvf", tarballFilename, "/var/lib/docker", "/var/lib/minikube/binaries")
+	dirs := []string{
+		fmt.Sprintf("./lib/docker/%s", dockerStorageDriver),
+		"./lib/docker/image",
+	}
+	args := []string{"exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var", "-cvf", tarballFilename}
+	args = append(args, dirs...)
+	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout
-	return cmd.Run()
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "creating image tarball")
+	}
+	return nil
 }
 
 func copyTarballToHost() error {
-	sshKey, err := runCmd([]string{minikubePath, "ssh-key", "-p", profile})
-	if err != nil {
-		return errors.Wrap(err, "getting ssh-key")
-	}
-
-	ip, err := runCmd([]string{minikubePath, "ip", "-p", profile})
-	if err != nil {
-		return errors.Wrap(err, "getting ip")
-	}
-
 	dest := filepath.Join("out/", tarballFilename)
-	args := []string{"scp", "-o", "StrictHostKeyChecking=no", "-i", sshKey, fmt.Sprintf("docker@%s:/home/docker/%s", ip, tarballFilename), dest}
-	_, err = runCmd(args)
-	return err
+	cmd := exec.Command("docker", "cp", fmt.Sprintf("%s:/%s", profile, tarballFilename), dest)
+	cmd.Stdout = os.Stdout
+	if err := cmd.Run(); err != nil {
+		return errors.Wrap(err, "copying tarball to host")
+	}
+	return nil
 }
 
 func deleteMinikube() error {
@@ -100,8 +148,15 @@ func deleteMinikube() error {
 	return cmd.Run()
 }
 
-func runCmd(command []string) (string, error) {
-	cmd := exec.Command(command[0], command[1:]...)
+func verifyDockerStorage() error {
+	cmd := exec.Command("docker", "info", "-f", "{{.Info.Driver}}")
 	output, err := cmd.Output()
-	return strings.Trim(string(output), "\n "), err
+	if err != nil {
+		return err
+	}
+	driver := strings.Trim(string(output), " \n")
+	if driver != dockerStorageDriver {
+		return fmt.Errorf("docker storage driver %s does not match requested %s", driver, dockerStorageDriver)
+	}
+	return nil
 }
