@@ -220,7 +220,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 
 	if err == nil && driver.BareMetal(cc.Driver) {
-		if err := uninstallKubernetes(api, profile.Name, profile.Name, *cc, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+		if err := uninstallKubernetes(api, profile.Name, *cc, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
 			if ok {
 				delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
@@ -304,7 +304,7 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
 }
 
-func uninstallKubernetes(api libmachine.API, profile string, nodeName string, cc pkg_config.ClusterConfig, bsName string) error {
+func uninstallKubernetes(api libmachine.API, nodeName string, cc pkg_config.ClusterConfig, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
 	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, nodeName)
 	if err != nil {

@@ -60,16 +60,17 @@ func RegisterMockDriver(t *testing.T) {
 	}
 }
 
+var defaultNodeConfig = config.Node{
+	Name: viper.GetString("profile"),
+}
+
 var defaultClusterConfig = config.ClusterConfig{
 	Name:        viper.GetString("profile"),
 	Driver:      driver.Mock,
 	MinikubeISO: constants.DefaultISOURL,
 	Downloader:  MockDownloader{},
 	DockerEnv:   []string{"MOCK_MAKE_IT_PROVISION=true"},
-}
-
-var defaultNodeConfig = config.Node{
-	Name: viper.GetString("profile"),
+	Nodes:       []config.Node{defaultNodeConfig},
 }
 
 func TestCreateHost(t *testing.T) {
@@ -317,9 +318,11 @@ func TestStopHost(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	m := driver.MachineName(defaultClusterConfig, viper.GetString("profile"))
+	cc := defaultClusterConfig
+	cc.Name = viper.GetString("profile")
+	m := driver.MachineName(cc, defaultNodeConfig.Name)
 	if err := StopHost(api, m); err != nil {
-		t.Fatal("An error should be thrown when stopping non-existing machine.")
+		t.Fatalf("Unexpected error stopping machine: %v", err)
 	}
 	if s, _ := h.Driver.GetState(); s != state.Stopped {
 		t.Fatalf("Machine not stopped. Currently in state: %s", s)
@@ -333,7 +336,10 @@ func TestDeleteHost(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, viper.GetString("profile"))); err != nil {
+	cc := defaultClusterConfig
+	cc.Name = viper.GetString("profile")
+
+	if err := DeleteHost(api, driver.MachineName(cc, viper.GetString("profile"))); err != nil {
 		t.Fatalf("Unexpected error deleting host: %v", err)
 	}
 }
