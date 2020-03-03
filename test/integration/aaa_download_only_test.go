@@ -202,7 +202,7 @@ func TestDownloadOnlyDocker(t *testing.T) {
 		t.Errorf("getting list of docker images failed: %v\nOutput: %s", err, string(images))
 	}
 	if !strings.Contains(string(images), kic.BaseImage) {
-		t.Errorf("expected image does not exist in local daemon; got %s wanted %s", string(images), kic.BaseImage)
+		t.Errorf("expected image does not exist in local daemon; got:\n%s wanted:\n%s", string(images), kic.BaseImage)
 	}
 }
 
