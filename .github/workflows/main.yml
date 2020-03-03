@@ -24,8 +24,6 @@ jobs:
         echo workspace $GITHUB_WORKSPACE
         echo "end of debug stuff"
         echo $(which jq)
-        sudo apt-get update
-        sudo apt-get upgrade docker
     - uses: actions/upload-artifact@v1
       with:
         name: minikube_binaries
@@ -79,6 +77,8 @@ jobs:
     - name: Docker Info
       shell: bash
       run: |
+        sudo apt-get update
+        sudo apt-get upgrade docker
         docker info || true
         docker version || true
         docker ps || true
