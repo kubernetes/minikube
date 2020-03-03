@@ -110,11 +110,6 @@ func executePreloadImages() error {
 		}
 	}
 
-	// Delete /var/lib/docker/network
-	if err := deleteDirInMinikube("/var/lib/docker/network"); err != nil {
-		return errors.Wrap(err, "deleting dir")
-	}
-
 	// Create image tarball
 	if err := createImageTarball(); err != nil {
 		return err
@@ -123,19 +118,16 @@ func executePreloadImages() error {
 }
 
 func createImageTarball() error {
-	cmd := exec.Command("docker", "exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var", "-cvf", tarballFilename, "./lib/docker")
+	dirs := []string{
+		fmt.Sprintf("./lib/docker/%s", dockerStorageDriver),
+		"./lib/docker/image",
+	}
+	args := []string{"exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var", "-cvf", tarballFilename}
+	args = append(args, dirs...)
+	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
 		return errors.Wrap(err, "creating image tarball")
-	}
-	return nil
-}
-
-func deleteDirInMinikube(dir string) error {
-	cmd := exec.Command("docker", "exec", profile, "sudo", "rm", "-rf", dir)
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "deleting %s", dir)
 	}
 	return nil
 }
