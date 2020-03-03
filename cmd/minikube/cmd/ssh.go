@@ -54,7 +54,7 @@ var sshCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting primary control plane", err)
 		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(*cc, cp.Name))
+		host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(*cc, cp))
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
@@ -67,7 +67,7 @@ var sshCmd = &cobra.Command{
 			ssh.SetDefaultClient(ssh.External)
 		}
 
-		err = machine.CreateSSHShell(api, *cc, cp.Name, args)
+		err = machine.CreateSSHShell(api, *cc, cp, args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)

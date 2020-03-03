@@ -215,10 +215,10 @@ func SetLibvirtURI(v string) {
 }
 
 //MachineName returns the name of the machine given the cluster and node names
-func MachineName(cc config.ClusterConfig, nodeName string) string {
+func MachineName(cc config.ClusterConfig, n config.Node) string {
 	// For single node cluster, default to back to old naming
-	if len(cc.Nodes) == 1 {
+	if len(cc.Nodes) == 1 || n.ControlPlane {
 		return cc.Name
 	}
-	return fmt.Sprintf("%s-%s", cc.Name, nodeName)
+	return fmt.Sprintf("%s-%s", cc.Name, n.Name)
 }

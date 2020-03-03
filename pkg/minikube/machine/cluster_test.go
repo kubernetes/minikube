@@ -320,7 +320,7 @@ func TestStopHost(t *testing.T) {
 
 	cc := defaultClusterConfig
 	cc.Name = viper.GetString("profile")
-	m := driver.MachineName(cc, defaultNodeConfig.Name)
+	m := driver.MachineName(cc, defaultNodeConfig)
 	if err := StopHost(api, m); err != nil {
 		t.Fatalf("Unexpected error stopping machine: %v", err)
 	}
@@ -339,7 +339,7 @@ func TestDeleteHost(t *testing.T) {
 	cc := defaultClusterConfig
 	cc.Name = viper.GetString("profile")
 
-	if err := DeleteHost(api, driver.MachineName(cc, viper.GetString("profile"))); err != nil {
+	if err := DeleteHost(api, driver.MachineName(cc, defaultNodeConfig)); err != nil {
 		t.Fatalf("Unexpected error deleting host: %v", err)
 	}
 }
@@ -355,7 +355,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	d := &tests.MockDriver{RemoveError: true, T: t}
 	h.Driver = d
 
-	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, viper.GetString("profile"))); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, defaultNodeConfig)); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -368,7 +368,7 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, viper.GetString("profile"))); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, defaultNodeConfig)); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -383,7 +383,7 @@ func TestDeleteHostErrMachineNotExist(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, viper.GetString("profile"))); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, defaultNodeConfig)); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -395,7 +395,7 @@ func TestGetHostStatus(t *testing.T) {
 	cc := defaultClusterConfig
 	cc.Name = viper.GetString("profile")
 
-	m := driver.MachineName(cc, viper.GetString("profile"))
+	m := driver.MachineName(cc, defaultNodeConfig)
 
 	checkState := func(expected string, machineName string) {
 		s, err := GetHostStatus(api, machineName)
@@ -415,7 +415,7 @@ func TestGetHostStatus(t *testing.T) {
 
 	cc.Name = viper.GetString("profile")
 
-	m = driver.MachineName(cc, viper.GetString("profile"))
+	m = driver.MachineName(cc, defaultNodeConfig)
 
 	checkState(state.Running.String(), m)
 
@@ -449,7 +449,7 @@ func TestCreateSSHShell(t *testing.T) {
 	cc.Name = viper.GetString("profile")
 
 	cliArgs := []string{"exit"}
-	if err := CreateSSHShell(api, cc, defaultNodeConfig.Name, cliArgs); err != nil {
+	if err := CreateSSHShell(api, cc, defaultNodeConfig, cliArgs); err != nil {
 		t.Fatalf("Error running ssh command: %v", err)
 	}
 

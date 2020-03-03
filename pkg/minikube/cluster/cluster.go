@@ -43,12 +43,12 @@ func init() {
 }
 
 // Bootstrapper returns a new bootstrapper for the cluster
-func Bootstrapper(api libmachine.API, bootstrapperName string, cc config.ClusterConfig, nodeName string) (bootstrapper.Bootstrapper, error) {
+func Bootstrapper(api libmachine.API, bootstrapperName string, cc config.ClusterConfig, n config.Node) (bootstrapper.Bootstrapper, error) {
 	var b bootstrapper.Bootstrapper
 	var err error
 	switch bootstrapperName {
 	case bootstrapper.Kubeadm:
-		b, err = kubeadm.NewBootstrapper(api, cc, nodeName)
+		b, err = kubeadm.NewBootstrapper(api, cc, n)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting a new kubeadm bootstrapper")
 		}

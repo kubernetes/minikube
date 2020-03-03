@@ -510,7 +510,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		exit.WithError("Error getting primary cp", err)
 	}
 
-	machineName := driver.MachineName(*existing, cp.Name)
+	machineName := driver.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
 		glog.Warningf("selectDriver api.Load: %v", err)

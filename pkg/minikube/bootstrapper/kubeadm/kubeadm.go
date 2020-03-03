@@ -64,8 +64,8 @@ type Bootstrapper struct {
 }
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
-func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, nodeName string) (*Bootstrapper, error) {
-	name := driver.MachineName(cc, nodeName)
+func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Bootstrapper, error) {
+	name := driver.MachineName(cc, n)
 	h, err := api.Load(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")

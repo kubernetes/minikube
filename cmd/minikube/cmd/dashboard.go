@@ -87,7 +87,7 @@ var dashboardCmd = &cobra.Command{
 			exit.WithError("Error getting primary control plane", err)
 		}
 
-		machineName := driver.MachineName(*cc, cp.Name)
+		machineName := driver.MachineName(*cc, cp)
 		if _, err = api.Load(machineName); err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:

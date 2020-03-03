@@ -92,7 +92,7 @@ var serviceCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting control plane", err)
 		}
-		machineName := driver.MachineName(*cfg, cp.Name)
+		machineName := driver.MachineName(*cfg, cp)
 		if !machine.IsHostRunning(api, machineName) {
 			os.Exit(1)
 		}

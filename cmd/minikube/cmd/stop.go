@@ -59,7 +59,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 
 	for _, n := range cc.Nodes {
-		nonexistent := stop(api, *cc, n.Name)
+		nonexistent := stop(api, *cc, n)
 
 		if !nonexistent {
 			out.T(out.Stopped, `"{{.node_name}}" stopped.`, out.V{"node_name": n.Name})
@@ -76,7 +76,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 }
 
-func stop(api libmachine.API, cluster config.ClusterConfig, n string) bool {
+func stop(api libmachine.API, cluster config.ClusterConfig, n config.Node) bool {
 	nonexistent := false
 	stop := func() (err error) {
 		machineName := driver.MachineName(cluster, n)

@@ -124,8 +124,8 @@ func machineDirs(miniHome ...string) (dirs []string, err error) {
 }
 
 // CreateSSHShell creates a new SSH shell / client
-func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, nodeName string, args []string) error {
-	machineName := driver.MachineName(cc, nodeName)
+func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, args []string) error {
+	machineName := driver.MachineName(cc, n)
 	host, err := CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return errors.Wrap(err, "host exists and load")

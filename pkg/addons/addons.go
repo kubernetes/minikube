@@ -256,7 +256,7 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 	if err != nil {
 		return errors.Wrap(err, "getting control plane")
 	}
-	if !machine.IsHostRunning(api, driver.MachineName(*cc, cp.Name)) {
+	if !machine.IsHostRunning(api, driver.MachineName(*cc, cp)) {
 		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", profile, name, val)
 		return enableOrDisableAddon(name, val, profile)
 	}
