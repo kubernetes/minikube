@@ -80,7 +80,7 @@ var printProfilesTable = func() {
 		if err != nil {
 			exit.WithError("error getting primary control plane", err)
 		}
-		p.Status, err = machine.GetHostStatus(api, driver.MachineName(p.Name, cp.Name))
+		p.Status, err = machine.GetHostStatus(api, driver.MachineName(*p.Config, cp.Name))
 		if err != nil {
 			glog.Warningf("error getting host status for %s: %v", p.Name, err)
 		}
@@ -121,7 +121,7 @@ var printProfilesJSON = func() {
 		if err != nil {
 			exit.WithError("error getting primary control plane", err)
 		}
-		status, err := machine.GetHostStatus(api, driver.MachineName(v.Name, cp.Name))
+		status, err := machine.GetHostStatus(api, driver.MachineName(*v.Config, cp.Name))
 		if err != nil {
 			glog.Warningf("error getting host status for %s: %v", v.Name, err)
 		}

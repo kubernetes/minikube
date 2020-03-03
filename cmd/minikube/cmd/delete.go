@@ -220,7 +220,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 
 	if err == nil && driver.BareMetal(cc.Driver) {
-		if err := uninstallKubernetes(api, profile.Name, profile.Name, cc.KubernetesConfig, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+		if err := uninstallKubernetes(api, profile.Name, profile.Name, *cc, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
 			if ok {
 				delErr := profileDeletionErr(profile.Name, fmt.Sprintf("%v", err))
@@ -236,7 +236,7 @@ func deleteProfile(profile *pkg_config.Profile) error {
 	}
 
 	for _, n := range cc.Nodes {
-		machineName := driver.MachineName(profile.Name, n.Name)
+		machineName := driver.MachineName(*cc, n.Name)
 		if err = machine.DeleteHost(api, machineName); err != nil {
 			switch errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
@@ -304,14 +304,14 @@ func profileDeletionErr(profileName string, additionalInfo string) error {
 	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
 }
 
-func uninstallKubernetes(api libmachine.API, profile string, nodeName string, kc pkg_config.KubernetesConfig, bsName string) error {
-	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": kc.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, nodeName)
+func uninstallKubernetes(api libmachine.API, profile string, nodeName string, cc pkg_config.ClusterConfig, bsName string) error {
+	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
+	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, nodeName)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}
 
-	host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(profile, nodeName))
+	host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(cc, nodeName))
 	if err != nil {
 		exit.WithError("Error getting host", err)
 	}
@@ -320,7 +320,7 @@ func uninstallKubernetes(api libmachine.API, profile string, nodeName string, kc
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	cr, err := cruntime.New(cruntime.Config{Type: kc.ContainerRuntime, Runner: r})
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
 	if err != nil {
 		exit.WithError("Failed runtime", err)
 	}
@@ -331,7 +331,7 @@ func uninstallKubernetes(api libmachine.API, profile string, nodeName string, kc
 		glog.Errorf("unpause failed: %v", err)
 	}
 
-	if err = clusterBootstrapper.DeleteCluster(kc); err != nil {
+	if err = clusterBootstrapper.DeleteCluster(cc.KubernetesConfig); err != nil {
 		return DeletionError{Err: fmt.Errorf("failed to delete cluster: %v", err), Errtype: Fatal}
 	}
 	return nil

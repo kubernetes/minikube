@@ -66,7 +66,7 @@ func runPause(cmd *cobra.Command, args []string) {
 	glog.Infof("config: %+v", cc)
 
 	for _, n := range cc.Nodes {
-		host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(cname, n.Name))
+		host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(*cc, n.Name))
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}

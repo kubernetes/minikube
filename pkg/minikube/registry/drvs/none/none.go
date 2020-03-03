@@ -42,11 +42,11 @@ func init() {
 	}
 }
 
-func configure(mc config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return none.NewDriver(none.Config{
-		MachineName:      driver.MachineName(mc.Name, n.Name),
+		MachineName:      driver.MachineName(cc, n.Name),
 		StorePath:        localpath.MiniPath(),
-		ContainerRuntime: mc.KubernetesConfig.ContainerRuntime,
+		ContainerRuntime: cc.KubernetesConfig.ContainerRuntime,
 	}), nil
 }
 

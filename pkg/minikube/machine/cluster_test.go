@@ -317,7 +317,7 @@ func TestStopHost(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	m := driver.MachineName(viper.GetString("profile"), viper.GetString("profile"))
+	m := driver.MachineName(defaultClusterConfig, viper.GetString("profile"))
 	if err := StopHost(api, m); err != nil {
 		t.Fatal("An error should be thrown when stopping non-existing machine.")
 	}
@@ -333,7 +333,7 @@ func TestDeleteHost(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, driver.MachineName(viper.GetString("profile"), viper.GetString("profile"))); err != nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, viper.GetString("profile"))); err != nil {
 		t.Fatalf("Unexpected error deleting host: %v", err)
 	}
 }
@@ -349,7 +349,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	d := &tests.MockDriver{RemoveError: true, T: t}
 	h.Driver = d
 
-	if err := DeleteHost(api, driver.MachineName(viper.GetString("profile"), viper.GetString("profile"))); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, viper.GetString("profile"))); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -362,7 +362,7 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, driver.MachineName(viper.GetString("profile"), viper.GetString("profile"))); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, viper.GetString("profile"))); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -377,7 +377,7 @@ func TestDeleteHostErrMachineNotExist(t *testing.T) {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, driver.MachineName(viper.GetString("profile"), viper.GetString("profile"))); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, viper.GetString("profile"))); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -387,7 +387,7 @@ func TestGetHostStatus(t *testing.T) {
 	api := tests.NewMockAPI(t)
 
 	checkState := func(expected string) {
-		s, err := GetHostStatus(api, driver.MachineName(viper.GetString("profile"), viper.GetString("profile")))
+		s, err := GetHostStatus(api, driver.MachineName(defaultClusterConfig, viper.GetString("profile")))
 		if err != nil {
 			t.Fatalf("Unexpected error getting status: %v", err)
 		}
@@ -404,7 +404,7 @@ func TestGetHostStatus(t *testing.T) {
 
 	checkState(state.Running.String())
 
-	m := driver.MachineName(viper.GetString("profile"), viper.GetString("profile"))
+	m := driver.MachineName(defaultClusterConfig, viper.GetString("profile"))
 	if err := StopHost(api, m); err != nil {
 		t.Errorf("StopHost failed: %v", err)
 	}

@@ -54,16 +54,16 @@ var (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.Host, error) {
+func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, error) {
 	out.T(out.Waiting, "Reconfiguring existing host ...")
 
 	start := time.Now()
-	glog.Infof("fixHost starting: %s", mc.Name)
+	glog.Infof("fixHost starting: %s", cc.Name)
 	defer func() {
 		glog.Infof("fixHost completed within %s", time.Since(start))
 	}()
 
-	h, err := api.Load(driver.MachineName(mc.Name, n.Name))
+	h, err := api.Load(driver.MachineName(cc, n.Name))
 	if err != nil {
 		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
@@ -83,12 +83,12 @@ func fixHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.
 					}
 				}
 				// remove machine config directory
-				if err := api.Remove(mc.Name); err != nil {
+				if err := api.Remove(cc.Name); err != nil {
 					return nil, errors.Wrap(err, "api remove")
 				}
 				// recreate virtual machine
-				out.T(out.Meh, "machine '{{.name}}' does not exist. Proceeding ahead with recreating VM.", out.V{"name": mc.Name})
-				h, err = createHost(api, mc, n)
+				out.T(out.Meh, "machine '{{.name}}' does not exist. Proceeding ahead with recreating VM.", out.V{"name": cc.Name})
+				h, err = createHost(api, cc, n)
 				if err != nil {
 					return nil, errors.Wrap(err, "Error recreating VM")
 				}
@@ -101,9 +101,9 @@ func fixHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": mc.Driver, "profile_name": mc.Name})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": cc.Driver, "profile_name": cc.Name})
 	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": mc.Driver, "profile_name": mc.Name})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": cc.Driver, "profile_name": cc.Name})
 		if err := h.Driver.Start(); err != nil {
 			return h, errors.Wrap(err, "driver start")
 		}
@@ -112,7 +112,7 @@ func fixHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.
 		}
 	}
 
-	e := engineOptions(mc)
+	e := engineOptions(cc)
 	if len(e.Env) > 0 {
 		h.HostOptions.EngineOptions.Env = e.Env
 		glog.Infof("Detecting provisioner ...")
@@ -129,7 +129,7 @@ func fixHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.
 		return h, nil
 	}
 
-	if err := postStartSetup(h, mc); err != nil {
+	if err := postStartSetup(h, cc); err != nil {
 		return h, errors.Wrap(err, "post-start")
 	}
 
@@ -142,7 +142,7 @@ func fixHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.
 	if err := h.ConfigureAuth(); err != nil {
 		return h, &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 	}
-	return h, ensureSyncedGuestClock(h, mc.Driver)
+	return h, ensureSyncedGuestClock(h, cc.Driver)
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
