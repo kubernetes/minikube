@@ -93,7 +93,6 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.UsageT("Usage: minikube delete")
 	}
-	profileFlag := viper.GetString(config.ProfileName)
 
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 	if err != nil {
@@ -111,9 +110,6 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if deleteAll {
-		if profileFlag != constants.DefaultClusterName {
-			exit.UsageT("usage: minikube delete --all")
-		}
 		delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
 		errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
 		if len(errs) > 0 { // it will error if there is no container to delete
