@@ -65,7 +65,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	return &hyperkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: driver.MachineName(cfg.Name, n.Name),
+			MachineName: driver.MachineName(cfg, n),
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},
@@ -78,7 +78,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		UUID:           u,
 		VpnKitSock:     cfg.HyperkitVpnKitSock,
 		VSockPorts:     cfg.HyperkitVSockPorts,
-		Cmdline:        "loglevel=3 console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes random.trust_cpu=on hw_rng_model=virtio base host=" + config.Name,
+		Cmdline:        "loglevel=3 console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes random.trust_cpu=on hw_rng_model=virtio base host=" + cfg.Name,
 	}, nil
 }
 
