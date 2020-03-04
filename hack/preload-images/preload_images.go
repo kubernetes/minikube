@@ -27,7 +27,10 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
@@ -110,6 +113,14 @@ func executePreloadImages() error {
 		}
 	}
 
+	// Transfer in k8s binaries
+	kcfg := config.KubernetesConfig{
+		KubernetesVersion: kubernetesVersion,
+	}
+	runner := command.NewKICRunner(profile, driver.OCIBinary)
+	if err := bsutil.TransferBinaries(kcfg, runner); err != nil {
+		return errors.Wrap(err, "transferring k8s binaries")
+	}
 	// Create image tarball
 	if err := createImageTarball(); err != nil {
 		return err
@@ -121,6 +132,7 @@ func createImageTarball() error {
 	dirs := []string{
 		fmt.Sprintf("./lib/docker/%s", dockerStorageDriver),
 		"./lib/docker/image",
+		"./lib/minikube/binaries",
 	}
 	args := []string{"exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var", "-cvf", tarballFilename}
 	args = append(args, dirs...)
