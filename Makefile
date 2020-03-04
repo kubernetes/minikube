@@ -624,7 +624,7 @@ kvm_in_docker:
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 
 .PHONY: install-kvm-driver
-install-kvmdriver: out/docker-machine-driver-kvm2  ## Install KVM Driver
+install-kvm-driver: out/docker-machine-driver-kvm2  ## Install KVM Driver
 	mkdir -p $(GOBIN)
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
