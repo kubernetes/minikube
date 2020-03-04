@@ -199,7 +199,7 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 	for _, port := range svc.Spec.Ports {
 
 		if port.Name != "" {
-			m[port.TargetPort.IntVal] = port.Name
+			m[port.TargetPort.IntVal] = fmt.Sprintf("%s/%d", port.Name, port.Port)
 		} else {
 			m[port.TargetPort.IntVal] = strconv.Itoa(int(port.Port))
 		}
