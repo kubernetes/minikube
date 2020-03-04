@@ -105,10 +105,11 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 		}
 	}
 
+	machineType := driver.MachineType(cc.Driver)
 	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" VM ...`, out.V{"driver_name": cc.Driver, "profile_name": cc.Name})
+		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "profile_name": cc.Name, "machine_type": machineType})
 	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} VM for "{{.profile_name}}" ...`, out.V{"driver_name": cc.Driver, "profile_name": cc.Name})
+		out.T(out.Restarting, `Starting existing {{.driver_name}} {{.machine_type}} for "{{.profile_name}}" ...`, out.V{"driver_name": cc.Driver, "profile_name": cc.Name, "machine_type": machineType})
 		if err := h.Driver.Start(); err != nil {
 			return h, errors.Wrap(err, "driver start")
 		}

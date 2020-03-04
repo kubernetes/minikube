@@ -58,6 +58,31 @@ func TestBareMetal(t *testing.T) {
 	}
 }
 
+func TestMachineType(t *testing.T) {
+	types := map[string]string{
+		Podman:       "container",
+		Docker:       "container",
+		Mock:         "bare metal machine",
+		None:         "bare metal machine",
+		KVM2:         "VM",
+		VirtualBox:   "VM",
+		HyperKit:     "VM",
+		VMware:       "VM",
+		VMwareFusion: "VM",
+		HyperV:       "VM",
+		Parallels:    "VM",
+	}
+
+	drivers := SupportedDrivers()
+	for _, driver := range drivers {
+		want := types[driver]
+		got := MachineType(driver)
+		if want != got {
+			t.Errorf("mismatched machine type for driver %s: want = %s got = %s", driver, want, got)
+		}
+	}
+}
+
 func TestFlagDefaults(t *testing.T) {
 	expected := FlagHints{CacheImages: true}
 	if diff := cmp.Diff(FlagDefaults(VirtualBox), expected); diff != "" {

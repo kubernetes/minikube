@@ -86,6 +86,20 @@ func Supported(name string) bool {
 	return false
 }
 
+// MachineType returns appropriate machine name for the driver
+func MachineType(name string) string {
+	if IsKIC(name) {
+		return "container"
+	}
+
+	if IsVM(name) {
+		return "VM"
+	}
+
+	// none or mock
+	return "bare metal machine"
+}
+
 // IsKIC checks if the driver is a kubernetes in container
 func IsKIC(name string) bool {
 	return name == Docker || name == Podman
