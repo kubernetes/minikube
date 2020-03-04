@@ -159,7 +159,6 @@ func warnToReEvalEnv(drver string, name string) {
 		out.T(out.WarningType, `Please run the following command: 
 		'minikube -p {{.profile_name}} docker-env'`, out.V{"profile_name": name})
 	}
-	return
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
