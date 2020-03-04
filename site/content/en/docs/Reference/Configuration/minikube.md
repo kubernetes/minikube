@@ -54,7 +54,7 @@ Example:
 ```shell
 Configurable fields: 
 
- * vm-driver
+ * driver
  * feature-gates
  * v
  * cpus
@@ -107,7 +107,7 @@ Example output:
 ```shell
 - memory: 4096
 - registry: true
-- vm-driver: vmware
+- driver: vmware
 - dashboard: true
 - gvisor: true
 ```

@@ -79,7 +79,7 @@ func TestDownloadOnly(t *testing.T) {
 					t.Errorf("kubeadm images: %v %+v", v, err)
 				}
 
-				// skip verify for cache images if --vm-driver=none
+				// skip verify for cache images if --driver=none
 				if !NoneDriver() {
 					for _, img := range imgs {
 						img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
@@ -176,7 +176,7 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer Cleanup(t, profile, cancel)
 
-	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", "--vm-driver=docker"}
+	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", "--driver=docker"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("%s failed: %v:\n%s", args, err, rr.Output())
@@ -210,7 +210,7 @@ func TestDownloadOnlyDocker(t *testing.T) {
 
 func runningDockerDriver(startArgs []string) bool {
 	for _, s := range startArgs {
-		if s == "--vm-driver=docker" {
+		if s == "--driver=docker" {
 			return true
 		}
 	}
