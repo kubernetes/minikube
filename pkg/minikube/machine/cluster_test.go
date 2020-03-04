@@ -60,17 +60,13 @@ func RegisterMockDriver(t *testing.T) {
 	}
 }
 
-var defaultNodeConfig = config.Node{
-	Name: viper.GetString("profile"),
-}
-
 var defaultClusterConfig = config.ClusterConfig{
 	Name:        viper.GetString("profile"),
 	Driver:      driver.Mock,
 	MinikubeISO: constants.DefaultISOURL,
 	Downloader:  MockDownloader{},
 	DockerEnv:   []string{"MOCK_MAKE_IT_PROVISION=true"},
-	Nodes:       []config.Node{defaultNodeConfig},
+	Nodes:       []config.Node{config.Node{Name: "minikube"}},
 }
 
 func TestCreateHost(t *testing.T) {
@@ -82,7 +78,7 @@ func TestCreateHost(t *testing.T) {
 		t.Fatal("Machine already exists.")
 	}
 
-	_, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
+	_, err := createHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -120,7 +116,7 @@ func TestStartHostExists(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	// Create an initial host.
-	ih, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
+	ih, err := createHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -137,8 +133,8 @@ func TestStartHostExists(t *testing.T) {
 	mc := defaultClusterConfig
 	mc.Name = ih.Name
 
-	n := defaultNodeConfig
-	n.Name = ih.Name
+	n := config.Node{Name: ih.Name}
+
 	// This should pass without calling Create because the host exists already.
 	h, err := StartHost(api, mc, n)
 	if err != nil {
@@ -160,7 +156,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	api := tests.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
 	api.NotExistError = true
-	h, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
+	h, err := createHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -171,8 +167,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	mc := defaultClusterConfig
 	mc.Name = h.Name
 
-	n := defaultNodeConfig
-	n.Name = h.Name
+	n := config.Node{Name: h.Name}
 
 	// This should pass with creating host, while machine does not exist.
 	h, err = StartHost(api, mc, n)
@@ -206,7 +201,7 @@ func TestStartStoppedHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	// Create an initial host.
-	h, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
+	h, err := createHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Fatalf("Error creating host: %v", err)
 	}
@@ -218,8 +213,7 @@ func TestStartStoppedHost(t *testing.T) {
 	provision.SetDetector(md)
 	mc := defaultClusterConfig
 	mc.Name = h.Name
-	n := defaultNodeConfig
-	n.Name = h.Name
+	n := config.Node{Name: h.Name}
 	h, err = StartHost(api, mc, n)
 	if err != nil {
 		t.Fatal("Error starting host.")
@@ -248,7 +242,7 @@ func TestStartHost(t *testing.T) {
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
-	h, err := StartHost(api, defaultClusterConfig, defaultNodeConfig)
+	h, err := StartHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -283,7 +277,7 @@ func TestStartHostConfig(t *testing.T) {
 		Downloader: MockDownloader{},
 	}
 
-	h, err := StartHost(api, cfg, defaultNodeConfig)
+	h, err := StartHost(api, cfg, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -313,14 +307,14 @@ func TestStopHostError(t *testing.T) {
 func TestStopHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	h, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
+	h, err := createHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
 	cc := defaultClusterConfig
 	cc.Name = viper.GetString("profile")
-	m := driver.MachineName(cc, defaultNodeConfig)
+	m := driver.MachineName(cc, config.Node{Name: "minikube"})
 	if err := StopHost(api, m); err != nil {
 		t.Fatalf("Unexpected error stopping machine: %v", err)
 	}
@@ -332,14 +326,14 @@ func TestStopHost(t *testing.T) {
 func TestDeleteHost(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	if _, err := createHost(api, defaultClusterConfig, defaultNodeConfig); err != nil {
+	if _, err := createHost(api, defaultClusterConfig, config.Node{Name: "minikube"}); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
 	cc := defaultClusterConfig
 	cc.Name = viper.GetString("profile")
 
-	if err := DeleteHost(api, driver.MachineName(cc, defaultNodeConfig)); err != nil {
+	if err := DeleteHost(api, driver.MachineName(cc, config.Node{Name: "minikube"})); err != nil {
 		t.Fatalf("Unexpected error deleting host: %v", err)
 	}
 }
@@ -347,7 +341,7 @@ func TestDeleteHost(t *testing.T) {
 func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
-	h, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
+	h, err := createHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
@@ -355,7 +349,7 @@ func TestDeleteHostErrorDeletingVM(t *testing.T) {
 	d := &tests.MockDriver{RemoveError: true, T: t}
 	h.Driver = d
 
-	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, defaultNodeConfig)); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, config.Node{Name: "minikube"})); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -364,11 +358,11 @@ func TestDeleteHostErrorDeletingFiles(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 	api.RemoveError = true
-	if _, err := createHost(api, defaultClusterConfig, defaultNodeConfig); err != nil {
+	if _, err := createHost(api, defaultClusterConfig, config.Node{Name: "minikube"}); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, defaultNodeConfig)); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, config.Node{Name: "minikube"})); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -378,12 +372,12 @@ func TestDeleteHostErrMachineNotExist(t *testing.T) {
 	api := tests.NewMockAPI(t)
 	// Create an incomplete host with machine does not exist error(i.e. User Interrupt Cancel)
 	api.NotExistError = true
-	_, err := createHost(api, defaultClusterConfig, defaultNodeConfig)
+	_, err := createHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
-	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, defaultNodeConfig)); err == nil {
+	if err := DeleteHost(api, driver.MachineName(defaultClusterConfig, config.Node{Name: "minikube"})); err == nil {
 		t.Fatal("Expected error deleting host.")
 	}
 }
@@ -395,7 +389,7 @@ func TestGetHostStatus(t *testing.T) {
 	cc := defaultClusterConfig
 	cc.Name = viper.GetString("profile")
 
-	m := driver.MachineName(cc, defaultNodeConfig)
+	m := driver.MachineName(cc, config.Node{Name: "minikube"})
 
 	checkState := func(expected string, machineName string) {
 		s, err := GetHostStatus(api, machineName)
@@ -409,13 +403,13 @@ func TestGetHostStatus(t *testing.T) {
 
 	checkState(state.None.String(), m)
 
-	if _, err := createHost(api, cc, defaultNodeConfig); err != nil {
+	if _, err := createHost(api, cc, config.Node{Name: "minikube"}); err != nil {
 		t.Errorf("createHost failed: %v", err)
 	}
 
 	cc.Name = viper.GetString("profile")
 
-	m = driver.MachineName(cc, defaultNodeConfig)
+	m = driver.MachineName(cc, config.Node{Name: "minikube"})
 
 	checkState(state.Running.String(), m)
 
@@ -449,7 +443,7 @@ func TestCreateSSHShell(t *testing.T) {
 	cc.Name = viper.GetString("profile")
 
 	cliArgs := []string{"exit"}
-	if err := CreateSSHShell(api, cc, defaultNodeConfig, cliArgs); err != nil {
+	if err := CreateSSHShell(api, cc, config.Node{Name: "minikube"}, cliArgs); err != nil {
 		t.Fatalf("Error running ssh command: %v", err)
 	}
 
