@@ -40,7 +40,7 @@ minikube start [flags]
 
      The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
      
-     Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, proxy, scheduler
+     Valid components are: kubelet, kubeadm, apiserver, controller-manager, etcd, kube-proxy, scheduler
      
      Valid kubeadm parameters: ignore-preflight-errors, dry-run, kubeconfig, kubeconfig-dir, node-name, cri-socket, experimental-upload-certs, certificate-key, rootfs, pod-network-cidr
      
