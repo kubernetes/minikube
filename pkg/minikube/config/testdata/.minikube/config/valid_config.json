@@ -1,5 +1,5 @@
 {
-  "vm-driver": "kvm2",
+  "driver": "kvm2",
   "cpus": 4,
   "disk-size": "20g",
   "show-libmachine-logs": true,

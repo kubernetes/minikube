@@ -190,7 +190,7 @@ func initKubernetesFlags() {
 // initDriverFlags inits the commandline flags for vm drivers
 func initDriverFlags() {
 	startCmd.Flags().String("driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.DisplaySupportedDrivers()))
-	startCmd.Flags().String("vm-driver", "", "DEPRECATED, use `driver` instead.")
+	startCmd.Flags().String("driver", "", "DEPRECATED, use `driver` instead.")
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
 
 	// kvm2
@@ -451,9 +451,9 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		return ds
 	}
 
-	// Fallback to old vm-driver parameter
-	if viper.GetString("vm-driver") != "" {
-		ds := driver.Status(viper.GetString("vm-driver"))
+	// Fallback to old driver parameter
+	if viper.GetString("driver") != "" {
+		ds := driver.Status(viper.GetString("driver"))
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds
 	}

@@ -262,7 +262,7 @@ integration: out/minikube ## Trigger minikube integration test
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test
-	sudo -E out/e2e-linux-$(GOARCH) -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
+	sudo -E out/e2e-linux-$(GOARCH) -testdata-dir "test/integration/testdata" -minikube-start-args="--driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube ## Trigger minikube integration testing
@@ -623,13 +623,13 @@ kvm_in_docker:
 	rm -f out/docker-machine-driver-kvm2
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 
-.PHONY: install-kvm-driver
-install-kvm-driver: out/docker-machine-driver-kvm2  ## Install KVM Driver
+.PHONY: install-kdriver
+install-kdriver: out/docker-machine-driver-kvm2  ## Install KVM Driver
 	mkdir -p $(GOBIN)
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
-.PHONY: release-kvm-driver
-release-kvm-driver: install-kvm-driver checksum  ## Release KVM Driver
+.PHONY: release-kdriver
+release-kdriver: install-kdriver checksum  ## Release KVM Driver
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
 
