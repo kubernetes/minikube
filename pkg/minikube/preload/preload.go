@@ -74,7 +74,7 @@ func TarballExists(k8sVersion, containerRuntime string) bool {
 		return false
 	}
 	url := remoteTarballURL(k8sVersion)
-	_, err := http.Get(url)
+	_, err := http.Head(url)
 	return err == nil
 }
 
