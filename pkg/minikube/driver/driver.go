@@ -214,7 +214,7 @@ func SetLibvirtURI(v string) {
 
 }
 
-//MachineName returns the name of the machine given the cluster and node names
+// MachineName returns the name of the machine, as seen by the hypervisor given the cluster and node names
 func MachineName(cc config.ClusterConfig, n config.Node) string {
 	// For single node cluster, default to back to old naming
 	if len(cc.Nodes) == 1 || n.ControlPlane {

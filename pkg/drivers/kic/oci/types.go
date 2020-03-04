@@ -38,7 +38,7 @@ type CreateParams struct {
 	Name          string            // used for container name and hostname
 	Image         string            // container image to use to create the node.
 	ClusterLabel  string            // label the clusters we create using minikube so we can clean up
-	NodeLabel     string            //l abel the nodes so we can clean up by node name
+	NodeLabel     string            // label the nodes so we can clean up by node name
 	Role          string            // currently only role supported is control-plane
 	Mounts        []Mount           // volume mounts
 	APIServerPort int               // kubernetes api server port
