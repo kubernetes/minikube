@@ -34,7 +34,6 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -94,7 +93,6 @@ func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
 		exit.UsageT("Usage: minikube delete")
 	}
-	profileFlag := viper.GetString(config.MachineProfile)
 
 	validProfiles, invalidProfiles, err := pkg_config.ListProfiles()
 	if err != nil {
@@ -112,9 +110,6 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if deleteAll {
-		if profileFlag != constants.DefaultMachineName {
-			exit.UsageT("usage: minikube delete --all")
-		}
 		delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
 		errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
 		if len(errs) > 0 { // it will error if there is no container to delete
