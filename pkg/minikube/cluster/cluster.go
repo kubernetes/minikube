@@ -43,6 +43,7 @@ func init() {
 }
 
 // Bootstrapper returns a new bootstrapper for the cluster
+// TODO(#6891): Remove node as an argument
 func Bootstrapper(api libmachine.API, bootstrapperName string, cc config.ClusterConfig, n config.Node) (bootstrapper.Bootstrapper, error) {
 	var b bootstrapper.Bootstrapper
 	var err error
