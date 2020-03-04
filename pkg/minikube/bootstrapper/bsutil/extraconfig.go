@@ -50,6 +50,7 @@ var componentToKubeadmConfigKey = map[string]string{
 	ControllerManager: "controllerManager",
 	Scheduler:         "scheduler",
 	Kubeadm:           "kubeadm",
+	Kubeproxy:         "kubeProxy",
 	// The Kubelet is not configured in kubeadm, only in systemd.
 	Kubelet: "",
 }
