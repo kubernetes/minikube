@@ -136,10 +136,10 @@ func (d *Driver) prepareSSH() error {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	if d.NodeConfig.OCIBinary == "podman" {
-		return "podman"
+	if d.NodeConfig.OCIBinary == oci.Podman {
+		return oci.Podman
 	}
-	return "docker"
+	return oci.Docker
 }
 
 // GetIP returns an IP or hostname that this host is available at
@@ -227,6 +227,9 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "killing kic node %s", d.MachineName)
@@ -236,6 +239,10 @@ func (d *Driver) Kill() error {
 
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
+
 	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
 		log.Warnf("could not find the container %s to remove it.", d.MachineName)
 	}
@@ -253,13 +260,14 @@ func (d *Driver) Remove() error {
 
 // Restart a host
 func (d *Driver) Restart() error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
 	s, err := d.GetState()
 	if err != nil {
 		return errors.Wrap(err, "get kic state")
 	}
 	switch s {
-	case state.Paused:
-		return d.Unpause()
 	case state.Stopped:
 		return d.Start()
 	case state.Running, state.Error:
@@ -275,18 +283,12 @@ func (d *Driver) Restart() error {
 	return fmt.Errorf("restarted not implemented for kic state %s yet", s)
 }
 
-// Unpause a kic container
-func (d *Driver) Unpause() error {
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "unpause", d.MachineName)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "unpausing %s", d.MachineName)
-	}
-	return nil
-}
-
 // Start a _stopped_ kic container
 // not meant to be used for Create().
 func (d *Driver) Start() error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
 	s, err := d.GetState()
 	if err != nil {
 		return errors.Wrap(err, "get kic state")
@@ -304,6 +306,9 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)
