@@ -69,7 +69,10 @@ func fixHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, error) {
 	if err != nil {
 		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
-	warnToReEvalEnv(mc.Driver, mc.Name)
+
+	// check if need to re-run docker-env
+	maybeWarnAboutEvalEnv(mc.Driver, mc.Name)
+
 	s, err := h.Driver.GetState()
 	if err != nil || s == state.Stopped || s == state.None {
 		// If virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C), recreate virtual machine
@@ -147,18 +150,24 @@ func fixHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, error) {
 	return h, ensureSyncedGuestClock(h, mc.Driver)
 }
 
-// warnToReEvalEnv wil warn user if they need to re-eval their docker-env, podman-env
+// maybeWarnAboutEvalEnv wil warn user if they need to re-eval their docker-env, podman-env
 // because docker changes the allocated bind ports after restart https://github.com/kubernetes/minikube/issues/6824
-func warnToReEvalEnv(drver string, name string) {
+func maybeWarnAboutEvalEnv(drver string, name string) {
 	if !driver.IsKIC(drver) {
 		return
 	}
 	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
-	if p != "" {
-		out.T(out.WarningType, "dockerd port changed since restart. minikube's docker-env need to be updated.")
-		out.T(out.WarningType, `Please run the following command: 
-		'minikube -p {{.profile_name}} docker-env'`, out.V{"profile_name": name})
+	if p == "" {
+		return
 	}
+	out.T(out.Notice, "Noticed that you are using minikube docker-env:")
+	out.T(out.WarningType, `After minikube restart the dockerd ports might have changed. To ensure docker-env works properly.
+Please re-eval the docker-env command:
+
+	'minikube -p {{.profile_name}} docker-env'
+
+	`, out.V{"profile_name": name})
+
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
