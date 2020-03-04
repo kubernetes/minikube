@@ -64,6 +64,7 @@ type Bootstrapper struct {
 }
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
+// TODO(#6891): Remove node as an argument
 func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Bootstrapper, error) {
 	name := driver.MachineName(cc, n)
 	h, err := api.Load(name)
