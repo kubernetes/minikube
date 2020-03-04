@@ -156,7 +156,8 @@ func warnToReEvalEnv(drver string, name string) {
 	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
 	if p != "" {
 		out.T(out.WarningType, "dockerd port changed since restart. minikube's docker-env need to be updated.")
-		out.T(out.WarningType, "Please run the following command: 'minikube -p {{.profile_name}} docker-env'", out.V{"profile_name": name})
+		out.T(out.WarningType, `Please run the following command: 
+		'minikube -p {{.profile_name}} docker-env'`, out.V{"profile_name": name})
 	}
 	return
 }

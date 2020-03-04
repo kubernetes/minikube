@@ -228,7 +228,7 @@ func (d *Driver) GetState() (state.State, error) {
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		return state.Error, errors.Wrap(err, "point host docker daemon")
+		return errors.Wrap(err, "point host docker daemon")
 	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
 	if err := cmd.Run(); err != nil {
@@ -240,7 +240,7 @@ func (d *Driver) Kill() error {
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		return state.Error, errors.Wrap(err, "point host docker daemon")
+		return errors.Wrap(err, "point host docker daemon")
 	}
 
 	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
@@ -261,7 +261,7 @@ func (d *Driver) Remove() error {
 // Restart a host
 func (d *Driver) Restart() error {
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		return state.Error, errors.Wrap(err, "point host docker daemon")
+		return errors.Wrap(err, "point host docker daemon")
 	}
 	s, err := d.GetState()
 	if err != nil {
@@ -287,7 +287,7 @@ func (d *Driver) Restart() error {
 // not meant to be used for Create().
 func (d *Driver) Start() error {
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		return state.Error, errors.Wrap(err, "point host docker daemon")
+		return errors.Wrap(err, "point host docker daemon")
 	}
 	s, err := d.GetState()
 	if err != nil {
@@ -307,7 +307,7 @@ func (d *Driver) Start() error {
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		return state.Error, errors.Wrap(err, "point host docker daemon")
+		return errors.Wrap(err, "point host docker daemon")
 	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
