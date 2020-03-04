@@ -241,11 +241,13 @@ func (s *SSHRunner) sameFileExists(f assets.CopyableFile, dst string) (bool, err
 	if err != nil {
 		return false, err
 	}
+	glog.Infof("found %s: %d bytes, modified at %s", dst, dstSize, dstModTime)
 
 	// compare sizes and modtimes
 	if srcSize != dstSize {
 		return false, errors.New("source file and destination file are different sizes")
 	}
+
 	return srcModTime.Equal(dstModTime), nil
 }
 
