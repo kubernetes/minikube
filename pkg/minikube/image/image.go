@@ -94,21 +94,11 @@ func WriteImageToDaemon(img string) error {
 			return nil
 		}
 	}
-	// Else, pull it
-	ref, err := name.ParseReference(img)
-	if err != nil {
-		return errors.Wrap(err, "parsing reference")
+	cmd = exec.Command("docker", "pull", img)
+	if output, err := cmd.Output(); err != nil {
+		return errors.Wrapf(err, "pulling %s:%v\n%s", img, err, string(output))
 	}
-	i, err := remote.Image(ref)
-	if err != nil {
-		return errors.Wrap(err, "getting remote image")
-	}
-	tag, err := name.NewTag(strings.Split(img, "@")[0])
-	if err != nil {
-		return errors.Wrap(err, "getting tag")
-	}
-	_, err = daemon.Write(tag, i)
-	return err
+	return nil
 }
 
 func retrieveImage(ref name.Reference) (v1.Image, error) {
