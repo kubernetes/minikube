@@ -136,6 +136,7 @@ const (
 	Apiserver         = "apiserver"
 	Scheduler         = "scheduler"
 	ControllerManager = "controller-manager"
+	Kubeproxy         = "kube-proxy"
 )
 
 // InvokeKubeadm returns the invocation command for Kubeadm
