@@ -70,6 +70,7 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 		"experimental-upload-certs",
 		"certificate-key",
 		"rootfs",
+		"skip-phases",
 	},
 	KubeadmConfigParam: {
 		"pod-network-cidr",
