@@ -190,7 +190,7 @@ func initKubernetesFlags() {
 // initDriverFlags inits the commandline flags for vm drivers
 func initDriverFlags() {
 	startCmd.Flags().String("driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.DisplaySupportedDrivers()))
-	startCmd.Flags().String("driver", "", "DEPRECATED, use `driver` instead.")
+	startCmd.Flags().String("vm-driver", "", "DEPRECATED, use `driver` instead.")
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
 
 	// kvm2

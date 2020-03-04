@@ -623,13 +623,13 @@ kvm_in_docker:
 	rm -f out/docker-machine-driver-kvm2
 	$(call DOCKER,$(KVM_BUILD_IMAGE),/usr/bin/make out/docker-machine-driver-kvm2 COMMIT=$(COMMIT))
 
-.PHONY: install-kdriver
-install-kdriver: out/docker-machine-driver-kvm2  ## Install KVM Driver
+.PHONY: install-kvmdriver
+install-kvmdriver: out/docker-machine-driver-kvm2  ## Install KVM Driver
 	mkdir -p $(GOBIN)
 	cp out/docker-machine-driver-kvm2 $(GOBIN)/docker-machine-driver-kvm2
 
-.PHONY: release-kdriver
-release-kdriver: install-kdriver checksum  ## Release KVM Driver
+.PHONY: release-kvmdriver
+release-kvmdriver: install-kvmdriver checksum  ## Release KVM Driver
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
 
