@@ -122,7 +122,7 @@ minikube config set <key> <value>
 For example:
 
 ```shell
-minikube config set vm-driver hyperkit
+minikube config set driver hyperkit
 ```
 
 ## Environment Configuration

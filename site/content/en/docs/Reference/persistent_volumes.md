@@ -7,7 +7,7 @@ description: >
   About persistent volumes (hostPath)
 ---
 
-minikube supports [PersistentVolumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) of type `hostPath` out of the box.  These PersistentVolumes are mapped to a directory inside the running Minikube instance (usually a VM, unless you use `--vm-driver=none`).  For more information on how this works, read the Dynamic Provisioning section below.
+minikube supports [PersistentVolumes](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) of type `hostPath` out of the box.  These PersistentVolumes are mapped to a directory inside the running Minikube instance (usually a VM, unless you use `--driver=none`, `--driver=docker`, or `--driver=podman`).  For more information on how this works, read the Dynamic Provisioning section below.
 
 ## A note on mounts, persistence, and minikube hosts
 
