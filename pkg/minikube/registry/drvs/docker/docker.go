@@ -63,6 +63,10 @@ func status() registry.State {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
 	}
 
+	if err := PointToHostDockerDaemon(); err != nil {
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Failed to point to dockerd. Please make sure DOCKER_HOST environment variable is pointing to your installed dockerd."}
+	}
+
 	// Allow no more than 3 seconds for docker info
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
