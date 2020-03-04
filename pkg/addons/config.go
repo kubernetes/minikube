@@ -122,4 +122,9 @@ var Addons = []*Addon{
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableStorageClasses},
 	},
+	{
+		name:      "metallb",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+	},
 }
