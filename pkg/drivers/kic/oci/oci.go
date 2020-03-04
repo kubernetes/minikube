@@ -461,7 +461,7 @@ func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 func PointToHostDockerDaemon() error {
 	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
 	if p != "" {
-		glog.Infof("shell is pointing to docker inside minikube. will unset to use host")
+		glog.Infof("shell is pointing to dockerd inside minikube. will unset to use host")
 	}
 
 	for i := range constants.DockerDaemonEnvs {

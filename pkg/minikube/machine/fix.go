@@ -19,6 +19,7 @@ package machine
 import (
 	"fmt"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
@@ -67,7 +69,7 @@ func fixHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, error) {
 	if err != nil {
 		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
-
+	warnToReEvalEnv(mc.Driver, mc.Name)
 	s, err := h.Driver.GetState()
 	if err != nil || s == state.Stopped || s == state.None {
 		// If virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C), recreate virtual machine
@@ -143,6 +145,20 @@ func fixHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, error) {
 		return h, &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 	}
 	return h, ensureSyncedGuestClock(h, mc.Driver)
+}
+
+// warnToReEvalEnv wil warn user if they need to re-eval their docker-env, podman-env
+// because docker changes the allocated bind ports after restart https://github.com/kubernetes/minikube/issues/6824
+func warnToReEvalEnv(drver string, name string) {
+	if !driver.IsKIC(drver) {
+		return
+	}
+	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
+	if p != "" {
+		out.T(out.WarningType, "dockerd port changed since restart. minikube's docker-env need to be updated.")
+		out.T(out.WarningType, "Please run the following command: 'minikube -p {{.profile_name}} docker-env'", out.V{"profile_name": name})
+	}
+	return
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync
