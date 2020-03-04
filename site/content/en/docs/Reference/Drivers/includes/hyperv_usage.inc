@@ -16,10 +16,10 @@ If Hyper-V was not previously active, you will need to reboot.
 ## Usage
 
 ```shell
-minikube start --vm-driver=hyperv 
+minikube start --driver=hyperv 
 ```
 To make hyperv the default driver:
 
 ```shell
-minikube config set vm-driver hyperv
+minikube config set driver hyperv
 ```
