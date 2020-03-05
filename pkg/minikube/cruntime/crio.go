@@ -228,5 +228,5 @@ func (r *CRIO) SystemLogCmd(len int) string {
 
 // Preload preloads the container runtime with k8s images
 func (r *CRIO) Preload(k8sVersion string) error {
-	return nil
+	return fmt.Errorf("not yet implemented for %s", r.Name)
 }
