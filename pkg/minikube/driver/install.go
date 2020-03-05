@@ -27,12 +27,11 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
-	"github.com/hashicorp/go-getter"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
@@ -59,7 +58,7 @@ func InstallOrUpdate(name string, directory string, v semver.Version, interactiv
 	if !exists || (err != nil && autoUpdate) {
 		glog.Warningf("%s: %v", executable, err)
 		path = filepath.Join(directory, executable)
-		derr := download(executable, path, v)
+		derr := download.Driver(executable, path, v)
 		if derr != nil {
 			return derr
 		}
@@ -137,31 +136,6 @@ func validateDriver(executable string, v semver.Version) (string, error) {
 		return path, fmt.Errorf("%s is version %s, want %s", executable, driverVersion, v)
 	}
 	return path, nil
-}
-
-func driverWithChecksumURL(name string, v semver.Version) string {
-	base := fmt.Sprintf("https://github.com/kubernetes/minikube/releases/download/v%s/%s", v, name)
-	return fmt.Sprintf("%s?checksum=file:%s.sha256", base, base)
-}
-
-// download an arbitrary driver
-func download(name string, destination string, v semver.Version) error {
-	out.T(out.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": name})
-	os.Remove(destination)
-	url := driverWithChecksumURL(name, v)
-	client := &getter.Client{
-		Src:     url,
-		Dst:     destination,
-		Mode:    getter.ClientModeFile,
-		Options: []getter.ClientOption{getter.WithProgress(util.DefaultProgressBar)},
-	}
-
-	glog.Infof("Downloading: %+v", client)
-	if err := client.Get(); err != nil {
-		return errors.Wrapf(err, "download failed: %s", url)
-	}
-	// Give downloaded drivers a baseline decent file permission
-	return os.Chmod(destination, 0755)
 }
 
 // extractDriverVersion extracts the driver version.

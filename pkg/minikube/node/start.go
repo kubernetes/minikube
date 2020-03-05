@@ -29,7 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/preload"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -41,14 +40,17 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	// See if we can create a volume of preloaded images
 	// If not, pull images in the background while the VM boots.
 	var kicGroup errgroup.Group
+	needKubernetesImages := true
 	if driver.IsKIC(driverName) {
-		beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+		// If we can download a preload tarball, it isn't necessary to pull Kubernetes images
+		if beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime) {
+			needKubernetesImages = false
+		}
 	}
-	// Now that the ISO is downloaded, pull images in the background while the VM boots.
+
 	var cacheGroup errgroup.Group
-	skipCacheImages := driver.IsKIC(driverName) && preload.TarballExists(k8sVersion, mc.KubernetesConfig.ContainerRuntime)
-	if !skipCacheImages {
-		beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	if needKubernetesImages {
+		beginCacheKubernetesImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
 	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
