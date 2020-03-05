@@ -23,7 +23,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -41,17 +40,17 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	// See if we can create a volume of preloaded images
 	// If not, pull images in the background while the VM boots.
 	var kicGroup errgroup.Group
-	downloadImages := true
+	needKubernetesImages := true
 	if driver.IsKIC(driverName) {
-		if download.PreloadExists(k8sVersion, mc.KubernetesConfig.ContainerRuntime) {
-			beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
-			downloadImages = false
+		// If we can download a preload tarball, it isn't necessary to pull Kubernetes images
+		if beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime) {
+			needKubernetesImages = false
 		}
 	}
 
 	var cacheGroup errgroup.Group
-	if downloadImages {
-		beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	if needKubernetesImages {
+		beginCacheKubernetesImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
 	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
