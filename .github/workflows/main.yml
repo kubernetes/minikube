@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
-    - name: build binaries
+    - name: Build Binaries
       run : |
         make minikube-linux-amd64
         make e2e-linux-amd64
@@ -36,11 +36,11 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
-    - name: install libvirt
+    - name: Install libvirt
       run : |
         sudo apt-get update
         sudo apt-get install -y libvirt-dev
-    - name: lint
+    - name: Lint
       env:
         TESTSUITE: lintall
       run : make test
@@ -53,11 +53,11 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
-    - name: install libvirt
+    - name: Install libvirt
       run : |
         sudo apt-get update
         sudo apt-get install -y libvirt-dev
-    - name: unit test
+    - name: Unit Test
       env:
         TESTSUITE: unittest
       run :
@@ -85,11 +85,11 @@ jobs:
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
-    - name: Download binaries
+    - name: Download Binaries
       uses: actions/download-artifact@v1
       with:
         name: minikube_binaries
-    - name: Run integration test
+    - name: Run Integration Test
       continue-on-error: true
       # bash {0} to allow test to continue to next step. in case of
       shell: bash {0}
@@ -107,7 +107,7 @@ jobs:
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-    - name: Generate html report
+    - name: Generate HTML Report
       shell: bash
       run: |
         cd minikube_binaries
@@ -153,11 +153,11 @@ jobs:
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
-    - name: Download binaries
+    - name: Download Binaries
       uses: actions/download-artifact@v1
       with:
         name: minikube_binaries
-    - name: Run integration test
+    - name: Run Integration Test
       continue-on-error: true
       # bash {0} to allow test to continue to next step. in case of
       shell: bash {0}
@@ -175,7 +175,7 @@ jobs:
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-    - name: Generate html report
+    - name: Generate HTML Report
       shell: bash
       run: |
         cd minikube_binaries
@@ -215,11 +215,11 @@ jobs:
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
-    - name: Download binaries
+    - name: Download Binaries
       uses: actions/download-artifact@v1
       with:
         name: minikube_binaries
-    - name: Run integration test
+    - name: Run Integration Test
       continue-on-error: true
       # bash {0} to allow test to continue to next step. in case of
       shell: bash {0}
@@ -237,7 +237,7 @@ jobs:
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-    - name: Generate html report
+    - name: Generate HTML Report
       shell: bash
       run: |
         cd minikube_binaries
@@ -277,11 +277,11 @@ jobs:
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
-    - name: Download binaries
+    - name: Download Binaries
       uses: actions/download-artifact@v1
       with:
         name: minikube_binaries
-    - name: Run integration test
+    - name: Run Integration Test
       continue-on-error: true
       # bash {0} to allow test to continue to next step. in case of
       shell: bash {0}
@@ -299,7 +299,7 @@ jobs:
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
         echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-    - name: Generate html report
+    - name: Generate HTML Report
       shell: bash
       run: |
         cd minikube_binaries
@@ -354,7 +354,7 @@ jobs:
         uses: actions/download-artifact@v1
         with:
           name: minikube_binaries
-      - name: Run integration test
+      - name: Run Integration Test
         continue-on-error: true
         # bash {0} to allow test to continue to next step. in case of
         shell: bash {0}
@@ -372,7 +372,7 @@ jobs:
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
           echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
-      - name: Generate html report
+      - name: Generate HTML Report
         shell: bash
         run: |
           cd minikube_binaries
@@ -405,7 +405,7 @@ jobs:
     needs: [docker_ubuntu_16_04,docker_ubuntu_18_04,none_ubuntu16_04,none_ubuntu18_04,podman_ubuntu_18_04]
     runs-on: ubuntu-18.04
     steps:
-    - name: download results docker_ubuntu_16_04
+    - name: Download Results docker_ubuntu_16_04
       uses: actions/download-artifact@v1
       with:
         name: docker_ubuntu_16_04
@@ -415,7 +415,7 @@ jobs:
       run: |
         mkdir -p all_reports
         cp -r docker_ubuntu_16_04 ./all_reports/
-    - name: download results docker_ubuntu_18_04
+    - name: Download Results docker_ubuntu_18_04
       uses: actions/download-artifact@v1
       with:
         name: docker_ubuntu_18_04
@@ -425,7 +425,7 @@ jobs:
       run: |
         mkdir -p all_reports
         cp -r docker_ubuntu_18_04 ./all_reports/
-    - name: download results none_ubuntu16_04
+    - name: Download Results none_ubuntu16_04
       uses: actions/download-artifact@v1
       with:
         name: none_ubuntu16_04
@@ -435,21 +435,21 @@ jobs:
       run: |
         mkdir -p all_reports
         cp -r none_ubuntu16_04 ./all_reports/
-    - name: download results none_ubuntu18_04
+    - name: Download Results none_ubuntu18_04
       uses: actions/download-artifact@v1
       with:
         name: none_ubuntu18_04
-    - name: cp none_ubuntu18_04 to all_report
+    - name: Copy none_ubuntu18_04 to all_report
       continue-on-error: true
       shell: bash {0}
       run: |
         mkdir -p all_reports
         cp -r none_ubuntu18_04 ./all_reports/
-    - name: download results podman_ubuntu_18_04
+    - name: Download Results podman_ubuntu_18_04
       uses: actions/download-artifact@v1
       with:
         name: podman_ubuntu_18_04
-    - name: cp podman_ubuntu_18_04 to all_report
+    - name: Copy podman_ubuntu_18_04 to all_report
       continue-on-error: true
       shell: bash {0}
       run: |
