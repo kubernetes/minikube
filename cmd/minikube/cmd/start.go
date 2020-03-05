@@ -43,10 +43,10 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -154,7 +154,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.")
-	startCmd.Flags().String(isoURL, constants.DefaultISOURL, "Location of the minikube iso.")
+	startCmd.Flags().StringSlice(isoURL, download.DefaultISOURLs(), "Locations to fetch the minikube ISO from.")
 	startCmd.Flags().Bool(keepContext, false, "This will keep the existing kubectl context and will create a minikube context.")
 	startCmd.Flags().Bool(embedCerts, false, "if true, will embed the certs in kubeconfig.")
 	startCmd.Flags().String(containerRuntime, "docker", "The container runtime to be used (docker, crio, containerd).")
@@ -321,7 +321,13 @@ func runStart(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	cacheISO(&mc, driverName)
+	if !driver.BareMetal(driverName) && !driver.IsKIC(driverName) {
+		url, err := download.ISO(viper.GetStringSlice(isoURL))
+		if err != nil {
+			exit.WithError("Failed to cache ISO", err)
+		}
+		mc.MinikubeISO = url
+	}
 
 	if viper.GetBool(nativeSSH) {
 		ssh.SetDefaultClient(ssh.Native)
@@ -352,14 +358,6 @@ func updateDriver(driverName string) {
 		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
 	} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
 		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
-	}
-}
-
-func cacheISO(cfg *config.ClusterConfig, driverName string) {
-	if !driver.BareMetal(driverName) && !driver.IsKIC(driverName) {
-		if err := cluster.CacheISO(*cfg); err != nil {
-			exit.WithError("Failed to cache ISO", err)
-		}
 	}
 }
 
@@ -796,7 +794,6 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		Name:                    viper.GetString(config.ProfileName),
 		KeepContext:             viper.GetBool(keepContext),
 		EmbedCerts:              viper.GetBool(embedCerts),
-		MinikubeISO:             viper.GetString(isoURL),
 		Memory:                  pkgutil.CalculateSizeInMB(viper.GetString(memory)),
 		CPUs:                    viper.GetInt(cpus),
 		DiskSize:                pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
@@ -817,7 +814,6 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		KVMQemuURI:              viper.GetString(kvmQemuURI),
 		KVMGPU:                  viper.GetBool(kvmGPU),
 		KVMHidden:               viper.GetBool(kvmHidden),
-		Downloader:              pkgutil.DefaultDownloader{},
 		DisableDriverMounts:     viper.GetBool(disableDriverMounts),
 		UUID:                    viper.GetString(uuid),
 		NoVTXCheck:              viper.GetBool(noVTXCheck),
