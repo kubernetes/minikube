@@ -13,6 +13,8 @@ bootstrapTokens:
 nodeRegistration:
   criSocket: /var/run/crio/crio.sock
   name: "mk"
+  kubeletExtraArgs:
+    node-ip: 1.1.1.1
   taints: []
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
@@ -33,7 +35,7 @@ scheduler:
     scheduler-name: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
-controlPlaneEndpoint: localhost:8443
+controlPlaneEndpoint: 1.1.1.1:8443
 controllerManager: {}
 dns:
   type: CoreDNS

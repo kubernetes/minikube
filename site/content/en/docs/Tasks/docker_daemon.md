@@ -76,4 +76,4 @@ docker ps
 
 ##  Related Documentation
 
-- [docker_registry.md](Using the Docker registry)
+-  [Using the Docker registry]({{< ref "/docs/tasks/docker_registry" >}})

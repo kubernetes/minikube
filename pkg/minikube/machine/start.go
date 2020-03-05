@@ -32,6 +32,7 @@ import (
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -61,7 +62,7 @@ var (
 )
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error) {
+func StartHost(api libmachine.API, cfg config.ClusterConfig) (*host.Host, error) {
 	// Prevent machine-driver boot races, as well as our own certificate race
 	releaser, err := acquireMachinesLock(cfg.Name)
 	if err != nil {
@@ -85,7 +86,7 @@ func StartHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error)
 	return fixHost(api, cfg)
 }
 
-func engineOptions(cfg config.MachineConfig) *engine.Options {
+func engineOptions(cfg config.ClusterConfig) *engine.Options {
 	o := engine.Options{
 		Env:              cfg.DockerEnv,
 		InsecureRegistry: append([]string{constants.DefaultServiceCIDR}, cfg.InsecureRegistry...),
@@ -96,7 +97,7 @@ func engineOptions(cfg config.MachineConfig) *engine.Options {
 	return &o
 }
 
-func createHost(api libmachine.API, cfg config.MachineConfig) (*host.Host, error) {
+func createHost(api libmachine.API, cfg config.ClusterConfig) (*host.Host, error) {
 	glog.Infof("createHost starting for %q (driver=%q)", cfg.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
@@ -178,7 +179,7 @@ func timedCreateHost(h *host.Host, api libmachine.API, t time.Duration) error {
 }
 
 // postStart are functions shared between startHost and fixHost
-func postStartSetup(h *host.Host, mc config.MachineConfig) error {
+func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	glog.Infof("post-start starting for %q (driver=%q)", h.Name, h.DriverName)
 	start := time.Now()
 	defer func() {
@@ -251,7 +252,7 @@ func acquireMachinesLock(name string) (mutex.Releaser, error) {
 }
 
 // showHostInfo shows host information
-func showHostInfo(cfg config.MachineConfig) {
+func showHostInfo(cfg config.ClusterConfig) {
 	if driver.BareMetal(cfg.Driver) {
 		info, err := getHostInfo()
 		if err == nil {
@@ -259,10 +260,13 @@ func showHostInfo(cfg config.MachineConfig) {
 		}
 		return
 	}
-	if driver.IsKIC(cfg.Driver) {
-		info, err := getHostInfo() // TODO medyagh: get docker-machine info for non linux
+	if driver.IsKIC(cfg.Driver) { // TODO:medyagh add free disk space on docker machine
+		s, err := oci.DaemonInfo(cfg.Driver)
 		if err == nil {
-			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": cfg.Memory, "host_memory_size": info.Memory})
+			var info hostInfo
+			info.CPUs = s.CPUs
+			info.Memory = megs(uint64(s.TotalMemory))
+			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}) ({{.number_of_host_cpus}} available), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": cfg.Memory, "host_memory_size": info.Memory})
 		}
 		return
 	}

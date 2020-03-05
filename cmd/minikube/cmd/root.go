@@ -233,7 +233,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	configPath := localpath.ConfigFile
+	configPath := localpath.ConfigFile()
 	viper.SetConfigFile(configPath)
 	viper.SetConfigType("json")
 	if err := viper.ReadInConfig(); err != nil {

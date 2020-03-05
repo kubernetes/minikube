@@ -95,7 +95,7 @@ set -gx DOCKER_CERT_PATH "/certs"
 set -gx MINIKUBE_ACTIVE_DOCKERD "fish"
 
 # To point your shell to minikube's docker-daemon, run:
-# eval (minikube -p fish docker-env)
+# minikube -p fish docker-env | source
 `,
 			`set -e DOCKER_TLS_VERIFY
 set -e DOCKER_HOST

@@ -36,6 +36,8 @@ bootstrapTokens:
 nodeRegistration:
   criSocket: {{if .CRISocket}}{{.CRISocket}}{{else}}/var/run/dockershim.sock{{end}}
   name: "{{.NodeName}}"
+  kubeletExtraArgs:
+    node-ip: {{.NodeIP}}
   taints: []
 ---
 apiVersion: kubeadm.k8s.io/v1alpha3
@@ -50,7 +52,7 @@ kind: ClusterConfiguration
 certificatesDir: {{.CertDir}}
 clusterName: {{.ClusterName}}
 apiServerCertSANs: ["127.0.0.1", "localhost", "{{.AdvertiseAddress}}"]
-controlPlaneEndpoint: localhost:{{.APIServerPort}}
+controlPlaneEndpoint: {{.ControlPlaneIP}}:{{.APIServerPort}}
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}
