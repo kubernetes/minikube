@@ -65,9 +65,12 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 	if driver.BareMetal(drvName) {
 		disableOthers = false
 	}
-	if err := cr.Preload(k8s.KubernetesVersion); err != nil {
-		glog.Infof("Failed to preload container runtime %s: %v", cr.Name(), err)
+	if !driver.IsKIC(drvName) {
+		if err := cr.Preload(k8s.KubernetesVersion); err != nil {
+			glog.Infof("Failed to preload container runtime %s: %v", cr.Name(), err)
+		}
 	}
+
 	err = cr.Enable(disableOthers)
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
