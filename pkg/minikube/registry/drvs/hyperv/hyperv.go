@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -54,7 +55,7 @@ func init() {
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 	d := hyperv.NewDriver(driver.MachineName(cfg, n), localpath.MiniPath())
-	d.Boot2DockerURL = cfg.Downloader.GetISOFileURI(cfg.MinikubeISO)
+	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
 	d.VSwitch = cfg.HypervVirtualSwitch
 	if d.VSwitch == "" && cfg.HypervUseExternalSwitch {
 		switchName, adapter, err := chooseSwitch(cfg.HypervExternalAdapter)

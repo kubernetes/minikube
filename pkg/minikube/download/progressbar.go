@@ -18,7 +18,7 @@ limitations under the License.
 // based on:
 // https://github.com/hashicorp/go-getter/blob/master/cmd/go-getter/progress_tracking.go
 
-package util
+package download
 
 import (
 	"io"

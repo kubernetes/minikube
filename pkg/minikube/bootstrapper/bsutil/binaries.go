@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
@@ -53,7 +54,7 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 	for _, name := range constants.KubernetesReleaseBinaries {
 		name := name
 		g.Go(func() error {
-			src, err := machine.CacheBinary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)
+			src, err := download.Binary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", name)
 			}
