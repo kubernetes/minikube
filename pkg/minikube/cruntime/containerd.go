@@ -308,3 +308,8 @@ func (r *Containerd) ContainerLogCmd(id string, len int, follow bool) string {
 func (r *Containerd) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u containerd -n %d", len)
 }
+
+// Preload preloads the container runtime with k8s images
+func (r *Containerd) Preload(k8sVersion string) error {
+	return nil
+}

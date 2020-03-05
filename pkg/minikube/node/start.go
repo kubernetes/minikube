@@ -19,7 +19,6 @@ package node
 import (
 	"os"
 
-	"github.com/golang/glog"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/addons"
@@ -64,12 +63,6 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
 	defer machineAPI.Close()
-
-	if !driver.IsKIC(driverName) {
-		if err := preload.CopyIntoVMAndExtract(mc, mRunner); err != nil {
-			glog.Infof("error extracting preloaded images to VM: %v", err)
-		}
-	}
 
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig)
