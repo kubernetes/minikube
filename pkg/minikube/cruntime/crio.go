@@ -225,3 +225,8 @@ func (r *CRIO) ContainerLogCmd(id string, len int, follow bool) string {
 func (r *CRIO) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u crio -n %d", len)
 }
+
+// Preload preloads the container runtime with k8s images
+func (r *CRIO) Preload(k8sVersion string) error {
+	return nil
+}

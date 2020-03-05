@@ -19,11 +19,15 @@ package cruntime
 import (
 	"fmt"
 	"os/exec"
+	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/preload"
 )
 
 // KubernetesContainerPrefix is the prefix of each kubernetes container
@@ -89,6 +93,15 @@ func (r *Docker) Enable(disOthers bool) error {
 	c := exec.Command("sudo", "systemctl", "start", "docker")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "enable docker.")
+	}
+	return nil
+}
+
+// Restart restarts Docker on a host
+func (r *Docker) Restart() error {
+	c := exec.Command("sudo", "systemctl", "restart", "docker")
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrap(err, "restarting docker.")
 	}
 	return nil
 }
@@ -251,4 +264,35 @@ func (r *Docker) ContainerLogCmd(id string, len int, follow bool) string {
 // SystemLogCmd returns the command to retrieve system logs
 func (r *Docker) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u docker -n %d", len)
+}
+
+// Preload preloads docker with k8s images:
+// 1. Copy over the preloaded tarball into the VM
+// 2. Extract the preloaded tarball to the correct directory
+// 3. Remove the tarball within the VM
+func (r *Docker) Preload(k8sVersion string) error {
+	tarballPath := preload.TarballFilepath(k8sVersion)
+	dest := "/tmp/preloaded.tar"
+
+	// Copy over tarball into host
+	fa, err := assets.NewFileAsset(tarballPath, filepath.Dir(dest), filepath.Base(dest), "0644")
+	if err != nil {
+		return errors.Wrap(err, "getting file asset")
+	}
+	t := time.Now()
+	if err := r.Runner.Copy(fa); err != nil {
+		return errors.Wrap(err, "copying file")
+	}
+	glog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
+
+	// extract the tarball to /var in the VM
+	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xvf", dest)); err != nil {
+		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
+	}
+
+	//  remove the tarball in the VM
+	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "rm", dest)); err != nil {
+		return errors.Wrapf(err, "removing tarball: %s", rr.Output())
+	}
+	return r.Restart()
 }
