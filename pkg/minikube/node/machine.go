@@ -44,7 +44,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
-	host, preExists = startHost(m, *cfg)
+	host, preExists = startHost(m, *cfg, *node)
 	runner, err = machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
@@ -68,13 +68,13 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, bool) {
+func startHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.Host, bool) {
 	exists, err := api.Exists(mc.Name)
 	if err != nil {
 		exit.WithError("Failed to check if machine exists", err)
 	}
 
-	host, err := machine.StartHost(api, mc)
+	host, err := machine.StartHost(api, mc, n)
 	if err != nil {
 		exit.WithError("Unable to start VM. Please investigate and run 'minikube delete' if possible", err)
 	}
@@ -146,7 +146,7 @@ func trySSH(h *host.Host, ip string) {
 	- Disable your local VPN or firewall software
 	- Configure your local VPN or firewall to allow access to {{.ip}}
 	- Restart or reinstall {{.hypervisor}}
-	- Use an alternative --vm-driver
+	- Use an alternative --driver
 	- Use --force to override this connectivity check
 	`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
 	}

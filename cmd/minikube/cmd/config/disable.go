@@ -35,7 +35,7 @@ var addonsDisableCmd = &cobra.Command{
 		}
 
 		addon := args[0]
-		err := addons.Set(addon, "false", viper.GetString(config.MachineProfile))
+		err := addons.Set(addon, "false", viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("disable failed", err)
 		}
