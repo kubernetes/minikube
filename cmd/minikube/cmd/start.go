@@ -943,13 +943,26 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		nv = version.VersionPrefix + ovs.String()
 		profileArg := ""
 		if old.Name != constants.DefaultClusterName {
-			profileArg = fmt.Sprintf("-p %s", old.Name)
+			profileArg = fmt.Sprintf(" -p %s", old.Name)
 		}
-		exit.WithCodeT(exit.Config, `Error: You have selected Kubernetes v{{.new}}, but the existing cluster for your profile is running Kubernetes v{{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
 
-* Recreate the cluster using Kubernetes v{{.new}}: Run "minikube delete {{.profile}}", then "minikube start {{.profile}} --kubernetes-version={{.new}}"
-* Create a second cluster with Kubernetes v{{.new}}: Run "minikube start -p <new name> --kubernetes-version={{.new}}"
-* Reuse the existing cluster with Kubernetes v{{.old}} or newer: Run "minikube start {{.profile}} --kubernetes-version={{.old}}"`, out.V{"new": nvs, "old": ovs, "profile": profileArg})
+		suggestedName := old.Name + "2"
+		out.T(out.Conflict, "You have selected Kubernetes v{{.new}}, but the existing cluster is running Kubernetes v{{.old}}", out.V{"new": nvs, "old": ovs, "profile": profileArg})
+		exit.WithCodeT(exit.Config, `Non-destructive downgrades are not supported, but you can proceed with one of the following options:
+
+  1) Recreate the cluster with Kubernetes v{{.new}}, by running:
+
+    minikube delete{{.profile}}
+    minikube start{{.profile}} --kubernetes-version={{.new}}
+
+  2) Create a second cluster with Kubernetes v{{.new}}, by running:
+
+    minikube start -p {{.suggestedName}} --kubernetes-version={{.new}}
+
+  3) Use the existing cluster at version Kubernetes v{{.old}}, by running:
+
+    minikube start{{.profile}} --kubernetes-version={{.old}}
+`, out.V{"new": nvs, "old": ovs, "profile": profileArg, "suggestedName": suggestedName})
 
 	}
 	if defaultVersion.GT(nvs) {
