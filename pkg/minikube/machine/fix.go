@@ -71,7 +71,7 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 	}
 
 	// check if need to re-run docker-env
-	maybeWarnAboutEvalEnv(mc.Driver, mc.Name)
+	maybeWarnAboutEvalEnv(cc.Driver, cc.Name)
 
 	s, err := h.Driver.GetState()
 	if err != nil || s == state.Stopped || s == state.None {
