@@ -41,13 +41,16 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	// See if we can create a volume of preloaded images
 	// If not, pull images in the background while the VM boots.
 	var kicGroup errgroup.Group
+	downloadImages := true
 	if driver.IsKIC(driverName) {
-		beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+		if download.PreloadExists(k8sVersion, mc.KubernetesConfig.ContainerRuntime) {
+			beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+			downloadImages = false
+		}
 	}
-	// Now that the ISO is downloaded, pull images in the background while the VM boots.
+
 	var cacheGroup errgroup.Group
-	skipCacheImages := driver.IsKIC(driverName) && download.PreloadExists(k8sVersion, mc.KubernetesConfig.ContainerRuntime)
-	if !skipCacheImages {
+	if downloadImages {
 		beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
 	}
 

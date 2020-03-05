@@ -98,6 +98,7 @@ func beginDownloadKicArtifacts(g *errgroup.Group, k8sVersion, cRuntime string) {
 func waitDownloadKicArtifacts(g *errgroup.Group) {
 	if err := g.Wait(); err != nil {
 		glog.Errorln("Error downloading kic artifacts: ", err)
+		return
 	}
 	glog.Info("Successfully downloaded all kic artifacts")
 }
