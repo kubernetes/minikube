@@ -67,7 +67,7 @@ func TestVersionUpgrade(t *testing.T) {
 
 	// Assert that --iso-url works without a sha checksum, and that we can upgrade from old ISO's
 	// Some day, this will break an implicit assumption that a tool is available in the ISO :)
-	oldISO := "https://storage.googleapis.com/minikube/iso/integration-test-v1.7.0.iso"
+	oldISO := "https://storage.googleapis.com/minikube/iso/integration-test.iso"
 	args := append([]string{"start", "-p", profile, fmt.Sprintf("--iso-url=%s", oldISO), fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr := &RunResult{}
 	r := func() error {
