@@ -27,7 +27,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/preload"
+	"k8s.io/minikube/pkg/minikube/download"
 )
 
 // KubernetesContainerPrefix is the prefix of each kubernetes container
@@ -271,7 +271,7 @@ func (r *Docker) SystemLogCmd(len int) string {
 // 2. Extract the preloaded tarball to the correct directory
 // 3. Remove the tarball within the VM
 func (r *Docker) Preload(k8sVersion string) error {
-	tarballPath := preload.TarballFilepath(k8sVersion)
+	tarballPath := download.TarballPath(k8sVersion)
 	dest := "/tmp/preloaded.tar"
 
 	// Copy over tarball into host
