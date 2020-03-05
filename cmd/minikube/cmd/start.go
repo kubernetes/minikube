@@ -287,7 +287,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	existing, err := config.Load(viper.GetString(config.MachineProfile))
+	existing, err := config.Load(viper.GetString(config.ProfileName))
 	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
@@ -365,8 +365,8 @@ func cacheISO(cfg *config.ClusterConfig, driverName string) {
 
 func displayVersion(version string) {
 	prefix := ""
-	if viper.GetString(config.MachineProfile) != constants.DefaultMachineName {
-		prefix = fmt.Sprintf("[%s] ", viper.GetString(config.MachineProfile))
+	if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
+		prefix = fmt.Sprintf("[%s] ", viper.GetString(config.ProfileName))
 	}
 
 	versionState := out.Happy
@@ -514,7 +514,12 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		return
 	}
 
-	machineName := viper.GetString(config.MachineProfile)
+	cp, err := config.PrimaryControlPlane(*existing)
+	if err != nil {
+		exit.WithError("Error getting primary cp", err)
+	}
+
+	machineName := driver.MachineName(*existing, cp)
 	h, err := api.Load(machineName)
 	if err != nil {
 		glog.Warningf("selectDriver api.Load: %v", err)
@@ -593,8 +598,8 @@ func selectImageRepository(mirrorCountry string) (bool, string, error) {
 
 // Return a minikube command containing the current profile name
 func minikubeCmd() string {
-	if viper.GetString(config.MachineProfile) != constants.DefaultMachineName {
-		return fmt.Sprintf("minikube -p %s", config.MachineProfile)
+	if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
+		return fmt.Sprintf("minikube -p %s", config.ProfileName)
 	}
 	return "minikube"
 }
@@ -624,7 +629,7 @@ func validateUser(drvName string) {
 	if !useForce {
 		os.Exit(exit.Permissions)
 	}
-	_, err = config.Load(viper.GetString(config.MachineProfile))
+	_, err = config.Load(viper.GetString(config.ProfileName))
 	if err == nil || !config.IsNotExist(err) {
 		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
 	}
@@ -687,7 +692,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if driver.BareMetal(drvName) {
-		if viper.GetString(config.MachineProfile) != constants.DefaultMachineName {
+		if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
 			exit.WithCodeT(exit.Config, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 		}
 
@@ -775,7 +780,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 
 	var kubeNodeName string
 	if drvName != driver.None {
-		kubeNodeName = viper.GetString(config.MachineProfile)
+		kubeNodeName = "m01"
 	}
 
 	// Create the initial node, which will necessarily be a control plane
@@ -788,7 +793,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	}
 
 	cfg := config.ClusterConfig{
-		Name:                    viper.GetString(config.MachineProfile),
+		Name:                    viper.GetString(config.ProfileName),
 		KeepContext:             viper.GetBool(keepContext),
 		EmbedCerts:              viper.GetBool(embedCerts),
 		MinikubeISO:             viper.GetString(isoURL),
@@ -822,7 +827,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		NatNicType:              viper.GetString(natNicType),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
-			ClusterName:            viper.GetString(config.MachineProfile),
+			ClusterName:            viper.GetString(config.ProfileName),
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,
 			APIServerIPs:           apiServerIPs,
@@ -941,7 +946,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	if nvs.LT(ovs) {
 		nv = version.VersionPrefix + ovs.String()
 		profileArg := ""
-		if old.Name != constants.DefaultMachineName {
+		if old.Name != constants.DefaultClusterName {
 			profileArg = fmt.Sprintf("-p %s", old.Name)
 		}
 		exit.WithCodeT(exit.Config, `Error: You have selected Kubernetes v{{.new}}, but the existing cluster for your profile is running Kubernetes v{{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
