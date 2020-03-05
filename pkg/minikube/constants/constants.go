@@ -17,13 +17,11 @@ limitations under the License.
 package constants
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
 const (
@@ -78,10 +76,6 @@ var (
 
 var (
 	SHASuffix = ".sha256"
-	// DefaultISOURL is the default location of the minikube.iso file
-	DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetISOPath(), minikubeVersion.GetISOVersion())
-	// DefaultISOSHAURL is the default location of the minikube.iso.sha256 file
-	DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 	// DockerDaemonEnvs is list of docker-daemon related environment variables.
 	DockerDaemonEnvs = [3]string{DockerHostEnv, DockerTLSVerifyEnv, DockerCertPathEnv}

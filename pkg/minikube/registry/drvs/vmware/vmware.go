@@ -22,6 +22,7 @@ import (
 
 	vmwcfg "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -41,7 +42,7 @@ func init() {
 
 func configure(mc config.MachineConfig) (interface{}, error) {
 	d := vmwcfg.NewConfig(mc.Name, localpath.MiniPath())
-	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
+	d.Boot2DockerURL = download.LocalISOResource(mc.MinikubeISO)
 	d.Memory = mc.Memory
 	d.CPU = mc.CPUs
 	d.DiskSize = mc.DiskSize

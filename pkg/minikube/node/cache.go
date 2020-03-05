@@ -26,6 +26,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -71,7 +72,7 @@ func CacheKubectlBinary(k8sVerison string) (string, error) {
 		binary = "kubectl.exe"
 	}
 
-	return machine.CacheBinary(binary, k8sVerison, runtime.GOOS, runtime.GOARCH)
+	return download.Binary(binary, k8sVerison, runtime.GOOS, runtime.GOARCH)
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground

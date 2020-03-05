@@ -53,10 +53,6 @@ func GetISOVersion() string {
 	return isoVersion
 }
 
-// GetISOPath returns the remote path to the minikube.iso
-func GetISOPath() string {
-	return isoPath
-}
 
 // GetSemverVersion returns the current minikube semantic version (semver)
 func GetSemverVersion() (semver.Version, error) {

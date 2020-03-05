@@ -30,7 +30,6 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/tests"
@@ -61,10 +60,8 @@ func RegisterMockDriver(t *testing.T) {
 }
 
 var defaultMachineConfig = config.MachineConfig{
-	Driver:      driver.Mock,
-	MinikubeISO: constants.DefaultISOURL,
-	Downloader:  MockDownloader{},
-	DockerEnv:   []string{"MOCK_MAKE_IT_PROVISION=true"},
+	Driver:    driver.Mock,
+	DockerEnv: []string{"MOCK_MAKE_IT_PROVISION=true"},
 }
 
 func TestCreateHost(t *testing.T) {
@@ -262,10 +259,9 @@ func TestStartHostConfig(t *testing.T) {
 	provision.SetDetector(md)
 
 	config := config.MachineConfig{
-		Driver:     driver.Mock,
-		DockerEnv:  []string{"FOO=BAR"},
-		DockerOpt:  []string{"param=value"},
-		Downloader: MockDownloader{},
+		Driver:    driver.Mock,
+		DockerEnv: []string{"FOO=BAR"},
+		DockerOpt: []string{"param=value"},
 	}
 
 	h, err := StartHost(api, config)
