@@ -38,9 +38,11 @@ import (
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/cpu"
 	gopshost "github.com/shirou/gopsutil/host"
+	"github.com/shirou/gopsutil/mem"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -83,7 +85,6 @@ const (
 	kvmGPU                  = "kvm-gpu"
 	kvmHidden               = "kvm-hidden"
 	minikubeEnvPrefix       = "MINIKUBE"
-	defaultMemorySize       = "2000mb"
 	installAddons           = "install-addons"
 	defaultDiskSize         = "20000mb"
 	keepContext             = "keep-context"
@@ -112,7 +113,8 @@ const (
 	interactive             = "interactive"
 	waitTimeout             = "wait-timeout"
 	nativeSSH               = "native-ssh"
-	minimumMemorySize       = "1024mb"
+	minUsableMem            = 1024 // Kubernetes will not start with less than 1GB
+	minRecommendedMem       = 2000 // Warn at no lower than existing configurations
 	minimumCPUS             = 2
 	minimumDiskSize         = "2000mb"
 	autoUpdate              = "auto-update-drivers"
@@ -149,8 +151,8 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(interactive, true, "Allow user prompts for more information")
 	startCmd.Flags().Bool(dryRun, false, "dry-run mode. Validates configuration, but does not mutate system state")
 
-	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to the minikube VM.")
-	startCmd.Flags().String(memory, defaultMemorySize, "Amount of RAM allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
+	startCmd.Flags().Int(cpus, 2, "Number of CPUs allocated to Kubernetes.")
+	startCmd.Flags().String(memory, "", "Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().String(humanReadableDiskSize, defaultDiskSize, "Disk size allocated to the minikube VM (format: <number>[<unit>], where unit = b, k, m or g).")
 	startCmd.Flags().Bool(downloadOnly, false, "If true, only download and cache files for later use - don't install or start anything.")
 	startCmd.Flags().Bool(cacheImages, true, "If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none.")
@@ -636,23 +638,50 @@ func validateUser(drvName string) {
 	}
 }
 
-// validateDiskSize validates the disk size matches the minimum recommended
-func validateDiskSize() {
-	diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
-	if diskSizeMB < pkgutil.CalculateSizeInMB(minimumDiskSize) && !viper.GetBool(force) {
-		exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumDiskSize)})
+// defaultMemorySize calculates the default memory footprint in MB
+func defaultMemorySize(drvName string) int {
+	fallback := 2200
+	maximum := 6000
+
+	v, err := mem.VirtualMemory()
+	if err != nil {
+		return fallback
 	}
+	available := v.Total / 1024 / 1024
+
+	// For KIC, do not allocate more memory than the container has available (+ some slack)
+	if driver.IsKIC(drvName) {
+		s, err := oci.DaemonInfo(drvName)
+		if err != nil {
+			return fallback
+		}
+		maximum = int(s.TotalMemory/1024/1024) - 128
+	}
+
+	suggested := int(available / 4)
+
+	if suggested > maximum {
+		suggested = maximum
+	}
+
+	if suggested < fallback {
+		suggested = fallback
+	}
+
+	glog.Infof("Selecting memory default of %dMB, given %dMB available and %dMB maximum", suggested, available, maximum)
+	return suggested
 }
 
 // validateMemorySize validates the memory size matches the minimum recommended
 func validateMemorySize() {
-	memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString(memory))
-	if memorySizeMB < pkgutil.CalculateSizeInMB(minimumMemorySize) && !viper.GetBool(force) {
-		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}", out.V{"requested_size": memorySizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumMemorySize)})
+	req := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+	if req < minUsableMem && !viper.GetBool(force) {
+		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum}}MB",
+			out.V{"requested": req, "mininum": minUsableMem})
 	}
-	if memorySizeMB < pkgutil.CalculateSizeInMB(defaultMemorySize) && !viper.GetBool(force) {
-		out.T(out.Notice, "Requested memory allocation ({{.memory}}MB) is less than the default memory allocation of {{.default_memorysize}}MB. Beware that minikube might not work correctly or crash unexpectedly.",
-			out.V{"memory": memorySizeMB, "default_memorysize": pkgutil.CalculateSizeInMB(defaultMemorySize)})
+	if req < minRecommendedMem && !viper.GetBool(force) {
+		out.T(out.Notice, "Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.",
+			out.V{"requested": req, "recommended": minRecommendedMem})
 	}
 }
 
@@ -677,14 +706,23 @@ func validateCPUCount(local bool) {
 
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
-	validateDiskSize()
-	validateMemorySize()
+	if cmd.Flags().Changed(humanReadableDiskSize) {
+		diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+		if diskSizeMB < pkgutil.CalculateSizeInMB(minimumDiskSize) && !viper.GetBool(force) {
+			exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumDiskSize)})
+		}
+	}
 
-	if !driver.HasResourceLimits(drvName) {
-		if cmd.Flags().Changed(cpus) {
+	if cmd.Flags().Changed(cpus) {
+		validateCPUCount(driver.BareMetal(drvName))
+		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --cpus flag", out.V{"name": drvName})
 		}
-		if cmd.Flags().Changed(memory) {
+	}
+
+	if cmd.Flags().Changed(memory) {
+		validateMemorySize()
+		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
 		}
 	}
@@ -699,8 +737,6 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
 		}
 	}
-
-	validateCPUCount(driver.BareMetal(drvName))
 
 	// check that kubeadm extra args contain only whitelisted parameters
 	for param := range node.ExtraOptions.AsMap().Get(bsutil.Kubeadm) {
@@ -781,6 +817,11 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		kubeNodeName = "m01"
 	}
 
+	mem := defaultMemorySize(drvName)
+	if viper.GetString(memory) != "" {
+		mem = pkgutil.CalculateSizeInMB(viper.GetString(memory))
+	}
+
 	// Create the initial node, which will necessarily be a control plane
 	cp := config.Node{
 		Port:              viper.GetInt(apiServerPort),
@@ -794,7 +835,8 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		Name:                    viper.GetString(config.ProfileName),
 		KeepContext:             viper.GetBool(keepContext),
 		EmbedCerts:              viper.GetBool(embedCerts),
-		Memory:                  pkgutil.CalculateSizeInMB(viper.GetString(memory)),
+		MinikubeISO:             viper.GetString(isoURL),
+		Memory:                  mem,
 		CPUs:                    viper.GetInt(cpus),
 		DiskSize:                pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
 		Driver:                  drvName,
@@ -943,13 +985,26 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		nv = version.VersionPrefix + ovs.String()
 		profileArg := ""
 		if old.Name != constants.DefaultClusterName {
-			profileArg = fmt.Sprintf("-p %s", old.Name)
+			profileArg = fmt.Sprintf(" -p %s", old.Name)
 		}
-		exit.WithCodeT(exit.Config, `Error: You have selected Kubernetes v{{.new}}, but the existing cluster for your profile is running Kubernetes v{{.old}}. Non-destructive downgrades are not supported, but you can proceed by performing one of the following options:
 
-* Recreate the cluster using Kubernetes v{{.new}}: Run "minikube delete {{.profile}}", then "minikube start {{.profile}} --kubernetes-version={{.new}}"
-* Create a second cluster with Kubernetes v{{.new}}: Run "minikube start -p <new name> --kubernetes-version={{.new}}"
-* Reuse the existing cluster with Kubernetes v{{.old}} or newer: Run "minikube start {{.profile}} --kubernetes-version={{.old}}"`, out.V{"new": nvs, "old": ovs, "profile": profileArg})
+		suggestedName := old.Name + "2"
+		out.T(out.Conflict, "You have selected Kubernetes v{{.new}}, but the existing cluster is running Kubernetes v{{.old}}", out.V{"new": nvs, "old": ovs, "profile": profileArg})
+		exit.WithCodeT(exit.Config, `Non-destructive downgrades are not supported, but you can proceed with one of the following options:
+
+  1) Recreate the cluster with Kubernetes v{{.new}}, by running:
+
+    minikube delete{{.profile}}
+    minikube start{{.profile}} --kubernetes-version={{.new}}
+
+  2) Create a second cluster with Kubernetes v{{.new}}, by running:
+
+    minikube start -p {{.suggestedName}} --kubernetes-version={{.new}}
+
+  3) Use the existing cluster at version Kubernetes v{{.old}}, by running:
+
+    minikube start{{.profile}} --kubernetes-version={{.old}}
+`, out.V{"new": nvs, "old": ovs, "profile": profileArg, "suggestedName": suggestedName})
 
 	}
 	if defaultVersion.GT(nvs) {
