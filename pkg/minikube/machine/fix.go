@@ -58,7 +58,7 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 	out.T(out.Waiting, "Reconfiguring existing host ...")
 
 	start := time.Now()
-	glog.Infof("fixHost starting: %s", cc.Name)
+	glog.Infof("fixHost starting: %s", n.Name)
 	defer func() {
 		glog.Infof("fixHost completed within %s", time.Since(start))
 	}()
