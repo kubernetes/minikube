@@ -25,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
 )
@@ -213,6 +214,10 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 		rr := &command.RunResult{}
 		return rr, nil
 	}
+}
+
+func (f *FakeRunner) Copy(assets.CopyableFile) error {
+	return nil
 }
 
 // docker is a fake implementation of docker
