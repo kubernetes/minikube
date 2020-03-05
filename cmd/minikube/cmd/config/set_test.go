@@ -34,25 +34,25 @@ func TestNotFound(t *testing.T) {
 
 func TestSetNotAllowed(t *testing.T) {
 	createTestConfig(t)
-	err := Set("vm-driver", "123456")
-	if err == nil || err.Error() != "run validations for \"vm-driver\" with value of \"123456\": [driver \"123456\" is not supported]" {
+	err := Set("driver", "123456")
+	if err == nil || err.Error() != "run validations for \"driver\" with value of \"123456\": [driver \"123456\" is not supported]" {
 		t.Fatalf("Set did not return error for unallowed value: %+v", err)
 	}
 }
 
 func TestSetOK(t *testing.T) {
 	createTestConfig(t)
-	err := Set("vm-driver", "virtualbox")
+	err := Set("driver", "virtualbox")
 	defer func() {
-		err = Unset("vm-driver")
+		err = Unset("driver")
 		if err != nil {
-			t.Errorf("failed to unset vm-driver: %+v", err)
+			t.Errorf("failed to unset driver: %+v", err)
 		}
 	}()
 	if err != nil {
 		t.Fatalf("Set returned error for valid property value: %+v", err)
 	}
-	val, err := Get("vm-driver")
+	val, err := Get("driver")
 	if err != nil {
 		t.Fatalf("Get returned error for valid property: %+v", err)
 	}
