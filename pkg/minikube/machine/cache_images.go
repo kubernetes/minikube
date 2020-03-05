@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -168,28 +169,31 @@ func CacheAndLoadImages(images []string) error {
 	}
 	for _, p := range profiles { // loading images to all running profiles
 		pName := p.Name // capture the loop variable
-		status, err := GetHostStatus(api, pName)
+		c, err := config.Load(pName)
 		if err != nil {
-			glog.Warningf("skipping loading cache for profile %s", pName)
-			glog.Errorf("error getting status for %s: %v", pName, err)
-			continue // try next machine
+			return err
 		}
-		if status == state.Running.String() { // the not running hosts will load on next start
-			h, err := api.Load(pName)
+		for _, n := range c.Nodes {
+			m := driver.MachineName(*c, n)
+			status, err := GetHostStatus(api, m)
 			if err != nil {
-				return err
+				glog.Warningf("skipping loading cache for profile %s", pName)
+				glog.Errorf("error getting status for %s: %v", pName, err)
+				continue // try next machine
 			}
-			cr, err := CommandRunner(h)
-			if err != nil {
-				return err
-			}
-			c, err := config.Load(pName)
-			if err != nil {
-				return err
-			}
-			err = LoadImages(c, cr, images, constants.ImageCacheDir)
-			if err != nil {
-				glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+			if status == state.Running.String() { // the not running hosts will load on next start
+				h, err := api.Load(m)
+				if err != nil {
+					return err
+				}
+				cr, err := CommandRunner(h)
+				if err != nil {
+					return err
+				}
+				err = LoadImages(c, cr, images, constants.ImageCacheDir)
+				if err != nil {
+					glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+				}
 			}
 		}
 	}
