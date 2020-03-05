@@ -272,7 +272,7 @@ func (r *Docker) SystemLogCmd(len int) string {
 // 3. Remove the tarball within the VM
 func (r *Docker) Preload(k8sVersion string) error {
 	tarballPath := download.TarballPath(k8sVersion)
-	dest := filepath.Join("/", "preloaded.tar.lz4")
+	dest := "/preloaded.tar.lz4"
 
 	// Copy over tarball into host
 	fa, err := assets.NewFileAsset(tarballPath, filepath.Dir(dest), filepath.Base(dest), "0644")
