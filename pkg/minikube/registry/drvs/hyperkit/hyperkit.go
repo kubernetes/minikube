@@ -58,7 +58,7 @@ func init() {
 	}
 }
 
-func configure(config cfg.MachineConfig) (interface{}, error) {
+func configure(config cfg.ClusterConfig) (interface{}, error) {
 	u := config.UUID
 	if u == "" {
 		u = uuid.NewUUID().String()

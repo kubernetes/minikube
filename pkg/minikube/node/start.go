@@ -33,10 +33,19 @@ import (
 )
 
 // Start spins up a guest and starts the kubernetes node.
-func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
+func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
+	k8sVersion := mc.KubernetesConfig.KubernetesVersion
+	driverName := mc.Driver
+
+	// See if we can create a volume of preloaded images
+	// If not, pull images in the background while the VM boots.
+	var kicGroup errgroup.Group
+	if driver.IsKIC(driverName) {
+		beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+	}
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
-	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
+	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
@@ -44,10 +53,10 @@ func Start(mc config.MachineConfig, n config.Node, primary bool, existingAddons 
 		exit.WithError("Failed to save config", err)
 	}
 
-	k8sVersion := mc.KubernetesConfig.KubernetesVersion
-	driverName := mc.Driver
 	// exits here in case of --download-only option.
-	handleDownloadOnly(&cacheGroup, k8sVersion)
+	handleDownloadOnly(&cacheGroup, &kicGroup, k8sVersion)
+	waitDownloadKicArtifacts(&kicGroup)
+
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
 	defer machineAPI.Close()
 	// configure the runtime (docker, containerd, crio)

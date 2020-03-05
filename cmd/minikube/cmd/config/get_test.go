@@ -16,24 +16,28 @@ limitations under the License.
 
 package config
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestGetNotFound(t *testing.T) {
+	createTestConfig(t)
 	_, err := Get("nonexistent")
-	if err == nil {
+	if err == nil || err.Error() != "specified key could not be found in config" {
 		t.Fatalf("Get did not return error for unknown property")
 	}
 }
 
 func TestGetOK(t *testing.T) {
+	createTestConfig(t)
 	name := "vm-driver"
 	err := Set(name, "virtualbox")
 	if err != nil {
-		t.Fatalf("Set returned error for property %s", name)
+		t.Fatalf("Set returned error for property %s, %+v", name, err)
 	}
 	val, err := Get(name)
 	if err != nil {
-		t.Fatalf("Get returned error for property %s", name)
+		t.Fatalf("Get returned error for property %s, %+v", name, err)
 	}
 	if val != "virtualbox" {
 		t.Fatalf("Get returned %s, expected virtualbox", val)

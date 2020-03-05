@@ -60,7 +60,7 @@ func Mount(r mountRunner, source string, target string, c *MountConfig) error {
 		return errors.Wrap(err, "umount")
 	}
 
-	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s && %s", c.Mode, target, mntCmd(source, target, c)))); err != nil {
+	if _, err := r.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mkdir -m %o -p %s", c.Mode, target))); err != nil {
 		return errors.Wrap(err, "create folder pre-mount")
 	}
 

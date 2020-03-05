@@ -19,6 +19,7 @@ package machine
 import (
 	"fmt"
 	"math"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -32,6 +33,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
@@ -54,7 +56,7 @@ var (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
+func fixHost(api libmachine.API, mc config.ClusterConfig) (*host.Host, error) {
 	out.T(out.Waiting, "Reconfiguring existing host ...")
 
 	start := time.Now()
@@ -67,6 +69,9 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 	if err != nil {
 		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
+
+	// check if need to re-run docker-env
+	maybeWarnAboutEvalEnv(mc.Driver, mc.Name)
 
 	s, err := h.Driver.GetState()
 	if err != nil || s == state.Stopped || s == state.None {
@@ -143,6 +148,26 @@ func fixHost(api libmachine.API, mc config.MachineConfig) (*host.Host, error) {
 		return h, &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
 	}
 	return h, ensureSyncedGuestClock(h, mc.Driver)
+}
+
+// maybeWarnAboutEvalEnv wil warn user if they need to re-eval their docker-env, podman-env
+// because docker changes the allocated bind ports after restart https://github.com/kubernetes/minikube/issues/6824
+func maybeWarnAboutEvalEnv(drver string, name string) {
+	if !driver.IsKIC(drver) {
+		return
+	}
+	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
+	if p == "" {
+		return
+	}
+	out.T(out.Notice, "Noticed that you are using minikube docker-env:")
+	out.T(out.WarningType, `After minikube restart the dockerd ports might have changed. To ensure docker-env works properly.
+Please re-eval the docker-env command:
+
+	'minikube -p {{.profile_name}} docker-env'
+
+	`, out.V{"profile_name": name})
+
 }
 
 // ensureGuestClockSync ensures that the guest system clock is relatively in-sync

@@ -17,11 +17,13 @@ limitations under the License.
 package kic
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/log"
@@ -34,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/download"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -88,14 +91,23 @@ func (d *Driver) Create() error {
 			ContainerPort: constants.DockerDaemonPort,
 		},
 	)
-	err := oci.CreateContainerNode(params)
-	if err != nil {
+	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
 	}
 
 	if err := d.prepareSSH(); err != nil {
 		return errors.Wrap(err, "prepare kic ssh")
 	}
+
+	t := time.Now()
+	glog.Infof("Starting extracting preloaded images to volume")
+	// Extract preloaded images to container
+	if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion), params.Name, BaseImage); err != nil {
+		glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
+	} else {
+		glog.Infof("Took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
+	}
+
 	return nil
 }
 
@@ -124,10 +136,10 @@ func (d *Driver) prepareSSH() error {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	if d.NodeConfig.OCIBinary == "podman" {
-		return "podman"
+	if d.NodeConfig.OCIBinary == oci.Podman {
+		return oci.Podman
 	}
-	return "docker"
+	return oci.Docker
 }
 
 // GetIP returns an IP or hostname that this host is available at
@@ -181,11 +193,18 @@ func (d *Driver) GetURL() (string, error) {
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
 	if err := oci.PointToHostDockerDaemon(); err != nil {
-		return state.Error, errors.Wrap(err, "point host docker-daemon")
+		return state.Error, errors.Wrap(err, "point host docker daemon")
 	}
+	// allow no more than 2 seconds for this. when this takes long this means deadline passed
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
 
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
+	cmd := exec.CommandContext(ctx, d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
 	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		glog.Errorf("GetState for %s took longer than normal. Restarting your %s daemon might fix this issue.", d.MachineName, d.OCIBinary)
+		return state.Error, fmt.Errorf("inspect %s timeout", d.MachineName)
+	}
 	o := strings.TrimSpace(string(out))
 	if err != nil {
 		return state.Error, errors.Wrapf(err, "get container %s status", d.MachineName)
@@ -208,6 +227,9 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "killing kic node %s", d.MachineName)
@@ -217,6 +239,10 @@ func (d *Driver) Kill() error {
 
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
+
 	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
 		log.Warnf("could not find the container %s to remove it.", d.MachineName)
 	}
@@ -234,13 +260,14 @@ func (d *Driver) Remove() error {
 
 // Restart a host
 func (d *Driver) Restart() error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
 	s, err := d.GetState()
 	if err != nil {
 		return errors.Wrap(err, "get kic state")
 	}
 	switch s {
-	case state.Paused:
-		return d.Unpause()
 	case state.Stopped:
 		return d.Start()
 	case state.Running, state.Error:
@@ -256,18 +283,12 @@ func (d *Driver) Restart() error {
 	return fmt.Errorf("restarted not implemented for kic state %s yet", s)
 }
 
-// Unpause a kic container
-func (d *Driver) Unpause() error {
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "unpause", d.MachineName)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "unpausing %s", d.MachineName)
-	}
-	return nil
-}
-
 // Start a _stopped_ kic container
 // not meant to be used for Create().
 func (d *Driver) Start() error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
 	s, err := d.GetState()
 	if err != nil {
 		return errors.Wrap(err, "get kic state")
@@ -285,6 +306,9 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)

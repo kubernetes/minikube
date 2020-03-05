@@ -64,7 +64,7 @@ func (m *clusterInspector) getStateAndRoute() (HostState, *Route, error) {
 	if err != nil {
 		return hostState, nil, err
 	}
-	var c *config.MachineConfig
+	var c *config.ClusterConfig
 	c, err = m.configLoader.LoadConfigFromFile(m.machineName)
 	if err != nil {
 		err = errors.Wrapf(err, "error loading config for %s", m.machineName)
@@ -80,7 +80,7 @@ func (m *clusterInspector) getStateAndRoute() (HostState, *Route, error) {
 	return hostState, route, nil
 }
 
-func getRoute(host *host.Host, clusterConfig config.MachineConfig) (*Route, error) {
+func getRoute(host *host.Host, clusterConfig config.ClusterConfig) (*Route, error) {
 	hostDriverIP, err := host.Driver.GetIP()
 	if err != nil {
 		return nil, errors.Wrapf(err, "error getting host IP for %s", host.Name)

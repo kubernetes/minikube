@@ -45,7 +45,7 @@ func init() {
 
 }
 
-func configure(config cfg.MachineConfig) (interface{}, error) {
+func configure(config cfg.ClusterConfig) (interface{}, error) {
 	d := parallels.NewDriver(config.Name, localpath.MiniPath()).(*parallels.Driver)
 	d.Boot2DockerURL = download.LocalISOResource(config.MinikubeISO)
 	d.Memory = config.Memory

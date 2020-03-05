@@ -88,7 +88,7 @@ func run(name, value, profile string, fns []setFn) error {
 }
 
 // SetBool sets a bool value
-func SetBool(m *config.MachineConfig, name string, val string) error {
+func SetBool(m *config.ClusterConfig, name string, val string) error {
 	b, err := strconv.ParseBool(val)
 	if err != nil {
 		return err
@@ -118,6 +118,9 @@ func enableOrDisableAddon(name, val, profile string) error {
 
 	if alreadySet {
 		glog.Warningf("addon %s should already be in state %v", name, val)
+		if !enable {
+			return nil
+		}
 	}
 
 	if name == "istio" && enable {

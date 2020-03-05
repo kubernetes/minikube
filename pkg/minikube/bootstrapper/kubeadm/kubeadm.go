@@ -18,6 +18,7 @@ package kubeadm
 
 import (
 	"bytes"
+	"context"
 	"os/exec"
 	"path"
 
@@ -53,7 +54,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util/retry"
+	"k8s.io/minikube/pkg/version"
 )
 
 // Bootstrapper is a bootstrapper using kubeadm
@@ -149,7 +150,7 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 }
 
 // StartCluster starts the cluster
-func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
+func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	err := bsutil.ExistingConfig(k.c)
 	if err == nil { // if there is an existing cluster don't reconfigure it
 		return k.restartCluster(cfg)
@@ -169,11 +170,6 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 
 	extraFlags := bsutil.CreateFlagsFromExtraArgs(cfg.KubernetesConfig.ExtraOptions)
 	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime})
-	if err != nil {
-		return err
-	}
-
-	cp, err := config.PrimaryControlPlane(cfg)
 	if err != nil {
 		return err
 	}
@@ -216,23 +212,16 @@ func (k *Bootstrapper) StartCluster(cfg config.MachineConfig) error {
 		}
 	}
 
-	if !driver.IsKIC(cfg.Driver) { // TODO: skip for both after verifications https://github.com/kubernetes/minikube/issues/6239
-		glog.Infof("Configuring cluster permissions ...")
-		elevate := func() error {
-			client, err := k.client(cp.IP, cp.Port)
-			if err != nil {
-				return err
-			}
-			return bsutil.ElevateKubeSystemPrivileges(client)
-		}
-
-		if err := retry.Expo(elevate, time.Millisecond*500, 120*time.Second); err != nil {
-			return errors.Wrap(err, "timed out waiting to elevate kube-system RBAC privileges")
-		}
+	if err := k.applyNodeLabels(cfg); err != nil {
+		glog.Warningf("unable to apply node labels: %v", err)
 	}
 
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
+	}
+
+	if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
+		glog.Warningf("unable to create cluster role binding, some addons might not work : %v. ", err)
 	}
 
 	return nil
@@ -262,7 +251,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForCluster blocks until the cluster appears to be healthy
-func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
 	cp, err := config.PrimaryControlPlane(cfg)
@@ -295,7 +284,7 @@ func (k *Bootstrapper) WaitForCluster(cfg config.MachineConfig, timeout time.Dur
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
-func (k *Bootstrapper) restartCluster(cfg config.MachineConfig) error {
+func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 	glog.Infof("restartCluster start")
 
 	start := time.Now()
@@ -396,7 +385,7 @@ func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) er
 }
 
 // UpdateCluster updates the cluster
-func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
+func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	images, err := images.Kubeadm(cfg.KubernetesConfig.ImageRepository, cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "kubeadm images")
@@ -412,7 +401,9 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
-	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, r)
+
+	// TODO: multiple nodes
+	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, r, cfg.Nodes[0])
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
 	}
@@ -469,8 +460,11 @@ func (k *Bootstrapper) UpdateCluster(cfg config.MachineConfig) error {
 }
 
 // applyKicOverlay applies the CNI plugin needed to make kic work
-func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
-	cmd := exec.Command("sudo",
+func (k *Bootstrapper) applyKicOverlay(cfg config.ClusterConfig) error {
+	// Allow no more than 5 seconds for apply kic overlay
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "sudo",
 		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"-f", "-")
 	b := bytes.Buffer{}
@@ -482,4 +476,53 @@ func (k *Bootstrapper) applyKicOverlay(cfg config.MachineConfig) error {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
 	}
 	return nil
+}
+
+// applyNodeLabels applies minikube labels to all the nodes
+func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
+	// time cluster was created. time format is based on ISO 8601 (RFC 3339)
+	// converting - and : to _ because of kubernetes label restriction
+	createdAtLbl := "minikube.k8s.io/updated_at=" + time.Now().Format("2006_01_02T15_04_05_0700")
+	verLbl := "minikube.k8s.io/version=" + version.GetVersion()
+	commitLbl := "minikube.k8s.io/commit=" + version.GetGitCommitID()
+	nameLbl := "minikube.k8s.io/name=" + cfg.Name
+
+	// Allow no more than 5 seconds for applying labels
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// example:
+	// sudo /var/lib/minikube/binaries/v1.17.3/kubectl label nodes minikube.k8s.io/version=v1.7.3 minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
+	cmd := exec.CommandContext(ctx, "sudo",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, "--all", "--overwrite",
+		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
+
+	if _, err := k.c.RunCmd(cmd); err != nil {
+		return errors.Wrapf(err, "applying node labels")
+	}
+	return nil
+}
+
+// elevateKubeSystemPrivileges gives the kube-system service account cluster admin privileges to work with RBAC.
+func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) error {
+	start := time.Now()
+	// Allow no more than 5 seconds for creating cluster role bindings
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	rbacName := "minikube-rbac"
+	// kubectl create clusterrolebinding minikube-rbac --clusterrole=cluster-admin --serviceaccount=kube-system:default
+	cmd := exec.CommandContext(ctx, "sudo",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+		"create", "clusterrolebinding", rbacName, "--clusterrole=cluster-admin", "--serviceaccount=kube-system:default",
+		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
+	rr, err := k.c.RunCmd(cmd)
+	if err != nil {
+		// Error from server (AlreadyExists): clusterrolebindings.rbac.authorization.k8s.io "minikube-rbac" already exists
+		if strings.Contains(rr.Output(), fmt.Sprintf("Error from server (AlreadyExists)")) {
+			glog.Infof("rbac %q already exists not need to re-create.", rbacName)
+			return nil
+		}
+	}
+	glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
+	return err
 }
