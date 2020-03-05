@@ -49,6 +49,8 @@ type CommandRunner interface {
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
 	// Copy is a convenience method that runs a command to copy a file
 	Copy(assets.CopyableFile) error
+	// Remove is a convenience method that runs a command to remove a file
+	Remove(assets.CopyableFile) error
 }
 
 // Manager is a common interface for container runtimes
