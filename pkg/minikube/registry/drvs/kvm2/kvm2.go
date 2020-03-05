@@ -30,6 +30,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -79,7 +80,7 @@ func configure(mc config.MachineConfig) (interface{}, error) {
 		CPU:            mc.CPUs,
 		Network:        mc.KVMNetwork,
 		PrivateNetwork: "minikube-net",
-		Boot2DockerURL: mc.Downloader.GetISOFileURI(mc.MinikubeISO),
+		Boot2DockerURL: download.LocalISOResource(mc.MinikubeISO),
 		DiskSize:       mc.DiskSize,
 		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.rawdisk", name)),
 		ISO:            filepath.Join(localpath.MiniPath(), "machines", name, "boot2docker.iso"),

@@ -54,7 +54,7 @@ func init() {
 
 func configure(config cfg.MachineConfig) (interface{}, error) {
 	d := hyperv.NewDriver(config.Name, localpath.MiniPath())
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
+	d.Boot2DockerURL = download.LocalISOResource(config.MinikubeISO)
 	d.VSwitch = config.HypervVirtualSwitch
 	if d.VSwitch == "" && config.HypervUseExternalSwitch {
 		switchName, adapter, err := chooseSwitch(config.HypervExternalAdapter)

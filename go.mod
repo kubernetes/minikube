@@ -23,15 +23,12 @@ require (
 	github.com/google/go-cmp v0.3.0
 	github.com/google/go-containerregistry v0.0.0-20200131185320-aec8da010de2
 	github.com/googleapis/gnostic v0.3.0 // indirect
-	github.com/hashicorp/errwrap v0.0.0-20141028054710-7554cd9344ce // indirect
 	github.com/hashicorp/go-getter v1.4.0
-	github.com/hashicorp/go-multierror v0.0.0-20160811015721-8c5f0ad93604 // indirect
 	github.com/hashicorp/go-retryablehttp v0.5.4
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/hooklift/iso9660 v0.0.0-20170318115843-1cf07e5970d8
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
-	github.com/jimmidyson/go-download v0.0.0-20161028105827-7f9a90c8c95b
 	github.com/johanneswuerbach/nfsexports v0.0.0-20181204082207-1aa528dcb345
 	github.com/juju/clock v0.0.0-20190205081909-9c5c9712527c
 	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d // indirect

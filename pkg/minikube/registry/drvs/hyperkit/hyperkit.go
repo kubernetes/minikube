@@ -32,6 +32,7 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -69,7 +70,7 @@ func configure(config cfg.MachineConfig) (interface{}, error) {
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},
-		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
+		Boot2DockerURL: download.LocalISOResource(config.MinikubeISO),
 		DiskSize:       config.DiskSize,
 		Memory:         config.Memory,
 		CPU:            config.CPUs,
