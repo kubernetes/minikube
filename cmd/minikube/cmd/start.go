@@ -452,8 +452,8 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	}
 
 	// Fallback to old driver parameter
-	if viper.GetString("driver") != "" {
-		ds := driver.Status(viper.GetString("driver"))
+	if viper.GetString("vm-driver") != "" {
+		ds := driver.Status(viper.GetString("vm-driver"))
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds
 	}
