@@ -245,7 +245,7 @@ test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross out/gvisor-addon ## Build all different minikube components
+all: cross drivers e2e-cross exotic out/gvisor-addon ## Build all different minikube components
 
 .PHONY: drivers
 drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2 ## Build Hyperkit and KVM2 drivers
@@ -304,7 +304,10 @@ endif
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
 .PHONY: cross
-cross: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
+cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
+
+.PHONY: exotic
+exotic: out/minikube-linux-arm out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x ## Build minikube for non-amd64 linux
 
 .PHONY: windows
 windows: minikube-windows-amd64.exe ## Build minikube for Windows 64bit
@@ -320,7 +323,8 @@ e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe ## End-to-end 
 
 .PHONY: checksum
 checksum: ## Generate checksums
-	for f in out/minikube.iso out/minikube-linux-amd64 minikube-linux-arm64 \
+	for f in out/minikube.iso out/minikube-linux-amd64 out/minikube-linux-arm \
+		 out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x \
 		 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe \
 		 out/docker-machine-driver-kvm2 out/docker-machine-driver-hyperkit; do \
 		if [ -f "$${f}" ]; then \
@@ -441,15 +445,13 @@ out/repodata/repomd.xml: out/minikube-$(RPM_VERSION).rpm
 
 .SECONDEXPANSION:
 TAR_TARGETS_linux-amd64   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
-TAR_TARGETS_linux-arm64   := out/minikube-linux-arm64
 TAR_TARGETS_darwin-amd64  := out/minikube-darwin-amd64 out/docker-machine-driver-hyperkit
 TAR_TARGETS_windows-amd64 := out/minikube-windows-amd64.exe
 out/minikube-%.tar.gz: $$(TAR_TARGETS_$$*)
 	tar -cvzf $@ $^
 
 .PHONY: cross-tars
-cross-tars: out/minikube-linux-amd64.tar.gz out/minikube-linux-arm64.tar.gz \ ## Cross-compile minikube
-	    out/minikube-windows-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
+cross-tars: out/minikube-linux-amd64.tar.gz out/minikube-windows-amd64.tar.gz out/minikube-darwin-amd64.tar.gz ## Cross-compile minikube
 	-cd out && $(SHA512SUM) *.tar.gz > SHA512SUM
 
 out/minikube-installer.exe: out/minikube-windows-amd64.exe

@@ -103,7 +103,7 @@ var printProfilesTable = func() {
 	}
 
 	if err != nil {
-		exit.WithCodeT(exit.Config, fmt.Sprintf("error loading profiles: %v", err))
+		glog.Warningf("error loading profiles: %v", err)
 	}
 
 }
