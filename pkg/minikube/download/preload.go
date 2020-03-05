@@ -72,6 +72,16 @@ func remoteTarballURL(k8sVersion string) string {
 	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", PreloadBucket, tarballName(k8sVersion))
 }
 
+// PreloadExists returns true if there is a preloaded tarball that can be used
+func PreloadExists(k8sVersion, containerRuntime string) bool {
+	if containerRuntime != "docker" {
+		return false
+	}
+	url := remoteTarballURL(k8sVersion)
+	_, err := http.Head(url)
+	return err == nil
+}
+
 // Preload caches the preloaded images tarball on the host machine
 func Preload(k8sVersion, containerRuntime string) error {
 	if containerRuntime != "docker" {
@@ -86,15 +96,14 @@ func Preload(k8sVersion, containerRuntime string) error {
 		}
 	}
 
-	url := remoteTarballURL(k8sVersion)
-
 	// Make sure we support this k8s version
-	if _, err := http.Get(url); err != nil {
-		glog.Infof("Unable to get response from %s, skipping downloading: %v", url, err)
+	if !PreloadExists(k8sVersion, containerRuntime) {
+		glog.Infof("Preloaded tarball for k8s version %s does not exist", k8sVersion)
 		return nil
 	}
 
 	out.T(out.FileDownload, "Downloading preloaded images tarball for k8s {{.version}} ...", out.V{"version": k8sVersion})
+	url := remoteTarballURL(k8sVersion)
 	client := &getter.Client{
 		Src:     url,
 		Dst:     targetPath,

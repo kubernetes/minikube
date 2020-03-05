@@ -146,7 +146,7 @@ func trySSH(h *host.Host, ip string) {
 	- Disable your local VPN or firewall software
 	- Configure your local VPN or firewall to allow access to {{.ip}}
 	- Restart or reinstall {{.hypervisor}}
-	- Use an alternative --vm-driver
+	- Use an alternative --driver
 	- Use --force to override this connectivity check
 	`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
 	}
