@@ -38,6 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -181,15 +182,15 @@ func TestDownloadOnlyDocker(t *testing.T) {
 		t.Errorf("%s failed: %v:\n%s", args, err, rr.Output())
 	}
 
-	// Make sure the preloaded image tarball exists
-	tarball := download.TarballFilepath(constants.DefaultKubernetesVersion)
+	// Make sure the downloaded image tarball exists
+	tarball := download.TarballPath(constants.DefaultKubernetesVersion)
 	contents, err := ioutil.ReadFile(tarball)
 	if err != nil {
 		t.Errorf("reading tarball: %v", err)
 	}
 	// Make sure it has the correct checksum
 	checksum := md5.Sum(contents)
-	remoteChecksum, err := ioutil.ReadFile(preload.ChecksumFilepath(constants.DefaultKubernetesVersion))
+	remoteChecksum, err := ioutil.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion))
 	if err != nil {
 		t.Errorf("reading checksum file: %v", err)
 	}
