@@ -23,7 +23,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
+	"path/filepath"
+	"time"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -31,6 +34,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -146,4 +152,41 @@ func verifyChecksum(k8sVersion string) error {
 		return fmt.Errorf("checksum of %s does not match remote checksum (%s != %s)", TarballFilepath(k8sVersion), string(remoteChecksum), string(checksum[:]))
 	}
 	return nil
+}
+
+// CopyIntoVMAndExtract tries to:
+// 1. Copy over the preloaded tarball into the VM
+// 2. Extract the preloaded tarball to the correct directory
+// 3. Remove the tarball within the VM
+func CopyIntoVMAndExtract(cc config.ClusterConfig, runner command.Runner) error {
+	k8sVersion := cc.KubernetesConfig.KubernetesVersion
+	tarballPath := TarballFilepath(k8sVersion)
+	dest := "/tmp/preloaded.tar"
+
+	// Copy over tarball into host
+	fa, err := assets.NewFileAsset(tarballPath, filepath.Dir(dest), filepath.Base(dest), "0644")
+	if err != nil {
+		return errors.Wrap(err, "getting file asset")
+	}
+	t := time.Now()
+	if err := runner.Copy(fa); err != nil {
+		return errors.Wrap(err, "copying file")
+	}
+	glog.Infof("Took %f seconds to copy over tarball", time.Since(t).Seconds())
+
+	// Now, extract the tarball
+	if rr, err := runner.RunCmd(exec.Command("sudo", "tar", "-I", "lz4", "-C", "/var", "-xvf", dest)); err != nil {
+		return errors.Wrapf(err, "extracting tarball: %s", rr.Output())
+	}
+
+	//  remove the tarball on the host
+	if rr, err := runner.RunCmd(exec.Command("sudo", "rm", dest)); err != nil {
+		return errors.Wrapf(err, "removing tarball: %s", rr.Output())
+	}
+
+	// restart the docker daemon
+	if rr, err := runner.RunCmd(exec.Command("sudo", "systemctl", "restart", "docker")); err != nil {
+		return errors.Wrapf(err, "removing tarball: %s", rr.Output())
+	}
+	return fmt.Errorf("error extracting preloaded tarball")
 }
