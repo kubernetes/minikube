@@ -30,16 +30,10 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/tests"
 )
-
-type MockDownloader struct{}
-
-func (d MockDownloader) GetISOFileURI(isoURL string) string          { return "" }
-func (d MockDownloader) CacheMinikubeISOFromURL(isoURL string) error { return nil }
 
 func createMockDriverHost(c config.ClusterConfig, n config.Node) (interface{}, error) {
 	return nil, nil
@@ -61,12 +55,10 @@ func RegisterMockDriver(t *testing.T) {
 }
 
 var defaultClusterConfig = config.ClusterConfig{
-	Name:        viper.GetString("profile"),
-	Driver:      driver.Mock,
-	MinikubeISO: constants.DefaultISOURL,
-	Downloader:  MockDownloader{},
-	DockerEnv:   []string{"MOCK_MAKE_IT_PROVISION=true"},
-	Nodes:       []config.Node{config.Node{Name: "minikube"}},
+	Name:      viper.GetString("profile"),
+	Driver:    driver.Mock,
+	DockerEnv: []string{"MOCK_MAKE_IT_PROVISION=true"},
+	Nodes:     []config.Node{config.Node{Name: "minikube"}},
 }
 
 func TestCreateHost(t *testing.T) {
@@ -271,10 +263,9 @@ func TestStartHostConfig(t *testing.T) {
 	provision.SetDetector(md)
 
 	cfg := config.ClusterConfig{
-		Driver:     driver.Mock,
-		DockerEnv:  []string{"FOO=BAR"},
-		DockerOpt:  []string{"param=value"},
-		Downloader: MockDownloader{},
+		Driver:    driver.Mock,
+		DockerEnv: []string{"FOO=BAR"},
+		DockerOpt: []string{"param=value"},
 	}
 
 	h, err := StartHost(api, cfg, config.Node{Name: "minikube"})
