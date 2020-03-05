@@ -253,6 +253,7 @@ func acquireMachinesLock(name string) (mutex.Releaser, error) {
 
 // showHostInfo shows host information
 func showHostInfo(cfg config.ClusterConfig) {
+	machineType := driver.MachineType(cfg.Driver)
 	if driver.BareMetal(cfg.Driver) {
 		info, err := getHostInfo()
 		if err == nil {
@@ -266,9 +267,9 @@ func showHostInfo(cfg config.ClusterConfig) {
 			var info hostInfo
 			info.CPUs = s.CPUs
 			info.Memory = megs(uint64(s.TotalMemory))
-			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} container with (CPUs={{.number_of_cpus}}) ({{.number_of_host_cpus}} available), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": cfg.Memory, "host_memory_size": info.Memory})
+			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} {{.machine_type}} with (CPUs={{.number_of_cpus}}) ({{.number_of_host_cpus}} available), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": cfg.Memory, "host_memory_size": info.Memory, "machine_type": machineType})
 		}
 		return
 	}
-	out.T(out.StartingVM, "Creating {{.driver_name}} VM (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize})
+	out.T(out.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize, "machine_type": machineType})
 }
