@@ -26,8 +26,8 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // KubernetesContainerPrefix is the prefix of each kubernetes container
@@ -272,7 +272,7 @@ func (r *Docker) SystemLogCmd(len int) string {
 // 3. Remove the tarball within the VM
 func (r *Docker) Preload(k8sVersion string) error {
 	tarballPath := download.TarballPath(k8sVersion)
-	dest := "/tmp/preloaded.tar"
+	dest := "/preloaded.tar"
 
 	// Copy over tarball into host
 	fa, err := assets.NewFileAsset(tarballPath, filepath.Dir(dest), filepath.Base(dest), "0644")
