@@ -220,6 +220,10 @@ func (f *FakeRunner) Copy(assets.CopyableFile) error {
 	return nil
 }
 
+func (f *FakeRunner) Remove(assets.CopyableFile) error {
+	return nil
+}
+
 // docker is a fake implementation of docker
 func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 	switch cmd := args[0]; cmd {

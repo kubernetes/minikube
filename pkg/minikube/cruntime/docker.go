@@ -272,7 +272,7 @@ func (r *Docker) SystemLogCmd(len int) string {
 // 3. Remove the tarball within the VM
 func (r *Docker) Preload(k8sVersion string) error {
 	tarballPath := download.TarballPath(k8sVersion)
-	dest := "/tmp/preloaded.tar"
+	dest := filepath.Join("/", "preloaded.tar.lz4")
 
 	// Copy over tarball into host
 	fa, err := assets.NewFileAsset(tarballPath, filepath.Dir(dest), filepath.Base(dest), "0644")
@@ -291,8 +291,8 @@ func (r *Docker) Preload(k8sVersion string) error {
 	}
 
 	//  remove the tarball in the VM
-	if rr, err := r.Runner.RunCmd(exec.Command("sudo", "rm", dest)); err != nil {
-		return errors.Wrapf(err, "removing tarball: %s", rr.Output())
+	if err := r.Runner.Remove(fa); err != nil {
+		glog.Infof("error removing tarball: %v", err)
 	}
 	return r.Restart()
 }
