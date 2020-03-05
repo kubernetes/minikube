@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/preload"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -45,7 +46,10 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	}
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
-	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	skipCacheImages := driver.IsKIC(driverName) && preload.TarballExists(k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+	if !skipCacheImages {
+		beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
