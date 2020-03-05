@@ -77,9 +77,31 @@ func PreloadExists(k8sVersion, containerRuntime string) bool {
 	if containerRuntime != "docker" {
 		return false
 	}
+
+	// Omit remote check if tarball exists locally
+	targetPath := TarballPath(k8sVersion)
+	if _, err := os.Stat(targetPath); err == nil {
+		if err := verifyChecksum(k8sVersion); err == nil {
+			glog.Infof("Found %s in cache, no need to check remotely", targetPath)
+			return true
+		}
+	}
+
 	url := remoteTarballURL(k8sVersion)
-	_, err := http.Head(url)
-	return err == nil
+	resp, err := http.Head(url)
+	if err != nil {
+		glog.Warningf("%s fetch error: %v", url, err)
+		return false
+	}
+
+	// note: err won't be set if it's a 404
+	if resp.StatusCode != 200 {
+		glog.Warningf("%s status code: %d", url, resp.StatusCode)
+		return false
+	}
+
+	glog.Infof("Goody! %s exists!", url)
+	return true
 }
 
 // Preload caches the preloaded images tarball on the host machine
