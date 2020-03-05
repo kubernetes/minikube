@@ -2,7 +2,7 @@ name: CI
 on: [pull_request]
 jobs:
   # Runs before all other jobs
-  # builds the minikube binaries 
+  # builds the minikube binaries
   build_minikube:
     env:
       TIME_ELAPSED: time
@@ -37,7 +37,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: install libvirt
-      run : | 
+      run : |
         sudo apt-get update
         sudo apt-get install -y libvirt-dev
     - name: lint
@@ -54,7 +54,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: install libvirt
-      run : | 
+      run : |
         sudo apt-get update
         sudo apt-get install -y libvirt-dev
     - name: unit test
@@ -170,7 +170,7 @@ jobs:
         START_TIME=$(date -u +%s)
         KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker -test.timeout=70m -test.v -timeout-multiplier=3 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
-        TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
+        TIME_ELAPSED=$(($END_TIME-$START_TIME))
         min=$((${TIME_ELAPSED}/60))
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
@@ -184,7 +184,7 @@ jobs:
         STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
         echo status: ${STAT}
         FailNum=$(echo $STAT | jq '.NumberOfFail')
-        TestsNum=$(echo $STAT | jq '.NumberOfTests')       
+        TestsNum=$(echo $STAT | jq '.NumberOfTests')
         GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
         echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
         echo ::set-env name=STAT::${STAT}
@@ -232,7 +232,7 @@ jobs:
         START_TIME=$(date -u +%s)
         KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--driver=none -test.timeout=70m -test.v -timeout-multiplier=3 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
-        TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
+        TIME_ELAPSED=$(($END_TIME-$START_TIME))
         min=$((${TIME_ELAPSED}/60))
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
@@ -246,7 +246,7 @@ jobs:
         STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
         echo status: ${STAT}
         FailNum=$(echo $STAT | jq '.NumberOfFail')
-        TestsNum=$(echo $STAT | jq '.NumberOfTests')       
+        TestsNum=$(echo $STAT | jq '.NumberOfTests')
         GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
         echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
         echo ::set-env name=STAT::${STAT}
@@ -276,7 +276,7 @@ jobs:
       shell: bash
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
-        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh    
+        sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download binaries
       uses: actions/download-artifact@v1
       with:
@@ -294,7 +294,7 @@ jobs:
         START_TIME=$(date -u +%s)
         KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--driver=none -test.timeout=70m -test.v -timeout-multiplier=3 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
-        TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
+        TIME_ELAPSED=$(($END_TIME-$START_TIME))
         min=$((${TIME_ELAPSED}/60))
         sec=$((${TIME_ELAPSED}%60))
         TIME_ELAPSED="${min} min $sec seconds "
@@ -308,7 +308,7 @@ jobs:
         STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
         echo status: ${STAT}
         FailNum=$(echo $STAT | jq '.NumberOfFail')
-        TestsNum=$(echo $STAT | jq '.NumberOfTests')       
+        TestsNum=$(echo $STAT | jq '.NumberOfTests')
         GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
         echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
         echo ::set-env name=STAT::${STAT}
@@ -343,8 +343,8 @@ jobs:
           sudo apt-key add - < Release.key || true
           sudo apt-get update -qq
           sudo apt-get -qq -y install podman
-          sudo podman version || true 
-          sudo podman info || true 
+          sudo podman version || true
+          sudo podman info || true
       - name: Install gopogh
         shell: bash
         run: |
@@ -367,7 +367,7 @@ jobs:
           START_TIME=$(date -u +%s)
           KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--driver=podman -test.timeout=70m -test.v -timeout-multiplier=3 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
-          TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
+          TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
           sec=$((${TIME_ELAPSED}%60))
           TIME_ELAPSED="${min} min $sec seconds "
@@ -381,7 +381,7 @@ jobs:
           STAT=$(gopogh -in ./report/testout.json -out ./report/testout.html -name "${JOB_NAME} ${GITHUB_REF}" -repo "${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
           echo status: ${STAT}
           FailNum=$(echo $STAT | jq '.NumberOfFail')
-          TestsNum=$(echo $STAT | jq '.NumberOfTests')       
+          TestsNum=$(echo $STAT | jq '.NumberOfTests')
           GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
           echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
           echo ::set-env name=STAT::${STAT}
@@ -398,7 +398,7 @@ jobs:
           echo $STAT | jq '.FailedTests' || true
           echo "-------------------------------------------------------"
           if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  # After all 4 integration tests finished 
+  # After all 4 integration tests finished
   # collect all the reports and upload
   upload_all_reports:
     if: always()
