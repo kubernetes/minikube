@@ -24,10 +24,10 @@ curl -LO $(curl -s $r/releases/latest | grep -o 'http.*darwin_amd64' | head -n1)
 Start a cluster using the vmware driver:
 
 ```shell
-minikube start --vm-driver=vmware
+minikube start --driver=vmware
 ```
 To make vmware the default driver:
 
 ```shell
-minikube config set vm-driver vmware
+minikube config set driver vmware
 ```

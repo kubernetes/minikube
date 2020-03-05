@@ -47,11 +47,14 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	}
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup errgroup.Group
-	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	skipCacheImages := driver.IsKIC(driverName) && preload.TarballExists(k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+	if !skipCacheImages {
+		beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := config.SaveProfile(viper.GetString(config.MachineProfile), &mc); err != nil {
+	if err := config.SaveProfile(viper.GetString(config.ProfileName), &mc); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
@@ -93,7 +96,7 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 
 	// enable addons, both old and new!
 	if existingAddons != nil {
-		addons.Start(viper.GetString(config.MachineProfile), existingAddons, AddonList)
+		addons.Start(viper.GetString(config.ProfileName), existingAddons, AddonList)
 	}
 
 	if err = CacheAndLoadImagesInConfig(); err != nil {

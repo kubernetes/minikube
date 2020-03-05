@@ -23,9 +23,11 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 )
 
 const (
@@ -34,6 +36,7 @@ const (
 )
 
 var (
+	nodeName string
 	// followLogs triggers tail -f mode
 	followLogs bool
 	// numberOfLines is how many lines to output, set via -n
@@ -48,10 +51,25 @@ var logsCmd = &cobra.Command{
 	Short: "Gets the logs of the running instance, used for debugging minikube, not user code.",
 	Long:  `Gets the logs of the running instance, used for debugging minikube, not user code.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		cfg, err := config.Load(viper.GetString(config.MachineProfile))
+		cfg, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
+
+		if nodeName == "" {
+			cp, err := config.PrimaryControlPlane(*cfg)
+			if err != nil {
+				exit.WithError("Error getting primary control plane", err)
+			}
+			nodeName = cp.Name
+		}
+
+		n, _, err := node.Retrieve(cfg, nodeName)
+		if err != nil {
+			exit.WithError("Error retrieving node", err)
+		}
+
+		machineName := driver.MachineName(*cfg, *n)
 
 		api, err := machine.NewAPIClient()
 		if err != nil {
@@ -59,7 +77,7 @@ var logsCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		h, err := api.Load(cfg.Name)
+		h, err := api.Load(machineName)
 		if err != nil {
 			exit.WithError("api load", err)
 		}
@@ -67,7 +85,7 @@ var logsCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("command runner", err)
 		}
-		bs, err := cluster.Bootstrapper(api, viper.GetString(cmdcfg.Bootstrapper))
+		bs, err := cluster.Bootstrapper(api, viper.GetString(cmdcfg.Bootstrapper), *cfg, *n)
 		if err != nil {
 			exit.WithError("Error getting cluster bootstrapper", err)
 		}
@@ -99,4 +117,5 @@ func init() {
 	logsCmd.Flags().BoolVarP(&followLogs, "follow", "f", false, "Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.")
 	logsCmd.Flags().BoolVar(&showProblems, "problems", false, "Show only log entries which point to known problems")
 	logsCmd.Flags().IntVarP(&numberOfLines, "length", "n", 60, "Number of lines back to go within the log")
+	logsCmd.Flags().StringVar(&nodeName, "node", "", "The node to get logs from. Defaults to the primary control plane.")
 }
