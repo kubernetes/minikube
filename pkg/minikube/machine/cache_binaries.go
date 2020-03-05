@@ -45,7 +45,6 @@ func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) er
 	return g.Wait()
 }
 
-
 // CopyBinary copies a locally cached binary to the guest VM
 func CopyBinary(cr command.Runner, src string, dest string) error {
 	f, err := assets.NewFileAsset(src, path.Dir(dest), path.Base(dest), "0755")
