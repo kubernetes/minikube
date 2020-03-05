@@ -43,17 +43,17 @@ func init() {
 	}
 }
 
-func configure(mc config.ClusterConfig) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
-		MachineName:       mc.Name,
+		MachineName:       driver.MachineName(cc, n),
 		StorePath:         localpath.MiniPath(),
 		ImageDigest:       kic.BaseImage,
-		CPU:               mc.CPUs,
-		Memory:            mc.Memory,
+		CPU:               cc.CPUs,
+		Memory:            cc.Memory,
 		OCIBinary:         oci.Docker,
-		APIServerPort:     mc.Nodes[0].Port,
-		KubernetesVersion: mc.KubernetesConfig.KubernetesVersion,
-		ContainerRuntime:  mc.KubernetesConfig.ContainerRuntime,
+		APIServerPort:     cc.Nodes[0].Port,
+		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 	}), nil
 }
 

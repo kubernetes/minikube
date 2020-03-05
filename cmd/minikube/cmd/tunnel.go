@@ -76,7 +76,7 @@ var tunnelCmd = &cobra.Command{
 			exit.WithError("error creating clientset", err)
 		}
 
-		cfg, err := config.Load(viper.GetString(config.MachineProfile))
+		cfg, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
