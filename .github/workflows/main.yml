@@ -1,5 +1,7 @@
 name: CI
 on: [pull_request]
+env:
+  GOPROXY: https://proxy.golang.org
 jobs:
   # Runs before all other jobs
   # builds the minikube binaries
@@ -11,6 +13,8 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
+    - name: Download Dependencies
+      run : go mod download
     - name: Build Binaries
       run : |
         make minikube-linux-amd64
@@ -40,6 +44,8 @@ jobs:
       run : |
         sudo apt-get update
         sudo apt-get install -y libvirt-dev
+    - name: Download Dependencies
+      run : go mod download
     - name: Lint
       env:
         TESTSUITE: lintall
@@ -57,6 +63,8 @@ jobs:
       run : |
         sudo apt-get update
         sudo apt-get install -y libvirt-dev
+    - name: Download Dependencies
+      run : go mod download
     - name: Unit Test
       env:
         TESTSUITE: unittest
