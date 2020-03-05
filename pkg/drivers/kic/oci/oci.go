@@ -97,6 +97,8 @@ func CreateContainerNode(p CreateParams) error {
 		"--label", p.ClusterLabel,
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, p.Role),
+		// label th enode wuth the node ID
+		"--label", p.NodeLabel,
 	}
 
 	if p.OCIBinary == Podman { // enable execing in /var
@@ -109,7 +111,7 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
 	}
 	if p.OCIBinary == Docker {
-		if err := createDockerVolume(p.Name); err != nil {
+		if err := createDockerVolume(p.Name, p.Name); err != nil {
 			return errors.Wrapf(err, "creating volume for %s container", p.Name)
 		}
 		glog.Infof("Successfully created a docker volume %s", p.Name)

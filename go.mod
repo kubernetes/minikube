@@ -71,6 +71,7 @@ require (
 	golang.org/x/text v0.3.2
 	google.golang.org/api v0.9.0
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect
+	gotest.tools/v3 v3.0.2 // indirect
 	k8s.io/api v0.17.3
 	k8s.io/apimachinery v0.17.3
 	k8s.io/client-go v0.17.3

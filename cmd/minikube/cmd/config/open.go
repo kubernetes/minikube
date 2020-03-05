@@ -26,7 +26,9 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -67,8 +69,16 @@ var addonsOpenCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		profileName := viper.GetString(pkg_config.MachineProfile)
-		if !machine.IsHostRunning(api, profileName) {
+		profileName := viper.GetString(pkg_config.ProfileName)
+		cc, err := config.Load(profileName)
+		if err != nil {
+			exit.WithError("Error getting cluster", err)
+		}
+		cp, err := config.PrimaryControlPlane(*cc)
+		if err != nil {
+			exit.WithError("Error getting control plane", err)
+		}
+		if !machine.IsHostRunning(api, driver.MachineName(*cc, cp)) {
 			os.Exit(1)
 		}
 		addon, ok := assets.Addons[addonName] // validate addon input

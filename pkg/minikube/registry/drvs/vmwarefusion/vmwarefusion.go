@@ -26,7 +26,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
 
-	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -45,12 +45,12 @@ func init() {
 	}
 }
 
-func configure(config cfg.ClusterConfig) (interface{}, error) {
-	d := vmwarefusion.NewDriver(config.Name, localpath.MiniPath()).(*vmwarefusion.Driver)
-	d.Boot2DockerURL = download.LocalISOResource(config.MinikubeISO)
-	d.Memory = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = config.DiskSize
+func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
+	d := vmwarefusion.NewDriver(driver.MachineName(cfg, n), localpath.MiniPath()).(*vmwarefusion.Driver)
+	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
+	d.Memory = cfg.Memory
+	d.CPU = cfg.CPUs
+	d.DiskSize = cfg.DiskSize
 
 	// TODO(philips): push these defaults upstream to fixup this driver
 	d.SSHPort = 22
