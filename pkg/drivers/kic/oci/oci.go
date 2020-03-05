@@ -20,7 +20,6 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strconv"
 	"time"
 
 	"bufio"
@@ -212,85 +211,6 @@ func Copy(ociBinary string, ociID string, targetDir string, fName string) error 
 	return nil
 }
 
-// HostPortBinding will return port mapping for a container using cli.
-// example : HostPortBinding("docker", "minikube", "22")
-// will return the docker assigned port:
-// 32769, nil
-// only supports TCP ports
-func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return 0, errors.Wrap(err, "point host docker daemon")
-	}
-	var out []byte
-	var err error
-	if ociBinary == Podman {
-		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
-		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID)
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
-		}
-	} else {
-		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
-		}
-	}
-
-	o := strings.TrimSpace(string(out))
-	o = strings.Trim(o, "'")
-	p, err := strconv.Atoi(o)
-	if err != nil {
-		return p, errors.Wrapf(err, "convert host-port %q to number", p)
-	}
-	return p, nil
-}
-
-// ContainerIPs returns ipv4,ipv6, error of a container by their name
-func ContainerIPs(ociBinary string, name string) (string, string, error) {
-	if ociBinary == Podman {
-		return podmanConttainerIP(name)
-	}
-	return dockerContainerIP(name)
-}
-
-// podmanConttainerIP returns ipv4, ipv6 of container or error
-func podmanConttainerIP(name string) (string, string, error) {
-	cmd := exec.Command(Podman, "inspect",
-		"-f", "{{.NetworkSettings.IPAddress}}",
-		name)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
-	}
-	output := strings.TrimSpace(string(out))
-	if err == nil && output == "" { // podman returns empty for 127.0.0.1
-		return DefaultBindIPV4, "", nil
-	}
-	return output, "", nil
-}
-
-// dockerContainerIP returns ipv4, ipv6 of container or error
-func dockerContainerIP(name string) (string, string, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return "", "", errors.Wrap(err, "point host docker daemon")
-	}
-	// retrieve the IP address of the node using docker inspect
-	lines, err := inspect(Docker, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
-	if err != nil {
-		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
-	}
-	if len(lines) != 1 {
-		return "", "", errors.Errorf("IPs output should only be one line, got %d lines", len(lines))
-	}
-	ips := strings.Split(lines[0], ",")
-	if len(ips) != 2 {
-		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
-	}
-	return ips[0], ips[1], nil
-}
-
 // ContainerID returns id of a container name
 func ContainerID(ociBinary string, nameOrID string) (string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
@@ -463,7 +383,7 @@ func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 func PointToHostDockerDaemon() error {
 	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
 	if p != "" {
-		glog.Infof("shell is pointing to docker inside minikube. will unset to use host")
+		glog.Infof("shell is pointing to dockerd inside minikube. will unset to use host")
 	}
 
 	for i := range constants.DockerDaemonEnvs {
