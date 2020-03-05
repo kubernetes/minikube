@@ -51,7 +51,7 @@ func TestDriver(t *testing.T) {
 		},
 	}
 
-	runValidations(t, tests, "vm-driver", IsValidDriver)
+	runValidations(t, tests, "driver", IsValidDriver)
 
 }
 
