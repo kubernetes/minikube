@@ -37,21 +37,14 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	k8sVersion := mc.KubernetesConfig.KubernetesVersion
 	driverName := mc.Driver
 
-	// See if we can create a volume of preloaded images
-	// If not, pull images in the background while the VM boots.
+	// If using kic, make sure we download the kic base image
 	var kicGroup errgroup.Group
-	needKubernetesImages := true
 	if driver.IsKIC(driverName) {
-		// If we can download a preload tarball, it isn't necessary to pull Kubernetes images
-		if beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime) {
-			needKubernetesImages = false
-		}
+		beginDownloadKicArtifacts(&kicGroup)
 	}
 
 	var cacheGroup errgroup.Group
-	if needKubernetesImages {
-		beginCacheKubernetesImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
-	}
+	beginCacheKubernetesImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
