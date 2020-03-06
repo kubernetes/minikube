@@ -57,7 +57,7 @@ kind: ClusterConfiguration
 {{end -}}{{end -}}
 certificatesDir: {{.CertDir}}
 clusterName: {{.ClusterName}}
-controlPlaneEndpoint: {{.ControlPlaneIP}}:{{.APIServerPort}}
+controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
 dns:
   type: CoreDNS
 etcd:
