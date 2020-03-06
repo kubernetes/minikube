@@ -65,23 +65,23 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 	}
 
 	opts := struct {
-		CertDir           string
-		ServiceCIDR       string
-		PodSubnet         string
-		AdvertiseAddress  string
-		APIServerPort     int
-		KubernetesVersion string
-		EtcdDataDir       string
-		ClusterName       string
-		NodeName          string
-		DNSDomain         string
-		CRISocket         string
-		ImageRepository   string
-		ComponentOptions  []componentOptions
-		FeatureArgs       map[string]bool
-		NoTaintMaster     bool
-		NodeIP            string
-		ControlPlaneIP    string
+		CertDir             string
+		ServiceCIDR         string
+		PodSubnet           string
+		AdvertiseAddress    string
+		APIServerPort       int
+		KubernetesVersion   string
+		EtcdDataDir         string
+		ClusterName         string
+		NodeName            string
+		DNSDomain           string
+		CRISocket           string
+		ImageRepository     string
+		ComponentOptions    []componentOptions
+		FeatureArgs         map[string]bool
+		NoTaintMaster       bool
+		NodeIP              string
+		ControlPlaneAddress string
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
@@ -99,7 +99,9 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
 		DNSDomain:         k8s.DNSDomain,
 		NodeIP:            n.IP,
-		ControlPlaneIP:    cp.IP,
+		// NOTE: If set to an specific VM IP, things may break if the IP changes on host restart
+		// For multi-node, we may need to figure out an alternate strategy, like DNS or hosts files
+		ControlPlaneAddress: "localhost",
 	}
 
 	if k8s.ServiceCIDR != "" {
