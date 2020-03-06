@@ -77,8 +77,6 @@ jobs:
     - name: Docker Info
       shell: bash
       run: |
-        sudo apt-get update
-        sudo apt-get upgrade docker
         docker info || true
         docker version || true
         docker ps || true

@@ -40,8 +40,11 @@ const (
 )
 
 var (
+	// Repository is the container repository where all kic images are stored
+	Repository = "gcr.io/k8s-minikube/kicbase"
+
 	// BaseImage is the base image is used to spin up kic containers. it uses same base-image as kind.
-	BaseImage = fmt.Sprintf("gcr.io/k8s-minikube/kicbase:%s@sha256:%s", Version, baseImageSHA)
+	BaseImage = fmt.Sprintf("%s:%s@sha256:%s", Repository, Version, baseImageSHA)
 )
 
 // Config is configuration for the kic driver used by registry
