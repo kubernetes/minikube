@@ -69,6 +69,25 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 	return deleteErrs
 }
 
+// DeleteContainersByID deletes a container by ID or Name
+func DeleteContainersByID(ociBin string, name string) error {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
+	_, err := ContainerStatus(ociBin, name)
+	// only try to delete if docker/podman inspect returns
+	// if it doesn't it means docker daemon is stuck and needs restart
+	if err != nil {
+		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways", ociBin, ociBin)
+	}
+	// try to delete anyways
+	cmd := exec.Command(ociBin, "rm", "-f", "-v", name)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "delete container %s: output %s", name, out)
+	}
+	return nil
+}
+
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	if err := PointToHostDockerDaemon(); err != nil {
@@ -217,11 +236,32 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 		return "", errors.Wrap(err, "point host docker daemon")
 	}
 	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID)
-	id, err := cmd.CombinedOutput()
-	if err != nil {
-		id = []byte{}
+	out, err := cmd.CombinedOutput()
+	if err != nil { // don't return error if not found, only return empty string
+		if strings.Contains(string(out), "Error: No such object:") || strings.Contains(string(out), "unable to find") {
+			err = nil
+		}
+		out = []byte{}
 	}
-	return string(id), err
+	return string(out), err
+}
+
+// IsCreatedByMinikube returns true if the container was created by minikube
+// with default assumption that it is not created by minikube when we don't know for sure
+func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
+	if err := PointToHostDockerDaemon(); err != nil {
+		glog.Warningf("Failed to point to host docker daemon")
+		return false
+	}
+	cmd := exec.Command(ociBinary, "inspect", nameOrID, "--format", "{{.Config.Labels}}")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return false
+	}
+	if strings.Contains(string(out), fmt.Sprintf("%s:true", CreatedByLabelKey)) {
+		return true
+	}
+	return false
 }
 
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
