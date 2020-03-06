@@ -57,7 +57,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 		// if it doesn't it means docker daemon is stuck and needs restart
 		if err != nil {
 			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: %s daemon is stuck. please try again!", c, ociBin))
-			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s.", ociBin, ociBin)
+			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. :%v", ociBin, ociBin, err)
 			continue
 		}
 		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
@@ -75,10 +75,8 @@ func DeleteContainer(ociBin string, name string) error {
 		return errors.Wrap(err, "point host docker daemon")
 	}
 	_, err := ContainerStatus(ociBin, name)
-	// only try to delete if docker/podman inspect returns
-	// if it doesn't it means docker daemon is stuck and needs restart
 	if err != nil {
-		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways", ociBin, ociBin)
+		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways: %v", ociBin, ociBin, err)
 	}
 	// try to delete anyways
 	cmd := exec.Command(ociBin, "rm", "-f", "-v", name)

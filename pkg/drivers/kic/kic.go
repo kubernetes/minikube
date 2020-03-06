@@ -102,14 +102,12 @@ func (d *Driver) Create() error {
 		if oci.IsCreatedByMinikube(d.OCIBinary, params.Name) {
 			glog.Info("Found already existing abandoned minikube container, will try to delete.")
 			if err := oci.DeleteContainer(d.OCIBinary, params.Name); err != nil {
-				glog.Errorf("Failed to delete a conflicting minikube container %s. You might need to restart your %s daemon and delete it manually and try again.", params.Name, params.OCIBinary)
-				return errors.Wrapf(err, "deleting already in-use mini-created container %s", params.Name)
+				glog.Errorf("Failed to delete a conflicting minikube container %s. You might need to restart your %s daemon and delete it manually and try again: %v", params.Name, params.OCIBinary, err)
 			}
 		} else {
 			// The conflicting container name was not created by minikube
 			// user has a container that conflicts with minikube profile name, will not delete users container.
-			glog.Errorf("You have a container named %s that conflicts with minikube profile name %s, please either remove manually or choose a different minikbue profile name", params.Name, params.Name)
-			return errors.Wrap(err, "conflicting name with user's container")
+			return errors.Wrapf(err, "user has a conflicting container name %q with minikube container. Needs to be deleted by user's consent.", params.Name)
 		}
 	}
 
