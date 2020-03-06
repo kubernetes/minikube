@@ -92,6 +92,25 @@ func (d *Driver) Create() error {
 			ContainerPort: constants.DockerDaemonPort,
 		},
 	)
+
+	id, err := oci.ContainerID(d.OCIBinary, params.Name)
+	if err != nil {
+		return errors.Wrap(err, "check container exists")
+	}
+	if id != "" {
+		// if container was created by minikube it is safe to delete it.
+		if oci.IsCreatedByMinikube(d.OCIBinary, id) {
+			if err := oci.DeleteContainersByID(d.OCIBinary, id); err != nil {
+				glog.Errorf("Failed to delete a conflicting minikube container %s. You might need to restart your %s daemon and delete it manually and try again.", id)
+				return errors.Wrapf(err, "deleting already in-use mini-created container %s", id)
+			}
+		}
+		// if not the conflicting container name is not created by minikube
+		// that means it is a user has a container that conflicts with minikube profile name
+		glog.Errorf("You have a container named %s that conflicts with minikube profile name %s, please either remove manually or choose a different minikbue profile name", id)
+		return errors.Wrap(err, "conflicting name with user's container")
+	}
+
 	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
 	}
