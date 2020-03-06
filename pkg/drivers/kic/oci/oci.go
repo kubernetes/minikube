@@ -84,7 +84,6 @@ func DeleteContainer(ociBin string, name string) error {
 
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
-
 	runArgs := []string{
 		"-d", // run the container detached
 		"-t", // allocate a tty for entrypoint logs
@@ -138,30 +137,17 @@ func CreateContainerNode(p CreateParams) error {
 	// adds node specific args
 	runArgs = append(runArgs, p.ExtraArgs...)
 
-	enabled, err := isUsernsRemapEnabled(p.OCIBinary)
-	if err != nil {
-		glog.Warningf("Failed to detect if userns is enabled: %v", err)
-	}
-	if enabled {
+	if enabled := isUsernsRemapEnabled(p.OCIBinary); enabled {
 		// We need this argument in order to make this command work
 		// in systems that have userns-remap enabled on the docker daemon
 		runArgs = append(runArgs, "--userns=host")
 	}
 
-	_, err = createContainer(p.OCIBinary,
-		p.Image,
-		withRunArgs(runArgs...),
-		withMounts(p.Mounts),
-		withPortMappings(p.PortMappings),
-	)
-	if err != nil {
-		return errors.Wrap(err, "create a kic node")
-	}
-	return nil
+	return createContainer(p.OCIBinary, p.Image, withRunArgs(runArgs...), withMounts(p.Mounts), withPortMappings(p.PortMappings))
 }
 
 // CreateContainer creates a container with "docker/podman run"
-func createContainer(ociBinary string, image string, opts ...createOpt) ([]string, error) {
+func createContainer(ociBinary string, image string, opts ...createOpt) error {
 	o := &createOpts{}
 	for _, opt := range opts {
 		o = opt(o)
@@ -185,23 +171,13 @@ func createContainer(ociBinary string, image string, opts ...createOpt) ([]strin
 	args = append(args, runArgs...)
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
-	cmd := exec.Command(ociBinary, args...)
-	var buff bytes.Buffer
-	cmd.Stdout = &buff
-	cmd.Stderr = &buff
-	err := cmd.Run()
-	scanner := bufio.NewScanner(&buff)
-	var output []string
 
-	for scanner.Scan() {
-		output = append(output, scanner.Text())
-	}
-
+	out, err := exec.Command(ociBinary, args...).CombinedOutput()
 	if err != nil {
-		return output, errors.Wrapf(err, "args: %v  output: %s ", args, output)
+		return errors.Wrapf(err, "failed args: %v output: %s", args, out)
 	}
 
-	return output, nil
+	return nil
 }
 
 // Copy copies a local asset into the container
@@ -348,14 +324,14 @@ func generateMountBindings(mounts ...Mount) []string {
 }
 
 // isUsernsRemapEnabled checks if userns-remap is enabled in docker
-func isUsernsRemapEnabled(ociBinary string) (bool, error) {
+func isUsernsRemapEnabled(ociBinary string) bool {
 	cmd := exec.Command(ociBinary, "info", "--format", "'{{json .SecurityOptions}}'")
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff
 	err := cmd.Run()
 	if err != nil {
-		return false, nil
+		return false
 	}
 
 	scanner := bufio.NewScanner(&buff)
@@ -367,11 +343,11 @@ func isUsernsRemapEnabled(ociBinary string) (bool, error) {
 
 	if len(lines) > 0 {
 		if strings.Contains(lines[0], "name=userns") {
-			return true, nil
+			return true
 		}
 	}
 
-	return false, nil
+	return false
 }
 
 func generatePortMappings(portMappings ...PortMapping) []string {
