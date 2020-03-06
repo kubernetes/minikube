@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -59,7 +60,7 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 	for _, name := range constants.KubernetesReleaseBinaries {
 		name := name
 		g.Go(func() error {
-			src, err := download.Binary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)
+			src, err := download.Binary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH, &getter.FileGetter{})
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", name)
 			}

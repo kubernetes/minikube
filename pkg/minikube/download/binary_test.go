@@ -21,6 +21,8 @@ import (
 	"os"
 	"runtime"
 	"testing"
+
+	"github.com/hashicorp/go-getter"
 )
 
 func TestCacheBinary(t *testing.T) {
@@ -105,12 +107,23 @@ func TestCacheBinary(t *testing.T) {
 	for _, test := range tc {
 		t.Run(test.desc, func(t *testing.T) {
 			os.Setenv("MINIKUBE_HOME", test.minikubeHome)
-			_, err := Binary(test.binary, test.version, test.osName, test.archName)
-			if err != nil && !test.err {
-				t.Fatalf("Got unexpected error %v", err)
+			gtr := &getter.MockGetter{}
+			_, err := Binary(test.binary, test.version, test.osName, test.archName, gtr)
+			if !test.err {
+				if err != nil {
+					t.Fatalf("Got unexpected error %v", err)
+				}
+				if !gtr.GetFileCalled {
+					t.Fatalf("GetFile not called for %v", test)
+				}
 			}
-			if err == nil && test.err {
-				t.Fatalf("Expected error but got %v", err)
+			if test.err {
+				if err == nil {
+					t.Fatalf("Expected error but got %v", err)
+				}
+				if gtr.GetFileCalled {
+					t.Fatalf("GetFile should not be called for %v", test)
+				}
 			}
 		})
 	}

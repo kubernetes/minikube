@@ -20,6 +20,7 @@ import (
 	"path"
 	"runtime"
 
+	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 	"golang.org/x/sync/errgroup"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -29,14 +30,14 @@ import (
 )
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
-func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) error {
+func CacheBinariesForBootstrapper(version string, clusterBootstrapper string, gtr getter.Getter) error {
 	binaries := bootstrapper.GetCachedBinaryList(clusterBootstrapper)
 
 	var g errgroup.Group
 	for _, bin := range binaries {
 		bin := bin // https://golang.org/doc/faq#closures_and_goroutines
 		g.Go(func() error {
-			if _, err := download.Binary(bin, version, "linux", runtime.GOARCH); err != nil {
+			if _, err := download.Binary(bin, version, "linux", runtime.GOARCH, gtr); err != nil {
 				return errors.Wrapf(err, "caching binary %s", bin)
 			}
 			return nil

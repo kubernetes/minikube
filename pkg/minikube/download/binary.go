@@ -44,7 +44,7 @@ func binaryWithChecksumURL(binaryName, version, osName, archName string) (string
 }
 
 // Binary will download a binary onto the host
-func Binary(binary, version, osName, archName string) (string, error) {
+func Binary(binary, version, osName, archName string, gtr getter.Getter) (string, error) {
 	targetDir := localpath.MakeMiniPath("cache", osName, version)
 	targetFilepath := path.Join(targetDir, binary)
 
@@ -70,10 +70,15 @@ func Binary(binary, version, osName, archName string) (string, error) {
 		Mode:    getter.ClientModeFile,
 		Options: []getter.ClientOption{getter.WithProgress(DefaultProgressBar)},
 	}
+	gtr.SetClient(client)
 
 	glog.Infof("Downloading: %+v", client)
-	if err := client.Get(); err != nil {
+	if err := gtr.GetFile(targetFilepath, url); err != nil {
 		return "", errors.Wrapf(err, "download failed: %s", url)
+	}
+
+	if _, ok := gtr.(*getter.MockGetter); ok {
+		return targetFilepath, nil
 	}
 
 	if osName == runtime.GOOS && archName == runtime.GOARCH {
