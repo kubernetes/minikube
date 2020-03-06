@@ -201,10 +201,7 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	if err != nil {
 		t.Errorf("getting list of docker images failed: %v\nOutput: %s", err, string(images))
 	}
-	// docker on github actions supplies the digest for the kic images as <none> type
-	// upgrading to the latest version of docker doesn't fix the issue
-	// so, instead, check that repository:tag is correct
-	want := fmt.Sprintf("%s:%s", kic.Repository, kic.Version)
+	want := kic.BaseImage
 	if !strings.Contains(string(images), want) {
 		t.Errorf("expected image does not exist in local daemon; got:\n%s wanted:\n%s", string(images), want)
 	}
