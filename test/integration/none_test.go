@@ -83,7 +83,7 @@ func TestChangeNoneUser(t *testing.T) {
 			t.Errorf("stat(%s): %v", p, err)
 			continue
 		}
-		if info == nil && info.Sys() == nil {
+		if info == nil || info.Sys() == nil {
 			t.Errorf("nil info for %s", p)
 			continue
 		}
