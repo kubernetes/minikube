@@ -197,7 +197,7 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	}
 
 	// Make sure this image exists in the docker daemon
-	images, err := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}").Output()
+	images, err := exec.Command("docker", "images", "--digests", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}").Output()
 	if err != nil {
 		t.Errorf("getting list of docker images failed: %v\nOutput: %s", err, string(images))
 	}
