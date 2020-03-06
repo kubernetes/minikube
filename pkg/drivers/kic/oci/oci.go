@@ -57,7 +57,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 		// if it doesn't it means docker daemon is stuck and needs restart
 		if err != nil {
 			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: %s daemon is stuck. please try again!", c, ociBin))
-			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s.", ociBin, ociBin)
+			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. :%v", ociBin, ociBin, err)
 			continue
 		}
 		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
@@ -67,6 +67,23 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 
 	}
 	return deleteErrs
+}
+
+// DeleteContainer deletes a container by ID or Name
+func DeleteContainer(ociBin string, name string) error {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return errors.Wrap(err, "point host docker daemon")
+	}
+	_, err := ContainerStatus(ociBin, name)
+	if err != nil {
+		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways: %v", ociBin, ociBin, err)
+	}
+	// try to delete anyways
+	cmd := exec.Command(ociBin, "rm", "-f", "-v", name)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "delete container %s: output %s", name, out)
+	}
+	return nil
 }
 
 // CreateContainerNode creates a new container node
@@ -217,11 +234,57 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 		return "", errors.Wrap(err, "point host docker daemon")
 	}
 	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID)
-	id, err := cmd.CombinedOutput()
-	if err != nil {
-		id = []byte{}
+	out, err := cmd.CombinedOutput()
+	if err != nil { // don't return error if not found, only return empty string
+		if strings.Contains(string(out), "Error: No such object:") || strings.Contains(string(out), "unable to find") {
+			err = nil
+		}
+		out = []byte{}
 	}
-	return string(id), err
+	return string(out), err
+}
+
+// ContainerExists checks if container name exists (either running or exited)
+func ContainerExists(ociBin string, name string) (bool, error) {
+	if err := PointToHostDockerDaemon(); err != nil {
+		return false, errors.Wrap(err, "point host docker daemon")
+	}
+	// allow no more than 3 seconds for this.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, ociBin, "ps", "-a", "--format", "{{.Names}}")
+	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return false, fmt.Errorf("time out running %s ps -a", ociBin)
+	}
+	if err != nil {
+		return false, errors.Wrapf(err, string(out))
+	}
+	containers := strings.Split(string(out), "\n")
+	for _, c := range containers {
+		if strings.TrimSpace(c) == name {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+// IsCreatedByMinikube returns true if the container was created by minikube
+// with default assumption that it is not created by minikube when we don't know for sure
+func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
+	if err := PointToHostDockerDaemon(); err != nil {
+		glog.Warningf("Failed to point to host docker daemon")
+		return false
+	}
+	cmd := exec.Command(ociBinary, "inspect", nameOrID, "--format", "{{.Config.Labels}}")
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return false
+	}
+	if strings.Contains(string(out), fmt.Sprintf("%s:true", CreatedByLabelKey)) {
+		return true
+	}
+	return false
 }
 
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
