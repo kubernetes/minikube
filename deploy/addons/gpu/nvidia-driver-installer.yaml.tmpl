@@ -72,5 +72,5 @@ spec:
         - name: root-mount
           mountPath: /root
       containers:
-      - image: "{{default "gcr.io/google-containers" .ImageRepository}}/pause:2.0"
+      - image: "{{default "k8s.gcr.io" .ImageRepository}}/pause:2.0"
         name: pause
