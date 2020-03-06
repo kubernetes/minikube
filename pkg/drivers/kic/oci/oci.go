@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/util/retry"
 
 	"fmt"
 	"os/exec"
@@ -164,6 +165,23 @@ func CreateContainerNode(p CreateParams) error {
 	if err != nil {
 		return errors.Wrap(err, "create a kic node")
 	}
+
+	checkRunning := func() error {
+		s, err := ContainerStatus(p.OCIBinary, p.Name)
+		if err != nil {
+			return fmt.Errorf("temporary error checking status for %q : %v", p.Name, err)
+		}
+		if s != "running" {
+			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
+		}
+		return nil
+	}
+
+	// retry up to up 5 seconds to make sure the created container status is running.
+	if err = retry.Expo(checkRunning, 13*time.Millisecond, time.Second*5); err != nil {
+		glog.Warningf("The created container %q failed to report to be running in 5 seconds.", p.Name)
+	}
+
 	return nil
 }
 
