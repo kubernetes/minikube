@@ -37,12 +37,6 @@ func deleteOrphanedKIC(ociBin string, name string) {
 	if !(ociBin == oci.Podman || ociBin == oci.Docker) {
 		return
 	}
-	if ociBin == oci.Docker {
-		if err := oci.PointToHostDockerDaemon(); err != nil {
-			glog.Infof("Failed to point to host docker-damon: %v", err)
-			return
-		}
-	}
 
 	_, err := oci.ContainerStatus(ociBin, name)
 	if err != nil {
