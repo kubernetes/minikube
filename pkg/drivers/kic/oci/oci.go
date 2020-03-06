@@ -69,8 +69,8 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 	return deleteErrs
 }
 
-// DeleteContainersByID deletes a container by ID or Name
-func DeleteContainersByID(ociBin string, name string) error {
+// DeleteContainer deletes a container by ID or Name
+func DeleteContainer(ociBin string, name string) error {
 	if err := PointToHostDockerDaemon(); err != nil {
 		return errors.Wrap(err, "point host docker daemon")
 	}
@@ -248,13 +248,16 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 
 // ContainerExists checks if container name exists (either running or exited)
 func ContainerExists(ociBin string, name string) (bool, error) {
-	// allow no more than 3 seconds for this. 
+	if err := PointToHostDockerDaemon(); err != nil {
+		return false, errors.Wrap(err, "point host docker daemon")
+	}
+	// allow no more than 3 seconds for this.
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	cmd := exec.CommandContext(ctx,ociBin, "ps", "-a", "--format", "{{.Names}}")
+	cmd := exec.CommandContext(ctx, ociBin, "ps", "-a", "--format", "{{.Names}}")
 	out, err := cmd.CombinedOutput()
 	if ctx.Err() == context.DeadlineExceeded {
-		return false,fmt.Errorf("time out running %s ps -a",ociBin)
+		return false, fmt.Errorf("time out running %s ps -a", ociBin)
 	}
 	if err != nil {
 		return false, errors.Wrapf(err, string(out))
