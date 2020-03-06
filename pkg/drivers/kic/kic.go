@@ -106,8 +106,8 @@ func (d *Driver) Create() error {
 				return errors.Wrapf(err, "deleting already in-use mini-created container %s", params.Name)
 			}
 		} else {
-			// if not the conflicting container name is not created by minikube
-			// that means it is a user has a container that conflicts with minikube profile name
+			// The conflicting container name was not created by minikube
+			// user has a container that conflicts with minikube profile name, will not delete users container.
 			glog.Errorf("You have a container named %s that conflicts with minikube profile name %s, please either remove manually or choose a different minikbue profile name", params.Name, params.Name)
 			return errors.Wrap(err, "conflicting name with user's container")
 		}
