@@ -102,7 +102,7 @@ func (d *Driver) Create() error {
 		if oci.IsCreatedByMinikube(d.OCIBinary, params.Name) {
 			glog.Info("Found already existing abandoned minikube container, will try to delete.")
 			if err := oci.DeleteContainer(d.OCIBinary, params.Name); err != nil {
-				glog.Errorf("Failed to delete a conflicting minikube container %s. You might need to restart your %s daemon and delete it manually and try again.", params.Name)
+				glog.Errorf("Failed to delete a conflicting minikube container %s. You might need to restart your %s daemon and delete it manually and try again.", params.Name, params.OCIBinary)
 				return errors.Wrapf(err, "deleting already in-use mini-created container %s", params.Name)
 			}
 		} else {
