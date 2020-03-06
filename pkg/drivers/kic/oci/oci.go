@@ -39,18 +39,16 @@ import (
 // if there no containers found with the given 	label, it will return nil
 func DeleteContainersByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
-	if ociBin == Docker {
-		if err := PointToHostDockerDaemon(); err != nil {
-			return []error{errors.Wrap(err, "point host docker daemon")}
-		}
-	}
+
 	cs, err := listContainersByLabel(ociBin, label)
 	if err != nil {
 		return []error{fmt.Errorf("listing containers by label %q", label)}
 	}
+
 	if len(cs) == 0 {
 		return nil
 	}
+
 	for _, c := range cs {
 		_, err := ContainerStatus(ociBin, c)
 		// only try to delete if docker/podman inspect returns
@@ -71,9 +69,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 
 // DeleteContainer deletes a container by ID or Name
 func DeleteContainer(ociBin string, name string) error {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker daemon")
-	}
+
 	_, err := ContainerStatus(ociBin, name)
 	if err != nil {
 		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways: %v", ociBin, ociBin, err)
@@ -88,9 +84,6 @@ func DeleteContainer(ociBin string, name string) error {
 
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker daemon")
-	}
 
 	runArgs := []string{
 		"-d", // run the container detached
@@ -169,10 +162,6 @@ func CreateContainerNode(p CreateParams) error {
 
 // CreateContainer creates a container with "docker/podman run"
 func createContainer(ociBinary string, image string, opts ...createOpt) ([]string, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return nil, errors.Wrap(err, "point host docker daemon")
-	}
-
 	o := &createOpts{}
 	for _, opt := range opts {
 		o = opt(o)
@@ -187,10 +176,12 @@ func createContainer(ociBinary string, image string, opts ...createOpt) ([]strin
 	}
 	// construct the actual docker run argv
 	args := []string{"run"}
+
 	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
 	if ociBinary == Podman {
 		args = append(args, "--cgroup-manager", "cgroupfs")
 	}
+
 	args = append(args, runArgs...)
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
@@ -201,6 +192,7 @@ func createContainer(ociBinary string, image string, opts ...createOpt) ([]strin
 	err := cmd.Run()
 	scanner := bufio.NewScanner(&buff)
 	var output []string
+
 	for scanner.Scan() {
 		output = append(output, scanner.Text())
 	}
@@ -208,82 +200,81 @@ func createContainer(ociBinary string, image string, opts ...createOpt) ([]strin
 	if err != nil {
 		return output, errors.Wrapf(err, "args: %v  output: %s ", args, output)
 	}
+
 	return output, nil
 }
 
 // Copy copies a local asset into the container
 func Copy(ociBinary string, ociID string, targetDir string, fName string) error {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker daemon")
-	}
 	if _, err := os.Stat(fName); os.IsNotExist(err) {
 		return errors.Wrapf(err, "error source %s does not exist", fName)
 	}
+
 	destination := fmt.Sprintf("%s:%s", ociID, targetDir)
 	cmd := exec.Command(ociBinary, "cp", fName, destination)
-	err := cmd.Run()
-	if err != nil {
+	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "error copying %s into node", fName)
 	}
+
 	return nil
 }
 
 // ContainerID returns id of a container name
 func ContainerID(ociBinary string, nameOrID string) (string, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return "", errors.Wrap(err, "point host docker daemon")
-	}
 	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID)
 	out, err := cmd.CombinedOutput()
+
 	if err != nil { // don't return error if not found, only return empty string
 		if strings.Contains(string(out), "Error: No such object:") || strings.Contains(string(out), "unable to find") {
 			err = nil
 		}
 		out = []byte{}
 	}
+
 	return string(out), err
 }
 
 // ContainerExists checks if container name exists (either running or exited)
 func ContainerExists(ociBin string, name string) (bool, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return false, errors.Wrap(err, "point host docker daemon")
-	}
 	// allow no more than 3 seconds for this.
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
+
 	cmd := exec.CommandContext(ctx, ociBin, "ps", "-a", "--format", "{{.Names}}")
 	out, err := cmd.CombinedOutput()
+
 	if ctx.Err() == context.DeadlineExceeded {
 		return false, fmt.Errorf("time out running %s ps -a", ociBin)
 	}
+
 	if err != nil {
 		return false, errors.Wrapf(err, string(out))
 	}
+
 	containers := strings.Split(string(out), "\n")
 	for _, c := range containers {
 		if strings.TrimSpace(c) == name {
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
 // IsCreatedByMinikube returns true if the container was created by minikube
 // with default assumption that it is not created by minikube when we don't know for sure
 func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
-	if err := PointToHostDockerDaemon(); err != nil {
-		glog.Warningf("Failed to point to host docker daemon")
-		return false
-	}
 	cmd := exec.Command(ociBinary, "inspect", nameOrID, "--format", "{{.Config.Labels}}")
 	out, err := cmd.CombinedOutput()
+
 	if err != nil {
 		return false
 	}
+
 	if strings.Contains(string(out), fmt.Sprintf("%s:true", CreatedByLabelKey)) {
 		return true
 	}
+
 	return false
 }
 
@@ -294,9 +285,7 @@ func ListOwnedContainers(ociBinary string) ([]string, error) {
 
 // inspect return low-level information on containers
 func inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return nil, errors.Wrap(err, "point host docker daemon")
-	}
+
 	cmd := exec.Command(ociBinary, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
@@ -360,27 +349,28 @@ func generateMountBindings(mounts ...Mount) []string {
 
 // isUsernsRemapEnabled checks if userns-remap is enabled in docker
 func isUsernsRemapEnabled(ociBinary string) (bool, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return false, errors.Wrap(err, "point host docker daemon")
-	}
 	cmd := exec.Command(ociBinary, "info", "--format", "'{{json .SecurityOptions}}'")
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff
 	err := cmd.Run()
-	scanner := bufio.NewScanner(&buff)
-	var lines []string
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
 	if err != nil {
 		return false, nil
 	}
+
+	scanner := bufio.NewScanner(&buff)
+	var lines []string
+
+	for scanner.Scan() {
+		lines = append(lines, scanner.Text())
+	}
+
 	if len(lines) > 0 {
 		if strings.Contains(lines[0], "name=userns") {
 			return true, nil
 		}
 	}
+
 	return false, nil
 }
 
@@ -422,9 +412,7 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 
 // listContainersByLabel returns all the container names with a specified label
 func listContainersByLabel(ociBinary string, label string) ([]string, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return nil, errors.Wrap(err, "point host docker daemon")
-	}
+
 	// allow no more than 5 seconds for docker ps
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -462,22 +450,21 @@ func PointToHostDockerDaemon() error {
 
 // ContainerStatus returns status of a container running,exited,...
 func ContainerStatus(ociBin string, name string) (string, error) {
-	if ociBin == Docker {
-		if err := PointToHostDockerDaemon(); err != nil {
-			return "", errors.Wrap(err, "point host docker daemon")
-		}
-	}
 	// allow no more than 2 seconds for this. when this takes long this means deadline passed
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
+
 	cmd := exec.CommandContext(ctx, ociBin, "inspect", name, "--format={{.State.Status}}")
 	out, err := cmd.CombinedOutput()
+
 	if ctx.Err() == context.DeadlineExceeded {
 		glog.Warningf("%s inspect %s took longer than normal. Restarting your %s daemon might fix this issue.", ociBin, name, ociBin)
 		return strings.TrimSpace(string(out)), fmt.Errorf("inspect %s timeout", name)
 	}
+
 	if err != nil {
 		return string(out), errors.Wrapf(err, "inspecting container: output %s", out)
 	}
+
 	return strings.TrimSpace(string(out)), nil
 }
