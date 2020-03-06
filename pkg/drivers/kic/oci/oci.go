@@ -246,6 +246,28 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 	return string(out), err
 }
 
+// ContainerExists checks if container name exists (either running or exited)
+func ContainerExists(ociBin string, name string) (bool, error) {
+	// allow no more than 3 seconds for this. 
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx,ociBin, "ps", "-a", "--format", "{{.Names}}")
+	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		return false,fmt.Errorf("time out running %s ps -a",ociBin)
+	}
+	if err != nil {
+		return false, errors.Wrapf(err, string(out))
+	}
+	containers := strings.Split(string(out), "\n")
+	for _, c := range containers {
+		if strings.TrimSpace(c) == name {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
 // IsCreatedByMinikube returns true if the container was created by minikube
 // with default assumption that it is not created by minikube when we don't know for sure
 func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
