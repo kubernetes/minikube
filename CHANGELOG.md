@@ -64,7 +64,6 @@ Thank you to everyone who helped with this extraordinary release. We now invite 
 - Tam Mach
 - Thomas Strömberg
 - anencore94
-- priyawadhwa
 - sayboras
 - vikkyomkar
 
@@ -110,7 +109,6 @@ Thank you to our wonderful and amazing contributors who contributed to this bug-
 - Tam Mach
 - edge0701
 - go_vargo
-- sayboras
 
 ## Version 1.7.2 - 2020-02-07
 
