@@ -59,10 +59,12 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
 	defer machineAPI.Close()
 
+	// wait for preloaded tarball to finish downloading before configuring runtimes
+	waitCacheRequiredImages(&cacheGroup)
+
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
-	waitCacheRequiredImages(&cacheGroup)
 
 	//TODO(sharifelgamal): Part out the cluster-wide operations, perhaps using the "primary" param
 
