@@ -59,6 +59,7 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
 	defer machineAPI.Close()
 
+	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
 	// configure the runtime (docker, containerd, crio)
