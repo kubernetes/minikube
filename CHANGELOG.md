@@ -2,7 +2,7 @@
 
 ## Version 1.8.1 - 2020-03-06
 
-Minor bug fixe:
+Minor bug fix:
 
 * Block on preload download before extracting, fall back to caching images if it fails [#6928](https://github.com/kubernetes/minikube/pull/6928)
 * Cleanup remaining PointToHostDockerDaemon calls [#6925](https://github.com/kubernetes/minikube/pull/6925)
