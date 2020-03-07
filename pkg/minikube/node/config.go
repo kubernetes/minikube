@@ -68,7 +68,7 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 	}
 	if !driver.IsKIC(drvName) {
 		if err := cr.Preload(k8s.KubernetesVersion); err != nil {
-			glog.Infof("Failed to preload container runtime %s: %v, falling back to caching images", cr.Name(), err)
+			glog.Errorf("Failed to preload container runtime %s: %v, falling back to caching images", cr.Name(), err)
 			if err := machine.CacheImagesForBootstrapper(k8s.ImageRepository, k8s.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 				exit.WithError("Failed to cache images", err)
 			}
