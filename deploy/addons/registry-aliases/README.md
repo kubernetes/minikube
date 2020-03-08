@@ -7,7 +7,6 @@ An addon to minikube that can help push and pull from the minikube registry usin
 ### Start minikube
 
 ```shell
-minikube profile demo
 minikube start -p demo
 ```
 This addon depends on `registry` addon, it need to be enabled before the alias addon is installed:
