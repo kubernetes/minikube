@@ -413,7 +413,7 @@ func TestGetHostStatus(t *testing.T) {
 
 func TestCreateSSHShell(t *testing.T) {
 	api := tests.NewMockAPI(t)
-	// Setting the default client to native gives much better performance.
+	// Setting the default ssh client to native for test stability.
 	ssh.SetDefaultClient(ssh.Native)
 
 	s, _ := tests.NewSSHServer(t)
