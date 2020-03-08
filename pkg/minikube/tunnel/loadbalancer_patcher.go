@@ -44,16 +44,19 @@ type LoadBalancerEmulator struct {
 	patchConverter patchConverter
 }
 
+// PatchServices will update all load balancer services
 func (l *LoadBalancerEmulator) PatchServices() ([]string, error) {
 	return l.applyOnLBServices(l.updateService)
 }
 
+// PatchServiceIP will patch the given service and ip
 func (l *LoadBalancerEmulator) PatchServiceIP(restClient rest.Interface, svc core.Service, ip string) error {
 	// TODO: do not ignore result
 	_, err := l.updateServiceIP(restClient, svc, ip)
 	return err
 }
 
+// Cleanup will clean up all load balancer services
 func (l *LoadBalancerEmulator) Cleanup() ([]string, error) {
 	return l.applyOnLBServices(l.cleanupService)
 }
@@ -143,6 +146,7 @@ func (l *LoadBalancerEmulator) cleanupService(restClient rest.Interface, svc cor
 
 }
 
+// NewLoadBalancerEmulator creates a new LoadBalancerEmulator
 func NewLoadBalancerEmulator(corev1Client typed_core.CoreV1Interface) LoadBalancerEmulator {
 	return LoadBalancerEmulator{
 		coreV1Client:   corev1Client,

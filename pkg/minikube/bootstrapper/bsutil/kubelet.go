@@ -28,9 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
-// NewKubeletConfig generates a new systemd unit containing a configured kubelet
-// based on the options present in the KubernetesConfig.
-func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) ([]byte, error) {
+func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) (map[string]string, error) {
 	k8s := mc.KubernetesConfig
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
@@ -79,7 +77,18 @@ func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 		extraOpts["feature-gates"] = kubeletFeatureArgs
 	}
 
+	return extraOpts, nil
+}
+
+// NewKubeletConfig generates a new systemd unit containing a configured kubelet
+// based on the options present in the KubernetesConfig.
+func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) ([]byte, error) {
 	b := bytes.Buffer{}
+	extraOpts, err := extraKubeletOpts(mc, nc, r)
+	if err != nil {
+		return nil, err
+	}
+	k8s := mc.KubernetesConfig
 	opts := struct {
 		ExtraOptions     string
 		ContainerRuntime string
