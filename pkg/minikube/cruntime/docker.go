@@ -274,6 +274,11 @@ func (r *Docker) Preload(k8sVersion string) error {
 	tarballPath := download.TarballPath(k8sVersion)
 	dest := "/preloaded.tar.lz4"
 
+	c := exec.Command("which", "lz4")
+	if _, err := r.Runner.RunCmd(c); err != nil {
+		return errors.Wrapf(err, "check lz4 available.")
+	}
+
 	// Copy over tarball into host
 	fa, err := assets.NewFileAsset(tarballPath, filepath.Dir(dest), filepath.Base(dest), "0644")
 	if err != nil {
