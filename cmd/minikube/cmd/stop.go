@@ -62,7 +62,7 @@ func runStop(cmd *cobra.Command, args []string) {
 		nonexistent := stop(api, *cc, n)
 
 		if !nonexistent {
-			out.T(out.Stopped, `"{{.node_name}}" stopped.`, out.V{"node_name": n.Name})
+			out.T(out.Stopped, `Node: "{{.node_name}}" stopped.`, out.V{"node_name": n.Name})
 		}
 	}
 
