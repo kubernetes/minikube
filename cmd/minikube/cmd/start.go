@@ -514,7 +514,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		return
 	}
 
-	cp, err := config.PrimaryControlPlane(*existing)
+	cp, err := config.PrimaryControlPlane(existing)
 	if err != nil {
 		exit.WithError("Error getting primary cp", err)
 	}

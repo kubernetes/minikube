@@ -53,7 +53,7 @@ func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	if k8s.NetworkPlugin != "" {
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}
-	cp, err := config.PrimaryControlPlane(mc)
+	cp, err := config.PrimaryControlPlane(&mc)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting master node")
 	}

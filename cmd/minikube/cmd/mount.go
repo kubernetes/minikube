@@ -109,7 +109,7 @@ var mountCmd = &cobra.Command{
 			exit.WithError("Error getting config", err)
 		}
 
-		cp, err := config.PrimaryControlPlane(*cc)
+		cp, err := config.PrimaryControlPlane(cc)
 		if err != nil {
 			exit.WithError("Error getting primary cp", err)
 		}

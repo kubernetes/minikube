@@ -82,7 +82,7 @@ var dashboardCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 
-		cp, err := config.PrimaryControlPlane(*cc)
+		cp, err := config.PrimaryControlPlane(cc)
 		if err != nil {
 			exit.WithError("Error getting primary control plane", err)
 		}
