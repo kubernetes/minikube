@@ -50,7 +50,7 @@ var sshCmd = &cobra.Command{
 			exit.WithError("Error getting config", err)
 		}
 		// TODO: allow choice of node to ssh into
-		cp, err := config.PrimaryControlPlane(*cc)
+		cp, err := config.PrimaryControlPlane(cc)
 		if err != nil {
 			exit.WithError("Error getting primary control plane", err)
 		}

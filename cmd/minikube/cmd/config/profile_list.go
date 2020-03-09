@@ -76,7 +76,7 @@ var printProfilesTable = func() {
 	defer api.Close()
 
 	for _, p := range validProfiles {
-		cp, err := config.PrimaryControlPlane(*p.Config)
+		cp, err := config.PrimaryControlPlane(p.Config)
 		if err != nil {
 			exit.WithError("error getting primary control plane", err)
 		}
@@ -117,7 +117,7 @@ var printProfilesJSON = func() {
 
 	validProfiles, invalidProfiles, err := config.ListProfiles()
 	for _, v := range validProfiles {
-		cp, err := config.PrimaryControlPlane(*v.Config)
+		cp, err := config.PrimaryControlPlane(v.Config)
 		if err != nil {
 			exit.WithError("error getting primary control plane", err)
 		}

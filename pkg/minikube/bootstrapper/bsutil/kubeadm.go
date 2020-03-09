@@ -50,7 +50,7 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 	}
 
 	// In case of no port assigned, use default
-	cp, err := config.PrimaryControlPlane(mc)
+	cp, err := config.PrimaryControlPlane(&mc)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting control plane")
 	}
