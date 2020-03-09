@@ -60,7 +60,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 
 	// enable addons, both old and new!
 	if existingAddons != nil {
-		addons.Start(viper.GetString(config.MachineProfile), existingAddons, config.AddonList)
+		addons.Start(viper.GetString(config.ProfileName), existingAddons, config.AddonList)
 	}
 
 	if err := bs.UpdateNode(cc, n, cr); err != nil {
@@ -87,7 +87,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	if err != nil {
 		exit.WithError("Getting primary control plane", err)
 	}
-	cpBs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cc.Name, cp.Name)
+	cpBs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cc, cp)
 	if err != nil {
 		exit.WithError("Getting bootstrapper", err)
 	}

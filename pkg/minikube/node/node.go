@@ -19,9 +19,9 @@ package node
 import (
 	"errors"
 
-	"github.com/golang/glog"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -48,13 +48,9 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 
 // Delete stops and deletes the given node from the given cluster
 func Delete(cc config.ClusterConfig, name string) error {
-	_, index, err := Retrieve(&cc, name)
+	n, index, err := Retrieve(&cc, name)
 	if err != nil {
 		return err
-	}
-
-	if err != nil {
-		glog.Warningf("Failed to stop node %s. Will still try to delete.", name)
 	}
 
 	api, err := machine.NewAPIClient()
@@ -62,13 +58,13 @@ func Delete(cc config.ClusterConfig, name string) error {
 		return err
 	}
 
-	err = machine.DeleteHost(api, name)
+	err = machine.DeleteHost(api, driver.MachineName(cc, *n))
 	if err != nil {
 		return err
 	}
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return config.SaveProfile(viper.GetString(config.MachineProfile), &cc)
+	return config.SaveProfile(viper.GetString(config.ProfileName), &cc)
 }
 
 // Retrieve finds the node by name in the given cluster
@@ -80,4 +76,21 @@ func Retrieve(cc *config.ClusterConfig, name string) (*config.Node, int, error) 
 	}
 
 	return nil, -1, errors.New("Could not find node " + name)
+}
+
+// Save saves a node to a cluster
+func Save(cfg *config.ClusterConfig, node *config.Node) error {
+	update := false
+	for i, n := range cfg.Nodes {
+		if n.Name == node.Name {
+			cfg.Nodes[i] = *node
+			update = true
+			break
+		}
+	}
+
+	if !update {
+		cfg.Nodes = append(cfg.Nodes, *node)
+	}
+	return config.SaveProfile(viper.GetString(config.ProfileName), cfg)
 }

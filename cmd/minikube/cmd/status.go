@@ -100,15 +100,14 @@ var statusCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		cluster := viper.GetString(config.MachineProfile)
-		cc, err := config.Load(cluster)
+		cc, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("getting config", err)
 		}
 
 		var st *Status
 		for _, n := range cc.Nodes {
-			machineName := driver.MachineName(cluster, n.Name)
+			machineName := driver.MachineName(*cc, n)
 			st, err = status(api, machineName, n.ControlPlane)
 			if err != nil {
 				glog.Errorf("status error: %v", err)

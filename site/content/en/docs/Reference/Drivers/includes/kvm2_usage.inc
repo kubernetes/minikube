@@ -26,10 +26,10 @@ virt-host-validate
 Start a cluster using the kvm2 driver:
 
 ```shell
-minikube start --vm-driver=kvm2
+minikube start --driver=kvm2
 ```
 To make kvm2 the default driver:
 
 ```shell
-minikube config set vm-driver kvm2
+minikube config set driver kvm2
 ```

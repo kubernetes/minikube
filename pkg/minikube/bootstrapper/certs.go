@@ -132,9 +132,8 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 		}
 	}
 
-	// configure CA certificates
-	if err := configureCACerts(cmd, caCerts); err != nil {
-		return errors.Wrapf(err, "Configuring CA certs")
+	if err := installCertSymlinks(cmd, caCerts); err != nil {
+		return errors.Wrapf(err, "certificate symlinks")
 	}
 	return nil
 }
@@ -320,9 +319,9 @@ func getSubjectHash(cr command.Runner, filePath string) (string, error) {
 	return stringHash, nil
 }
 
-// configureCACerts looks up and installs all uploaded PEM certificates in /usr/share/ca-certificates to system-wide certificate store (/etc/ssl/certs).
+// installCertSymlinks installs certs in /usr/share/ca-certificates into system-wide certificate store (/etc/ssl/certs).
 // OpenSSL binary required in minikube ISO
-func configureCACerts(cr command.Runner, caCerts map[string]string) error {
+func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 	hasSSLBinary := true
 	_, err := cr.RunCmd(exec.Command("openssl", "version"))
 	if err != nil {
@@ -336,7 +335,8 @@ func configureCACerts(cr command.Runner, caCerts map[string]string) error {
 	for _, caCertFile := range caCerts {
 		dstFilename := path.Base(caCertFile)
 		certStorePath := path.Join(vmpath.GuestCertStoreDir, dstFilename)
-		cmd := fmt.Sprintf("test -f %s || ln -fs %s %s", caCertFile, certStorePath, caCertFile)
+		// If the cert really exists, add a named symlink
+		cmd := fmt.Sprintf("test -f %s && ln -fs %s %s", caCertFile, caCertFile, certStorePath)
 		if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
 			return errors.Wrapf(err, "create symlink for %s", caCertFile)
 		}

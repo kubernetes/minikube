@@ -17,9 +17,10 @@ limitations under the License.
 package oci
 
 import (
+	"context"
 	"os"
 	"path/filepath"
-	"strconv"
+	"time"
 
 	"bufio"
 	"bytes"
@@ -34,13 +35,13 @@ import (
 	"strings"
 )
 
-// DeleteAllContainersByLabel deletes all containers that have a specific label
+// DeleteContainersByLabel deletes all containers that have a specific label
 // if there no containers found with the given 	label, it will return nil
-func DeleteAllContainersByLabel(ociBin string, label string) []error {
+func DeleteContainersByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
 	if ociBin == Docker {
 		if err := PointToHostDockerDaemon(); err != nil {
-			return []error{errors.Wrap(err, "point host docker-daemon")}
+			return []error{errors.Wrap(err, "point host docker daemon")}
 		}
 	}
 	cs, err := listContainersByLabel(ociBin, label)
@@ -51,10 +52,19 @@ func DeleteAllContainersByLabel(ociBin string, label string) []error {
 		return nil
 	}
 	for _, c := range cs {
+		_, err := ContainerStatus(ociBin, c)
+		// only try to delete if docker/podman inspect returns
+		// if it doesn't it means docker daemon is stuck and needs restart
+		if err != nil {
+			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: %s daemon is stuck. please try again!", c, ociBin))
+			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s.", ociBin, ociBin)
+			continue
+		}
 		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
 		}
+
 	}
 	return deleteErrs
 }
@@ -62,7 +72,7 @@ func DeleteAllContainersByLabel(ociBin string, label string) []error {
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	if err := PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker-daemon")
+		return errors.Wrap(err, "point host docker daemon")
 	}
 
 	runArgs := []string{
@@ -87,6 +97,8 @@ func CreateContainerNode(p CreateParams) error {
 		"--label", p.ClusterLabel,
 		// label the node with the role ID
 		"--label", fmt.Sprintf("%s=%s", nodeRoleLabelKey, p.Role),
+		// label th enode wuth the node ID
+		"--label", p.NodeLabel,
 	}
 
 	if p.OCIBinary == Podman { // enable execing in /var
@@ -99,7 +111,7 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
 	}
 	if p.OCIBinary == Docker {
-		if err := createDockerVolume(p.Name); err != nil {
+		if err := createDockerVolume(p.Name, p.Name); err != nil {
 			return errors.Wrapf(err, "creating volume for %s container", p.Name)
 		}
 		glog.Infof("Successfully created a docker volume %s", p.Name)
@@ -141,7 +153,7 @@ func CreateContainerNode(p CreateParams) error {
 // CreateContainer creates a container with "docker/podman run"
 func createContainer(ociBinary string, image string, opts ...createOpt) ([]string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
-		return nil, errors.Wrap(err, "point host docker-daemon")
+		return nil, errors.Wrap(err, "point host docker daemon")
 	}
 
 	o := &createOpts{}
@@ -185,7 +197,7 @@ func createContainer(ociBinary string, image string, opts ...createOpt) ([]strin
 // Copy copies a local asset into the container
 func Copy(ociBinary string, ociID string, targetDir string, fName string) error {
 	if err := PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker-daemon")
+		return errors.Wrap(err, "point host docker daemon")
 	}
 	if _, err := os.Stat(fName); os.IsNotExist(err) {
 		return errors.Wrapf(err, "error source %s does not exist", fName)
@@ -199,89 +211,10 @@ func Copy(ociBinary string, ociID string, targetDir string, fName string) error 
 	return nil
 }
 
-// HostPortBinding will return port mapping for a container using cli.
-// example : HostPortBinding("docker", "minikube", "22")
-// will return the docker assigned port:
-// 32769, nil
-// only supports TCP ports
-func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return 0, errors.Wrap(err, "point host docker-daemon")
-	}
-	var out []byte
-	var err error
-	if ociBinary == Podman {
-		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
-		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID)
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
-		}
-	} else {
-		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
-		out, err = cmd.CombinedOutput()
-		if err != nil {
-			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
-		}
-	}
-
-	o := strings.TrimSpace(string(out))
-	o = strings.Trim(o, "'")
-	p, err := strconv.Atoi(o)
-	if err != nil {
-		return p, errors.Wrapf(err, "convert host-port %q to number", p)
-	}
-	return p, nil
-}
-
-// ContainerIPs returns ipv4,ipv6, error of a container by their name
-func ContainerIPs(ociBinary string, name string) (string, string, error) {
-	if ociBinary == Podman {
-		return podmanConttainerIP(name)
-	}
-	return dockerContainerIP(name)
-}
-
-// podmanConttainerIP returns ipv4, ipv6 of container or error
-func podmanConttainerIP(name string) (string, string, error) {
-	cmd := exec.Command(Podman, "inspect",
-		"-f", "{{.NetworkSettings.IPAddress}}",
-		name)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", "", errors.Wrapf(err, "podman inspect ip %s", name)
-	}
-	output := strings.TrimSpace(string(out))
-	if err == nil && output == "" { // podman returns empty for 127.0.0.1
-		return DefaultBindIPV4, "", nil
-	}
-	return output, "", nil
-}
-
-// dockerContainerIP returns ipv4, ipv6 of container or error
-func dockerContainerIP(name string) (string, string, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return "", "", errors.Wrap(err, "point host docker-daemon")
-	}
-	// retrieve the IP address of the node using docker inspect
-	lines, err := inspect(Docker, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
-	if err != nil {
-		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
-	}
-	if len(lines) != 1 {
-		return "", "", errors.Errorf("IPs output should only be one line, got %d lines", len(lines))
-	}
-	ips := strings.Split(lines[0], ",")
-	if len(ips) != 2 {
-		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
-	}
-	return ips[0], ips[1], nil
-}
-
 // ContainerID returns id of a container name
 func ContainerID(ociBinary string, nameOrID string) (string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
-		return "", errors.Wrap(err, "point host docker-daemon")
+		return "", errors.Wrap(err, "point host docker daemon")
 	}
 	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID)
 	id, err := cmd.CombinedOutput()
@@ -299,7 +232,7 @@ func ListOwnedContainers(ociBinary string) ([]string, error) {
 // inspect return low-level information on containers
 func inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
-		return nil, errors.Wrap(err, "point host docker-daemon")
+		return nil, errors.Wrap(err, "point host docker daemon")
 	}
 	cmd := exec.Command(ociBinary, "inspect",
 		"-f", format,
@@ -365,7 +298,7 @@ func generateMountBindings(mounts ...Mount) []string {
 // isUsernsRemapEnabled checks if userns-remap is enabled in docker
 func isUsernsRemapEnabled(ociBinary string) (bool, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
-		return false, errors.Wrap(err, "point host docker-daemon")
+		return false, errors.Wrap(err, "point host docker daemon")
 	}
 	cmd := exec.Command(ociBinary, "info", "--format", "'{{json .SecurityOptions}}'")
 	var buff bytes.Buffer
@@ -427,9 +360,12 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 // listContainersByLabel returns all the container names with a specified label
 func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 	if err := PointToHostDockerDaemon(); err != nil {
-		return nil, errors.Wrap(err, "point host docker-daemon")
+		return nil, errors.Wrap(err, "point host docker daemon")
 	}
-	cmd := exec.Command(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
+	// allow no more than 5 seconds for docker ps
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
 	stdout, err := cmd.Output()
 	s := bufio.NewScanner(bytes.NewReader(stdout))
 	var names []string
@@ -439,7 +375,6 @@ func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 			names = append(names, n)
 		}
 	}
-
 	return names, err
 }
 
@@ -448,7 +383,7 @@ func listContainersByLabel(ociBinary string, label string) ([]string, error) {
 func PointToHostDockerDaemon() error {
 	p := os.Getenv(constants.MinikubeActiveDockerdEnv)
 	if p != "" {
-		glog.Infof("shell is pointing to docker inside minikube. will unset to use host")
+		glog.Infof("shell is pointing to dockerd inside minikube. will unset to use host")
 	}
 
 	for i := range constants.DockerDaemonEnvs {
@@ -460,4 +395,26 @@ func PointToHostDockerDaemon() error {
 
 	}
 	return nil
+}
+
+// ContainerStatus returns status of a container running,exited,...
+func ContainerStatus(ociBin string, name string) (string, error) {
+	if ociBin == Docker {
+		if err := PointToHostDockerDaemon(); err != nil {
+			return "", errors.Wrap(err, "point host docker daemon")
+		}
+	}
+	// allow no more than 2 seconds for this. when this takes long this means deadline passed
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, ociBin, "inspect", name, "--format={{.State.Status}}")
+	out, err := cmd.CombinedOutput()
+	if ctx.Err() == context.DeadlineExceeded {
+		glog.Warningf("%s inspect %s took longer than normal. Restarting your %s daemon might fix this issue.", ociBin, name, ociBin)
+		return strings.TrimSpace(string(out)), fmt.Errorf("inspect %s timeout", name)
+	}
+	if err != nil {
+		return string(out), errors.Wrapf(err, "inspecting container: output %s", out)
+	}
+	return strings.TrimSpace(string(out)), nil
 }

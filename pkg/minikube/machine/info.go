@@ -29,13 +29,13 @@ import (
 )
 
 type hostInfo struct {
-	Memory   int
+	Memory   int64
 	CPUs     int
-	DiskSize int
+	DiskSize int64
 }
 
-func megs(bytes uint64) int {
-	return int(bytes / 1024 / 1024)
+func megs(bytes uint64) int64 {
+	return int64(bytes / 1024 / 1024)
 }
 
 func getHostInfo() (*hostInfo, error) {

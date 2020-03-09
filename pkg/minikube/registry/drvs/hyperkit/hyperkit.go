@@ -32,6 +32,7 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/hyperkit"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -65,11 +66,11 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 
 	return &hyperkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: driver.MachineName(cfg.Name, n.Name),
+			MachineName: driver.MachineName(cfg, n),
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},
-		Boot2DockerURL: cfg.Downloader.GetISOFileURI(cfg.MinikubeISO),
+		Boot2DockerURL: download.LocalISOResource(cfg.MinikubeISO),
 		DiskSize:       cfg.DiskSize,
 		Memory:         cfg.Memory,
 		CPU:            cfg.CPUs,
@@ -78,7 +79,7 @@ func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
 		UUID:           u,
 		VpnKitSock:     cfg.HyperkitVpnKitSock,
 		VSockPorts:     cfg.HyperkitVSockPorts,
-		Cmdline:        "loglevel=3 console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes random.trust_cpu=on hw_rng_model=virtio base host=" + n.Name,
+		Cmdline:        "loglevel=3 console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes random.trust_cpu=on hw_rng_model=virtio base host=" + cfg.Name,
 	}, nil
 }
 

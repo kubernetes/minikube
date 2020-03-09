@@ -27,6 +27,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -45,8 +46,8 @@ func init() {
 }
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := vmwarefusion.NewDriver(driver.MachineName(cfg.Name, n.Name), localpath.MiniPath()).(*vmwarefusion.Driver)
-	d.Boot2DockerURL = cfg.Downloader.GetISOFileURI(cfg.MinikubeISO)
+	d := vmwarefusion.NewDriver(driver.MachineName(cfg, n), localpath.MiniPath()).(*vmwarefusion.Driver)
+	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
 	d.Memory = cfg.Memory
 	d.CPU = cfg.CPUs
 	d.DiskSize = cfg.DiskSize

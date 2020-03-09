@@ -105,7 +105,7 @@ func SaveNode(cfg *ClusterConfig, node *Node) error {
 	if !update {
 		cfg.Nodes = append(cfg.Nodes, *node)
 	}
-	return SaveProfile(viper.GetString(MachineProfile), cfg)
+	return SaveProfile(viper.GetString(ProfileName), cfg)
 }
 
 // SaveProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json

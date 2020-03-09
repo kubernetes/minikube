@@ -50,7 +50,7 @@ var nodeStartCmd = &cobra.Command{
 			os.Exit(0)
 		}
 
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		cc, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("loading config", err)
 		}

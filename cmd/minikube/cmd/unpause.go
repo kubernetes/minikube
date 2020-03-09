@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -37,7 +38,7 @@ var unpauseCmd = &cobra.Command{
 	Use:   "unpause",
 	Short: "unpause Kubernetes",
 	Run: func(cmd *cobra.Command, args []string) {
-		cname := viper.GetString(config.MachineProfile)
+		cname := viper.GetString(config.ProfileName)
 		api, err := machine.NewAPIClient()
 		if err != nil {
 			exit.WithError("Error getting client", err)
@@ -54,39 +55,43 @@ var unpauseCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		glog.Infof("config: %+v", cc)
-		host, err := machine.CheckIfHostExistsAndLoad(api, cname)
-		if err != nil {
-			exit.WithError("Error getting host", err)
-		}
 
-		r, err := machine.CommandRunner(host)
-		if err != nil {
-			exit.WithError("Failed to get command runner", err)
-		}
-
-		cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
-		if err != nil {
-			exit.WithError("Failed runtime", err)
-		}
-
-		glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
-		if allNamespaces {
-			namespaces = nil //all
-		} else {
-			if len(namespaces) == 0 {
-				exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
+		for _, n := range cc.Nodes {
+			machineName := driver.MachineName(*cc, n)
+			host, err := machine.CheckIfHostExistsAndLoad(api, machineName)
+			if err != nil {
+				exit.WithError("Error getting host", err)
 			}
-		}
 
-		ids, err := cluster.Unpause(cr, r, namespaces)
-		if err != nil {
-			exit.WithError("Pause", err)
-		}
+			r, err := machine.CommandRunner(host)
+			if err != nil {
+				exit.WithError("Failed to get command runner", err)
+			}
 
-		if namespaces == nil {
-			out.T(out.Pause, "Unpaused kubelet and {{.count}} containers", out.V{"count": len(ids)})
-		} else {
-			out.T(out.Pause, "Unpaused kubelet and {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+			cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
+			if err != nil {
+				exit.WithError("Failed runtime", err)
+			}
+
+			glog.Infof("namespaces: %v keys: %v", namespaces, viper.AllSettings())
+			if allNamespaces {
+				namespaces = nil //all
+			} else {
+				if len(namespaces) == 0 {
+					exit.WithCodeT(exit.BadUsage, "Use -A to specify all namespaces")
+				}
+			}
+
+			ids, err := cluster.Unpause(cr, r, namespaces)
+			if err != nil {
+				exit.WithError("Pause", err)
+			}
+
+			if namespaces == nil {
+				out.T(out.Pause, "Unpaused kubelet and {{.count}} containers", out.V{"count": len(ids)})
+			} else {
+				out.T(out.Pause, "Unpaused kubelet and {{.count}} containers in: {{.namespaces}}", out.V{"count": len(ids), "namespaces": strings.Join(namespaces, ", ")})
+			}
 		}
 
 	},
