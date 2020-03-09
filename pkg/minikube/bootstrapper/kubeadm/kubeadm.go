@@ -36,7 +36,6 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -65,7 +64,9 @@ type Bootstrapper struct {
 }
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
-func NewBootstrapper(api libmachine.API, name string) (*Bootstrapper, error) {
+// TODO(#6891): Remove node as an argument
+func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Bootstrapper, error) {
+	name := driver.MachineName(cc, n)
 	h, err := api.Load(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting api client")
@@ -74,7 +75,7 @@ func NewBootstrapper(api libmachine.API, name string) (*Bootstrapper, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "command runner")
 	}
-	return &Bootstrapper{c: runner, contextName: viper.GetString(config.MachineProfile), k8sClient: nil}, nil
+	return &Bootstrapper{c: runner, contextName: cc.Name, k8sClient: nil}, nil
 }
 
 // GetKubeletStatus returns the kubelet status
@@ -268,7 +269,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	port := cp.Port
 	if driver.IsKIC(cfg.Driver) {
 		ip = oci.DefaultBindIPV4
-		port, err = oci.HostPortBinding(cfg.Driver, driver.MachineName(cfg.Name, n.Name), port)
+		port, err = oci.HostPortBinding(cfg.Driver, driver.MachineName(cfg, n), port)
 		if err != nil {
 			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 		}
@@ -338,9 +339,9 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		port := n.Port
 		if driver.IsKIC(cfg.Driver) {
 			ip = oci.DefaultBindIPV4
-			port, err = oci.HostPortBinding(cfg.Driver, driver.MachineName(cfg.Name, n.Name), port)
+			port, err = oci.HostPortBinding(cfg.Driver, driver.MachineName(cfg, n), port)
 			if err != nil {
-				return errors.Wrapf(err, "get host-bind port %d for container %s", port, driver.MachineName(cfg.Name, n.Name))
+				return errors.Wrapf(err, "get host-bind port %d for container %s", port, driver.MachineName(cfg, n))
 			}
 		}
 		client, err := k.client(ip, port)

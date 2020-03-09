@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -118,6 +119,9 @@ func enableOrDisableAddon(name, val, profile string) error {
 
 	if alreadySet {
 		glog.Warningf("addon %s should already be in state %v", name, val)
+		if !enable {
+			return nil
+		}
 	}
 
 	if name == "istio" && enable {
@@ -243,7 +247,16 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 	}
 	defer api.Close()
 
-	if !machine.IsHostRunning(api, profile) {
+	cc, err := config.Load(profile)
+	if err != nil {
+		return errors.Wrap(err, "getting cluster")
+	}
+
+	cp, err := config.PrimaryControlPlane(*cc)
+	if err != nil {
+		return errors.Wrap(err, "getting control plane")
+	}
+	if !machine.IsHostRunning(api, driver.MachineName(*cc, cp)) {
 		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", profile, name, val)
 		return enableOrDisableAddon(name, val, profile)
 	}

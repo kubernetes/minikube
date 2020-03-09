@@ -49,7 +49,7 @@ minikube kubectl -- get pods --namespace kube-system`,
 		}
 		defer api.Close()
 
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		cc, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil && !config.IsNotExist(err) {
 			out.ErrLn("Error loading profile config: %v", err)
 		}

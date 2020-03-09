@@ -37,21 +37,23 @@ func init() {
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
-		Priority: registry.Experimental,
+		Priority: registry.Fallback,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
 }
 
-func configure(mc config.ClusterConfig, n config.Node) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
-		MachineName:   driver.MachineName(mc.Name, n.Name),
-		StorePath:     localpath.MiniPath(),
-		ImageDigest:   kic.BaseImage,
-		CPU:           mc.CPUs,
-		Memory:        mc.Memory,
-		OCIBinary:     oci.Docker,
-		APIServerPort: n.Port,
+		MachineName:       driver.MachineName(cc, n),
+		StorePath:         localpath.MiniPath(),
+		ImageDigest:       kic.BaseImage,
+		CPU:               cc.CPUs,
+		Memory:            cc.Memory,
+		OCIBinary:         oci.Docker,
+		APIServerPort:     cc.Nodes[0].Port,
+		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 	}), nil
 }
 
@@ -59,6 +61,10 @@ func status() registry.State {
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
+	}
+
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Failed to point to dockerd. Please make sure DOCKER_HOST environment variable is pointing to your installed dockerd."}
 	}
 
 	// Allow no more than 3 seconds for docker info

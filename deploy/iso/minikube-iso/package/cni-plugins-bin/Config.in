@@ -1,4 +1,0 @@
-config BR2_PACKAGE_CNI_PLUGINS_BIN
-	bool "cni-plugins-bin"
-	default y
-	depends on BR2_x86_64

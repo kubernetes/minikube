@@ -25,6 +25,8 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -84,7 +86,7 @@ func List(miniHome ...string) (validMachines []*Machine, inValidMachines []*Mach
 	return validMachines, inValidMachines, nil
 }
 
-// Load loads a machine or throws an error if the machine could not be loadedG
+// Load loads a machine or throws an error if the machine could not be loaded.
 func Load(name string) (*Machine, error) {
 	api, err := NewAPIClient()
 	if err != nil {
@@ -122,7 +124,8 @@ func machineDirs(miniHome ...string) (dirs []string, err error) {
 }
 
 // CreateSSHShell creates a new SSH shell / client
-func CreateSSHShell(api libmachine.API, machineName string, args []string) error {
+func CreateSSHShell(api libmachine.API, cc config.ClusterConfig, n config.Node, args []string) error {
+	machineName := driver.MachineName(cc, n)
 	host, err := CheckIfHostExistsAndLoad(api, machineName)
 	if err != nil {
 		return errors.Wrap(err, "host exists and load")

@@ -30,6 +30,7 @@ import (
 	"github.com/pkg/errors"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -53,8 +54,8 @@ func init() {
 }
 
 func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
-	d := hyperv.NewDriver(driver.MachineName(mc.Name, n.Name), localpath.MiniPath())
-	d.Boot2DockerURL = cfg.Downloader.GetISOFileURI(cfg.MinikubeISO)
+	d := hyperv.NewDriver(driver.MachineName(cfg, n), localpath.MiniPath())
+	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
 	d.VSwitch = cfg.HypervVirtualSwitch
 	if d.VSwitch == "" && cfg.HypervUseExternalSwitch {
 		switchName, adapter, err := chooseSwitch(cfg.HypervExternalAdapter)
@@ -85,14 +86,22 @@ func status() registry.State {
 		return registry.State{Error: err}
 	}
 
-	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, path, "Get-WindowsOptionalFeature", "-FeatureName", "Microsoft-Hyper-V-All", "-Online")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return registry.State{Installed: false, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'", Doc: docURL}
+		errorMessage := fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out)
+		fixMessage := "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'"
+
+		// If timed out, prompt different error and suggestion messages
+		// See https://github.com/kubernetes/minikube/issues/6579
+		if ctx.Err() != nil {
+			errorMessage = fmt.Errorf("%s exited unexpectedly:\n%s", strings.Join(cmd.Args, " "), ctx.Err())
+			fixMessage = "If you have Hyper-V configured correctly, please try start again with `--force` specified"
+		}
+		return registry.State{Installed: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
 	}
 	return registry.State{Installed: true, Healthy: true}
 }

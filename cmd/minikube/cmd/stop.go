@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"github.com/docker/machine/libmachine"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -39,7 +40,7 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
-	profile := viper.GetString(pkg_config.MachineProfile)
+	profile := viper.GetString(pkg_config.ProfileName)
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Error getting client", err)
@@ -48,21 +49,16 @@ func runStop(cmd *cobra.Command, args []string) {
 
 	cc, err := config.Load(profile)
 	if err != nil {
-		exit.WithError("Error retrieving config", err)
+		exit.WithError("Error getting cluster config", err)
 	}
 
-	// TODO replace this back with expo backoff
 	for _, n := range cc.Nodes {
-		err := machine.StopHost(api, driver.MachineName(profile, n.Name))
-		if err != nil {
-			exit.WithError("Unable to stop VM", err)
-		}
-		/*if err := retry.Expo(fn, 5*time.Second, 3*time.Minute, 5); err != nil {
-			exit.WithError("Unable to stop VM", err)
-		}*/
-	}
+		nonexistent := stop(api, *cc, n)
 
-	out.T(out.Stopped, `"{{.profile_name}}" stopped.`, out.V{"profile_name": profile})
+		if !nonexistent {
+			out.T(out.Stopped, `"{{.node_name}}" stopped.`, out.V{"node_name": n.Name})
+		}
+	}
 
 	if err := killMountProcess(); err != nil {
 		out.T(out.WarningType, "Unable to kill mount process: {{.error}}", out.V{"error": err})
@@ -72,4 +68,21 @@ func runStop(cmd *cobra.Command, args []string) {
 	if err != nil {
 		exit.WithError("update config", err)
 	}
+}
+
+func stop(api libmachine.API, cluster config.ClusterConfig, n config.Node) bool {
+	nonexistent := false
+
+	// TODO replace this back with expo backoff
+	for _, n := range cluster.Nodes {
+		err := machine.StopHost(api, driver.MachineName(cluster, n))
+		if err != nil {
+			exit.WithError("Unable to stop VM", err)
+		}
+		/*if err := retry.Expo(fn, 5*time.Second, 3*time.Minute, 5); err != nil {
+			exit.WithError("Unable to stop VM", err)
+		}*/
+	}
+
+	return nonexistent
 }
