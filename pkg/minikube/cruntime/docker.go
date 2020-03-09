@@ -19,7 +19,6 @@ package cruntime
 import (
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -272,7 +271,11 @@ func (r *Docker) SystemLogCmd(len int) string {
 // 3. Remove the tarball within the VM
 func (r *Docker) Preload(k8sVersion string) error {
 	tarballPath := download.TarballPath(k8sVersion)
-	dest := "/preloaded.tar.lz4"
+	targetDir := "/"
+	targetName := "preloaded.tar.lz4"
+	// don't use filepath.Join so that we maintain Linux file separators
+	// so that this still works on Windows
+	dest := targetDir + targetName
 
 	c := exec.Command("which", "lz4")
 	if _, err := r.Runner.RunCmd(c); err != nil {
@@ -280,7 +283,7 @@ func (r *Docker) Preload(k8sVersion string) error {
 	}
 
 	// Copy over tarball into host
-	fa, err := assets.NewFileAsset(tarballPath, filepath.Dir(dest), filepath.Base(dest), "0644")
+	fa, err := assets.NewFileAsset(tarballPath, targetDir, targetName, "0644")
 	if err != nil {
 		return errors.Wrap(err, "getting file asset")
 	}
