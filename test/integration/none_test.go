@@ -77,6 +77,12 @@ func TestChangeNoneUser(t *testing.T) {
 		t.Errorf("Failed to convert uid to int: %v", err)
 	}
 
+	// Retrieve the kube config from env
+	kubeConfig := os.Getenv("KUBECONFIG")
+	if kubeConfig == "" {
+		kubeConfig = filepath.Join(u.HomeDir, ".kube/config")
+	}
+
 	for _, p := range []string{localpath.MiniPath(), filepath.Join(u.HomeDir, ".kube/config")} {
 		info, err := os.Stat(p)
 		if err != nil {
