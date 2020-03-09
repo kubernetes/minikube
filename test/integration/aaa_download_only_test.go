@@ -197,11 +197,11 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	}
 
 	// Make sure this image exists in the docker daemon
-	images, err := exec.Command("docker", "images", "--digests", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}").Output()
+	images, err := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}").Output()
 	if err != nil {
 		t.Errorf("getting list of docker images failed: %v\nOutput: %s", err, string(images))
 	}
-	want := kic.BaseImage
+	want := fmt.Sprintf("%s:%s", kic.Repository, kic.Version)
 	if !strings.Contains(string(images), want) {
 		t.Errorf("expected image does not exist in local daemon; got:\n%s wanted:\n%s", string(images), want)
 	}
