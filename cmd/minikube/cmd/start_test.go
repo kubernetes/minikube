@@ -71,8 +71,6 @@ func TestGetKuberneterVersion(t *testing.T) {
 }
 
 func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
-	viper.SetDefault(memory, defaultMemorySize)
-	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 	originalEnv := os.Getenv("HTTP_PROXY")
 	defer func() {
 		err := os.Setenv("HTTP_PROXY", originalEnv)
@@ -120,6 +118,37 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 				if v == test.proxy && test.proxyIgnored {
 					t.Fatalf("Value %v not expected in dockerEnv but occurred", v)
 				}
+			}
+		})
+	}
+}
+
+func TestSuggestMemoryAllocation(t *testing.T) {
+	var tests = []struct {
+		description    string
+		sysLimit       int
+		containerLimit int
+		want           int
+	}{
+		{"128GB sys", 128000, 0, 6000},
+		{"64GB sys", 64000, 0, 6000},
+		{"16GB sys", 16384, 0, 4000},
+		{"odd sys", 14567, 0, 3600},
+		{"4GB sys", 4096, 0, 2200},
+		{"2GB sys", 2048, 0, 2048},
+		{"Unable to poll sys", 0, 0, 2200},
+		{"128GB sys, 16GB container", 128000, 16384, 16336},
+		{"64GB sys, 16GB container", 64000, 16384, 16000},
+		{"16GB sys, 4GB container", 16384, 4096, 4000},
+		{"4GB sys, 3.5GB container", 16384, 3500, 3452},
+		{"2GB sys, 2GB container", 16384, 2048, 2048},
+		{"2GB sys, unable to poll container", 16384, 0, 4000},
+	}
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			got := suggestMemoryAllocation(test.sysLimit, test.containerLimit)
+			if got != test.want {
+				t.Errorf("defaultMemorySize(sys=%d, container=%d) = %d, want: %d", test.sysLimit, test.containerLimit, got, test.want)
 			}
 		})
 	}
