@@ -337,14 +337,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	var existingAddons map[string]bool
-	if viper.GetBool(installAddons) {
-		existingAddons = map[string]bool{}
-		if existing != nil && existing.Addons != nil {
-			existingAddons = existing.Addons
-		}
-	}
-	kubeconfig, err := node.Start(mc, n, true, existingAddons)
+	kubeconfig, err := startNode(existing, mc, n)
 	if err != nil {
 		exit.WithError("Starting node", err)
 	}
@@ -387,6 +380,17 @@ func displayEnviron(env []string) {
 			out.T(out.Option, "{{.key}}={{.value}}", out.V{"key": k, "value": v})
 		}
 	}
+}
+
+func startNode(existing *config.ClusterConfig, mc config.ClusterConfig, n config.Node) (*kubeconfig.Settings, error) {
+	var existingAddons map[string]bool
+	if viper.GetBool(installAddons) {
+		existingAddons = map[string]bool{}
+		if existing != nil && existing.Addons != nil {
+			existingAddons = existing.Addons
+		}
+	}
+	return node.Start(mc, n, true, existingAddons)
 }
 
 func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
