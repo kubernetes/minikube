@@ -56,12 +56,12 @@ func runStop(cmd *cobra.Command, args []string) {
 		nonexistent := stop(api, *cc, n)
 
 		if !nonexistent {
-			out.T(out.Stopped, `"{{.node_name}}" stopped.`, out.V{"node_name": n.Name})
+			out.T(out.Stopped, `Node "{{.node_name}}" stopped.`, out.V{"node_name": n.Name})
 		}
 	}
 
 	if err := killMountProcess(); err != nil {
-		out.T(out.WarningType, "Unable to kill mount process: {{.error}}", out.V{"error": err})
+		out.T(out.Warning, "Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
 	err = kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv())

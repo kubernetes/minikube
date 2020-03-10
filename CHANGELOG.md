@@ -1,5 +1,85 @@
 # Release Notes
 
+## Version 1.8.1 - 2020-03-06
+
+Minor bug fix:
+
+* Block on preload download before extracting, fall back to caching images if it fails [#6928](https://github.com/kubernetes/minikube/pull/6928)
+* Cleanup remaining PointToHostDockerDaemon calls [#6925](https://github.com/kubernetes/minikube/pull/6925)
+
+Huge thank you for this release towards our contributors: 
+- Priya Wadhwa
+- Thomas Stromberg
+- Medya Ghazizadeh
+
+## Version 1.8.0 - 2020-03-06
+
+Exciting new improvements:
+
+* Promote docker driver priority from "experimental" to "fallback" [#6791](https://github.com/kubernetes/minikube/pull/6791)
+* Preload tarball images for kic drivers (docker,podman) [#6720](https://github.com/kubernetes/minikube/pull/6720)
+* Preload tarball images for VMs drivers as well [#6898](https://github.com/kubernetes/minikube/pull/6898)
+* Add tunnel for docker driver on darwin  [#6460](https://github.com/kubernetes/minikube/pull/6460)
+* Add service feature to docker driver on darwin [#6811](https://github.com/kubernetes/minikube/pull/6811)
+* Add cri-o runtime to kic drivers (podman,docker) [#6756](https://github.com/kubernetes/minikube/pull/6756)
+* Add mount feature to kic drivers (podman,docker) [#6630](https://github.com/kubernetes/minikube/pull/6630)
+* Rename --vm-driver flag to --driver for start command [#6888](https://github.com/kubernetes/minikube/pull/6888)
+* Add Korean translation [#6910](https://github.com/kubernetes/minikube/pull/6910)
+* Add k8s binaries to preloaded tarball [#6870](https://github.com/kubernetes/minikube/pull/6870)
+* Add lz4 and tar to iso [#6897](https://github.com/kubernetes/minikube/pull/6897)
+* Add packaging of the falco_probe kernel module [#6560](https://github.com/kubernetes/minikube/pull/6560)
+* Automatically scale the default memory allocation [#6900](https://github.com/kubernetes/minikube/pull/6900)
+* Change cgroup driver from cgroupfs to systemd [#6651](https://github.com/kubernetes/minikube/pull/6651)
+* Unify downloaders, add GitHub and Alibaba ISO fallbacks [#6892](https://github.com/kubernetes/minikube/pull/6892)
+* Upgrade cni and cni-plugins to spec 0.4.0 [#6784](https://github.com/kubernetes/minikube/pull/6784)
+* Label minikube nodes [#6717](https://github.com/kubernetes/minikube/pull/6717)
+* Add more Chinese translations [#6813](https://github.com/kubernetes/minikube/pull/6813)
+* Update addon registry 2.6.1 → 2.7.1 [#6707](https://github.com/kubernetes/minikube/pull/6707)
+* Use 'k8s.gcr.io' instead of 'gcr.io/google-containers' [#6908](https://github.com/kubernetes/minikube/pull/6908)
+
+Important bug fixes:
+
+* Fix inverted certificate symlink creation logic [#6889](https://github.com/kubernetes/minikube/pull/6889)
+* Add systemd patch for handling DHCP router [#6659](https://github.com/kubernetes/minikube/pull/6659)
+* Docker: handle already in use container name [#6906](https://github.com/kubernetes/minikube/pull/6906)
+* Fix delete --all if using non default profile [#6875](https://github.com/kubernetes/minikube/pull/6875)
+* Fix native-ssh flag for the ssh command [#6858](https://github.com/kubernetes/minikube/pull/6858)
+* Fix start for existing profile with different vm-driver [#6828](https://github.com/kubernetes/minikube/pull/6828)
+* Fix: disabling a disabled addon should not error [#6817](https://github.com/kubernetes/minikube/pull/6817)
+* Fix: do not change the profile to a none existing profile [#6774](https://github.com/kubernetes/minikube/pull/6774)
+* Generate fish compatible docker-env hint [#6744](https://github.com/kubernetes/minikube/pull/6744)
+* Specifying control plane IP in kubeadm config template [#6745](https://github.com/kubernetes/minikube/pull/6745)
+* hyperv detection: increase timeout from 2s to 8s [#6701](https://github.com/kubernetes/minikube/pull/6701)
+* kic: fix service list for docker on darwin [#6830](https://github.com/kubernetes/minikube/pull/6830)
+* kic: fix unprivileged port bind tunnel docker for darwin [#6833](https://github.com/kubernetes/minikube/pull/6833)
+* profile list: exit zero even if one profile is not ready [#6882](https://github.com/kubernetes/minikube/pull/6882)
+* tunnel on docker driver on mac: fix known_hosts issue [#6810](https://github.com/kubernetes/minikube/pull/6810)
+* docker-env: fix semicolons required for fish 2.x users [#6915](https://github.com/kubernetes/minikube/pull/6915)
+
+Thank you to everyone who helped with this extraordinary release. We now invite everyone to give the `--driver=docker` option a try!
+
+- Anders Björklund
+- Black-Hole
+- Csongor Halmai
+- Jose Donizetti
+- Keith Schaab
+- Kenta Iso
+- Kevin Pullin
+- Medya Ghazizadeh
+- Naveen Kumar Sangi
+- Nguyen Hai Truong
+- Olivier Lemasle
+- Pierre Ugaz
+- Prasad Katti
+- Priya Wadhwa
+- Sharif Elgamal
+- Song Shukun
+- Tam Mach
+- Thomas Strömberg
+- anencore94
+- sayboras
+- vikkyomkar
+
 ## Version 1.7.3 - 2020-02-20
 
 * Add podman driver [#6515](https://github.com/kubernetes/minikube/pull/6515)
@@ -42,7 +122,6 @@ Thank you to our wonderful and amazing contributors who contributed to this bug-
 - Tam Mach
 - edge0701
 - go_vargo
-- sayboras
 
 ## Version 1.7.2 - 2020-02-07
 

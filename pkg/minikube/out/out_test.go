@@ -44,7 +44,7 @@ func TestOutT(t *testing.T) {
 	}{
 		{Happy, "Happy", nil, "😄  Happy\n", "* Happy\n"},
 		{Option, "Option", nil, "    ▪ Option\n", "  - Option\n"},
-		{WarningType, "Warning", nil, "⚠️  Warning\n", "! Warning\n"},
+		{Warning, "Warning", nil, "❗  Warning\n", "! Warning\n"},
 		{FatalType, "Fatal: {{.error}}", V{"error": "ugh"}, "💣  Fatal: ugh\n", "X Fatal: ugh\n"},
 		{Issue, "http://i/{{.number}}", V{"number": 10000}, "    ▪ http://i/10000\n", "  - http://i/10000\n"},
 		{Usage, "raw: {{.one}} {{.two}}", V{"one": "'%'", "two": "%d"}, "💡  raw: '%' %d\n", "* raw: '%' %d\n"},

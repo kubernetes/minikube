@@ -58,9 +58,6 @@ const (
 
 // InitialSetup performs all necessary operations on the initial control plane node when first spinning up a cluster
 func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
-	var cacheGroup errgroup.Group
-	BeginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
-
 	_, preExists, machineAPI, host := StartMachine(&cc, &n)
 	defer machineAPI.Close()
 
@@ -72,6 +69,9 @@ func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[str
 
 	// setup kubeadm (must come after setupKubeconfig)
 	bs := setupKubeAdm(machineAPI, cc, n)
+
+	var cacheGroup errgroup.Group
+	BeginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
 
 	// pull images or restart cluster
 	out.T(out.Launch, "Launching Kubernetes ... ")
