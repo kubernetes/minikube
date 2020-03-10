@@ -89,7 +89,7 @@ func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[str
 
 	// enable addons, both old and new!
 	if existingAddons != nil {
-		addons.Start(viper.GetString(config.MachineProfile), existingAddons, config.AddonList)
+		addons.Start(viper.GetString(config.ProfileName), existingAddons, config.AddonList)
 	}
 
 	// special ops for none , like change minikube directory.
@@ -111,7 +111,7 @@ func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[str
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
 func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node) bootstrapper.Bootstrapper {
-	bs, err := Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg.Name, n.Name)
+	bs, err := Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg, n)
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}

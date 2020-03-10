@@ -58,7 +58,11 @@ var sshCmd = &cobra.Command{
 			}
 			n = &cp
 		} else {
-			n = node.Retrieve(cc, nodeName)
+			n, _, err = node.Retrieve(cc, nodeName)
+			if err != nil {
+				out.FailureT("Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
+				exit.WithError("", err)
+			}
 		}
 		host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(*cc, *n))
 		if err != nil {
@@ -73,7 +77,7 @@ var sshCmd = &cobra.Command{
 			ssh.SetDefaultClient(ssh.External)
 		}
 
-		err = machine.CreateSSHShell(api, *cc, cp, args)
+		err = machine.CreateSSHShell(api, *cc, *n, args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)
