@@ -348,7 +348,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := config.SaveProfile(viper.GetString(config.MachineProfile), &mc); err != nil {
+	if err := config.SaveProfile(viper.GetString(config.ProfileName), &mc); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
