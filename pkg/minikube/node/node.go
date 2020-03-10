@@ -32,6 +32,7 @@ const (
 	mountString      = "mount-string"
 	createMount      = "mount"
 	waitTimeout      = "wait-timeout"
+	imageRepository  = "image-repository"
 )
 
 // Add adds a new node config to an existing cluster.
