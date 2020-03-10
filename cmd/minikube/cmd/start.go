@@ -868,7 +868,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	}
 
 	mem := suggestMemoryAllocation(sysLimit, containerLimit)
-	if viper.GetString(memory) != "" {
+	if cmd.Flags().Changed(memory) {
 		mem = pkgutil.CalculateSizeInMB(viper.GetString(memory))
 	} else {
 		glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
