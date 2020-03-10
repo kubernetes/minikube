@@ -68,7 +68,13 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 	}
 	if !driver.IsKIC(drvName) {
 		if err := cr.Preload(k8s.KubernetesVersion); err != nil {
-			glog.Errorf("Failed to preload container runtime %s: %v, falling back to caching images", cr.Name(), err)
+			switch err.(type) {
+			case *cruntime.ErrISOFeature:
+				out.T(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
+			default:
+				glog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
+			}
+
 			if err := machine.CacheImagesForBootstrapper(k8s.ImageRepository, k8s.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 				exit.WithError("Failed to cache images", err)
 			}
