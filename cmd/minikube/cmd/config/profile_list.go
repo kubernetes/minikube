@@ -91,7 +91,7 @@ var printProfilesTable = func() {
 	table.Render()
 
 	if invalidProfiles != nil {
-		out.T(out.WarningType, "Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})
+		out.T(out.Warning, "Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})
 		for _, p := range invalidProfiles {
 			out.T(out.Empty, "\t "+p.Name)
 		}

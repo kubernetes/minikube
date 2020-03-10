@@ -162,7 +162,7 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 		return
 	}
 	out.T(out.Notice, "Noticed that you are using minikube docker-env:")
-	out.T(out.WarningType, `After minikube restart the dockerd ports might have changed. To ensure docker-env works properly.
+	out.T(out.Warning, `After minikube restart the dockerd ports might have changed. To ensure docker-env works properly.
 Please re-eval the docker-env command:
 
 	'minikube -p {{.profile_name}} docker-env'
