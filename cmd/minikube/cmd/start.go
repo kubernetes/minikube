@@ -642,27 +642,68 @@ func validateUser(drvName string) {
 	}
 }
 
-// defaultMemorySize calculates the default memory footprint in MB
-func defaultMemorySize(drvName string) int {
-	fallback := 2200
-	maximum := 6000
-
+// memoryLimits returns the amount of memory allocated to the system and hypervisor
+func memoryLimits(drvName string) (int, int, error) {
 	v, err := mem.VirtualMemory()
 	if err != nil {
-		return fallback
+		return -1, -1, err
 	}
-	available := v.Total / 1024 / 1024
+	sysLimit := int(v.Total / 1024 / 1024)
+	containerLimit := 0
 
-	// For KIC, do not allocate more memory than the container has available (+ some slack)
 	if driver.IsKIC(drvName) {
 		s, err := oci.DaemonInfo(drvName)
 		if err != nil {
-			return fallback
+			return -1, -1, err
 		}
-		maximum = int(s.TotalMemory/1024/1024) - 128
+		containerLimit = int(s.TotalMemory / 1024 / 1024)
+	}
+	return sysLimit, containerLimit, nil
+}
+
+// suggestMemoryAllocation calculates the default memory footprint in MB
+func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
+	fallback := 2200
+	maximum := 6000
+
+	if sysLimit > 0 && fallback > sysLimit {
+		return sysLimit
 	}
 
-	suggested := int(available / 4)
+	// If there are container limits, add tiny bit of slack for non-minikube components
+	if containerLimit > 0 {
+		if fallback > containerLimit {
+			return containerLimit
+		}
+		maximum = containerLimit - 48
+	}
+
+	// Suggest 25% of RAM, rounded to nearest 100MB. Hyper-V requires an even number!
+	suggested := int(sysLimit/400.0) * 100
+
+	if suggested > maximum {
+		return maximum
+	}
+
+	if suggested < fallback {
+		return fallback
+	}
+
+	return suggested
+}
+
+// defaultMemorySize calculates the default memory footprint in MB
+func suggest(drvName string, available int) int {
+	fallback := 2200
+	maximum := 6000
+
+	// For KIC, do not allocate more memory than the container has available (+ some slack)
+	if driver.IsKIC(drvName) {
+		maximum = available - 100
+	}
+
+	// Suggest 25% of RAM, rounded to nearest 100MB
+	suggested := int(available/400.0) * 100
 
 	if suggested > maximum {
 		suggested = maximum
@@ -821,9 +862,16 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		kubeNodeName = "m01"
 	}
 
-	mem := defaultMemorySize(drvName)
+	sysLimit, containerLimit, err := memoryLimits(drvName)
+	if err != nil {
+		glog.Warningf("Unable to query memory limits: %v", err)
+	}
+
+	mem := suggestMemoryAllocation(sysLimit, containerLimit)
 	if viper.GetString(memory) != "" {
 		mem = pkgutil.CalculateSizeInMB(viper.GetString(memory))
+	} else {
+		glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 	}
 
 	// Create the initial node, which will necessarily be a control plane
