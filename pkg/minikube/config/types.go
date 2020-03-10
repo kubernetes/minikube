@@ -85,6 +85,11 @@ type KubernetesConfig struct {
 
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool
+
+	// We need to keep these in the short term for backwards compatibility
+	NodeIP   string
+	NodePort int
+	NodeName string
 }
 
 // Node contains information about specific nodes in a cluster

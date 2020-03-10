@@ -252,7 +252,7 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 		return errors.Wrap(err, "getting cluster")
 	}
 
-	cp, err := config.PrimaryControlPlane(*cc)
+	cp, err := config.PrimaryControlPlane(cc)
 	if err != nil {
 		return errors.Wrap(err, "getting control plane")
 	}
