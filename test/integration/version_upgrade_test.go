@@ -170,7 +170,17 @@ func TestVersionUpgradeV1(t *testing.T) {
 		}
 	}
 
-	args := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=1"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--iso-url=%s", oldISO), fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	rr := &RunResult{}
+	r := func() error {
+		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
+		return err
+	}
+
+	// Retry to allow flakiness for the previous release
+	if err := retry.Expo(r, 13*time.Second, Minutes(30), 2); err != nil {
+		t.Fatalf("v1.0.0 start failed: %v", err)
+	}
 	rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), "stop", "-p", profile))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
