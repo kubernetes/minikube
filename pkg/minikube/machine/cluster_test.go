@@ -108,8 +108,6 @@ func TestStartHostExists(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
-	n := defaultNodeConfig
-
 	// Create an initial host.
 	ih, err := createHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
 	if err != nil {
