@@ -33,6 +33,19 @@ import (
 // KubernetesContainerPrefix is the prefix of each kubernetes container
 const KubernetesContainerPrefix = "k8s_"
 
+type ErrISOFeature struct {
+	missing string
+}
+
+func NewErrISOFeature(missing string) *ErrISOFeature {
+	return &ErrISOFeature{
+		missing: missing,
+	}
+}
+func (e *ErrISOFeature) Error() string {
+	return e.missing
+}
+
 // Docker contains Docker runtime state
 type Docker struct {
 	Socket string
@@ -278,7 +291,7 @@ func (r *Docker) Preload(k8sVersion string) error {
 
 	c := exec.Command("which", "lz4")
 	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "check lz4 available.")
+		return NewErrISOFeature("lz4")
 	}
 
 	// Copy over tarball into host
