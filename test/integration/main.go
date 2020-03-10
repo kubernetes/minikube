@@ -56,7 +56,7 @@ func StartArgs() []string {
 
 // StartArgsOld returns the arguments normally used for starting minikube campatible for Pre 1.8.0 which did not have --driver fag
 func StartArgsOld() []string {
-	return strings.Split(strings.Replace(*startArgs, "--driver", "--vm-driver"), " ")
+	return strings.Split(strings.Replace(*startArgs, "--driver", "--vm-driver"), " ", -1)
 }
 
 // Target returns where the minikube binary can be found
