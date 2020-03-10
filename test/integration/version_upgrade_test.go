@@ -217,6 +217,6 @@ func TestVersionUpgradeV1(t *testing.T) {
 	if _, err = semver.Parse(cv.ServerVersion.GitVersion); err != nil {
 		t.Fatalf("err parsing the kubernets version %v", err)
 	} else {
-		t.Logf("k8s version is %s")
+		t.Logf("k8s version is %q", cv.ServerVersion.GitVersion)
 	}
 }
