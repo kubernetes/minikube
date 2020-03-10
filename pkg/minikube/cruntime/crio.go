@@ -24,6 +24,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -227,6 +228,6 @@ func (r *CRIO) SystemLogCmd(len int) string {
 }
 
 // Preload preloads the container runtime with k8s images
-func (r *CRIO) Preload(k8sVersion string) error {
+func (r *CRIO) Preload(cfg config.KubernetesConfig) error {
 	return fmt.Errorf("not yet implemented for %s", r.Name())
 }

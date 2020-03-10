@@ -26,6 +26,9 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -270,7 +273,19 @@ func (r *Docker) SystemLogCmd(len int) string {
 // 1. Copy over the preloaded tarball into the VM
 // 2. Extract the preloaded tarball to the correct directory
 // 3. Remove the tarball within the VM
-func (r *Docker) Preload(k8sVersion string) error {
+func (r *Docker) Preload(cfg config.KubernetesConfig) error {
+	k8sVersion := cfg.KubernetesVersion
+
+	// If images already exist, return
+	images, err := images.Kubeadm(cfg.ImageRepository, k8sVersion)
+	if err != nil {
+		return errors.Wrap(err, "getting images")
+	}
+	if ImagesPreloaded(r.Runner, images) {
+		glog.Info("Images already preloaded, skipping extraction")
+		return nil
+	}
+
 	tarballPath := download.TarballPath(k8sVersion)
 	targetDir := "/"
 	targetName := "preloaded.tar.lz4"
@@ -302,4 +317,27 @@ func (r *Docker) Preload(k8sVersion string) error {
 		glog.Infof("error removing tarball: %v", err)
 	}
 	return r.Restart()
+}
+
+// ImagesPreloaded returns true if all images have been preloaded
+func ImagesPreloaded(runner command.Runner, images []string) bool {
+	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
+	if err != nil {
+		return false
+	}
+	preloadedImages := map[string]struct{}{}
+	for _, i := range strings.Split(rr.Stdout.String(), "\n") {
+		preloadedImages[i] = struct{}{}
+	}
+
+	glog.Infof("Got preloaded images: %s", rr.Output())
+
+	// Make sure images == imgs
+	for _, i := range images {
+		if _, ok := preloadedImages[i]; !ok {
+			glog.Infof("%s wasn't preloaded", i)
+			return false
+		}
+	}
+	return true
 }
