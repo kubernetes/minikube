@@ -41,7 +41,15 @@ const (
 )
 
 // BeginCacheRequiredImages caches images required for kubernetes version in the background
-func BeginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVersion string) {
+func BeginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string) {
+	if download.PreloadExists(k8sVersion, cRuntime) {
+		g.Go(func() error {
+			glog.Info("Caching tarball of preloaded images")
+			return download.Preload(k8sVersion, cRuntime)
+		})
+		return
+	}
+
 	if !viper.GetBool("cache-images") {
 		return
 	}
@@ -64,7 +72,7 @@ func HandleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string)
 		exit.WithError("Failed to cache kubectl", err)
 	}
 	WaitCacheRequiredImages(cacheGroup)
-	waitDownloadKicArtifacts(kicGroup)
+	WaitDownloadKicArtifacts(kicGroup)
 	if err := saveImagesToTarFromConfig(); err != nil {
 		exit.WithError("Failed to cache images to tar", err)
 	}
@@ -89,24 +97,16 @@ func doCacheBinaries(k8sVersion string) error {
 }
 
 // beginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
-func beginDownloadKicArtifacts(g *errgroup.Group, k8sVersion, cRuntime string) bool {
+func beginDownloadKicArtifacts(g *errgroup.Group) {
 	glog.Info("Beginning downloading kic artifacts")
 	g.Go(func() error {
 		glog.Infof("Downloading %s to local daemon", kic.BaseImage)
 		return image.WriteImageToDaemon(kic.BaseImage)
 	})
-
-	if download.PreloadExists(k8sVersion, cRuntime) {
-		g.Go(func() error {
-			glog.Info("Caching tarball of preloaded images")
-			return download.Preload(k8sVersion, cRuntime)
-		})
-		return true
-	}
-	return false
 }
 
-func waitDownloadKicArtifacts(g *errgroup.Group) {
+// WaitDownloadKicArtifacts blocks until the required artifacts for KIC are downloaded.
+func WaitDownloadKicArtifacts(g *errgroup.Group) {
 	if err := g.Wait(); err != nil {
 		glog.Errorln("Error downloading kic artifacts: ", err)
 		return
@@ -114,7 +114,7 @@ func waitDownloadKicArtifacts(g *errgroup.Group) {
 	glog.Info("Successfully downloaded all kic artifacts")
 }
 
-// waitCacheRequiredImages blocks until the required images are all cached.
+// WaitCacheRequiredImages blocks until the required images are all cached.
 func WaitCacheRequiredImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return

@@ -78,12 +78,11 @@ func localISOPath(u *url.URL) string {
 }
 
 // ISO downloads and returns the path to the downloaded ISO
-func ISO(urls []string) (string, error) {
-	out.T(out.ISODownload, "Downloading VM boot image ...")
+func ISO(urls []string, skipChecksum bool) (string, error) {
 	errs := map[string]string{}
 
 	for _, url := range urls {
-		err := downloadISO(url)
+		err := downloadISO(url, skipChecksum)
 		if err != nil {
 			glog.Errorf("Unable to download %s: %v", url, err)
 			errs[url] = err.Error()
@@ -102,7 +101,7 @@ func ISO(urls []string) (string, error) {
 }
 
 // downloadISO downloads an ISO URL
-func downloadISO(isoURL string) error {
+func downloadISO(isoURL string, skipChecksum bool) error {
 	u, err := url.Parse(isoURL)
 	if err != nil {
 		return errors.Wrapf(err, "url.parse %q", isoURL)
@@ -128,7 +127,12 @@ func downloadISO(isoURL string) error {
 		return nil
 	}
 
+	out.T(out.ISODownload, "Downloading VM boot image ...")
+
 	urlWithChecksum := isoURL + "?checksum=file:" + isoURL + ".sha256"
+	if skipChecksum {
+		urlWithChecksum = isoURL
+	}
 
 	// Predictable temp destination so that resume can function
 	tmpDst := dst + ".download"

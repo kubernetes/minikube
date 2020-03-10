@@ -254,10 +254,6 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for node {{.name}} to come online ...", out.V{"name": n.Name})
-	cp, err := config.PrimaryControlPlane(cfg)
-	if err != nil {
-		return err
-	}
 
 	if n.ControlPlane {
 		if err := kverify.APIServerProcess(k.c, start, timeout); err != nil {
@@ -265,11 +261,11 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 	}
 
-	ip := cp.IP
-	port := cp.Port
+	ip := n.IP
+	port := n.Port
 	if driver.IsKIC(cfg.Driver) {
 		ip = oci.DefaultBindIPV4
-		port, err = oci.HostPortBinding(cfg.Driver, driver.MachineName(cfg, n), port)
+		port, err := oci.HostPortBinding(cfg.Driver, driver.MachineName(cfg, n), port)
 		if err != nil {
 			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 		}

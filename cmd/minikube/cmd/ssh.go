@@ -52,7 +52,7 @@ var sshCmd = &cobra.Command{
 		}
 		var n *config.Node
 		if nodeName == "" {
-			cp, err := config.PrimaryControlPlane(*cc)
+			cp, err := config.PrimaryControlPlane(cc)
 			if err != nil {
 				exit.WithError("Getting primary control plane", err)
 			}

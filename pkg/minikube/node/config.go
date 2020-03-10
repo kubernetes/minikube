@@ -25,12 +25,14 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
+	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -47,6 +49,21 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 	if driver.BareMetal(drvName) {
 		disableOthers = false
 	}
+	if !driver.IsKIC(drvName) {
+		if err := cr.Preload(k8s.KubernetesVersion); err != nil {
+			switch err.(type) {
+			case *cruntime.ErrISOFeature:
+				out.T(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
+			default:
+				glog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
+			}
+
+			if err := machine.CacheImagesForBootstrapper(k8s.ImageRepository, k8s.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+				exit.WithError("Failed to cache images", err)
+			}
+		}
+	}
+
 	err = cr.Enable(disableOthers)
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)

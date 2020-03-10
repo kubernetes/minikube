@@ -52,7 +52,7 @@ var serviceListCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		cp, err := config.PrimaryControlPlane(*cfg)
+		cp, err := config.PrimaryControlPlane(cfg)
 		if err != nil {
 			exit.WithError("Error getting primary control plane", err)
 		}

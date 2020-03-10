@@ -57,7 +57,7 @@ var logsCmd = &cobra.Command{
 		}
 
 		if nodeName == "" {
-			cp, err := config.PrimaryControlPlane(*cfg)
+			cp, err := config.PrimaryControlPlane(cfg)
 			if err != nil {
 				exit.WithError("Error getting primary control plane", err)
 			}

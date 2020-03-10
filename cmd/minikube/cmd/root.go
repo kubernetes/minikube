@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -97,6 +98,11 @@ func Execute() {
 		// add minikube binaries to the path
 		targetDir := localpath.MakeMiniPath("bin")
 		addToPath(targetDir)
+	}
+
+	// Universally ensure that we never speak to the wrong DOCKER_HOST
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		glog.Errorf("oci env: %v", err)
 	}
 
 	if err := RootCmd.Execute(); err != nil {

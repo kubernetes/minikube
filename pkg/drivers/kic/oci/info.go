@@ -216,17 +216,18 @@ type podmanSysInfo struct {
 // dockerSystemInfo returns docker system info --format '{{json .}}'
 func dockerSystemInfo() (dockerSysInfo, error) {
 	var ds dockerSysInfo
-	if err := PointToHostDockerDaemon(); err != nil {
-		return ds, errors.Wrap(err, "point host docker-daemon")
-	}
+
 	cmd := exec.Command(Docker, "system", "info", "--format", "{{json .}}")
 	out, err := cmd.CombinedOutput()
+
 	if err != nil {
 		return ds, errors.Wrap(err, "get docker system info")
 	}
+
 	if err := json.Unmarshal([]byte(strings.TrimSpace(string(out))), &ds); err != nil {
 		return ds, errors.Wrapf(err, "unmarshal docker system info")
 	}
+
 	return ds, nil
 }
 

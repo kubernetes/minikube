@@ -89,18 +89,18 @@ export MINIKUBE_ACTIVE_DOCKERD="ipv6"
 			"fish",
 			DockerEnvConfig{profile: "fish", driver: "kvm2", hostIP: "127.0.0.1", port: 2376, certsDir: "/certs"},
 			nil,
-			`set -gx DOCKER_TLS_VERIFY "1"
-set -gx DOCKER_HOST "tcp://127.0.0.1:2376"
-set -gx DOCKER_CERT_PATH "/certs"
-set -gx MINIKUBE_ACTIVE_DOCKERD "fish"
+			`set -gx DOCKER_TLS_VERIFY "1";
+set -gx DOCKER_HOST "tcp://127.0.0.1:2376";
+set -gx DOCKER_CERT_PATH "/certs";
+set -gx MINIKUBE_ACTIVE_DOCKERD "fish";
 
 # To point your shell to minikube's docker-daemon, run:
 # minikube -p fish docker-env | source
 `,
-			`set -e DOCKER_TLS_VERIFY
-set -e DOCKER_HOST
-set -e DOCKER_CERT_PATH
-set -e MINIKUBE_ACTIVE_DOCKERD
+			`set -e DOCKER_TLS_VERIFY;
+set -e DOCKER_HOST;
+set -e DOCKER_CERT_PATH;
+set -e MINIKUBE_ACTIVE_DOCKERD;
 `,
 		},
 		{

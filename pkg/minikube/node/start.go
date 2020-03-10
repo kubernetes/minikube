@@ -31,7 +31,7 @@ import (
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool) error {
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup, kicGroup errgroup.Group
-	cluster.BeginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion)
+	cluster.BeginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
 
 	runner, preExists, mAPI, _ := cluster.StartMachine(&cc, &n)
 	defer mAPI.Close()
@@ -45,10 +45,14 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	driverName := cc.Driver
 	// exits here in case of --download-only option.
 	cluster.HandleDownloadOnly(&cacheGroup, &kicGroup, k8sVersion)
+	cluster.WaitDownloadKicArtifacts(&kicGroup)
+
+	// wait for preloaded tarball to finish downloading before configuring runtimes
+	cluster.WaitCacheRequiredImages(&cacheGroup)
+
 	// configure the runtime (docker, containerd, crio)
 	cr := configureRuntimes(runner, driverName, cc.KubernetesConfig)
 	showVersionInfo(k8sVersion, cr)
-	cluster.WaitCacheRequiredImages(&cacheGroup)
 
 	configureMounts()
 
@@ -77,7 +81,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		exit.WithError("setting up certs", err)
 	}
 
-	cp, err := config.PrimaryControlPlane(cc)
+	cp, err := config.PrimaryControlPlane(&cc)
 	if err != nil {
 		exit.WithError("Getting primary control plane", err)
 	}

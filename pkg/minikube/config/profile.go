@@ -18,7 +18,6 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -53,14 +52,35 @@ func (p *Profile) IsValid() bool {
 }
 
 // PrimaryControlPlane gets the node specific config for the first created control plane
-func PrimaryControlPlane(cc ClusterConfig) (Node, error) {
+func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
 	for _, n := range cc.Nodes {
 		if n.ControlPlane {
 			return n, nil
 		}
 	}
 
-	return Node{}, errors.New("could not find master node")
+	// This config is probably from 1.6 or earlier, let's convert it.
+	cp := Node{
+		Name:              cc.KubernetesConfig.NodeName,
+		IP:                cc.KubernetesConfig.NodeIP,
+		Port:              cc.KubernetesConfig.NodePort,
+		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+		ControlPlane:      true,
+		Worker:            true,
+	}
+
+	cc.Nodes = []Node{cp}
+
+	// Remove old style attribute to avoid confusion
+	cc.KubernetesConfig.NodeName = ""
+	cc.KubernetesConfig.NodeIP = ""
+
+	err := SaveProfile(viper.GetString(ProfileName), cc)
+	if err != nil {
+		return Node{}, err
+	}
+
+	return cp, nil
 }
 
 // ProfileNameInReservedKeywords checks if the profile is an internal keywords
