@@ -40,10 +40,10 @@ import (
 
 // TestVersionUpgradeLatest is a comprehensive combination of tests
 // downloads the current latest release binary from https://github.com/kubernetes/minikube/releases/latest
-// and starts it with:  a custom ISO-URL and oldest supported kuberentes version
+// and starts it with:  a custom ISO-URL and oldest supported k8s version
 // and then stops it
-// and then starts with head minikube binary with oldest supported minikube
-// and then starts with head minikube binary with oldest newest minikube
+// and then starts with head minikube binary with oldest supported k8s version
+// and then starts with head minikube binary with newest supported k8s version
 func TestVersionUpgradeLatest(t *testing.T) {
 	MaybeParallel(t)
 	profile := UniqueProfileName("vupgrade-latest")
