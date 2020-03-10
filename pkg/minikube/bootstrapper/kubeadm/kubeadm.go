@@ -254,7 +254,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Duration) error {
 	start := time.Now()
 	out.T(out.Waiting, "Waiting for cluster to come online ...")
-	cp, err := config.PrimaryControlPlane(cfg)
+	cp, err := config.PrimaryControlPlane(&cfg)
 	if err != nil {
 		return err
 	}
