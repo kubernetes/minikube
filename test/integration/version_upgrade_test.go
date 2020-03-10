@@ -211,11 +211,12 @@ func TestVersionUpgradeV1(t *testing.T) {
 		} `json:"serverVersion"`
 	}{}
 	err = json.Unmarshal(s.Stdout.Bytes(), &cv)
-
 	if err != nil {
 		t.Fatalf("error traversing json output: %v", err)
 	}
 	if _, err = semver.Parse(cv.ServerVersion.GitVersion); err != nil {
 		t.Fatalf("err parsing the kubernets version %v", err)
+	} else {
+		t.Logf("k8s version is %s")
 	}
 }
