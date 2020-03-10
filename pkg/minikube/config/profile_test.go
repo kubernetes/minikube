@@ -34,7 +34,7 @@ func TestListProfiles(t *testing.T) {
 		vmDriver   string
 	}{
 		{0, "p1", "hyperkit"},
-		{1, "p2", "virtualbox"},
+		{1, "p2_newformat", "virtualbox"},
 	}
 
 	// test cases for invalid profiles
@@ -109,7 +109,7 @@ func TestProfileExists(t *testing.T) {
 		expected bool
 	}{
 		{"p1", true},
-		{"p2", true},
+		{"p2_newformat", true},
 		{"p3_empty", true},
 		{"p4_invalid_file", true},
 		{"p5_partial_config", true},
@@ -233,7 +233,7 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 		expectedName string
 	}{
 		{"old style", "p1", "192.168.64.75", 8443, "minikube"},
-		{"new style", "p2", "192.168.99.136", 8443, "m01"},
+		{"new style", "p2_newformat", "192.168.99.136", 8443, "m01"},
 	}
 
 	for _, tc := range tests {
