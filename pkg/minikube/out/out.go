@@ -118,7 +118,7 @@ func FatalT(format string, a ...V) {
 
 // WarningT is a shortcut for writing a templated warning message to stderr
 func WarningT(format string, a ...V) {
-	ErrT(WarningType, format, a...)
+	ErrT(Warning, format, a...)
 }
 
 // FailureT is a shortcut for writing a templated failure message to stderr

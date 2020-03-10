@@ -159,7 +159,7 @@ var mountCmd = &cobra.Command{
 
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
 		if !supportedFilesystems[cfg.Type] {
-			out.T(out.WarningType, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
+			out.T(out.Warning, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
 		}
 
 		bindIP := ip.String() // the ip to listen on the user's host machine
