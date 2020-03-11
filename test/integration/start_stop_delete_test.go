@@ -169,6 +169,26 @@ func TestStartStop(t *testing.T) {
 // testPodScheduling asserts that this configuration can schedule new pods
 func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 	t.Helper()
+	// to avoid https://github.com/kubernetes/minikube/issues/6997
+	// adding this logic to minikube start is not necessary but useful for rare test flakes
+	saReady := func() error { // check if default service account is created.
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "serviceaccount", "default")))
+		if err != nil {
+			t.Logf("temporary error waiting for default service account: %v",err)
+			return fmt.Errorf("Error waiting for default service account %v",err)
+		}
+		return nil
+	}
+
+	if err := retry.Expo(saReady, 500*time.Millisecond, time.Second*30); err != nil {
+		t.Errorf("default service account was not created in 30 seconds.", err)
+	}
+
+	// schedule a pod to assert persistence
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
 
 	// schedule a pod to assert persistence
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
