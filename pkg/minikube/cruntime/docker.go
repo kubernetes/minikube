@@ -29,6 +29,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -299,6 +300,11 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 		return nil
 	}
 
+	refStore := docker.NewStorage(r.Runner)
+	if err := refStore.Save(); err != nil {
+		glog.Infof("error saving reference store: %v", err)
+	}
+
 	tarballPath := download.TarballPath(k8sVersion)
 	targetDir := "/"
 	targetName := "preloaded.tar.lz4"
@@ -328,6 +334,15 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 	//  remove the tarball in the VM
 	if err := r.Runner.Remove(fa); err != nil {
 		glog.Infof("error removing tarball: %v", err)
+	}
+
+	// save new reference store again
+	if err := refStore.Save(); err != nil {
+		glog.Infof("error saving reference store: %v", err)
+	}
+	// update reference store
+	if err := refStore.Update(); err != nil {
+		glog.Infof("error updating reference store: %v", err)
 	}
 	return r.Restart()
 }
