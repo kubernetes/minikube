@@ -192,7 +192,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	// Allow older kubeadm versions to function with newer Docker releases.
 	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
 	if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.Driver) {
-		glog.Infof("disabling SystemVerification check based on driver or kubernetes version", version)
+		glog.Info("ignoring SystemVerification for kubeadm because of either driver or kubernetes version")
 		ignore = append(ignore, "SystemVerification")
 	}
 
