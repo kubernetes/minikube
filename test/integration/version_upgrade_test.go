@@ -170,7 +170,7 @@ func TestVersionUpgradeV1(t *testing.T) {
 		}
 	}
 
-	args := append([]string{"start", "-p", profile}, StartArgs()...)
+	args := append([]string{"start", "-p", profile}, StartArgsLegacy()...)
 	rr := &RunResult{}
 	r := func() error {
 		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
@@ -195,7 +195,7 @@ func TestVersionUpgradeV1(t *testing.T) {
 		t.Errorf("status = %q; want = %q", got, state.Stopped.String())
 	}
 
-	args = append([]string{"start", "-p", profile, "--alsologtostderr", "-v=1"}, StartArgsOld()...)
+	args = append([]string{"start", "-p", profile, "--alsologtostderr", "-v=1"}, StartArgsLegacy()...)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
