@@ -104,6 +104,8 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 		},
 	}
 	for _, test := range tests {
+		// Set default disk size value in lieu of flag init
+		viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
 		t.Run(test.description, func(t *testing.T) {
 			cmd := &cobra.Command{}
 			if err := os.Setenv("HTTP_PROXY", test.proxy); err != nil {
