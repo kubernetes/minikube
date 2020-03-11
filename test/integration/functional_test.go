@@ -595,6 +595,20 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateServiceCmd asserts basic "service" command functionality
 func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
+	// to avoid https://github.com/kubernetes/minikube/issues/6997
+	// adding this logic to minikube start is not necessary but useful for rare test flakes
+	saReady := func() error { // check if default service account is created.
+		if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "serviceaccount", "default")); err != nil {
+			t.Logf("temporary error waiting for default service account: %v", err)
+			return fmt.Errorf("Error waiting for default service account %v", err)
+		}
+		return nil
+	}
+
+	if err := retry.Expo(saReady, 500*time.Microsecond, time.Second*30); err != nil {
+		t.Errorf("default service account was not created in 30 seconds.: %v", err)
+	}
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=gcr.io/hello-minikube-zero-install/hello-node"))
 	if err != nil {
 		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
@@ -710,6 +724,20 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateMySQL validates a minimalist MySQL deployment
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
+	// to avoid https://github.com/kubernetes/minikube/issues/6997
+	// adding this logic to minikube start is not necessary but useful for rare test flakes
+	saReady := func() error { // check if default service account is created.
+		if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "serviceaccount", "default")); err != nil {
+			t.Logf("temporary error waiting for default service account: %v", err)
+			return fmt.Errorf("Error waiting for default service account %v", err)
+		}
+		return nil
+	}
+
+	if err := retry.Expo(saReady, 500*time.Microsecond, time.Second*30); err != nil {
+		t.Errorf("default service account was not created in 30 seconds.: %v", err)
+	}
+
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -725,7 +753,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
 		return err
 	}
-	if err = retry.Expo(mysql, 5*time.Second, 180*time.Second); err != nil {
+	if err = retry.Expo(mysql, 5*time.Second, Seconds(180)); err != nil {
 		t.Errorf("mysql failing: %v", err)
 	}
 }
