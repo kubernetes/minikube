@@ -35,11 +35,13 @@ func driverWithChecksumURL(name string, v semver.Version) string {
 // Driver downloads an arbitrary driver
 func Driver(name string, destination string, v semver.Version) error {
 	out.T(out.FileDownload, "Downloading driver {{.driver}}:", out.V{"driver": name})
-	os.Remove(destination)
+
+	tmpDst := destination + ".download"
+
 	url := driverWithChecksumURL(name, v)
 	client := &getter.Client{
 		Src:     url,
-		Dst:     destination,
+		Dst:     tmpDst,
 		Mode:    getter.ClientModeFile,
 		Options: []getter.ClientOption{getter.WithProgress(DefaultProgressBar)},
 	}
@@ -49,5 +51,9 @@ func Driver(name string, destination string, v semver.Version) error {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
 	// Give downloaded drivers a baseline decent file permission
-	return os.Chmod(destination, 0755)
+	err := os.Chmod(tmpDst, 0755)
+	if err != nil {
+		return err
+	}
+	return os.Rename(tmpDst, destination)
 }
