@@ -42,6 +42,7 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 			glog.Info("Caching tarball of preloaded images")
 			return download.Preload(k8sVersion, cRuntime)
 		})
+		g.Wait()
 		return
 	}
 
