@@ -103,6 +103,7 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 // to the volume named volumeName
 func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
 	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
+	glog.Infof("executing: %s", cmd.Args)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}
@@ -114,6 +115,7 @@ func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
 // TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
 func createDockerVolume(profile string, nodeName string) error {
 	cmd := exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))
+	glog.Infof("executing: %s", cmd.Args)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}
