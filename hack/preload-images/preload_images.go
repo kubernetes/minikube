@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"os"
@@ -92,7 +93,7 @@ func executePreloadImages() error {
 	defer os.Remove(baseDir)
 
 	if err := os.MkdirAll(baseDir, 0755); err != nil {
-		return err
+		return errors.Wrap(err, "mkdir")
 	}
 	if err := driver.Create(); err != nil {
 		return errors.Wrap(err, "creating kic driver")
@@ -123,7 +124,7 @@ func executePreloadImages() error {
 	}
 	// Create image tarball
 	if err := createImageTarball(); err != nil {
-		return err
+		return errors.Wrap(err, "create tarball")
 	}
 	return copyTarballToHost()
 }
@@ -139,7 +140,7 @@ func createImageTarball() error {
 	cmd := exec.Command("docker", args...)
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "creating image tarball")
+		return errors.Wrapf(err, "tarball cmd: %s", cmd.Args)
 	}
 	return nil
 }
@@ -149,7 +150,7 @@ func copyTarballToHost() error {
 	cmd := exec.Command("docker", "cp", fmt.Sprintf("%s:/%s", profile, tarballFilename), dest)
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
-		return errors.Wrap(err, "copying tarball to host")
+		return errors.Wrapf(err, "cp cmd: %s", cmd.Args)
 	}
 	return nil
 }
@@ -162,9 +163,11 @@ func deleteMinikube() error {
 
 func verifyDockerStorage() error {
 	cmd := exec.Command("docker", "info", "-f", "{{.Info.Driver}}")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
 	output, err := cmd.Output()
 	if err != nil {
-		return err
+		return fmt.Errorf("%v: %v:\n%s", cmd.Args, err, stderr.String())
 	}
 	driver := strings.Trim(string(output), " \n")
 	if driver != dockerStorageDriver {
