@@ -38,16 +38,13 @@ import (
 // beginCacheKubernetesImages caches images required for kubernetes version in the background
 func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion, cRuntime string) {
 	if download.PreloadExists(k8sVersion, cRuntime) {
-		g.Go(func() error {
-			glog.Info("Caching tarball of preloaded images")
-			return download.Preload(k8sVersion, cRuntime)
-		})
-		err := g.Wait()
+		glog.Info("Caching tarball of preloaded images")
+		err := download.Preload(k8sVersion, cRuntime)
 		if err == nil {
 			glog.Infof("Finished downloading the preloaded tar for %s on %s", k8sVersion, cRuntime)
 			return // don't cache individual images if preload is successful.
 		}
-		glog.Errorf("Error downloading preloaded artifacts will continue without preload: %v", err)
+		glog.Warningf("Error downloading preloaded artifacts will continue without preload: %v", err)
 	}
 
 	if !viper.GetBool("cache-images") {
