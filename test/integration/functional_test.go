@@ -598,7 +598,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	// to avoid https://github.com/kubernetes/minikube/issues/6997
 	// adding this logic to minikube start is not necessary but useful for rare test flakes
 	saReady := func() error { // check if default service account is created.
-		if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "serviceaccount", "default")); err != nil {
+		if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "serviceaccount", "default")); err != nil {
 			t.Logf("temporary error waiting for default service account: %v", err)
 			return fmt.Errorf("Error waiting for default service account %v", err)
 		}
@@ -727,7 +727,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	// to avoid https://github.com/kubernetes/minikube/issues/6997
 	// adding this logic to minikube start is not necessary but useful for rare test flakes
 	saReady := func() error { // check if default service account is created.
-		if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "serviceaccount", "default")); err != nil {
+		if _, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "serviceaccount", "default")); err != nil {
 			t.Logf("temporary error waiting for default service account: %v", err)
 			return fmt.Errorf("Error waiting for default service account %v", err)
 		}
