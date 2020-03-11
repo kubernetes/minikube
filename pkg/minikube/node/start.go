@@ -44,10 +44,13 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	}
 
 	var cacheGroup errgroup.Group
-	beginCacheKubernetesImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+	// Adding a second layer of cache does not make sense for the none driver
+	if !driver.BareMetal(driverName) {
+		beginCacheKubernetesImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
-	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
+	// Hence, saveProfile must be called before startHost, and again afterwards when we know the IP.
 	if err := config.SaveProfile(viper.GetString(config.ProfileName), &mc); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
