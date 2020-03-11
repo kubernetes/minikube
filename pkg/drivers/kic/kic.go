@@ -202,7 +202,7 @@ func (d *Driver) GetSSHKeyPath() string {
 
 // GetURL returns ip of the container running kic control-panel
 func (d *Driver) GetURL() (string, error) {
-	p, err := oci.HostPortBinding(d.NodeConfig.OCIBinary, d.MachineName, int(d.NodeConfig.APIServerPort))
+	p, err := oci.HostPortBinding(d.NodeConfig.OCIBinary, d.MachineName, d.NodeConfig.APIServerPort)
 	url := fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", fmt.Sprint(p)))
 	if err != nil {
 		return url, errors.Wrap(err, "api host port binding")
