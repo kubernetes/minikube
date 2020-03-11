@@ -52,7 +52,10 @@ func TestCalculateSizeInMB(t *testing.T) {
 	}
 
 	for _, tt := range testData {
-		number := CalculateSizeInMB(tt.size)
+		number, err := CalculateSizeInMB(tt.size)
+		if err != nil {
+			t.Fatalf("unexpected err: %v", err)
+		}
 		if number != tt.expectedNumber {
 			t.Fatalf("Expected '%d'' but got '%d'", tt.expectedNumber, number)
 		}

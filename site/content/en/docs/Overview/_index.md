@@ -41,7 +41,6 @@ Then minikube is for you.
 
 * **What is it good for?** Developing local Kubernetes applications
 * **What is it not good for?** Production Kubernetes deployments
-* **What is it *not yet* good for?** Environments which do not allow VM's
 
 ## Where should I go next?
 
