@@ -134,7 +134,6 @@ func downloadISO(isoURL string, skipChecksum bool) error {
 		urlWithChecksum = isoURL
 	}
 
-	// Predictable temp destination so that resume can function
 	tmpDst := dst + ".download"
 
 	opts := []getter.ClientOption{getter.WithProgress(DefaultProgressBar)}
