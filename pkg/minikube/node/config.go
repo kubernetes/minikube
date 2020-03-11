@@ -66,7 +66,9 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 	if driver.BareMetal(drvName) {
 		disableOthers = false
 	}
-	if !driver.IsKIC(drvName) {
+
+	// Preload is overly invasive for bare metal, and caching is not meaningful.
+	if driver.IsVM(drvName) {
 		if err := cr.Preload(k8s.KubernetesVersion); err != nil {
 			switch err.(type) {
 			case *cruntime.ErrISOFeature:
