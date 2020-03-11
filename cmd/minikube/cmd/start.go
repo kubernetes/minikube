@@ -431,8 +431,11 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	glog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
 
 	if client.Major != cluster.Major || minorSkew > 1 {
-		out.WarningT("{{.path}} is version {{.client_version}}, and is incompatible with Kubernetes {{.cluster_version}}. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
+		out.Ln("")
+		out.T(out.Warning, "{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
+		out.T(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
+			out.V{"path": path, "client_version": client})
 	}
 	return nil
 }
