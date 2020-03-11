@@ -295,7 +295,7 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 	if err != nil {
 		return errors.Wrap(err, "getting images")
 	}
-	if ImagesPreloaded(r.Runner, images) {
+	if DockerImagesPreloaded(r.Runner, images) {
 		glog.Info("Images already preloaded, skipping extraction")
 		return nil
 	}
@@ -347,8 +347,8 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 	return r.Restart()
 }
 
-// ImagesPreloaded returns true if all images have been preloaded
-func ImagesPreloaded(runner command.Runner, images []string) bool {
+// DockerImagesPreloaded returns true if all images have been preloaded
+func DockerImagesPreloaded(runner command.Runner, images []string) bool {
 	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
 	if err != nil {
 		return false

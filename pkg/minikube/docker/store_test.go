@@ -17,8 +17,9 @@ limitations under the License.
 package docker
 
 import (
-	"reflect"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestMergeReferenceStores(t *testing.T) {
@@ -68,7 +69,7 @@ func TestMergeReferenceStores(t *testing.T) {
 	}
 
 	actual := s.mergeReferenceStores()
-	if !reflect.DeepEqual(actual, expected) {
-		t.Errorf("Actual: %v, Expected: %v", actual, expected)
+	if diff := cmp.Diff(actual, expected); diff != "" {
+		t.Errorf("Actual: %v, Expected: %v, Diff: %s", actual, expected, diff)
 	}
 }
