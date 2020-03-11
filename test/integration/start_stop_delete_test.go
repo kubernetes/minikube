@@ -62,8 +62,6 @@ func TestStartStop(t *testing.T) {
 			}},
 			{"containerd", constants.DefaultKubernetesVersion, []string{
 				"--container-runtime=containerd",
-				"--docker-opt",
-				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
 			}},
 			{"crio", "v1.15.7", []string{
