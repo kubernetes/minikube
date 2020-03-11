@@ -67,7 +67,7 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 		disableOthers = false
 	}
 
-	// Preload is overly invasive for VM's, and caching is not meaningful.
+	// Preload is overly invasive for bare metal, and caching is not meaningful.
 	if driver.IsVM(drvName) {
 		if err := cr.Preload(k8s.KubernetesVersion); err != nil {
 			switch err.(type) {
