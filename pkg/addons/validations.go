@@ -34,12 +34,8 @@ and then start minikube again with the following flags:
 minikube start --container-runtime=containerd --docker-opt containerd=/var/run/containerd/containerd.sock`
 
 // IsContainerdRuntime is a validator which returns an error if the current runtime is not containerd
-func IsContainerdRuntime(_, _, profile string) error {
-	config, err := config.Load(profile)
-	if err != nil {
-		return fmt.Errorf("config.Load: %v", err)
-	}
-	r, err := cruntime.New(cruntime.Config{Type: config.KubernetesConfig.ContainerRuntime})
+func IsContainerdRuntime(cc *config.ClusterConfig, _, _ string) error {
+	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
 	if err != nil {
 		return err
 	}

@@ -18,7 +18,7 @@ package addons
 
 import "k8s.io/minikube/pkg/minikube/config"
 
-type setFn func(string, string, string) error
+type setFn func(*config.ClusterConfig, string, string) error
 
 // Addon represents an addon
 type Addon struct {
