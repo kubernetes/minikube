@@ -127,7 +127,10 @@ func enableOrDisableAddon(name, val, profile string) error {
 	if name == "istio" && enable {
 		minMem := 8192
 		minCpus := 4
-		memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString("memory"))
+		memorySizeMB, err := pkgutil.CalculateSizeInMB(viper.GetString("memory"))
+		if err != nil {
+			return errors.Wrap(err, "calculate memory")
+		}
 		cpuCount := viper.GetInt("cpus")
 		if memorySizeMB < minMem || cpuCount < minCpus {
 			out.WarningT("Enable istio needs {{.minMem}} MB of memory and {{.minCpus}} CPUs.", out.V{"minMem": minMem, "minCpus": minCpus})
