@@ -21,6 +21,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -37,13 +38,13 @@ type CRIO struct {
 	Socket            string
 	Runner            CommandRunner
 	ImageRepository   string
-	KubernetesVersion string
+	KubernetesVersion semver.Version
 }
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
-func generateCRIOConfig(cr CommandRunner, imageRepository string) error {
+func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version) error {
 	cPath := crioConfigFile
-	pauseImage := images.Pause(imageRepository)
+	pauseImage := images.Pause(kv, imageRepository)
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, cPath))
 	if _, err := cr.RunCmd(c); err != nil {
@@ -116,7 +117,7 @@ func (r *CRIO) Enable(disOthers bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateCRIOConfig(r.Runner, r.ImageRepository); err != nil {
+	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {

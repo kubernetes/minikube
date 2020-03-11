@@ -62,8 +62,13 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
+	sv, err := util.ParseKubernetesVersion(mc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return nil, err
+	}
+
 	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig)
+	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig, sv)
 	showVersionInfo(k8sVersion, cr)
 
 	//TODO(sharifelgamal): Part out the cluster-wide operations, perhaps using the "primary" param

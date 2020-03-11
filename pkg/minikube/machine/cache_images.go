@@ -79,6 +79,7 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 	}()
 
 	var g errgroup.Group
+
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
