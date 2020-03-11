@@ -177,7 +177,7 @@ func TestStartStopWithPreload(t *testing.T) {
 
 	startArgs := []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}
 	startArgs = append(startArgs, StartArgs()...)
-	k8sVersion := "v1.17.3"
+	k8sVersion := "v1.17.0"
 	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
@@ -191,11 +191,16 @@ func TestStartStopWithPreload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
-	// Restart minikube
+	// Restart minikube with v1.17.3, which has a preloaded tarball
+	startArgs = []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}
+	startArgs = append(startArgs, StartArgs()...)
+	k8sVersion = "v1.17.3"
+	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
+
 	// Ensure that busybox still exists in the daemon
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images"))
 	if err != nil {
