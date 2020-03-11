@@ -26,8 +26,6 @@ import (
 	"github.com/blang/semver"
 	"github.com/docker/go-units"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/out"
 )
 
 const (
@@ -35,17 +33,17 @@ const (
 )
 
 // CalculateSizeInMB returns the number of MB in the human readable string
-func CalculateSizeInMB(humanReadableSize string) int {
+func CalculateSizeInMB(humanReadableSize string) (int, error) {
 	_, err := strconv.ParseInt(humanReadableSize, 10, 64)
 	if err == nil {
 		humanReadableSize += "mb"
 	}
 	size, err := units.FromHumanSize(humanReadableSize)
 	if err != nil {
-		exit.WithCodeT(exit.Config, "Invalid size passed in argument: {{.error}}", out.V{"error": err})
+		return 0, fmt.Errorf("FromHumanSize: %v", err)
 	}
 
-	return int(size / units.MB)
+	return int(size / units.MB), nil
 }
 
 // GetBinaryDownloadURL returns a suitable URL for the platform
