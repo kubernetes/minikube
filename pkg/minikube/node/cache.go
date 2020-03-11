@@ -42,8 +42,12 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 			glog.Info("Caching tarball of preloaded images")
 			return download.Preload(k8sVersion, cRuntime)
 		})
-		g.Wait()
-		return
+		err := g.Wait()
+		if err == nil {
+			glog.Infof("Finished downloading the preloaded tar for %s on %s", k8sVersion, cRuntime)
+			return // don't cache individual images if preload is successful.
+		}
+		glog.Errorf("Error downloading preloaded artifacts will continue without preload: %v", err)
 	}
 
 	if !viper.GetBool("cache-images") {
