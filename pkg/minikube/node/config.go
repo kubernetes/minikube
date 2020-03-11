@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
@@ -55,9 +56,13 @@ var (
 )
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig) cruntime.Manager {
-	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner, ImageRepository: k8s.ImageRepository, KubernetesVersion: k8s.KubernetesVersion}
-	cr, err := cruntime.New(config)
+func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig, kv semver.Version) cruntime.Manager {
+	co := cruntime.Config{
+		Type:   viper.GetString(containerRuntime),
+		Runner: runner, ImageRepository: k8s.ImageRepository,
+		KubernetesVersion: kv,
+	}
+	cr, err := cruntime.New(co)
 	if err != nil {
 		exit.WithError("Failed runtime", err)
 	}

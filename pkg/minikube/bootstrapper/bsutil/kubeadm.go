@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 )
 
 // Container runtimes
@@ -38,7 +39,7 @@ const remoteContainerRuntime = "remote"
 // GenerateKubeadmYAML generates the kubeadm.yaml file
 func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.Node) ([]byte, error) {
 	k8s := mc.KubernetesConfig
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}

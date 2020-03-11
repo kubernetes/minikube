@@ -431,8 +431,11 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	glog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
 
 	if client.Major != cluster.Major || minorSkew > 1 {
-		out.WarningT("{{.path}} is version {{.client_version}}, and is incompatible with Kubernetes {{.cluster_version}}. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
+		out.Ln("")
+		out.T(out.Warning, "{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
+		out.T(out.Tip, "You can also use 'minikube kubectl -- <arguments>' to invoke a matching version",
+			out.V{"path": path, "client_version": client})
 	}
 	return nil
 }
@@ -549,7 +552,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
 
-func selectImageRepository(mirrorCountry string) (bool, string, error) {
+func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
 	glog.Infof("selecting image repository for country %s ...", mirrorCountry)
@@ -577,7 +580,7 @@ func selectImageRepository(mirrorCountry string) (bool, string, error) {
 	}
 
 	checkRepository := func(repo string) error {
-		pauseImage := images.Pause(repo)
+		pauseImage := images.Pause(v, repo)
 		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
 		if err != nil {
 			return err
@@ -796,7 +799,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	repository := viper.GetString(imageRepository)
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
 	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
-		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry)
+		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(k8sVersion))
 		if err != nil {
 			exit.WithError("Failed to check main repository and mirrors for images for images", err)
 		}

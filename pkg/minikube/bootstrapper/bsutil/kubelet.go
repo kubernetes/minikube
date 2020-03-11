@@ -26,11 +26,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/util"
 )
 
 func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) (map[string]string, error) {
 	k8s := mc.KubernetesConfig
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -62,7 +63,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 		extraOpts["hostname-override"] = nc.Name
 	}
 
-	pauseImage := images.Pause(k8s.ImageRepository)
+	pauseImage := images.Pause(version, k8s.ImageRepository)
 	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
 		extraOpts["pod-infra-container-image"] = pauseImage
 	}

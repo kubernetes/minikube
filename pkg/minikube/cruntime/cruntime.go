@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
@@ -114,7 +115,7 @@ type Config struct {
 	// ImageRepository image repository to download image from
 	ImageRepository string
 	// KubernetesVersion Kubernetes version
-	KubernetesVersion string
+	KubernetesVersion semver.Version
 }
 
 // ListOptions are the options to use for listing containers
