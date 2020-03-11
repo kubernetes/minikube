@@ -54,7 +54,7 @@ var Addons = []*Addon{
 	{
 		name:        "gvisor",
 		set:         SetBool,
-		validations: []setFn{UsingContainerd},
+		validations: []setFn{IsRuntimeContainerd},
 		callbacks:   []setFn{enableOrDisableAddon},
 	},
 	{
