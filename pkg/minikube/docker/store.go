@@ -19,6 +19,7 @@ package docker
 import (
 	"encoding/json"
 	"os/exec"
+	"path"
 
 	"github.com/golang/glog"
 	"github.com/opencontainers/go-digest"
@@ -55,7 +56,7 @@ func NewStorage(runner command.Runner) *Storage {
 // Save saves the current reference store in memory
 func (s *Storage) Save() error {
 	// get the contents of repositories.json in minikube
-	// if this command fails, assume the file doens't exist
+	// if this command fails, assume the file doesn't exist
 	rr, err := s.runner.RunCmd(exec.Command("sudo", "cat", referenceStorePath))
 	if err != nil {
 		glog.Infof("repositories.json doesn't exist: %v", err)
@@ -85,7 +86,7 @@ func (s *Storage) Update() error {
 		return err
 	}
 
-	asset := assets.NewMemoryAsset(contents, "/var/lib/docker/image/overlay2/", "repositories.json", "0644")
+	asset := assets.NewMemoryAsset(contents, path.Dir(referenceStorePath), path.Base(referenceStorePath), "0644")
 	return s.runner.Copy(asset)
 }
 
