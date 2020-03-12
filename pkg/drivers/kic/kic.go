@@ -202,9 +202,13 @@ func (d *Driver) GetSSHKeyPath() string {
 
 // GetURL returns ip of the container running kic control-panel
 func (d *Driver) GetURL() (string, error) {
+	ip, err := d.GetIP()
+	if err != nil {
+		return "", err
+	}
 	// because of libmachine problem with detecting docker port https://github.com/kubernetes/minikube/issues/7017
 	// we have to do this hack https://github.com/docker/machine/blob/master/libmachine/provision/utils.go#L159_L175
-	url := fmt.Sprintf("https://%s", net.JoinHostPort("127.0.0.1", "2376"))
+	url := fmt.Sprintf("tcp://%s", net.JoinHostPort(ip, "2376"))
 	return url, nil
 }
 
