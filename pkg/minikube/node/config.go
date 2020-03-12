@@ -138,10 +138,12 @@ func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clus
 		if err != nil {
 			exit.WithError("Failed to get host binding port for api port", err)
 		}
-
 	}
 
 	addr = strings.Replace(addr, "tcp://", "https://", -1)
+	// because of libmachine problem with detecting docker port https://github.com/kubernetes/minikube/issues/7017
+	// we have to do this hack https://github.com/docker/machine/blob/master/libmachine/provision/utils.go#L159_L175
+	// @
 	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(p), -1)
 
 	if c.KubernetesConfig.APIServerName != constants.APIServerName {
