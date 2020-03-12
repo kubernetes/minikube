@@ -72,9 +72,9 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 		disableOthers = false
 	}
 
-	// Preload is overly invasive for bare metal, and caching is not meaningful.
+	// Preload is overly invasive for bare metal, and caching is not meaningful. KIC handled elsewhere.
 	if driver.IsVM(drvName) {
-		if err := cr.Preload(k8s.KubernetesVersion); err != nil {
+		if err := cr.Preload(k8s); err != nil {
 			switch err.(type) {
 			case *cruntime.ErrISOFeature:
 				out.T(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
