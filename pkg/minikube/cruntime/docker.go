@@ -95,7 +95,7 @@ func (r *Docker) Available() error {
 
 // Active returns if docker is active on the host
 func (r *Docker) Active() bool {
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "docker")
+	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "docker")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
