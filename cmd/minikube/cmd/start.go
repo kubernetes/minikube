@@ -315,7 +315,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	k8sVersion := getKubernetesVersion(existing)
-	mc, n, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
+	cc, n, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
@@ -331,7 +331,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		if err != nil {
 			exit.WithError("Failed to cache ISO", err)
 		}
-		mc.MinikubeISO = url
+		cc.MinikubeISO = url
 	}
 
 	if viper.GetBool(nativeSSH) {
@@ -350,16 +350,16 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := config.SaveProfile(viper.GetString(config.ProfileName), &mc); err != nil {
+	if err := config.SaveProfile(viper.GetString(config.ProfileName), &cc); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
-	kubeconfig, err := cluster.InitialSetup(mc, n, existingAddons)
+	kubeconfig, err := cluster.InitialSetup(cc, n, existingAddons)
 	if err != nil {
 		exit.WithError("Starting node", err)
 	}
 
-	if err := showKubectlInfo(kubeconfig, k8sVersion, mc.Name); err != nil {
+	if err := showKubectlInfo(kubeconfig, k8sVersion, cc.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
 	}
 
@@ -369,14 +369,14 @@ func runStart(cmd *cobra.Command, args []string) {
 			out.T(out.Meh, "The none driver is not compatible with multi-node clusters.")
 		}
 		for i := 1; i < numNodes; i++ {
-			nodeName := fmt.Sprintf("%s%d", n.Name, i+1)
+			nodeName := fmt.Sprintf("m%02d", i+1)
 			n := config.Node{
 				Name:              nodeName,
 				Worker:            true,
 				ControlPlane:      false,
-				KubernetesVersion: mc.KubernetesConfig.KubernetesVersion,
+				KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 			}
-			err := node.Add(&mc, n)
+			err := node.Add(&cc, n)
 			if err != nil {
 				exit.WithError("adding node", err)
 			}

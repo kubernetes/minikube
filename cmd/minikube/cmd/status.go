@@ -150,8 +150,15 @@ func exitCode(st *Status) int {
 
 func status(api libmachine.API, name string, controlPlane bool) (*Status, error) {
 
-	profile := strings.Split(name, "-")[0]
-	node := strings.Split(name, "-")[1]
+	var profile, node string
+
+	if strings.Contains(name, "-") {
+		profile = strings.Split(name, "-")[0]
+		node = strings.Split(name, "-")[1]
+	} else {
+		profile = name
+		node = name
+	}
 
 	st := &Status{
 		Name:       node,

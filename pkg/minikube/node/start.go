@@ -28,12 +28,12 @@ import (
 )
 
 // Start spins up a guest and starts the kubernetes node.
-func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool) error {
+func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool) {
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
 	var cacheGroup, kicGroup errgroup.Group
 	cluster.BeginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
 
-	runner, preExists, mAPI, _ := cluster.StartMachine(&cc, &n)
+	runner, _, mAPI, _ := cluster.StartMachine(&cc, &n)
 	defer mAPI.Close()
 
 	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cc, n)
@@ -69,13 +69,6 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		out.T(out.FailureType, "Unable to load cached images from config file.")
 	}
 
-	// Skip pre-existing, because we already waited for health
-	if viper.GetBool(waitUntilHealthy) && !preExists {
-		if err := bs.WaitForNode(cc, n, viper.GetDuration(waitTimeout)); err != nil {
-			exit.WithError("Wait failed", err)
-		}
-	}
-
 	err = bs.SetupCerts(cc.KubernetesConfig, n)
 	if err != nil {
 		exit.WithError("setting up certs", err)
@@ -93,5 +86,15 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	if err != nil {
 		exit.WithError("generating join token", err)
 	}
-	return bs.JoinCluster(cc, n, joinCmd)
+	err = bs.JoinCluster(cc, n, joinCmd)
+	if err != nil {
+		exit.WithError("joining cluster", err)
+	}
+
+	/*// Skip pre-existing, because we already waited for health
+	if viper.GetBool(waitUntilHealthy) && !preExists {
+		if err := bs.WaitForNode(cc, n, viper.GetDuration(waitTimeout)); err != nil {
+			exit.WithError("Wait failed", err)
+		}
+	}*/
 }

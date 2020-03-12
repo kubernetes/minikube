@@ -61,10 +61,7 @@ var nodeStartCmd = &cobra.Command{
 		}
 
 		// Start it up baby
-		err = node.Start(*cc, *n, nil)
-		if err != nil {
-			out.FatalT("Failed to start node {{.name}}", out.V{"name": name})
-		}
+		node.Start(*cc, *n, nil)
 	},
 }
 

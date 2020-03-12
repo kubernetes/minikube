@@ -36,8 +36,8 @@ import (
 const remoteContainerRuntime = "remote"
 
 // GenerateKubeadmYAML generates the kubeadm.yaml file
-func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.Node) ([]byte, error) {
-	k8s := mc.KubernetesConfig
+func GenerateKubeadmYAML(cc config.ClusterConfig, r cruntime.Manager, n config.Node) ([]byte, error) {
+	k8s := cc.KubernetesConfig
 	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
@@ -50,7 +50,7 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 	}
 
 	// In case of no port assigned, use default
-	cp, err := config.PrimaryControlPlane(&mc)
+	cp, err := config.PrimaryControlPlane(&cc)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting control plane")
 	}
@@ -62,6 +62,11 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 	componentOpts, err := createExtraComponentConfig(k8s.ExtraOptions, version, componentFeatureArgs, cp)
 	if err != nil {
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
+	}
+
+	controlPlaneEndpoint := cp.IP
+	if n.ControlPlane {
+		controlPlaneEndpoint = "localhost"
 	}
 
 	opts := struct {
@@ -91,7 +96,7 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
 		ClusterName:       k8s.ClusterName,
-		NodeName:          cp.Name,
+		NodeName:          n.Name,
 		CRISocket:         r.SocketPath(),
 		ImageRepository:   k8s.ImageRepository,
 		ComponentOptions:  componentOpts,
@@ -101,7 +106,7 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 		NodeIP:            n.IP,
 		// NOTE: If set to an specific VM IP, things may break if the IP changes on host restart
 		// For multi-node, we may need to figure out an alternate strategy, like DNS or hosts files
-		ControlPlaneAddress: "localhost",
+		ControlPlaneAddress: controlPlaneEndpoint,
 	}
 
 	if k8s.ServiceCIDR != "" {
@@ -126,6 +131,7 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
 	}
+	fmt.Printf("%s OPTS=%+v\n", n.Name, opts)
 	glog.Infof("kubeadm config:\n%s\n", b.String())
 	return b.Bytes(), nil
 }
