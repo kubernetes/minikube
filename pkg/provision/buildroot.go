@@ -155,7 +155,7 @@ WantedBy=multi-user.target
 		return nil, err
 	}
 
-	if err := p.Service("", serviceaction.Enable); err != nil {
+	if err := p.Service("docker", serviceaction.Enable); err != nil {
 		return nil, err
 	}
 
