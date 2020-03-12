@@ -43,7 +43,7 @@ var nodeAddCmd = &cobra.Command{
 			exit.WithError("Error getting config", err)
 		}
 
-		name := fmt.Sprintf("m%d", len(cc.Nodes)+1)
+		name := fmt.Sprintf("m%02d", len(cc.Nodes)+1)
 
 		out.T(out.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": profile})
 

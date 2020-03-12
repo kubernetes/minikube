@@ -43,8 +43,8 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 		return err
 	}
 
-	err = Start(*cc, n, nil)
-	return err
+	Start(*cc, n, nil)
+	return nil
 }
 
 // Delete stops and deletes the given node from the given cluster
