@@ -130,7 +130,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Nod
 
 func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
 	addr := ""
-	var err
+	var err error
 	if driver.IsKIC(h.DriverName) {
 		p, err := oci.HostPortBinding(h.DriverName, h.Name, n.Port)
 		if err != nil {
