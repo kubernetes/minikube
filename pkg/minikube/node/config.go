@@ -30,6 +30,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -131,10 +132,17 @@ func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clus
 	if err != nil {
 		exit.WithError("Failed to get driver URL", err)
 	}
-	if !driver.IsKIC(h.DriverName) {
-		addr = strings.Replace(addr, "tcp://", "https://", -1)
-		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(n.Port), -1)
+	p := n.Port
+	if driver.IsKIC(h.DriverName) {
+		p, err = oci.HostPortBinding(h.DriverName, h.Name, n.Port)
+		if err != nil {
+			exit.WithError("Failed to get host binding port for api port", err)
+		}
+
 	}
+
+	addr = strings.Replace(addr, "tcp://", "https://", -1)
+	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(p), -1)
 
 	if c.KubernetesConfig.APIServerName != constants.APIServerName {
 		addr = strings.Replace(addr, n.IP, c.KubernetesConfig.APIServerName, -1)
