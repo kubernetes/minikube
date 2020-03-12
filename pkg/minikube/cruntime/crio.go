@@ -103,7 +103,7 @@ func (r *CRIO) Available() error {
 
 // Active returns if CRIO is active on the host
 func (r *CRIO) Active() bool {
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "crio")
+	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "crio")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
