@@ -23,7 +23,8 @@ import (
 	"path/filepath"
 	"strconv"
 
-	units "github.com/docker/go-units"
+	"github.com/blang/semver"
+	"github.com/docker/go-units"
 	"github.com/pkg/errors"
 )
 
@@ -86,4 +87,9 @@ func MaybeChownDirRecursiveToMinikubeUser(dir string) error {
 		}
 	}
 	return nil
+}
+
+// ParseKubernetesVersion parses the kubernetes version
+func ParseKubernetesVersion(version string) (semver.Version, error) {
+	return semver.Make(version[1:])
 }
