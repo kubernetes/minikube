@@ -18,6 +18,7 @@ package node
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -128,23 +129,26 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Nod
 }
 
 func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
-	addr, err := h.Driver.GetURL()
-	if err != nil {
-		exit.WithError("Failed to get driver URL", err)
-	}
-	p := n.Port
+	addr := ""
+	var err
 	if driver.IsKIC(h.DriverName) {
-		p, err = oci.HostPortBinding(h.DriverName, h.Name, n.Port)
+		p, err := oci.HostPortBinding(h.DriverName, h.Name, n.Port)
 		if err != nil {
 			exit.WithError("Failed to get host binding port for api port", err)
 		}
-	}
+		addr = fmt.Sprintf("https://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(p)))
+	} else {
+		addr, err = h.Driver.GetURL()
+		if err != nil {
+			exit.WithError("Failed to get driver URL", err)
+		}
 
-	addr = strings.Replace(addr, "tcp://", "https://", -1)
-	// because of libmachine problem with detecting docker port https://github.com/kubernetes/minikube/issues/7017
-	// we have to do this hack https://github.com/docker/machine/blob/master/libmachine/provision/utils.go#L159_L175
-	// @
-	addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(p), -1)
+		addr = strings.Replace(addr, "tcp://", "https://", -1)
+		// because of libmachine problem with detecting docker port https://github.com/kubernetes/minikube/issues/7017
+		// we have to do this hack https://github.com/docker/machine/blob/master/libmachine/provision/utils.go#L159_L175
+		// contact @afbjorklund for more details
+		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(n.Port), -1)
+	}
 
 	if c.KubernetesConfig.APIServerName != constants.APIServerName {
 		addr = strings.Replace(addr, n.IP, c.KubernetesConfig.APIServerName, -1)
