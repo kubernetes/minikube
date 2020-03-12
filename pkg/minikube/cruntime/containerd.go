@@ -157,7 +157,7 @@ func (r *Containerd) DefaultCNI() bool {
 
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "containerd")
+	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "containerd")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
