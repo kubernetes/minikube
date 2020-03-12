@@ -36,7 +36,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 // hostRunner is a minimal host.Host based interface for running commands
@@ -104,10 +103,6 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 		return h, nil
 	}
 
-	glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
-	if err := h.ConfigureAuth(); err != nil {
-		return h, &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
-	}
 	return h, ensureSyncedGuestClock(h, cc.Driver)
 }
 
