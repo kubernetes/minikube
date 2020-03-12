@@ -552,7 +552,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
 
-func selectImageRepository(mirrorCountry string) (bool, string, error) {
+func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
 	glog.Infof("selecting image repository for country %s ...", mirrorCountry)
@@ -580,7 +580,7 @@ func selectImageRepository(mirrorCountry string) (bool, string, error) {
 	}
 
 	checkRepository := func(repo string) error {
-		pauseImage := images.Pause(repo)
+		pauseImage := images.Pause(v, repo)
 		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
 		if err != nil {
 			return err
@@ -822,7 +822,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	repository := viper.GetString(imageRepository)
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
 	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
-		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry)
+		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(k8sVersion))
 		if err != nil {
 			exit.WithError("Failed to check main repository and mirrors for images for images", err)
 		}

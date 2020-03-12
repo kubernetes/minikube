@@ -21,22 +21,10 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 )
-
-// ParseKubernetesVersion parses the kubernetes version
-func ParseKubernetesVersion(version string) (semver.Version, error) {
-	// Strip leading 'v' prefix from version for semver parsing
-	v, err := semver.Make(version[1:])
-	if err != nil {
-		return semver.Version{}, errors.Wrap(err, "invalid version, must begin with 'v'")
-	}
-
-	return v, nil
-}
 
 // versionIsBetween checks if a version is between (or including) two given versions
 func versionIsBetween(version, gte, lte semver.Version) bool {
