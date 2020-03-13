@@ -1000,10 +1000,6 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	}
 	nv := version.VersionPrefix + nvs.String()
 
-	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
-		return nv
-	}
-
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	if err != nil {
 		exit.WithCodeT(exit.Data, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
@@ -1020,6 +1016,10 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		} else {
 			exit.WithCodeT(exit.Data, "Sorry, Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 		}
+	}
+
+	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
+		return nv
 	}
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))
