@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"os"
 	"path"
+	"runtime"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -75,6 +76,10 @@ func remoteTarballURL(k8sVersion string) string {
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime string) bool {
 	if containerRuntime != "docker" {
+		return false
+	}
+
+	if runtime.GOARCH != "amd64" {
 		return false
 	}
 
