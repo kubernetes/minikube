@@ -21,8 +21,6 @@ VERSION ?= v$(RAW_VERSION)
 
 KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
-PRELOADED_TARBALL_VERSION ?= $(shell egrep "PreloadVersion =" pkg/minikube/download/preload.go | cut -d \" -f2)
-PRELOADED_VOLUMES_GCS_BUCKET ?= $(shell egrep "PreloadBucket =" pkg/minikube/download/preload.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
