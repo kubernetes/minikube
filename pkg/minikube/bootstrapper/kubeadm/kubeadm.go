@@ -222,6 +222,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	return nil
 }
 
+// SetupNode runs commands that need to be on all nodes
 func (k *Bootstrapper) SetupNode(cfg config.ClusterConfig) error {
 	if cfg.Driver == driver.Docker {
 		if err := k.applyKicOverlay(cfg); err != nil {
@@ -339,33 +340,32 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
-	for _, n := range cfg.Nodes {
-		ip := n.IP
-		port := n.Port
-		if driver.IsKIC(cfg.Driver) {
-			ip = oci.DefaultBindIPV4
-			port, err = oci.HostPortBinding(cfg.Driver, driver.MachineName(cfg, n), port)
-			if err != nil {
-				return errors.Wrapf(err, "get host-bind port %d for container %s", port, driver.MachineName(cfg, n))
-			}
-		}
-		client, err := k.client(ip, port)
+	cp, err := config.PrimaryControlPlane(&cfg)
+	ip := cp.IP
+	port := cp.Port
+	if driver.IsKIC(cfg.Driver) {
+		ip = oci.DefaultBindIPV4
+		port, err = oci.HostPortBinding(cfg.Driver, driver.MachineName(cfg, cp), port)
 		if err != nil {
-			return errors.Wrap(err, "getting k8s client")
+			return errors.Wrapf(err, "get host-bind port %d for container %s", port, driver.MachineName(cfg, cp))
 		}
+	}
+	client, err := k.client(ip, port)
+	if err != nil {
+		return errors.Wrap(err, "getting k8s client")
+	}
 
-		if err := kverify.SystemPods(client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
-			return errors.Wrap(err, "system pods")
-		}
+	if err := kverify.SystemPods(client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "system pods")
+	}
 
-		// Explicitly re-enable kubeadm addons (proxy, coredns) so that they will check for IP or configuration changes.
-		if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, bsutil.KubeadmYamlPath))); err != nil {
-			return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q", rr.Command()))
-		}
+	// Explicitly re-enable kubeadm addons (proxy, coredns) so that they will check for IP or configuration changes.
+	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, bsutil.KubeadmYamlPath))); err != nil {
+		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q", rr.Command()))
+	}
 
-		if err := bsutil.AdjustResourceLimits(k.c); err != nil {
-			glog.Warningf("unable to adjust resource limits: %v", err)
-		}
+	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
+		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
 	return nil
 }

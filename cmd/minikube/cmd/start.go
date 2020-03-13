@@ -359,10 +359,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithError("Starting node", err)
 	}
 
-	if err := showKubectlInfo(kubeconfig, k8sVersion, cc.Name); err != nil {
-		glog.Errorf("kubectl info: %v", err)
-	}
-
 	numNodes := viper.GetInt(nodes)
 	if numNodes > 1 {
 		if driver.IsKIC(driverName) {
@@ -381,6 +377,10 @@ func runStart(cmd *cobra.Command, args []string) {
 				exit.WithError("adding node", err)
 			}
 		}
+	}
+
+	if err := showKubectlInfo(kubeconfig, k8sVersion, cc.Name); err != nil {
+		glog.Errorf("kubectl info: %v", err)
 	}
 }
 
