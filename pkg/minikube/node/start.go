@@ -24,7 +24,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // Start spins up a guest and starts the kubernetes node.
@@ -66,12 +65,15 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	}
 
 	if err := cluster.CacheAndLoadImagesInConfig(); err != nil {
-		out.T(out.FailureType, "Unable to load cached images from config file.")
+		exit.WithError("Unable to load cached images from config file.", err)
 	}
 
-	err = bs.SetupCerts(cc.KubernetesConfig, n)
-	if err != nil {
+	if err = bs.SetupCerts(cc.KubernetesConfig, n); err != nil {
 		exit.WithError("setting up certs", err)
+	}
+
+	if err = bs.SetupNode(cc); err != nil {
+		exit.WithError("Failed to setup node", err)
 	}
 
 	cp, err := config.PrimaryControlPlane(&cc)
@@ -82,19 +84,13 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	if err != nil {
 		exit.WithError("Getting bootstrapper", err)
 	}
-	joinCmd, err := cpBs.GenerateToken(cc.KubernetesConfig)
+
+	joinCmd, err := cpBs.GenerateToken(cc)
 	if err != nil {
 		exit.WithError("generating join token", err)
 	}
-	err = bs.JoinCluster(cc, n, joinCmd)
-	if err != nil {
+
+	if err = bs.JoinCluster(cc, n, joinCmd); err != nil {
 		exit.WithError("joining cluster", err)
 	}
-
-	/*// Skip pre-existing, because we already waited for health
-	if viper.GetBool(waitUntilHealthy) && !preExists {
-		if err := bs.WaitForNode(cc, n, viper.GetDuration(waitTimeout)); err != nil {
-			exit.WithError("Wait failed", err)
-		}
-	}*/
 }

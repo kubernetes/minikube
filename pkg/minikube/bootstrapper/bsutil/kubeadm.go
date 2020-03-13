@@ -65,9 +65,9 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, r cruntime.Manager, n config.N
 	}
 
 	controlPlaneEndpoint := cp.IP
-	if n.ControlPlane {
+	/*if n.ControlPlane {
 		controlPlaneEndpoint = "localhost"
-	}
+	}*/
 
 	opts := struct {
 		CertDir             string
