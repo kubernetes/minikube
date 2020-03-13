@@ -113,7 +113,7 @@ func (api *LocalClient) NewHost(drvName string, rawDriver []byte) (*host.Host, e
 			},
 			EngineOptions: &engine.Options{
 				StorageDriver: "overlay2",
-				TLSVerify:     true,
+				TLSVerify:     false,
 			},
 			SwarmOptions: &swarm.Options{},
 		},
