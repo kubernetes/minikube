@@ -151,6 +151,11 @@ WantedBy=multi-user.target
 		return nil, err
 	}
 
+	// To make sure if there is a already-installed docker on the ISO to pick up the new systemd file
+	if err := p.Service("", serviceaction.DaemonReload); err != nil {
+		return nil, err
+	}
+
 	if err := p.Service("docker", serviceaction.Enable); err != nil {
 		return nil, err
 	}
