@@ -226,7 +226,7 @@ func (d *Driver) GetState() (state.State, error) {
 	}
 	o := strings.TrimSpace(string(out))
 	if err != nil {
-		return state.Error, errors.Wrapf(err, "get container %s status", d.MachineName)
+		return state.Error, errors.Wrapf(err, "%s: %s", cmd.Args, out)
 	}
 	switch o {
 	case "running":
