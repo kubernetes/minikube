@@ -15,32 +15,29 @@ This tutorial will cover how to set up your minikube cluster so that you can run
 
 ## Prerequisites
 
-- minikube source code
 - Latest minikube binary
 
 ## Tutorial
 
-First, you will need to build the minikube ISO from scratch.
-Instructions for building the ISO can be found [here](../Contributing/iso.md).
-
-_Note: Building the ISO can take at least an hour._
-
-Now, start minikube:
+First, start minikube:
 
 ```
 $ minikube start
 ```
 
-Mount kernel headers that were built during the ISO build into the minikube VM:
+You will need to download and extract necessary kernel headers within minikube:
 
+```shell
+$ minikube ssh -- curl -Lo /tmp/kernel-headers-linux-4.19.94.tar.lz4 https://storage.googleapis.com/minikube-kernel-headers/kernel-headers-linux-4.19.94.tar.lz4 
+
+$ minikube ssh -- sudo mkdir -p /lib/modules/4.19.94/build
+
+$ minikube ssh -- sudo tar -I lz4 -C /lib/modules/4.19.94/build -xvf /tmp/kernel-headers-linux-4.19.94.tar.lz4
+
+$ minikube ssh -- rm /tmp/kernel-headers-linux-4.19.94.tar.lz4
 ```
-$ cd minikube
-$ minikube mount $(pwd)/out/buildroot/output/build/linux-4.19.94:/lib/modules/4.19.94/build
-```
 
-This command will need to stay running for as long as you want to run BPF tools.
-
-In another terminal window, you can now run [BCC tools](https://github.com/iovisor/bcc) as a Docker container in minikube:
+You can now run [BCC tools](https://github.com/iovisor/bcc) as a Docker container in minikube:
 
 ```shell
 $ minikube ssh -- docker run -it --rm   --privileged   -v /lib/modules:/lib/modules:ro   -v /usr/src:/usr/src:ro   -v /etc/localtime:/etc/localtime:ro   --workdir /usr/share/bcc/tools   zlim/bcc ./execsnoop
