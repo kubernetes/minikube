@@ -77,6 +77,10 @@ jobs:
     - name: Docker Info
       shell: bash
       run: |
+        sudo apt-get update
+        sudo apt-get remove docker docker-engine docker.io containerd runc
+        sudo apt-get install docker-ce
+        docker version
         docker info || true
         docker version || true
         docker ps || true
@@ -145,6 +149,10 @@ jobs:
     - name: Docker Info
       shell: bash
       run: |
+        sudo apt-get update
+        sudo apt-get remove docker docker-engine docker.io containerd runc
+        sudo apt-get install docker-ce
+        docker version
         docker info || true
         docker version || true
         docker ps || true

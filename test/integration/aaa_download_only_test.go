@@ -167,7 +167,7 @@ func TestDownloadOnly(t *testing.T) {
 }
 func TestDownloadOnlyDocker(t *testing.T) {
 	if !runningDockerDriver(StartArgs()) {
-		t.Skip("this test only runs with the docker driver")
+		t.Skipf("this test only runs with the docker driver, start args are: %v", StartArgs())
 	}
 
 	profile := UniqueProfileName("download-docker")
@@ -197,11 +197,11 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	}
 
 	// Make sure this image exists in the docker daemon
-	images, err := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}").Output()
+	images, err := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}").Output()
 	if err != nil {
 		t.Errorf("getting list of docker images failed: %v\nOutput: %s", err, string(images))
 	}
-	want := fmt.Sprintf("%s:%s", kic.Repository, kic.Version)
+	want := kic.BaseImage
 	if !strings.Contains(string(images), want) {
 		t.Errorf("expected image does not exist in local daemon; got:\n%s wanted:\n%s", string(images), want)
 	}
@@ -209,7 +209,7 @@ func TestDownloadOnlyDocker(t *testing.T) {
 
 func runningDockerDriver(startArgs []string) bool {
 	for _, s := range startArgs {
-		if s == "--vm-driver=docker" {
+		if strings.Contains(s, "driver=docker") {
 			return true
 		}
 	}
