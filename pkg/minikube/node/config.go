@@ -23,7 +23,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
@@ -154,28 +153,31 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 
 // apiServerURL returns a URL to end user can reach to the api server
 func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
+	hostname := ""
+	port := n.Port
+	var err error
 	if driver.IsKIC(h.DriverName) {
-		p, err := oci.HostPortBinding(h.DriverName, h.Name, n.Port)
+		// for kic drivers we use 127.0.0.1 instead of node IP,
+		// because of Docker on MacOs limitations for reaching to container's IP.
+		hostname = oci.DefaultBindIPV4
+		port, err = oci.HostPortBinding(h.DriverName, h.Name, port)
 		if err != nil {
 			return "", errors.Wrap(err, "host port binding")
 		}
-		// for kic drivers we use 127.0.0.1 instead of node IP,
-		// because of Docker on MacOs limitations for reaching to container's IP.
-		addr := fmt.Sprintf("https://" + net.JoinHostPort(oci.DefaultBindIPV4, strconv.Itoa(p)))
 		if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-			addr = strings.Replace(addr, oci.DefaultBindIPV4, cc.KubernetesConfig.APIServerName, -1)
+			hostname = cc.KubernetesConfig.APIServerName
 		}
-		return addr, nil
+		return fmt.Sprintf("https://" + net.JoinHostPort(hostname, strconv.Itoa(port))), nil
 	}
-	ip, err := h.Driver.GetIP()
+
+	hostname, err = h.Driver.GetIP()
 	if err != nil {
 		return "", errors.Wrap(err, "get ip")
 	}
-	addr := fmt.Sprintf("https://" + net.JoinHostPort(ip, strconv.Itoa(n.Port)))
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, n.IP, cc.KubernetesConfig.APIServerName, -1)
+		hostname = cc.KubernetesConfig.APIServerName
 	}
-	return addr, nil
+	return fmt.Sprintf("https://" + net.JoinHostPort(hostname, strconv.Itoa(n.Port))), nil
 }
 
 // configureMounts configures any requested filesystem mounts

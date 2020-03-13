@@ -155,7 +155,7 @@ WantedBy=multi-user.target
 		return nil, err
 	}
 
-	// because in kic base image we pre-install docker it already has a service file, it is harmless to double check with this step
+	// because in kic base image we pre-install docker it already has a service file. we need to daemon-reload for the new systemd file
 	if err := p.Service("", serviceaction.DaemonReload); err != nil {
 		return nil, err
 	}
