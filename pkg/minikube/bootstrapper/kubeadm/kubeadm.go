@@ -200,20 +200,15 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	}
 
+	err = k.SetupNode(cfg)
+	if err != nil {
+		return errors.Wrap(err, "setting up node")
+	}
+
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	rr, err := k.c.RunCmd(c)
 	if err != nil {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
-	}
-
-	if cfg.Driver == driver.Docker {
-		if err := k.applyKicOverlay(cfg); err != nil {
-			return errors.Wrap(err, "apply kic overlay")
-		}
-	}
-
-	if err := k.applyNodeLabels(cfg); err != nil {
-		glog.Warningf("unable to apply node labels: %v", err)
 	}
 
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
@@ -222,6 +217,20 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
 		glog.Warningf("unable to create cluster role binding, some addons might not work : %v. ", err)
+	}
+
+	return nil
+}
+
+func (k *Bootstrapper) SetupNode(cfg config.ClusterConfig) error {
+	if cfg.Driver == driver.Docker {
+		if err := k.applyKicOverlay(cfg); err != nil {
+			return errors.Wrap(err, "apply kic overlay")
+		}
+	}
+
+	if err := k.applyNodeLabels(cfg); err != nil {
+		glog.Warningf("unable to apply node labels: %v", err)
 	}
 
 	return nil
@@ -384,14 +393,20 @@ func (k *Bootstrapper) JoinCluster(cc config.ClusterConfig, n config.Node, joinC
 }
 
 // GenerateToken creates a token and returns the appropriate kubeadm join command to run
-func (k *Bootstrapper) GenerateToken(k8s config.KubernetesConfig) (string, error) {
-	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(k8s.KubernetesVersion)))
+func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
+	tokenCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s token create --print-join-command --ttl=0", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion)))
 	r, err := k.c.RunCmd(tokenCmd)
 	if err != nil {
 		return "", errors.Wrap(err, "generating bootstrap token")
 	}
+
+	/*cp, err := config.PrimaryControlPlane(&cc)
+	if err != nil {
+		return "", errors.Wrap(err, "getting primary control plane")
+	}*/
 	joinCmd := r.Stdout.String()
-	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(k8s.KubernetesVersion), 1)
+	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
+	//joinCmd = strings.ReplaceAll(joinCmd, "localhost", cp.IP)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
 
 	return joinCmd, nil
