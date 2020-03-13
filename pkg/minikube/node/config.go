@@ -132,7 +132,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Nod
 func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
 	addr, err := apiServerURL(*h, *n)
 	if err != nil {
-		exit.WithError("Failed to api server URL", err)
+		exit.WithError("Failed to get api server URL", err)
 	}
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
 		addr = strings.Replace(addr, n.IP, cc.KubernetesConfig.APIServerName, -1)
