@@ -6,8 +6,8 @@ Bug Fixes:
 * Fix dockerd internal port changing on restart [#7021](https://github.com/kubernetes/minikube/pull/7021)
 * none: Skip driver preload and image caching [#7015](https://github.com/kubernetes/minikube/pull/7015)
 * preload: fix bug for windows file separators [#6968](https://github.com/kubernetes/minikube/pull/6968)
-* hyperV: fix 'memory value assigned' bug by rounding suggested memory alloc by 100MB for VM's
-
+* hyperV: fix 'memory value assigned' bug by rounding suggested memory alloc by 100MB for VM's [#6987](https://github.com/kubernetes/minikube/pull/6987)
+* Merge repositories.json after extracting preloaded tarball so that reference store isn't lost [#6985](https://github.com/kubernetes/minikube/pull/6985)
 
 
 Documentation:
