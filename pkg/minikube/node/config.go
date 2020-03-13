@@ -130,13 +130,11 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Nod
 }
 
 func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
-	addr, err := apiServerURL(*h, *n)
+	addr, err := apiServerURL(*h, *cc, *n)
 	if err != nil {
 		exit.WithError("Failed to get api server URL", err)
 	}
-	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, n.IP, cc.KubernetesConfig.APIServerName, -1)
-	}
+
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
 		ClusterServerAddress: addr,
@@ -155,19 +153,29 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 }
 
 // apiServerURL returns a URL to end user can reach to the api server
-func apiServerURL(h host.Host, n config.Node) (string, error) {
+func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
 	if driver.IsKIC(h.DriverName) {
 		p, err := oci.HostPortBinding(h.DriverName, h.Name, n.Port)
 		if err != nil {
 			return "", errors.Wrap(err, "host port binding")
 		}
-		return fmt.Sprintf("https://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(p))), nil
+		// for kic drivers we use 127.0.0.1 instead of node IP,
+		// because of Docker on MacOs limitations for reaching to container's IP.
+		addr := fmt.Sprintf("https://" + net.JoinHostPort(oci.DefaultBindIPV4, strconv.Itoa(p)))
+		if cc.KubernetesConfig.APIServerName != constants.APIServerName {
+			addr = strings.Replace(addr, oci.DefaultBindIPV4, cc.KubernetesConfig.APIServerName, -1)
+		}
+		return addr, nil
 	}
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		return "", errors.Wrap(err, "get ip")
 	}
-	return fmt.Sprintf("https://" + net.JoinHostPort(ip, strconv.Itoa(n.Port))), nil
+	addr := fmt.Sprintf("https://" + net.JoinHostPort(ip, strconv.Itoa(n.Port)))
+	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
+		addr = strings.Replace(addr, n.IP, cc.KubernetesConfig.APIServerName, -1)
+	}
+	return addr, nil
 }
 
 // configureMounts configures any requested filesystem mounts
