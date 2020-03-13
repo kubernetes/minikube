@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go v0.45.1
 	github.com/Microsoft/go-winio v0.4.15-0.20190919025122-fc70bd9a86b5 // indirect
 	github.com/Parallels/docker-machine-parallels v1.3.0
+	github.com/RaveNoX/go-jsonmerge v1.0.0 // indirect
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/blang/semver v3.5.0+incompatible
 	github.com/c4milo/gotoolkit v0.0.0-20170318115440-bcc06269efa9 // indirect
@@ -20,7 +21,7 @@ require (
 	github.com/docker/machine v0.7.1-0.20190718054102-a555e4f7a8f5 // version is 0.7.1 to pin to a555e4f7a8f5
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
-	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
+	github.com/evanphx/json-patch v4.5.0+incompatible
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
@@ -46,12 +47,14 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
+	github.com/mattbaird/jsonpatch v0.0.0-20171005235357-81af80346b1a
 	github.com/mattn/go-isatty v0.0.9
 	github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
 	github.com/olekukonko/tablewriter v0.0.0-20170122224234-a0225b3f23b5
 	github.com/onsi/ginkgo v1.10.3 // indirect
 	github.com/onsi/gomega v1.7.1 // indirect
+	github.com/opencontainers/go-digest v1.0.0-rc1
 	github.com/otiai10/copy v1.0.2
 	github.com/pborman/uuid v1.2.0
 	github.com/phayes/freeport v0.0.0-20180830031419-95f893ade6f2

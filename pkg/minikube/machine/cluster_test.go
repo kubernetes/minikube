@@ -27,6 +27,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/provision"
+	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -58,7 +59,7 @@ var defaultClusterConfig = config.ClusterConfig{
 	Name:      viper.GetString("profile"),
 	Driver:    driver.Mock,
 	DockerEnv: []string{"MOCK_MAKE_IT_PROVISION=true"},
-	Nodes:     []config.Node{config.Node{Name: "minikube"}},
+	Nodes:     []config.Node{{Name: "minikube"}},
 }
 
 func TestCreateHost(t *testing.T) {
@@ -412,6 +413,8 @@ func TestGetHostStatus(t *testing.T) {
 
 func TestCreateSSHShell(t *testing.T) {
 	api := tests.NewMockAPI(t)
+	// Setting the default ssh client to native for test stability.
+	ssh.SetDefaultClient(ssh.Native)
 
 	s, _ := tests.NewSSHServer(t)
 	port, err := s.Start()

@@ -19,10 +19,8 @@ package machine
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -66,7 +64,7 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 // LoadImages loads previously cached images into the container runtime
 func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
 	// Skip loading images if images already exist
-	if imagesPreloaded(runner, images) {
+	if cruntime.DockerImagesPreloaded(runner, images) {
 		glog.Infof("Images are preloaded, skipping loading")
 		return nil
 	}
@@ -79,6 +77,7 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 	}()
 
 	var g errgroup.Group
+
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -106,28 +105,6 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 	}
 	glog.Infoln("Successfully loaded all cached images")
 	return nil
-}
-
-func imagesPreloaded(runner command.Runner, images []string) bool {
-	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
-	if err != nil {
-		return false
-	}
-	preloadedImages := map[string]struct{}{}
-	for _, i := range strings.Split(rr.Stdout.String(), "\n") {
-		preloadedImages[i] = struct{}{}
-	}
-
-	glog.Infof("Got preloaded images: %s", rr.Output())
-
-	// Make sure images == imgs
-	for _, i := range images {
-		if _, ok := preloadedImages[i]; !ok {
-			glog.Infof("%s wasn't preloaded", i)
-			return false
-		}
-	}
-	return true
 }
 
 // needsTransfer returns an error if an image needs to be retransfered

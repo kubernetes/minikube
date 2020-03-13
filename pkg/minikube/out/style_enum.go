@@ -35,7 +35,7 @@ const (
 	Reconfiguring
 	Stopping
 	Stopped
-	WarningType
+	Warning
 	Waiting
 	WaitingPods
 	Usage

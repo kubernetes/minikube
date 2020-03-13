@@ -68,7 +68,7 @@ func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 
 	if askForSudo {
 		out.T(
-			out.WarningType,
+			out.Warning,
 			"The service {{.service}} requires privileged ports to be exposed: {{.ports}}",
 			out.V{"service": svc.Name, "ports": fmt.Sprintf("%v", privilegedPorts)},
 		)

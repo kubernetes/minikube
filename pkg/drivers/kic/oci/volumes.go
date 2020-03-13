@@ -34,16 +34,13 @@ import (
 func DeleteAllVolumesByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
 	glog.Infof("trying to delete all %s volumes with label %s", ociBin, label)
-	if ociBin == Docker {
-		if err := PointToHostDockerDaemon(); err != nil {
-			return []error{errors.Wrap(err, "point host docker daemon")}
-		}
-	}
 
 	vs, err := allVolumesByLabel(ociBin, label)
+
 	if err != nil {
 		return []error{fmt.Errorf("listing volumes by label %q: %v", label, err)}
 	}
+
 	for _, v := range vs {
 		// allow no more than 3 seconds for this. when this takes long this means deadline passed
 		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -57,6 +54,7 @@ func DeleteAllVolumesByLabel(ociBin string, label string) []error {
 			deleteErrs = append(deleteErrs, fmt.Errorf("deleting volume %s: output: %s", v, string(out)))
 		}
 	}
+
 	return deleteErrs
 }
 
@@ -66,11 +64,7 @@ func DeleteAllVolumesByLabel(ociBin string, label string) []error {
 func PruneAllVolumesByLabel(ociBin string, label string) []error {
 	var deleteErrs []error
 	glog.Infof("trying to prune all %s volumes with label %s", ociBin, label)
-	if ociBin == Docker {
-		if err := PointToHostDockerDaemon(); err != nil {
-			return []error{errors.Wrap(err, "point host docker daemon")}
-		}
-	}
+
 	// allow no more than 3 seconds for this. when this takes long this means deadline passed
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
@@ -80,10 +74,12 @@ func PruneAllVolumesByLabel(ociBin string, label string) []error {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		deleteErrs = append(deleteErrs, errors.Wrapf(err, "prune volume by label %s: %s", label, string(out)))
 	}
+
 	if ctx.Err() == context.DeadlineExceeded {
 		glog.Warningf("pruning volume with label %s took longer than normal. Restarting your %s daemon might fix this issue.", label, ociBin)
 		deleteErrs = append(deleteErrs, fmt.Errorf("prune deadline exceeded for %s", label))
 	}
+
 	return deleteErrs
 }
 
@@ -106,10 +102,8 @@ func allVolumesByLabel(ociBin string, label string) ([]string, error) {
 // ExtractTarballToVolume runs a docker image imageName which extracts the tarball at tarballPath
 // to the volume named volumeName
 func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker-daemon")
-	}
 	cmd := exec.Command(Docker, "run", "--rm", "--entrypoint", "/usr/bin/tar", "-v", fmt.Sprintf("%s:/preloaded.tar:ro", tarballPath), "-v", fmt.Sprintf("%s:/extractDir", volumeName), imageName, "-I", "lz4", "-xvf", "/preloaded.tar", "-C", "/extractDir")
+	glog.Infof("executing: %s", cmd.Args)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}
@@ -120,10 +114,8 @@ func ExtractTarballToVolume(tarballPath, volumeName, imageName string) error {
 // Caution ! if volume already exists does NOT return an error and will not apply the minikube labels on it.
 // TODO: this should be fixed as a part of https://github.com/kubernetes/minikube/issues/6530
 func createDockerVolume(profile string, nodeName string) error {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker daemon")
-	}
 	cmd := exec.Command(Docker, "volume", "create", nodeName, "--label", fmt.Sprintf("%s=%s", ProfileLabelKey, profile), "--label", fmt.Sprintf("%s=%s", CreatedByLabelKey, "true"))
+	glog.Infof("executing: %s", cmd.Args)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "output %s", string(out))
 	}

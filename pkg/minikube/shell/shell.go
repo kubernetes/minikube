@@ -30,11 +30,11 @@ import (
 
 const (
 	fishSetPfx   = "set -gx "
-	fishSetSfx   = "\"\n"
+	fishSetSfx   = "\";\n" // semi-colon required for fish 2.7
 	fishSetDelim = " \""
 
 	fishUnsetPfx = "set -e "
-	fishUnsetSfx = "\n"
+	fishUnsetSfx = ";\n"
 
 	psSetPfx   = "$Env:"
 	psSetSfx   = "\"\n"
