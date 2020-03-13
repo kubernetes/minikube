@@ -88,6 +88,24 @@ func init() {
 	RootCmd.AddCommand(deleteCmd)
 }
 
+func deleteContainersAndVolumes() {
+	delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
+	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
+	if len(errs) > 0 { // it will error if there is no container to delete
+		glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, errs)
+	}
+
+	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
+	if len(errs) > 0 { // it will not error if there is nothing to delete
+		glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
+	}
+
+	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+	if len(errs) > 0 { // it will not error if there is nothing to delete
+		glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
+	}
+}
+
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
@@ -110,23 +128,9 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if deleteAll {
-		delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
-		errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
-		if len(errs) > 0 { // it will error if there is no container to delete
-			glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, err)
-		}
+		deleteContainersAndVolumes()
 
-		errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
-		if len(errs) > 0 { // it will not error if there is nothing to delete
-			glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
-		}
-
-		errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
-		if len(errs) > 0 { // it will not error if there is nothing to delete
-			glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
-		}
-
-		errs = DeleteProfiles(profilesToDelete)
+		errs := DeleteProfiles(profilesToDelete)
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		} else {
@@ -185,13 +189,11 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	return errs
 }
 
-func deleteProfile(profile *config.Profile) error {
-	viper.Set(config.ProfileName, profile.Name)
-
-	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, profile.Name)
+func deleteProfileContainersAndVolumes(name string) {
+	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, name)
 	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
 	if errs != nil { // it will error if there is no container to delete
-		glog.Infof("error deleting containers for %s (might be okay):\n%v", profile.Name, errs)
+		glog.Infof("error deleting containers for %s (might be okay):\n%v", name, errs)
 	}
 	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
@@ -202,6 +204,13 @@ func deleteProfile(profile *config.Profile) error {
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volume (might be okay):\n%v", errs)
 	}
+}
+
+func deleteProfile(profile *config.Profile) error {
+	viper.Set(config.ProfileName, profile.Name)
+
+	deleteProfileContainersAndVolumes(profile.Name)
+
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error getting client %v", err))
@@ -230,37 +239,48 @@ func deleteProfile(profile *config.Profile) error {
 		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	if cc != nil {
-		for _, n := range cc.Nodes {
-			machineName := driver.MachineName(*cc, n)
-			if err = machine.DeleteHost(api, machineName); err != nil {
-				switch errors.Cause(err).(type) {
-				case mcnerror.ErrHostDoesNotExist:
-					glog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
-				default:
-					out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
-					out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": profile.Name})
-				}
-			}
-		}
-	}
+	deleteHosts(api, cc)
 
 	// In case DeleteHost didn't complete the job.
 	deleteProfileDirectory(profile.Name)
 
-	if err := config.DeleteProfile(profile.Name); err != nil {
-		if config.IsNotExist(err) {
-			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("\"%s\" profile does not exist", profile.Name))
-			return DeletionError{Err: delErr, Errtype: MissingProfile}
-		}
-		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("failed to remove profile %v", err))
-		return DeletionError{Err: delErr, Errtype: Fatal}
+	if err := deleteConfig(profile.Name); err != nil {
+		return err
 	}
 
 	if err := deleteContext(profile.Name); err != nil {
 		return err
 	}
 	out.T(out.Deleted, `Removed all traces of the "{{.name}}" cluster.`, out.V{"name": profile.Name})
+	return nil
+}
+
+func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
+	if cc != nil {
+		for _, n := range cc.Nodes {
+			machineName := driver.MachineName(*cc, n)
+			if err := machine.DeleteHost(api, machineName); err != nil {
+				switch errors.Cause(err).(type) {
+				case mcnerror.ErrHostDoesNotExist:
+					glog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
+				default:
+					out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
+					out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
+				}
+			}
+		}
+	}
+}
+
+func deleteConfig(profileName string) error {
+	if err := config.DeleteProfile(profileName); err != nil {
+		if config.IsNotExist(err) {
+			delErr := profileDeletionErr(profileName, fmt.Sprintf("\"%s\" profile does not exist", profileName))
+			return DeletionError{Err: delErr, Errtype: MissingProfile}
+		}
+		delErr := profileDeletionErr(profileName, fmt.Sprintf("failed to remove profile %v", err))
+		return DeletionError{Err: delErr, Errtype: Fatal}
+	}
 	return nil
 }
 

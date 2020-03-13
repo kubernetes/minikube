@@ -21,10 +21,12 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -100,7 +102,7 @@ type Manager interface {
 	// SystemLogCmd returns the command to return the system logs
 	SystemLogCmd(int) string
 	// Preload preloads the container runtime with k8s images
-	Preload(string) error
+	Preload(config.KubernetesConfig) error
 }
 
 // Config is runtime configuration
@@ -114,7 +116,7 @@ type Config struct {
 	// ImageRepository image repository to download image from
 	ImageRepository string
 	// KubernetesVersion Kubernetes version
-	KubernetesVersion string
+	KubernetesVersion semver.Version
 }
 
 // ListOptions are the options to use for listing containers
