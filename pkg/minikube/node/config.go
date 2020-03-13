@@ -164,20 +164,17 @@ func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, 
 		if err != nil {
 			return "", errors.Wrap(err, "host port binding")
 		}
-		if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-			hostname = cc.KubernetesConfig.APIServerName
+	} else {
+		hostname, err = h.Driver.GetIP()
+		if err != nil {
+			return "", errors.Wrap(err, "get ip")
 		}
-		return fmt.Sprintf("https://" + net.JoinHostPort(hostname, strconv.Itoa(port))), nil
 	}
 
-	hostname, err = h.Driver.GetIP()
-	if err != nil {
-		return "", errors.Wrap(err, "get ip")
-	}
 	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
 		hostname = cc.KubernetesConfig.APIServerName
 	}
-	return fmt.Sprintf("https://" + net.JoinHostPort(hostname, strconv.Itoa(n.Port))), nil
+	return fmt.Sprintf("https://" + net.JoinHostPort(hostname, strconv.Itoa(port))), nil
 }
 
 // configureMounts configures any requested filesystem mounts
