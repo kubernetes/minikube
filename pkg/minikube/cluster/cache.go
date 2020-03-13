@@ -40,8 +40,8 @@ const (
 	cacheImageConfigKey = "cache"
 )
 
-// BeginCacheRequiredImages caches images required for kubernetes version in the background
-func BeginCacheRequiredImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string) {
+// BeginCacheKubernetesImages caches images required for kubernetes version in the background
+func BeginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string) {
 	if download.PreloadExists(k8sVersion, cRuntime) {
 		g.Go(func() error {
 			glog.Info("Caching tarball of preloaded images")
@@ -96,8 +96,8 @@ func doCacheBinaries(k8sVersion string) error {
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 }
 
-// beginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
-func beginDownloadKicArtifacts(g *errgroup.Group) {
+// BeginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
+func BeginDownloadKicArtifacts(g *errgroup.Group) {
 	glog.Info("Beginning downloading kic artifacts")
 	g.Go(func() error {
 		glog.Infof("Downloading %s to local daemon", kic.BaseImage)

@@ -62,28 +62,32 @@ var (
 )
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, error) {
+func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, bool, error) {
+	machineName := driver.MachineName(cfg, n)
+
 	// Prevent machine-driver boot races, as well as our own certificate race
-	releaser, err := acquireMachinesLock(n.Name)
+	releaser, err := acquireMachinesLock(machineName)
 	if err != nil {
-		return nil, errors.Wrap(err, "boot lock")
+		return nil, false, errors.Wrap(err, "boot lock")
 	}
 	start := time.Now()
 	defer func() {
-		glog.Infof("releasing machines lock for %q, held for %s", n.Name, time.Since(start))
+		glog.Infof("releasing machines lock for %q, held for %s", machineName, time.Since(start))
 		releaser.Release()
 	}()
 
-	exists, err := api.Exists(n.Name)
+	exists, err := api.Exists(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "exists: %s", n.Name)
+		return nil, false, errors.Wrapf(err, "exists: %s", machineName)
 	}
 	if !exists {
 		glog.Infof("Provisioning new machine with config: %+v %+v", cfg, n)
-		return createHost(api, cfg, n)
+		h, err := createHost(api, cfg, n)
+		return h, exists, err
 	}
 	glog.Infoln("Skipping create...Using existing machine configuration")
-	return fixHost(api, cfg, n)
+	h, err := fixHost(api, cfg, n)
+	return h, exists, err
 }
 
 func engineOptions(cfg config.ClusterConfig) *engine.Options {

@@ -130,7 +130,7 @@ func TestStartHostExists(t *testing.T) {
 	n := config.Node{Name: ih.Name}
 
 	// This should pass without calling Create because the host exists already.
-	h, err := StartHost(api, mc, n)
+	h, _, err := StartHost(api, mc, n)
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
@@ -164,7 +164,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	n := config.Node{Name: h.Name}
 
 	// This should pass with creating host, while machine does not exist.
-	h, err = StartHost(api, mc, n)
+	h, _, err = StartHost(api, mc, n)
 	if err != nil {
 		if err != ErrorMachineNotExist {
 			t.Fatalf("Error starting host: %v", err)
@@ -177,7 +177,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	n.Name = h.Name
 
 	// Second call. This should pass without calling Create because the host exists already.
-	h, err = StartHost(api, mc, n)
+	h, _, err = StartHost(api, mc, n)
 	if err != nil {
 		t.Fatalf("Error starting host: %v", err)
 	}
@@ -210,7 +210,7 @@ func TestStartStoppedHost(t *testing.T) {
 	mc := defaultClusterConfig
 	mc.Name = h.Name
 	n := config.Node{Name: h.Name}
-	h, err = StartHost(api, mc, n)
+	h, _, err = StartHost(api, mc, n)
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -238,7 +238,7 @@ func TestStartHost(t *testing.T) {
 	md := &tests.MockDetector{Provisioner: &tests.MockProvisioner{}}
 	provision.SetDetector(md)
 
-	h, err := StartHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
+	h, _, err := StartHost(api, defaultClusterConfig, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}
@@ -272,7 +272,7 @@ func TestStartHostConfig(t *testing.T) {
 		DockerOpt: []string{"param=value"},
 	}
 
-	h, err := StartHost(api, cfg, config.Node{Name: "minikube"})
+	h, _, err := StartHost(api, cfg, config.Node{Name: "minikube"})
 	if err != nil {
 		t.Fatal("Error starting host.")
 	}

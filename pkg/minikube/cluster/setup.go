@@ -71,7 +71,17 @@ func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[str
 	bs := setupKubeAdm(machineAPI, cc, n)
 
 	var cacheGroup errgroup.Group
-	BeginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
+	if !driver.BareMetal(cc.Driver) {
+		BeginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
+	}
+
+	var kicGroup errgroup.Group
+	if driver.IsKIC(cc.Driver) {
+		BeginDownloadKicArtifacts(&kicGroup)
+	}
+
+	HandleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
+	WaitDownloadKicArtifacts(&kicGroup)
 
 	// pull images or restart cluster
 	out.T(out.Launch, "Launching Kubernetes ... ")
@@ -189,12 +199,7 @@ func StartMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 
 // startHost starts a new minikube host using a VM or None
 func startHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.Host, bool) {
-	exists, err := api.Exists(n.Name)
-	if err != nil {
-		exit.WithError("Failed to check if machine exists", err)
-	}
-
-	host, err := machine.StartHost(api, mc, n)
+	host, exists, err := machine.StartHost(api, mc, n)
 	if err != nil {
 		exit.WithError("Unable to start VM. Please investigate and run 'minikube delete' if possible", err)
 	}

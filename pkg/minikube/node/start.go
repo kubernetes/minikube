@@ -23,14 +23,22 @@ import (
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 // Start spins up a guest and starts the kubernetes node.
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool) {
 	// Now that the ISO is downloaded, pull images in the background while the VM boots.
-	var cacheGroup, kicGroup errgroup.Group
-	cluster.BeginCacheRequiredImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
+	var cacheGroup errgroup.Group
+	if !driver.BareMetal(cc.Driver) {
+		cluster.BeginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
+	}
+
+	var kicGroup errgroup.Group
+	if driver.IsKIC(cc.Driver) {
+		cluster.BeginDownloadKicArtifacts(&kicGroup)
+	}
 
 	runner, _, mAPI, _ := cluster.StartMachine(&cc, &n)
 	defer mAPI.Close()
@@ -40,7 +48,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		exit.WithError("Failed to get bootstrapper", err)
 	}
 
-	k8sVersion := cc.KubernetesConfig.KubernetesVersion
+	k8sVersion := n.KubernetesVersion
 	driverName := cc.Driver
 	// exits here in case of --download-only option.
 	cluster.HandleDownloadOnly(&cacheGroup, &kicGroup, k8sVersion)
