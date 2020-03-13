@@ -526,14 +526,8 @@ kic-base-image: ## builds the base image used for kic.
 	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --target base .
 
 .PHONY: upload-preloaded-images-tar
-upload-preloaded-images-tar: generate-preloaded-images-tar # Upload the preloaded images tar to the GCS bucket. Specify a specific kubernetes version to build via `KUBERNETES_VERSION=vx.y.z make upload-preloaded-images-tar`.
-	gsutil cp out/preloaded-images-k8s-${PRELOADED_TARBALL_VERSION}-${KUBERNETES_VERSION}-docker-overlay2.tar.lz4 gs://${PRELOADED_VOLUMES_GCS_BUCKET}
-	gsutil acl ch -u AllUsers:R gs://${PRELOADED_VOLUMES_GCS_BUCKET}/preloaded-images-k8s-${PRELOADED_TARBALL_VERSION}-${KUBERNETES_VERSION}-docker-overlay2.tar.lz4 
-
-.PHONY: generate-preloaded-images-tar
-generate-preloaded-images-tar:
-	go run ./hack/preload-images/preload_images.go -kubernetes-version ${KUBERNETES_VERSION} -preloaded-tarball-version ${PRELOADED_TARBALL_VERSION}
-
+upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
+	go run ./hack/preload-images/*.go 
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
