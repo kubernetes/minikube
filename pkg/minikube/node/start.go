@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/util"
 )
 
 // Start spins up a guest and starts the kubernetes node.
@@ -57,8 +58,13 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	cluster.WaitCacheRequiredImages(&cacheGroup)
 
+	sv, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		exit.WithError("Failed to parse kubernetes version", err)
+	}
+
 	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(runner, driverName, cc.KubernetesConfig)
+	cr := configureRuntimes(runner, driverName, cc.KubernetesConfig, sv)
 	showVersionInfo(k8sVersion, cr)
 
 	configureMounts()

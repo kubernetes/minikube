@@ -41,6 +41,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
@@ -53,6 +54,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -163,7 +165,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		glog.Infof("StartCluster complete in %s", time.Since(start))
 	}()
 
-	version, err := bsutil.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -191,7 +193,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	// Allow older kubeadm versions to function with newer Docker releases.
 	// For kic on linux example error: "modprobe: FATAL: Module configs not found in directory /lib/modules/5.2.17-1rodete3-amd64"
 	if version.LT(semver.MustParse("1.13.0")) || driver.IsKIC(cfg.Driver) {
-		glog.Infof("Older Kubernetes release detected (%s), disabling SystemVerification check.", version)
+		glog.Info("ignoring SystemVerification for kubeadm because of either driver or kubernetes version")
 		ignore = append(ignore, "SystemVerification")
 	}
 
@@ -291,7 +293,10 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	return kverify.SystemPods(c, start, timeout)
+	if err := kverify.SystemPods(c, start, timeout); err != nil {
+		return errors.Wrap(err, "waiting for system pods")
+	}
+	return nil
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
@@ -303,7 +308,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		glog.Infof("restartCluster took %s", time.Since(start))
 	}()
 
-	version, err := bsutil.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -414,7 +419,7 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
-	version, err := bsutil.ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -483,10 +488,9 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 
 	glog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
 
-	stopCmd := exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")
 	// stop kubelet to avoid "Text File Busy" error
-	if rr, err := k.c.RunCmd(stopCmd); err != nil {
-		glog.Warningf("unable to stop kubelet: %s command: %q output: %q", err, rr.Command(), rr.Output())
+	if err := stopKubelet(k.c); err != nil {
+		glog.Warningf("unable to stop kubelet: %s", err)
 	}
 
 	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
@@ -498,24 +502,46 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		cniFile = []byte(defaultCNIConfig)
 	}
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
+	if err := copyFiles(k.c, files); err != nil {
+		return err
+	}
 
+	if err := startKubelet(k.c); err != nil {
+		return err
+	}
+	return nil
+}
+
+func stopKubelet(runner command.Runner) error {
+	stopCmd := exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")
+	if rr, err := runner.RunCmd(stopCmd); err != nil {
+		return errors.Wrapf(err, "command: %q output: %q", rr.Command(), rr.Output())
+	}
+	return nil
+}
+
+func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
 	// Combine mkdir request into a single call to reduce load
 	dirs := []string{}
 	for _, f := range files {
 		dirs = append(dirs, f.GetTargetDir())
 	}
 	args := append([]string{"mkdir", "-p"}, dirs...)
-	if _, err := k.c.RunCmd(exec.Command("sudo", args...)); err != nil {
+	if _, err := runner.RunCmd(exec.Command("sudo", args...)); err != nil {
 		return errors.Wrap(err, "mkdir")
 	}
 
 	for _, f := range files {
-		if err := k.c.Copy(f); err != nil {
+		if err := runner.Copy(f); err != nil {
 			return errors.Wrapf(err, "copy")
 		}
 	}
+	return nil
+}
 
-	if _, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl start kubelet")); err != nil {
+func startKubelet(runner command.Runner) error {
+	startCmd := exec.Command("/bin/bash", "-c", "sudo systemctl daemon-reload && sudo systemctl start kubelet")
+	if _, err := runner.RunCmd(startCmd); err != nil {
 		return errors.Wrap(err, "starting kubelet")
 	}
 	return nil

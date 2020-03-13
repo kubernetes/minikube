@@ -59,7 +59,7 @@ var defaultClusterConfig = config.ClusterConfig{
 	Name:      viper.GetString("profile"),
 	Driver:    driver.Mock,
 	DockerEnv: []string{"MOCK_MAKE_IT_PROVISION=true"},
-	Nodes:     []config.Node{config.Node{Name: "minikube"}},
+	Nodes:     []config.Node{{Name: "minikube"}},
 }
 
 func TestCreateHost(t *testing.T) {

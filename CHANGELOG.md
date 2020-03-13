@@ -1,5 +1,31 @@
 # Release Notes
 
+## Version 1.8.2 - 2020-03-13
+
+Bug Fixes:
+* Fix dockerd internal port changing on restart [#7021](https://github.com/kubernetes/minikube/pull/7021)
+* none: Skip driver preload and image caching [#7015](https://github.com/kubernetes/minikube/pull/7015)
+* preload: fix bug for windows file separators [#6968](https://github.com/kubernetes/minikube/pull/6968)
+
+
+Documentation:
+* Add doc for running ebpf based tools in minikube [#6914](https://github.com/kubernetes/minikube/pull/6914)
+
+
+New Features:
+* Update NewestKubernetesVersion to 1.18.0-beta.2 [#6988](https://github.com/kubernetes/minikube/pull/6988)
+* allow setting api-server port for docker/podman drivers [#6991](https://github.com/kubernetes/minikube/pull/6991)
+
+Huge thank you for this release towards our contributors: 
+- Anders F Björklund
+- Ian Molee
+- Kenta Iso
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+
+
 ## Version 1.8.1 - 2020-03-06
 
 Minor bug fix:
