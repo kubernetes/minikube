@@ -35,7 +35,9 @@ import (
 	"github.com/spf13/viper"
 	pkgaddons "k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -57,7 +59,7 @@ var dashboardCmd = &cobra.Command{
 	Short: "Access the kubernetes dashboard running within the minikube cluster",
 	Long:  `Access the kubernetes dashboard running within the minikube cluster`,
 	Run: func(cmd *cobra.Command, args []string) {
-		profileName := viper.GetString(pkg_config.MachineProfile)
+		profileName := viper.GetString(pkg_config.ProfileName)
 		cc, err := pkg_config.Load(profileName)
 		if err != nil && !pkg_config.IsNotExist(err) {
 			exit.WithError("Error loading profile config", err)
@@ -80,7 +82,13 @@ var dashboardCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 
-		if _, err = api.Load(cc.Name); err != nil {
+		cp, err := config.PrimaryControlPlane(cc)
+		if err != nil {
+			exit.WithError("Error getting primary control plane", err)
+		}
+
+		machineName := driver.MachineName(*cc, cp)
+		if _, err = api.Load(machineName); err != nil {
 			switch err := errors.Cause(err).(type) {
 			case mcnerror.ErrHostDoesNotExist:
 				exit.WithCodeT(exit.Unavailable, "{{.name}} cluster does not exist", out.V{"name": cc.Name})
@@ -101,7 +109,7 @@ var dashboardCmd = &cobra.Command{
 			exit.WithCodeT(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		}
 
-		if !machine.IsHostRunning(api, profileName) {
+		if !machine.IsHostRunning(api, machineName) {
 			os.Exit(1)
 		}
 
@@ -127,7 +135,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		out.ErrT(out.Launch, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy(kubectl, cc.Name)
+		p, hostPort, err := kubectlProxy(kubectl, machineName)
 		if err != nil {
 			exit.WithError("kubectl proxy", err)
 		}

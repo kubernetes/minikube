@@ -31,7 +31,8 @@ import (
 	"github.com/pborman/uuid"
 
 	"k8s.io/minikube/pkg/drivers/hyperkit"
-	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -57,28 +58,28 @@ func init() {
 	}
 }
 
-func configure(config cfg.ClusterConfig) (interface{}, error) {
-	u := config.UUID
+func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
+	u := cfg.UUID
 	if u == "" {
 		u = uuid.NewUUID().String()
 	}
 
 	return &hyperkit.Driver{
 		BaseDriver: &drivers.BaseDriver{
-			MachineName: config.Name,
+			MachineName: driver.MachineName(cfg, n),
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},
-		Boot2DockerURL: config.Downloader.GetISOFileURI(config.MinikubeISO),
-		DiskSize:       config.DiskSize,
-		Memory:         config.Memory,
-		CPU:            config.CPUs,
-		NFSShares:      config.NFSShare,
-		NFSSharesRoot:  config.NFSSharesRoot,
+		Boot2DockerURL: download.LocalISOResource(cfg.MinikubeISO),
+		DiskSize:       cfg.DiskSize,
+		Memory:         cfg.Memory,
+		CPU:            cfg.CPUs,
+		NFSShares:      cfg.NFSShare,
+		NFSSharesRoot:  cfg.NFSSharesRoot,
 		UUID:           u,
-		VpnKitSock:     config.HyperkitVpnKitSock,
-		VSockPorts:     config.HyperkitVSockPorts,
-		Cmdline:        "loglevel=3 console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes random.trust_cpu=on hw_rng_model=virtio base host=" + config.Name,
+		VpnKitSock:     cfg.HyperkitVpnKitSock,
+		VSockPorts:     cfg.HyperkitVSockPorts,
+		Cmdline:        "loglevel=3 console=ttyS0 console=tty0 noembed nomodeset norestore waitusb=10 systemd.legacy_systemd_cgroup_controller=yes random.trust_cpu=on hw_rng_model=virtio base host=" + cfg.Name,
 	}, nil
 }
 

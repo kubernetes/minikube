@@ -30,6 +30,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 )
 
 // Container runtimes
@@ -38,7 +39,7 @@ const remoteContainerRuntime = "remote"
 // GenerateKubeadmYAML generates the kubeadm.yaml file
 func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.Node) ([]byte, error) {
 	k8s := mc.KubernetesConfig
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -50,7 +51,7 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 	}
 
 	// In case of no port assigned, use default
-	cp, err := config.PrimaryControlPlane(mc)
+	cp, err := config.PrimaryControlPlane(&mc)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting control plane")
 	}
@@ -65,23 +66,23 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 	}
 
 	opts := struct {
-		CertDir           string
-		ServiceCIDR       string
-		PodSubnet         string
-		AdvertiseAddress  string
-		APIServerPort     int
-		KubernetesVersion string
-		EtcdDataDir       string
-		ClusterName       string
-		NodeName          string
-		DNSDomain         string
-		CRISocket         string
-		ImageRepository   string
-		ComponentOptions  []componentOptions
-		FeatureArgs       map[string]bool
-		NoTaintMaster     bool
-		NodeIP            string
-		ControlPlaneIP    string
+		CertDir             string
+		ServiceCIDR         string
+		PodSubnet           string
+		AdvertiseAddress    string
+		APIServerPort       int
+		KubernetesVersion   string
+		EtcdDataDir         string
+		ClusterName         string
+		NodeName            string
+		DNSDomain           string
+		CRISocket           string
+		ImageRepository     string
+		ComponentOptions    []componentOptions
+		FeatureArgs         map[string]bool
+		NoTaintMaster       bool
+		NodeIP              string
+		ControlPlaneAddress string
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
@@ -99,7 +100,9 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 		NoTaintMaster:     false, // That does not work with k8s 1.12+
 		DNSDomain:         k8s.DNSDomain,
 		NodeIP:            n.IP,
-		ControlPlaneIP:    cp.IP,
+		// NOTE: If set to an specific VM IP, things may break if the IP changes on host restart
+		// For multi-node, we may need to figure out an alternate strategy, like DNS or hosts files
+		ControlPlaneAddress: "localhost",
 	}
 
 	if k8s.ServiceCIDR != "" {

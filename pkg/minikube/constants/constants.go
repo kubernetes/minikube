@@ -17,27 +17,22 @@ limitations under the License.
 package constants
 
 import (
-	"fmt"
 	"path/filepath"
 
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/client-go/util/homedir"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	minikubeVersion "k8s.io/minikube/pkg/version"
 )
 
 const (
 	// DefaultKubernetesVersion is the default kubernetes version
 	DefaultKubernetesVersion = "v1.17.3"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
-	NewestKubernetesVersion = "v1.17.3"
+	NewestKubernetesVersion = "v1.18.0-beta.2"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.11.10"
-	// DefaultMachineName is the default name for the VM
-	DefaultMachineName = "minikube"
-	// DefaultNodeName is the default name for the kubeadm node within the VM
-	DefaultNodeName = "minikube"
-
+	// DefaultClusterName is the default nane for the k8s cluster
+	DefaultClusterName = "minikube"
 	// DockerDaemonPort is the port Docker daemon listening inside a minikube node (vm or container).
 	DockerDaemonPort = 2376
 	// APIServerPort is the default API server port
@@ -63,9 +58,6 @@ const (
 	MinikubeActiveDockerdEnv = "MINIKUBE_ACTIVE_DOCKERD"
 	// PodmanVarlinkBridgeEnv is used for podman settings
 	PodmanVarlinkBridgeEnv = "PODMAN_VARLINK_BRIDGE"
-
-	// PreloadedVolumeTarballsBucket is the name of the GCS bucket where preloaded volume tarballs exist
-	PreloadedVolumeTarballsBucket = "minikube-preloaded-volume-tarballs"
 )
 
 var (
@@ -78,10 +70,6 @@ var (
 
 	// SHASuffix is the suffix of a SHA-256 checksum file
 	SHASuffix = ".sha256"
-	// DefaultISOURL is the default location of the minikube.iso file
-	DefaultISOURL = fmt.Sprintf("https://storage.googleapis.com/%s/minikube-%s.iso", minikubeVersion.GetISOPath(), minikubeVersion.GetISOVersion())
-	// DefaultISOSHAURL is the default location of the minikube.iso.sha256 file
-	DefaultISOSHAURL = DefaultISOURL + SHASuffix
 
 	// DockerDaemonEnvs is list of docker-daemon related environment variables.
 	DockerDaemonEnvs = [3]string{DockerHostEnv, DockerTLSVerifyEnv, DockerCertPathEnv}

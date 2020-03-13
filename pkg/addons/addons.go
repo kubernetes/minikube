@@ -26,15 +26,14 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/storageclass"
-	pkgutil "k8s.io/minikube/pkg/util"
 )
 
 // defaultStorageClassProvisioner is the name of the default storage class provisioner
@@ -48,35 +47,34 @@ func Set(name, value, profile string) error {
 		return errors.Errorf("%s is not a valid addon", name)
 	}
 
-	// Run any additional validations for this property
-	if err := run(name, value, profile, a.validations); err != nil {
-		return errors.Wrap(err, "running validations")
-	}
-
-	// Set the value
-	c, err := config.Load(profile)
+	cc, err := config.Load(profile)
 	if err != nil {
 		return errors.Wrap(err, "loading profile")
 	}
 
-	if err := a.set(c, name, value); err != nil {
+	// Run any additional validations for this property
+	if err := run(cc, name, value, a.validations); err != nil {
+		return errors.Wrap(err, "running validations")
+	}
+
+	if err := a.set(cc, name, value); err != nil {
 		return errors.Wrap(err, "setting new value of addon")
 	}
 
 	// Run any callbacks for this property
-	if err := run(name, value, profile, a.callbacks); err != nil {
+	if err := run(cc, name, value, a.callbacks); err != nil {
 		return errors.Wrap(err, "running callbacks")
 	}
 
 	glog.Infof("Writing out %q config to set %s=%v...", profile, name, value)
-	return config.Write(profile, c)
+	return config.Write(profile, cc)
 }
 
 // Runs all the validation or callback functions and collects errors
-func run(name, value, profile string, fns []setFn) error {
+func run(cc *config.ClusterConfig, name string, value string, fns []setFn) error {
 	var errors []error
 	for _, fn := range fns {
-		err := fn(name, value, profile)
+		err := fn(cc, name, value)
 		if err != nil {
 			errors = append(errors, err)
 		}
@@ -88,21 +86,21 @@ func run(name, value, profile string, fns []setFn) error {
 }
 
 // SetBool sets a bool value
-func SetBool(m *config.ClusterConfig, name string, val string) error {
+func SetBool(cc *config.ClusterConfig, name string, val string) error {
 	b, err := strconv.ParseBool(val)
 	if err != nil {
 		return err
 	}
-	if m.Addons == nil {
-		m.Addons = map[string]bool{}
+	if cc.Addons == nil {
+		cc.Addons = map[string]bool{}
 	}
-	m.Addons[name] = b
+	cc.Addons[name] = b
 	return nil
 }
 
 // enableOrDisableAddon updates addon status executing any commands necessary
-func enableOrDisableAddon(name, val, profile string) error {
-	glog.Infof("Setting addon %s=%s in %q", name, val, profile)
+func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) error {
+	glog.Infof("Setting addon %s=%s in %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrapf(err, "parsing bool: %s", name)
@@ -110,7 +108,7 @@ func enableOrDisableAddon(name, val, profile string) error {
 	addon := assets.Addons[name]
 
 	// check addon status before enabling/disabling it
-	alreadySet, err := isAddonAlreadySet(addon, enable, profile)
+	alreadySet, err := isAddonAlreadySet(addon, enable, cc.Name)
 	if err != nil {
 		out.ErrT(out.Conflict, "{{.error}}", out.V{"error": err})
 		return err
@@ -123,13 +121,14 @@ func enableOrDisableAddon(name, val, profile string) error {
 		}
 	}
 
-	if name == "istio" && enable {
+	if strings.HasPrefix(name, "istio") && enable {
 		minMem := 8192
-		minCpus := 4
-		memorySizeMB := pkgutil.CalculateSizeInMB(viper.GetString("memory"))
-		cpuCount := viper.GetInt("cpus")
-		if memorySizeMB < minMem || cpuCount < minCpus {
-			out.WarningT("Enable istio needs {{.minMem}} MB of memory and {{.minCpus}} CPUs.", out.V{"minMem": minMem, "minCpus": minCpus})
+		minCPUs := 4
+		if cc.Memory < minMem {
+			out.WarningT("Istio needs {{.minMem}}MB of memory -- your configuration only allocates {{.memory}}MB", out.V{"minMem": minMem, "memory": cc.Memory})
+		}
+		if cc.CPUs < minCPUs {
+			out.WarningT("Istio needs {{.minCPUs}} CPUs -- your configuration only allocates {{.cpus}} CPUs", out.V{"minCPUs": minCPUs, "cpus": cc.CPUs})
 		}
 	}
 
@@ -140,14 +139,15 @@ func enableOrDisableAddon(name, val, profile string) error {
 	}
 	defer api.Close()
 
-	cfg, err := config.Load(profile)
-	if err != nil && !config.IsNotExist(err) {
-		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
+	cp, err := config.PrimaryControlPlane(cc)
+	if err != nil {
+		exit.WithError("Error getting primary control plane", err)
 	}
 
-	host, err := machine.CheckIfHostExistsAndLoad(api, profile)
-	if err != nil || !machine.IsHostRunning(api, profile) {
-		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement (err=%v)", profile, addon.Name(), enable, err)
+	mName := driver.MachineName(*cc, cp)
+	host, err := machine.CheckIfHostExistsAndLoad(api, mName)
+	if err != nil || !machine.IsHostRunning(api, mName) {
+		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement (err=%v)", mName, addon.Name(), enable, err)
 		return nil
 	}
 
@@ -156,8 +156,8 @@ func enableOrDisableAddon(name, val, profile string) error {
 		return errors.Wrap(err, "command runner")
 	}
 
-	data := assets.GenerateTemplateData(cfg.KubernetesConfig)
-	return enableOrDisableAddonInternal(addon, cmd, data, enable, profile)
+	data := assets.GenerateTemplateData(cc.KubernetesConfig)
+	return enableOrDisableAddonInternal(cc, addon, cmd, data, enable)
 }
 
 func isAddonAlreadySet(addon *assets.Addon, enable bool, profile string) (bool, error) {
@@ -175,7 +175,7 @@ func isAddonAlreadySet(addon *assets.Addon, enable bool, profile string) (bool, 
 	return false, nil
 }
 
-func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data interface{}, enable bool, profile string) error {
+func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
 	deployFiles := []string{}
 
 	for _, addon := range addon.Assets {
@@ -210,10 +210,7 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 		}
 	}
 
-	command, err := kubectlCommand(profile, deployFiles, enable)
-	if err != nil {
-		return err
-	}
+	command := kubectlCommand(cc, deployFiles, enable)
 	glog.Infof("Running: %v", command)
 	rr, err := cmd.RunCmd(command)
 	if err != nil {
@@ -224,8 +221,8 @@ func enableOrDisableAddonInternal(addon *assets.Addon, cmd command.Runner, data 
 }
 
 // enableOrDisableStorageClasses enables or disables storage classes
-func enableOrDisableStorageClasses(name, val, profile string) error {
-	glog.Infof("enableOrDisableStorageClasses %s=%v on %q", name, val, profile)
+func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val string) error {
+	glog.Infof("enableOrDisableStorageClasses %s=%v on %q", name, val, cc.Name)
 	enable, err := strconv.ParseBool(val)
 	if err != nil {
 		return errors.Wrap(err, "Error parsing boolean")
@@ -246,9 +243,13 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 	}
 	defer api.Close()
 
-	if !machine.IsHostRunning(api, profile) {
-		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", profile, name, val)
-		return enableOrDisableAddon(name, val, profile)
+	cp, err := config.PrimaryControlPlane(cc)
+	if err != nil {
+		return errors.Wrap(err, "getting control plane")
+	}
+	if !machine.IsHostRunning(api, driver.MachineName(*cc, cp)) {
+		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", driver.MachineName(*cc, cp), name, val)
+		return enableOrDisableAddon(cc, name, val)
 	}
 
 	if enable {
@@ -265,7 +266,7 @@ func enableOrDisableStorageClasses(name, val, profile string) error {
 		}
 	}
 
-	return enableOrDisableAddon(name, val, profile)
+	return enableOrDisableAddon(cc, name, val)
 }
 
 // Start enables the default addons for a profile, plus any additional

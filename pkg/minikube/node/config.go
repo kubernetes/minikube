@@ -24,6 +24,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
@@ -38,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -54,9 +56,13 @@ var (
 )
 
 // configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig) cruntime.Manager {
-	config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: runner, ImageRepository: k8s.ImageRepository, KubernetesVersion: k8s.KubernetesVersion}
-	cr, err := cruntime.New(config)
+func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig, kv semver.Version) cruntime.Manager {
+	co := cruntime.Config{
+		Type:   viper.GetString(containerRuntime),
+		Runner: runner, ImageRepository: k8s.ImageRepository,
+		KubernetesVersion: kv,
+	}
+	cr, err := cruntime.New(co)
 	if err != nil {
 		exit.WithError("Failed runtime", err)
 	}
@@ -65,6 +71,23 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 	if driver.BareMetal(drvName) {
 		disableOthers = false
 	}
+
+	// Preload is overly invasive for bare metal, and caching is not meaningful. KIC handled elsewhere.
+	if driver.IsVM(drvName) {
+		if err := cr.Preload(k8s); err != nil {
+			switch err.(type) {
+			case *cruntime.ErrISOFeature:
+				out.T(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
+			default:
+				glog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
+			}
+
+			if err := machine.CacheImagesForBootstrapper(k8s.ImageRepository, k8s.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+				exit.WithError("Failed to cache images", err)
+			}
+		}
+	}
+
 	err = cr.Enable(disableOthers)
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
@@ -86,7 +109,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started
 func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Node) bootstrapper.Bootstrapper {
-	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper))
+	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg, node)
 	if err != nil {
 		exit.WithError("Failed to get bootstrapper", err)
 	}

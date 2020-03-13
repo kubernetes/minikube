@@ -34,7 +34,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -83,9 +82,7 @@ func DigestByGoLib(imgName string) string {
 // WriteImageToDaemon write img to the local docker daemon
 func WriteImageToDaemon(img string) error {
 	glog.Infof("Writing %s to local daemon", img)
-	if err := oci.PointToHostDockerDaemon(); err != nil {
-		return errors.Wrap(err, "point host docker-daemon")
-	}
+
 	// Check if image exists locally
 	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
 	if output, err := cmd.Output(); err == nil {

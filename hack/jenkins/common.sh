@@ -19,7 +19,7 @@
 
 # The script expects the following env variables:
 # OS_ARCH: The operating system and the architecture separated by a hyphen '-' (e.g. darwin-amd64, linux-amd64, windows-amd64)
-# VM_DRIVER: the vm-driver to use for the test
+# VM_DRIVER: the driver to use for the test
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
@@ -285,7 +285,7 @@ if test -f "${TEST_OUT}"; then
 fi
 touch "${TEST_OUT}"
 ${SUDO_PREFIX}${E2E_BIN} \
-  -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
+  -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
   -test.timeout=70m -test.v \
   ${EXTRA_TEST_ARGS} \
@@ -353,7 +353,7 @@ touch "${HTML_OUT}"
 gopogh_status=$(gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
 fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
 test_num=$(echo $gopogh_status | jq '.NumberOfTests')       
-pessimistic_status="$completed with ${fail_num} / ${test_num} failures in ${elapsed}"
+pessimistic_status="${fail_num} / ${test_num} failures"
 description="completed with ${status} in ${elapsed} minute(s)."
 if [ "$status" = "failure" ]; then
   description="completed with ${pessimistic_status} in ${elapsed} minute(s)."

@@ -26,7 +26,7 @@ make integration
 You may find it useful to set various options to test only a particular test against a non-default driver. For instance:
 
 ```shell
- env TEST_ARGS="-minikube-start-args=--vm-driver=hyperkit -test.run TestStartStop" make integration
+ env TEST_ARGS="-minikube-start-args=--driver=hyperkit -test.run TestStartStop" make integration
  ```
 
 ### Conformance Tests

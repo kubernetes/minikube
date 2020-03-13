@@ -34,7 +34,7 @@ var addonsEnableCmd = &cobra.Command{
 			exit.UsageT("usage: minikube addons enable ADDON_NAME")
 		}
 		addon := args[0]
-		err := addons.Set(addon, "true", viper.GetString(config.MachineProfile))
+		err := addons.Set(addon, "true", viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("enable failed", err)
 		}

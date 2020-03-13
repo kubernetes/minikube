@@ -27,7 +27,7 @@ kind: MasterConfiguration
 api:
   advertiseAddress: {{.AdvertiseAddress}}
   bindPort: {{.APIServerPort}}
-  controlPlaneEndpoint: {{.ControlPlaneIP}}
+  controlPlaneEndpoint: {{.ControlPlaneAddress}}
 kubernetesVersion: {{.KubernetesVersion}}
 certificatesDir: {{.CertDir}}
 networking:

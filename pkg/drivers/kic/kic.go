@@ -36,7 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/preload"
+	"k8s.io/minikube/pkg/minikube/download"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -69,6 +69,7 @@ func (d *Driver) Create() error {
 		Name:          d.NodeConfig.MachineName,
 		Image:         d.NodeConfig.ImageDigest,
 		ClusterLabel:  oci.ProfileLabelKey + "=" + d.MachineName,
+		NodeLabel:     oci.NodeLabelKey + "=" + d.NodeConfig.MachineName,
 		CPUs:          strconv.Itoa(d.NodeConfig.CPU),
 		Memory:        strconv.Itoa(d.NodeConfig.Memory) + "mb",
 		Envs:          d.NodeConfig.Envs,
@@ -80,7 +81,7 @@ func (d *Driver) Create() error {
 	// control plane specific options
 	params.PortMappings = append(params.PortMappings, oci.PortMapping{
 		ListenAddress: oci.DefaultBindIPV4,
-		ContainerPort: constants.APIServerPort,
+		ContainerPort: int32(params.APIServerPort),
 	},
 		oci.PortMapping{
 			ListenAddress: oci.DefaultBindIPV4,
@@ -91,6 +92,25 @@ func (d *Driver) Create() error {
 			ContainerPort: constants.DockerDaemonPort,
 		},
 	)
+
+	exists, err := oci.ContainerExists(d.OCIBinary, params.Name)
+	if err != nil {
+		glog.Warningf("failed to check if container already exists: %v", err)
+	}
+	if exists {
+		// if container was created by minikube it is safe to delete and recreate it.
+		if oci.IsCreatedByMinikube(d.OCIBinary, params.Name) {
+			glog.Info("Found already existing abandoned minikube container, will try to delete.")
+			if err := oci.DeleteContainer(d.OCIBinary, params.Name); err != nil {
+				glog.Errorf("Failed to delete a conflicting minikube container %s. You might need to restart your %s daemon and delete it manually and try again: %v", params.Name, params.OCIBinary, err)
+			}
+		} else {
+			// The conflicting container name was not created by minikube
+			// user has a container that conflicts with minikube profile name, will not delete users container.
+			return errors.Wrapf(err, "user has a conflicting container name %q with minikube container. Needs to be deleted by user's consent.", params.Name)
+		}
+	}
+
 	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
 	}
@@ -102,7 +122,7 @@ func (d *Driver) Create() error {
 	t := time.Now()
 	glog.Infof("Starting extracting preloaded images to volume")
 	// Extract preloaded images to container
-	if err := oci.ExtractTarballToVolume(preload.TarballFilepath(d.NodeConfig.KubernetesVersion), params.Name, BaseImage); err != nil {
+	if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion), params.Name, BaseImage); err != nil {
 		glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
 	} else {
 		glog.Infof("Took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
@@ -136,10 +156,10 @@ func (d *Driver) prepareSSH() error {
 
 // DriverName returns the name of the driver
 func (d *Driver) DriverName() string {
-	if d.NodeConfig.OCIBinary == "podman" {
-		return "podman"
+	if d.NodeConfig.OCIBinary == oci.Podman {
+		return oci.Podman
 	}
-	return "docker"
+	return oci.Docker
 }
 
 // GetIP returns an IP or hostname that this host is available at
@@ -192,9 +212,6 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	if err := oci.PointToHostDockerDaemon(); err != nil {
-		return state.Error, errors.Wrap(err, "point host docker daemon")
-	}
 	// allow no more than 2 seconds for this. when this takes long this means deadline passed
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
@@ -258,8 +275,6 @@ func (d *Driver) Restart() error {
 		return errors.Wrap(err, "get kic state")
 	}
 	switch s {
-	case state.Paused:
-		return d.Unpause()
 	case state.Stopped:
 		return d.Start()
 	case state.Running, state.Error:
@@ -273,15 +288,6 @@ func (d *Driver) Restart() error {
 	}
 
 	return fmt.Errorf("restarted not implemented for kic state %s yet", s)
-}
-
-// Unpause a kic container
-func (d *Driver) Unpause() error {
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "unpause", d.MachineName)
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "unpausing %s", d.MachineName)
-	}
-	return nil
 }
 
 // Start a _stopped_ kic container
