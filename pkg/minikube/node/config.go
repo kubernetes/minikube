@@ -29,6 +29,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -128,30 +129,13 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Nod
 	return bs
 }
 
-func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
-	addr := ""
-	var err error
-	if driver.IsKIC(h.DriverName) {
-		p, err := oci.HostPortBinding(h.DriverName, h.Name, n.Port)
-		if err != nil {
-			exit.WithError("Failed to get host binding port for api port", err)
-		}
-		addr = fmt.Sprintf("https://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(p)))
-	} else {
-		addr, err = h.Driver.GetURL()
-		if err != nil {
-			exit.WithError("Failed to get driver URL", err)
-		}
-
-		addr = strings.Replace(addr, "tcp://", "https://", -1)
-		// because of libmachine problem with detecting docker port https://github.com/kubernetes/minikube/issues/7017
-		// we have to do this hack https://github.com/docker/machine/blob/master/libmachine/provision/utils.go#L159_L175
-		// contact @afbjorklund for more details
-		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(n.Port), -1)
+func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
+	addr, err := apiServerURL(*h, *n)
+	if err != nil {
+		exit.WithError("Failed to api server URL", err)
 	}
-
-	if c.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, n.IP, c.KubernetesConfig.APIServerName, -1)
+	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
+		addr = strings.Replace(addr, n.IP, cc.KubernetesConfig.APIServerName, -1)
 	}
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
@@ -168,6 +152,22 @@ func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clus
 		return kcs, err
 	}
 	return kcs, nil
+}
+
+// apiServerURL returns a URL to end user can reach to the api server
+func apiServerURL(h host.Host, n config.Node) (string, error) {
+	if driver.IsKIC(h.DriverName) {
+		p, err := oci.HostPortBinding(h.DriverName, h.Name, n.Port)
+		if err != nil {
+			return "", errors.Wrap(err, "host port binding")
+		}
+		return fmt.Sprintf("https://" + net.JoinHostPort("127.0.0.1", strconv.Itoa(p))), nil
+	}
+	ip, err := h.Driver.GetIP()
+	if err != nil {
+		return "", errors.Wrap(err, "get ip")
+	}
+	return fmt.Sprintf("https://" + net.JoinHostPort(ip, strconv.Itoa(n.Port))), nil
 }
 
 // configureMounts configures any requested filesystem mounts
