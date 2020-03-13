@@ -151,6 +151,7 @@ WantedBy=multi-user.target
 		return nil, err
 	}
 
+	// because currently we install docker differently in kic, it is harmless to do this step for VM too so the code by the same
 	if err := p.Service("", serviceaction.DaemonReload); err != nil {
 		return nil, err
 	}
