@@ -226,7 +226,7 @@ func (d *Driver) GetState() (state.State, error) {
 	}
 	o := strings.TrimSpace(string(out))
 	if err != nil {
-		return state.Error, errors.Wrapf(err, "%s: %s", cmd.Args, out)
+		return state.Error, errors.Wrapf(err, "%s: %s", strings.Join(cmd.Args, " "), o)
 	}
 	switch o {
 	case "running":
