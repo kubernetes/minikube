@@ -116,7 +116,7 @@ const (
 	minUsableMem            = 1024 // Kubernetes will not start with less than 1GB
 	minRecommendedMem       = 2000 // Warn at no lower than existing configurations
 	minimumCPUS             = 2
-	minimumDiskSize         = "2000mb"
+	minimumDiskSize         = 2000
 	autoUpdate              = "auto-update-drivers"
 	hostOnlyNicType         = "host-only-nic-type"
 	natNicType              = "nat-nic-type"
@@ -337,14 +337,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	var existingAddons map[string]bool
-	if viper.GetBool(installAddons) {
-		existingAddons = map[string]bool{}
-		if existing != nil && existing.Addons != nil {
-			existingAddons = existing.Addons
-		}
-	}
-	kubeconfig, err := node.Start(mc, n, true, existingAddons)
+	kubeconfig, err := startNode(existing, mc, n)
 	if err != nil {
 		exit.WithError("Starting node", err)
 	}
@@ -389,6 +382,17 @@ func displayEnviron(env []string) {
 	}
 }
 
+func startNode(existing *config.ClusterConfig, mc config.ClusterConfig, n config.Node) (*kubeconfig.Settings, error) {
+	var existingAddons map[string]bool
+	if viper.GetBool(installAddons) {
+		existingAddons = map[string]bool{}
+		if existing != nil && existing.Addons != nil {
+			existingAddons = existing.Addons
+		}
+	}
+	return node.Start(mc, n, true, existingAddons)
+}
+
 func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
 	if kcs.KeepContext {
 		out.T(out.Kubectl, "To connect to this cluster, use: kubectl --context={{.name}}", out.V{"name": kcs.ClusterName})
@@ -427,8 +431,11 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	glog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
 
 	if client.Major != cluster.Major || minorSkew > 1 {
-		out.WarningT("{{.path}} is version {{.client_version}}, and is incompatible with Kubernetes {{.cluster_version}}. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
+		out.Ln("")
+		out.T(out.Warning, "{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
+		out.T(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
+			out.V{"path": path, "client_version": client})
 	}
 	return nil
 }
@@ -514,7 +521,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		return
 	}
 
-	cp, err := config.PrimaryControlPlane(*existing)
+	cp, err := config.PrimaryControlPlane(existing)
 	if err != nil {
 		exit.WithError("Error getting primary cp", err)
 	}
@@ -545,7 +552,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
 
-func selectImageRepository(mirrorCountry string) (bool, string, error) {
+func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string, error) {
 	var tryCountries []string
 	var fallback string
 	glog.Infof("selecting image repository for country %s ...", mirrorCountry)
@@ -573,7 +580,7 @@ func selectImageRepository(mirrorCountry string) (bool, string, error) {
 	}
 
 	checkRepository := func(repo string) error {
-		pauseImage := images.Pause(repo)
+		pauseImage := images.Pause(v, repo)
 		ref, err := name.ParseReference(pauseImage, name.WeakValidation)
 		if err != nil {
 			return err
@@ -638,43 +645,62 @@ func validateUser(drvName string) {
 	}
 }
 
-// defaultMemorySize calculates the default memory footprint in MB
-func defaultMemorySize(drvName string) int {
-	fallback := 2200
-	maximum := 6000
-
+// memoryLimits returns the amount of memory allocated to the system and hypervisor
+func memoryLimits(drvName string) (int, int, error) {
 	v, err := mem.VirtualMemory()
 	if err != nil {
-		return fallback
+		return -1, -1, err
 	}
-	available := v.Total / 1024 / 1024
+	sysLimit := int(v.Total / 1024 / 1024)
+	containerLimit := 0
 
-	// For KIC, do not allocate more memory than the container has available (+ some slack)
 	if driver.IsKIC(drvName) {
 		s, err := oci.DaemonInfo(drvName)
 		if err != nil {
-			return fallback
+			return -1, -1, err
 		}
-		maximum = int(s.TotalMemory/1024/1024) - 128
+		containerLimit = int(s.TotalMemory / 1024 / 1024)
+	}
+	return sysLimit, containerLimit, nil
+}
+
+// suggestMemoryAllocation calculates the default memory footprint in MB
+func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
+	fallback := 2200
+	maximum := 6000
+
+	if sysLimit > 0 && fallback > sysLimit {
+		return sysLimit
 	}
 
-	suggested := int(available / 4)
+	// If there are container limits, add tiny bit of slack for non-minikube components
+	if containerLimit > 0 {
+		if fallback > containerLimit {
+			return containerLimit
+		}
+		maximum = containerLimit - 48
+	}
+
+	// Suggest 25% of RAM, rounded to nearest 100MB. Hyper-V requires an even number!
+	suggested := int(float32(sysLimit)/400.0) * 100
 
 	if suggested > maximum {
-		suggested = maximum
+		return maximum
 	}
 
 	if suggested < fallback {
-		suggested = fallback
+		return fallback
 	}
 
-	glog.Infof("Selecting memory default of %dMB, given %dMB available and %dMB maximum", suggested, available, maximum)
 	return suggested
 }
 
 // validateMemorySize validates the memory size matches the minimum recommended
 func validateMemorySize() {
-	req := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+	req, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+	if err != nil {
+		exit.WithCodeT(exit.Config, "Unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+	}
 	if req < minUsableMem && !viper.GetBool(force) {
 		exit.WithCodeT(exit.Config, "Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum}}MB",
 			out.V{"requested": req, "mininum": minUsableMem})
@@ -707,9 +733,13 @@ func validateCPUCount(local bool) {
 // validateFlags validates the supplied flags against known bad combinations
 func validateFlags(cmd *cobra.Command, drvName string) {
 	if cmd.Flags().Changed(humanReadableDiskSize) {
-		diskSizeMB := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
-		if diskSizeMB < pkgutil.CalculateSizeInMB(minimumDiskSize) && !viper.GetBool(force) {
-			exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": pkgutil.CalculateSizeInMB(minimumDiskSize)})
+		diskSizeMB, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+		if err != nil {
+			exit.WithCodeT(exit.Config, "Validation unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
+		}
+
+		if diskSizeMB < minimumDiskSize && !viper.GetBool(force) {
+			exit.WithCodeT(exit.Config, "Requested disk size {{.requested_size}} is less than minimum of {{.minimum_size}}", out.V{"requested_size": diskSizeMB, "minimum_size": minimumDiskSize})
 		}
 	}
 
@@ -792,7 +822,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	repository := viper.GetString(imageRepository)
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
 	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
-		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry)
+		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(k8sVersion))
 		if err != nil {
 			exit.WithError("Failed to check main repository and mirrors for images for images", err)
 		}
@@ -817,9 +847,20 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		kubeNodeName = "m01"
 	}
 
-	mem := defaultMemorySize(drvName)
-	if viper.GetString(memory) != "" {
-		mem = pkgutil.CalculateSizeInMB(viper.GetString(memory))
+	sysLimit, containerLimit, err := memoryLimits(drvName)
+	if err != nil {
+		glog.Warningf("Unable to query memory limits: %v", err)
+	}
+
+	mem := suggestMemoryAllocation(sysLimit, containerLimit)
+	if cmd.Flags().Changed(memory) {
+		mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
+		if err != nil {
+			exit.WithCodeT(exit.Config, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+		}
+
+	} else {
+		glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 	}
 
 	// Create the initial node, which will necessarily be a control plane
@@ -831,6 +872,11 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		Worker:            true,
 	}
 
+	diskSize, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+	if err != nil {
+		exit.WithCodeT(exit.Config, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
+	}
+
 	cfg := config.ClusterConfig{
 		Name:                    viper.GetString(config.ProfileName),
 		KeepContext:             viper.GetBool(keepContext),
@@ -838,7 +884,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		MinikubeISO:             viper.GetString(isoURL),
 		Memory:                  mem,
 		CPUs:                    viper.GetInt(cpus),
-		DiskSize:                pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize)),
+		DiskSize:                diskSize,
 		Driver:                  drvName,
 		HyperkitVpnKitSock:      viper.GetString(vpnkitSock),
 		HyperkitVSockPorts:      viper.GetStringSlice(vsockPorts),
@@ -954,10 +1000,6 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	}
 	nv := version.VersionPrefix + nvs.String()
 
-	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
-		return nv
-	}
-
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	if err != nil {
 		exit.WithCodeT(exit.Data, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
@@ -974,6 +1016,10 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		} else {
 			exit.WithCodeT(exit.Data, "Sorry, Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 		}
+	}
+
+	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
+		return nv
 	}
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))

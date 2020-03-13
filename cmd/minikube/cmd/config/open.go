@@ -74,7 +74,7 @@ var addonsOpenCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting cluster", err)
 		}
-		cp, err := config.PrimaryControlPlane(*cc)
+		cp, err := config.PrimaryControlPlane(cc)
 		if err != nil {
 			exit.WithError("Error getting control plane", err)
 		}

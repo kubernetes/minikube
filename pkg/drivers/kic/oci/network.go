@@ -43,15 +43,14 @@ func RoutableHostIPFromInside(ociBin string, containerName string) (net.IP, erro
 
 // digDNS will get the IP record for a dns
 func digDNS(ociBin, containerName, dns string) (net.IP, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return nil, errors.Wrap(err, "point host docker daemon")
-	}
 	cmd := exec.Command(ociBin, "exec", "-t", containerName, "dig", "+short", dns)
 	out, err := cmd.CombinedOutput()
 	ip := net.ParseIP(strings.TrimSpace(string(out)))
+
 	if err != nil {
 		return ip, errors.Wrapf(err, "resolve dns to ip: %s", string(out))
 	}
+
 	glog.Infof("got host ip for mount in container by digging dns: %s", ip.String())
 	return ip, nil
 }
@@ -59,21 +58,22 @@ func digDNS(ociBin, containerName, dns string) (net.IP, error) {
 // dockerGatewayIP gets the default gateway ip for the docker bridge on the user's host machine
 // gets the ip from user's host docker
 func dockerGatewayIP() (net.IP, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return nil, errors.Wrap(err, "point host docker daemon")
-	}
 	cmd := exec.Command(Docker, "network", "ls", "--filter", "name=bridge", "--format", "{{.ID}}")
 	out, err := cmd.CombinedOutput()
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "get network bridge. output: %s", string(out))
 	}
+
 	bridgeID := strings.TrimSpace(string(out))
 	cmd = exec.Command(Docker, "inspect",
 		"--format", "{{(index .IPAM.Config 0).Gateway}}", bridgeID)
 	out, err = cmd.CombinedOutput()
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "inspect IP gatway for bridge network: %q. output: %s", string(out), bridgeID)
 	}
+
 	ip := net.ParseIP(strings.TrimSpace(string(out)))
 	glog.Infof("got host ip for mount in container by inspect docker network: %s", ip.String())
 	return ip, nil
@@ -85,11 +85,9 @@ func dockerGatewayIP() (net.IP, error) {
 // 32769, nil
 // only supports TCP ports
 func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return 0, errors.Wrap(err, "point host docker daemon")
-	}
 	var out []byte
 	var err error
+
 	if ociBinary == Podman {
 		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
 		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID)
@@ -108,9 +106,11 @@ func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) 
 	o := strings.TrimSpace(string(out))
 	o = strings.Trim(o, "'")
 	p, err := strconv.Atoi(o)
+
 	if err != nil {
 		return p, errors.Wrapf(err, "convert host-port %q to number", p)
 	}
+
 	return p, nil
 }
 
@@ -140,20 +140,20 @@ func podmanConttainerIP(name string) (string, string, error) {
 
 // dockerContainerIP returns ipv4, ipv6 of container or error
 func dockerContainerIP(name string) (string, string, error) {
-	if err := PointToHostDockerDaemon(); err != nil {
-		return "", "", errors.Wrap(err, "point host docker daemon")
-	}
 	// retrieve the IP address of the node using docker inspect
 	lines, err := inspect(Docker, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
 		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
 	}
+
 	if len(lines) != 1 {
 		return "", "", errors.Errorf("IPs output should only be one line, got %d lines", len(lines))
 	}
+
 	ips := strings.Split(lines[0], ",")
 	if len(ips) != 2 {
 		return "", "", errors.Errorf("container addresses should have 2 values, got %d values: %+v", len(ips), ips)
 	}
+
 	return ips[0], ips[1], nil
 }

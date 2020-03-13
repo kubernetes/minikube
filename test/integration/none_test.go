@@ -81,6 +81,11 @@ func TestChangeNoneUser(t *testing.T) {
 		info, err := os.Stat(p)
 		if err != nil {
 			t.Errorf("stat(%s): %v", p, err)
+			continue
+		}
+		if info == nil || info.Sys() == nil {
+			t.Errorf("nil info for %s", p)
+			continue
 		}
 		got := info.Sys().(*syscall.Stat_t).Uid
 		if got != uint32(uid) {

@@ -44,10 +44,13 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	}
 
 	var cacheGroup errgroup.Group
-	beginCacheKubernetesImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+	// Adding a second layer of cache does not make sense for the none driver
+	if !driver.BareMetal(driverName) {
+		beginCacheKubernetesImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
-	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
+	// Hence, saveProfile must be called before startHost, and again afterwards when we know the IP.
 	if err := config.SaveProfile(viper.GetString(config.ProfileName), &mc); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
@@ -59,10 +62,17 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
 	defer machineAPI.Close()
 
-	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig)
-	showVersionInfo(k8sVersion, cr)
+	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
+
+	sv, err := util.ParseKubernetesVersion(mc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	// configure the runtime (docker, containerd, crio)
+	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig, sv)
+	showVersionInfo(k8sVersion, cr)
 
 	//TODO(sharifelgamal): Part out the cluster-wide operations, perhaps using the "primary" param
 

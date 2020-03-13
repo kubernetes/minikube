@@ -88,7 +88,7 @@ var serviceCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		cp, err := config.PrimaryControlPlane(*cfg)
+		cp, err := config.PrimaryControlPlane(cfg)
 		if err != nil {
 			exit.WithError("Error getting control plane", err)
 		}
@@ -151,7 +151,7 @@ func startKicServiceTunnel(svc, configName string) {
 	service.PrintServiceList(os.Stdout, data)
 
 	openURLs(svc, urls)
-	out.T(out.WarningType, "Because you are using docker driver on Mac, the terminal needs to be open to run it.")
+	out.T(out.Warning, "Because you are using docker driver on Mac, the terminal needs to be open to run it.")
 
 	<-ctrlC
 

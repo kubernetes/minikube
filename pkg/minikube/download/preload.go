@@ -81,10 +81,8 @@ func PreloadExists(k8sVersion, containerRuntime string) bool {
 	// Omit remote check if tarball exists locally
 	targetPath := TarballPath(k8sVersion)
 	if _, err := os.Stat(targetPath); err == nil {
-		if err := verifyChecksum(k8sVersion); err == nil {
-			glog.Infof("Found %s in cache, no need to check remotely", targetPath)
-			return true
-		}
+		glog.Infof("Found local preload: %s", targetPath)
+		return true
 	}
 
 	url := remoteTarballURL(k8sVersion)
@@ -100,7 +98,7 @@ func PreloadExists(k8sVersion, containerRuntime string) bool {
 		return false
 	}
 
-	glog.Infof("Goody! %s exists!", url)
+	glog.Infof("Found remote preload: %s", url)
 	return true
 }
 
@@ -112,10 +110,8 @@ func Preload(k8sVersion, containerRuntime string) error {
 	targetPath := TarballPath(k8sVersion)
 
 	if _, err := os.Stat(targetPath); err == nil {
-		if err := verifyChecksum(k8sVersion); err == nil {
-			glog.Infof("Found %s in cache, skipping downloading", targetPath)
-			return nil
-		}
+		glog.Infof("Found %s in cache, skipping download", targetPath)
+		return nil
 	}
 
 	// Make sure we support this k8s version
@@ -126,9 +122,11 @@ func Preload(k8sVersion, containerRuntime string) error {
 
 	out.T(out.FileDownload, "Downloading preloaded images tarball for k8s {{.version}} ...", out.V{"version": k8sVersion})
 	url := remoteTarballURL(k8sVersion)
+
+	tmpDst := targetPath + ".download"
 	client := &getter.Client{
 		Src:     url,
-		Dst:     targetPath,
+		Dst:     tmpDst,
 		Mode:    getter.ClientModeFile,
 		Options: []getter.ClientOption{getter.WithProgress(DefaultProgressBar)},
 	}
@@ -137,18 +135,19 @@ func Preload(k8sVersion, containerRuntime string) error {
 	if err := client.Get(); err != nil {
 		return errors.Wrapf(err, "download failed: %s", url)
 	}
-	// Give downloaded drivers a baseline decent file permission
-	if err := os.Chmod(targetPath, 0755); err != nil {
-		return err
-	}
-	// Save checksum file locally
+
 	if err := saveChecksumFile(k8sVersion); err != nil {
 		return errors.Wrap(err, "saving checksum file")
 	}
-	return verifyChecksum(k8sVersion)
+
+	if err := verifyChecksum(k8sVersion, tmpDst); err != nil {
+		return errors.Wrap(err, "verify")
+	}
+	return os.Rename(tmpDst, targetPath)
 }
 
 func saveChecksumFile(k8sVersion string) error {
+	glog.Infof("saving checksum for %s ...", tarballName(k8sVersion))
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
 	if err != nil {
@@ -164,9 +163,10 @@ func saveChecksumFile(k8sVersion string) error {
 
 // verifyChecksum returns true if the checksum of the local binary matches
 // the checksum of the remote binary
-func verifyChecksum(k8sVersion string) error {
+func verifyChecksum(k8sVersion string, path string) error {
+	glog.Infof("verifying checksumm of %s ...", path)
 	// get md5 checksum of tarball path
-	contents, err := ioutil.ReadFile(TarballPath(k8sVersion))
+	contents, err := ioutil.ReadFile(path)
 	if err != nil {
 		return errors.Wrap(err, "reading tarball")
 	}
@@ -179,7 +179,7 @@ func verifyChecksum(k8sVersion string) error {
 
 	// create a slice of checksum, which is [16]byte
 	if string(remoteChecksum) != string(checksum[:]) {
-		return fmt.Errorf("checksum of %s does not match remote checksum (%s != %s)", TarballPath(k8sVersion), string(remoteChecksum), string(checksum[:]))
+		return fmt.Errorf("checksum of %s does not match remote checksum (%s != %s)", path, string(remoteChecksum), string(checksum[:]))
 	}
 	return nil
 }
