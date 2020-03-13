@@ -346,6 +346,9 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 	}
 
 	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "getting control plane")
+	}
 	ip := cp.IP
 	port := cp.Port
 	if driver.IsKIC(cfg.Driver) {

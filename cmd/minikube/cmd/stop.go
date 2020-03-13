@@ -17,7 +17,12 @@ limitations under the License.
 package cmd
 
 import (
+	"time"
+
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/mcnerror"
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -27,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // stopCmd represents the stop command
@@ -72,16 +78,26 @@ func runStop(cmd *cobra.Command, args []string) {
 
 func stop(api libmachine.API, cluster config.ClusterConfig, n config.Node) bool {
 	nonexistent := false
-
-	// TODO replace this back with expo backoff
-	for _, n := range cluster.Nodes {
-		err := machine.StopHost(api, driver.MachineName(cluster, n))
-		if err != nil {
-			exit.WithError("Unable to stop VM", err)
+	stop := func() (err error) {
+		machineName := driver.MachineName(cluster, n)
+		err = machine.StopHost(api, machineName)
+		if err == nil {
+			return nil
 		}
-		/*if err := retry.Expo(fn, 5*time.Second, 3*time.Minute, 5); err != nil {
-			exit.WithError("Unable to stop VM", err)
-		}*/
+		glog.Warningf("stop host returned error: %v", err)
+
+		switch err := errors.Cause(err).(type) {
+		case mcnerror.ErrHostDoesNotExist:
+			out.T(out.Meh, `"{{.machineName}}" does not exist, nothing to stop`, out.V{"machineName": machineName})
+			nonexistent = true
+			return nil
+		default:
+			return err
+		}
+	}
+
+	if err := retry.Expo(stop, 5*time.Second, 3*time.Minute, 5); err != nil {
+		exit.WithError("Unable to stop VM", err)
 	}
 
 	return nonexistent

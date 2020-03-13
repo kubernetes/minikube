@@ -27,12 +27,9 @@ import (
 
 // TODO: Share these between cluster and node packages
 const (
-	waitUntilHealthy = "wait"
 	containerRuntime = "container-runtime"
 	mountString      = "mount-string"
 	createMount      = "mount"
-	waitTimeout      = "wait-timeout"
-	imageRepository  = "image-repository"
 )
 
 // Add adds a new node config to an existing cluster.
