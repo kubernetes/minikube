@@ -10,10 +10,11 @@ Shiny new improvements:
 
 Captivating bug fixes:
 
+* Hyper-V: Round suggested memory alloc by 100MB for VM's [#6987](https://github.com/kubernetes/minikube/pull/6987)
+* Merge repositories.json after extracting preloaded tarball so that reference store isn't lost [#6985](https://github.com/kubernetes/minikube/pull/6985)
 * Fix dockerd internal port changing on restart [#7021](https://github.com/kubernetes/minikube/pull/7021)
 * none: Skip driver preload and image caching [#7015](https://github.com/kubernetes/minikube/pull/7015)
 * preload: fix bug for windows file separators [#6968](https://github.com/kubernetes/minikube/pull/6968)
-* Hyper-V: Round suggested memory alloc by 100MB for VM's [#6987](https://github.com/kubernetes/minikube/pull/6987)
 * Block on preload download [#7003](https://github.com/kubernetes/minikube/pull/7003)
 * Check if lz4 is available before trying to use it [#6941](https://github.com/kubernetes/minikube/pull/6941)
 * Allow backwards compatibility with 1.6 and earlier configs [#6969](https://github.com/kubernetes/minikube/pull/6969)
