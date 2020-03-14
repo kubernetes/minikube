@@ -64,7 +64,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	}
 
 	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(runner, driverName, cc.KubernetesConfig, sv)
+	cr := cluster.ConfigureRuntimes(runner, driverName, cc.KubernetesConfig, sv)
 	showVersionInfo(k8sVersion, cr)
 
 	configureMounts()

@@ -52,7 +52,7 @@ func BeginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 		glog.Warningf("Error downloading preloaded artifacts will continue without preload: %v", err)
 	}
 
-	if !viper.GetBool("cache-images") {
+	if !viper.GetBool(cacheImages) {
 		return
 	}
 

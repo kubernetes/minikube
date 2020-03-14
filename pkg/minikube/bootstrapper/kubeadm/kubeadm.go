@@ -202,8 +202,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	}
 
-	err = k.SetupNode(cfg)
-	if err != nil {
+	if err = k.SetupNode(cfg); err != nil {
 		return errors.Wrap(err, "setting up node")
 	}
 
