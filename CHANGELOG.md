@@ -2,21 +2,22 @@
 
 ## Version 1.8.2 - 2020-03-13
 
-Bug Fixes:
+Shiny new improvements:
+
+* allow setting api-server port for docker/podman drivers [#6991](https://github.com/kubernetes/minikube/pull/6991)
+* Update NewestKubernetesVersion to 1.18.0-beta.2 [#6988](https://github.com/kubernetes/minikube/pull/6988)
+* Add warning if disk image is missing features [#6978](https://github.com/kubernetes/minikube/pull/6978)
+
+Captivating bug fixes:
+
+* Hyper-V: Round suggested memory alloc by 100MB for VM's [#6987](https://github.com/kubernetes/minikube/pull/6987)
+* Merge repositories.json after extracting preloaded tarball so that reference store isn't lost [#6985](https://github.com/kubernetes/minikube/pull/6985)
 * Fix dockerd internal port changing on restart [#7021](https://github.com/kubernetes/minikube/pull/7021)
 * none: Skip driver preload and image caching [#7015](https://github.com/kubernetes/minikube/pull/7015)
 * preload: fix bug for windows file separators [#6968](https://github.com/kubernetes/minikube/pull/6968)
-* hyperV: fix 'memory value assigned' bug by rounding suggested memory alloc by 100MB for VM's [#6987](https://github.com/kubernetes/minikube/pull/6987)
-* Merge repositories.json after extracting preloaded tarball so that reference store isn't lost [#6985](https://github.com/kubernetes/minikube/pull/6985)
-
-
-Documentation:
-* Add doc for running ebpf based tools in minikube [#6914](https://github.com/kubernetes/minikube/pull/6914)
-
-
-New Features:
-* Update NewestKubernetesVersion to 1.18.0-beta.2 [#6988](https://github.com/kubernetes/minikube/pull/6988)
-* allow setting api-server port for docker/podman drivers [#6991](https://github.com/kubernetes/minikube/pull/6991)
+* Block on preload download [#7003](https://github.com/kubernetes/minikube/pull/7003)
+* Check if lz4 is available before trying to use it [#6941](https://github.com/kubernetes/minikube/pull/6941)
+* Allow backwards compatibility with 1.6 and earlier configs [#6969](https://github.com/kubernetes/minikube/pull/6969)
 
 Huge thank you for this release towards our contributors: 
 - Anders F Björklund
@@ -26,7 +27,6 @@ Huge thank you for this release towards our contributors:
 - Priya Wadhwa
 - Sharif Elgamal
 - Thomas Strömberg
-
 
 ## Version 1.8.1 - 2020-03-06
 
