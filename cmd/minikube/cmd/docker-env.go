@@ -150,7 +150,7 @@ var dockerEnvCmd = &cobra.Command{
 		}
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)
-			host, err := machine.CheckIfHostExistsAndLoad(api, machineName)
+			host, err := machine.LoadHost(api, machineName)
 			if err != nil {
 				exit.WithError("Error getting host", err)
 			}
@@ -158,7 +158,7 @@ var dockerEnvCmd = &cobra.Command{
 				exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
 			}
 
-			hostSt, err := machine.GetHostStatus(api, machineName)
+			hostSt, err := machine.Status(api, machineName)
 			if err != nil {
 				exit.WithError("Error getting host status", err)
 			}

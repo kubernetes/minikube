@@ -157,7 +157,7 @@ func status(api libmachine.API, name string) (*Status, error) {
 		Kubeconfig: Nonexistent,
 	}
 
-	hs, err := machine.GetHostStatus(api, name)
+	hs, err := machine.Status(api, name)
 	glog.Infof("%s host status = %q (err=%v)", name, hs, err)
 	if err != nil {
 		return st, errors.Wrap(err, "host")
@@ -199,7 +199,7 @@ func status(api libmachine.API, name string) (*Status, error) {
 		st.Kubeconfig = Configured
 	}
 
-	host, err := machine.CheckIfHostExistsAndLoad(api, name)
+	host, err := machine.LoadHost(api, name)
 	if err != nil {
 		return st, err
 	}
