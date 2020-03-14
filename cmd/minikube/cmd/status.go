@@ -98,6 +98,9 @@ var statusCmd = &cobra.Command{
 
 		cc, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
+			if config.IsNotExist(err) {
+				exit.WithCodeT(exitCode(&Status{}), `The "{{.name}}" cluster does not exist!`, out.V{"name": viper.GetString(config.ProfileName)})
+			}
 			exit.WithError("getting config", err)
 		}
 
