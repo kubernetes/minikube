@@ -21,9 +21,11 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -37,13 +39,13 @@ type CRIO struct {
 	Socket            string
 	Runner            CommandRunner
 	ImageRepository   string
-	KubernetesVersion string
+	KubernetesVersion semver.Version
 }
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
-func generateCRIOConfig(cr CommandRunner, imageRepository string) error {
+func generateCRIOConfig(cr CommandRunner, imageRepository string, kv semver.Version) error {
 	cPath := crioConfigFile
-	pauseImage := images.Pause(imageRepository)
+	pauseImage := images.Pause(kv, imageRepository)
 
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo sed -e 's|^pause_image = .*$|pause_image = \"%s\"|' -i %s", pauseImage, cPath))
 	if _, err := cr.RunCmd(c); err != nil {
@@ -101,7 +103,7 @@ func (r *CRIO) Available() error {
 
 // Active returns if CRIO is active on the host
 func (r *CRIO) Active() bool {
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "crio")
+	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "crio")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
@@ -116,7 +118,7 @@ func (r *CRIO) Enable(disOthers bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateCRIOConfig(r.Runner, r.ImageRepository); err != nil {
+	if err := generateCRIOConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
@@ -224,4 +226,9 @@ func (r *CRIO) ContainerLogCmd(id string, len int, follow bool) string {
 // SystemLogCmd returns the command to retrieve system logs
 func (r *CRIO) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u crio -n %d", len)
+}
+
+// Preload preloads the container runtime with k8s images
+func (r *CRIO) Preload(cfg config.KubernetesConfig) error {
+	return fmt.Errorf("not yet implemented for %s", r.Name())
 }

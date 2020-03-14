@@ -8,7 +8,7 @@ description: >
 
 This document is written for contributors who are familiar with minikube, who would like to add support for a new VM driver.
 
-minikube relies on docker-machine drivers to manage machines. This document discusses how to modify minikube, so that this driver may be used by `minikube start --vm-driver=<new_driver>`. 
+minikube relies on docker-machine drivers to manage machines. This document discusses how to modify minikube, so that this driver may be used by `minikube start --driver=<new_driver>`. 
 
 ## Creating a new driver
 
@@ -46,7 +46,7 @@ struct to define a driver metadata. Essentially, you need to define 4 things at 
 pretty simple once you understand your driver well:
 
 - Name: unique name of the driver, it will be used as the unique ID in registry and as
-`--vm-driver` option in minikube command
+`--driver` option in minikube command
 
 - Builtin: `true` if the driver should be builtin to minikube (preferred). `false` otherwise.
 
@@ -87,7 +87,7 @@ func init() {
 
 func createVMwareFusionHost(config cfg.ClusterConfig) interface{} {
     d := vmwarefusion.NewDriver(config.Name, localpath.MiniPath()).(*vmwarefusion.Driver)
-    d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
+    d.Boot2DockerURL = download.LocalISOResource(config.MinikubeISO)
     d.Memory = config.Memory
     d.CPU = config.CPUs
     d.DiskSize = config.DiskSize

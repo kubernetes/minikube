@@ -52,7 +52,7 @@ kind: ClusterConfiguration
 certificatesDir: {{.CertDir}}
 clusterName: {{.ClusterName}}
 apiServerCertSANs: ["127.0.0.1", "localhost", "{{.AdvertiseAddress}}"]
-controlPlaneEndpoint: {{.ControlPlaneIP}}:{{.APIServerPort}}
+controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
 etcd:
   local:
     dataDir: {{.EtcdDataDir}}

@@ -21,9 +21,12 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -46,6 +49,10 @@ func (cs ContainerState) String() string {
 // CommandRunner is the subset of command.Runner this package consumes
 type CommandRunner interface {
 	RunCmd(cmd *exec.Cmd) (*command.RunResult, error)
+	// Copy is a convenience method that runs a command to copy a file
+	Copy(assets.CopyableFile) error
+	// Remove is a convenience method that runs a command to remove a file
+	Remove(assets.CopyableFile) error
 }
 
 // Manager is a common interface for container runtimes
@@ -94,6 +101,8 @@ type Manager interface {
 	ContainerLogCmd(string, int, bool) string
 	// SystemLogCmd returns the command to return the system logs
 	SystemLogCmd(int) string
+	// Preload preloads the container runtime with k8s images
+	Preload(config.KubernetesConfig) error
 }
 
 // Config is runtime configuration
@@ -107,7 +116,7 @@ type Config struct {
 	// ImageRepository image repository to download image from
 	ImageRepository string
 	// KubernetesVersion Kubernetes version
-	KubernetesVersion string
+	KubernetesVersion semver.Version
 }
 
 // ListOptions are the options to use for listing containers

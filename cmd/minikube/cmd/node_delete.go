@@ -36,7 +36,7 @@ var nodeDeleteCmd = &cobra.Command{
 		}
 		name := args[0]
 
-		profile := viper.GetString(config.MachineProfile)
+		profile := viper.GetString(config.ProfileName)
 		out.T(out.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": profile})
 
 		cc, err := config.Load(profile)

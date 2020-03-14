@@ -20,18 +20,25 @@ package integration
 
 import (
 	"context"
+	"crypto/md5"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/daemon"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -72,7 +79,7 @@ func TestDownloadOnly(t *testing.T) {
 					t.Errorf("kubeadm images: %v %+v", v, err)
 				}
 
-				// skip verify for cache images if --vm-driver=none
+				// skip verify for cache images if --driver=none
 				if !NoneDriver() {
 					for _, img := range imgs {
 						img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
@@ -159,4 +166,53 @@ func TestDownloadOnly(t *testing.T) {
 		})
 	})
 
+}
+func TestDownloadOnlyDocker(t *testing.T) {
+	if !runningDockerDriver(StartArgs()) {
+		t.Skip("this test only runs with the docker driver")
+	}
+
+	profile := UniqueProfileName("download-docker")
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	defer Cleanup(t, profile, cancel)
+
+	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", "--driver=docker"}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("%s failed: %v:\n%s", args, err, rr.Output())
+	}
+
+	// Make sure the downloaded image tarball exists
+	tarball := download.TarballPath(constants.DefaultKubernetesVersion)
+	contents, err := ioutil.ReadFile(tarball)
+	if err != nil {
+		t.Errorf("reading tarball: %v", err)
+	}
+	// Make sure it has the correct checksum
+	checksum := md5.Sum(contents)
+	remoteChecksum, err := ioutil.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion))
+	if err != nil {
+		t.Errorf("reading checksum file: %v", err)
+	}
+	if string(remoteChecksum) != string(checksum[:]) {
+		t.Errorf("checksum of %s does not match remote checksum (%s != %s)", tarball, string(remoteChecksum), string(checksum[:]))
+	}
+
+	// Make sure this image exists in the docker daemon
+	ref, err := name.ParseReference(kic.BaseImage)
+	if err != nil {
+		t.Errorf("parsing reference failed: %v", err)
+	}
+	if _, err := daemon.Image(ref); err != nil {
+		t.Errorf("expected image does not exist in local daemon: %v", err)
+	}
+}
+
+func runningDockerDriver(startArgs []string) bool {
+	for _, s := range startArgs {
+		if s == "--driver=docker" {
+			return true
+		}
+	}
+	return false
 }

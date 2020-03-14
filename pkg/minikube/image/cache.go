@@ -24,6 +24,7 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/google/go-containerregistry/pkg/name"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
@@ -120,6 +121,20 @@ func saveToTarFile(iname, rawDest string) error {
 		return errors.Wrapf(err, "nil image for %s", iname)
 	}
 
+	tag, err := name.NewTag(iname, name.WeakValidation)
+	if err != nil {
+		return errors.Wrap(err, "newtag")
+	}
+	err = writeImage(img, dst, tag)
+	if err != nil {
+		return err
+	}
+
+	glog.Infof("%s exists", dst)
+	return nil
+}
+
+func writeImage(img v1.Image, dst string, tag name.Tag) error {
 	glog.Infoln("opening: ", dst)
 	f, err := ioutil.TempFile(filepath.Dir(dst), filepath.Base(dst)+".*.tmp")
 	if err != nil {
@@ -135,10 +150,7 @@ func saveToTarFile(iname, rawDest string) error {
 			}
 		}
 	}()
-	tag, err := name.NewTag(iname, name.WeakValidation)
-	if err != nil {
-		return errors.Wrap(err, "newtag")
-	}
+
 	err = tarball.Write(tag, img, f)
 	if err != nil {
 		return errors.Wrap(err, "write")
@@ -151,6 +163,5 @@ func saveToTarFile(iname, rawDest string) error {
 	if err != nil {
 		return errors.Wrap(err, "rename")
 	}
-	glog.Infof("%s exists", dst)
 	return nil
 }

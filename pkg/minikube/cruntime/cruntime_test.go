@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 )
 
@@ -215,43 +216,68 @@ func (f *FakeRunner) RunCmd(cmd *exec.Cmd) (*command.RunResult, error) {
 	}
 }
 
+func (f *FakeRunner) Copy(assets.CopyableFile) error {
+	return nil
+}
+
+func (f *FakeRunner) Remove(assets.CopyableFile) error {
+	return nil
+}
+
+func (f *FakeRunner) dockerPs(args []string) (string, error) {
+	// ps -a --filter="name=apiserver" --format="{{.ID}}"
+	if args[1] == "-a" && strings.HasPrefix(args[2], "--filter") {
+		filter := strings.Split(args[2], `r=`)[1]
+		fname := strings.Split(filter, "=")[1]
+		ids := []string{}
+		f.t.Logf("fake docker: Looking for containers matching %q", fname)
+		for id, cname := range f.containers {
+			if strings.Contains(cname, fname) {
+				ids = append(ids, id)
+			}
+		}
+		f.t.Logf("fake docker: Found containers: %v", ids)
+		return strings.Join(ids, "\n"), nil
+	}
+	return "", nil
+}
+
+func (f *FakeRunner) dockerStop(args []string) (string, error) {
+	ids := strings.Split(args[1], " ")
+	for _, id := range ids {
+		f.t.Logf("fake docker: Stopping id %q", id)
+		if f.containers[id] == "" {
+			return "", fmt.Errorf("no such container")
+		}
+		delete(f.containers, id)
+	}
+	return "", nil
+}
+
+func (f *FakeRunner) dockerRm(args []string) (string, error) {
+	// Skip "-f" argument
+	for _, id := range args[2:] {
+		f.t.Logf("fake docker: Removing id %q", id)
+		if f.containers[id] == "" {
+			return "", fmt.Errorf("no such container")
+		}
+		delete(f.containers, id)
+	}
+	return "", nil
+}
+
 // docker is a fake implementation of docker
 func (f *FakeRunner) docker(args []string, _ bool) (string, error) {
 	switch cmd := args[0]; cmd {
 	case "ps":
-		// ps -a --filter="name=apiserver" --format="{{.ID}}"
-		if args[1] == "-a" && strings.HasPrefix(args[2], "--filter") {
-			filter := strings.Split(args[2], `r=`)[1]
-			fname := strings.Split(filter, "=")[1]
-			ids := []string{}
-			f.t.Logf("fake docker: Looking for containers matching %q", fname)
-			for id, cname := range f.containers {
-				if strings.Contains(cname, fname) {
-					ids = append(ids, id)
-				}
-			}
-			f.t.Logf("fake docker: Found containers: %v", ids)
-			return strings.Join(ids, "\n"), nil
-		}
-	case "stop":
-		ids := strings.Split(args[1], " ")
-		for _, id := range ids {
-			f.t.Logf("fake docker: Stopping id %q", id)
-			if f.containers[id] == "" {
-				return "", fmt.Errorf("no such container")
-			}
-			delete(f.containers, id)
-		}
-	case "rm":
-		// Skip "-f" argument
-		for _, id := range args[2:] {
-			f.t.Logf("fake docker: Removing id %q", id)
-			if f.containers[id] == "" {
-				return "", fmt.Errorf("no such container")
-			}
-			delete(f.containers, id)
+		return f.dockerPs(args)
 
-		}
+	case "stop":
+		return f.dockerStop(args)
+
+	case "rm":
+		return f.dockerRm(args)
+
 	case "version":
 
 		if args[1] == "--format" && args[2] == "{{.Server.Version}}" {

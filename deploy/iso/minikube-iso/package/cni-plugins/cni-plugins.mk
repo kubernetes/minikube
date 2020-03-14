@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-CNI_PLUGINS_VERSION = v0.6.0
+CNI_PLUGINS_VERSION = v0.8.5
 CNI_PLUGINS_SITE = https://github.com/containernetworking/plugins/archive
 CNI_PLUGINS_SOURCE = $(CNI_PLUGINS_VERSION).tar.gz
 CNI_PLUGINS_LICENSE = Apache-2.0
@@ -16,13 +16,22 @@ CNI_PLUGINS_MAKE_ENV = \
 	CGO_ENABLED=0 \
 	GO111MODULE=off
 
-CNI_PLUGINS_BUILDFLAGS = -a --ldflags '-extldflags \"-static\"'
+CNI_PLUGINS_BUILDFLAGS = -a -ldflags '-extldflags -static -X github.com/containernetworking/plugins/pkg/utils/buildversion.BuildVersion=$(CNI_PLUGINS_VERSION)'
+
 
 define CNI_PLUGINS_BUILD_CMDS
-	(cd $(@D); $(CNI_PLUGINS_MAKE_ENV) ./build.sh $(CNI_PLUGINS_BUILDFLAGS))
+	(cd $(@D); $(CNI_PLUGINS_MAKE_ENV) ./build_linux.sh $(CNI_PLUGINS_BUILDFLAGS))
 endef
 
 define CNI_PLUGINS_INSTALL_TARGET_CMDS
+	$(INSTALL) -D -m 0755 \
+		$(@D)/bin/bandwidth \
+		$(TARGET_DIR)/opt/cni/bin/bandwidth
+
+	ln -sf \
+		../../opt/cni/bin/bandwidth \
+		$(TARGET_DIR)/usr/bin/bandwidth
+
 	$(INSTALL) -D -m 0755 \
 		$(@D)/bin/bridge \
 		$(TARGET_DIR)/opt/cni/bin/bridge
@@ -46,14 +55,6 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 	ln -sf \
 		../../opt/cni/bin/tuning \
 		$(TARGET_DIR)/usr/bin/tuning
-
-	$(INSTALL) -D -m 0755 \
-		$(@D)/bin/sample \
-		$(TARGET_DIR)/opt/cni/bin/sample
-
-	ln -sf \
-		../../opt/cni/bin/sample \
-		$(TARGET_DIR)/usr/bin/sample
 
 	$(INSTALL) -D -m 0755 \
 		$(@D)/bin/ptp \
@@ -119,6 +120,14 @@ define CNI_PLUGINS_INSTALL_TARGET_CMDS
 	ln -sf \
 		../../opt/cni/bin/dhcp \
 		$(TARGET_DIR)/usr/bin/dhcp
+
+	$(INSTALL) -D -m 0755 \
+		$(@D)/bin/firewall \
+		$(TARGET_DIR)/opt/cni/bin/firewall
+
+	ln -sf \
+		../../opt/cni/bin/firewall \
+		$(TARGET_DIR)/usr/bin/firewall
 endef
 
 $(eval $(generic-package))

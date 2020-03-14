@@ -417,15 +417,15 @@ func TestGetServiceURLs(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
-				constants.DefaultMachineName: {
-					Name:   constants.DefaultMachineName,
+				constants.DefaultClusterName: {
+					Name:   constants.DefaultClusterName,
 					Driver: &tests.MockDriver{},
 				},
 			},
 		},
 	}
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
-	viper.Set(config.MachineProfile, constants.DefaultMachineName)
+	viper.Set(config.ProfileName, constants.DefaultClusterName)
 
 	var tests = []struct {
 		description string
@@ -490,15 +490,15 @@ func TestGetServiceURLsForService(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
-				constants.DefaultMachineName: {
-					Name:   constants.DefaultMachineName,
+				constants.DefaultClusterName: {
+					Name:   constants.DefaultClusterName,
 					Driver: &tests.MockDriver{},
 				},
 			},
 		},
 	}
 	defaultTemplate := template.Must(template.New("svc-template").Parse("http://{{.IP}}:{{.Port}}"))
-	viper.Set(config.MachineProfile, constants.DefaultMachineName)
+	viper.Set(config.ProfileName, constants.DefaultClusterName)
 
 	var tests = []struct {
 		description string
@@ -830,8 +830,8 @@ func TestWaitAndMaybeOpenService(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
-				constants.DefaultMachineName: {
-					Name:   constants.DefaultMachineName,
+				constants.DefaultClusterName: {
+					Name:   constants.DefaultClusterName,
 					Driver: &tests.MockDriver{},
 				},
 			},
@@ -947,8 +947,8 @@ func TestWaitAndMaybeOpenServiceForNotDefaultNamspace(t *testing.T) {
 	defaultAPI := &tests.MockAPI{
 		FakeStore: tests.FakeStore{
 			Hosts: map[string]*host.Host{
-				constants.DefaultMachineName: {
-					Name:   constants.DefaultMachineName,
+				constants.DefaultClusterName: {
+					Name:   constants.DefaultClusterName,
 					Driver: &tests.MockDriver{},
 				},
 			},

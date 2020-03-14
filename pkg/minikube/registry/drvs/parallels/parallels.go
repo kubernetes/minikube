@@ -24,7 +24,8 @@ import (
 
 	parallels "github.com/Parallels/docker-machine-parallels"
 	"github.com/docker/machine/libmachine/drivers"
-	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -44,12 +45,12 @@ func init() {
 
 }
 
-func configure(config cfg.ClusterConfig) (interface{}, error) {
-	d := parallels.NewDriver(config.Name, localpath.MiniPath()).(*parallels.Driver)
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.Memory = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = config.DiskSize
+func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
+	d := parallels.NewDriver(driver.MachineName(cfg, n), localpath.MiniPath()).(*parallels.Driver)
+	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
+	d.Memory = cfg.Memory
+	d.CPU = cfg.CPUs
+	d.DiskSize = cfg.DiskSize
 	return d, nil
 }
 
