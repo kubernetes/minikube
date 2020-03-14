@@ -17,12 +17,8 @@ limitations under the License.
 package machine
 
 import (
-	"io/ioutil"
-	"path/filepath"
-
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // Machine contains information about a machine
@@ -77,19 +73,4 @@ func LoadMachine(name string) (*Machine, error) {
 		return nil, errors.New("host is nil")
 	}
 	return &mm, nil
-}
-
-func machineDirs(miniHome ...string) (dirs []string, err error) {
-	miniPath := localpath.MiniPath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
-	}
-	mRootDir := filepath.Join(miniPath, "machines")
-	items, err := ioutil.ReadDir(mRootDir)
-	for _, f := range items {
-		if f.IsDir() {
-			dirs = append(dirs, f.Name())
-		}
-	}
-	return dirs, err
 }
