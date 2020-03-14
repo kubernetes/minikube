@@ -37,10 +37,12 @@ import (
 // KubernetesContainerPrefix is the prefix of each kubernetes container
 const KubernetesContainerPrefix = "k8s_"
 
+// ErrISOFeature is the error returned when disk image is missing features
 type ErrISOFeature struct {
 	missing string
 }
 
+// NewErrISOFeature creates a new ErrISOFeature
 func NewErrISOFeature(missing string) *ErrISOFeature {
 	return &ErrISOFeature{
 		missing: missing,

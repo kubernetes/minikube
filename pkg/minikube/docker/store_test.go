@@ -25,11 +25,11 @@ import (
 func TestMergeReferenceStores(t *testing.T) {
 	initial := ReferenceStore{
 		Repositories: map[string]repository{
-			"image1": repository{
+			"image1": {
 				"r1": "d1",
 				"r2": "d2",
 			},
-			"image2": repository{
+			"image2": {
 				"r1": "d1",
 				"r2": "d2",
 			},
@@ -38,11 +38,11 @@ func TestMergeReferenceStores(t *testing.T) {
 
 	afterPreload := ReferenceStore{
 		Repositories: map[string]repository{
-			"image1": repository{
+			"image1": {
 				"r1": "updated",
 				"r2": "updated",
 			},
-			"image3": repository{
+			"image3": {
 				"r3": "d3",
 			},
 		},
@@ -50,15 +50,15 @@ func TestMergeReferenceStores(t *testing.T) {
 
 	expected := ReferenceStore{
 		Repositories: map[string]repository{
-			"image1": repository{
+			"image1": {
 				"r1": "updated",
 				"r2": "updated",
 			},
-			"image2": repository{
+			"image2": {
 				"r1": "d1",
 				"r2": "d2",
 			},
-			"image3": repository{
+			"image3": {
 				"r3": "d3",
 			},
 		},
