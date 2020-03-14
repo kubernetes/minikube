@@ -36,6 +36,7 @@ $ source ~/.minikube-completion
 apt-get install bash-completion
 source /etc/bash-completion
 source <(minikube completion bash) # for bash users
+echo 'source <(minikube completion bash)' >>~/.bashrc - to save all changes
 source <(minikube completion zsh) # for zsh users
 ```
 
