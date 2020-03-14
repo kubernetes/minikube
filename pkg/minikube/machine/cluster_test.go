@@ -374,7 +374,7 @@ func TestDeleteHostErrMachineNotExist(t *testing.T) {
 	}
 }
 
-func TestGetHostStatus(t *testing.T) {
+func TestStatus(t *testing.T) {
 	RegisterMockDriver(t)
 	api := tests.NewMockAPI(t)
 
@@ -384,7 +384,7 @@ func TestGetHostStatus(t *testing.T) {
 	m := driver.MachineName(cc, config.Node{Name: "minikube"})
 
 	checkState := func(expected string, machineName string) {
-		s, err := GetHostStatus(api, machineName)
+		s, err := Status(api, machineName)
 		if err != nil {
 			t.Fatalf("Unexpected error getting status: %v", err)
 		}
