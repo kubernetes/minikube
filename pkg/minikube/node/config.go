@@ -160,7 +160,7 @@ func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, 
 		// for kic drivers we use 127.0.0.1 instead of node IP,
 		// because of Docker on MacOs limitations for reaching to container's IP.
 		hostname = oci.DefaultBindIPV4
-		port, err = oci.HostPortBinding(h.DriverName, h.Name, port)
+		port, err = oci.ForwardedPort(h.DriverName, h.Name, port)
 		if err != nil {
 			return "", errors.Wrap(err, "host port binding")
 		}
