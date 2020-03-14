@@ -65,11 +65,6 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, r cruntime.Manager, n config.N
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
-	controlPlaneEndpoint := cp.IP
-	/*if n.ControlPlane {
-		controlPlaneEndpoint = "localhost"
-	}*/
-
 	opts := struct {
 		CertDir             string
 		ServiceCIDR         string
@@ -107,7 +102,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, r cruntime.Manager, n config.N
 		NodeIP:            n.IP,
 		// NOTE: If set to an specific VM IP, things may break if the IP changes on host restart
 		// For multi-node, we may need to figure out an alternate strategy, like DNS or hosts files
-		ControlPlaneAddress: controlPlaneEndpoint,
+		ControlPlaneAddress: cp.IP,
 	}
 
 	if k8s.ServiceCIDR != "" {

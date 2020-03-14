@@ -326,7 +326,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	if !driver.BareMetal(driverName) && !driver.IsKIC(driverName) {
+	if driver.IsVM(driverName) {
 		url, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
 			exit.WithError("Failed to cache ISO", err)
@@ -348,12 +348,6 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
-	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := config.SaveProfile(viper.GetString(config.ProfileName), &cc); err != nil {
-		exit.WithError("Failed to save config", err)
-	}
-
 	kubeconfig, err := cluster.InitialSetup(cc, n, existingAddons)
 	if err != nil {
 		exit.WithError("Starting node", err)
@@ -361,7 +355,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	numNodes := viper.GetInt(nodes)
 	if numNodes > 1 {
-		if driver.IsKIC(driverName) {
+		if driver.BareMetal(driverName) {
 			out.T(out.Meh, "The none driver is not compatible with multi-node clusters.")
 		}
 		for i := 1; i < numNodes; i++ {

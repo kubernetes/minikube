@@ -112,7 +112,7 @@ func IsMock(name string) bool {
 
 // IsVM checks if the driver is a VM
 func IsVM(name string) bool {
-	if IsKIC(name) || IsMock(name) || BareMetal(name) {
+	if IsKIC(name) || BareMetal(name) {
 		return false
 	}
 	return true

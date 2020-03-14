@@ -25,6 +25,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
@@ -37,10 +38,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
@@ -54,12 +57,43 @@ const (
 	embedCerts       = "embed-certs"
 	keepContext      = "keep-context"
 	imageRepository  = "image-repository"
+	containerRuntime = "container-runtime"
 )
 
 // InitialSetup performs all necessary operations on the initial control plane node when first spinning up a cluster
 func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
-	_, preExists, machineAPI, host := StartMachine(&cc, &n)
+	var kicGroup errgroup.Group
+	if driver.IsKIC(cc.Driver) {
+		BeginDownloadKicArtifacts(&kicGroup)
+	}
+
+	var cacheGroup errgroup.Group
+	if !driver.BareMetal(cc.Driver) {
+		BeginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
+	}
+
+	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
+	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
+	if err := config.SaveProfile(viper.GetString(config.ProfileName), &cc); err != nil {
+		exit.WithError("Failed to save config", err)
+	}
+
+	HandleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
+	WaitDownloadKicArtifacts(&kicGroup)
+
+	mRunner, preExists, machineAPI, host := StartMachine(&cc, &n)
 	defer machineAPI.Close()
+
+	// wait for preloaded tarball to finish downloading before configuring runtimes
+	WaitCacheRequiredImages(&cacheGroup)
+
+	sv, err := util.ParseKubernetesVersion(n.KubernetesVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	// configure the runtime (docker, containerd, crio)
+	cr := ConfigureRuntimes(mRunner, cc.Driver, cc.KubernetesConfig, sv)
 
 	// Must be written before bootstrap, otherwise health checks may flake due to stale IP
 	kubeconfig, err := setupKubeconfig(host, &cc, &n, cc.Name)
@@ -70,28 +104,13 @@ func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[str
 	// setup kubeadm (must come after setupKubeconfig)
 	bs := setupKubeAdm(machineAPI, cc, n)
 
-	var cacheGroup errgroup.Group
-	if !driver.BareMetal(cc.Driver) {
-		BeginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
-	}
-
-	var kicGroup errgroup.Group
-	if driver.IsKIC(cc.Driver) {
-		BeginDownloadKicArtifacts(&kicGroup)
-	}
-
-	HandleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
-	WaitDownloadKicArtifacts(&kicGroup)
-
 	// pull images or restart cluster
 	out.T(out.Launch, "Launching Kubernetes ... ")
 	err = bs.StartCluster(cc)
 	if err != nil {
-		/*config := cruntime.Config{Type: viper.GetString(containerRuntime), Runner: mRunner, ImageRepository: cc.KubernetesConfig.ImageRepository, KubernetesVersion: cc.KubernetesConfig.KubernetesVersion}
-		cr, err := cruntime.New(config)
-		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, mRunner))*/
-		exit.WithError("Error starting cluster", err)
+		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, mRunner))
 	}
+	//configureMounts()
 
 	if err := CacheAndLoadImagesInConfig(); err != nil {
 		out.T(out.FailureType, "Unable to load cached images from config file.")
@@ -117,6 +136,47 @@ func InitialSetup(cc config.ClusterConfig, n config.Node, existingAddons map[str
 
 	return kubeconfig, nil
 
+}
+
+// ConfigureRuntimes does what needs to happen to get a runtime going.
+func ConfigureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig, kv semver.Version) cruntime.Manager {
+	co := cruntime.Config{
+		Type:   viper.GetString(containerRuntime),
+		Runner: runner, ImageRepository: k8s.ImageRepository,
+		KubernetesVersion: kv,
+	}
+	cr, err := cruntime.New(co)
+	if err != nil {
+		exit.WithError("Failed runtime", err)
+	}
+
+	disableOthers := true
+	if driver.BareMetal(drvName) {
+		disableOthers = false
+	}
+
+	// Preload is overly invasive for bare metal, and caching is not meaningful. KIC handled elsewhere.
+	if driver.IsVM(drvName) {
+		if err := cr.Preload(k8s); err != nil {
+			switch err.(type) {
+			case *cruntime.ErrISOFeature:
+				out.T(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
+			default:
+				glog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
+			}
+
+			if err := machine.CacheImagesForBootstrapper(k8s.ImageRepository, k8s.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+				exit.WithError("Failed to cache images", err)
+			}
+		}
+	}
+
+	err = cr.Enable(disableOthers)
+	if err != nil {
+		exit.WithError("Failed to enable container runtime", err)
+	}
+
+	return cr
 }
 
 // setupKubeAdm adds any requested files into the VM before Kubernetes is started

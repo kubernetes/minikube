@@ -23,61 +23,16 @@ import (
 	"path/filepath"
 	"strconv"
 
-	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
-	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
 )
-
-// configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig, kv semver.Version) cruntime.Manager {
-	co := cruntime.Config{
-		Type:   viper.GetString(containerRuntime),
-		Runner: runner, ImageRepository: k8s.ImageRepository,
-		KubernetesVersion: kv,
-	}
-	cr, err := cruntime.New(co)
-	if err != nil {
-		exit.WithError("Failed runtime", err)
-	}
-
-	disableOthers := true
-	if driver.BareMetal(drvName) {
-		disableOthers = false
-	}
-
-	// Preload is overly invasive for bare metal, and caching is not meaningful. KIC handled elsewhere.
-	if driver.IsVM(drvName) {
-		if err := cr.Preload(k8s); err != nil {
-			switch err.(type) {
-			case *cruntime.ErrISOFeature:
-				out.T(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
-			default:
-				glog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
-			}
-
-			if err := machine.CacheImagesForBootstrapper(k8s.ImageRepository, k8s.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
-				exit.WithError("Failed to cache images", err)
-			}
-		}
-	}
-
-	err = cr.Enable(disableOthers)
-	if err != nil {
-		exit.WithError("Failed to enable container runtime", err)
-	}
-
-	return cr
-}
 
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
