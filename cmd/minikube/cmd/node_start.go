@@ -45,12 +45,12 @@ var nodeStartCmd = &cobra.Command{
 			exit.WithError("creating api client", err)
 		}
 
-		if machine.IsHostRunning(api, name) {
+		if machine.IsRunning(api, name) {
 			out.T(out.Check, "{{.name}} is already running", out.V{"name": name})
 			os.Exit(0)
 		}
 
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		cc, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("loading config", err)
 		}

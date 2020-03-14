@@ -37,5 +37,5 @@ export KUBECONFIG=$HOME/.kube/config
 mkdir -p $HOME/.kube $HOME/.minikube
 touch $KUBECONFIG
 
-sudo -E minikube start --vm-driver=none
+sudo -E minikube start --driver=none
 ```

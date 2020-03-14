@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/viper"
 	"k8s.io/kubectl/pkg/util/templates"
 	configCmd "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -99,6 +100,11 @@ func Execute() {
 		addToPath(targetDir)
 	}
 
+	// Universally ensure that we never speak to the wrong DOCKER_HOST
+	if err := oci.PointToHostDockerDaemon(); err != nil {
+		glog.Errorf("oci env: %v", err)
+	}
+
 	if err := RootCmd.Execute(); err != nil {
 		// Cobra already outputs the error, typically because the user provided an unknown command.
 		os.Exit(exit.BadUsage)
@@ -156,7 +162,7 @@ func setFlagsUsingViper() {
 
 func init() {
 	translate.DetermineLocale()
-	RootCmd.PersistentFlags().StringP(config.MachineProfile, "p", constants.DefaultMachineName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
+	RootCmd.PersistentFlags().StringP(config.ProfileName, "p", constants.DefaultClusterName, `The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently.`)
 	RootCmd.PersistentFlags().StringP(configCmd.Bootstrapper, "b", "kubeadm", "The name of the cluster bootstrapper that will set up the kubernetes cluster.")
 
 	groups := templates.CommandGroups{

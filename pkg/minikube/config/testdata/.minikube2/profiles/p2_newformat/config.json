@@ -29,9 +29,6 @@
     },
     "KubernetesConfig": {
         "KubernetesVersion": "v1.15.0",
-        "NodeIP": "192.168.99.136",
-        "NodePort": 8443,
-        "NodeName": "minikube",
         "APIServerName": "minikubeCA",
         "APIServerNames": null,
         "APIServerIPs": null,
@@ -45,5 +42,15 @@
         "ExtraOptions": null,
         "ShouldLoadCachedImages": true,
         "EnableDefaultCNI": false
-    }
+    },
+    "Nodes": [
+        {
+            "Name": "m01",
+            "IP": "192.168.99.136",
+            "Port": 8443,
+            "KubernetesVersion": "v1.15.0",
+            "ControlPlane": true,
+            "Worker": true
+        }
+    ]
 }

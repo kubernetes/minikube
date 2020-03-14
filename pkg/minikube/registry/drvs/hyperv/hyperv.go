@@ -29,7 +29,8 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
 
-	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -52,16 +53,16 @@ func init() {
 	}
 }
 
-func configure(config cfg.ClusterConfig) (interface{}, error) {
-	d := hyperv.NewDriver(config.Name, localpath.MiniPath())
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.VSwitch = config.HypervVirtualSwitch
-	if d.VSwitch == "" && config.HypervUseExternalSwitch {
-		switchName, adapter, err := chooseSwitch(config.HypervExternalAdapter)
+func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
+	d := hyperv.NewDriver(driver.MachineName(cfg, n), localpath.MiniPath())
+	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
+	d.VSwitch = cfg.HypervVirtualSwitch
+	if d.VSwitch == "" && cfg.HypervUseExternalSwitch {
+		switchName, adapter, err := chooseSwitch(cfg.HypervExternalAdapter)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to choose switch for Hyper-V driver")
 		}
-		if config.HypervExternalAdapter == "" && switchName == "" {
+		if cfg.HypervExternalAdapter == "" && switchName == "" {
 			// create a switch on the returned adapter
 			switchName = defaultExternalSwitchName
 			err := createVMSwitch(switchName, adapter)
@@ -71,9 +72,9 @@ func configure(config cfg.ClusterConfig) (interface{}, error) {
 		}
 		d.VSwitch = switchName
 	}
-	d.MemSize = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = config.DiskSize
+	d.MemSize = cfg.Memory
+	d.CPU = cfg.CPUs
+	d.DiskSize = cfg.DiskSize
 	d.SSHUser = "docker"
 	d.DisableDynamicMemory = true // default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
 	return d, nil

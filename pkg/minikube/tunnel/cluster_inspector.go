@@ -37,7 +37,7 @@ type clusterInspector struct {
 
 func (m *clusterInspector) getStateAndHost() (HostState, *host.Host, error) {
 
-	h, err := machine.CheckIfHostExistsAndLoad(m.machineAPI, m.machineName)
+	h, err := machine.LoadHost(m.machineAPI, m.machineName)
 
 	if err != nil {
 		err = errors.Wrapf(err, "error loading docker-machine host for: %s", m.machineName)

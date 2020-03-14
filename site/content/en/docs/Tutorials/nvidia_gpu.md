@@ -15,7 +15,7 @@ description: >
 
 ## Using the KVM2 driver
 
-When using NVIDIA GPUs with the kvm2 vm-driver, we passthrough spare GPUs on the
+When using NVIDIA GPUs with the kvm2 driver, we passthrough spare GPUs on the
 host to the minikube VM. Doing so has a few prerequisites:
 
 - You must install the [kvm2 driver](/docs/start/linux/#hypervisor-setup). If you already had
@@ -44,7 +44,7 @@ host to the minikube VM. Doing so has a few prerequisites:
 - Once you reboot the system after doing the above, you should be ready to use
   GPUs with kvm2. Run the following command to start minikube:
   ```shell
-  minikube start --vm-driver kvm2 --kvm-gpu
+  minikube start --driver kvm2 --kvm-gpu
   ```
 
   This command will check if all the above conditions are satisfied and
@@ -78,7 +78,7 @@ are disruptive to the host, so we decided to not do them automatically.
 ## Using the 'none' driver
 
 NOTE: This approach used to expose GPUs here is different than the approach used
-to expose GPUs with `--vm-driver=kvm2`. Please don't mix these instructions.
+to expose GPUs with `--driver=kvm2`. Please don't mix these instructions.
 
 - Install minikube.
 
@@ -88,7 +88,7 @@ to expose GPUs with `--vm-driver=kvm2`. Please don't mix these instructions.
 
 - Start minikube:
   ```shell
-  minikube start --vm-driver=none --apiserver-ips 127.0.0.1 --apiserver-name localhost
+  minikube start --driver=none --apiserver-ips 127.0.0.1 --apiserver-name localhost
   ```
 
 - Install NVIDIA's device plugin:

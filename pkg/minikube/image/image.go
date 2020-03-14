@@ -20,8 +20,10 @@ import (
 	"context"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/client"
@@ -31,6 +33,7 @@ import (
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
@@ -44,6 +47,7 @@ var defaultPlatform = v1.Platform{
 func DigestByDockerLib(imgClient *client.Client, imgName string) string {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
+	imgClient.NegotiateAPIVersion(ctx)
 	img, _, err := imgClient.ImageInspectWithRaw(ctx, imgName)
 	if err != nil && !client.IsErrNotFound(err) {
 		glog.Infof("couldn't find image digest %s from local daemon: %v ", imgName, err)
@@ -73,6 +77,35 @@ func DigestByGoLib(imgName string) string {
 		return cf.Hex
 	}
 	return cf.Hex
+}
+
+// WriteImageToDaemon write img to the local docker daemon
+func WriteImageToDaemon(img string) error {
+	glog.Infof("Writing %s to local daemon", img)
+
+	// Check if image exists locally
+	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
+	if output, err := cmd.Output(); err == nil {
+		if strings.Contains(string(output), img) {
+			glog.Infof("Found %s in local docker daemon, skipping pull", img)
+			return nil
+		}
+	}
+	// Else, pull it
+	ref, err := name.ParseReference(img)
+	if err != nil {
+		return errors.Wrap(err, "parsing reference")
+	}
+	i, err := remote.Image(ref)
+	if err != nil {
+		return errors.Wrap(err, "getting remote image")
+	}
+	tag, err := name.NewTag(strings.Split(img, "@")[0])
+	if err != nil {
+		return errors.Wrap(err, "getting tag")
+	}
+	_, err = daemon.Write(tag, i)
+	return err
 }
 
 func retrieveImage(ref name.Reference) (v1.Image, error) {

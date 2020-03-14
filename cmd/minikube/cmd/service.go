@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -82,14 +83,18 @@ var serviceCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		profileName := viper.GetString(pkg_config.MachineProfile)
-		if !machine.IsHostRunning(api, profileName) {
-			os.Exit(1)
-		}
-
+		profileName := viper.GetString(pkg_config.ProfileName)
 		cfg, err := config.Load(profileName)
 		if err != nil {
 			exit.WithError("Error getting config", err)
+		}
+		cp, err := config.PrimaryControlPlane(cfg)
+		if err != nil {
+			exit.WithError("Error getting control plane", err)
+		}
+		machineName := driver.MachineName(*cfg, cp)
+		if !machine.IsRunning(api, machineName) {
+			os.Exit(1)
 		}
 
 		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
@@ -146,6 +151,7 @@ func startKicServiceTunnel(svc, configName string) {
 	service.PrintServiceList(os.Stdout, data)
 
 	openURLs(svc, urls)
+	out.T(out.Warning, "Because you are using docker driver on Mac, the terminal needs to be open to run it.")
 
 	<-ctrlC
 
@@ -173,8 +179,5 @@ func openURLs(svc string, urls []string) {
 		if err := browser.OpenURL(u); err != nil {
 			exit.WithError(fmt.Sprintf("open url failed: %s", u), err)
 		}
-
-		out.T(out.WarningType, "Because you are using docker driver on Mac, the terminal needs to be open to run it.")
 	}
-
 }
