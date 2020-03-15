@@ -80,7 +80,7 @@
 	"Deletes a local kubernetes cluster. This command deletes the VM, and removes all associated files.": "Supprime le cluster Kubernetes local. Cette commande supprime la VM ainsi que tous les fichiers associés.",
 	"Deletes a node from a cluster.": "",
 	"Deleting \"{{.profile_name}}\" in {{.driver_name}} ...": "Suppression de \"{{.profile_name}}\" dans {{.driver_name}}...",
-	"Deleting node {{.name}} from cluster {{.cluster}}": "",
+	"Deleting node {{.name}} from cluster {{.cluster}}": "Suppression de noeuds {{.name}} de cluster {{.cluster}}",
 	"Disable checking for the availability of hardware virtualization before the vm is started (virtualbox driver only)": "Désactive la vérification de la disponibilité de la virtualisation du matériel avant le démarrage de la VM (pilote virtualbox uniquement).",
 	"Disable dynamic memory in your VM manager, or pass in a larger --memory value": "",
 	"Disables the addon w/ADDON_NAME within minikube (example: minikube addons disable dashboard). For a list of available addons use: minikube addons list": "",
