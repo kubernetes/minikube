@@ -180,7 +180,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
-	p, err := oci.HostPortBinding(d.OCIBinary, d.MachineName, constants.SSHPort)
+	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
 	if err != nil {
 		return p, errors.Wrap(err, "get ssh host-port")
 	}
