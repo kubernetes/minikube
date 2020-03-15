@@ -81,6 +81,8 @@ type Manager interface {
 	// DefaultCNI returns whether to use CNI networking by default
 	DefaultCNI() bool
 
+	// WantSingleLoadImage returns if LoadImage show load just one image
+	WantSingleLoadImage() bool
 	// Load an image idempotently into the runtime on a host
 	LoadImage(string) error
 

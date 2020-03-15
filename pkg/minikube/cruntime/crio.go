@@ -153,6 +153,12 @@ func (r *CRIO) ImageExists(name string, sha string) bool {
 	return true
 }
 
+// WantSingleLoadImage returns if LoadImage show load just one image
+func (r *CRIO) WantSingleLoadImage() bool {
+	// no daemon to coordinate load
+	return true
+}
+
 // LoadImage loads an image into this runtime
 func (r *CRIO) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)

@@ -233,6 +233,12 @@ func (r *Containerd) ImageExists(name string, sha string) bool {
 	return true
 }
 
+// WantSingleLoadImage returns if LoadImage show load just one image
+func (r *Containerd) WantSingleLoadImage() bool {
+	// daemon will serialize as needed
+	return false
+}
+
 // LoadImage loads an image into this runtime
 func (r *Containerd) LoadImage(path string) error {
 	glog.Infof("Loading image: %s", path)

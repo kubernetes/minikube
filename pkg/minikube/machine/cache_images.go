@@ -199,8 +199,10 @@ func transferAndLoadImage(cr command.Runner, k8s config.KubernetesConfig, imgNam
 		return errors.Wrap(err, "transferring cached image")
 	}
 
-	loadImageLock.Lock()
-	defer loadImageLock.Unlock()
+	if r.WantSingleLoadImage() {
+		loadImageLock.Lock()
+		defer loadImageLock.Unlock()
+	}
 
 	err = r.LoadImage(dst)
 	if err != nil {
