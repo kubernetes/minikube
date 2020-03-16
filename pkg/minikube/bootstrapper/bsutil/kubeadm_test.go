@@ -129,7 +129,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
 				cfg.KubernetesConfig.ClusterName = "kubernetes"
 
-				got, err := GenerateKubeadmYAML(cfg, runtime, cfg.Nodes[0])
+				got, err := GenerateKubeadmYAML(cfg, cfg.Nodes[0], runtime)
 				if err != nil && !tc.shouldErr {
 					t.Fatalf("got unexpected error generating config: %v", err)
 				}
@@ -210,7 +210,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
 				cfg.KubernetesConfig.ClusterName = "kubernetes"
 
-				got, err := GenerateKubeadmYAML(cfg, runtime, cfg.Nodes[0])
+				got, err := GenerateKubeadmYAML(cfg, cfg.Nodes[0], runtime)
 				if err != nil && !tc.shouldErr {
 					t.Fatalf("got unexpected error generating config: %v", err)
 				}
