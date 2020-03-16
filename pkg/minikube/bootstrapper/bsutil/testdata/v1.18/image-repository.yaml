@@ -27,7 +27,6 @@ apiServer:
 certificatesDir: /var/lib/minikube/certs
 clusterName: mk
 controlPlaneEndpoint: 1.1.1.1:8443
-controllerManager: {}
 dns:
   type: CoreDNS
 etcd:
