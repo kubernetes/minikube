@@ -109,7 +109,7 @@ var dashboardCmd = &cobra.Command{
 			exit.WithCodeT(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		}
 
-		if !machine.IsHostRunning(api, machineName) {
+		if !machine.IsRunning(api, machineName) {
 			os.Exit(1)
 		}
 

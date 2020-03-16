@@ -102,6 +102,9 @@ var statusCmd = &cobra.Command{
 
 		cc, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
+			if config.IsNotExist(err) {
+				exit.WithCodeT(exitCode(&Status{}), `The "{{.name}}" cluster does not exist!`, out.V{"name": viper.GetString(config.ProfileName)})
+			}
 			exit.WithError("getting config", err)
 		}
 
@@ -168,7 +171,7 @@ func status(api libmachine.API, name string, controlPlane bool) (*Status, error)
 		Kubeconfig: Nonexistent,
 	}
 
-	hs, err := machine.GetHostStatus(api, name)
+	hs, err := machine.Status(api, name)
 	glog.Infof("%s host status = %q (err=%v)", name, hs, err)
 	if err != nil {
 		return st, errors.Wrap(err, "host")
@@ -217,7 +220,7 @@ func status(api libmachine.API, name string, controlPlane bool) (*Status, error)
 		}
 	}
 
-	host, err := machine.CheckIfHostExistsAndLoad(api, name)
+	host, err := machine.LoadHost(api, name)
 	if err != nil {
 		return st, err
 	}

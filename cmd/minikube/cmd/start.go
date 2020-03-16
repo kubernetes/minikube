@@ -867,6 +867,13 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		kubeNodeName = "m01"
 	}
 
+	return createNode(cmd, k8sVersion, kubeNodeName, drvName,
+		repository, selectedEnableDefaultCNI, selectedNetworkPlugin)
+}
+
+func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repository string,
+	selectedEnableDefaultCNI bool, selectedNetworkPlugin string) (config.ClusterConfig, config.Node, error) {
+
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
 		glog.Warningf("Unable to query memory limits: %v", err)

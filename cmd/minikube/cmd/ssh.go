@@ -64,7 +64,7 @@ var sshCmd = &cobra.Command{
 				exit.WithError("", err)
 			}
 		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(*cc, *n))
+		host, err := machine.LoadHost(api, driver.MachineName(*cc, *n))
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
