@@ -27,9 +27,8 @@ import (
 
 // TODO: Share these between cluster and node packages
 const (
-	containerRuntime = "container-runtime"
-	mountString      = "mount-string"
-	createMount      = "mount"
+	mountString = "mount-string"
+	createMount = "mount"
 )
 
 // Add adds a new node config to an existing cluster.

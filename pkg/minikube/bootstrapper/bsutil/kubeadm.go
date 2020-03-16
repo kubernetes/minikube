@@ -129,7 +129,6 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 	if err := configTmpl.Execute(&b, opts); err != nil {
 		return nil, err
 	}
-	fmt.Printf("%s OPTS=%+v\n", n.Name, opts)
 	glog.Infof("kubeadm config:\n%s\n", b.String())
 	return b.Bytes(), nil
 }
