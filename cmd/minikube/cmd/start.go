@@ -357,18 +357,19 @@ func runStart(cmd *cobra.Command, args []string) {
 	if numNodes > 1 {
 		if driver.BareMetal(driverName) {
 			out.T(out.Meh, "The none driver is not compatible with multi-node clusters.")
-		}
-		for i := 1; i < numNodes; i++ {
-			nodeName := fmt.Sprintf("m%02d", i+1)
-			n := config.Node{
-				Name:              nodeName,
-				Worker:            true,
-				ControlPlane:      false,
-				KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
-			}
-			err := node.Add(&cc, n)
-			if err != nil {
-				exit.WithError("adding node", err)
+		} else {
+			for i := 1; i < numNodes; i++ {
+				nodeName := fmt.Sprintf("m%02d", i+1)
+				n := config.Node{
+					Name:              nodeName,
+					Worker:            true,
+					ControlPlane:      false,
+					KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+				}
+				err := node.Add(&cc, n)
+				if err != nil {
+					exit.WithError("adding node", err)
+				}
 			}
 		}
 	}
