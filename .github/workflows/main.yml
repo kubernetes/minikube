@@ -19,7 +19,6 @@ jobs:
       run : |
         make minikube-linux-amd64
         make e2e-linux-amd64
-        make upload-preloaded-images-tar
         cp -r test/integration/testdata ./out
         whoami
         echo github ref $GITHUB_REF
