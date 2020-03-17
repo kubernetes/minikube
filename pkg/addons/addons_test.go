@@ -44,7 +44,15 @@ func createTestProfile(t *testing.T) string {
 	if err := os.MkdirAll(config.ProfileFolderPath(name), 0777); err != nil {
 		t.Fatalf("error creating temporary directory")
 	}
-	if err := config.DefaultLoader.WriteConfigToFile(name, &config.ClusterConfig{}); err != nil {
+
+	cc := &config.ClusterConfig{
+		Name:             name,
+		CPUs:             2,
+		Memory:           2500,
+		KubernetesConfig: config.KubernetesConfig{},
+	}
+
+	if err := config.DefaultLoader.WriteConfigToFile(name, cc); err != nil {
 		t.Fatalf("error creating temporary profile config: %v", err)
 	}
 	return name

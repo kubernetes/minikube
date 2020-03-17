@@ -431,8 +431,11 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 	glog.Infof("kubectl: %s, cluster: %s (minor skew: %d)", client, cluster, minorSkew)
 
 	if client.Major != cluster.Major || minorSkew > 1 {
-		out.WarningT("{{.path}} is version {{.client_version}}, and is incompatible with Kubernetes {{.cluster_version}}. You will need to update {{.path}} or use 'minikube kubectl' to connect with this cluster",
+		out.Ln("")
+		out.T(out.Warning, "{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
+		out.T(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
+			out.V{"path": path, "client_version": client})
 	}
 	return nil
 }
@@ -844,6 +847,13 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		kubeNodeName = "m01"
 	}
 
+	return createNode(cmd, k8sVersion, kubeNodeName, drvName,
+		repository, selectedEnableDefaultCNI, selectedNetworkPlugin)
+}
+
+func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repository string,
+	selectedEnableDefaultCNI bool, selectedNetworkPlugin string) (config.ClusterConfig, config.Node, error) {
+
 	sysLimit, containerLimit, err := memoryLimits(drvName)
 	if err != nil {
 		glog.Warningf("Unable to query memory limits: %v", err)
@@ -997,10 +1007,6 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 	}
 	nv := version.VersionPrefix + nvs.String()
 
-	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
-		return nv
-	}
-
 	oldestVersion, err := semver.Make(strings.TrimPrefix(constants.OldestKubernetesVersion, version.VersionPrefix))
 	if err != nil {
 		exit.WithCodeT(exit.Data, "Unable to parse oldest Kubernetes version from constants: {{.error}}", out.V{"error": err})
@@ -1017,6 +1023,10 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		} else {
 			exit.WithCodeT(exit.Data, "Sorry, Kubernetes {{.version}} is not supported by this release of minikube", out.V{"version": nvs})
 		}
+	}
+
+	if old == nil || old.KubernetesConfig.KubernetesVersion == "" {
+		return nv
 	}
 
 	ovs, err := semver.Make(strings.TrimPrefix(old.KubernetesConfig.KubernetesVersion, version.VersionPrefix))

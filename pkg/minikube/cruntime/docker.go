@@ -26,6 +26,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -33,10 +37,12 @@ import (
 // KubernetesContainerPrefix is the prefix of each kubernetes container
 const KubernetesContainerPrefix = "k8s_"
 
+// ErrISOFeature is the error returned when disk image is missing features
 type ErrISOFeature struct {
 	missing string
 }
 
+// NewErrISOFeature creates a new ErrISOFeature
 func NewErrISOFeature(missing string) *ErrISOFeature {
 	return &ErrISOFeature{
 		missing: missing,
@@ -91,7 +97,7 @@ func (r *Docker) Available() error {
 
 // Active returns if docker is active on the host
 func (r *Docker) Active() bool {
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "docker")
+	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "docker")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
@@ -283,7 +289,24 @@ func (r *Docker) SystemLogCmd(len int) string {
 // 1. Copy over the preloaded tarball into the VM
 // 2. Extract the preloaded tarball to the correct directory
 // 3. Remove the tarball within the VM
-func (r *Docker) Preload(k8sVersion string) error {
+func (r *Docker) Preload(cfg config.KubernetesConfig) error {
+	k8sVersion := cfg.KubernetesVersion
+
+	// If images already exist, return
+	images, err := images.Kubeadm(cfg.ImageRepository, k8sVersion)
+	if err != nil {
+		return errors.Wrap(err, "getting images")
+	}
+	if DockerImagesPreloaded(r.Runner, images) {
+		glog.Info("Images already preloaded, skipping extraction")
+		return nil
+	}
+
+	refStore := docker.NewStorage(r.Runner)
+	if err := refStore.Save(); err != nil {
+		glog.Infof("error saving reference store: %v", err)
+	}
+
 	tarballPath := download.TarballPath(k8sVersion)
 	targetDir := "/"
 	targetName := "preloaded.tar.lz4"
@@ -314,5 +337,37 @@ func (r *Docker) Preload(k8sVersion string) error {
 	if err := r.Runner.Remove(fa); err != nil {
 		glog.Infof("error removing tarball: %v", err)
 	}
+
+	// save new reference store again
+	if err := refStore.Save(); err != nil {
+		glog.Infof("error saving reference store: %v", err)
+	}
+	// update reference store
+	if err := refStore.Update(); err != nil {
+		glog.Infof("error updating reference store: %v", err)
+	}
 	return r.Restart()
+}
+
+// DockerImagesPreloaded returns true if all images have been preloaded
+func DockerImagesPreloaded(runner command.Runner, images []string) bool {
+	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
+	if err != nil {
+		return false
+	}
+	preloadedImages := map[string]struct{}{}
+	for _, i := range strings.Split(rr.Stdout.String(), "\n") {
+		preloadedImages[i] = struct{}{}
+	}
+
+	glog.Infof("Got preloaded images: %s", rr.Output())
+
+	// Make sure images == imgs
+	for _, i := range images {
+		if _, ok := preloadedImages[i]; !ok {
+			glog.Infof("%s wasn't preloaded", i)
+			return false
+		}
+	}
+	return true
 }

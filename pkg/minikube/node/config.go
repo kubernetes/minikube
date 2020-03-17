@@ -18,18 +18,20 @@ package node
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"strings"
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -71,8 +73,10 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 	if driver.BareMetal(drvName) {
 		disableOthers = false
 	}
-	if !driver.IsKIC(drvName) {
-		if err := cr.Preload(k8s.KubernetesVersion); err != nil {
+
+	// Preload is overly invasive for bare metal, and caching is not meaningful. KIC handled elsewhere.
+	if driver.IsVM(drvName) {
+		if err := cr.Preload(k8s); err != nil {
 			switch err.(type) {
 			case *cruntime.ErrISOFeature:
 				out.T(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
@@ -124,19 +128,12 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Nod
 	return bs
 }
 
-func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
-	addr, err := h.Driver.GetURL()
+func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
+	addr, err := apiServerURL(*h, *cc, *n)
 	if err != nil {
-		exit.WithError("Failed to get driver URL", err)
-	}
-	if !driver.IsKIC(h.DriverName) {
-		addr = strings.Replace(addr, "tcp://", "https://", -1)
-		addr = strings.Replace(addr, ":2376", ":"+strconv.Itoa(n.Port), -1)
+		exit.WithError("Failed to get api server URL", err)
 	}
 
-	if c.KubernetesConfig.APIServerName != constants.APIServerName {
-		addr = strings.Replace(addr, n.IP, c.KubernetesConfig.APIServerName, -1)
-	}
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
 		ClusterServerAddress: addr,
@@ -152,6 +149,32 @@ func setupKubeconfig(h *host.Host, c *config.ClusterConfig, n *config.Node, clus
 		return kcs, err
 	}
 	return kcs, nil
+}
+
+// apiServerURL returns a URL to end user can reach to the api server
+func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
+	hostname := ""
+	port := n.Port
+	var err error
+	if driver.IsKIC(h.DriverName) {
+		// for kic drivers we use 127.0.0.1 instead of node IP,
+		// because of Docker on MacOs limitations for reaching to container's IP.
+		hostname = oci.DefaultBindIPV4
+		port, err = oci.ForwardedPort(h.DriverName, h.Name, port)
+		if err != nil {
+			return "", errors.Wrap(err, "host port binding")
+		}
+	} else {
+		hostname, err = h.Driver.GetIP()
+		if err != nil {
+			return "", errors.Wrap(err, "get ip")
+		}
+	}
+
+	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
+		hostname = cc.KubernetesConfig.APIServerName
+	}
+	return fmt.Sprintf("https://" + net.JoinHostPort(hostname, strconv.Itoa(port))), nil
 }
 
 // configureMounts configures any requested filesystem mounts

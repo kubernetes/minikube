@@ -62,9 +62,11 @@ func Binary(binary, version, osName, archName string) (string, error) {
 		return "", errors.Wrapf(err, "mkdir %s", targetDir)
 	}
 
+	tmpDst := targetFilepath + ".download"
+
 	client := &getter.Client{
 		Src:     url,
-		Dst:     targetFilepath,
+		Dst:     tmpDst,
 		Mode:    getter.ClientModeFile,
 		Options: []getter.ClientOption{getter.WithProgress(DefaultProgressBar)},
 	}
@@ -75,9 +77,9 @@ func Binary(binary, version, osName, archName string) (string, error) {
 	}
 
 	if osName == runtime.GOOS && archName == runtime.GOARCH {
-		if err = os.Chmod(targetFilepath, 0755); err != nil {
+		if err = os.Chmod(tmpDst, 0755); err != nil {
 			return "", errors.Wrapf(err, "chmod +x %s", targetFilepath)
 		}
 	}
-	return targetFilepath, nil
+	return targetFilepath, os.Rename(tmpDst, targetFilepath)
 }

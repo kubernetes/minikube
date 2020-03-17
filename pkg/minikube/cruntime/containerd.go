@@ -29,6 +29,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -156,7 +157,7 @@ func (r *Containerd) DefaultCNI() bool {
 
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "containerd")
+	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "containerd")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
@@ -311,6 +312,6 @@ func (r *Containerd) SystemLogCmd(len int) string {
 }
 
 // Preload preloads the container runtime with k8s images
-func (r *Containerd) Preload(k8sVersion string) error {
+func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
 	return fmt.Errorf("not yet implemented for %s", r.Name())
 }
