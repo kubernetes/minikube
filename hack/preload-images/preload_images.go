@@ -18,6 +18,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -35,30 +36,43 @@ var (
 	dockerStorageDriver     = "overlay2"
 	preloadedTarballVersion = "v1"
 	containerRuntimes       = []string{"docker"}
+	k8sVersion              string
+	k8sVersions             []string
 )
+
+func init() {
+	flag.StringVar(&k8sVersion, "kubernetes-version", "", "desired kubernetes version, for example `v1.17.2`")
+	flag.Parse()
+	if k8sVersion != "" {
+		k8sVersions = append(k8sVersions, k8sVersion)
+	}
+}
 
 func main() {
 	if err := verifyDockerStorage(); err != nil {
 		exit.WithError("Docker storage type is incompatible: %v\n", err)
 	}
-	kubernetesVersions, err := RecentK8sVersions()
-	if err != nil {
-		exit.WithError("Unable to get recent k8s versions: %v\n", err)
+	if k8sVersions == nil {
+		var err error
+		k8sVersions, err = RecentK8sVersions()
+		if err != nil {
+			exit.WithError("Unable to get recent k8s versions: %v\n", err)
+		}
 	}
 
-	for _, kubernetesVersion := range kubernetesVersions {
+	for _, kv := range k8sVersions {
 		for _, cr := range containerRuntimes {
-			tf := tarballFilename(kubernetesVersion, cr)
+			tf := tarballFilename(kv, cr)
 			if tarballExists(tf) {
-				fmt.Printf("A preloaded tarball for k8s version %s already exists, skipping generation.\n", kubernetesVersion)
+				fmt.Printf("A preloaded tarball for k8s version %s already exists, skipping generation.\n", kv)
 				continue
 			}
-			fmt.Printf("A preloaded tarball for k8s version %s doesn't exist, generating now...\n", kubernetesVersion)
-			if err := generateTarball(kubernetesVersion, tf); err != nil {
-				exit.WithError(fmt.Sprintf("generating tarball for k8s version %s with %s", kubernetesVersion, cr), err)
+			fmt.Printf("A preloaded tarball for k8s version %s doesn't exist, generating now...\n", kv)
+			if err := generateTarball(kv, tf); err != nil {
+				exit.WithError(fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr), err)
 			}
 			if err := uploadTarball(tf); err != nil {
-				exit.WithError(fmt.Sprintf("uploading tarball for k8s version %s with %s", kubernetesVersion, cr), err)
+				exit.WithError(fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr), err)
 			}
 		}
 	}
