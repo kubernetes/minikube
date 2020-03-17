@@ -42,14 +42,14 @@ const (
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
 
-// returns name of the tarball
-func tarballName(k8sVersion string) string {
-	return fmt.Sprintf("preloaded-images-k8s-%s-%s-docker-overlay2.tar.lz4", PreloadVersion, k8sVersion)
+// TarballName returns name of the tarball
+func TarballName(k8sVersion string) string {
+	return fmt.Sprintf("preloaded-images-k8s-%s-%s-docker-overlay2-amd64.tar.lz4", PreloadVersion, k8sVersion)
 }
 
 // returns the name of the checksum file
 func checksumName(k8sVersion string) string {
-	return fmt.Sprintf("%s.checksum", tarballName(k8sVersion))
+	return fmt.Sprintf("%s.checksum", TarballName(k8sVersion))
 }
 
 // returns target dir for all cached items related to preloading
@@ -64,12 +64,12 @@ func PreloadChecksumPath(k8sVersion string) string {
 
 // TarballPath returns the path to the preloaded tarball
 func TarballPath(k8sVersion string) string {
-	return path.Join(targetDir(), tarballName(k8sVersion))
+	return path.Join(targetDir(), TarballName(k8sVersion))
 }
 
 // remoteTarballURL returns the URL for the remote tarball in GCS
 func remoteTarballURL(k8sVersion string) string {
-	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", PreloadBucket, tarballName(k8sVersion))
+	return fmt.Sprintf("https://storage.googleapis.com/%s/%s", PreloadBucket, TarballName(k8sVersion))
 }
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
@@ -147,13 +147,13 @@ func Preload(k8sVersion, containerRuntime string) error {
 }
 
 func saveChecksumFile(k8sVersion string) error {
-	glog.Infof("saving checksum for %s ...", tarballName(k8sVersion))
+	glog.Infof("saving checksum for %s ...", TarballName(k8sVersion))
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
 	if err != nil {
 		return errors.Wrap(err, "getting storage client")
 	}
-	attrs, err := client.Bucket(PreloadBucket).Object(tarballName(k8sVersion)).Attrs(ctx)
+	attrs, err := client.Bucket(PreloadBucket).Object(TarballName(k8sVersion)).Attrs(ctx)
 	if err != nil {
 		return errors.Wrap(err, "getting storage object")
 	}
