@@ -41,10 +41,6 @@ docker kill $(docker ps -q) || true
 docker rm $(docker ps -aq) || true
 make -j 16 all && failed=$? || failed=$?  
 
-echo "Running preloaded images release script..."
-make upload-preloaded-images-tar
-
-
 "out/minikube-$(go env GOOS)-$(go env GOARCH)" version
 
 gsutil cp "gs://${bucket}/logs/index.html" \

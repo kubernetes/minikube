@@ -22,7 +22,6 @@ import (
 	"os/exec"
 	"strings"
 
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
@@ -36,17 +35,17 @@ var (
 	dockerStorageDriver     = "overlay2"
 	preloadedTarballVersion = "v1"
 	containerRuntimes       = []string{"docker"}
-	kubernetesVersions      = []string{
-		constants.OldestKubernetesVersion,
-		constants.DefaultKubernetesVersion,
-		constants.NewestKubernetesVersion,
-	}
 )
 
 func main() {
 	if err := verifyDockerStorage(); err != nil {
 		exit.WithError("Docker storage type is incompatible: %v\n", err)
 	}
+	kubernetesVersions, err := RecentK8sVersions()
+	if err != nil {
+		exit.WithError("Unable to get recent k8s versions: %v\n", err)
+	}
+
 	for _, kubernetesVersion := range kubernetesVersions {
 		for _, cr := range containerRuntimes {
 			tf := tarballFilename(kubernetesVersion, cr)
