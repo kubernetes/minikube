@@ -202,14 +202,14 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	}
 
-	if err = k.SetupNode(cfg); err != nil {
-		return errors.Wrap(err, "setting up node")
-	}
-
 	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	rr, err := k.c.RunCmd(c)
 	if err != nil {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
+	}
+
+	if err = k.SetupNode(cfg); err != nil {
+		return errors.Wrap(err, "setting up node")
 	}
 
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
