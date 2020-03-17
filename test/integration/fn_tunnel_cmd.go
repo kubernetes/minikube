@@ -102,24 +102,8 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("kubectl get svc nginx-svc:\n%s", rr.Stdout)
 	}
 
-	got := []byte{}
-	fetch := func() error {
-		h := &http.Client{Timeout: time.Second * 10}
-		resp, err := h.Get(fmt.Sprintf("http://%s", nginxIP))
-		if err != nil {
-			return &retry.RetriableError{Err: err}
-		}
-		if resp.Body == nil {
-			return &retry.RetriableError{Err: fmt.Errorf("no body")}
-		}
-		defer resp.Body.Close()
-		got, err = ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return &retry.RetriableError{Err: err}
-		}
-		return nil
-	}
-	if err = retry.Expo(fetch, time.Millisecond*500, Minutes(2), 6); err != nil {
+	got, err := getBody(nginxIP)
+	if err != nil {
 		t.Errorf("failed to contact nginx at %s: %v", nginxIP, err)
 	}
 
@@ -127,4 +111,30 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(string(got), want) {
 		t.Errorf("body = %q, want *%s*", got, want)
 	}
+}
+
+func getBody(address string) ([]byte, error) {
+	body := []byte{}
+	var err error
+	fetch := func() error {
+		h := &http.Client{Timeout: time.Second * 10}
+		resp, err := h.Get(fmt.Sprintf("http://%s", address))
+		if err != nil {
+			return &retry.RetriableError{Err: err}
+		}
+		if resp.Body == nil {
+			return &retry.RetriableError{Err: fmt.Errorf("no body")}
+		}
+		defer resp.Body.Close()
+		body, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return &retry.RetriableError{Err: err}
+		}
+		return nil
+	}
+	if err = retry.Expo(fetch, time.Millisecond*500, Minutes(2), 6); err != nil {
+		return []byte{}, err
+	}
+
+	return body, nil
 }

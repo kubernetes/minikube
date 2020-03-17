@@ -58,11 +58,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 
 	ctx, cancel := context.WithTimeout(ctx, Minutes(10))
 
-	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
-	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Fatalf("%v failed: %v", args, err)
-	}
+	ss := mountDir(ctx, t, profile, tempDir)
 
 	defer func() {
 		if t.Failed() {
@@ -87,16 +83,15 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 	}()
 
+	runTest(ctx, t, profile, tempDir)
+}
+
+func runTest(ctx context.Context, t *testing.T, profile string, tempDir string) {
 	// Write local files
 	testMarker := fmt.Sprintf("test-%d", time.Now().UnixNano())
 	wantFromTest := []byte(testMarker)
-	for _, name := range []string{createdByTest, createdByTestRemovedByPod, testMarker} {
-		p := filepath.Join(tempDir, name)
-		err := ioutil.WriteFile(p, wantFromTest, 0644)
-		t.Logf("wrote %q to %s", wantFromTest, p)
-		if err != nil {
-			t.Errorf("WriteFile %s: %v", p, err)
-		}
+	if err := createFiles(tempDir, testMarker, wantFromTest); err != nil {
+		t.Error(err)
 	}
 
 	// Block until the mount succeeds to avoid file race
@@ -164,6 +159,35 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// test file timestamps are correct
+	testFiles(ctx, t, profile)
+
+	if err := removeFiles(tempDir); err != nil {
+		t.Error(err)
+	}
+}
+
+func mountDir(ctx context.Context, t *testing.T, profile string, tempDir string) *StartSession {
+	args := []string{"mount", "-p", profile, fmt.Sprintf("%s:%s", tempDir, guestMount), "--alsologtostderr", "-v=1"}
+	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("%v failed: %v", args, err)
+	}
+	return ss
+}
+
+func createFiles(tempDir string, testMarker string, wantFromTest []byte) error {
+	for _, name := range []string{createdByTest, createdByTestRemovedByPod, testMarker} {
+		p := filepath.Join(tempDir, name)
+		err := ioutil.WriteFile(p, wantFromTest, 0644)
+		//t.Logf("wrote %q to %s", wantFromTest, p)
+		if err != nil {
+			return fmt.Errorf("WriteFile %s: %v", p, err)
+		}
+	}
+	return nil
+}
+
+func testFiles(ctx context.Context, t *testing.T, profile string) {
 	for _, name := range []string{createdByTest, createdByPod} {
 		gp := path.Join(guestMount, name)
 		// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
@@ -182,14 +206,17 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 			t.Errorf("invalid modify time: %v", rr.Stdout)
 		}
 	}
+}
 
-	p = filepath.Join(tempDir, createdByTestRemovedByPod)
+func removeFiles(tempDir string) error {
+	p := filepath.Join(tempDir, createdByTestRemovedByPod)
 	if _, err := os.Stat(p); err == nil {
-		t.Errorf("expected file %s to be removed", p)
+		return fmt.Errorf("expected file %s to be removed", p)
 	}
 
 	p = filepath.Join(tempDir, createdByPodRemovedByTest)
 	if err := os.Remove(p); err != nil {
-		t.Errorf("unexpected error removing file %s: %v", p, err)
+		return fmt.Errorf("unexpected error removing file %s: %v", p, err)
 	}
+	return nil
 }

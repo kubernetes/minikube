@@ -39,11 +39,7 @@ func TestStartStop(t *testing.T) {
 	MaybeParallel(t)
 
 	t.Run("group", func(t *testing.T) {
-		tests := []struct {
-			name    string
-			version string
-			args    []string
-		}{
+		tests := []Testcase{
 			{"old-docker", constants.OldestKubernetesVersion, []string{
 				// default is the network created by libvirt, if we change the name minikube won't boot
 				// because the given network doesn't exist
@@ -74,96 +70,117 @@ func TestStartStop(t *testing.T) {
 		}
 
 		for _, tc := range tests {
-			tc := tc
-			t.Run(tc.name, func(t *testing.T) {
-				MaybeParallel(t)
-
-				if !strings.Contains(tc.name, "docker") && NoneDriver() {
-					t.Skipf("skipping %s - incompatible with none driver", t.Name())
-				}
-
-				profile := UniqueProfileName(tc.name)
-				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-				defer CleanupWithLogs(t, profile, cancel)
-
-				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
-				startArgs = append(startArgs, StartArgs()...)
-				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
-
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-				if err != nil {
-					t.Fatalf("%s failed: %v", rr.Args, err)
-				}
-
-				if !strings.Contains(tc.name, "cni") {
-					testPodScheduling(ctx, t, profile)
-				}
-
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
-				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
-				}
-
-				// The none driver never really stops
-				if !NoneDriver() {
-					got := Status(ctx, t, Target(), profile, "Host")
-					if got != state.Stopped.String() {
-						t.Errorf("post-stop host status = %q; want = %q", got, state.Stopped)
-					}
-				}
-
-				// Enable an addon to assert it comes up afterwards
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
-				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
-				}
-
-				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-				if err != nil {
-					// Explicit fatal so that failures don't move directly to deletion
-					t.Fatalf("%s failed: %v", rr.Args, err)
-				}
-
-				if strings.Contains(tc.name, "cni") {
-					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
-				} else {
-					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4)); err != nil {
-						t.Fatalf("post-stop-start pod wait: %v", err)
-					}
-					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(4)); err != nil {
-						t.Fatalf("post-stop-start addon wait: %v", err)
-					}
-				}
-
-				got := Status(ctx, t, Target(), profile, "Host")
-				if got != state.Running.String() {
-					t.Errorf("post-start host status = %q; want = %q", got, state.Running)
-				}
-
-				if !NoneDriver() {
-					testPulledImages(ctx, t, profile, tc.version)
-				}
-
-				testPause(ctx, t, profile)
-
-				if *cleanup {
-					// Normally handled by cleanuprofile, but not fatal there
-					rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
-					if err != nil {
-						t.Errorf("%s failed: %v", rr.Args, err)
-					}
-
-					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts", profile))
-					if err != nil {
-						t.Logf("config context error: %v (may be ok)", err)
-					}
-					if rr.ExitCode != 1 {
-						t.Errorf("wanted exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
-					}
-				}
-			})
+			runTestcase(t, tc)
 		}
 	})
+}
+
+type Testcase struct {
+	name    string
+	version string
+	args    []string
+}
+
+func getStartArgs(tc Testcase, profile string) []string {
+	startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
+	startArgs = append(startArgs, StartArgs()...)
+	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
+	return startArgs
+}
+
+func runTestcase(t *testing.T, tc Testcase) {
+	t.Run(tc.name, func(t *testing.T) {
+		MaybeParallel(t)
+
+		if !strings.Contains(tc.name, "docker") && NoneDriver() {
+			t.Skipf("skipping %s - incompatible with none driver", t.Name())
+		}
+
+		profile := UniqueProfileName(tc.name)
+		ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+		defer CleanupWithLogs(t, profile, cancel)
+
+		startArgs := getStartArgs(tc, profile)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+		if err != nil {
+			t.Fatalf("%s failed: %v", rr.Args, err)
+		}
+
+		if !strings.Contains(tc.name, "cni") {
+			testPodScheduling(ctx, t, profile)
+		}
+
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+
+		// The none driver never really stops
+		if !NoneDriver() {
+			got := Status(ctx, t, Target(), profile, "Host")
+			if got != state.Stopped.String() {
+				t.Errorf("post-stop host status = %q; want = %q", got, state.Stopped)
+			}
+		}
+
+		// Enable an addon to assert it comes up afterwards
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+		if err != nil {
+			// Explicit fatal so that failures don't move directly to deletion
+			t.Fatalf("%s failed: %v", rr.Args, err)
+		}
+
+		if strings.Contains(tc.name, "cni") {
+			t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
+		} else {
+			waitForPods(ctx, t, profile)
+		}
+
+		got := Status(ctx, t, Target(), profile, "Host")
+		if got != state.Running.String() {
+			t.Errorf("post-start host status = %q; want = %q", got, state.Running)
+		}
+
+		if !NoneDriver() {
+			testPulledImages(ctx, t, profile, tc.version)
+		}
+
+		testPause(ctx, t, profile)
+
+		if *cleanup {
+			// Normally handled by cleanuprofile, but not fatal there
+			cleanupTest(ctx, t, profile)
+		}
+	})
+}
+
+func waitForPods(ctx context.Context, t *testing.T, profile string) {
+	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4)); err != nil {
+		t.Fatalf("post-stop-start pod wait: %v", err)
+	}
+	if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(4)); err != nil {
+		t.Fatalf("post-stop-start addon wait: %v", err)
+	}
+}
+
+func cleanupTest(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts", profile))
+	if err != nil {
+		t.Logf("config context error: %v (may be ok)", err)
+	}
+	if rr.ExitCode != 1 {
+		t.Errorf("wanted exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
+	}
 }
 
 func TestStartStopWithPreload(t *testing.T) {

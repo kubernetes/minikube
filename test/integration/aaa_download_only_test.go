@@ -42,14 +42,129 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+// Stores the startup run result for later error messages
+var rrr *RunResult
+var err error
+
+func kubernetesVersion(ctx context.Context, t *testing.T, profile string, v string) {
+	t.Run(v, func(t *testing.T) {
+		// Explicitly does not pass StartArgs() to test driver default
+		// --force to avoid uid check
+		args := append([]string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v)}, StartArgs()...)
+
+		// Preserve the initial run-result for debugging
+		if rrr == nil {
+			rrr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+		} else {
+			_, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+		}
+
+		if err != nil {
+			t.Errorf("%s failed: %v", args, err)
+		}
+
+		imgs, err := images.Kubeadm("", v)
+		if err != nil {
+			t.Errorf("kubeadm images: %v %+v", v, err)
+		}
+
+		// skip verify for cache images if --driver=none
+		if !NoneDriver() {
+			for _, img := range imgs {
+				img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
+				fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
+				_, err := os.Stat(fp)
+				if err != nil {
+					t.Errorf("expected image file exist at %q but got error: %v", fp, err)
+				}
+			}
+		}
+
+		// checking binaries downloaded (kubelet,kubeadm)
+		for _, bin := range constants.KubernetesReleaseBinaries {
+			fp := filepath.Join(localpath.MiniPath(), "cache", "linux", v, bin)
+			_, err := os.Stat(fp)
+			if err != nil {
+				t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
+			}
+		}
+
+		// If we are on darwin/windows, check to make sure OS specific kubectl has been downloaded
+		// as well for the `minikube kubectl` command
+		if runtime.GOOS == "linux" {
+			return
+		}
+		binary := "kubectl"
+		if runtime.GOOS == "windows" {
+			binary = "kubectl.exe"
+		}
+		fp := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, v, binary)
+		if _, err := os.Stat(fp); err != nil {
+			t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
+		}
+	})
+}
+
+func expectedDefaultDriver(ctx context.Context, t *testing.T, profile string) {
+	// Check that the profile we've created has the expected driver
+	t.Run("ExpectedDefaultDriver", func(t *testing.T) {
+		if ExpectedDefaultDriver() == "" {
+			t.Skipf("--expected-default-driver is unset, skipping test")
+			return
+		}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+		var ps map[string][]config.Profile
+		err = json.Unmarshal(rr.Stdout.Bytes(), &ps)
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+
+		got := ""
+		for _, p := range ps["valid"] {
+			if p.Name == profile {
+				got = p.Config.Driver
+			}
+		}
+
+		if got != ExpectedDefaultDriver() {
+			t.Errorf("got driver %q, expected %q\nstart output: %s", got, ExpectedDefaultDriver(), rrr.Output())
+		}
+	})
+}
+
+func deleteAll(ctx context.Context, t *testing.T) {
+	// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
+	t.Run("DeleteAll", func(t *testing.T) {
+		if !CanCleanup() {
+			t.Skip("skipping, as cleanup is disabled")
+		}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+	})
+}
+
+func deleteAlwaysSucceeds(ctx context.Context, t *testing.T, profile string) {
+	// Delete should always succeed, even if previously partially or fully deleted.
+	t.Run("DeleteAlwaysSucceeds", func(t *testing.T) {
+		if !CanCleanup() {
+			t.Skip("skipping, as cleanup is disabled")
+		}
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+	})
+}
+
 func TestDownloadOnly(t *testing.T) {
 	profile := UniqueProfileName("download")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
-
-	// Stores the startup run result for later error messages
-	var rrr *RunResult
-	var err error
 
 	t.Run("group", func(t *testing.T) {
 		versions := []string{
@@ -58,112 +173,13 @@ func TestDownloadOnly(t *testing.T) {
 			constants.NewestKubernetesVersion,
 		}
 		for _, v := range versions {
-			t.Run(v, func(t *testing.T) {
-				// Explicitly does not pass StartArgs() to test driver default
-				// --force to avoid uid check
-				args := append([]string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", fmt.Sprintf("--kubernetes-version=%s", v)}, StartArgs()...)
-
-				// Preserve the initial run-result for debugging
-				if rrr == nil {
-					rrr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
-				} else {
-					_, err = Run(t, exec.CommandContext(ctx, Target(), args...))
-				}
-
-				if err != nil {
-					t.Errorf("%s failed: %v", args, err)
-				}
-
-				imgs, err := images.Kubeadm("", v)
-				if err != nil {
-					t.Errorf("kubeadm images: %v %+v", v, err)
-				}
-
-				// skip verify for cache images if --driver=none
-				if !NoneDriver() {
-					for _, img := range imgs {
-						img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
-						fp := filepath.Join(localpath.MiniPath(), "cache", "images", img)
-						_, err := os.Stat(fp)
-						if err != nil {
-							t.Errorf("expected image file exist at %q but got error: %v", fp, err)
-						}
-					}
-				}
-
-				// checking binaries downloaded (kubelet,kubeadm)
-				for _, bin := range constants.KubernetesReleaseBinaries {
-					fp := filepath.Join(localpath.MiniPath(), "cache", "linux", v, bin)
-					_, err := os.Stat(fp)
-					if err != nil {
-						t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
-					}
-				}
-
-				// If we are on darwin/windows, check to make sure OS specific kubectl has been downloaded
-				// as well for the `minikube kubectl` command
-				if runtime.GOOS == "linux" {
-					return
-				}
-				binary := "kubectl"
-				if runtime.GOOS == "windows" {
-					binary = "kubectl.exe"
-				}
-				fp := filepath.Join(localpath.MiniPath(), "cache", runtime.GOOS, v, binary)
-				if _, err := os.Stat(fp); err != nil {
-					t.Errorf("expected the file for binary exist at %q but got error %v", fp, err)
-				}
-			})
+			kubernetesVersion(ctx, t, profile, v)
 		}
 
-		// Check that the profile we've created has the expected driver
-		t.Run("ExpectedDefaultDriver", func(t *testing.T) {
-			if ExpectedDefaultDriver() == "" {
-				t.Skipf("--expected-default-driver is unset, skipping test")
-				return
-			}
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
-			if err != nil {
-				t.Errorf("%s failed: %v", rr.Args, err)
-			}
-			var ps map[string][]config.Profile
-			err = json.Unmarshal(rr.Stdout.Bytes(), &ps)
-			if err != nil {
-				t.Errorf("%s failed: %v", rr.Args, err)
-			}
+		expectedDefaultDriver(ctx, t, profile)
 
-			got := ""
-			for _, p := range ps["valid"] {
-				if p.Name == profile {
-					got = p.Config.Driver
-				}
-			}
-
-			if got != ExpectedDefaultDriver() {
-				t.Errorf("got driver %q, expected %q\nstart output: %s", got, ExpectedDefaultDriver(), rrr.Output())
-			}
-		})
-
-		// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
-		t.Run("DeleteAll", func(t *testing.T) {
-			if !CanCleanup() {
-				t.Skip("skipping, as cleanup is disabled")
-			}
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
-			if err != nil {
-				t.Errorf("%s failed: %v", rr.Args, err)
-			}
-		})
-		// Delete should always succeed, even if previously partially or fully deleted.
-		t.Run("DeleteAlwaysSucceeds", func(t *testing.T) {
-			if !CanCleanup() {
-				t.Skip("skipping, as cleanup is disabled")
-			}
-			rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
-			if err != nil {
-				t.Errorf("%s failed: %v", rr.Args, err)
-			}
-		})
+		deleteAll(ctx, t)
+		deleteAlwaysSucceeds(ctx, t, profile)
 	})
 
 }

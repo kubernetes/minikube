@@ -92,7 +92,11 @@ func TestGvisorAddon(t *testing.T) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	runGvisorAddonTest(ctx, t, profile, startArgs)
+}
+
+func runGvisorAddonTest(ctx context.Context, t *testing.T, profile string, startArgs []string) {
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}

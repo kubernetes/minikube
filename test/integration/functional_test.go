@@ -516,8 +516,7 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 }
 
-// validateProfileCmd asserts "profile" command functionality
-func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
+func profileNotCreate(ctx context.Context, t *testing.T) {
 	t.Run("profile_not_create", func(t *testing.T) {
 		// Profile command should not create a nonexistent profile
 		nonexistentProfile := "lis"
@@ -543,7 +542,9 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 			}
 		}
 	})
+}
 
+func profileList(ctx context.Context, t *testing.T, profile string) {
 	t.Run("profile_list", func(t *testing.T) {
 		// List profiles
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
@@ -566,7 +567,9 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 
 	})
+}
 
+func profileJSONOutput(ctx context.Context, t *testing.T, profile string) {
 	t.Run("profile_json_output", func(t *testing.T) {
 		// Json output
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
@@ -593,8 +596,14 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 	})
 }
 
-// validateServiceCmd asserts basic "service" command functionality
-func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
+// validateProfileCmd asserts "profile" command functionality
+func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
+	profileNotCreate(ctx, t)
+	profileList(ctx, t, profile)
+	profileJSONOutput(ctx, t, profile)
+}
+
+func createHelloNodePods(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=gcr.io/hello-minikube-zero-install/hello-node"))
 	if err != nil {
 		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
@@ -607,8 +616,13 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
+}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
+// validateServiceCmd asserts basic "service" command functionality
+func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
+	createHelloNodePods(ctx, t, profile)
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
