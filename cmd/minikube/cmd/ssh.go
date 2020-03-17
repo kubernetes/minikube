@@ -54,7 +54,7 @@ var sshCmd = &cobra.Command{
 		if err != nil {
 			exit.WithError("Error getting primary control plane", err)
 		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(*cc, cp))
+		host, err := machine.LoadHost(api, driver.MachineName(*cc, cp))
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}

@@ -93,7 +93,7 @@ var serviceCmd = &cobra.Command{
 			exit.WithError("Error getting control plane", err)
 		}
 		machineName := driver.MachineName(*cfg, cp)
-		if !machine.IsHostRunning(api, machineName) {
+		if !machine.IsRunning(api, machineName) {
 			os.Exit(1)
 		}
 
@@ -131,7 +131,7 @@ func startKicServiceTunnel(svc, configName string) {
 		exit.WithError("error creating clientset", err)
 	}
 
-	port, err := oci.HostPortBinding(oci.Docker, configName, 22)
+	port, err := oci.ForwardedPort(oci.Docker, configName, 22)
 	if err != nil {
 		exit.WithError("error getting ssh port", err)
 	}
