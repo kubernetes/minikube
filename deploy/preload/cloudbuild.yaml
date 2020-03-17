@@ -1,0 +1,2 @@
+steps:
+    - image: gcr.io/k8s-minikube/preload-generator
