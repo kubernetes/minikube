@@ -1,4 +1,0 @@
-steps:
-    - image: gcr.io/cloud-builders/docker
-      args: ["build", "-t", "preload-generator", "-f", "deploy/preload/Dockerfile", "deploy/preload"]
-    - image: preload-generator
