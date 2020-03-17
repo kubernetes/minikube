@@ -294,6 +294,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
 
+	validateSpecifiedDriver(existing)
 	ds := selectDriver(existing)
 	driverName := ds.Name
 	glog.Infof("selected driver: %s", driverName)
@@ -482,6 +483,55 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	return pick
 }
 
+// validateSpecifiedDriver makes sure that if a user has passed in a driver
+// it matches the existing cluster if there is one
+func validateSpecifiedDriver(existing *config.ClusterConfig) {
+	if existing == nil {
+		return
+	}
+	old := existing.Driver
+	var requested string
+	if d := viper.GetString("driver"); d != "" {
+		requested = d
+	} else if d := viper.GetString("vm-driver"); d != "" {
+		requested = d
+	}
+	if old == requested {
+		return
+	}
+
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		glog.Warningf("selectDriver NewAPIClient: %v", err)
+		return
+	}
+
+	cp, err := config.PrimaryControlPlane(existing)
+	if err != nil {
+		exit.WithError("Error getting primary cp", err)
+	}
+	machineName := driver.MachineName(*existing, cp)
+	h, err := api.Load(machineName)
+	if err != nil {
+		glog.Warningf("selectDriver api.Load: %v", err)
+		return
+	}
+
+	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
+		out.V{"profile_name": machineName, "driver": requested, "old_driver": h.Driver.DriverName()})
+
+	out.ErrT(out.Workaround, `To proceed, either:
+
+1) Delete the existing "{{.profile_name}}" cluster using: '{{.command}} delete'
+
+* or *
+
+2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --driver={{.old_driver}}'
+`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": machineName})
+
+	exit.WithCodeT(exit.Config, "Exiting.")
+}
+
 // validateDriver validates that the selected driver appears sane, exits if not
 func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
@@ -510,46 +560,6 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
 	}
-
-	if existing == nil {
-		return
-	}
-
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		glog.Warningf("selectDriver NewAPIClient: %v", err)
-		return
-	}
-
-	cp, err := config.PrimaryControlPlane(existing)
-	if err != nil {
-		exit.WithError("Error getting primary cp", err)
-	}
-
-	machineName := driver.MachineName(*existing, cp)
-	h, err := api.Load(machineName)
-	if err != nil {
-		glog.Warningf("selectDriver api.Load: %v", err)
-		return
-	}
-
-	if h.Driver.DriverName() == name {
-		return
-	}
-
-	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM that was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
-		out.V{"profile_name": machineName, "driver": name, "old_driver": h.Driver.DriverName()})
-
-	out.ErrT(out.Workaround, `To proceed, either:
-
-    1) Delete the existing "{{.profile_name}}" cluster using: '{{.command}} delete'
-
-    * or *
-
-    2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --driver={{.old_driver}}'
-	`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": machineName})
-
-	exit.WithCodeT(exit.Config, "Exiting.")
 }
 
 func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string, error) {
