@@ -62,7 +62,7 @@ func main() {
 
 	for _, kv := range k8sVersions {
 		for _, cr := range containerRuntimes {
-			tf := tarballFilename(kv, cr)
+			tf := download.TarballName(kv)
 			if tarballExists(tf) {
 				fmt.Printf("A preloaded tarball for k8s version %s already exists, skipping generation.\n", kv)
 				continue
@@ -76,10 +76,6 @@ func main() {
 			}
 		}
 	}
-}
-
-func tarballFilename(kubernetesVersion string, containerRuntime string) string {
-	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s.tar.lz4", preloadedTarballVersion, kubernetesVersion, containerRuntime, dockerStorageDriver)
 }
 
 func tarballExists(tarballFilename string) bool {
