@@ -165,26 +165,22 @@ func FlagDefaults(name string) FlagHints {
 
 // Choices returns a list of drivers which are possible on this system
 func Choices(vm bool) []registry.DriverState {
+	var drivers []registry.DriverState
 	options := registry.Available()
 	if vm {
-		var vmOptions []registry.DriverState 
 		for _, ds := range options {
 			if IsVM(ds.Name) {
-				vmOptions = append(vmOptions,ds)
+				drivers = append(drivers, ds)
 			}
 		}
-		// Descending priority for predictability and appearance
-                sort.Slice(vmOptions, func(i, j int) bool {
-                        return vmOptions[i].Priority > vmOptions[j].Priority
-		})
-		return vmOptions
-	}else {
-		// Descending priority for predictability and appearance
-		sort.Slice(options, func(i, j int) bool {
-			return options[i].Priority > options[j].Priority
-		})
-		return options
+	} else {
+		drivers = options
 	}
+	// Descending priority for predictability and appearance
+	sort.Slice(options, func(i, j int) bool {
+		return options[i].Priority > options[j].Priority
+	})
+	return drivers
 }
 
 // Suggest returns a suggested driver from a set of options
