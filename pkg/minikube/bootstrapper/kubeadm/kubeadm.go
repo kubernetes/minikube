@@ -276,10 +276,11 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	port := n.Port
 	if driver.IsKIC(cfg.Driver) {
 		ip = oci.DefaultBindIPV4
-		port, err := oci.ForwardedPort(cfg.Driver, driver.MachineName(cfg, n), port)
+		p, err := oci.ForwardedPort(cfg.Driver, driver.MachineName(cfg, n), port)
 		if err != nil {
 			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 		}
+		port = p
 	}
 	if n.ControlPlane {
 		if err := kverify.APIServerIsRunning(start, ip, port, timeout); err != nil {

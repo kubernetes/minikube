@@ -23,6 +23,7 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -41,6 +42,10 @@ var nodeAddCmd = &cobra.Command{
 		cc, err := config.Load(profile)
 		if err != nil {
 			exit.WithError("Error getting config", err)
+		}
+
+		if driver.BareMetal(cc.Driver) {
+			out.ErrT(out.FailureType, "none driver does not support multi-node clusters")
 		}
 
 		name := fmt.Sprintf("m%02d", len(cc.Nodes)+1)
