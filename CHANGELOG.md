@@ -5,12 +5,16 @@
 New features
 
 * Use Kubernetes v1.18.0-rc.1 by default [#7076](https://github.com/kubernetes/minikube/pull/7076)
+* Upgrade Docker driver to preferred (Linux), default on other platforms [#7090](https://github.com/kubernetes/minikube/pull/7090)
 * Upgrade Docker, from 19.03.7 to 19.03.8 [#7040](https://github.com/kubernetes/minikube/pull/7040)
 * Upgrade Docker, from 19.03.6 to 19.03.7 [#6939](https://github.com/kubernetes/minikube/pull/6939)
+* Upgrade dashboard to v2.0.0-rc6 [#7098](https://github.com/kubernetes/minikube/pull/7098)
+* Upgrade crio to 1.17.1 [#7099](https://github.com/kubernetes/minikube/pull/7099)
 * Updated French translation [#7055](https://github.com/kubernetes/minikube/pull/7055)
 
 Bugfixes
 
+* If user doesn't specify driver, don't validate against existing cluster [#7096](https://github.com/kubernetes/minikube/pull/7096)
 * Strip the version prefix before calling semver [#7054](https://github.com/kubernetes/minikube/pull/7054)
 * Move some of the driver validation before driver selection [#7080](https://github.com/kubernetes/minikube/pull/7080)
 * Fix bug where global config memory was ignored [#7082](https://github.com/kubernetes/minikube/pull/7082)
@@ -23,12 +27,12 @@ Huge thank you for this release towards our contributors:
 - Anders F Björklund
 - Medya Ghazizadeh
 - Priya Wadhwa
+- RA489
 - Richard Wall
 - Sharif Elgamal
 - Thomas Strömberg
 - Vikky Omkar
 - jumahmohammad
-- vikkyomkar
 
 ## Version 1.8.2 - 2020-03-13
 
