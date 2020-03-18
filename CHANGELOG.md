@@ -1,5 +1,35 @@
 # Release Notes
 
+## Version 1.9.0-beta.1 - 2020-03-18
+
+New features
+
+* Use Kubernetes v1.18.0-rc.1 by default [#7076](https://github.com/kubernetes/minikube/pull/7076)
+* Upgrade Docker, from 19.03.7 to 19.03.8 [#7040](https://github.com/kubernetes/minikube/pull/7040)
+* Upgrade Docker, from 19.03.6 to 19.03.7 [#6939](https://github.com/kubernetes/minikube/pull/6939)
+* Updated French translation [#7055](https://github.com/kubernetes/minikube/pull/7055)
+
+Bugfixes
+
+* Strip the version prefix before calling semver [#7054](https://github.com/kubernetes/minikube/pull/7054)
+* Move some of the driver validation before driver selection [#7080](https://github.com/kubernetes/minikube/pull/7080)
+* Fix bug where global config memory was ignored [#7082](https://github.com/kubernetes/minikube/pull/7082)
+* Remove controllerManager from the kubeadm v1beta2 template [#7030](https://github.com/kubernetes/minikube/pull/7030)
+* Delete: output underlying status failure [#7043](https://github.com/kubernetes/minikube/pull/7043)
+* status: error properly if cluster does not exist [#7041](https://github.com/kubernetes/minikube/pull/7041)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Richard Wall
+- Sharif Elgamal
+- Thomas Strömberg
+- Vikky Omkar
+- jumahmohammad
+- vikkyomkar
+
 ## Version 1.8.2 - 2020-03-13
 
 Shiny new improvements:
