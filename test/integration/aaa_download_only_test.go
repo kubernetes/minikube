@@ -54,8 +54,7 @@ func TestDownloadOnly(t *testing.T) {
 	t.Run("group", func(t *testing.T) {
 		versions := []string{
 			constants.OldestKubernetesVersion,
-			constants.DefaultKubernetesVersion,
-			constants.NewestKubernetesVersion,
+			"v1.12.0",
 		}
 		for _, v := range versions {
 			t.Run(v, func(t *testing.T) {
@@ -196,15 +195,6 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	}
 	if string(remoteChecksum) != string(checksum[:]) {
 		t.Errorf("checksum of %s does not match remote checksum (%s != %s)", tarball, string(remoteChecksum), string(checksum[:]))
-	}
-
-	// Make sure this image exists in the docker daemon
-	ref, err := name.ParseReference(kic.BaseImage)
-	if err != nil {
-		t.Errorf("parsing reference failed: %v", err)
-	}
-	if _, err := daemon.Image(ref); err != nil {
-		t.Errorf("expected image does not exist in local daemon: %v", err)
 	}
 }
 
