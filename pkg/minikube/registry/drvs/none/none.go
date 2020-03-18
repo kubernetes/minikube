@@ -51,9 +51,9 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
-	_, err := exec.LookPath("systemctl")
+	_, err := exec.LookPath("iptables")
 	if err != nil {
-		return registry.State{Error: err, Fix: "Use a systemd based Linux distribution", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
+		return registry.State{Error: err, Fix: "iptables must be installed", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
 	return registry.State{Installed: true, Healthy: true}
 }

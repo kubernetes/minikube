@@ -27,6 +27,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/sysinit"
+
 )
 
 const (
@@ -40,6 +42,8 @@ type CRIO struct {
 	Runner            CommandRunner
 	ImageRepository   string
 	KubernetesVersion semver.Version
+	Init			  sysinit.Manager
+
 }
 
 // generateCRIOConfig sets up /etc/crio/crio.conf
@@ -103,9 +107,7 @@ func (r *CRIO) Available() error {
 
 // Active returns if CRIO is active on the host
 func (r *CRIO) Active() bool {
-	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "crio")
-	_, err := r.Runner.RunCmd(c)
-	return err == nil
+	return r.Init.Active("crio")
 }
 
 // Enable idempotently enables CRIO on a host
@@ -124,19 +126,12 @@ func (r *CRIO) Enable(disOthers bool) error {
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
 	}
-
-	if _, err := r.Runner.RunCmd(exec.Command("sudo", "systemctl", "restart", "crio")); err != nil {
-		return errors.Wrapf(err, "enable crio.")
-	}
-	return nil
+	return r.Init.Start("crio")
 }
 
 // Disable idempotently disables CRIO on a host
 func (r *CRIO) Disable() error {
-	if _, err := r.Runner.RunCmd(exec.Command("sudo", "systemctl", "stop", "crio")); err != nil {
-		return errors.Wrapf(err, "disable crio.")
-	}
-	return nil
+	return r.Init.Stop("crio")
 }
 
 // ImageExists checks if an image exists

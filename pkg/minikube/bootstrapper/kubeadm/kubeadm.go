@@ -426,10 +426,13 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 
 	glog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
 
+	sm := sysinit.New(k.c)
+
 	// stop kubelet to avoid "Text File Busy" error
-	if err := stopKubelet(k.c); err != nil {
+	if err := sm.Stop("kubelet"); err != nil {
 		glog.Warningf("unable to stop kubelet: %s", err)
 	}
+
 
 	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
 		return errors.Wrap(err, "downloading binaries")
@@ -444,9 +447,10 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		return err
 	}
 
-	if err := startKubelet(k.c); err != nil {
+	if err := sm.Start("kubelet"); err != nil {
 		return err
 	}
+
 	return nil
 }
 
