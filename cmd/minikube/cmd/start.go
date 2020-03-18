@@ -496,6 +496,10 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 	} else if d := viper.GetString("vm-driver"); d != "" {
 		requested = d
 	}
+	// Neither --vm-driver or --driver was specified
+	if requested == "" {
+		return
+	}
 	if old == requested {
 		return
 	}
