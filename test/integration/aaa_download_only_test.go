@@ -51,7 +51,8 @@ func TestDownloadOnly(t *testing.T) {
 	t.Run("group", func(t *testing.T) {
 		versions := []string{
 			constants.OldestKubernetesVersion,
-			"v1.12.0",
+			constants.DefaultKubernetesVersion,
+			constants.NewestKubernetesVersion,
 		}
 		for _, v := range versions {
 			t.Run(v, func(t *testing.T) {
@@ -68,6 +69,14 @@ func TestDownloadOnly(t *testing.T) {
 
 				if err != nil {
 					t.Errorf("%s failed: %v", args, err)
+				}
+
+				if download.PreloadExists(v, "docker") {
+					// Just make sure the tarball path exists
+					if _, err := os.Stat(download.TarballPath(v)); err != nil {
+						t.Errorf("preloaded tarball path doesn't exist: %v", err)
+					}
+					return
 				}
 
 				imgs, err := images.Kubeadm("", v)
