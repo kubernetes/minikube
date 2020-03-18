@@ -34,7 +34,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/logs"
 )
 
 // APIServerProcess waits for api server to be healthy returns error if it doesn't
@@ -94,13 +97,25 @@ func SystemPods(client *kubernetes.Clientset, start time.Time, timeout time.Dura
 	return nil
 }
 
-// APIServerIsRunning waits for api server status to be running
-func APIServerIsRunning(start time.Time, ip string, port int, timeout time.Duration) error {
+// WaitForHealthyAPIServer waits for api server status to be running
+func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner, start time.Time, ip string, port int, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
+
+	minLogTime := kconst.APICallRetryInterval * 10
 	healthz := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during healthz check")
+		}
+
+		// We're probably not going to recover, so show problems and slow polling
+		if time.Since(start) > minLogTime {
+			problems := logs.FindProblems(r, bs, cr)
+			if len(problems) > 0 {
+				logs.OutputProblems(problems, 5)
+				time.Sleep(kconst.APICallRetryInterval * 15)
+			}
+			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
 
 		status, err := apiServerHealthz(net.ParseIP(ip), port)
@@ -174,6 +189,10 @@ func apiServerHealthz(ip net.IP, port int) (state.State, error) {
 	// Connection refused, usually.
 	if err != nil {
 		return state.Stopped, nil
+	}
+	if resp.StatusCode == http.StatusUnauthorized {
+		glog.Errorf("%s returned code %d (unauthorized). Please ensure that your apiserver authorization settings make sense!", url, resp.StatusCode)
+		return state.Error, nil
 	}
 	if resp.StatusCode != http.StatusOK {
 		glog.Warningf("%s response: %v %+v", url, err, resp)

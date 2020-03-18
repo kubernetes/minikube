@@ -36,6 +36,7 @@ func TestIsProblem(t *testing.T) {
 		{"no-objects-passed-to-apply #4010", false, "error: no objects passed to apply"},
 		{"bad-certificate #4251", true, "log.go:172] http: TLS handshake error from 127.0.0.1:49200: remote error: tls: bad certificate"},
 		{"ephemeral-eviction #5355", true, " eviction_manager.go:419] eviction manager: unexpected error when attempting to reduce ephemeral-storage pressure: wanted to free 9223372036854775807 bytes, but freed 0 bytes space with errors in image deletion"},
+		{"anonymous-auth", true, "AnonymousAuth is not allowed with the AlwaysAllow authorizer. Resetting AnonymousAuth to false. You should use a different authorizer"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
