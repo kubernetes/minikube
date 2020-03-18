@@ -33,11 +33,10 @@ const (
 )
 
 var (
-	dockerStorageDriver     = "overlay2"
-	preloadedTarballVersion = "v1"
-	containerRuntimes       = []string{"docker"}
-	k8sVersion              string
-	k8sVersions             []string
+	dockerStorageDriver = "overlay2"
+	containerRuntimes   = []string{"docker"}
+	k8sVersion          string
+	k8sVersions         []string
 )
 
 func init() {
