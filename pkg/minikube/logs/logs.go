@@ -56,6 +56,8 @@ var rootCauses = []string{
 	`Failed to initialize CSINodeInfo.*forbidden`,
 	`Failed to admit pod`,
 	`failed to "StartContainer"`,
+	`kubelet.*forbidden.*cannot \w+ resource`,
+	`leases.*forbidden.*cannot \w+ resource`,
 }
 
 // rootCauseRe combines rootCauses into a single regex
