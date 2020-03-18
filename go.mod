@@ -27,6 +27,8 @@ require (
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
 	github.com/google/go-cmp v0.3.1
 	github.com/google/go-containerregistry v0.0.0-20200131185320-aec8da010de2
+	github.com/google/go-github v17.0.0+incompatible
+	github.com/google/go-github/v29 v29.0.3 // indirect
 	github.com/googleapis/gnostic v0.3.0 // indirect
 	github.com/hashicorp/go-getter v1.4.0
 	github.com/hashicorp/go-retryablehttp v0.5.4
