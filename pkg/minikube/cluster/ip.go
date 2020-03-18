@@ -79,7 +79,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 
 // GetHostDriverIP gets the ip address of the current minikube cluster
 func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
-	host, err := machine.CheckIfHostExistsAndLoad(api, machineName)
+	host, err := machine.LoadHost(api, machineName)
 	if err != nil {
 		return nil, err
 	}

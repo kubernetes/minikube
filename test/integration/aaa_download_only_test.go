@@ -38,8 +38,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/preload"
 )
 
 func TestDownloadOnly(t *testing.T) {
@@ -79,7 +79,7 @@ func TestDownloadOnly(t *testing.T) {
 					t.Errorf("kubeadm images: %v %+v", v, err)
 				}
 
-				// skip verify for cache images if --vm-driver=none
+				// skip verify for cache images if --driver=none
 				if !NoneDriver() {
 					for _, img := range imgs {
 						img = strings.Replace(img, ":", "_", 1) // for example kube-scheduler:v1.15.2 --> kube-scheduler_v1.15.2
@@ -176,21 +176,21 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
 	defer Cleanup(t, profile, cancel)
 
-	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", "--vm-driver=docker"}
+	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", "--driver=docker"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("%s failed: %v:\n%s", args, err, rr.Output())
 	}
 
-	// Make sure the preloaded image tarball exists
-	tarball := preload.TarballFilepath(constants.DefaultKubernetesVersion)
+	// Make sure the downloaded image tarball exists
+	tarball := download.TarballPath(constants.DefaultKubernetesVersion)
 	contents, err := ioutil.ReadFile(tarball)
 	if err != nil {
 		t.Errorf("reading tarball: %v", err)
 	}
 	// Make sure it has the correct checksum
 	checksum := md5.Sum(contents)
-	remoteChecksum, err := ioutil.ReadFile(preload.ChecksumFilepath(constants.DefaultKubernetesVersion))
+	remoteChecksum, err := ioutil.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion))
 	if err != nil {
 		t.Errorf("reading checksum file: %v", err)
 	}
@@ -210,7 +210,7 @@ func TestDownloadOnlyDocker(t *testing.T) {
 
 func runningDockerDriver(startArgs []string) bool {
 	for _, s := range startArgs {
-		if s == "--vm-driver=docker" {
+		if s == "--driver=docker" {
 			return true
 		}
 	}

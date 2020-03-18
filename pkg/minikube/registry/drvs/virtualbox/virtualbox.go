@@ -27,6 +27,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -49,19 +50,19 @@ func init() {
 	}
 }
 
-func configure(mc config.ClusterConfig) (interface{}, error) {
-	d := virtualbox.NewDriver(mc.Name, localpath.MiniPath())
-	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
-	d.Memory = mc.Memory
-	d.CPU = mc.CPUs
-	d.DiskSize = mc.DiskSize
-	d.HostOnlyCIDR = mc.HostOnlyCIDR
-	d.NoShare = mc.DisableDriverMounts
-	d.NoVTXCheck = mc.NoVTXCheck
-	d.NatNicType = mc.NatNicType
-	d.HostOnlyNicType = mc.HostOnlyNicType
-	d.DNSProxy = mc.DNSProxy
-	d.HostDNSResolver = mc.HostDNSResolver
+func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+	d := virtualbox.NewDriver(driver.MachineName(cc, n), localpath.MiniPath())
+	d.Boot2DockerURL = download.LocalISOResource(cc.MinikubeISO)
+	d.Memory = cc.Memory
+	d.CPU = cc.CPUs
+	d.DiskSize = cc.DiskSize
+	d.HostOnlyCIDR = cc.HostOnlyCIDR
+	d.NoShare = cc.DisableDriverMounts
+	d.NoVTXCheck = cc.NoVTXCheck
+	d.NatNicType = cc.NatNicType
+	d.HostOnlyNicType = cc.HostOnlyNicType
+	d.DNSProxy = cc.DNSProxy
+	d.HostDNSResolver = cc.HostDNSResolver
 	return d, nil
 }
 

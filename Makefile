@@ -14,24 +14,24 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 7
-VERSION_BUILD ?= 3
+VERSION_MINOR ?= 8
+VERSION_BUILD ?= 2
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
 VERSION ?= v$(RAW_VERSION)
 
 KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
-PRELOADED_TARBALL_VERSION ?= $(shell egrep "Version =" pkg/minikube/preload/constants.go | cut -d \" -f2)
-PRELOADED_VOLUMES_GCS_BUCKET ?= $(shell egrep "PreloadedVolumeTarballsBucket =" pkg/minikube/constants/constants.go | cut -d \" -f2)
+PRELOADED_TARBALL_VERSION ?= $(shell egrep "PreloadVersion =" pkg/minikube/download/preload.go | cut -d \" -f2)
+PRELOADED_VOLUMES_GCS_BUCKET ?= $(shell egrep "PreloadBucket =" pkg/minikube/download/preload.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).3
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.13.6
+GO_VERSION ?= 1.13.8
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2019.02.9
@@ -42,8 +42,8 @@ COMMIT_NO := $(shell git rev-parse HEAD 2> /dev/null || true)
 COMMIT ?= $(if $(shell git status --porcelain --untracked-files=no),"${COMMIT_NO}-dirty","${COMMIT_NO}")
 
 HYPERKIT_BUILD_IMAGE 	?= karalabe/xgo-1.12.x
-# NOTE: "latest" as of 2019-08-15. kube-cross images aren't updated as often as Kubernetes
-BUILD_IMAGE 	?= k8s.gcr.io/kube-cross:v$(GO_VERSION)-1
+# NOTE: "latest" as of 2020-02-26. kube-cross images aren't updated as often as Kubernetes
+BUILD_IMAGE 	?= us.gcr.io/k8s-artifacts-prod/build-image/kube-cross:v$(GO_VERSION)-1
 ISO_BUILD_IMAGE ?= $(REGISTRY)/buildroot-image
 KVM_BUILD_IMAGE ?= $(REGISTRY)/kvm-build-image:$(GO_VERSION)
 
@@ -163,7 +163,7 @@ out/minikube$(IS_EXE): $(SOURCE_GENERATED) $(SOURCE_FILES) go.mod
 ifeq ($(MINIKUBE_BUILD_IN_DOCKER),y)
 	$(call DOCKER,$(BUILD_IMAGE),GOOS=$(GOOS) GOARCH=$(GOARCH) /usr/bin/make $@)
 else
-	go build -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
+	go build $(MINIKUBE_GOFLAGS) -tags "$(MINIKUBE_BUILD_TAGS)" -ldflags="$(MINIKUBE_LDFLAGS)" -o $@ k8s.io/minikube/cmd/minikube
 endif
 
 out/minikube-windows-amd64.exe: out/minikube-windows-amd64
@@ -245,7 +245,7 @@ test-pkg/%: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go
 	go test -v -test.timeout=60m ./$* --tags="$(MINIKUBE_BUILD_TAGS)"
 
 .PHONY: all
-all: cross drivers e2e-cross out/gvisor-addon ## Build all different minikube components
+all: cross drivers e2e-cross exotic out/gvisor-addon ## Build all different minikube components
 
 .PHONY: drivers
 drivers: docker-machine-driver-hyperkit docker-machine-driver-kvm2 ## Build Hyperkit and KVM2 drivers
@@ -262,7 +262,7 @@ integration: out/minikube ## Trigger minikube integration test
 
 .PHONY: integration-none-driver
 integration-none-driver: e2e-linux-$(GOARCH) out/minikube-linux-$(GOARCH)  ## Trigger minikube none driver test
-	sudo -E out/e2e-linux-$(GOARCH) -testdata-dir "test/integration/testdata" -minikube-start-args="--vm-driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
+	sudo -E out/e2e-linux-$(GOARCH) -testdata-dir "test/integration/testdata" -minikube-start-args="--driver=none" -test.v -test.timeout=60m -binary=out/minikube-linux-amd64 $(TEST_ARGS)
 
 .PHONY: integration-versioned
 integration-versioned: out/minikube ## Trigger minikube integration testing
@@ -304,7 +304,10 @@ endif
 	@sed -i -e 's/Json/JSON/' $@ && rm -f ./-e
 
 .PHONY: cross
-cross: minikube-linux-amd64 minikube-linux-arm64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
+cross: minikube-linux-amd64 minikube-darwin-amd64 minikube-windows-amd64.exe ## Build minikube for all platform
+
+.PHONY: exotic
+exotic: out/minikube-linux-arm out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x ## Build minikube for non-amd64 linux
 
 .PHONY: windows
 windows: minikube-windows-amd64.exe ## Build minikube for Windows 64bit
@@ -320,7 +323,8 @@ e2e-cross: e2e-linux-amd64 e2e-darwin-amd64 e2e-windows-amd64.exe ## End-to-end 
 
 .PHONY: checksum
 checksum: ## Generate checksums
-	for f in out/minikube.iso out/minikube-linux-amd64 minikube-linux-arm64 \
+	for f in out/minikube.iso out/minikube-linux-amd64 out/minikube-linux-arm \
+		 out/minikube-linux-arm64 out/minikube-linux-ppc64le out/minikube-linux-s390x \
 		 out/minikube-darwin-amd64 out/minikube-windows-amd64.exe \
 		 out/docker-machine-driver-kvm2 out/docker-machine-driver-hyperkit; do \
 		if [ -f "$${f}" ]; then \
@@ -441,15 +445,13 @@ out/repodata/repomd.xml: out/minikube-$(RPM_VERSION).rpm
 
 .SECONDEXPANSION:
 TAR_TARGETS_linux-amd64   := out/minikube-linux-amd64 out/docker-machine-driver-kvm2
-TAR_TARGETS_linux-arm64   := out/minikube-linux-arm64
 TAR_TARGETS_darwin-amd64  := out/minikube-darwin-amd64 out/docker-machine-driver-hyperkit
 TAR_TARGETS_windows-amd64 := out/minikube-windows-amd64.exe
 out/minikube-%.tar.gz: $$(TAR_TARGETS_$$*)
 	tar -cvzf $@ $^
 
 .PHONY: cross-tars
-cross-tars: out/minikube-linux-amd64.tar.gz out/minikube-linux-arm64.tar.gz \ ## Cross-compile minikube
-	    out/minikube-windows-amd64.tar.gz out/minikube-darwin-amd64.tar.gz
+cross-tars: out/minikube-linux-amd64.tar.gz out/minikube-windows-amd64.tar.gz out/minikube-darwin-amd64.tar.gz ## Cross-compile minikube
 	-cd out && $(SHA512SUM) *.tar.gz > SHA512SUM
 
 out/minikube-installer.exe: out/minikube-windows-amd64.exe

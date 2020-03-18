@@ -39,7 +39,7 @@ var updateContextCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		machineName := viper.GetString(config.MachineProfile)
+		machineName := viper.GetString(config.ProfileName)
 		ip, err := cluster.GetHostDriverIP(api, machineName)
 		if err != nil {
 			exit.WithError("Error host driver ip status", err)

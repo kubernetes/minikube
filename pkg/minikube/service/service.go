@@ -81,7 +81,7 @@ func (k *K8sClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
 // GetClientset returns a clientset
 func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	profile := viper.GetString(config.MachineProfile)
+	profile := viper.GetString(config.ProfileName)
 	configOverrides := &clientcmd.ConfigOverrides{
 		Context: clientcmdapi.Context{
 			Cluster:  profile,
@@ -119,7 +119,7 @@ type URLs []SvcURL
 // GetServiceURLs returns a SvcURL object for every service in a particular namespace.
 // Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
-	host, err := machine.CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
+	host, err := machine.LoadHost(api, viper.GetString(config.ProfileName))
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 // GetServiceURLsForService returns a SvcUrl object for a service in a namespace. Supports optional formatting.
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) (SvcURL, error) {
-	host, err := machine.CheckIfHostExistsAndLoad(api, viper.GetString(config.MachineProfile))
+	host, err := machine.LoadHost(api, viper.GetString(config.ProfileName))
 	if err != nil {
 		return SvcURL{}, errors.Wrap(err, "Error checking if api exist and loading it")
 	}

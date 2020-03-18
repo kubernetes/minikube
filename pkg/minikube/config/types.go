@@ -20,7 +20,6 @@ import (
 	"net"
 
 	"github.com/blang/semver"
-	"k8s.io/minikube/pkg/util"
 )
 
 // Profile represents a minikube profile
@@ -49,13 +48,12 @@ type ClusterConfig struct {
 	HypervVirtualSwitch     string
 	HypervUseExternalSwitch bool
 	HypervExternalAdapter   string
-	KVMNetwork              string             // Only used by the KVM driver
-	KVMQemuURI              string             // Only used by kvm2
-	KVMGPU                  bool               // Only used by kvm2
-	KVMHidden               bool               // Only used by kvm2
-	Downloader              util.ISODownloader `json:"-"`
-	DockerOpt               []string           // Each entry is formatted as KEY=VALUE.
-	DisableDriverMounts     bool               // Only used by virtualbox
+	KVMNetwork              string   // Only used by the KVM driver
+	KVMQemuURI              string   // Only used by kvm2
+	KVMGPU                  bool     // Only used by kvm2
+	KVMHidden               bool     // Only used by kvm2
+	DockerOpt               []string // Each entry is formatted as KEY=VALUE.
+	DisableDriverMounts     bool     // Only used by virtualbox
 	NFSShare                []string
 	NFSSharesRoot           string
 	UUID                    string // Only used by hyperkit to restore the mac address
@@ -87,6 +85,11 @@ type KubernetesConfig struct {
 
 	ShouldLoadCachedImages bool
 	EnableDefaultCNI       bool
+
+	// We need to keep these in the short term for backwards compatibility
+	NodeIP   string
+	NodePort int
+	NodeName string
 }
 
 // Node contains information about specific nodes in a cluster
