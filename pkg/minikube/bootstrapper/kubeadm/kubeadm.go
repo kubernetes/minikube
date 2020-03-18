@@ -273,7 +273,13 @@ func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Dur
 			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 		}
 	}
-	if err := kverify.APIServerIsRunning(start, ip, port, timeout); err != nil {
+
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return err
+	}
+
+	if err := kverify.WaitForHealthyAPIServer(cr, k, k.c, start, ip, port, timeout); err != nil {
 		return err
 	}
 
