@@ -40,15 +40,22 @@ import (
 	"k8s.io/minikube/pkg/minikube/logs"
 )
 
-// APIServerProcess waits for api server to be healthy returns error if it doesn't
-func APIServerProcess(runner command.Runner, start time.Time, timeout time.Duration) error {
+// WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
+func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner, start time.Time, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver process to appear ...")
+	minLogTime := kconst.APICallRetryInterval * 10
+
 	err := wait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during process check")
 		}
 
-		if _, ierr := apiServerPID(runner); ierr != nil {
+		if time.Since(start) > minLogTime {
+			announceProblems(r, bs, cr)
+			time.Sleep(kconst.APICallRetryInterval * 5)
+		}
+
+		if _, ierr := apiServerPID(cr); ierr != nil {
 			return false, nil
 		}
 		return true, nil
@@ -70,14 +77,21 @@ func apiServerPID(cr command.Runner) (int, error) {
 	return strconv.Atoi(s)
 }
 
-// SystemPods verifies essential pods for running kurnetes is running
-func SystemPods(client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
+// WaitForSystemPods verifies essential pods for running kurnetes is running
+func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
 	glog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
+	minLogTime := kconst.APICallRetryInterval * 10
+
 	podList := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during pod check")
 		}
+		if time.Since(start) > minLogTime {
+			announceProblems(r, bs, cr)
+			time.Sleep(kconst.APICallRetryInterval * 5)
+		}
+
 		// Wait for any system pod, as waiting for apiserver may block until etcd
 		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
 		if err != nil {
@@ -108,13 +122,8 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 			return false, fmt.Errorf("cluster wait timed out during healthz check")
 		}
 
-		// We're probably not going to recover, so show problems and slow polling
 		if time.Since(start) > minLogTime {
-			problems := logs.FindProblems(r, bs, cr)
-			if len(problems) > 0 {
-				logs.OutputProblems(problems, 5)
-				time.Sleep(kconst.APICallRetryInterval * 15)
-			}
+			announceProblems(r, bs, cr)
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
 
@@ -134,6 +143,15 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 	}
 	glog.Infof("duration metric: took %s to wait for apiserver healthz status ...", time.Since(hStart))
 	return nil
+}
+
+// announceProblems checks for problems, and slows polling down if any are found
+func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner) {
+	problems := logs.FindProblems(r, bs, cr)
+	if len(problems) > 0 {
+		logs.OutputProblems(problems, 5)
+		time.Sleep(kconst.APICallRetryInterval * 15)
+	}
 }
 
 // APIServerStatus returns apiserver status in libmachine style state.State

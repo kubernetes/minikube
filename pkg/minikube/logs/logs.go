@@ -35,8 +35,31 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// rootCauseRe is a regular expression that matches known failure root causes
-var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted|tls: bad certificate|kubelet.*no API client|kubelet.*No api server|STDIN.*127.0.0.1:8080|failed to create listener|address already in use|unable to evict any pods|eviction manager: unexpected error|Resetting AnonymousAuth to false`)
+// rootCauses are regular expressions that match known failures
+var rootCauses = []string{
+	`^error: `,
+	`eviction manager: pods.* evicted`,
+	`unknown flag: --`,
+	`forbidden.*no providers available`,
+	`eviction manager:.*evicted`,
+	`tls: bad certificate`,
+	`kubelet.*no API client`,
+	`kubelet.*No api server`,
+	`STDIN.*127.0.0.1:8080`,
+	`failed to create listener`,
+	`address already in use`,
+	`unable to evict any pods`,
+	`eviction manager: unexpected error`,
+	`Resetting AnonymousAuth to false`,
+	`CrashLoopBackOff`,
+	`Unable to register node.*forbidden`,
+	`Failed to initialize CSINodeInfo.*forbidden`,
+	`Failed to admit pod`,
+	`failed to "StartContainer"`,
+}
+
+// rootCauseRe combines rootCauses into a single regex
+var rootCauseRe = regexp.MustCompile(strings.Join(rootCauses, "|"))
 
 // ignoreCauseRe is a regular expression that matches spurious errors to not surface
 var ignoreCauseRe = regexp.MustCompile("error: no objects passed to apply")
@@ -44,6 +67,7 @@ var ignoreCauseRe = regexp.MustCompile("error: no objects passed to apply")
 // importantPods are a list of pods to retrieve logs for, in addition to the bootstrapper logs.
 var importantPods = []string{
 	"kube-apiserver",
+	"etcd",
 	"coredns",
 	"kube-scheduler",
 	"kube-proxy",
