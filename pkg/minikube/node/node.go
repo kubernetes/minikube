@@ -39,7 +39,7 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 		return err
 	}
 
-	Start(*cc, n, nil)
+	Start(*cc, n, nil, false)
 	return nil
 }
 

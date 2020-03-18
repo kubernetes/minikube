@@ -25,10 +25,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -59,7 +59,7 @@ minikube kubectl -- get pods --namespace kube-system`,
 			version = cc.KubernetesConfig.KubernetesVersion
 		}
 
-		path, err := cluster.CacheKubectlBinary(version)
+		path, err := node.CacheKubectlBinary(version)
 		if err != nil {
 			out.ErrLn("Error caching kubectl: %v", err)
 		}

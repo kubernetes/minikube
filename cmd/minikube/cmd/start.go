@@ -45,7 +45,6 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -348,10 +347,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubeconfig, err := cluster.InitialSetup(cc, n, existingAddons)
-	if err != nil {
-		exit.WithError("Starting node", err)
-	}
+	kubeconfig := node.Start(cc, n, existingAddons, true)
 
 	numNodes := viper.GetInt(nodes)
 	if numNodes > 1 {
