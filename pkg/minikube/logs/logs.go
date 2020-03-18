@@ -23,16 +23,20 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 // rootCauseRe is a regular expression that matches known failure root causes
@@ -186,5 +190,15 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 	}
 	cmds[r.Name()] = r.SystemLogCmd(length)
 	cmds["container status"] = cruntime.ContainerStatusCommand()
+
+	cfg, err := config.Load(viper.GetString(config.ProfileName))
+	if err != nil && !config.IsNotExist(err) {
+		out.ErrLn("Error loading profile config: %v", err)
+	}
+
+	cmds["describe nodes"] = fmt.Sprintf("sudo %s describe node -A --kubeconfig=%s",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+		path.Join(vmpath.GuestPersistentDir, "kubeconfig"))
+
 	return cmds
 }
