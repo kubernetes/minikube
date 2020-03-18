@@ -37,7 +37,9 @@ import (
 
 const (
 	// PreloadVersion is the current version of the preloaded tarball
-	PreloadVersion = "v1"
+	//
+	// NOTE: You may need to bump this version up when upgrading auxiliary docker images
+	PreloadVersion = "v2"
 	// PreloadBucket is the name of the GCS bucket where preloaded volume tarballs exist
 	PreloadBucket = "minikube-preloaded-volume-tarballs"
 )
