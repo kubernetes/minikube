@@ -19,10 +19,8 @@ package machine
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -37,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/image"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -65,7 +64,7 @@ func CacheImagesForBootstrapper(imageRepository string, version string, clusterB
 // LoadImages loads previously cached images into the container runtime
 func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string, cacheDir string) error {
 	// Skip loading images if images already exist
-	if imagesPreloaded(runner, images) {
+	if cruntime.DockerImagesPreloaded(runner, images) {
 		glog.Infof("Images are preloaded, skipping loading")
 		return nil
 	}
@@ -78,6 +77,7 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 	}()
 
 	var g errgroup.Group
+
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: runner})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
@@ -105,28 +105,6 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 	}
 	glog.Infoln("Successfully loaded all cached images")
 	return nil
-}
-
-func imagesPreloaded(runner command.Runner, images []string) bool {
-	rr, err := runner.RunCmd(exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}"))
-	if err != nil {
-		return false
-	}
-	preloadedImages := map[string]struct{}{}
-	for _, i := range strings.Split(rr.Stdout.String(), "\n") {
-		preloadedImages[i] = struct{}{}
-	}
-
-	glog.Infof("Got preloaded images: %s", rr.Output())
-
-	// Make sure images == imgs
-	for _, i := range images {
-		if _, ok := preloadedImages[i]; !ok {
-			glog.Infof("%s wasn't preloaded", i)
-			return false
-		}
-	}
-	return true
 }
 
 // needsTransfer returns an error if an image needs to be retransfered
@@ -168,28 +146,31 @@ func CacheAndLoadImages(images []string) error {
 	}
 	for _, p := range profiles { // loading images to all running profiles
 		pName := p.Name // capture the loop variable
-		status, err := GetHostStatus(api, pName)
+		c, err := config.Load(pName)
 		if err != nil {
-			glog.Warningf("skipping loading cache for profile %s", pName)
-			glog.Errorf("error getting status for %s: %v", pName, err)
-			continue // try next machine
+			return err
 		}
-		if status == state.Running.String() { // the not running hosts will load on next start
-			h, err := api.Load(pName)
+		for _, n := range c.Nodes {
+			m := driver.MachineName(*c, n)
+			status, err := Status(api, m)
 			if err != nil {
-				return err
+				glog.Warningf("skipping loading cache for profile %s", pName)
+				glog.Errorf("error getting status for %s: %v", pName, err)
+				continue // try next machine
 			}
-			cr, err := CommandRunner(h)
-			if err != nil {
-				return err
-			}
-			c, err := config.Load(pName)
-			if err != nil {
-				return err
-			}
-			err = LoadImages(c, cr, images, constants.ImageCacheDir)
-			if err != nil {
-				glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+			if status == state.Running.String() { // the not running hosts will load on next start
+				h, err := api.Load(m)
+				if err != nil {
+					return err
+				}
+				cr, err := CommandRunner(h)
+				if err != nil {
+					return err
+				}
+				err = LoadImages(c, cr, images, constants.ImageCacheDir)
+				if err != nil {
+					glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
+				}
 			}
 		}
 	}

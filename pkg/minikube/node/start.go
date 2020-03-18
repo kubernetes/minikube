@@ -37,19 +37,21 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	k8sVersion := mc.KubernetesConfig.KubernetesVersion
 	driverName := mc.Driver
 
-	// See if we can create a volume of preloaded images
-	// If not, pull images in the background while the VM boots.
+	// If using kic, make sure we download the kic base image
 	var kicGroup errgroup.Group
 	if driver.IsKIC(driverName) {
-		beginDownloadKicArtifacts(&kicGroup, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+		beginDownloadKicArtifacts(&kicGroup)
 	}
-	// Now that the ISO is downloaded, pull images in the background while the VM boots.
+
 	var cacheGroup errgroup.Group
-	beginCacheRequiredImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion)
+	// Adding a second layer of cache does not make sense for the none driver
+	if !driver.BareMetal(driverName) {
+		beginCacheKubernetesImages(&cacheGroup, mc.KubernetesConfig.ImageRepository, k8sVersion, mc.KubernetesConfig.ContainerRuntime)
+	}
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
-	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := config.SaveProfile(viper.GetString(config.MachineProfile), &mc); err != nil {
+	// Hence, saveProfile must be called before startHost, and again afterwards when we know the IP.
+	if err := config.SaveProfile(viper.GetString(config.ProfileName), &mc); err != nil {
 		exit.WithError("Failed to save config", err)
 	}
 
@@ -59,10 +61,18 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 
 	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
 	defer machineAPI.Close()
-	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig)
-	showVersionInfo(k8sVersion, cr)
+
+	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
+
+	sv, err := util.ParseKubernetesVersion(mc.KubernetesConfig.KubernetesVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	// configure the runtime (docker, containerd, crio)
+	cr := configureRuntimes(mRunner, driverName, mc.KubernetesConfig, sv)
+	showVersionInfo(k8sVersion, cr)
 
 	//TODO(sharifelgamal): Part out the cluster-wide operations, perhaps using the "primary" param
 
@@ -84,7 +94,7 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 
 	// enable addons, both old and new!
 	if existingAddons != nil {
-		addons.Start(viper.GetString(config.MachineProfile), existingAddons, AddonList)
+		addons.Start(viper.GetString(config.ProfileName), existingAddons, AddonList)
 	}
 
 	if err = CacheAndLoadImagesInConfig(); err != nil {

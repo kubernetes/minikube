@@ -9,11 +9,11 @@ description: >
 
 ### Overview
 
-config modifies minikube config files using subcommands like "minikube config set vm-driver kvm"
+config modifies minikube config files using subcommands like "minikube config set driver kvm"
 
 Configurable fields: 
 
- * vm-driver
+ * driver
  * container-runtime
  * feature-gates
  * v

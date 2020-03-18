@@ -30,6 +30,7 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -67,25 +68,25 @@ type kvmDriver struct {
 	ConnectionURI  string
 }
 
-func configure(mc config.ClusterConfig) (interface{}, error) {
-	name := mc.Name
+func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+	name := driver.MachineName(cc, n)
 	return kvmDriver{
 		BaseDriver: &drivers.BaseDriver{
 			MachineName: name,
 			StorePath:   localpath.MiniPath(),
 			SSHUser:     "docker",
 		},
-		Memory:         mc.Memory,
-		CPU:            mc.CPUs,
-		Network:        mc.KVMNetwork,
+		Memory:         cc.Memory,
+		CPU:            cc.CPUs,
+		Network:        cc.KVMNetwork,
 		PrivateNetwork: "minikube-net",
-		Boot2DockerURL: mc.Downloader.GetISOFileURI(mc.MinikubeISO),
-		DiskSize:       mc.DiskSize,
+		Boot2DockerURL: download.LocalISOResource(cc.MinikubeISO),
+		DiskSize:       cc.DiskSize,
 		DiskPath:       filepath.Join(localpath.MiniPath(), "machines", name, fmt.Sprintf("%s.rawdisk", name)),
 		ISO:            filepath.Join(localpath.MiniPath(), "machines", name, "boot2docker.iso"),
-		GPU:            mc.KVMGPU,
-		Hidden:         mc.KVMHidden,
-		ConnectionURI:  mc.KVMQemuURI,
+		GPU:            cc.KVMGPU,
+		Hidden:         cc.KVMHidden,
+		ConnectionURI:  cc.KVMQemuURI,
 	}, nil
 }
 

@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -95,7 +96,20 @@ var statusCmd = &cobra.Command{
 		}
 		defer api.Close()
 
-		machineName := viper.GetString(config.MachineProfile)
+		cc, err := config.Load(viper.GetString(config.ProfileName))
+		if err != nil {
+			if config.IsNotExist(err) {
+				exit.WithCodeT(exitCode(&Status{}), `The "{{.name}}" cluster does not exist!`, out.V{"name": viper.GetString(config.ProfileName)})
+			}
+			exit.WithError("getting config", err)
+		}
+
+		cp, err := config.PrimaryControlPlane(cc)
+		if err != nil {
+			exit.WithError("getting primary control plane", err)
+		}
+
+		machineName := driver.MachineName(*cc, cp)
 		st, err := status(api, machineName)
 		if err != nil {
 			glog.Errorf("status error: %v", err)
@@ -143,7 +157,7 @@ func status(api libmachine.API, name string) (*Status, error) {
 		Kubeconfig: Nonexistent,
 	}
 
-	hs, err := machine.GetHostStatus(api, name)
+	hs, err := machine.Status(api, name)
 	glog.Infof("%s host status = %q (err=%v)", name, hs, err)
 	if err != nil {
 		return st, errors.Wrap(err, "host")
@@ -185,7 +199,7 @@ func status(api libmachine.API, name string) (*Status, error) {
 		st.Kubeconfig = Configured
 	}
 
-	host, err := machine.CheckIfHostExistsAndLoad(api, name)
+	host, err := machine.LoadHost(api, name)
 	if err != nil {
 		return st, err
 	}

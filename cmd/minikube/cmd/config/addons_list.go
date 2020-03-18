@@ -98,7 +98,7 @@ var printAddonsList = func() {
 	table.SetAutoFormatHeaders(true)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
-	pName := viper.GetString(config.MachineProfile)
+	pName := viper.GetString(config.ProfileName)
 
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
@@ -123,7 +123,7 @@ var printAddonsList = func() {
 
 var printAddonsJSON = func() {
 	addonNames := make([]string, 0, len(assets.Addons))
-	pName := viper.GetString(config.MachineProfile)
+	pName := viper.GetString(config.ProfileName)
 	for addonName := range assets.Addons {
 		addonNames = append(addonNames, addonName)
 	}

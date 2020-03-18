@@ -104,11 +104,16 @@ var mountCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		cc, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := api.Load(cc.Name)
+
+		cp, err := config.PrimaryControlPlane(cc)
+		if err != nil {
+			exit.WithError("Error getting primary cp", err)
+		}
+		host, err := api.Load(driver.MachineName(*cc, cp))
 		if err != nil {
 			exit.WithError("Error loading api", err)
 		}
@@ -154,7 +159,7 @@ var mountCmd = &cobra.Command{
 
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
 		if !supportedFilesystems[cfg.Type] {
-			out.T(out.WarningType, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
+			out.T(out.Warning, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
 		}
 
 		bindIP := ip.String() // the ip to listen on the user's host machine

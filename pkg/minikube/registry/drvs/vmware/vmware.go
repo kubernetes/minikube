@@ -22,6 +22,7 @@ import (
 
 	vmwcfg "github.com/machine-drivers/docker-machine-driver-vmware/pkg/drivers/vmware/config"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -39,12 +40,12 @@ func init() {
 	}
 }
 
-func configure(mc config.ClusterConfig) (interface{}, error) {
-	d := vmwcfg.NewConfig(mc.Name, localpath.MiniPath())
-	d.Boot2DockerURL = mc.Downloader.GetISOFileURI(mc.MinikubeISO)
-	d.Memory = mc.Memory
-	d.CPU = mc.CPUs
-	d.DiskSize = mc.DiskSize
+func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
+	d := vmwcfg.NewConfig(driver.MachineName(cc, n), localpath.MiniPath())
+	d.Boot2DockerURL = download.LocalISOResource(cc.MinikubeISO)
+	d.Memory = cc.Memory
+	d.CPU = cc.CPUs
+	d.DiskSize = cc.DiskSize
 
 	// TODO(frapposelli): push these defaults upstream to fixup this driver
 	d.SSHPort = 22

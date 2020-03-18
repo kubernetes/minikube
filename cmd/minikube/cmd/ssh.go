@@ -45,11 +45,16 @@ var sshCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		cc, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
+		// TODO: allow choice of node to ssh into
+		cp, err := config.PrimaryControlPlane(cc)
+		if err != nil {
+			exit.WithError("Error getting primary control plane", err)
+		}
+		host, err := machine.LoadHost(api, driver.MachineName(*cc, cp))
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
@@ -62,7 +67,7 @@ var sshCmd = &cobra.Command{
 			ssh.SetDefaultClient(ssh.External)
 		}
 
-		err = machine.CreateSSHShell(api, args)
+		err = machine.CreateSSHShell(api, *cc, cp, args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)

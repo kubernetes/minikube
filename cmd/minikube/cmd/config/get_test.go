@@ -30,7 +30,7 @@ func TestGetNotFound(t *testing.T) {
 
 func TestGetOK(t *testing.T) {
 	createTestConfig(t)
-	name := "vm-driver"
+	name := "driver"
 	err := Set(name, "virtualbox")
 	if err != nil {
 		t.Fatalf("Set returned error for property %s, %+v", name, err)

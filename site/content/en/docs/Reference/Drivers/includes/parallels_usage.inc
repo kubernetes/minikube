@@ -24,11 +24,11 @@ curl -LO $(curl -s $r/releases/latest | grep -o 'http.*parallels' | head -n1) \
 Start a cluster using the parallels driver:
 
 ```shell
-minikube start --vm-driver=parallels
+minikube start --driver=parallels
 ```
 
 To make parallels the default driver:
 
 ```shell
-minikube config set vm-driver parallels
+minikube config set driver parallels
 ```
