@@ -666,6 +666,9 @@ func memoryLimits(drvName string) (int, int, error) {
 
 // suggestMemoryAllocation calculates the default memory footprint in MB
 func suggestMemoryAllocation(sysLimit int, containerLimit int) int {
+	if mem := viper.GetInt(memory); mem != 0 {
+		return mem
+	}
 	fallback := 2200
 	maximum := 6000
 
