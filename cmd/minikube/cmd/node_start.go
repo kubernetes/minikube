@@ -61,7 +61,7 @@ var nodeStartCmd = &cobra.Command{
 		}
 
 		// Start it up baby
-		node.Start(*cc, *n, nil)
+		node.Start(*cc, *n, nil, false)
 	},
 }
 

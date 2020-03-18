@@ -212,6 +212,10 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "setting up node")
 	}
 
+	if err := k.applyNodeLabels(cfg); err != nil {
+		glog.Warningf("unable to apply node labels: %v", err)
+	}
+
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
@@ -229,10 +233,6 @@ func (k *Bootstrapper) SetupNode(cfg config.ClusterConfig) error {
 		if err := k.applyKicOverlay(cfg); err != nil {
 			return errors.Wrap(err, "apply kic overlay")
 		}
-	}
-
-	if err := k.applyNodeLabels(cfg); err != nil {
-		glog.Warningf("unable to apply node labels: %v", err)
 	}
 
 	return nil
