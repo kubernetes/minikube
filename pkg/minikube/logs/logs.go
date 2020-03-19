@@ -192,7 +192,7 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 	cmds["container status"] = cruntime.ContainerStatusCommand()
 
 	cfg, err := config.Load(viper.GetString(config.ProfileName))
-	if err != nil && !config.IsNotExist(err) {
+	if err != nil {
 		out.ErrLn("Error loading profile config: %v", err)
 	}
 
