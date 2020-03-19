@@ -32,9 +32,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/daemon"
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -72,6 +69,14 @@ func TestDownloadOnly(t *testing.T) {
 
 				if err != nil {
 					t.Errorf("%s failed: %v", args, err)
+				}
+
+				if download.PreloadExists(v, "docker") {
+					// Just make sure the tarball path exists
+					if _, err := os.Stat(download.TarballPath(v)); err != nil {
+						t.Errorf("preloaded tarball path doesn't exist: %v", err)
+					}
+					return
 				}
 
 				imgs, err := images.Kubeadm("", v)
@@ -196,15 +201,6 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	}
 	if string(remoteChecksum) != string(checksum[:]) {
 		t.Errorf("checksum of %s does not match remote checksum (%s != %s)", tarball, string(remoteChecksum), string(checksum[:]))
-	}
-
-	// Make sure this image exists in the docker daemon
-	ref, err := name.ParseReference(kic.BaseImage)
-	if err != nil {
-		t.Errorf("parsing reference failed: %v", err)
-	}
-	if _, err := daemon.Image(ref); err != nil {
-		t.Errorf("expected image does not exist in local daemon: %v", err)
 	}
 }
 
