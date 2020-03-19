@@ -67,6 +67,7 @@ type Status struct {
 	Kubelet    string
 	APIServer  string
 	Kubeconfig string
+	Worker     bool
 }
 
 const (
@@ -78,6 +79,12 @@ host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
 kubeconfig: {{.Kubeconfig}}
+
+`
+	workerStatusFormat = `{{.Name}}
+host: {{.Host}}
+kubelet: {{.Kubelet}}
+
 `
 )
 
@@ -153,15 +160,7 @@ func exitCode(st *Status) int {
 
 func status(api libmachine.API, name string, controlPlane bool) (*Status, error) {
 
-	var profile, node string
-
-	if strings.Contains(name, "-") {
-		profile = strings.Split(name, "-")[0]
-		node = strings.Split(name, "-")[1]
-	} else {
-		profile = name
-		node = name
-	}
+	profile, node := driver.ClusterNameFromMachine(name)
 
 	st := &Status{
 		Name:       node,
@@ -169,6 +168,7 @@ func status(api libmachine.API, name string, controlPlane bool) (*Status, error)
 		APIServer:  Nonexistent,
 		Kubelet:    Nonexistent,
 		Kubeconfig: Nonexistent,
+		Worker:     !controlPlane,
 	}
 
 	hs, err := machine.Status(api, name)
@@ -265,6 +265,9 @@ For the list accessible variables for the template, see the struct values here: 
 
 func statusText(st *Status, w io.Writer) error {
 	tmpl, err := template.New("status").Parse(statusFormat)
+	if st.Worker && statusFormat == defaultStatusFormat {
+		tmpl, err = template.New("worker-status").Parse(workerStatusFormat)
+	}
 	if err != nil {
 		return err
 	}
