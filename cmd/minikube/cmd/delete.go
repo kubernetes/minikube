@@ -239,7 +239,9 @@ func deleteProfile(profile *config.Profile) error {
 		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	deleteHosts(api, cc)
+	if driver.IsVM(cc.Driver) {
+		deleteHosts(api, cc)
+	}
 
 	// In case DeleteHost didn't complete the job.
 	deleteProfileDirectory(profile.Name)
