@@ -238,9 +238,9 @@ func MachineName(cc config.ClusterConfig, n config.Node) string {
 }
 
 // ClusterNameFromMachine retrieves the cluster name embedded in the machine name
-func ClusterNameFromMachine(name string) string {
+func ClusterNameFromMachine(name string) (string, string) {
 	if strings.Contains(name, "---") {
-		return strings.Split(name, "---")[0]
+		return strings.Split(name, "---")[0], strings.Split(name, "---")[1]
 	}
-	return name
+	return name, name
 }

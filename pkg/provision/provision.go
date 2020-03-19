@@ -196,7 +196,7 @@ func setRemoteAuthOptions(p provision.Provisioner) auth.Options {
 }
 
 func setContainerRuntimeOptions(name string, p miniProvisioner) error {
-	cluster := driver.ClusterNameFromMachine(name)
+	cluster, _ := driver.ClusterNameFromMachine(name)
 	c, err := config.Load(cluster)
 	if err != nil {
 		return errors.Wrap(err, "getting cluster config")

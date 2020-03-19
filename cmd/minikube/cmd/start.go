@@ -350,6 +350,9 @@ func runStart(cmd *cobra.Command, args []string) {
 	kubeconfig := node.Start(cc, n, existingAddons, true)
 
 	numNodes := viper.GetInt(nodes)
+	if numNodes == 1 && existing != nil {
+		numNodes = len(existing.Nodes)
+	}
 	if numNodes > 1 {
 		if driver.BareMetal(driverName) {
 			out.T(out.Meh, "The none driver is not compatible with multi-node clusters.")
