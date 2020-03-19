@@ -240,7 +240,8 @@ func MachineName(cc config.ClusterConfig, n config.Node) string {
 // ClusterNameFromMachine retrieves the cluster name embedded in the machine name
 func ClusterNameFromMachine(name string) string {
 	if strings.Contains(name, "-") {
-		return strings.Split(name, "-")[0]
+		a := strings.Split(name, "-")
+		return strings.Join(a[0:len(a)-2], "-")
 	}
 	return name
 }
