@@ -87,6 +87,19 @@ Suspected **Root cause**:
 `Help wanted` - if the bug could use help from a contributor
 
 
+## Prioritization
+If the issue is not `triage/support`, it needs a [priority label](https://github.com/kubernetes/community/blob/master/contributors/guide/issue-triage.md#define-priority):
+
+`priority/critical-urgent` - someones top priority ASAP, such as security issue, user-visible bug, or build breakage. Rarely used.
+
+`priority/important-soon`: in time for the next two releases (8 weeks)
+
+`priority/important-longterm`: 2-4 releases from now
+
+`priority/backlog`: agreed that this would be good to have, but no one is available at the moment. Consider tagging as `help wanted`
+
+`priority/awaiting-more-evidence`: may be more useful, but there is not yet enough support.
+
 
 # Responding to Issues
 
