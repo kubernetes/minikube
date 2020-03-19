@@ -19,9 +19,72 @@ If you're interested in helping out with minikube triage, this doc covers the ba
 
 Additionally, if you'd be interested in participating in our weekly triage meeting, please fill out this [form](https://forms.gle/vNtWZSWXqeYaaNbU9) to express interest. Thank you! 
 
-# Labeling Issues
+# Daily Triage
+Daily triage has two goals:
 
+1. Responsiveness for new issues
+1. Responsiveness when explicitly requested information was provided
 
+The list of outstanding items are at https://teaparty-tts3vkcpgq-uc.a.run.app/s/daily-triage - it covers:
+
+1. Issues without a `kind/` or `triage/` label
+1. Issues without a `priority/` label
+1. `triage/needs-information` issues which the user has followed up on
+
+## Categorization
+
+The most important level of categorizing the issue is defining what type it is.
+We typically want at least one of the following labels on every issue, and some issues may fall into multiple categories:
+
+- `triage/support`   - The default for most incoming issues
+- `kind/bug` - When it’s a bug or we aren’t delivering the best user experience
+
+Other possibilities: 
+- `kind/feature`- Identify new feature requests
+- `kind/flake` - Used for flaky integration or unit tests
+- `kind/cleanup` - Cleaning up/refactoring the codebase
+- `kind/documentation` - Updates or additions to minikube documentation
+- `kind/ux` - Issues that involve improving user experience
+- `kind/security` - When there's a security vulnerability in minikube
+
+If the issue is specific to an operating system, hypervisor, container, addon, or Kubernetes component:
+
+os/<operating system> - When the issue appears specific to an operating system
+  - `os/linux`
+  - `os/macos`
+  - `os/windows`
+co/<driver> - When the issue appears specific to a driver
+  - `co/hyperkit`
+  - `co/hyperv`
+  - `co/kvm2`
+  - `co/none-driver`
+  - `co/docker-driver`
+  - `co/virtualbox`
+co/<kubernetes component> - When the issue appears specific to a k8s component
+  - `co/apiserver`
+  - `co/etcd`
+  - `co/coredns`
+  - `co/dashboard`
+  - `co/kube-proxy`
+  - `co/kubeadm`
+  - `co/kubelet`
+  - `co/kubeconfig`
+ 
+
+Other useful tags:
+
+Did an **Event** occur that we can dedup similar issues against?
+- `ev/CrashLoopBackoff`
+- `ev/Panic`
+- `ev/Pending`
+- `ev/kubeadm-exit-1`
+Suspected **Root cause**:
+- `cause/vm-environment`
+- `cause/invalid-kubelet-options`
+
+**Help wanted?**
+`Good First Issue` - bug has a proposed solution, can be implemented w/o further discussion.
+`Help wanted` - if the bug could use help from a contributor
 
 
 
