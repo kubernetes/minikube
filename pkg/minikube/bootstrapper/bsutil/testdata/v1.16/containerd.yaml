@@ -13,6 +13,8 @@ bootstrapTokens:
 nodeRegistration:
   criSocket: /run/containerd/containerd.sock
   name: "mk"
+  kubeletExtraArgs:
+    node-ip: 1.1.1.1
   taints: []
 ---
 apiVersion: kubeadm.k8s.io/v1beta1

@@ -41,6 +41,7 @@ jobs=(
      'KVM_Linux'
      'none_Linux'
      'Docker_Linux'
+     'Docker_macOS'
      'Podman_Linux'
 )
 
@@ -74,7 +75,7 @@ function retry_github_status() {
     echo "HTTP code ${code}! Retrying in ${timeout} .."
     sleep "${timeout}"
     attempt=$(( attempt + 1 ))
-    timeout=$(( timeout * 2 ))
+    timeout=$(( timeout * 5 ))
   done
 }
 

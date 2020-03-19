@@ -28,3 +28,4 @@ As an experimental driver, not all commands are supported on all platforms. Nota
 ## Troubleshooting
 
 * Run `minikube start --alsologtostderr -v=1` to debug crashes
+* If your docker is too slow on mac os try [Improving docker performance](https://docs.docker.com/docker-for-mac/osxfs-caching/)

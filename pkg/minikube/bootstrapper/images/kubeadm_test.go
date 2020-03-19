@@ -38,7 +38,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.4.3-0",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/dashboard:v2.0.0-rc6",
 			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 		{"v1.16.1", "mirror.k8s.io", []string{
@@ -50,7 +50,7 @@ func TestKubeadmImages(t *testing.T) {
 			"mirror.k8s.io/etcd:3.3.15-0",
 			"mirror.k8s.io/pause:3.1",
 			"mirror.k8s.io/storage-provisioner:v1.8.1",
-			"mirror.k8s.io/dashboard:v2.0.0-beta8",
+			"mirror.k8s.io/dashboard:v2.0.0-rc6",
 			"mirror.k8s.io/metrics-scraper:v1.0.2",
 		}},
 		{"v1.15.0", "", []string{
@@ -62,7 +62,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.3.10",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/dashboard:v2.0.0-rc6",
 			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 		{"v1.14.0", "", []string{
@@ -74,7 +74,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.3.10",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/dashboard:v2.0.0-rc6",
 			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 		{"v1.13.0", "", []string{
@@ -86,7 +86,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.2.24",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/dashboard:v2.0.0-rc6",
 			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 		{"v1.12.0", "", []string{
@@ -98,7 +98,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd:3.2.24",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/dashboard:v2.0.0-rc6",
 			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 		{"v1.11.10", "", []string{
@@ -110,7 +110,7 @@ func TestKubeadmImages(t *testing.T) {
 			"k8s.gcr.io/etcd-amd64:3.2.18",
 			"k8s.gcr.io/pause:3.1",
 			"gcr.io/k8s-minikube/storage-provisioner:v1.8.1",
-			"kubernetesui/dashboard:v2.0.0-beta8",
+			"kubernetesui/dashboard:v2.0.0-rc6",
 			"kubernetesui/metrics-scraper:v1.0.2",
 		}},
 	}

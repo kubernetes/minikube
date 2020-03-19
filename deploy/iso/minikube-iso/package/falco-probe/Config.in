@@ -1,0 +1,6 @@
+config BR2_PACKAGE_FALCO_PROBE
+	bool "falco-probe"
+	default y
+	depends on BR2_LINUX_KERNEL
+	select BR2_PACKAGE_NCURSES
+	select BR2_PACKAGE_LIBYAML

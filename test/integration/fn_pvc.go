@@ -34,10 +34,10 @@ import (
 )
 
 func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile string) {
-	ctx, cancel := context.WithTimeout(ctx, 10*time.Minute)
+	ctx, cancel := context.WithTimeout(ctx, Minutes(10))
 	defer cancel()
 
-	if _, err := PodWait(ctx, t, profile, "kube-system", "integration-test=storage-provisioner", 4*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "integration-test=storage-provisioner", Minutes(4)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -83,7 +83,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 		return fmt.Errorf("testpvc phase = %q, want %q (msg=%+v)", pvc.Status.Phase, "Bound", pvc)
 	}
 
-	if err := retry.Expo(checkStoragePhase, 2*time.Second, 4*time.Minute); err != nil {
+	if err := retry.Expo(checkStoragePhase, 2*time.Second, Minutes(4)); err != nil {
 		t.Fatalf("PV Creation failed with error: %v", err)
 	}
 }

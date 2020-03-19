@@ -30,13 +30,13 @@ import (
 func TestGenerateKubeletConfig(t *testing.T) {
 	tests := []struct {
 		description string
-		cfg         config.MachineConfig
+		cfg         config.ClusterConfig
 		expected    string
 		shouldErr   bool
 	}{
 		{
 			description: "old docker",
-			cfg: config.MachineConfig{
+			cfg: config.ClusterConfig{
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.OldestKubernetesVersion,
 					ContainerRuntime:  "docker",
@@ -61,7 +61,7 @@ ExecStart=/var/lib/minikube/binaries/v1.11.10/kubelet --allow-privileged=true --
 		},
 		{
 			description: "newest cri runtime",
-			cfg: config.MachineConfig{
+			cfg: config.ClusterConfig{
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.NewestKubernetesVersion,
 					ContainerRuntime:  "cri-o",
@@ -79,14 +79,14 @@ Wants=crio.service
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=/var/run/crio/crio.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=/var/run/crio/crio.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+ExecStart=/var/lib/minikube/binaries/v1.18.0-rc.1/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=/var/run/crio/crio.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=/var/run/crio/crio.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
 `,
 		},
 		{
 			description: "default containerd runtime",
-			cfg: config.MachineConfig{
+			cfg: config.ClusterConfig{
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.DefaultKubernetesVersion,
 					ContainerRuntime:  "containerd",
@@ -104,14 +104,14 @@ Wants=containerd.service
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+ExecStart=/var/lib/minikube/binaries/v1.18.0-rc.1/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
 `,
 		},
 		{
 			description: "default containerd runtime with IP override",
-			cfg: config.MachineConfig{
+			cfg: config.ClusterConfig{
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.DefaultKubernetesVersion,
 					ContainerRuntime:  "containerd",
@@ -136,14 +136,14 @@ Wants=containerd.service
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.200 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
+ExecStart=/var/lib/minikube/binaries/v1.18.0-rc.1/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock --fail-swap-on=false --hostname-override=minikube --image-service-endpoint=unix:///run/containerd/containerd.sock --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.200 --pod-manifest-path=/etc/kubernetes/manifests --runtime-request-timeout=15m
 
 [Install]
 `,
 		},
 		{
 			description: "docker with custom image repository",
-			cfg: config.MachineConfig{
+			cfg: config.ClusterConfig{
 				KubernetesConfig: config.KubernetesConfig{
 					KubernetesVersion: constants.DefaultKubernetesVersion,
 					ContainerRuntime:  "docker",
@@ -162,7 +162,7 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.17.2/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.1 --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/var/lib/minikube/binaries/v1.18.0-rc.1/kubelet --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-infra-container-image=docker-proxy-image.io/google_containers/pause:3.2 --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,

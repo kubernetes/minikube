@@ -141,7 +141,7 @@ func TestDeleteProfile(t *testing.T) {
 				t.Errorf("machines mismatch (-want +got):\n%s", diff)
 			}
 
-			viper.Set(config.MachineProfile, "")
+			viper.Set(config.ProfileName, "")
 		})
 	}
 }
@@ -211,5 +211,5 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("Did not delete all machines, remaining: %v", afterMachines)
 	}
 
-	viper.Set(config.MachineProfile, "")
+	viper.Set(config.ProfileName, "")
 }

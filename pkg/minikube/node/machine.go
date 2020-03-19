@@ -39,12 +39,12 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-func startMachine(cfg *config.MachineConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
-	host, preExists = startHost(m, *cfg)
+	host, preExists = startHost(m, *cfg, *node)
 	runner, err = machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
@@ -68,13 +68,13 @@ func startMachine(cfg *config.MachineConfig, node *config.Node) (runner command.
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, mc config.MachineConfig) (*host.Host, bool) {
+func startHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.Host, bool) {
 	exists, err := api.Exists(mc.Name)
 	if err != nil {
 		exit.WithError("Failed to check if machine exists", err)
 	}
 
-	host, err := machine.StartHost(api, mc)
+	host, err := machine.StartHost(api, mc, n)
 	if err != nil {
 		exit.WithError("Unable to start VM. Please investigate and run 'minikube delete' if possible", err)
 	}
@@ -146,7 +146,7 @@ func trySSH(h *host.Host, ip string) {
 	- Disable your local VPN or firewall software
 	- Configure your local VPN or firewall to allow access to {{.ip}}
 	- Restart or reinstall {{.hypervisor}}
-	- Use an alternative --vm-driver
+	- Use an alternative --driver
 	- Use --force to override this connectivity check
 	`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
 	}
@@ -154,12 +154,15 @@ func trySSH(h *host.Host, ip string) {
 
 func tryLookup(r command.Runner) {
 	// DNS check
-	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io", "-type=ns")); err != nil {
+	if rr, err := r.RunCmd(exec.Command("nslookup", "-type=ns", "kubernetes.io")); err != nil {
 		glog.Infof("%s failed: %v which might be okay will retry nslookup without query type", rr.Args, err)
 		// will try with without query type for ISOs with different busybox versions.
 		if _, err = r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
 			glog.Warningf("nslookup failed: %v", err)
-			out.WarningT("Node may be unable to resolve external DNS records")
+			// try with the older "host" command, instead of the newer "nslookup"
+			if _, err = r.RunCmd(exec.Command("host", "kubernetes.io")); err != nil {
+				out.WarningT("Node may be unable to resolve external DNS records")
+			}
 		}
 	}
 }

@@ -77,7 +77,7 @@ func Restart(cr command.Runner) error {
 // Check checks on the status of the kubelet
 func Check(cr command.Runner) error {
 	glog.Infof("checking for running kubelet ...")
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "kubelet")
+	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "kubelet")
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "check kubelet")
 	}

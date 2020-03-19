@@ -28,8 +28,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 )
 
+// enum to differentiate kubeadm command line parameters from kubeadm config file parameters (see the
+// KubeadmExtraArgsWhitelist variable for more info)
 const (
-	KubeadmCmdParam    = iota
+	// KubeadmCmdParam is command parameters for kubeadm
+	KubeadmCmdParam = iota
+	// KubeadmConfigParam is config parameters for kubeadm
 	KubeadmConfigParam = iota
 )
 
@@ -66,6 +70,7 @@ var KubeadmExtraArgsWhitelist = map[int][]string{
 		"experimental-upload-certs",
 		"certificate-key",
 		"rootfs",
+		"skip-phases",
 	},
 	KubeadmConfigParam: {
 		"pod-network-cidr",

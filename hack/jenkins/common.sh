@@ -19,7 +19,7 @@
 
 # The script expects the following env variables:
 # OS_ARCH: The operating system and the architecture separated by a hyphen '-' (e.g. darwin-amd64, linux-amd64, windows-amd64)
-# VM_DRIVER: the vm-driver to use for the test
+# VM_DRIVER: the driver to use for the test
 # EXTRA_START_ARGS: additional flags to pass into minikube start
 # EXTRA_ARGS: additional flags to pass into minikube
 # JOB_NAME: the name of the logfile and check name to update on github
@@ -31,8 +31,11 @@ export KUBECONFIG="${TEST_HOME}/kubeconfig"
 export PATH=$PATH:"/usr/local/bin/:/usr/local/go/bin/:$GOPATH/bin"
 
 # installing golang so we could do go get for gopogh
-sudo ./installers/check_install_golang.sh "1.13.4" "/usr/local" || true
+sudo ./installers/check_install_golang.sh "1.13.8" "/usr/local" || true
 
+docker rm -f -v $(docker ps -aq) >/dev/null 2>&1 || true
+docker volume prune -f || true
+docker system df || true
 
 echo ">> Starting at $(date)"
 echo ""
@@ -282,7 +285,7 @@ if test -f "${TEST_OUT}"; then
 fi
 touch "${TEST_OUT}"
 ${SUDO_PREFIX}${E2E_BIN} \
-  -minikube-start-args="--vm-driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
+  -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
   -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
   -test.timeout=70m -test.v \
   ${EXTRA_TEST_ARGS} \
@@ -324,17 +327,33 @@ touch "${JSON_OUT}"
 # Generate JSON output
 echo ">> Running go test2json"
 go tool test2json -t < "${TEST_OUT}" > "${JSON_OUT}" || true
+
+if ! type "jq" > /dev/null; then
+echo ">> Installing jq"
+    if [ "$(uname)" != "Darwin" ]; then
+      curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 && sudo install jq-linux64 /usr/local/bin/jq
+    else
+      curl -LO https://github.com/stedolan/jq/releases/download/jq-1.6/jq-osx-amd64 && sudo install jq-osx-amd64 /usr/local/bin/jq
+    fi
+fi
+
 echo ">> Installing gopogh"
-cd $(mktemp -d)
-GO111MODULE="on" go get -u github.com/medyagh/gopogh@v0.0.17 || true
-cd -
+if [ "$(uname)" != "Darwin" ]; then
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64 && sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
+else
+  curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-darwin-amd64 && sudo install gopogh-darwin-amd64 /usr/local/bin/gopogh
+fi
+
 echo ">> Running gopogh"
 if test -f "${HTML_OUT}"; then
     rm "${HTML_OUT}" || true # clean up previous runs of same build
 fi
 
 touch "${HTML_OUT}"
-pessimistic_status=$(gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+gopogh_status=$(gopogh -in "${JSON_OUT}" -out "${HTML_OUT}" -name "${JOB_NAME}" -pr "${MINIKUBE_LOCATION}" -repo github.com/kubernetes/minikube/  -details "${COMMIT}") || true
+fail_num=$(echo $gopogh_status | jq '.NumberOfFail')
+test_num=$(echo $gopogh_status | jq '.NumberOfTests')       
+pessimistic_status="${fail_num} / ${test_num} failures"
 description="completed with ${status} in ${elapsed} minute(s)."
 if [ "$status" = "failure" ]; then
   description="completed with ${pessimistic_status} in ${elapsed} minute(s)."
@@ -400,10 +419,9 @@ function retry_github_status() {
     echo "HTTP code ${code}! Retrying in ${timeout} .."
     sleep "${timeout}"
     attempt=$(( attempt + 1 ))
-    timeout=$(( timeout * 2 ))
+    timeout=$(( timeout * 5 )) 
   done
 }
-
 
 
 retry_github_status "${COMMIT}" "${JOB_NAME}" "${status}" "${access_token}" "${public_log_url}" "${description}"
