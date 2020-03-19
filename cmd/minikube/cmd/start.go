@@ -453,8 +453,18 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	}
 
 	// Default to looking at the new driver parameter
-	if viper.GetString("driver") != "" {
-		ds := driver.Status(viper.GetString("driver"))
+	if d := viper.GetString("driver"); d != "" {
+		if vmd := viper.GetString("vm-driver"); vmd != "" {
+			// Output a warning
+			warning := `Both driver={{.driver}} and vm-driver={{.vmd}} have been set.
+			
+    Since vm-driver is deprecated, minikube will default to driver={{.driver}}.
+
+    If vm-driver is set in the global config, please run "minikube config unset vm-driver" to resolve this warning.			
+			`
+			out.T(out.Warning, warning, out.V{"driver": d, "vmd": vmd})
+		}
+		ds := driver.Status(d)
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds
 	}
