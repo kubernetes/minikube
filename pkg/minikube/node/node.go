@@ -21,6 +21,7 @@ import (
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
@@ -38,7 +39,7 @@ const (
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, k8sVersion string, profileName string) (*config.Node, error) {
+func Add(cc *config.ClusterConfig, name string, controlPlane bool, worker bool, k8sVersion string, profileName string) (*config.Node, error) {
 	n := config.Node{
 		Name:   name,
 		Worker: true,
@@ -69,33 +70,28 @@ func Add(cc *config.MachineConfig, name string, controlPlane bool, worker bool, 
 }
 
 // Delete stops and deletes the given node from the given cluster
-func Delete(cc config.MachineConfig, name string) error {
-	_, index, err := Retrieve(&cc, name)
+func Delete(cc config.ClusterConfig, name string) error {
+	n, index, err := Retrieve(&cc, name)
 	if err != nil {
 		return err
 	}
-
-	/*err = Stop(cc, nd)
-	if err != nil {
-		glog.Warningf("Failed to stop node %s. Will still try to delete.", name)
-	}*/
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return err
 	}
 
-	err = machine.DeleteHost(api, name)
+	err = machine.DeleteHost(api, driver.MachineName(cc, *n))
 	if err != nil {
 		return err
 	}
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return config.SaveProfile(viper.GetString(config.MachineProfile), &cc)
+	return config.SaveProfile(viper.GetString(config.ProfileName), &cc)
 }
 
 // Retrieve finds the node by name in the given cluster
-func Retrieve(cc *config.MachineConfig, name string) (*config.Node, int, error) {
+func Retrieve(cc *config.ClusterConfig, name string) (*config.Node, int, error) {
 	for i, n := range cc.Nodes {
 		if n.Name == name {
 			return &n, i, nil
@@ -106,7 +102,7 @@ func Retrieve(cc *config.MachineConfig, name string) (*config.Node, int, error) 
 }
 
 // Save saves a node to a cluster
-func Save(cfg *config.MachineConfig, node *config.Node) error {
+func Save(cfg *config.ClusterConfig, node *config.Node) error {
 	update := false
 	for i, n := range cfg.Nodes {
 		if n.Name == node.Name {
@@ -119,5 +115,5 @@ func Save(cfg *config.MachineConfig, node *config.Node) error {
 	if !update {
 		cfg.Nodes = append(cfg.Nodes, *node)
 	}
-	return config.SaveProfile(viper.GetString(config.MachineProfile), cfg)
+	return config.SaveProfile(viper.GetString(config.ProfileName), cfg)
 }

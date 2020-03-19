@@ -25,8 +25,6 @@ import (
 // VersionPrefix is the prefix of the git tag for a version
 const VersionPrefix = "v"
 
-// The current version of the minikube
-
 // version is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.version=vX.Y.Z"
 var version = "v0.0.0-unset"
 
@@ -35,8 +33,6 @@ var gitCommitID = ""
 
 // isoVersion is a private field and should be set when compiling with --ldflags="-X k8s.io/minikube/pkg/version.isoVersion=vX.Y.Z"
 var isoVersion = "v0.0.0-unset"
-
-var isoPath = "minikube/iso"
 
 // GetVersion returns the current minikube version
 func GetVersion() string {
@@ -51,11 +47,6 @@ func GetGitCommitID() string {
 // GetISOVersion returns the current minikube.iso version
 func GetISOVersion() string {
 	return isoVersion
-}
-
-// GetISOPath returns the remote path to the minikube.iso
-func GetISOPath() string {
-	return isoPath
 }
 
 // GetSemverVersion returns the current minikube semantic version (semver)

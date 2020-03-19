@@ -26,13 +26,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/util"
 )
 
-// NewKubeletConfig generates a new systemd unit containing a configured kubelet
-// based on the options present in the KubernetesConfig.
-func NewKubeletConfig(mc config.MachineConfig, nc config.Node, r cruntime.Manager) ([]byte, error) {
+func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) (map[string]string, error) {
 	k8s := mc.KubernetesConfig
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -53,7 +52,7 @@ func NewKubeletConfig(mc config.MachineConfig, nc config.Node, r cruntime.Manage
 	if k8s.NetworkPlugin != "" {
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}
-	cp, err := config.PrimaryControlPlane(mc)
+	cp, err := config.PrimaryControlPlane(&mc)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting master node")
 	}
@@ -64,7 +63,7 @@ func NewKubeletConfig(mc config.MachineConfig, nc config.Node, r cruntime.Manage
 		extraOpts["hostname-override"] = nc.Name
 	}
 
-	pauseImage := images.Pause(k8s.ImageRepository)
+	pauseImage := images.Pause(version, k8s.ImageRepository)
 	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
 		extraOpts["pod-infra-container-image"] = pauseImage
 	}
@@ -79,7 +78,18 @@ func NewKubeletConfig(mc config.MachineConfig, nc config.Node, r cruntime.Manage
 		extraOpts["feature-gates"] = kubeletFeatureArgs
 	}
 
+	return extraOpts, nil
+}
+
+// NewKubeletConfig generates a new systemd unit containing a configured kubelet
+// based on the options present in the KubernetesConfig.
+func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) ([]byte, error) {
 	b := bytes.Buffer{}
+	extraOpts, err := extraKubeletOpts(mc, nc, r)
+	if err != nil {
+		return nil, err
+	}
+	k8s := mc.KubernetesConfig
 	opts := struct {
 		ExtraOptions     string
 		ContainerRuntime string

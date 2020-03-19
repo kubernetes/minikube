@@ -36,6 +36,8 @@ bootstrapTokens:
 nodeRegistration:
   criSocket: {{if .CRISocket}}{{.CRISocket}}{{else}}/var/run/dockershim.sock{{end}}
   name: "{{.NodeName}}"
+  kubeletExtraArgs:
+    node-ip: {{.NodeIP}}
   taints: []
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
@@ -55,8 +57,7 @@ kind: ClusterConfiguration
 {{end -}}{{end -}}
 certificatesDir: {{.CertDir}}
 clusterName: kubernetes
-controlPlaneEndpoint: localhost:{{.APIServerPort}}
-controllerManager: {}
+controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
 dns:
   type: CoreDNS
 etcd:

@@ -37,7 +37,7 @@ import (
 // TestAddons tests addons that require no special environment -- in parallel
 func TestAddons(t *testing.T) {
 	profile := UniqueProfileName("addons")
-	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)
 
 	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1", "--addons=ingress", "--addons=registry", "--addons=metrics-server"}, StartArgs()...)
@@ -90,10 +90,10 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("kubernetes client: %v", client)
 	}
 
-	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", 6*time.Minute); err != nil {
+	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "nginx-ingress-controller", Minutes(6)); err != nil {
 		t.Errorf("waiting for ingress-controller deployment to stabilize: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=nginx-ingress-controller", 12*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "app.kubernetes.io/name=nginx-ingress-controller", Minutes(12)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -106,10 +106,10 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", 4*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", Minutes(4)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
-	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, time.Minute*10); err != nil {
+	if err := kapi.WaitForService(client, "default", "nginx", true, time.Millisecond*500, Minutes(10)); err != nil {
 		t.Errorf("Error waiting for nginx service to be up")
 	}
 
@@ -128,7 +128,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		return nil
 	}
 
-	if err := retry.Expo(checkIngress, 500*time.Millisecond, time.Minute); err != nil {
+	if err := retry.Expo(checkIngress, 500*time.Millisecond, Minutes(1)); err != nil {
 		t.Errorf("ingress never responded as expected on 127.0.0.1:80: %v", err)
 	}
 
@@ -145,15 +145,15 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	start := time.Now()
-	if err := kapi.WaitForRCToStabilize(client, "kube-system", "registry", 6*time.Minute); err != nil {
+	if err := kapi.WaitForRCToStabilize(client, "kube-system", "registry", Minutes(6)); err != nil {
 		t.Errorf("waiting for registry replicacontroller to stabilize: %v", err)
 	}
 	t.Logf("registry stabilized in %s", time.Since(start))
 
-	if _, err := PodWait(ctx, t, profile, "kube-system", "actual-registry=true", 6*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "actual-registry=true", Minutes(6)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
-	if _, err := PodWait(ctx, t, profile, "kube-system", "registry-proxy=true", 10*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "registry-proxy=true", Minutes(10)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -198,7 +198,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 		return nil
 	}
 
-	if err := retry.Expo(checkExternalAccess, 500*time.Millisecond, 2*time.Minute); err != nil {
+	if err := retry.Expo(checkExternalAccess, 500*time.Millisecond, Minutes(2)); err != nil {
 		t.Errorf(err.Error())
 	}
 
@@ -215,12 +215,12 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 	}
 
 	start := time.Now()
-	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "metrics-server", 6*time.Minute); err != nil {
+	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "metrics-server", Minutes(6)); err != nil {
 		t.Errorf("waiting for metrics-server deployment to stabilize: %v", err)
 	}
 	t.Logf("metrics-server stabilized in %s", time.Since(start))
 
-	if _, err := PodWait(ctx, t, profile, "kube-system", "k8s-app=metrics-server", 6*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "kube-system", "k8s-app=metrics-server", Minutes(6)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -240,7 +240,7 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 	}
 
 	// metrics-server takes some time to be able to collect metrics
-	if err := retry.Expo(checkMetricsServer, time.Minute, 5*time.Minute); err != nil {
+	if err := retry.Expo(checkMetricsServer, Seconds(13), Minutes(6)); err != nil {
 		t.Errorf(err.Error())
 	}
 

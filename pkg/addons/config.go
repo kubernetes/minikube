@@ -18,12 +18,12 @@ package addons
 
 import "k8s.io/minikube/pkg/minikube/config"
 
-type setFn func(string, string, string) error
+type setFn func(*config.ClusterConfig, string, string) error
 
 // Addon represents an addon
 type Addon struct {
 	name        string
-	set         func(*config.MachineConfig, string, string) error
+	set         func(*config.ClusterConfig, string, string) error
 	validations []setFn
 	callbacks   []setFn
 }
@@ -54,7 +54,7 @@ var Addons = []*Addon{
 	{
 		name:        "gvisor",
 		set:         SetBool,
-		validations: []setFn{IsContainerdRuntime},
+		validations: []setFn{IsRuntimeContainerd},
 		callbacks:   []setFn{enableOrDisableAddon},
 	},
 	{

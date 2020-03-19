@@ -28,6 +28,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
@@ -55,9 +56,16 @@ type validateFunc func(context.Context, *testing.T, string)
 func TestFunctional(t *testing.T) {
 
 	profile := UniqueProfileName("functional")
-	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer func() {
+		if !*cleanup {
+			return
+		}
 		p := localSyncTestPath()
+		if err := os.Remove(p); err != nil {
+			t.Logf("unable to remove %s: %v", p, err)
+		}
+		p = localTestCertPath()
 		if err := os.Remove(p); err != nil {
 			t.Logf("unable to remove %s: %v", p, err)
 		}
@@ -110,8 +118,10 @@ func TestFunctional(t *testing.T) {
 			{"SSHCmd", validateSSHCmd},
 			{"MySQL", validateMySQL},
 			{"FileSync", validateFileSync},
+			{"CertSync", validateCertSync},
 			{"UpdateContextCmd", validateUpdateContextCmd},
 			{"DockerEnv", validateDockerEnv},
+			{"NodeLabels", validateNodeLabels},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -123,9 +133,23 @@ func TestFunctional(t *testing.T) {
 	})
 }
 
+// validateNodeLabels checks if minikube cluster is created with correct kubernetes's node label
+func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
+	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "--output=go-template", "--template='{{range $k, $v := (index .items 0).metadata.labels}}{{$k}} {{end}}'"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+	expectedLabels := []string{"minikube.k8s.io/commit", "minikube.k8s.io/version", "minikube.k8s.io/updated_at", "minikube.k8s.io/name"}
+	for _, el := range expectedLabels {
+		if !strings.Contains(rr.Output(), el) {
+			t.Errorf("expected to have label %q in node labels: %q", expectedLabels, rr.Output())
+		}
+	}
+}
+
 // check functionality of minikube after evaling docker-env
 func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
-	mctx, cancel := context.WithTimeout(ctx, 13*time.Second)
+	mctx, cancel := context.WithTimeout(ctx, Seconds(13))
 	defer cancel()
 	// we should be able to get minikube status with a bash which evaled docker-env
 	c := exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && "+Target()+" status -p "+profile)
@@ -137,7 +161,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("Expected status output to include 'Running' after eval docker-env but got \n%s", rr.Output())
 	}
 
-	mctx, cancel = context.WithTimeout(ctx, 13*time.Second)
+	mctx, cancel = context.WithTimeout(ctx, Seconds(13))
 	defer cancel()
 	// do a eval $(minikube -p profile docker-env) and check if we are point to docker inside minikube
 	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
@@ -294,7 +318,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	}()
 
 	start := time.Now()
-	s, err := ReadLineWithTimeout(ss.Stdout, 300*time.Second)
+	s, err := ReadLineWithTimeout(ss.Stdout, Seconds(300))
 	if err != nil {
 		if runtime.GOOS == "windows" {
 			t.Skipf("failed to read url within %s: %v\noutput: %q\n", time.Since(start), err, s)
@@ -327,7 +351,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", 5*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4))
 	if err != nil {
 		t.Fatalf("wait: %v", err)
 	}
@@ -338,7 +362,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// If the coredns process was stable, this retry wouldn't be necessary.
-	if err = retry.Expo(nslookup, 1*time.Second, 1*time.Minute); err != nil {
+	if err = retry.Expo(nslookup, 1*time.Second, Minutes(1)); err != nil {
 		t.Errorf("nslookup failing: %v", err)
 	}
 
@@ -351,7 +375,7 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 // validateDryRun asserts that the dry-run mode quickly exits with the right code
 func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 	// dry-run mode should always be able to finish quickly (<5s)
-	mctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	mctx, cancel := context.WithTimeout(ctx, Seconds(5))
 	defer cancel()
 
 	// Too little memory!
@@ -364,7 +388,7 @@ func validateDryRun(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("dry-run(250MB) exit code = %d, wanted = %d: %v", rr.ExitCode, wantCode, err)
 	}
 
-	dctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	dctx, cancel := context.WithTimeout(ctx, Seconds(5))
 	defer cancel()
 	startArgs = append([]string{"start", "-p", profile, "--dry-run", "--alsologtostderr", "-v=1"}, StartArgs()...)
 	c = exec.CommandContext(dctx, Target(), startArgs...)
@@ -494,46 +518,79 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 
 // validateProfileCmd asserts "profile" command functionality
 func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-
-	// Table output
-	listLines := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
-	profileExists := false
-	for i := 3; i < (len(listLines) - 1); i++ {
-		profileLine := listLines[i]
-		if strings.Contains(profileLine, profile) {
-			profileExists = true
-			break
+	t.Run("profile_not_create", func(t *testing.T) {
+		// Profile command should not create a nonexistent profile
+		nonexistentProfile := "lis"
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", nonexistentProfile))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
 		}
-	}
-	if !profileExists {
-		t.Errorf("%s failed: Missing profile '%s'. Got '\n%s\n'", rr.Args, profile, rr.Stdout.String())
-	}
-
-	// Json output
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	var jsonObject map[string][]map[string]interface{}
-	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
-	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
-	}
-	validProfiles := jsonObject["valid"]
-	profileExists = false
-	for _, profileObject := range validProfiles {
-		if profileObject["Name"] == profile {
-			profileExists = true
-			break
+		rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
 		}
-	}
-	if !profileExists {
-		t.Errorf("%s failed: Missing profile '%s'. Got '\n%s\n'", rr.Args, profile, rr.Stdout.String())
-	}
+		var profileJSON map[string][]map[string]interface{}
+		err = json.Unmarshal(rr.Stdout.Bytes(), &profileJSON)
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+		for profileK := range profileJSON {
+			for _, p := range profileJSON[profileK] {
+				var name = p["Name"]
+				if name == nonexistentProfile {
+					t.Errorf("minikube profile %s should not exist", nonexistentProfile)
+				}
+			}
+		}
+	})
+
+	t.Run("profile_list", func(t *testing.T) {
+		// List profiles
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+
+		// Table output
+		listLines := strings.Split(strings.TrimSpace(rr.Stdout.String()), "\n")
+		profileExists := false
+		for i := 3; i < (len(listLines) - 1); i++ {
+			profileLine := listLines[i]
+			if strings.Contains(profileLine, profile) {
+				profileExists = true
+				break
+			}
+		}
+		if !profileExists {
+			t.Errorf("%s failed: Missing profile '%s'. Got '\n%s\n'", rr.Args, profile, rr.Stdout.String())
+		}
+
+	})
+
+	t.Run("profile_json_output", func(t *testing.T) {
+		// Json output
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+		var jsonObject map[string][]map[string]interface{}
+		err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+		validProfiles := jsonObject["valid"]
+		profileExists := false
+		for _, profileObject := range validProfiles {
+			if profileObject["Name"] == profile {
+				profileExists = true
+				break
+			}
+		}
+		if !profileExists {
+			t.Errorf("%s failed: Missing profile '%s'. Got '\n%s\n'", rr.Args, profile, rr.Stdout.String())
+		}
+
+	})
 }
 
 // validateServiceCmd asserts basic "service" command functionality
@@ -547,7 +604,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
 	}
 
-	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", 10*time.Minute); err != nil {
+	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {
 		t.Fatalf("wait: %v", err)
 	}
 
@@ -658,7 +715,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("%s failed: %v", rr.Args, err)
 	}
 
-	names, err := PodWait(ctx, t, profile, "default", "app=mysql", 10*time.Minute)
+	names, err := PodWait(ctx, t, profile, "default", "app=mysql", Minutes(10))
 	if err != nil {
 		t.Fatalf("podwait: %v", err)
 	}
@@ -683,11 +740,26 @@ func localSyncTestPath() string {
 	return filepath.Join(localpath.MiniPath(), "/files", vmSyncTestPath())
 }
 
+// testCert is name of the test certificate installed
+func testCert() string {
+	return fmt.Sprintf("%d.pem", os.Getpid())
+}
+
+// localTestCertPath is where the test file will be synced into the VM
+func localTestCertPath() string {
+	return filepath.Join(localpath.MiniPath(), "/certs", testCert())
+}
+
 // Copy extra file into minikube home folder for file sync test
 func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
 	err := copy.Copy("./testdata/sync.test", p)
+	if err != nil {
+		t.Fatalf("copy: %v", err)
+	}
+
+	err = copy.Copy("./testdata/minikube_test.pem", localTestCertPath())
 	if err != nil {
 		t.Fatalf("copy: %v", err)
 	}
@@ -715,6 +787,39 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 
 	if diff := cmp.Diff(string(expected), got); diff != "" {
 		t.Errorf("/etc/sync.test content mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// validateCertSync to check existence of the test certificate
+func validateCertSync(ctx context.Context, t *testing.T, profile string) {
+	if NoneDriver() {
+		t.Skipf("skipping: ssh unsupported by none")
+	}
+
+	want, err := ioutil.ReadFile("./testdata/minikube_test.pem")
+	if err != nil {
+		t.Errorf("test file not found: %v", err)
+	}
+
+	// Check both the installed & reference certs (they should be symlinked)
+	paths := []string{
+		path.Join("/etc/ssl/certs", testCert()),
+		path.Join("/usr/share/ca-certificates", testCert()),
+		// hashed path generated by: 'openssl x509 -hash -noout -in testCert()'
+		"/etc/ssl/certs/51391683.0",
+	}
+	for _, vp := range paths {
+		t.Logf("Checking for existence of %s within VM", vp)
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
+		if err != nil {
+			t.Errorf("%s failed: %v", rr.Args, err)
+		}
+
+		// Strip carriage returned by ssh
+		got := strings.Replace(rr.Stdout.String(), "\r", "", -1)
+		if diff := cmp.Diff(string(want), got); diff != "" {
+			t.Errorf("minikube_test.pem -> %s mismatch (-want +got):\n%s", vp, diff)
+		}
 	}
 }
 

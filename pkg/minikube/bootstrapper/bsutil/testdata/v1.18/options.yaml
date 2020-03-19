@@ -13,6 +13,8 @@ bootstrapTokens:
 nodeRegistration:
   criSocket: /var/run/dockershim.sock
   name: "mk"
+  kubeletExtraArgs:
+    node-ip: 1.1.1.1
   taints: []
 ---
 apiVersion: kubeadm.k8s.io/v1beta2
@@ -31,7 +33,6 @@ scheduler:
 certificatesDir: /var/lib/minikube/certs
 clusterName: kubernetes
 controlPlaneEndpoint: localhost:8443
-controllerManager: {}
 dns:
   type: CoreDNS
 etcd:

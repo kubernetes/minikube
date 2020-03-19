@@ -1,0 +1,470 @@
+From 398f9301fd2db3b15407a62e90d416914f94c669 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Mon, 11 Feb 2019 21:25:13 +0900
+Subject: [PATCH 1/3] network: minor coding style update
+
+(cherry picked from commit 860e636cf6855260634ef2f7f52af4635b1271c3)
+---
+ src/network/networkd-dhcp4.c | 16 +++++++---------
+ 1 file changed, 7 insertions(+), 9 deletions(-)
+
+diff --git a/src/network/networkd-dhcp4.c b/src/network/networkd-dhcp4.c
+index 980d49e..61f767a 100644
+--- a/src/network/networkd-dhcp4.c
++++ b/src/network/networkd-dhcp4.c
+@@ -70,7 +70,7 @@ static int link_set_dhcp_routes(Link *link) {
+         /* When the interface is part of an VRF use the VRFs routing table, unless
+          * there is a another table specified. */
+         table = link->network->dhcp_route_table;
+-        if (!link->network->dhcp_route_table_set && link->network->vrf != NULL)
++        if (!link->network->dhcp_route_table_set && link->network->vrf)
+                 table = VRF(link->network->vrf)->table;
+ 
+         r = sd_dhcp_lease_get_address(link->dhcp_lease, &address);
+@@ -135,14 +135,7 @@ static int link_set_dhcp_routes(Link *link) {
+                 log_link_warning(link, "Classless static routes received from DHCP server: ignoring static-route option and router option");
+ 
+         if (r >= 0 && !classless_route) {
+-                _cleanup_(route_freep) Route *route = NULL;
+-                _cleanup_(route_freep) Route *route_gw = NULL;
+-
+-                r = route_new(&route);
+-                if (r < 0)
+-                        return log_link_error_errno(link, r, "Could not allocate route: %m");
+-
+-                route->protocol = RTPROT_DHCP;
++                _cleanup_(route_freep) Route *route = NULL, *route_gw = NULL;
+ 
+                 r = route_new(&route_gw);
+                 if (r < 0)
+@@ -166,9 +159,14 @@ static int link_set_dhcp_routes(Link *link) {
+ 
+                 link->dhcp4_messages++;
+ 
++                r = route_new(&route);
++                if (r < 0)
++                        return log_link_error_errno(link, r, "Could not allocate route: %m");
++
+                 route->family = AF_INET;
+                 route->gw.in = gateway;
+                 route->prefsrc.in = address;
++                route->protocol = RTPROT_DHCP;
+                 route->priority = link->network->dhcp_route_metric;
+                 route->table = table;
+ 
+-- 
+2.7.4
+
+From 8fac545db140bd5c29113d13caa2d0d7cb8bb49b Mon Sep 17 00:00:00 2001
+From: Thomas Haller <thaller@redhat.com>
+Date: Fri, 14 Dec 2018 11:10:57 +0100
+Subject: [PATCH 2/3] dhcp: handle multiple addresses for "Router" (option 3)
+ in DHCP library
+
+The Router DHCP option may contain a list of one or more
+routers ([1]). Extend the API of sd_dhcp_lease to return a
+list instead of only the first.
+
+Note that networkd still only uses the first router (if present).
+Aside from extending the internal API of the DHCP client, there
+is almost no change in behavior. The only visible difference in
+behavior is that the "ROUTER" variable in the lease file is now a
+list of addresses.
+
+Note how RFC 2132 does not define certain IP addresses as invalid for the
+router option. Still, previously sd_dhcp_lease_get_router() would never
+return a "0.0.0.0" address. In fact, the previous API could not
+differenciate whether no router option was present, whether it
+was invalid, or whether its first router was "0.0.0.0". No longer let
+the DHCP client library impose additional restrictions that are not
+part of RFC. Instead, the caller should handle this. The patch does
+that, and networkd only consideres the first router entry if it is not
+"0.0.0.0".
+
+[1] https://tools.ietf.org/html/rfc2132#section-3.5
+
+(cherry picked from commit f8862395e8f802e4106a07ceaaf02b6a1faa5a6d)
+---
+ src/libsystemd-network/dhcp-lease-internal.h |  4 ++-
+ src/libsystemd-network/sd-dhcp-lease.c       | 50 +++++++++++++++-------------
+ src/libsystemd-network/test-dhcp-client.c    |  7 ++--
+ src/network/networkd-dhcp4.c                 | 37 ++++++++++----------
+ src/systemd/sd-dhcp-lease.h                  |  2 +-
+ 5 files changed, 54 insertions(+), 46 deletions(-)
+
+diff --git a/src/libsystemd-network/dhcp-lease-internal.h b/src/libsystemd-network/dhcp-lease-internal.h
+index 9d245a9..122042a 100644
+--- a/src/libsystemd-network/dhcp-lease-internal.h
++++ b/src/libsystemd-network/dhcp-lease-internal.h
+@@ -41,7 +41,6 @@ struct sd_dhcp_lease {
+         /* each 0 if unset */
+         be32_t address;
+         be32_t server_address;
+-        be32_t router;
+         be32_t next_server;
+ 
+         bool have_subnet_mask;
+@@ -50,6 +49,9 @@ struct sd_dhcp_lease {
+         bool have_broadcast;
+         be32_t broadcast;
+ 
++        struct in_addr *router;
++        size_t router_size;
++
+         struct in_addr *dns;
+         size_t dns_size;
+ 
+diff --git a/src/libsystemd-network/sd-dhcp-lease.c b/src/libsystemd-network/sd-dhcp-lease.c
+index 13badbf..406188c 100644
+--- a/src/libsystemd-network/sd-dhcp-lease.c
++++ b/src/libsystemd-network/sd-dhcp-lease.c
+@@ -151,15 +151,15 @@ int sd_dhcp_lease_get_root_path(sd_dhcp_lease *lease, const char **root_path) {
+         return 0;
+ }
+ 
+-int sd_dhcp_lease_get_router(sd_dhcp_lease *lease, struct in_addr *addr) {
++int sd_dhcp_lease_get_router(sd_dhcp_lease *lease, const struct in_addr **addr) {
+         assert_return(lease, -EINVAL);
+         assert_return(addr, -EINVAL);
+ 
+-        if (lease->router == 0)
++        if (lease->router_size <= 0)
+                 return -ENODATA;
+ 
+-        addr->s_addr = lease->router;
+-        return 0;
++        *addr = lease->router;
++        return (int) lease->router_size;
+ }
+ 
+ int sd_dhcp_lease_get_netmask(sd_dhcp_lease *lease, struct in_addr *addr) {
+@@ -261,6 +261,7 @@ static sd_dhcp_lease *dhcp_lease_free(sd_dhcp_lease *lease) {
+         }
+ 
+         free(lease->root_path);
++        free(lease->router);
+         free(lease->timezone);
+         free(lease->hostname);
+         free(lease->domainname);
+@@ -387,7 +388,7 @@ static void filter_bogus_addresses(struct in_addr *addresses, size_t *n) {
+         *n = j;
+ }
+ 
+-static int lease_parse_in_addrs(const uint8_t *option, size_t len, struct in_addr **ret, size_t *n_ret) {
++static int lease_parse_in_addrs(const uint8_t *option, size_t len, bool filter_bogus, struct in_addr **ret, size_t *n_ret) {
+         assert(option);
+         assert(ret);
+         assert(n_ret);
+@@ -408,7 +409,8 @@ static int lease_parse_in_addrs(const uint8_t *option, size_t len, struct in_add
+                 if (!addresses)
+                         return -ENOMEM;
+ 
+-                filter_bogus_addresses(addresses, &n_addresses);
++                if (filter_bogus)
++                        filter_bogus_addresses(addresses, &n_addresses);
+ 
+                 free(*ret);
+                 *ret = addresses;
+@@ -554,21 +556,19 @@ int dhcp_lease_parse_options(uint8_t code, uint8_t len, const void *option, void
+                 break;
+ 
+         case SD_DHCP_OPTION_ROUTER:
+-                if (len >= 4) {
+-                        r = lease_parse_be32(option, 4, &lease->router);
+-                        if (r < 0)
+-                                log_debug_errno(r, "Failed to parse router address, ignoring: %m");
+-                }
++                r = lease_parse_in_addrs(option, len, false, &lease->router, &lease->router_size);
++                if (r < 0)
++                        log_debug_errno(r, "Failed to parse router addresses, ignoring: %m");
+                 break;
+ 
+         case SD_DHCP_OPTION_DOMAIN_NAME_SERVER:
+-                r = lease_parse_in_addrs(option, len, &lease->dns, &lease->dns_size);
++                r = lease_parse_in_addrs(option, len, true, &lease->dns, &lease->dns_size);
+                 if (r < 0)
+                         log_debug_errno(r, "Failed to parse DNS server, ignoring: %m");
+                 break;
+ 
+         case SD_DHCP_OPTION_NTP_SERVER:
+-                r = lease_parse_in_addrs(option, len, &lease->ntp, &lease->ntp_size);
++                r = lease_parse_in_addrs(option, len, true, &lease->ntp, &lease->ntp_size);
+                 if (r < 0)
+                         log_debug_errno(r, "Failed to parse NTP server, ignoring: %m");
+                 break;
+@@ -820,7 +820,6 @@ int dhcp_lease_new(sd_dhcp_lease **ret) {
+         if (!lease)
+                 return -ENOMEM;
+ 
+-        lease->router = INADDR_ANY;
+         lease->n_ref = 1;
+ 
+         *ret = lease;
+@@ -863,9 +862,12 @@ int dhcp_lease_save(sd_dhcp_lease *lease, const char *lease_file) {
+         if (r >= 0)
+                 fprintf(f, "NETMASK=%s\n", inet_ntoa(address));
+ 
+-        r = sd_dhcp_lease_get_router(lease, &address);
+-        if (r >= 0)
+-                fprintf(f, "ROUTER=%s\n", inet_ntoa(address));
++        r = sd_dhcp_lease_get_router(lease, &addresses);
++        if (r > 0) {
++                fputs("ROUTER=", f);
++                serialize_in_addrs(f, addresses, r);
++                fputc('\n', f);
++        }
+ 
+         r = sd_dhcp_lease_get_server_identifier(lease, &address);
+         if (r >= 0)
+@@ -899,14 +901,14 @@ int dhcp_lease_save(sd_dhcp_lease *lease, const char *lease_file) {
+         if (r > 0) {
+                 fputs("DNS=", f);
+                 serialize_in_addrs(f, addresses, r);
+-                fputs("\n", f);
++                fputc('\n', f);
+         }
+ 
+         r = sd_dhcp_lease_get_ntp(lease, &addresses);
+         if (r > 0) {
+                 fputs("NTP=", f);
+                 serialize_in_addrs(f, addresses, r);
+-                fputs("\n", f);
++                fputc('\n', f);
+         }
+ 
+         r = sd_dhcp_lease_get_domainname(lease, &string);
+@@ -917,7 +919,7 @@ int dhcp_lease_save(sd_dhcp_lease *lease, const char *lease_file) {
+         if (r > 0) {
+                 fputs("DOMAIN_SEARCH_LIST=", f);
+                 fputstrv(f, search_domains, NULL, NULL);
+-                fputs("\n", f);
++                fputc('\n', f);
+         }
+ 
+         r = sd_dhcp_lease_get_hostname(lease, &string);
+@@ -1080,9 +1082,11 @@ int dhcp_lease_load(sd_dhcp_lease **ret, const char *lease_file) {
+         }
+ 
+         if (router) {
+-                r = inet_pton(AF_INET, router, &lease->router);
+-                if (r <= 0)
+-                        log_debug("Failed to parse router %s, ignoring.", router);
++                r = deserialize_in_addrs(&lease->router, router);
++                if (r < 0)
++                        log_debug_errno(r, "Failed to deserialize router addresses %s, ignoring: %m", router);
++                else
++                        lease->router_size = r;
+         }
+ 
+         if (netmask) {
+diff --git a/src/libsystemd-network/test-dhcp-client.c b/src/libsystemd-network/test-dhcp-client.c
+index fe6788d..0431e2c 100644
+--- a/src/libsystemd-network/test-dhcp-client.c
++++ b/src/libsystemd-network/test-dhcp-client.c
+@@ -423,6 +423,7 @@ static void test_addr_acq_acquired(sd_dhcp_client *client, int event,
+         sd_event *e = userdata;
+         sd_dhcp_lease *lease;
+         struct in_addr addr;
++        const struct in_addr *addrs;
+ 
+         assert_se(client);
+         assert_se(event == SD_DHCP_CLIENT_EVENT_IP_ACQUIRE);
+@@ -438,9 +439,9 @@ static void test_addr_acq_acquired(sd_dhcp_client *client, int event,
+         assert_se(memcmp(&addr.s_addr, &test_addr_acq_ack[285],
+                       sizeof(addr.s_addr)) == 0);
+ 
+-        assert_se(sd_dhcp_lease_get_router(lease, &addr) >= 0);
+-        assert_se(memcmp(&addr.s_addr, &test_addr_acq_ack[308],
+-                      sizeof(addr.s_addr)) == 0);
++        assert_se(sd_dhcp_lease_get_router(lease, &addrs) == 1);
++        assert_se(memcmp(&addrs[0].s_addr, &test_addr_acq_ack[308],
++                         sizeof(addrs[0].s_addr)) == 0);
+ 
+         if (verbose)
+                 printf("  DHCP address acquired\n");
+diff --git a/src/network/networkd-dhcp4.c b/src/network/networkd-dhcp4.c
+index 61f767a..56512e5 100644
+--- a/src/network/networkd-dhcp4.c
++++ b/src/network/networkd-dhcp4.c
+@@ -52,7 +52,8 @@ static int route_scope_from_address(const Route *route, const struct in_addr *se
+ static int link_set_dhcp_routes(Link *link) {
+         _cleanup_free_ sd_dhcp_route **static_routes = NULL;
+         bool classless_route = false, static_route = false;
+-        struct in_addr gateway, address;
++        const struct in_addr *router;
++        struct in_addr address;
+         int r, n, i;
+         uint32_t table;
+ 
+@@ -123,18 +124,18 @@ static int link_set_dhcp_routes(Link *link) {
+                 link->dhcp4_messages++;
+         }
+ 
+-        r = sd_dhcp_lease_get_router(link->dhcp_lease, &gateway);
+-        if (r == -ENODATA)
+-                log_link_info_errno(link, r, "DHCP: No gateway received from DHCP server: %m");
+-        else if (r < 0)
++        r = sd_dhcp_lease_get_router(link->dhcp_lease, &router);
++        if (r < 0 && r != -ENODATA)
+                 log_link_warning_errno(link, r, "DHCP error: could not get gateway: %m");
++        else if (r <= 0 || in4_addr_is_null(&router[0]))
++                log_link_info_errno(link, r, "DHCP: No gateway received from DHCP server: %m");
+ 
+         /* According to RFC 3442: If the DHCP server returns both a Classless Static Routes option and
+            a Router option, the DHCP client MUST ignore the Router option. */
+         if (classless_route && static_route)
+                 log_link_warning(link, "Classless static routes received from DHCP server: ignoring static-route option and router option");
+ 
+-        if (r >= 0 && !classless_route) {
++        if (r > 0 && !classless_route && !in4_addr_is_null(&router[0])) {
+                 _cleanup_(route_freep) Route *route = NULL, *route_gw = NULL;
+ 
+                 r = route_new(&route_gw);
+@@ -145,7 +146,7 @@ static int link_set_dhcp_routes(Link *link) {
+                  * route for the gw host so that we can route no matter the
+                  * netmask or existing kernel route tables. */
+                 route_gw->family = AF_INET;
+-                route_gw->dst.in = gateway;
++                route_gw->dst.in = router[0];
+                 route_gw->dst_prefixlen = 32;
+                 route_gw->prefsrc.in = address;
+                 route_gw->scope = RT_SCOPE_LINK;
+@@ -164,7 +165,7 @@ static int link_set_dhcp_routes(Link *link) {
+                         return log_link_error_errno(link, r, "Could not allocate route: %m");
+ 
+                 route->family = AF_INET;
+-                route->gw.in = gateway;
++                route->gw.in = router[0];
+                 route->prefsrc.in = address;
+                 route->protocol = RTPROT_DHCP;
+                 route->priority = link->network->dhcp_route_metric;
+@@ -185,9 +186,9 @@ static int link_set_dhcp_routes(Link *link) {
+ 
+ static int dhcp_lease_lost(Link *link) {
+         _cleanup_(address_freep) Address *address = NULL;
++        const struct in_addr *router;
+         struct in_addr addr;
+         struct in_addr netmask;
+-        struct in_addr gateway;
+         unsigned prefixlen = 0;
+         int r;
+ 
+@@ -220,15 +221,15 @@ static int dhcp_lease_lost(Link *link) {
+ 
+         r = address_new(&address);
+         if (r >= 0) {
+-                r = sd_dhcp_lease_get_router(link->dhcp_lease, &gateway);
+-                if (r >= 0) {
++                r = sd_dhcp_lease_get_router(link->dhcp_lease, &router);
++                if (r > 0 && !in4_addr_is_null(&router[0])) {
+                         _cleanup_(route_freep) Route *route_gw = NULL;
+                         _cleanup_(route_freep) Route *route = NULL;
+ 
+                         r = route_new(&route_gw);
+                         if (r >= 0) {
+                                 route_gw->family = AF_INET;
+-                                route_gw->dst.in = gateway;
++                                route_gw->dst.in = router[0];
+                                 route_gw->dst_prefixlen = 32;
+                                 route_gw->scope = RT_SCOPE_LINK;
+ 
+@@ -238,7 +239,7 @@ static int dhcp_lease_lost(Link *link) {
+                         r = route_new(&route);
+                         if (r >= 0) {
+                                 route->family = AF_INET;
+-                                route->gw.in = gateway;
++                                route->gw.in = router[0];
+ 
+                                 route_remove(route, link, NULL);
+                         }
+@@ -397,10 +398,10 @@ static int dhcp_lease_renew(sd_dhcp_client *client, Link *link) {
+ }
+ 
+ static int dhcp_lease_acquired(sd_dhcp_client *client, Link *link) {
++        const struct in_addr *router;
+         sd_dhcp_lease *lease;
+         struct in_addr address;
+         struct in_addr netmask;
+-        struct in_addr gateway;
+         unsigned prefixlen;
+         uint32_t lifetime = CACHE_INFO_INFINITY_LIFE_TIME;
+         int r;
+@@ -422,20 +423,20 @@ static int dhcp_lease_acquired(sd_dhcp_client *client, Link *link) {
+ 
+         prefixlen = in4_addr_netmask_to_prefixlen(&netmask);
+ 
+-        r = sd_dhcp_lease_get_router(lease, &gateway);
++        r = sd_dhcp_lease_get_router(lease, &router);
+         if (r < 0 && r != -ENODATA)
+                 return log_link_error_errno(link, r, "DHCP error: Could not get gateway: %m");
+ 
+-        if (r >= 0)
++        if (r > 0 && !in4_addr_is_null(&router[0]))
+                 log_struct(LOG_INFO,
+                            LOG_LINK_INTERFACE(link),
+                            LOG_LINK_MESSAGE(link, "DHCPv4 address %u.%u.%u.%u/%u via %u.%u.%u.%u",
+                                             ADDRESS_FMT_VAL(address),
+                                             prefixlen,
+-                                            ADDRESS_FMT_VAL(gateway)),
++                                            ADDRESS_FMT_VAL(router[0])),
+                            "ADDRESS=%u.%u.%u.%u", ADDRESS_FMT_VAL(address),
+                            "PREFIXLEN=%u", prefixlen,
+-                           "GATEWAY=%u.%u.%u.%u", ADDRESS_FMT_VAL(gateway));
++                           "GATEWAY=%u.%u.%u.%u", ADDRESS_FMT_VAL(router[0]));
+         else
+                 log_struct(LOG_INFO,
+                            LOG_LINK_INTERFACE(link),
+diff --git a/src/systemd/sd-dhcp-lease.h b/src/systemd/sd-dhcp-lease.h
+index 4875f10..d299c79 100644
+--- a/src/systemd/sd-dhcp-lease.h
++++ b/src/systemd/sd-dhcp-lease.h
+@@ -39,7 +39,7 @@ int sd_dhcp_lease_get_t1(sd_dhcp_lease *lease, uint32_t *t1);
+ int sd_dhcp_lease_get_t2(sd_dhcp_lease *lease, uint32_t *t2);
+ int sd_dhcp_lease_get_broadcast(sd_dhcp_lease *lease, struct in_addr *addr);
+ int sd_dhcp_lease_get_netmask(sd_dhcp_lease *lease, struct in_addr *addr);
+-int sd_dhcp_lease_get_router(sd_dhcp_lease *lease, struct in_addr *addr);
++int sd_dhcp_lease_get_router(sd_dhcp_lease *lease, const struct in_addr **addr);
+ int sd_dhcp_lease_get_next_server(sd_dhcp_lease *lease, struct in_addr *addr);
+ int sd_dhcp_lease_get_server_identifier(sd_dhcp_lease *lease, struct in_addr *addr);
+ int sd_dhcp_lease_get_dns(sd_dhcp_lease *lease, const struct in_addr **addr);
+-- 
+2.7.4
+
+From da9adbb9539bee8886bb680e70616eac8281acd5 Mon Sep 17 00:00:00 2001
+From: Yu Watanabe <watanabe.yu+github@gmail.com>
+Date: Tue, 19 Feb 2019 15:09:28 +0900
+Subject: [PATCH 3/3] network: do not log wrong error cause
+
+If sd_dhcp_lease_get_router() returns a positive value and the first
+router is null, then invalid error cause was logged.
+
+Follow-up for f8862395e8f802e4106a07ceaaf02b6a1faa5a6d.
+
+(cherry picked from commit 825ace96b1076ac367d2962e3979f62954145812)
+---
+ src/network/networkd-dhcp4.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/src/network/networkd-dhcp4.c b/src/network/networkd-dhcp4.c
+index 56512e5..29ad323 100644
+--- a/src/network/networkd-dhcp4.c
++++ b/src/network/networkd-dhcp4.c
+@@ -125,10 +125,12 @@ static int link_set_dhcp_routes(Link *link) {
+         }
+ 
+         r = sd_dhcp_lease_get_router(link->dhcp_lease, &router);
+-        if (r < 0 && r != -ENODATA)
++        if (IN_SET(r, 0, -ENODATA))
++                log_link_info(link, "DHCP: No gateway received from DHCP server.");
++        else if (r < 0)
+                 log_link_warning_errno(link, r, "DHCP error: could not get gateway: %m");
+-        else if (r <= 0 || in4_addr_is_null(&router[0]))
+-                log_link_info_errno(link, r, "DHCP: No gateway received from DHCP server: %m");
++        else if (in4_addr_is_null(&router[0]))
++                log_link_info(link, "DHCP: Received gateway is null.");
+ 
+         /* According to RFC 3442: If the DHCP server returns both a Classless Static Routes option and
+            a Router option, the DHCP client MUST ignore the Router option. */
+-- 
+2.7.4
+

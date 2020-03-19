@@ -26,16 +26,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
-var (
-	// For testing
-	k8sVersion = kubernetesVersion
-)
-
-func kubectlCommand(profile string, files []string, enable bool) (*exec.Cmd, error) {
-	v, err := k8sVersion(profile)
-	if err != nil {
-		return nil, err
+func kubectlCommand(cc *config.ClusterConfig, files []string, enable bool) *exec.Cmd {
+	v := constants.DefaultKubernetesVersion
+	if cc != nil {
+		v = cc.KubernetesConfig.KubernetesVersion
 	}
+
 	kubectlBinary := kubectlBinaryPath(v)
 
 	kubectlAction := "apply"
@@ -48,20 +44,7 @@ func kubectlCommand(profile string, files []string, enable bool) (*exec.Cmd, err
 		args = append(args, []string{"-f", f}...)
 	}
 
-	cmd := exec.Command("sudo", args...)
-	return cmd, nil
-}
-
-func kubernetesVersion(profile string) (string, error) {
-	cc, err := config.Load(profile)
-	if err != nil && !config.IsNotExist(err) {
-		return "", err
-	}
-	version := constants.DefaultKubernetesVersion
-	if cc != nil {
-		version = cc.KubernetesConfig.KubernetesVersion
-	}
-	return version, nil
+	return exec.Command("sudo", args...)
 }
 
 func kubectlBinaryPath(version string) string {
