@@ -260,7 +260,12 @@ func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Dur
 	if err != nil {
 		return err
 	}
-	if err := kverify.APIServerProcess(k.c, start, timeout); err != nil {
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return err
+	}
+
+	if err := kverify.WaitForAPIServerProcess(cr, k, k.c, start, timeout); err != nil {
 		return err
 	}
 
@@ -273,7 +278,8 @@ func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Dur
 			return errors.Wrapf(err, "get host-bind port %d for container %s", port, cfg.Name)
 		}
 	}
-	if err := kverify.APIServerIsRunning(start, ip, port, timeout); err != nil {
+
+	if err := kverify.WaitForHealthyAPIServer(cr, k, k.c, start, ip, port, timeout); err != nil {
 		return err
 	}
 
@@ -282,7 +288,7 @@ func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Dur
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := kverify.SystemPods(c, start, timeout); err != nil {
+	if err := kverify.WaitForSystemPods(cr, k, k.c, c, start, timeout); err != nil {
 		return errors.Wrap(err, "waiting for system pods")
 	}
 	return nil
@@ -329,8 +335,13 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		}
 	}
 
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return err
+	}
+
 	// We must ensure that the apiserver is healthy before proceeding
-	if err := kverify.APIServerProcess(k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.WaitForAPIServerProcess(cr, k, k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
@@ -349,7 +360,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 			return errors.Wrap(err, "getting k8s client")
 		}
 
-		if err := kverify.SystemPods(client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+		if err := kverify.WaitForSystemPods(cr, k, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 			return errors.Wrap(err, "system pods")
 		}
 
