@@ -101,11 +101,59 @@ If the issue is not `triage/support`, it needs a [priority label](https://github
 `priority/awaiting-more-evidence`: may be more useful, but there is not yet enough support.
 
 
-# Responding to Issues
+# Weekly Triage
 
-Many issues in the minikube repo fall into one of the following categories:
-- Needs more information from the author to be actionable
-- Duplicate Issue
+Weekly triage has three goals:
+
+1. Catching up on unresponded issues
+1. Reviewing and closing PR’s
+1. Closing stale issues
+
+The list of outstanding items can be found at https://teaparty-tts3vkcpgq-uc.a.run.app/s/weekly-triage.
+
+## Post-Release Triage
+
+Post-release triage occurs after a major release (around every 4-6 weeks).
+It focuses on:
+
+1. Closing bugs that have been resolved by the release
+1. Reprioritizing bugs that have not been resolved by the release
+1. Letting users know if we believe that there is still an issue
+
+This includes reviewing:
+
+1. Every issue that hasn’t been touched in the last 2 days
+1. Re-evaluation of long-term issues
+1. Re-evaluation of short-term issues
+
+
+## Responding to Issues
+
+### Needs More Information
+A sample response to ask for more info:
+
+```
+I don’t yet have a clear way to replicate this issue. Do you mind adding some additional details? Here is additional information that would be helpful:
+
+*  The exact `minikube start` command line used
+*  The full output of the `minikube start` command, preferably with `--alsologtostderr -v=4` for extra logging.
+ * The full output of `minikube logs`
+* The full output of `kubectl get po -A`
+
+
+Thank you for sharing your experience!
+```
+
+Then: Label with `triage/needs-information`.
+
+### Issue might be resolved
+If you think a release may have resolved an issue, ask the author to see if their issue has been resolved:
+
+```
+Could you please check to see if minikube <x> addresses this issue? We've made some changes with how this is handled, and improved the minikube logs output to help us debug tricky cases like this.
+```
+
+Then: Label with `triage/needs-information`.
 
 
 ## Closing with Care
@@ -121,22 +169,30 @@ In any of these situations, we aim to be kind when closing the issue, and offer 
 Samples responses for these situations include:
 
 ### Issue has been addressed
-
+```
 @author: I believe this issue is now addressed by minikube v1.4, as it <reason>. If you still see this issue with minikube v1.4 or higher, please reopen this issue by commenting with `/reopen`
 
 Thank you for reporting this issue!
+```
+
+Then: Close the issue
 
 ### Duplicate Issue
 
-
+```
 This issue appears to be a duplicate of #X, do you mind if we move the conversation there?
 
 This way we can centralize the content relating to the issue. If you feel that this issue is not in fact a duplicate, please re-open it using `/reopen`. If you have additional information to share, please add it to the new issue.
 
 Thank you for reporting this!
+```
+
+Then: Label with `triage/duplicate` and close the issue.
 
 ### Lack of Information
+If an issue hasn't been active for more than four weeks, and the author has been pinged at least once, then the issue can be closed.
 
+```
 Hey @author -- hopefully it's OK if I close this - there wasn't enough information to make it actionable, and some time has already passed. If you are able to provide additional details, you may reopen it at any point by adding /reopen to your comment.
 
 Here is additional information that may be helpful to us:
@@ -147,3 +203,6 @@ Here is additional information that may be helpful to us:
  * The full output of `minikube logs`
 
 Thank you for sharing your experience!
+```
+
+Then: Close the issue.
