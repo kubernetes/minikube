@@ -174,7 +174,7 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 		err := deleteProfile(profile)
 
 		if err != nil {
-			mm, loadErr := machine.Load(profile.Name)
+			mm, loadErr := machine.LoadMachine(profile.Name)
 
 			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
 				invalidProfileDeletionErrs := deleteInvalidProfile(profile)
@@ -208,7 +208,6 @@ func deleteProfileContainersAndVolumes(name string) {
 
 func deleteProfile(profile *config.Profile) error {
 	viper.Set(config.ProfileName, profile.Name)
-
 	deleteProfileContainersAndVolumes(profile.Name)
 
 	api, err := machine.NewAPIClient()
@@ -217,6 +216,7 @@ func deleteProfile(profile *config.Profile) error {
 		return DeletionError{Err: delErr, Errtype: Fatal}
 	}
 	defer api.Close()
+
 	cc, err := config.Load(profile.Name)
 	if err != nil && !config.IsNotExist(err) {
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
@@ -328,7 +328,7 @@ func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.N
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}
 
-	host, err := machine.CheckIfHostExistsAndLoad(api, driver.MachineName(cc, n))
+	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
 	if err != nil {
 		exit.WithError("Error getting host", err)
 	}

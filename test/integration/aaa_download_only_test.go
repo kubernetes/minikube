@@ -32,7 +32,6 @@ import (
 	"testing"
 	"time"
 
-	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -70,6 +69,14 @@ func TestDownloadOnly(t *testing.T) {
 
 				if err != nil {
 					t.Errorf("%s failed: %v", args, err)
+				}
+
+				if download.PreloadExists(v, "docker") {
+					// Just make sure the tarball path exists
+					if _, err := os.Stat(download.TarballPath(v)); err != nil {
+						t.Errorf("preloaded tarball path doesn't exist: %v", err)
+					}
+					return
 				}
 
 				imgs, err := images.Kubeadm("", v)
@@ -194,16 +201,6 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	}
 	if string(remoteChecksum) != string(checksum[:]) {
 		t.Errorf("checksum of %s does not match remote checksum (%s != %s)", tarball, string(remoteChecksum), string(checksum[:]))
-	}
-
-	// Make sure this image exists in the docker daemon
-	images, err := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}").Output()
-	if err != nil {
-		t.Errorf("getting list of docker images failed: %v\nOutput: %s", err, string(images))
-	}
-	want := kic.BaseImage
-	if !strings.Contains(string(images), want) {
-		t.Errorf("expected image does not exist in local daemon; got:\n%s wanted:\n%s", string(images), want)
 	}
 }
 

@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -32,12 +33,21 @@ import (
 )
 
 func init() {
+	priority := registry.Default
+	// Staged rollout for preferred:
+	// - Linux
+	// - Windows (once "service" command works)
+	// - macOS
+	if runtime.GOOS == "linux" {
+		priority = registry.Preferred
+	}
+
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Docker,
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
-		Priority: registry.Fallback,
+		Priority: priority,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}

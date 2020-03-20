@@ -79,12 +79,12 @@ func dockerGatewayIP() (net.IP, error) {
 	return ip, nil
 }
 
-// HostPortBinding will return port mapping for a container using cli.
-// example : HostPortBinding("docker", "minikube", "22")
+// ForwardedPort will return port mapping for a container using cli.
+// example : ForwardedPort("docker", "minikube", "22")
 // will return the docker assigned port:
 // 32769, nil
 // only supports TCP ports
-func HostPortBinding(ociBinary string, ociID string, contPort int) (int, error) {
+func ForwardedPort(ociBinary string, ociID string, contPort int) (int, error) {
 	var out []byte
 	var err error
 

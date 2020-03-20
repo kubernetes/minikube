@@ -1,5 +1,67 @@
 # Release Notes
 
+## Version 1.9.0-beta.1 - 2020-03-18
+
+New features
+
+* Use Kubernetes v1.18.0-rc.1 by default [#7076](https://github.com/kubernetes/minikube/pull/7076)
+* Upgrade Docker driver to preferred (Linux), default on other platforms [#7090](https://github.com/kubernetes/minikube/pull/7090)
+* Upgrade Docker, from 19.03.7 to 19.03.8 [#7040](https://github.com/kubernetes/minikube/pull/7040)
+* Upgrade Docker, from 19.03.6 to 19.03.7 [#6939](https://github.com/kubernetes/minikube/pull/6939)
+* Upgrade dashboard to v2.0.0-rc6 [#7098](https://github.com/kubernetes/minikube/pull/7098)
+* Upgrade crio to 1.17.1 [#7099](https://github.com/kubernetes/minikube/pull/7099)
+* Updated French translation [#7055](https://github.com/kubernetes/minikube/pull/7055)
+
+Bugfixes
+
+* If user doesn't specify driver, don't validate against existing cluster [#7096](https://github.com/kubernetes/minikube/pull/7096)
+* Strip the version prefix before calling semver [#7054](https://github.com/kubernetes/minikube/pull/7054)
+* Move some of the driver validation before driver selection [#7080](https://github.com/kubernetes/minikube/pull/7080)
+* Fix bug where global config memory was ignored [#7082](https://github.com/kubernetes/minikube/pull/7082)
+* Remove controllerManager from the kubeadm v1beta2 template [#7030](https://github.com/kubernetes/minikube/pull/7030)
+* Delete: output underlying status failure [#7043](https://github.com/kubernetes/minikube/pull/7043)
+* status: error properly if cluster does not exist [#7041](https://github.com/kubernetes/minikube/pull/7041)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Medya Ghazizadeh
+- Priya Wadhwa
+- RA489
+- Richard Wall
+- Sharif Elgamal
+- Thomas Strömberg
+- Vikky Omkar
+- jumahmohammad
+
+## Version 1.8.2 - 2020-03-13
+
+Shiny new improvements:
+
+* allow setting api-server port for docker/podman drivers [#6991](https://github.com/kubernetes/minikube/pull/6991)
+* Update NewestKubernetesVersion to 1.18.0-beta.2 [#6988](https://github.com/kubernetes/minikube/pull/6988)
+* Add warning if disk image is missing features [#6978](https://github.com/kubernetes/minikube/pull/6978)
+
+Captivating bug fixes:
+
+* Hyper-V: Round suggested memory alloc by 100MB for VM's [#6987](https://github.com/kubernetes/minikube/pull/6987)
+* Merge repositories.json after extracting preloaded tarball so that reference store isn't lost [#6985](https://github.com/kubernetes/minikube/pull/6985)
+* Fix dockerd internal port changing on restart [#7021](https://github.com/kubernetes/minikube/pull/7021)
+* none: Skip driver preload and image caching [#7015](https://github.com/kubernetes/minikube/pull/7015)
+* preload: fix bug for windows file separators [#6968](https://github.com/kubernetes/minikube/pull/6968)
+* Block on preload download [#7003](https://github.com/kubernetes/minikube/pull/7003)
+* Check if lz4 is available before trying to use it [#6941](https://github.com/kubernetes/minikube/pull/6941)
+* Allow backwards compatibility with 1.6 and earlier configs [#6969](https://github.com/kubernetes/minikube/pull/6969)
+
+Huge thank you for this release towards our contributors: 
+- Anders F Björklund
+- Ian Molee
+- Kenta Iso
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+
 ## Version 1.8.1 - 2020-03-06
 
 Minor bug fix:

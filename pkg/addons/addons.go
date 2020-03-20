@@ -145,8 +145,8 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	}
 
 	mName := driver.MachineName(*cc, cp)
-	host, err := machine.CheckIfHostExistsAndLoad(api, mName)
-	if err != nil || !machine.IsHostRunning(api, mName) {
+	host, err := machine.LoadHost(api, mName)
+	if err != nil || !machine.IsRunning(api, mName) {
 		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement (err=%v)", mName, addon.Name(), enable, err)
 		return nil
 	}
@@ -247,7 +247,7 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	if err != nil {
 		return errors.Wrap(err, "getting control plane")
 	}
-	if !machine.IsHostRunning(api, driver.MachineName(*cc, cp)) {
+	if !machine.IsRunning(api, driver.MachineName(*cc, cp)) {
 		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", driver.MachineName(*cc, cp), name, val)
 		return enableOrDisableAddon(cc, name, val)
 	}
