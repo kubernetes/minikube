@@ -52,18 +52,18 @@ func main() {
 	}
 	mode := info.Mode()
 
-	re := regexp.MustCompile(`var DefaultKubernetesVersion = .*`)
-	f := re.ReplaceAllString(string(cf), "var DefaultKubernetesVersion = \""+v+"\"")
+	re := regexp.MustCompile(`DefaultKubernetesVersion = \".*`)
+	f := re.ReplaceAllString(string(cf), "DefaultKubernetesVersion = \""+v+"\"")
 
-	re = regexp.MustCompile(`var NewestKubernetesVersion = .*`)
-	f = re.ReplaceAllString(f, "var NewestKubernetesVersion = \""+v+"\"")
+	re = regexp.MustCompile(`NewestKubernetesVersion = \".*`)
+	f = re.ReplaceAllString(f, "NewestKubernetesVersion = \""+v+"\"")
 
 	if err := ioutil.WriteFile(constantsFile, []byte(f), mode); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
 
-	testData := "../../pkg/minikube/bootstrapper/kubeadm/testdata"
+	testData := "../../pkg/minikube/bootstrapper/bsutil/testdata"
 
 	err = filepath.Walk(testData, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
