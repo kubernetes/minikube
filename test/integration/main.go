@@ -65,7 +65,7 @@ func NoneDriver() bool {
 }
 
 func DockerDriver() bool {
-	return strings.Contains(*startArgs, "--driver=docker")
+	return strings.Contains(*startArgs, "driver=docker")
 }
 
 // HyperVDriver returns whether or not this test is using the Hyper-V driver
