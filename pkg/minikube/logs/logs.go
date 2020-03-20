@@ -51,7 +51,6 @@ var rootCauses = []string{
 	`unable to evict any pods`,
 	`eviction manager: unexpected error`,
 	`Resetting AnonymousAuth to false`,
-	`CrashLoopBackOff`,
 	`Unable to register node.*forbidden`,
 	`Failed to initialize CSINodeInfo.*forbidden`,
 	`Failed to admit pod`,
