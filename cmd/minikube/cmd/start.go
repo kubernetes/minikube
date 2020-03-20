@@ -469,13 +469,19 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 			out.T(out.Warning, warning, out.V{"driver": d, "vmd": vmd})
 		}
 		ds := driver.Status(d)
+		if ds.Name == "" {
+			exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+		}
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds
 	}
 
 	// Fallback to old driver parameter
-	if viper.GetString("vm-driver") != "" {
+	if d := viper.GetString("vm-driver"); d != "" {
 		ds := driver.Status(viper.GetString("vm-driver"))
+		if ds.Name == "" {
+			exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
+		}
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
 		return ds
 	}
@@ -555,7 +561,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 	name := ds.Name
 	glog.Infof("validating driver %q against %+v", name, existing)
 	if !driver.Supported(name) {
-		exit.WithCodeT(exit.Unavailable, "The driver {{.experimental}} '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+		exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
 	}
 
 	st := ds.State

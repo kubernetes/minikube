@@ -217,7 +217,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 
 // Disable idempotently disables containerd on a host
 func (r *Containerd) Disable() error {
-	c := exec.Command("sudo", "systemctl", "stop", "containerd")
+	c := exec.Command("sudo", "systemctl", "stop", "-f", "containerd")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "stop containerd")
 	}
