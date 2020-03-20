@@ -177,6 +177,7 @@ func (api *LocalClient) Create(h *host.Host) error {
 		return fmt.Errorf("driver %q does not exist", h.DriverName)
 	}
 	if def.Init == nil {
+		// NOTE: This will call provision.DetectProvisioner
 		return api.legacyClient.Create(h)
 	}
 
