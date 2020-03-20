@@ -160,7 +160,7 @@ WantedBy=multi-user.target
 		return nil, err
 	}
 
-	if err := p.Service("docker", serviceaction.Restart); err != nil {
+	if err := p.Service("docker", serviceaction.Start); err != nil {
 		return nil, err
 	}
 	return dockerCfg, nil

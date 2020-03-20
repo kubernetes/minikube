@@ -122,6 +122,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Nod
 	if err := bs.UpdateCluster(cfg); err != nil {
 		exit.WithError("Failed to update cluster", err)
 	}
+
 	if err := bs.SetupCerts(cfg.KubernetesConfig, node); err != nil {
 		exit.WithError("Failed to setup certs", err)
 	}
@@ -137,8 +138,8 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
 		ClusterServerAddress: addr,
-		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
-		ClientKey:            localpath.MakeMiniPath("client.key"),
+		ClientCertificate:    filepath.Join(localpath.Profile(cc.Name), "client.crt"),
+		ClientKey:            filepath.Join(localpath.Profile(cc.Name), "client.key"),
 		CertificateAuthority: localpath.MakeMiniPath("ca.crt"),
 		KeepContext:          viper.GetBool(keepContext),
 		EmbedCerts:           viper.GetBool(embedCerts),
