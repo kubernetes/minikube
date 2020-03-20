@@ -25,7 +25,7 @@ Daily triage has two goals:
 1. Responsiveness for new issues
 1. Responsiveness when explicitly requested information was provided
 
-The list of outstanding items are at https://teaparty-tts3vkcpgq-uc.a.run.app/s/daily-triage - it covers:
+The list of outstanding items are at http://tinyurl.com/mk-tparty/daily-triage - it covers:
 
 1. Issues without a `kind/` or `triage/` label
 1. Issues without a `priority/` label
@@ -119,7 +119,7 @@ Weekly triage has three goals:
 1. Reviewing and closing PR’s
 1. Closing stale issues
 
-The list of outstanding items can be found at https://teaparty-tts3vkcpgq-uc.a.run.app/s/weekly-triage.
+The list of outstanding items can be found at http://tinyurl.com/mk-tparty/weekly-triage.
 
 ## Post-Release Triage
 
