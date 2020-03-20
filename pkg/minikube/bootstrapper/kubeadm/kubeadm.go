@@ -215,8 +215,10 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
 	}
 
-	if err = k.SetupNode(cfg); err != nil {
-		return errors.Wrap(err, "setting up node")
+	if cfg.Driver == driver.Docker {
+		if err := k.applyKicOverlay(cfg); err != nil {
+			return errors.Wrap(err, "apply kic overlay")
+		}
 	}
 
 	if err := k.applyNodeLabels(cfg); err != nil {
@@ -229,17 +231,6 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
 		glog.Warningf("unable to create cluster role binding, some addons might not work : %v. ", err)
-	}
-
-	return nil
-}
-
-// SetupNode runs commands that need to be on all nodes
-func (k *Bootstrapper) SetupNode(cfg config.ClusterConfig) error {
-	if cfg.Driver == driver.Docker {
-		if err := k.applyKicOverlay(cfg); err != nil {
-			return errors.Wrap(err, "apply kic overlay")
-		}
 	}
 
 	return nil
