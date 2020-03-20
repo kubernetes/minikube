@@ -139,9 +139,6 @@ func TestStartHostExists(t *testing.T) {
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
 	}
-	if !md.Provisioner.Provisioned {
-		t.Fatalf("Expected provision to be called")
-	}
 }
 
 func TestStartHostErrMachineNotExist(t *testing.T) {
@@ -185,9 +182,6 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	if s, _ := h.Driver.GetState(); s != state.Running {
 		t.Fatalf("Machine not started.")
 	}
-	if !md.Provisioner.Provisioned {
-		t.Fatalf("Expected provision to be called")
-	}
 }
 
 func TestStartStoppedHost(t *testing.T) {
@@ -223,9 +217,6 @@ func TestStartStoppedHost(t *testing.T) {
 		t.Fatalf("Machine must be saved after starting.")
 	}
 
-	if !md.Provisioner.Provisioned {
-		t.Fatalf("Expected provision to be called")
-	}
 }
 
 func TestStartHost(t *testing.T) {

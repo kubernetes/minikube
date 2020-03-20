@@ -66,6 +66,19 @@ func init() {
 
 }
 
+// NewSystemdProvisioner is our fork of the same name in the upstream provision library, without the packages
+func NewSystemdProvisioner(osReleaseID string, d drivers.Driver) provision.SystemdProvisioner {
+	return provision.SystemdProvisioner{
+		GenericProvisioner: provision.GenericProvisioner{
+			SSHCommander:      provision.GenericSSHCommander{Driver: d},
+			DockerOptionsDir:  "/etc/docker",
+			DaemonOptionsFile: "/etc/systemd/system/docker.service.d/10-machine.conf",
+			OsReleaseID:       osReleaseID,
+			Driver:            d,
+		},
+	}
+}
+
 func configureAuth(p miniProvisioner) error {
 	log.Infof("configureAuth start")
 	start := time.Now()

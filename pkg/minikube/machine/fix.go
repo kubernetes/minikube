@@ -36,7 +36,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/provision"
 )
 
 // hostRunner is a minimal host.Host based interface for running commands
@@ -83,11 +82,8 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, existing config.Cluste
 	if !reflect.DeepEqual(old, e) {
 		glog.Infof("docker config changed, updating provisioner: %+v", e)
 		h.HostOptions.EngineOptions.Env = e.Env
-		p := provision.NewBuildrootProvisioner(h.Driver)
-		if driver.IsKIC(h.Driver.DriverName()) {
-			p = provision.NewUbuntuProvisioner(h.Driver)
-		}
-		if err := p.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
+		err := provisionDockerMachine(h)
+		if err != nil {
 			return h, errors.Wrap(err, "provision")
 		}
 	}
