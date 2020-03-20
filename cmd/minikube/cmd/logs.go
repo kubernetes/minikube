@@ -32,7 +32,7 @@ import (
 
 const (
 	// number of problems per log to output
-	numberOfProblems = 5
+	numberOfProblems = 10
 )
 
 var (

@@ -246,6 +246,38 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "registry-creds"),
+	"registry-aliases": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/registry-aliases/registry-aliases-sa.tmpl",
+			vmpath.GuestAddonsDir,
+			"registry-aliases-sa.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry-aliases/registry-aliases-sa-crb.tmpl",
+			vmpath.GuestAddonsDir,
+			"registry-aliases-sa-crb.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry-aliases/registry-aliases-config.tmpl",
+			vmpath.GuestAddonsDir,
+			"registry-aliases-config.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry-aliases/node-etc-hosts-update.tmpl",
+			vmpath.GuestAddonsDir,
+			"node-etc-hosts-update.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry-aliases/patch-coredns-job.tmpl",
+			vmpath.GuestAddonsDir,
+			"patch-coredns-job.yaml",
+			"0640",
+			false),
+	}, false, "registry-aliases"),
 	"freshpod": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/freshpod/freshpod-rc.yaml.tmpl",
