@@ -127,7 +127,7 @@ func (r *Docker) Restart() error {
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
-	c := exec.Command("sudo", "systemctl", "stop", "docker", "docker.socket")
+	c := exec.Command("sudo", "systemctl", "stop", "-f", "docker", "docker.socket")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "disable docker")
 	}
