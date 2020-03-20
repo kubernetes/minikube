@@ -88,6 +88,7 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	oc.Env = cmd.Env
 
 	rr := &RunResult{Args: cmd.Args}
+	glog.Infof("Run: %v", rr.Command())
 
 	var outb, errb io.Writer
 	if oc.Stdout == nil {
