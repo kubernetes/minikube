@@ -88,7 +88,7 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	// pull images or restart cluster
 	out.T(out.Launch, "Launching Kubernetes ... ")
 	if err := bs.StartCluster(mc); err != nil {
-		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, mRunner))
+		exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, mc, mRunner))
 	}
 	configureMounts()
 

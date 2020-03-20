@@ -110,7 +110,7 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, port int) (string, error) {
 }
 
 // LogCommands returns a map of log type to a command which will display that log.
-func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string {
+func (k *Bootstrapper) LogCommands(cfg config.ClusterConfig, o bootstrapper.LogOptions) map[string]string {
 	var kubelet strings.Builder
 	kubelet.WriteString("sudo journalctl -u kubelet")
 	if o.Lines > 0 {
@@ -128,9 +128,15 @@ func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string 
 	if o.Lines > 0 {
 		dmesg.WriteString(fmt.Sprintf(" | tail -n %d", o.Lines))
 	}
+
+	describe_nodes := fmt.Sprintf("sudo %s describe node -A --kubeconfig=%s",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+		path.Join(vmpath.GuestPersistentDir, "kubeconfig"))
+
 	return map[string]string{
-		"kubelet": kubelet.String(),
-		"dmesg":   dmesg.String(),
+		"kubelet":        kubelet.String(),
+		"dmesg":          dmesg.String(),
+		"describe nodes": describe_nodes,
 	}
 }
 

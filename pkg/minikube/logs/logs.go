@@ -23,20 +23,17 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 // rootCauseRe is a regular expression that matches known failure root causes
@@ -66,9 +63,9 @@ type logRunner interface {
 const lookBackwardsCount = 400
 
 // Follow follows logs from multiple files in tail(1) format
-func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr logRunner) error {
+func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr logRunner) error {
 	cs := []string{}
-	for _, v := range logCommands(r, bs, 0, true) {
+	for _, v := range logCommands(r, bs, cfg, 0, true) {
 		cs = append(cs, v+" &")
 	}
 	cs = append(cs, "wait")
@@ -88,9 +85,9 @@ func IsProblem(line string) bool {
 }
 
 // FindProblems finds possible root causes among the logs
-func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr logRunner) map[string][]string {
+func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr logRunner) map[string][]string {
 	pMap := map[string][]string{}
-	cmds := logCommands(r, bs, lookBackwardsCount, false)
+	cmds := logCommands(r, bs, cfg, lookBackwardsCount, false)
 	for name := range cmds {
 		glog.Infof("Gathering logs for %s ...", name)
 		var b bytes.Buffer
@@ -132,8 +129,8 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 }
 
 // Output displays logs from multiple sources in tail(1) format
-func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner, lines int) error {
-	cmds := logCommands(r, bs, lines, false)
+func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner command.Runner, lines int) error {
+	cmds := logCommands(r, bs, cfg, lines, false)
 	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 
 	names := []string{}
@@ -170,8 +167,8 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 }
 
 // logCommands returns a list of commands that would be run to receive the anticipated logs
-func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, follow bool) map[string]string {
-	cmds := bs.LogCommands(bootstrapper.LogOptions{Lines: length, Follow: follow})
+func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
+	cmds := bs.LogCommands(cfg, bootstrapper.LogOptions{Lines: length, Follow: follow})
 	for _, pod := range importantPods {
 		ids, err := r.ListContainers(cruntime.ListOptions{Name: pod})
 		if err != nil {
@@ -190,15 +187,6 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 	}
 	cmds[r.Name()] = r.SystemLogCmd(length)
 	cmds["container status"] = cruntime.ContainerStatusCommand()
-
-	cfg, err := config.Load(viper.GetString(config.ProfileName))
-	if err != nil {
-		out.ErrLn("Error loading profile config: %v", err)
-	}
-
-	cmds["describe nodes"] = fmt.Sprintf("sudo %s describe node -A --kubeconfig=%s",
-		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
-		path.Join(vmpath.GuestPersistentDir, "kubeconfig"))
 
 	return cmds
 }
