@@ -40,7 +40,7 @@ type Bootstrapper interface {
 	DeleteCluster(config.KubernetesConfig) error
 	WaitForCluster(config.ClusterConfig, time.Duration) error
 	// LogCommands returns a map of log type to a command which will display that log.
-	LogCommands(LogOptions) map[string]string
+	LogCommands(config.ClusterConfig, LogOptions) map[string]string
 	SetupCerts(config.KubernetesConfig, config.Node) error
 	GetKubeletStatus() (string, error)
 	GetAPIServerStatus(net.IP, int) (string, error)
