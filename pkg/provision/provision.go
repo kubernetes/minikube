@@ -69,7 +69,7 @@ func init() {
 // NewSystemdProvisioner is our fork of the same name in the upstream provision library, without the packages
 func NewSystemdProvisioner(osReleaseID string, d drivers.Driver) provision.SystemdProvisioner {
 	return provision.SystemdProvisioner{
-		provision.GenericProvisioner{
+		GenericProvisioner: provision.GenericProvisioner{
 			SSHCommander:      provision.GenericSSHCommander{Driver: d},
 			DockerOptionsDir:  "/etc/docker",
 			DaemonOptionsFile: "/etc/systemd/system/docker.service.d/10-machine.conf",
@@ -292,12 +292,12 @@ func concatStrings(src []string, prefix string, postfix string) []string {
 
 // updateUnit efficiently updates a systemd unit file
 func updateUnit(p provision.SSHCommander, name string, content string, dst string) error {
-	glog.Infof("Updating %s ...", dst)
+	glog.Infof("Updating %s unit: %s ...", name, dst)
 
 	if _, err := p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s.new", path.Dir(dst), content, dst)); err != nil {
 		return err
 	}
-	if _, err := p.SSHCommand(fmt.Sprintf("sudo diff -u %s %s.new || { sudo mv %s.new %s; sudo systemctl -f daemon-reload && sudo sudo systemctl -f restart docker; }", dst, dst, dst, dst)); err != nil {
+	if _, err := p.SSHCommand(fmt.Sprintf("sudo diff -u %s %s.new || { sudo mv %s.new %s; sudo systemctl -f daemon-reload && sudo sudo systemctl -f restart %s; }", dst, dst, dst, dst, name)); err != nil {
 		return err
 	}
 	return nil
