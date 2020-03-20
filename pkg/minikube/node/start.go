@@ -124,9 +124,6 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 			exit.WithError("setting up certs", err)
 		}
 
-		if err = bs.SetupNode(cc); err != nil {
-			exit.WithError("Failed to setup node", err)
-		}
 	}
 
 	configureMounts()

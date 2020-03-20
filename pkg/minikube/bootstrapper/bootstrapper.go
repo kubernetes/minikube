@@ -42,7 +42,6 @@ type Bootstrapper interface {
 	WaitForNode(config.ClusterConfig, config.Node, time.Duration) error
 	JoinCluster(config.ClusterConfig, config.Node, string) error
 	UpdateNode(config.ClusterConfig, config.Node, cruntime.Manager) error
-	SetupNode(config.ClusterConfig) error
 	GenerateToken(config.ClusterConfig) (string, error)
 	// LogCommands returns a map of log type to a command which will display that log.
 	LogCommands(LogOptions) map[string]string
