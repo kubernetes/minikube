@@ -17,8 +17,6 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
@@ -48,7 +46,7 @@ var nodeAddCmd = &cobra.Command{
 			out.ErrT(out.FailureType, "none driver does not support multi-node clusters")
 		}
 
-		name := fmt.Sprintf("m%02d", len(cc.Nodes)+1)
+		name := node.Name(len(cc.Nodes) + 1)
 
 		out.T(out.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": profile})
 
