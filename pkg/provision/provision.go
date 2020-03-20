@@ -31,10 +31,10 @@ import (
 	"github.com/docker/machine/libmachine/cert"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
-	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/swarm"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -66,11 +66,24 @@ func init() {
 
 }
 
+// NewSystemdProvisioner is our fork of the same name in the upstream provision library, without the packages
+func NewSystemdProvisioner(osReleaseID string, d drivers.Driver) provision.SystemdProvisioner {
+	return provision.SystemdProvisioner{
+		GenericProvisioner: provision.GenericProvisioner{
+			SSHCommander:      provision.GenericSSHCommander{Driver: d},
+			DockerOptionsDir:  "/etc/docker",
+			DaemonOptionsFile: "/etc/systemd/system/docker.service.d/10-machine.conf",
+			OsReleaseID:       osReleaseID,
+			Driver:            d,
+		},
+	}
+}
+
 func configureAuth(p miniProvisioner) error {
-	log.Infof("configureAuth start")
+	glog.Infof("configureAuth start")
 	start := time.Now()
 	defer func() {
-		log.Infof("configureAuth took %s", time.Since(start))
+		glog.Infof("configureAuth took %s", time.Since(start))
 	}()
 
 	driver := p.GetDriver()
@@ -90,7 +103,7 @@ func configureAuth(p miniProvisioner) error {
 
 	// The Host IP is always added to the certificate's SANs list
 	hosts := append(authOptions.ServerCertSANs, ip, "localhost", "127.0.0.1")
-	log.Debugf("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
+	glog.Infof("generating server cert: %s ca-key=%s private-key=%s org=%s san=%s",
 		authOptions.ServerCertPath,
 		authOptions.CaCertPath,
 		authOptions.CaPrivateKeyPath,
@@ -116,11 +129,11 @@ func configureAuth(p miniProvisioner) error {
 }
 
 func copyHostCerts(authOptions auth.Options) error {
-	log.Infof("copyHostCerts")
+	glog.Infof("copyHostCerts")
 
 	err := os.MkdirAll(authOptions.StorePath, 0700)
 	if err != nil {
-		log.Errorf("mkdir failed: %v", err)
+		glog.Errorf("mkdir failed: %v", err)
 	}
 
 	hostCerts := map[string]string{
@@ -144,7 +157,7 @@ func copyHostCerts(authOptions auth.Options) error {
 }
 
 func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
-	log.Infof("copyRemoteCerts")
+	glog.Infof("copyRemoteCerts")
 
 	remoteCerts := map[string]string{
 		authOptions.CaCertPath:     authOptions.CaCertRemotePath,
@@ -275,4 +288,17 @@ func concatStrings(src []string, prefix string, postfix string) []string {
 		buf.Reset()
 	}
 	return ret
+}
+
+// updateUnit efficiently updates a systemd unit file
+func updateUnit(p provision.SSHCommander, name string, content string, dst string) error {
+	glog.Infof("Updating %s unit: %s ...", name, dst)
+
+	if _, err := p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s.new", path.Dir(dst), content, dst)); err != nil {
+		return err
+	}
+	if _, err := p.SSHCommand(fmt.Sprintf("sudo diff -u %s %s.new || { sudo mv %s.new %s; sudo systemctl -f daemon-reload && sudo sudo systemctl -f restart %s; }", dst, dst, dst, dst, name)); err != nil {
+		return err
+	}
+	return nil
 }
