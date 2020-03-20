@@ -397,7 +397,8 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 // SetupCerts sets up certificates within the cluster.
 func (k *Bootstrapper) SetupCerts(k8s config.KubernetesConfig, n config.Node) error {
-	return bootstrapper.SetupCerts(k.c, k8s, n)
+	_, err := bootstrapper.SetupCerts(k.c, k8s, n)
+	return err
 }
 
 // UpdateCluster updates the cluster

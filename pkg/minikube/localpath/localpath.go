@@ -54,6 +54,11 @@ func MakeMiniPath(fileName ...string) string {
 	return filepath.Join(args...)
 }
 
+// Profile returns the path to a profile
+func Profile(name string) string {
+	return filepath.Join(MiniPath(), "profiles", name)
+}
+
 // MachinePath returns the Minikube machine path of a machine
 func MachinePath(machine string, miniHome ...string) string {
 	miniPath := MiniPath()
