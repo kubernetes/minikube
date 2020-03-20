@@ -62,7 +62,7 @@ var (
 )
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, error) {
+func StartHost(api libmachine.API, cfg config.ClusterConfig, existing config.ClusterConfig, n config.Node) (*host.Host, error) {
 	// Prevent machine-driver boot races, as well as our own certificate race
 	releaser, err := acquireMachinesLock(cfg.Name)
 	if err != nil {
@@ -83,7 +83,7 @@ func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*ho
 		return createHost(api, cfg, n)
 	}
 	glog.Infoln("Skipping create...Using existing machine configuration")
-	return fixHost(api, cfg, n)
+	return fixHost(api, cfg, existing, n)
 }
 
 func engineOptions(cfg config.ClusterConfig) *engine.Options {

@@ -39,12 +39,12 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(cfg *config.ClusterConfig, existing *config.ClusterConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
 		exit.WithError("Failed to get machine client", err)
 	}
-	host, preExists = startHost(m, *cfg, *node)
+	host, preExists = startHost(m, *cfg, *existing, *node)
 	runner, err = machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
@@ -68,13 +68,13 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.Host, bool) {
+func startHost(api libmachine.API, mc config.ClusterConfig, existing config.ClusterConfig, n config.Node) (*host.Host, bool) {
 	exists, err := api.Exists(mc.Name)
 	if err != nil {
 		exit.WithError("Failed to check if machine exists", err)
 	}
 
-	host, err := machine.StartHost(api, mc, n)
+	host, err := machine.StartHost(api, mc, existing, n)
 	if err != nil {
 		exit.WithError("Unable to start VM. Please investigate and run 'minikube delete' if possible", err)
 	}

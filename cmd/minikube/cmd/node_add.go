@@ -53,7 +53,7 @@ var nodeAddCmd = &cobra.Command{
 			exit.WithError("Error adding node to cluster", err)
 		}
 
-		_, err = node.Start(*cc, *n, false, nil)
+		_, err = node.Start(*cc, config.ClusterConfig{}, *n, false, nil)
 		if err != nil {
 			exit.WithError("Error starting node", err)
 		}
