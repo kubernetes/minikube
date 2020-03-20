@@ -313,7 +313,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	k8sVersion := getKubernetesVersion(existing)
-	mc, n, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
+	cc, n, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
@@ -329,7 +329,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		if err != nil {
 			exit.WithError("Failed to cache ISO", err)
 		}
-		mc.MinikubeISO = url
+		cc.MinikubeISO = url
 	}
 
 	if viper.GetBool(nativeSSH) {
@@ -338,12 +338,12 @@ func runStart(cmd *cobra.Command, args []string) {
 		ssh.SetDefaultClient(ssh.External)
 	}
 
-	kubeconfig, err := startNode(existing, mc, n)
+	kubeconfig, err := startNode(existing, cc, n)
 	if err != nil {
 		exit.WithError("Starting node", err)
 	}
 
-	if err := showKubectlInfo(kubeconfig, k8sVersion, mc.Name); err != nil {
+	if err := showKubectlInfo(kubeconfig, k8sVersion, cc.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
 	}
 }
@@ -383,7 +383,7 @@ func displayEnviron(env []string) {
 	}
 }
 
-func startNode(existing *config.ClusterConfig, mc config.ClusterConfig, n config.Node) (*kubeconfig.Settings, error) {
+func startNode(existing *config.ClusterConfig, cc config.ClusterConfig, n config.Node) (*kubeconfig.Settings, error) {
 	var existingAddons map[string]bool
 	if viper.GetBool(installAddons) {
 		existingAddons = map[string]bool{}
@@ -391,7 +391,11 @@ func startNode(existing *config.ClusterConfig, mc config.ClusterConfig, n config
 			existingAddons = existing.Addons
 		}
 	}
-	return node.Start(mc, n, true, existingAddons)
+
+	if existing == nil {
+		existing = &config.ClusterConfig{}
+	}
+	return node.Start(cc, *existing, n, true, existingAddons)
 }
 
 func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName string) error {
@@ -814,7 +818,7 @@ func validateRegistryMirror() {
 	}
 }
 
-// generateCfgFromFlags generates config.Config based on flags and supplied arguments
+// generateCfgFromFlags generates config.ClusterConfig based on flags and supplied arguments
 func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
 	r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
 	if err != nil {

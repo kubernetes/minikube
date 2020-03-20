@@ -33,7 +33,7 @@ import (
 )
 
 // Start spins up a guest and starts the kubernetes node.
-func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
+func Start(mc config.ClusterConfig, existing config.ClusterConfig, n config.Node, primary bool, existingAddons map[string]bool) (*kubeconfig.Settings, error) {
 	k8sVersion := mc.KubernetesConfig.KubernetesVersion
 	driverName := mc.Driver
 
@@ -59,7 +59,7 @@ func Start(mc config.ClusterConfig, n config.Node, primary bool, existingAddons 
 	handleDownloadOnly(&cacheGroup, &kicGroup, k8sVersion)
 	waitDownloadKicArtifacts(&kicGroup)
 
-	mRunner, preExists, machineAPI, host := startMachine(&mc, &n)
+	mRunner, preExists, machineAPI, host := startMachine(&mc, &existing, &n)
 	defer machineAPI.Close()
 
 	// wait for preloaded tarball to finish downloading before configuring runtimes

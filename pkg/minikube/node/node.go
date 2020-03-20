@@ -65,7 +65,7 @@ func Add(cc *config.ClusterConfig, name string, controlPlane bool, worker bool, 
 		return nil, err
 	}
 
-	_, err = Start(*cc, n, false, nil)
+	_, err = Start(*cc, *cc, n, false, nil)
 	return &n, err
 }
 

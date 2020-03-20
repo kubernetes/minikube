@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -28,7 +29,6 @@ import (
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -36,7 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/util/retry"
+	"k8s.io/minikube/pkg/provision"
 )
 
 // hostRunner is a minimal host.Host based interface for running commands
@@ -56,7 +56,7 @@ var (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, error) {
+func fixHost(api libmachine.API, cc config.ClusterConfig, existing config.ClusterConfig, n config.Node) (*host.Host, error) {
 	out.T(out.Waiting, "Reconfiguring existing host ...")
 
 	start := time.Now()
@@ -78,15 +78,16 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 		return h, err
 	}
 
+	old := engineOptions(existing)
 	e := engineOptions(cc)
-	if len(e.Env) > 0 {
+	if !reflect.DeepEqual(old, e) {
+		glog.Infof("docker config changed, updating provisioner: %+v", e)
 		h.HostOptions.EngineOptions.Env = e.Env
-		glog.Infof("Detecting provisioner ...")
-		provisioner, err := provision.DetectProvisioner(h.Driver)
-		if err != nil {
-			return h, errors.Wrap(err, "detecting provisioner")
+		p := provision.NewBuildrootProvisioner(h.Driver)
+		if driver.IsKIC(h.Driver.DriverName()) {
+			p = provision.NewUbuntuProvisioner(h.Driver)
 		}
-		if err := provisioner.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
+		if err := p.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions); err != nil {
 			return h, errors.Wrap(err, "provision")
 		}
 	}
@@ -104,10 +105,6 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 		return h, nil
 	}
 
-	glog.Infof("Configuring auth for driver %s ...", h.Driver.DriverName())
-	if err := h.ConfigureAuth(); err != nil {
-		return h, &retry.RetriableError{Err: errors.Wrap(err, "Error configuring auth on host")}
-	}
 	return h, ensureSyncedGuestClock(h, cc.Driver)
 }
 

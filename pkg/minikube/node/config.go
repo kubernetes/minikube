@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/blang/semver"
 	"github.com/docker/machine/libmachine"
@@ -59,6 +60,12 @@ var (
 
 // configureRuntimes does what needs to happen to get a runtime going.
 func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig, kv semver.Version) cruntime.Manager {
+	start := time.Now()
+	glog.Infof("configureRuntimes start")
+	defer func() {
+		glog.Infof("configureRuntimes took %s", time.Since(start))
+	}()
+
 	co := cruntime.Config{
 		Type:   viper.GetString(containerRuntime),
 		Runner: runner, ImageRepository: k8s.ImageRepository,
@@ -90,6 +97,7 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 		}
 	}
 
+	glog.Infof("enabling %s ...", cr.Name())
 	err = cr.Enable(disableOthers)
 	if err != nil {
 		exit.WithError("Failed to enable container runtime", err)
