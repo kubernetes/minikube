@@ -356,10 +356,10 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 	if numNodes > 1 {
 		if driver.BareMetal(driverName) {
-			out.T(out.Meh, "The none driver is not compatible with multi-node clusters.")
+			exit.WithCodeT(exit.Config, "The none driver is not compatible with multi-node clusters.")
 		} else {
 			for i := 1; i < numNodes; i++ {
-				nodeName := fmt.Sprintf("m%02d", i+1)
+				nodeName := node.Name(i + 1)
 				n := config.Node{
 					Name:              nodeName,
 					Worker:            true,

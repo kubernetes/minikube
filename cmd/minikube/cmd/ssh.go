@@ -60,8 +60,7 @@ var sshCmd = &cobra.Command{
 		} else {
 			n, _, err = node.Retrieve(cc, nodeName)
 			if err != nil {
-				out.FailureT("Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
-				exit.WithError("", err)
+				exit.WithCodeT(exit.Unavailable, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
 			}
 		}
 		host, err := machine.LoadHost(api, driver.MachineName(*cc, *n))

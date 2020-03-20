@@ -18,6 +18,7 @@ package node
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -90,4 +91,9 @@ func Save(cfg *config.ClusterConfig, node *config.Node) error {
 		cfg.Nodes = append(cfg.Nodes, *node)
 	}
 	return config.SaveProfile(viper.GetString(config.ProfileName), cfg)
+}
+
+// Name returns the appropriate name for the node given the current number of nodes
+func Name(index int) string {
+	return fmt.Sprintf("m%02d", index)
 }

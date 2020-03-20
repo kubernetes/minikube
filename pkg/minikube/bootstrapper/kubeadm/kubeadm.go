@@ -419,13 +419,8 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 		return "", errors.Wrap(err, "generating bootstrap token")
 	}
 
-	/*cp, err := config.PrimaryControlPlane(&cc)
-	if err != nil {
-		return "", errors.Wrap(err, "getting primary control plane")
-	}*/
 	joinCmd := r.Stdout.String()
 	joinCmd = strings.Replace(joinCmd, "kubeadm", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), 1)
-	//joinCmd = strings.ReplaceAll(joinCmd, "localhost", cp.IP)
 	joinCmd = fmt.Sprintf("%s --ignore-preflight-errors=all", strings.TrimSpace(joinCmd))
 
 	return joinCmd, nil
