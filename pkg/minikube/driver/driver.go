@@ -19,12 +19,15 @@ package driver
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 )
 
@@ -214,6 +217,9 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 // Status returns the status of a driver
 func Status(name string) registry.DriverState {
 	d := registry.Driver(name)
+	if d.Empty() {
+		exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": name, "os": runtime.GOOS})
+	}
 	return registry.DriverState{
 		Name:     d.Name,
 		Priority: d.Priority,
