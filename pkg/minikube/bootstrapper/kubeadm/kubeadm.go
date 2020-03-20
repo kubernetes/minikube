@@ -411,7 +411,6 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		glog.Warningf("unable to adjust resource limits: %v", err)
 	}
 
-	glog.Infof("hope that was not too painful")
 	return nil
 }
 
