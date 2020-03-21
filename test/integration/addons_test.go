@@ -40,7 +40,7 @@ func TestAddons(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1", "--addons=ingress", "--addons=registry", "--addons=metrics-server"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
@@ -55,6 +55,7 @@ func TestAddons(t *testing.T) {
 			{"Registry", validateRegistryAddon},
 			{"Ingress", validateIngressAddon},
 			{"MetricsServer", validateMetricsServerAddon},
+			{"HelmTiller", validateHelmTillerAddon},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -245,6 +246,48 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 	}
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "metrics-server", "--alsologtostderr", "-v=1"))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
+	}
+}
+
+func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) {
+	client, err := kapi.Client(profile)
+	if err != nil {
+		t.Fatalf("kubernetes client: %v", client)
+	}
+
+	start := time.Now()
+	if err := kapi.WaitForDeploymentToStabilize(client, "kube-system", "tiller-deploy", Minutes(6)); err != nil {
+		t.Errorf("waiting for tiller-deploy deployment to stabilize: %v", err)
+	}
+	t.Logf("tiller-deploy stabilized in %s", time.Since(start))
+
+	if _, err := PodWait(ctx, t, profile, "kube-system", "app=helm", Minutes(6)); err != nil {
+		t.Fatalf("wait: %v", err)
+	}
+
+	want := "Server: &version.Version"
+	// Test from inside the cluster (`helm version` use pod.list permission. we use tiller serviceaccount in kube-system to list pod)
+	checkHelmTiller := func() error {
+		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--serviceaccount=tiller", "--", "version"))
+		if err != nil {
+			return err
+		}
+		if rr.Stderr.String() != "" {
+			t.Logf("%v: unexpected stderr: %s", rr.Args, rr.Stderr)
+		}
+		if !strings.Contains(rr.Stdout.String(), want) {
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Args, rr.Stdout, want)
+		}
+		return nil
+	}
+
+	if err := retry.Expo(checkHelmTiller, 500*time.Millisecond, Minutes(2)); err != nil {
+		t.Errorf(err.Error())
+	}
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "helm-tiller", "--alsologtostderr", "-v=1"))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
 	}

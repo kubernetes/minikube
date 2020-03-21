@@ -54,6 +54,26 @@ func MakeMiniPath(fileName ...string) string {
 	return filepath.Join(args...)
 }
 
+// Profile returns the path to a profile
+func Profile(name string) string {
+	return filepath.Join(MiniPath(), "profiles", name)
+}
+
+// ClientCert returns client certificate path, used by kubeconfig
+func ClientCert(name string) string {
+	return filepath.Join(Profile(name), "client.crt")
+}
+
+// ClientKey returns client certificate path, used by kubeconfig
+func ClientKey(name string) string {
+	return filepath.Join(Profile(name), "client.key")
+}
+
+// CACert returns the minikube CA certificate shared between profiles
+func CACert() string {
+	return filepath.Join(MiniPath(), "ca.crt")
+}
+
 // MachinePath returns the Minikube machine path of a machine
 func MachinePath(machine string, miniHome ...string) string {
 	miniPath := MiniPath()
