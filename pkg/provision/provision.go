@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
@@ -208,7 +209,8 @@ func setRemoteAuthOptions(p provision.Provisioner) auth.Options {
 }
 
 func setContainerRuntimeOptions(name string, p miniProvisioner) error {
-	c, err := config.Load(name)
+	cluster, _ := driver.ClusterNameFromMachine(name)
+	c, err := config.Load(cluster)
 	if err != nil {
 		return errors.Wrap(err, "getting cluster config")
 	}
