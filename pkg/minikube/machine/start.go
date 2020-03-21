@@ -32,6 +32,7 @@ import (
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/ssh"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -43,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/lock"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 var (
@@ -191,6 +193,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	}
 
 	glog.Infof("creating required directories: %v", requiredDirectories)
+
 	r, err := commandRunner(h)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
@@ -229,11 +232,19 @@ func commandRunner(h *host.Host) (command.Runner, error) {
 	}
 
 	glog.Infof("Creating SSH client and returning SSHRunner for %q driver", d)
-	client, err := sshutil.NewSSHClient(h.Driver)
-	if err != nil {
-		return nil, errors.Wrap(err, "ssh client")
+
+	// Retry in order to survive an ssh restart, which sometimes happens due to provisioning
+	var sc *ssh.Client
+	getSSH := func() (err error) {
+		sc, err = sshutil.NewSSHClient(h.Driver)
+		return err
 	}
-	return command.NewSSHRunner(client), nil
+
+	if err := retry.Expo(getSSH, 250*time.Millisecond, 2*time.Second); err != nil {
+		return nil, err
+	}
+
+	return command.NewSSHRunner(sc), nil
 }
 
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
