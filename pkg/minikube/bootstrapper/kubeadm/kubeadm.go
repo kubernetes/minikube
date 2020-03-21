@@ -110,7 +110,7 @@ func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, port int) (string, error) {
 }
 
 // LogCommands returns a map of log type to a command which will display that log.
-func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string {
+func (k *Bootstrapper) LogCommands(cfg config.ClusterConfig, o bootstrapper.LogOptions) map[string]string {
 	var kubelet strings.Builder
 	kubelet.WriteString("sudo journalctl -u kubelet")
 	if o.Lines > 0 {
@@ -128,9 +128,15 @@ func (k *Bootstrapper) LogCommands(o bootstrapper.LogOptions) map[string]string 
 	if o.Lines > 0 {
 		dmesg.WriteString(fmt.Sprintf(" | tail -n %d", o.Lines))
 	}
+
+	describeNodes := fmt.Sprintf("sudo %s describe node -A --kubeconfig=%s",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+		path.Join(vmpath.GuestPersistentDir, "kubeconfig"))
+
 	return map[string]string{
-		"kubelet": kubelet.String(),
-		"dmesg":   dmesg.String(),
+		"kubelet":        kubelet.String(),
+		"dmesg":          dmesg.String(),
+		"describe nodes": describeNodes,
 	}
 }
 
@@ -147,6 +153,30 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 	c := exec.Command("sudo", "ln", "-s", legacyEtcd, bsutil.EtcdDataDir())
 	if rr, err := k.c.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "create symlink failed: %s", rr.Command())
+	}
+	return nil
+}
+
+// clearStaleConfigs clears configurations which may have stale IP addresses
+func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) error {
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return err
+	}
+
+	paths := []string{
+		"/etc/kubernetes/admin.conf",
+		"/etc/kubernetes/kubelet.conf",
+		"/etc/kubernetes/controller-manager.conf",
+		"/etc/kubernetes/scheduler.conf",
+	}
+
+	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(cp.IP, strconv.Itoa(cp.Port)))
+	for _, path := range paths {
+		_, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("grep %s %s || sudo rm -f %s", endpoint, path, path)))
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -202,10 +232,8 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	}
 
-	// Remove the previous kubeadm kubeconfig as the IP may have changed
-	_, err = k.c.RunCmd(exec.Command("sudo", "rm", "-f", "/etc/kubernetes/admin.conf"))
-	if err != nil {
-		return errors.Wrap(err, "deleting admin.conf")
+	if err := k.clearStaleConfigs(cfg); err != nil {
+		return errors.Wrap(err, "clearing stale configs")
 	}
 
 	conf := bsutil.KubeadmYamlPath
@@ -287,7 +315,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return err
 	}
 
-	if err := kverify.WaitForAPIServerProcess(cr, k, k.c, start, timeout); err != nil {
+	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
 		return err
 	}
 
@@ -296,7 +324,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return err
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, k.c, start, ip, port, timeout); err != nil {
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, start, ip, port, timeout); err != nil {
 		return err
 	}
 
@@ -305,7 +333,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := kverify.WaitForSystemPods(cr, k, k.c, c, start, timeout); err != nil {
+	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, c, start, timeout); err != nil {
 		return errors.Wrap(err, "waiting for system pods")
 	}
 	return nil
@@ -313,8 +341,8 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 
 // needsReset returns whether or not the cluster needs to be reconfigured
 func (k *Bootstrapper) needsReset(conf string, ip string, port int, client *kubernetes.Clientset) bool {
-	if _, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
-		glog.Infof("needs reset: configs differ")
+	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
+		glog.Infof("needs reset: configs differ:\n%s", rr.Output())
 		return true
 	}
 
@@ -378,10 +406,8 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	// Remove the previous kubeadm kubeconfig as the IP may have changed
-	_, err = k.c.RunCmd(exec.Command("sudo", "rm", "-f", "/etc/kubernetes/admin.conf"))
-	if err != nil {
-		return errors.Wrap(err, "deleting admin.conf")
+	if err := k.clearStaleConfigs(cfg); err != nil {
+		return errors.Wrap(err, "clearing stale configs")
 	}
 
 	if _, err := k.c.RunCmd(exec.Command("sudo", "mv", conf+".new", conf)); err != nil {
@@ -411,11 +437,11 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 	}
 
 	// We must ensure that the apiserver is healthy before proceeding
-	if err := kverify.WaitForAPIServerProcess(cr, k, k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
-	if err := kverify.WaitForSystemPods(cr, k, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
 	}
 
