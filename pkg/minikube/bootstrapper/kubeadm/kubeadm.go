@@ -165,13 +165,6 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		glog.Infof("StartCluster complete in %s", time.Since(start))
 	}()
 
-	// Remove admin.conf from any previous run
-	c := exec.Command("/bin/bash", "-c", "sudo rm -f /etc/kubernetes/admin.conf")
-	_, err = k.c.RunCmd(c)
-	if err != nil {
-		return errors.Wrap(err, "deleting admin.conf")
-	}
-
 	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
@@ -209,7 +202,13 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	}
 
-	c = exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
+	// Remove the previous kubeadm kubeconfig as the IP may have changed
+	_, err = k.c.RunCmd(exec.Command("sudo", "rm", "-f", "/etc/kubernetes/admin.conf"))
+	if err != nil {
+		return errors.Wrap(err, "deleting admin.conf")
+	}
+
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("%s init --config %s %s --ignore-preflight-errors=%s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), bsutil.KubeadmYamlPath, extraFlags, strings.Join(ignore, ",")))
 	rr, err := k.c.RunCmd(c)
 	if err != nil {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
@@ -326,6 +325,12 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 
 	if err := k.createCompatSymlinks(); err != nil {
 		glog.Errorf("failed to create compat symlinks: %v", err)
+	}
+
+	// Remove the previous kubeadm kubeconfig as the IP may have changed
+	_, err = k.c.RunCmd(exec.Command("sudo", "rm", "-f", "/etc/kubernetes/admin.conf"))
+	if err != nil {
+		return errors.Wrap(err, "deleting admin.conf")
 	}
 
 	baseCmd := fmt.Sprintf("%s %s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), phase)
