@@ -3,9 +3,10 @@
 
 ### Enable istio on minikube
 Make sure to start minikube with at least 8192 MB of memory and 4 CPUs.
+See official [Platform Setup](https://istio.io/docs/setup/platform-setup/) documentation.
 
 ```shell script
-minikube start --memory=8000mb --cpus=4 
+minikube start --memory=8192mb --cpus=4
 ```
 
 To enable this addon, simply run:

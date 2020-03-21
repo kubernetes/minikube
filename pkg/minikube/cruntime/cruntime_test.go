@@ -408,6 +408,10 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // nolint result 0 (string) is always ""
 	action := args[0]
 	svcs := args[1:]
+	// force
+	if svcs[0] == "-f" {
+		svcs = svcs[1:]
+	}
 	out := ""
 
 	for i, arg := range args {
@@ -503,9 +507,9 @@ func TestDisable(t *testing.T) {
 		runtime string
 		want    []string
 	}{
-		{"docker", []string{"sudo", "systemctl", "stop", "docker", "docker.socket"}},
-		{"crio", []string{"sudo", "systemctl", "stop", "crio"}},
-		{"containerd", []string{"sudo", "systemctl", "stop", "containerd"}},
+		{"docker", []string{"sudo", "systemctl", "stop", "-f", "docker", "docker.socket"}},
+		{"crio", []string{"sudo", "systemctl", "stop", "-f", "crio"}},
+		{"containerd", []string{"sudo", "systemctl", "stop", "-f", "containerd"}},
 	}
 	for _, tc := range tests {
 		t.Run(tc.runtime, func(t *testing.T) {
