@@ -1,5 +1,41 @@
 # Release Notes
 
+## Version 1.9.0-beta.2 - 2020-03-21
+
+New features & improvements
+
+* Add experimental multi-node support 🎉 [#6787](https://github.com/kubernetes/minikube/pull/6787)
+* Skip kubeadm if cluster is running & properly configured [#7124](https://github.com/kubernetes/minikube/pull/7124)
+* Make certificates per-profile and consistent until IP or names change [#7125](https://github.com/kubernetes/minikube/pull/7125)
+* bumpup helm-tiller v2.16.1 → v2.16.3 [#7130](https://github.com/kubernetes/minikube/pull/7130)
+* Update Nvidia GPU plugin [#7132](https://github.com/kubernetes/minikube/pull/7132)
+* bumpup istio & istio-provisoner addon 1.4.0 → 1.5.0 [#7120](https://github.com/kubernetes/minikube/pull/7120)
+* New addon: registry-aliases [#6657](https://github.com/kubernetes/minikube/pull/6657)
+* Upgrade buildroot minor version [#7101](https://github.com/kubernetes/minikube/pull/7101)
+
+Bugfixes
+
+* Prevent crash if namespace or service doesn't exist [#5844](https://github.com/kubernetes/minikube/pull/5844)
+* Only run deleteHosts if running a VM [#7110](https://github.com/kubernetes/minikube/pull/7110)
+* provisioner: only reload docker if necessary, don't install curl [#7115](https://github.com/kubernetes/minikube/pull/7115)
+* Improve error when docker-env is used with non-docker runtime [#7112](https://github.com/kubernetes/minikube/pull/7112)
+* Add warning if both vm-driver and driver are specified [#7109](https://github.com/kubernetes/minikube/pull/7109)
+
+Thank you to our contributors:
+
+- Anders F Björklund
+- Iso Kenta
+- Kamesh Sampath
+- Kenta Iso
+- Priya Wadhwa
+- Sharif Elgamal
+- Tacio Costa
+- Thomas Stromberg
+- Thomas Strömberg
+- Zhongcheng Lao
+- rajula96reddy
+- sayboras
+
 ## Version 1.9.0-beta.1 - 2020-03-18
 
 New features
