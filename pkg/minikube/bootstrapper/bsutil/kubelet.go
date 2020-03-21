@@ -60,8 +60,9 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	if _, ok := extraOpts["node-ip"]; !ok {
 		extraOpts["node-ip"] = cp.IP
 	}
-	if nc.Name != "" {
-		extraOpts["hostname-override"] = driver.MachineName(mc, nc)
+	nodeName := driver.KubeNodeName(mc, nc)
+	if nodeName != "" {
+		extraOpts["hostname-override"] = nodeName
 	}
 
 	pauseImage := images.Pause(version, k8s.ImageRepository)
