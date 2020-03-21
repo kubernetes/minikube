@@ -102,8 +102,6 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		NoTaintMaster:    false, // That does not work with k8s 1.12+
 		DNSDomain:        k8s.DNSDomain,
 		NodeIP:           n.IP,
-		// NOTE: If set to an specific VM IP, things may break if the IP changes on host restart
-		// For multi-node, we may need to figure out an alternate strategy, like DNS or hosts files
 		ControlPlaneAddress: cp.IP,
 	}
 
