@@ -112,7 +112,7 @@ func IsMock(name string) bool {
 
 // IsVM checks if the driver is a VM
 func IsVM(name string) bool {
-	if IsKIC(name) || IsMock(name) || BareMetal(name) {
+	if IsKIC(name) || BareMetal(name) {
 		return false
 	}
 	return true
@@ -234,5 +234,13 @@ func MachineName(cc config.ClusterConfig, n config.Node) string {
 	if len(cc.Nodes) == 1 || n.ControlPlane {
 		return cc.Name
 	}
-	return fmt.Sprintf("%s-%s", cc.Name, n.Name)
+	return fmt.Sprintf("%s---%s", cc.Name, n.Name)
+}
+
+// ClusterNameFromMachine retrieves the cluster name embedded in the machine name
+func ClusterNameFromMachine(name string) (string, string) {
+	if strings.Contains(name, "---") {
+		return strings.Split(name, "---")[0], strings.Split(name, "---")[1]
+	}
+	return name, name
 }

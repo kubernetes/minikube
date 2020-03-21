@@ -108,7 +108,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 		shouldErr bool
 		cfg       config.ClusterConfig
 	}{
-		{"dns", "docker", false, config.ClusterConfig{KubernetesConfig: config.KubernetesConfig{DNSDomain: "1.1.1.1"}}},
+		{"dns", "docker", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{DNSDomain: "1.1.1.1"}}},
 	}
 	for _, version := range versions {
 		for _, tc := range tests {
@@ -129,7 +129,7 @@ func TestGenerateKubeadmYAMLDNS(t *testing.T) {
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
 				cfg.KubernetesConfig.ClusterName = "kubernetes"
 
-				got, err := GenerateKubeadmYAML(cfg, runtime, cfg.Nodes[0])
+				got, err := GenerateKubeadmYAML(cfg, cfg.Nodes[0], runtime)
 				if err != nil && !tc.shouldErr {
 					t.Fatalf("got unexpected error generating config: %v", err)
 				}
@@ -174,15 +174,15 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 		shouldErr bool
 		cfg       config.ClusterConfig
 	}{
-		{"default", "docker", false, config.ClusterConfig{}},
-		{"containerd", "containerd", false, config.ClusterConfig{}},
-		{"crio", "crio", false, config.ClusterConfig{}},
-		{"options", "docker", false, config.ClusterConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOpts}}},
-		{"crio-options-gates", "crio", false, config.ClusterConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}}},
-		{"unknown-component", "docker", true, config.ClusterConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: config.ExtraOptionSlice{config.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}}},
-		{"containerd-api-port", "containerd", false, config.ClusterConfig{Nodes: []config.Node{{Port: 12345}}}},
-		{"containerd-pod-network-cidr", "containerd", false, config.ClusterConfig{KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOptsPodCidr}}},
-		{"image-repository", "docker", false, config.ClusterConfig{KubernetesConfig: config.KubernetesConfig{ImageRepository: "test/repo"}}},
+		{"default", "docker", false, config.ClusterConfig{Name: "mk"}},
+		{"containerd", "containerd", false, config.ClusterConfig{Name: "mk"}},
+		{"crio", "crio", false, config.ClusterConfig{Name: "mk"}},
+		{"options", "docker", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOpts}}},
+		{"crio-options-gates", "crio", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOpts, FeatureGates: "a=b"}}},
+		{"unknown-component", "docker", true, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ExtraOptions: config.ExtraOptionSlice{config.ExtraOption{Component: "not-a-real-component", Key: "killswitch", Value: "true"}}}}},
+		{"containerd-api-port", "containerd", false, config.ClusterConfig{Name: "mk", Nodes: []config.Node{{Port: 12345}}}},
+		{"containerd-pod-network-cidr", "containerd", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ExtraOptions: extraOptsPodCidr}}},
+		{"image-repository", "docker", false, config.ClusterConfig{Name: "mk", KubernetesConfig: config.KubernetesConfig{ImageRepository: "test/repo"}}},
 	}
 	for _, version := range versions {
 		for _, tc := range tests {
@@ -210,7 +210,7 @@ func TestGenerateKubeadmYAML(t *testing.T) {
 				cfg.KubernetesConfig.KubernetesVersion = version + ".0"
 				cfg.KubernetesConfig.ClusterName = "kubernetes"
 
-				got, err := GenerateKubeadmYAML(cfg, runtime, cfg.Nodes[0])
+				got, err := GenerateKubeadmYAML(cfg, cfg.Nodes[0], runtime)
 				if err != nil && !tc.shouldErr {
 					t.Fatalf("got unexpected error generating config: %v", err)
 				}
