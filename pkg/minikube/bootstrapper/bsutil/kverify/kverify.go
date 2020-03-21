@@ -36,6 +36,7 @@ import (
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/logs"
 )
@@ -44,7 +45,7 @@ import (
 const minLogCheckTime = 30 * time.Second
 
 // WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
-func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner, start time.Time, timeout time.Duration) error {
+func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, start time.Time, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver process to appear ...")
 	err := wait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
 		if time.Since(start) > timeout {
@@ -52,7 +53,7 @@ func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 		}
 
 		if time.Since(start) > minLogCheckTime {
-			announceProblems(r, bs, cr)
+			announceProblems(r, bs, cfg, cr)
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
 
@@ -79,7 +80,7 @@ func apiServerPID(cr command.Runner) (int, error) {
 }
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
-func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
+func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
 	glog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
 
@@ -88,7 +89,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr comm
 			return false, fmt.Errorf("cluster wait timed out during pod check")
 		}
 		if time.Since(start) > minLogCheckTime {
-			announceProblems(r, bs, cr)
+			announceProblems(r, bs, cfg, cr)
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
 
@@ -112,7 +113,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr comm
 }
 
 // WaitForHealthyAPIServer waits for api server status to be running
-func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner, start time.Time, ip string, port int, timeout time.Duration) error {
+func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, start time.Time, ip string, port int, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
 
@@ -122,7 +123,7 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 		}
 
 		if time.Since(start) > minLogCheckTime {
-			announceProblems(r, bs, cr)
+			announceProblems(r, bs, cfg, cr)
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
 
@@ -145,8 +146,8 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 }
 
 // announceProblems checks for problems, and slows polling down if any are found
-func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner) {
-	problems := logs.FindProblems(r, bs, cr)
+func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner) {
+	problems := logs.FindProblems(r, bs, cfg, cr)
 	if len(problems) > 0 {
 		logs.OutputProblems(problems, 5)
 		time.Sleep(kconst.APICallRetryInterval * 15)
