@@ -41,17 +41,18 @@ import (
 	"k8s.io/minikube/pkg/minikube/logs"
 )
 
+// minLogCheckTime how long to wait before spamming error logs to console
+const minLogCheckTime = 30 * time.Second
+
 // WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
 func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner, start time.Time, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver process to appear ...")
-	minLogTime := kconst.APICallRetryInterval * 10
-
 	err := wait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during process check")
 		}
 
-		if time.Since(start) > minLogTime {
+		if time.Since(start) > minLogCheckTime {
 			announceProblems(r, bs, cr)
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
@@ -144,13 +145,12 @@ func podStatusMsg(pod core.Pod) string {
 func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
 	glog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
-	minLogTime := kconst.APICallRetryInterval * 10
 
 	podList := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during pod check")
 		}
-		if time.Since(start) > minLogTime {
+		if time.Since(start) > minLogCheckTime {
 			announceProblems(r, bs, cr)
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
@@ -183,13 +183,12 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 	glog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
 
-	minLogTime := kconst.APICallRetryInterval * 10
 	healthz := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during healthz check")
 		}
 
-		if time.Since(start) > minLogTime {
+		if time.Since(start) > minLogCheckTime {
 			announceProblems(r, bs, cr)
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}

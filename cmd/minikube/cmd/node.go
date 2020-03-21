@@ -23,10 +23,9 @@ import (
 
 // nodeCmd represents the set of node subcommands
 var nodeCmd = &cobra.Command{
-	Use:    "node",
-	Short:  "Node operations",
-	Long:   "Operations on nodes",
-	Hidden: true, // This won't be fully functional and thus should not be documented yet
+	Use:   "node",
+	Short: "Node operations",
+	Long:  "Operations on nodes",
 	Run: func(cmd *cobra.Command, args []string) {
 		exit.UsageT("Usage: minikube node [add|start|stop|delete]")
 	},
