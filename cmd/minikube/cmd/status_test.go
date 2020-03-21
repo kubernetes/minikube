@@ -51,18 +51,18 @@ func TestStatusText(t *testing.T) {
 	}{
 		{
 			name:  "ok",
-			state: &Status{Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured},
-			want:  "host: Running\nkubelet: Running\napiserver: Running\nkubeconfig: Configured\n",
+			state: &Status{Name: "minikube", Host: "Running", Kubelet: "Running", APIServer: "Running", Kubeconfig: Configured},
+			want:  "minikube\nhost: Running\nkubelet: Running\napiserver: Running\nkubeconfig: Configured\n\n",
 		},
 		{
 			name:  "paused",
-			state: &Status{Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured},
-			want:  "host: Running\nkubelet: Stopped\napiserver: Paused\nkubeconfig: Configured\n",
+			state: &Status{Name: "minikube", Host: "Running", Kubelet: "Stopped", APIServer: "Paused", Kubeconfig: Configured},
+			want:  "minikube\nhost: Running\nkubelet: Stopped\napiserver: Paused\nkubeconfig: Configured\n\n",
 		},
 		{
 			name:  "down",
-			state: &Status{Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured},
-			want:  "host: Stopped\nkubelet: Stopped\napiserver: Stopped\nkubeconfig: Misconfigured\n\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n",
+			state: &Status{Name: "minikube", Host: "Stopped", Kubelet: "Stopped", APIServer: "Stopped", Kubeconfig: Misconfigured},
+			want:  "minikube\nhost: Stopped\nkubelet: Stopped\napiserver: Stopped\nkubeconfig: Misconfigured\n\n\nWARNING: Your kubectl is pointing to stale minikube-vm.\nTo fix the kubectl context, run `minikube update-context`\n",
 		},
 	}
 	for _, tc := range tests {

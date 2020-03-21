@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/drivers/virtualbox"
-
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
@@ -54,7 +53,7 @@ var (
 )
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
-func fixHost(api libmachine.API, cc config.ClusterConfig, existing config.ClusterConfig, n config.Node) (*host.Host, error) {
+func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, error) {
 	out.T(out.Waiting, "Reconfiguring existing host ...")
 
 	start := time.Now()
