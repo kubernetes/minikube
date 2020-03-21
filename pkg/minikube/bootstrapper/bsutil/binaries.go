@@ -50,6 +50,11 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 		return err
 	}
 
+	// stop kubelet to avoid "Text File Busy" error
+	if _, err := c.RunCmd(exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")); err != nil {
+		glog.Warningf("unable to stop kubelet: %s", err)
+	}
+
 	var g errgroup.Group
 	for _, name := range constants.KubernetesReleaseBinaries {
 		name := name
