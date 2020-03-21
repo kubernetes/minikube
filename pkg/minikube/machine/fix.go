@@ -25,7 +25,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/drivers/virtualbox"
-
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/provision"
