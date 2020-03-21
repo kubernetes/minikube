@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -104,6 +105,11 @@ var serviceCmd = &cobra.Command{
 
 		urls, err := service.WaitForService(api, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
+			var s *service.SVCNotFoundError
+			if errors.As(err, &s) {
+				exit.WithCodeT(exit.Data, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
+You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": svc, "namespace": namespace})
+			}
 			exit.WithError("Error opening service", err)
 		}
 
