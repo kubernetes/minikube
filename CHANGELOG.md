@@ -30,7 +30,6 @@ Thank you to our contributors:
 - Priya Wadhwa
 - Sharif Elgamal
 - Tacio Costa
-- Thomas Stromberg
 - Thomas Strömberg
 - Zhongcheng Lao
 - rajula96reddy
