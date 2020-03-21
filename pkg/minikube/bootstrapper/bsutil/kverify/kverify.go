@@ -30,6 +30,7 @@ import (
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -79,6 +80,68 @@ func apiServerPID(cr command.Runner) (int, error) {
 	return strconv.Atoi(s)
 }
 
+// ExpectedComponentsRunning returns whether or not all expected components are running
+func ExpectedComponentsRunning(cs *kubernetes.Clientset) error {
+	expected := []string{
+		"kube-dns", // coredns
+		"etcd",
+		"kube-apiserver",
+		"kube-controller-manager",
+		"kube-proxy",
+		"kube-scheduler",
+	}
+
+	found := map[string]bool{}
+
+	pods, err := cs.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, pod := range pods.Items {
+		glog.Infof("found pod: %s", podStatusMsg(pod))
+		if pod.Status.Phase != core.PodRunning {
+			continue
+		}
+		for k, v := range pod.ObjectMeta.Labels {
+			if k == "component" || k == "k8s-app" {
+				found[v] = true
+			}
+		}
+	}
+
+	missing := []string{}
+	for _, e := range expected {
+		if !found[e] {
+			missing = append(missing, e)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("missing components: %v", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+// podStatusMsg returns a human-readable pod status, for generating debug status
+func podStatusMsg(pod core.Pod) string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase))
+	for i, c := range pod.Status.Conditions {
+		if c.Reason != "" {
+			if i == 0 {
+				sb.WriteString(": ")
+			} else {
+				sb.WriteString(" / ")
+			}
+			sb.WriteString(fmt.Sprintf("%s:%s", c.Type, c.Reason))
+		}
+		if c.Message != "" {
+			sb.WriteString(fmt.Sprintf(" (%s)", c.Message))
+		}
+	}
+	return sb.String()
+}
+
 // WaitForSystemPods verifies essential pods for running kurnetes is running
 func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
 	glog.Info("waiting for kube-system pods to appear ...")
@@ -100,6 +163,10 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 			return false, nil
 		}
 		glog.Infof("%d kube-system pods found", len(pods.Items))
+		for _, pod := range pods.Items {
+			glog.Infof(podStatusMsg(pod))
+		}
+
 		if len(pods.Items) < 2 {
 			return false, nil
 		}
@@ -160,7 +227,7 @@ func APIServerStatus(cr command.Runner, ip net.IP, port int) (state.State, error
 
 	pid, err := apiServerPID(cr)
 	if err != nil {
-		glog.Warningf("unable to get apiserver pid: %v", err)
+		glog.Warningf("stopped: unable to get apiserver pid: %v", err)
 		return state.Stopped, nil
 	}
 
@@ -206,6 +273,7 @@ func apiServerHealthz(ip net.IP, port int) (state.State, error) {
 	resp, err := client.Get(url)
 	// Connection refused, usually.
 	if err != nil {
+		glog.Infof("stopped: %s: %v", url, err)
 		return state.Stopped, nil
 	}
 	if resp.StatusCode == http.StatusUnauthorized {
