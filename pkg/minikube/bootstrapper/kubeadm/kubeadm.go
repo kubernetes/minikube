@@ -165,13 +165,6 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		glog.Infof("StartCluster complete in %s", time.Since(start))
 	}()
 
-	// Remove admin.conf from any previous run
-	c := exec.Command("/bin/bash", "-c", "sudo rm -f /etc/kubernetes/admin.conf")
-	_, err = k.c.RunCmd(c)
-	if err != nil {
-		return errors.Wrap(err, "deleting admin.conf")
-	}
-
 	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
@@ -209,8 +202,14 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	}
 
+	// Remove the previous kubeadm kubeconfig as the IP may have changed
+	_, err = k.c.RunCmd(exec.Command("sudo", "rm", "-f", "/etc/kubernetes/admin.conf"))
+	if err != nil {
+		return errors.Wrap(err, "deleting admin.conf")
+	}
+
 	conf := bsutil.KubeadmYamlPath
-	c = exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mv %s.new %s && %s init --config %s %s --ignore-preflight-errors=%s", conf, conf, bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
+	c := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo mv %s.new %s && %s init --config %s %s --ignore-preflight-errors=%s", conf, conf, bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	rr, err := k.c.RunCmd(c)
 	if err != nil {
 		return errors.Wrapf(err, "init failed. output: %q", rr.Output())
@@ -377,6 +376,12 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 	if !k.needsReset(conf, ip, port, client) {
 		glog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
 		return nil
+	}
+
+	// Remove the previous kubeadm kubeconfig as the IP may have changed
+	_, err = k.c.RunCmd(exec.Command("sudo", "rm", "-f", "/etc/kubernetes/admin.conf"))
+	if err != nil {
+		return errors.Wrap(err, "deleting admin.conf")
 	}
 
 	if _, err := k.c.RunCmd(exec.Command("sudo", "mv", conf+".new", conf)); err != nil {
