@@ -66,8 +66,9 @@ func DeleteHost(api libmachine.API, machineName string) error {
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
 	status, err := Status(api, machineName)
 	if err != nil {
-		// Warn, but proceed
-		out.WarningT(`Unable to get host status for "{{.name}}": {{.error}}`, out.V{"name": machineName, "error": err})
+		// Assume that the host has already been deleted, log and return
+		glog.Infof("Unable to get host status for %s, assuming it has already been deleted: %v", machineName, err)
+		return nil
 	}
 
 	if status == state.None.String() {
