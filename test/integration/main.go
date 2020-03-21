@@ -68,11 +68,6 @@ func HyperVDriver() bool {
 	return strings.Contains(*startArgs, "--driver=hyperv")
 }
 
-// ExpectedDefaultDriver returns the expected default driver, if any
-func ExpectedDefaultDriver() string {
-	return *defaultDriver
-}
-
 // CanCleanup returns if cleanup is allowed
 func CanCleanup() bool {
 	return *cleanup
