@@ -129,14 +129,14 @@ func (k *Bootstrapper) LogCommands(cfg config.ClusterConfig, o bootstrapper.LogO
 		dmesg.WriteString(fmt.Sprintf(" | tail -n %d", o.Lines))
 	}
 
-	describe_nodes := fmt.Sprintf("sudo %s describe node -A --kubeconfig=%s",
+	describeNodes := fmt.Sprintf("sudo %s describe node -A --kubeconfig=%s",
 		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
 		path.Join(vmpath.GuestPersistentDir, "kubeconfig"))
 
 	return map[string]string{
 		"kubelet":        kubelet.String(),
 		"dmesg":          dmesg.String(),
-		"describe nodes": describe_nodes,
+		"describe nodes": describeNodes,
 	}
 }
 
@@ -271,7 +271,7 @@ func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Dur
 		return err
 	}
 
-	if err := kverify.WaitForAPIServerProcess(cr, k, k.c, start, timeout); err != nil {
+	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
 		return err
 	}
 
@@ -285,7 +285,7 @@ func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Dur
 		}
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, k.c, start, ip, port, timeout); err != nil {
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, start, ip, port, timeout); err != nil {
 		return err
 	}
 
@@ -294,7 +294,7 @@ func (k *Bootstrapper) WaitForCluster(cfg config.ClusterConfig, timeout time.Dur
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := kverify.WaitForSystemPods(cr, k, k.c, c, start, timeout); err != nil {
+	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, c, start, timeout); err != nil {
 		return errors.Wrap(err, "waiting for system pods")
 	}
 	return nil
@@ -347,7 +347,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 	}
 
 	// We must ensure that the apiserver is healthy before proceeding
-	if err := kverify.WaitForAPIServerProcess(cr, k, k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
@@ -366,7 +366,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 			return errors.Wrap(err, "getting k8s client")
 		}
 
-		if err := kverify.WaitForSystemPods(cr, k, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 			return errors.Wrap(err, "system pods")
 		}
 
