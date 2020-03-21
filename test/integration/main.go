@@ -27,7 +27,6 @@ import (
 
 // General configuration: used to set the VM Driver
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
-var defaultDriver = flag.String("expected-default-driver", "", "Expected default driver")
 
 // Flags for faster local integration testing
 var forceProfile = flag.String("profile", "", "force tests to run against a particular profile")

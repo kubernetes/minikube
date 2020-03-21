@@ -21,7 +21,6 @@ package integration
 import (
 	"context"
 	"crypto/md5"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -33,7 +32,6 @@ import (
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -73,7 +71,7 @@ func TestDownloadOnly(t *testing.T) {
 						t.Errorf("%s failed: %v", args, err)
 					}
 
-					if download.PreloadExists(v, "docker") {
+					if download.PreloadExists(v, r) {
 						// Just make sure the tarball path exists
 						if _, err := os.Stat(download.TarballPath(v)); err != nil {
 							t.Errorf("preloaded tarball path doesn't exist: %v", err)
@@ -122,34 +120,6 @@ func TestDownloadOnly(t *testing.T) {
 					}
 				})
 			}
-
-			// Check that the profile we've created has the expected driver
-			t.Run("ExpectedDefaultDriver", func(t *testing.T) {
-				if ExpectedDefaultDriver() == "" {
-					t.Skipf("--expected-default-driver is unset, skipping test")
-					return
-				}
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
-				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
-				}
-				var ps map[string][]config.Profile
-				err = json.Unmarshal(rr.Stdout.Bytes(), &ps)
-				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
-				}
-
-				got := ""
-				for _, p := range ps["valid"] {
-					if p.Name == profile {
-						got = p.Config.Driver
-					}
-				}
-
-				if got != ExpectedDefaultDriver() {
-					t.Errorf("got driver %q, expected %q\nstart output: %s", got, ExpectedDefaultDriver(), rrr.Output())
-				}
-			})
 
 			// This is a weird place to test profile deletion, but this test is serial, and we have a profile to delete!
 			t.Run("DeleteAll", func(t *testing.T) {
