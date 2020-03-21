@@ -17,8 +17,11 @@ limitations under the License.
 package machine
 
 import (
+	"time"
+
 	"github.com/docker/machine/libmachine/host"
 	libprovision "github.com/docker/machine/libmachine/provision"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/provision"
@@ -80,6 +83,12 @@ func LoadMachine(name string) (*Machine, error) {
 
 // provisionDockerMachine provides fast provisioning of a docker machine
 func provisionDockerMachine(h *host.Host) error {
+	glog.Infof("provisioning docker machine ...")
+	start := time.Now()
+	defer func() {
+		glog.Infof("provisioned docker machine in %s", time.Since(start))
+	}()
+
 	p, err := fastDetectProvisioner(h)
 	if err != nil {
 		return errors.Wrap(err, "fast detect")

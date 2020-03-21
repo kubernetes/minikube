@@ -20,7 +20,6 @@ import (
 	"fmt"
 	"math"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -77,15 +76,13 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, existing config.Cluste
 		return h, err
 	}
 
-	old := engineOptions(existing)
+	// Technically, we should only have to call provision if Docker has changed,
+	// but who can predict what shape the existing VM is in.
 	e := engineOptions(cc)
-	if !reflect.DeepEqual(old, e) {
-		glog.Infof("docker config changed, updating provisioner: %+v", e)
-		h.HostOptions.EngineOptions.Env = e.Env
-		err := provisionDockerMachine(h)
-		if err != nil {
-			return h, errors.Wrap(err, "provision")
-		}
+	h.HostOptions.EngineOptions.Env = e.Env
+	err = provisionDockerMachine(h)
+	if err != nil {
+		return h, errors.Wrap(err, "provision")
 	}
 
 	if driver.IsMock(h.DriverName) {
