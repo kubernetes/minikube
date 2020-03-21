@@ -250,9 +250,9 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 	kcs := &kubeconfig.Settings{
 		ClusterName:          clusterName,
 		ClusterServerAddress: addr,
-		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
-		ClientKey:            localpath.MakeMiniPath("client.key"),
-		CertificateAuthority: localpath.MakeMiniPath("ca.crt"),
+		ClientCertificate:    localpath.ClientCert(cc.Name),
+		ClientKey:            localpath.ClientKey(cc.Name),
+		CertificateAuthority: localpath.CACert(),
 		KeepContext:          viper.GetBool(keepContext),
 		EmbedCerts:           viper.GetBool(embedCerts),
 	}
