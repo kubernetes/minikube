@@ -139,7 +139,7 @@ type CACerts struct {
 func generateSharedCACerts() (CACerts, error) {
 	globalPath := localpath.MiniPath()
 	cc := CACerts{
-		caCert:    filepath.Join(globalPath, "ca.crt"),
+		caCert:    localpath.CACert(),
 		caKey:     filepath.Join(globalPath, "ca.key"),
 		proxyCert: filepath.Join(globalPath, "proxy-client-ca.crt"),
 		proxyKey:  filepath.Join(globalPath, "proxy-client-ca.key"),
@@ -214,8 +214,8 @@ func generateProfileCerts(k8s config.KubernetesConfig, n config.Node, ccs CACert
 		caKeyPath      string
 	}{
 		{ // Client cert
-			certPath:       filepath.Join(profilePath, "client.crt"),
-			keyPath:        filepath.Join(profilePath, "client.key"),
+			certPath:       localpath.ClientCert(k8s.ClusterName),
+			keyPath:        localpath.ClientKey(k8s.ClusterName),
 			subject:        "minikube-user",
 			ips:            []net.IP{},
 			alternateNames: []string{},
