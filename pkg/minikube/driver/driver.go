@@ -237,16 +237,6 @@ func MachineName(cc config.ClusterConfig, n config.Node) string {
 	return fmt.Sprintf("%s---%s", cc.Name, n.Name)
 }
 
-// KubeNodeName returns the node name registered in Kubernetes
-func KubeNodeName(cc config.ClusterConfig, n config.Node) string {
-	if cc.Driver == None {
-		// Always use hostname for "none" driver
-		hostname, _ := os.Hostname()
-		return hostname
-	}
-	return MachineName(cc, n)
-}
-
 // ClusterNameFromMachine retrieves the cluster name embedded in the machine name
 func ClusterNameFromMachine(name string) (string, string) {
 	if strings.Contains(name, "---") {
