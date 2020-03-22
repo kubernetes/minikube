@@ -4,22 +4,22 @@
 
 New features & improvements
 
-* Add experimental multi-node support 🎉 [#6787](https://github.com/kubernetes/minikube/pull/6787)
-* Skip kubeadm if cluster is running & properly configured [#7124](https://github.com/kubernetes/minikube/pull/7124)
-* Make certificates per-profile and consistent until IP or names change [#7125](https://github.com/kubernetes/minikube/pull/7125)
+* 🎉 Experimental multi-node support 🎊 [#6787](https://github.com/kubernetes/minikube/pull/6787)
+* Add kubectl desc nodes to minikube logs [#7105](https://github.com/kubernetes/minikube/pull/7105)
 * bumpup helm-tiller v2.16.1 → v2.16.3 [#7130](https://github.com/kubernetes/minikube/pull/7130)
 * Update Nvidia GPU plugin [#7132](https://github.com/kubernetes/minikube/pull/7132)
 * bumpup istio & istio-provisoner addon 1.4.0 → 1.5.0 [#7120](https://github.com/kubernetes/minikube/pull/7120)
 * New addon: registry-aliases [#6657](https://github.com/kubernetes/minikube/pull/6657)
 * Upgrade buildroot minor version [#7101](https://github.com/kubernetes/minikube/pull/7101)
+* Skip kubeadm if cluster is running & properly configured [#7124](https://github.com/kubernetes/minikube/pull/7124)
+* Make certificates per-profile and consistent until IP or names change [#7125](https://github.com/kubernetes/minikube/pull/7125)
 
 Bugfixes
 
-* Prevent crash if namespace or service doesn't exist [#5844](https://github.com/kubernetes/minikube/pull/5844)
-* Only run deleteHosts if running a VM [#7110](https://github.com/kubernetes/minikube/pull/7110)
-* provisioner: only reload docker if necessary, don't install curl [#7115](https://github.com/kubernetes/minikube/pull/7115)
-* Improve error when docker-env is used with non-docker runtime [#7112](https://github.com/kubernetes/minikube/pull/7112)
+* Prevent minikube from crashing if namespace or service doesn't exist [#5844](https://github.com/kubernetes/minikube/pull/5844)
 * Add warning if both vm-driver and driver are specified [#7109](https://github.com/kubernetes/minikube/pull/7109)
+* Improve error when docker-env is used with non-docker runtime [#7112](https://github.com/kubernetes/minikube/pull/7112)
+* provisioner: only reload docker if necessary, don't install curl [#7115](https://github.com/kubernetes/minikube/pull/7115)
 
 Thank you to our contributors:
 
@@ -27,6 +27,7 @@ Thank you to our contributors:
 - Iso Kenta
 - Kamesh Sampath
 - Kenta Iso
+- Prasad Katti
 - Priya Wadhwa
 - Sharif Elgamal
 - Tacio Costa
