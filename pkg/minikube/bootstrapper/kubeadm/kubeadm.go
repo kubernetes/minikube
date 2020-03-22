@@ -157,6 +157,30 @@ func (k *Bootstrapper) createCompatSymlinks() error {
 	return nil
 }
 
+// clearStaleConfigs clears configurations which may have stale IP addresses
+func (k *Bootstrapper) clearStaleConfigs(cfg config.ClusterConfig) error {
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return err
+	}
+
+	paths := []string{
+		"/etc/kubernetes/admin.conf",
+		"/etc/kubernetes/kubelet.conf",
+		"/etc/kubernetes/controller-manager.conf",
+		"/etc/kubernetes/scheduler.conf",
+	}
+
+	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(cp.IP, strconv.Itoa(cp.Port)))
+	for _, path := range paths {
+		_, err := k.c.RunCmd(exec.Command("sudo", "/bin/bash", "-c", fmt.Sprintf("grep %s %s || sudo rm -f %s", endpoint, path, path)))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	err := bsutil.ExistingConfig(k.c)
@@ -208,10 +232,8 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 
 	}
 
-	// Remove the previous kubeadm kubeconfig as the IP may have changed
-	_, err = k.c.RunCmd(exec.Command("sudo", "rm", "-f", "/etc/kubernetes/admin.conf"))
-	if err != nil {
-		return errors.Wrap(err, "deleting admin.conf")
+	if err := k.clearStaleConfigs(cfg); err != nil {
+		return errors.Wrap(err, "clearing stale configs")
 	}
 
 	conf := bsutil.KubeadmYamlPath
@@ -319,8 +341,8 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 
 // needsReset returns whether or not the cluster needs to be reconfigured
 func (k *Bootstrapper) needsReset(conf string, ip string, port int, client *kubernetes.Clientset) bool {
-	if _, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
-		glog.Infof("needs reset: configs differ")
+	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
+		glog.Infof("needs reset: configs differ:\n%s", rr.Output())
 		return true
 	}
 
@@ -384,10 +406,8 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	// Remove the previous kubeadm kubeconfig as the IP may have changed
-	_, err = k.c.RunCmd(exec.Command("sudo", "rm", "-f", "/etc/kubernetes/admin.conf"))
-	if err != nil {
-		return errors.Wrap(err, "deleting admin.conf")
+	if err := k.clearStaleConfigs(cfg); err != nil {
+		return errors.Wrap(err, "clearing stale configs")
 	}
 
 	if _, err := k.c.RunCmd(exec.Command("sudo", "mv", conf+".new", conf)); err != nil {
