@@ -18,7 +18,6 @@ package config
 
 import (
 	"net"
-	"os"
 
 	"github.com/blang/semver"
 )
@@ -101,17 +100,6 @@ type Node struct {
 	KubernetesVersion string
 	ControlPlane      bool
 	Worker            bool
-}
-
-// returns the name to be registered kubernetes
-func (n Node) InternalName() string {
-	if n.Name == "" {
-		// Always use hostname for "none" driver
-		hostname, _ := os.Hostname()
-		return hostname
-	}
-
-	return n.Name
 }
 
 // VersionedExtraOption holds information on flags to apply to a specific range
