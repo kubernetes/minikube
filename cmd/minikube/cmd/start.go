@@ -850,7 +850,7 @@ func validateRegistryMirror() {
 	}
 }
 
-// generateCfgFromFlags generates config.Config based on flags and supplied arguments
+// generateCfgFromFlags generates config.ClusterConfig based on flags and supplied arguments
 func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
 	r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
 	if err != nil {

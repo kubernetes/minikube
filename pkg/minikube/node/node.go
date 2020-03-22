@@ -17,10 +17,11 @@ limitations under the License.
 package node
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -34,12 +35,11 @@ const (
 
 // Add adds a new node config to an existing cluster.
 func Add(cc *config.ClusterConfig, n config.Node) error {
-
-	err := config.SaveNode(cc, &n)
-	if err != nil {
-		return err
+	if err := config.SaveNode(cc, &n); err != nil {
+		return errors.Wrap(err, "save node")
 	}
 
+	// TODO: Start should return an error rather than calling exit!
 	Start(*cc, n, nil, false)
 	return nil
 }
@@ -48,7 +48,7 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 func Delete(cc config.ClusterConfig, name string) error {
 	n, index, err := Retrieve(&cc, name)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "retrieve")
 	}
 
 	api, err := machine.NewAPIClient()
