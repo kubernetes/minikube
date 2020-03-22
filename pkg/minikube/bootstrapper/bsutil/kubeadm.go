@@ -29,7 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 )
@@ -94,7 +93,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		EtcdDataDir:       EtcdDataDir(),
 		ClusterName:       cc.Name,
 		//kubeadm uses NodeName as the --hostname-override parameter, so this needs to be the name of the machine
-		NodeName:            driver.KubeNodeName(cc, n),
+		NodeName:            n.InternalName(),
 		CRISocket:           r.SocketPath(),
 		ImageRepository:     k8s.ImageRepository,
 		ComponentOptions:    componentOpts,
