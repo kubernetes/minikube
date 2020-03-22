@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -59,7 +60,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	if _, ok := extraOpts["node-ip"]; !ok {
 		extraOpts["node-ip"] = cp.IP
 	}
-	nodeName := nc.InternalName()
+	nodeName := driver.KubeNodeName(mc, nc)
 	if nodeName != "" {
 		extraOpts["hostname-override"] = nodeName
 	}
