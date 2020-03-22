@@ -291,7 +291,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	existing, err := config.Load(viper.GetString(config.ProfileName))
+	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
@@ -390,8 +390,8 @@ func updateDriver(driverName string) {
 
 func displayVersion(version string) {
 	prefix := ""
-	if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
-		prefix = fmt.Sprintf("[%s] ", viper.GetString(config.ProfileName))
+	if ClusterFlagValue() != constants.DefaultClusterName {
+		prefix = fmt.Sprintf("[%s] ", ClusterFlagValue())
 	}
 
 	versionState := out.Happy
@@ -653,14 +653,6 @@ func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string
 	return false, fallback, nil
 }
 
-// Return a minikube command containing the current profile name
-func minikubeCmd() string {
-	if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
-		return fmt.Sprintf("minikube -p %s", config.ProfileName)
-	}
-	return "minikube"
-}
-
 // validateUser validates minikube is run by the recommended user (privileged or regular)
 func validateUser(drvName string) {
 	u, err := user.Current()
@@ -686,7 +678,7 @@ func validateUser(drvName string) {
 	if !useForce {
 		os.Exit(exit.Permissions)
 	}
-	_, err = config.Load(viper.GetString(config.ProfileName))
+	_, err = config.Load(ClusterFlagValue())
 	if err == nil || !config.IsNotExist(err) {
 		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
 	}
@@ -811,7 +803,7 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if driver.BareMetal(drvName) {
-		if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
+		if ClusterFlagValue() != constants.DefaultClusterName {
 			exit.WithCodeT(exit.Config, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 		}
 
@@ -938,7 +930,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 	}
 
 	cfg := config.ClusterConfig{
-		Name:                    viper.GetString(config.ProfileName),
+		Name:                    ClusterFlagValue(),
 		KeepContext:             viper.GetBool(keepContext),
 		EmbedCerts:              viper.GetBool(embedCerts),
 		MinikubeISO:             viper.GetString(isoURL),
@@ -971,7 +963,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 		NatNicType:              viper.GetString(natNicType),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
-			ClusterName:            viper.GetString(config.ProfileName),
+			ClusterName:            ClusterFlagValue(),
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,
 			APIServerIPs:           apiServerIPs,

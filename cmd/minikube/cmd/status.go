@@ -29,16 +29,14 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/mustload"
 )
 
 var statusFormat string
@@ -101,24 +99,13 @@ var statusCmd = &cobra.Command{
 			exit.UsageT("Cannot use both --output and --format options")
 		}
 
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithCodeT(exit.Unavailable, "Error getting client: {{.error}}", out.V{"error": err})
-		}
-		defer api.Close()
-
-		cc, err := config.Load(viper.GetString(config.ProfileName))
-		if err != nil {
-			if config.IsNotExist(err) {
-				exit.WithCodeT(exitCode(&Status{}), `The "{{.name}}" cluster does not exist!`, out.V{"name": viper.GetString(config.ProfileName)})
-			}
-			exit.WithError("getting config", err)
-		}
+		cname := ClusterFlagValue()
+		api, cc := mustload.Partial(cname)
 
 		var st *Status
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)
-			st, err = status(api, machineName, n.ControlPlane)
+			st, err := status(api, machineName, n.ControlPlane)
 			if err != nil {
 				glog.Errorf("status error: %v", err)
 			}
