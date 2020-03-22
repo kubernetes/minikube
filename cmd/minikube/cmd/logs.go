@@ -95,18 +95,18 @@ var logsCmd = &cobra.Command{
 			exit.WithError("Unable to get runtime", err)
 		}
 		if followLogs {
-			err := logs.Follow(cr, bs, runner)
+			err := logs.Follow(cr, bs, *cfg, runner)
 			if err != nil {
 				exit.WithError("Follow", err)
 			}
 			return
 		}
 		if showProblems {
-			problems := logs.FindProblems(cr, bs, runner)
+			problems := logs.FindProblems(cr, bs, *cfg, runner)
 			logs.OutputProblems(problems, numberOfProblems)
 			return
 		}
-		err = logs.Output(cr, bs, runner, numberOfLines)
+		err = logs.Output(cr, bs, *cfg, runner, numberOfLines)
 		if err != nil {
 			exit.WithError("Error getting machine logs", err)
 		}
