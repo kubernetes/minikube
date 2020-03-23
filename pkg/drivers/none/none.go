@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	"k8s.io/minikube/pkg/minikube/kubelet"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -153,8 +154,8 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	if err := pkgdrivers.StopKubelet(d.exec); err != nil {
-		glog.Warning("couldn't stop kubelet %v. will continue with kill anyways.", err)
+	if err := kubelet.Stop(d.exec); err != nil {
+		glog.Warningf("couldn't stop kubelet. will continue with kill anyways: %v", err)
 	}
 
 	// First try to gracefully stop containers
@@ -217,8 +218,8 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
-	if err := pkgdrivers.StopKubelet(d.exec); err != nil {
-		glog.Warning("couldn't stop kubelet %v. will continue with stop anyways.", err)
+	if err := kubelet.Stop(d.exec); err != nil {
+		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
 	}
 	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
