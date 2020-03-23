@@ -32,7 +32,7 @@ import (
 func Stop(cr command.Runner) error {
 	glog.Infof("stopping kubelet ...")
 	stop := func() error {
-		cmd := exec.Command("sudo", "systemctl", "stop", "kubelet.service")
+		cmd := exec.Command("sudo", "systemctl", "stop", "-f", "kubelet.service")
 		if rr, err := cr.RunCmd(cmd); err != nil {
 			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
 		}

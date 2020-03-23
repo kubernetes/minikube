@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/kubelet"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -313,9 +314,9 @@ func (d *Driver) Start() error {
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
 	// docker does not send right SIG for systemd to know to stop the systemd.
-	// to avoid bind adress be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
-	if err := pkgdrivers.StopKubelet(d.exec); err != nil {
-		glog.Warning("couldn't stop kubelet %v", err)
+	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
+	if err := kubelet.Stop(d.exec); err != nil {
+		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
 	}
 
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
