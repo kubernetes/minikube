@@ -522,6 +522,9 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 
 // hostDriver returns the true driver used without relying on config fields
 func hostDriver(existing *config.ClusterConfig) string {
+	if existing == nil {
+		return ""
+	}
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		glog.Warningf("selectDriver NewAPIClient: %v", err)
@@ -592,7 +595,6 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 
 	st := ds.State
 	glog.Infof("status for %s: %+v", name, st)
-	old := hostDriver(existing)
 
 	if st.Error != nil {
 		out.ErrLn("")
@@ -605,8 +607,10 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		out.ErrLn("")
 
 		if !st.Installed && !viper.GetBool(force) {
-			if existing != nil && name == old {
-				exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+			if existing != nil {
+				if old := hostDriver(existing); name == old {
+					exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+				}
 			}
 			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
