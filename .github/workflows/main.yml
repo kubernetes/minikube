@@ -88,7 +88,7 @@ jobs:
         docker info || true
         docker version || true
         docker ps || true
-    - name: install lz4
+    - name: Install lz4
       shell: bash
       run: |
         sudo apt-get update -qq
@@ -228,11 +228,11 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
     steps:
-    - name: install lz4
+    - name: Install conntrack
       shell: bash
       run: |
         sudo apt-get update -qq
-        sudo apt-get -qq -y install liblz4-tool
+        sudo apt-get -qq -y install conntrack
     - name: Install gopogh
       shell: bash
       run: |
@@ -295,11 +295,11 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-18.04
     steps:
-    - name: install lz4
+    - name: Install conntrack
       shell: bash
       run: |
         sudo apt-get update -qq
-        sudo apt-get -qq -y install liblz4-tool
+        sudo apt-get -qq -y install conntrack
     - name: Install gopogh
       shell: bash
       run: |
