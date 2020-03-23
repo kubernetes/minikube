@@ -1,0 +1,26 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: registry-aliases-patch-core-dns
+  namespace: kube-system
+spec:
+  ttlSecondsAfterFinished: 100
+  template:
+    spec:
+      serviceAccountName: registry-aliases-sa
+      volumes:
+       - name: minikube
+         hostPath: 
+           path: /var/lib/minikube/binaries
+      containers:
+       - name: core-dns-patcher
+         image:  quay.io/rhdevelopers/core-dns-patcher
+         imagePullPolicy: IfNotPresent
+         # using the kubectl from the minikube instance
+         volumeMounts:
+           - mountPath: /var/lib/minikube/binaries
+             name: minikube
+             readOnly: true
+      restartPolicy: Never
+  backoffLimit: 4

@@ -286,7 +286,6 @@ fi
 touch "${TEST_OUT}"
 ${SUDO_PREFIX}${E2E_BIN} \
   -minikube-start-args="--driver=${VM_DRIVER} ${EXTRA_START_ARGS}" \
-  -expected-default-driver="${EXPECTED_DEFAULT_DRIVER}" \
   -test.timeout=70m -test.v \
   ${EXTRA_TEST_ARGS} \
   -binary="${MINIKUBE_BIN}" 2>&1 | tee "${TEST_OUT}"

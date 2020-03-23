@@ -119,7 +119,7 @@ type URLs []SvcURL
 // GetServiceURLs returns a SvcURL object for every service in a particular namespace.
 // Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
-	host, err := machine.CheckIfHostExistsAndLoad(api, viper.GetString(config.ProfileName))
+	host, err := machine.LoadHost(api, viper.GetString(config.ProfileName))
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +155,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 // GetServiceURLsForService returns a SvcUrl object for a service in a namespace. Supports optional formatting.
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) (SvcURL, error) {
-	host, err := machine.CheckIfHostExistsAndLoad(api, viper.GetString(config.ProfileName))
+	host, err := machine.LoadHost(api, viper.GetString(config.ProfileName))
 	if err != nil {
 		return SvcURL{}, errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -264,19 +264,34 @@ func PrintServiceList(writer io.Writer, data [][]string) {
 	table.Render()
 }
 
+// SVCNotFoundError error type handles 'service not found' scenarios
+type SVCNotFoundError struct {
+	Err error
+}
+
+// Error method for SVCNotFoundError type
+func (t SVCNotFoundError) Error() string {
+	return "Service not found"
+}
+
 // WaitForService waits for a service, and return the urls when available
 func WaitForService(api libmachine.API, namespace string, service string, urlTemplate *template.Template, urlMode bool, https bool,
 	wait int, interval int) ([]string, error) {
-
 	var urlList []string
 	// Convert "Amount of time to wait" and "interval of each check" to attempts
 	if interval == 0 {
 		interval = 1
 	}
+
+	err := CheckService(namespace, service)
+	if err != nil {
+		return nil, &SVCNotFoundError{err}
+	}
+
 	chkSVC := func() error { return CheckService(namespace, service) }
 
 	if err := retry.Expo(chkSVC, time.Duration(interval)*time.Second, time.Duration(wait)*time.Second); err != nil {
-		return urlList, errors.Wrapf(err, "Service %s was not found in %q namespace. You may select another namespace by using 'minikube service %s -n <namespace>", service, namespace, service)
+		return nil, &SVCNotFoundError{err}
 	}
 
 	serviceURL, err := GetServiceURLsForService(api, namespace, service, urlTemplate)

@@ -260,12 +260,14 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	if err != nil {
 		t.Errorf("images unmarshal: %v", err)
 	}
-	gotImages := []string{}
+	found := map[string]bool{}
 	for _, img := range jv["images"] {
 		for _, i := range img.Tags {
+			// Remove container-specific prefixes for naming consistency
+			i = strings.TrimPrefix(i, "docker.io/")
+			i = strings.TrimPrefix(i, "localhost/")
 			if defaultImage(i) {
-				// Remove docker.io for naming consistency between container runtimes
-				gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
+				found[i] = true
 			} else {
 				t.Logf("Found non-minikube image: %s", i)
 			}
@@ -274,6 +276,10 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	want, err := images.Kubeadm("", version)
 	if err != nil {
 		t.Errorf("kubeadm images: %v", version)
+	}
+	gotImages := []string{}
+	for k := range found {
+		gotImages = append(gotImages, k)
 	}
 	sort.Strings(want)
 	sort.Strings(gotImages)

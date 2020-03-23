@@ -58,7 +58,7 @@ var unpauseCmd = &cobra.Command{
 
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)
-			host, err := machine.CheckIfHostExistsAndLoad(api, machineName)
+			host, err := machine.LoadHost(api, machineName)
 			if err != nil {
 				exit.WithError("Error getting host", err)
 			}

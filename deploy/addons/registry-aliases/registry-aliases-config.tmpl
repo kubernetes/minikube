@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: registry-aliases
+  namespace: kube-system
+  labels:
+    kubernetes.io/minikube-addons: registry-aliases
+    addonmanager.kubernetes.io/mode: Reconcile
+data:
+  # Add additonal hosts seperated by new-line
+  registryAliases: >-
+    example.org
+    example.com
+    test.com
+    test.org
+  # default registry address in minikube when enabled via minikube addons enable registry
+  registrySvc: registry.kube-system.svc.cluster.local
+

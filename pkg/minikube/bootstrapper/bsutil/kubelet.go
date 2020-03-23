@@ -26,6 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/util"
 )
 
@@ -60,7 +61,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 		extraOpts["node-ip"] = cp.IP
 	}
 	if nc.Name != "" {
-		extraOpts["hostname-override"] = nc.Name
+		extraOpts["hostname-override"] = driver.MachineName(mc, nc)
 	}
 
 	pauseImage := images.Pause(version, k8s.ImageRepository)

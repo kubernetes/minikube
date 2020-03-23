@@ -122,13 +122,18 @@ func isDockerActive(d drivers.Driver) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	output, err := client.Output("sudo systemctl is-active docker")
-	if err != nil {
-		return false, err
-	}
-	// systemd returns error code on inactive
+	cmd := "sudo systemctl is-active docker"
+
+	output, err := client.Output(cmd)
 	s := strings.TrimSpace(output)
-	return err == nil && s == "active", nil
+
+	if err != nil {
+		return false, fmt.Errorf("%s failed: %v\noutput: %q", cmd, err, s)
+	}
+	if s != "active" {
+		return false, fmt.Errorf("%s returned %q", cmd, s)
+	}
+	return true, nil
 }
 
 // dockerEnvCmd represents the docker-env command
@@ -150,7 +155,7 @@ var dockerEnvCmd = &cobra.Command{
 		}
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)
-			host, err := machine.CheckIfHostExistsAndLoad(api, machineName)
+			host, err := machine.LoadHost(api, machineName)
 			if err != nil {
 				exit.WithError("Error getting host", err)
 			}
@@ -158,16 +163,22 @@ var dockerEnvCmd = &cobra.Command{
 				exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
 			}
 
-			hostSt, err := machine.GetHostStatus(api, machineName)
+			hostSt, err := machine.Status(api, machineName)
 			if err != nil {
 				exit.WithError("Error getting host status", err)
 			}
 			if hostSt != state.Running.String() {
 				exit.WithCodeT(exit.Unavailable, `'{{.profile}}' is not running`, out.V{"profile": profile})
 			}
+
+			if cc.KubernetesConfig.ContainerRuntime != "docker" {
+				exit.WithCodeT(exit.BadUsage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
+					out.V{"runtime": cc.KubernetesConfig.ContainerRuntime})
+			}
+
 			ok, err := isDockerActive(host.Driver)
 			if err != nil {
-				exit.WithError("Error getting service status", err)
+				exit.WithError("Docker runtime check failed", err)
 			}
 
 			if !ok {
@@ -186,7 +197,7 @@ var dockerEnvCmd = &cobra.Command{
 			port := constants.DockerDaemonPort
 			if driver.IsKIC(host.DriverName) { // for kic we need to find what port docker/podman chose for us
 				hostIP = oci.DefaultBindIPV4
-				port, err = oci.HostPortBinding(host.DriverName, profile, port)
+				port, err = oci.ForwardedPort(host.DriverName, profile, port)
 				if err != nil {
 					exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": host.DriverName, "error": err})
 				}

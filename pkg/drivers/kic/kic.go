@@ -184,7 +184,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
-	p, err := oci.HostPortBinding(d.OCIBinary, d.MachineName, constants.SSHPort)
+	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
 	if err != nil {
 		return p, errors.Wrap(err, "get ssh host-port")
 	}
@@ -230,7 +230,7 @@ func (d *Driver) GetState() (state.State, error) {
 	}
 	o := strings.TrimSpace(string(out))
 	if err != nil {
-		return state.Error, errors.Wrapf(err, "get container %s status", d.MachineName)
+		return state.Error, errors.Wrapf(err, "%s: %s", strings.Join(cmd.Args, " "), o)
 	}
 	switch o {
 	case "running":
