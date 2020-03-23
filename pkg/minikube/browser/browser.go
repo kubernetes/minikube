@@ -21,6 +21,7 @@ import (
 	"runtime"
 
 	"github.com/pkg/browser"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 // OpenURL opens a new browser window pointing to URL.
@@ -28,7 +29,8 @@ func OpenURL(url string) error {
 	if runtime.GOOS == "linux" {
 		_, err := exec.LookPath("xdg-open")
 		if err != nil {
-			return err
+			out.T(out.URL, url)
+			return nil
 		}
 	}
 	return browser.OpenURL(url)
