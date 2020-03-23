@@ -75,18 +75,26 @@ func DeleteHost(api libmachine.API, machineName string) error {
 		return mcnerror.ErrHostDoesNotExist{Name: machineName}
 	}
 
-	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
+	// Hyper-V requires special care to avoid ACPI and file locking issues
 	if host.Driver.DriverName() == driver.HyperV {
-		if err := trySSHPowerOff(host); err != nil {
-			glog.Infof("Unable to power off minikube because the host was not found.")
+		if err := StopHost(api, machineName); err != nil {
+			glog.Warningf("stop host: %v", err)
 		}
-		out.T(out.DeletingHost, "Successfully powered off Hyper-V. minikube driver -- {{.driver}}", out.V{"driver": host.Driver.DriverName()})
+		// Hack: give the Hyper-V VM more time to stop before deletion
+		time.Sleep(1 * time.Second)
 	}
 
 	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
 	if err := host.Driver.Remove(); err != nil {
-		return errors.Wrap(err, "host remove")
+		glog.Warningf("remove failed, will retry: %v", err)
+		time.Sleep(2 * time.Second)
+
+		nerr := host.Driver.Remove()
+		if nerr != nil {
+			return errors.Wrap(nerr, "host remove retry")
+		}
 	}
+
 	if err := api.Remove(machineName); err != nil {
 		return errors.Wrap(err, "api remove")
 	}
