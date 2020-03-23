@@ -42,9 +42,6 @@ spec:
       - name: device-plugin
         hostPath:
           path: /var/lib/kubelet/device-plugins
-      - name: dev
-        hostPath:
-          path: /dev
       containers:
       - image: "nvidia/k8s-device-plugin:1.0.0-beta4"
         command: ["/usr/bin/nvidia-device-plugin", "-logtostderr"]
@@ -54,11 +51,11 @@ spec:
             cpu: 50m
             memory: 10Mi
         securityContext:
-          privileged: true
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop: ["ALL"]
         volumeMounts:
         - name: device-plugin
           mountPath: /var/lib/kubelet/device-plugins
-        - name: dev
-          mountPath: /dev
   updateStrategy:
     type: RollingUpdate
