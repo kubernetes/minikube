@@ -220,6 +220,9 @@ func (d *Driver) Start() error {
 func (d *Driver) Stop() error {
 	if err := kubelet.Stop(d.exec); err != nil {
 		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
+		if err := kubelet.ForceStop(d.exec); err != nil {
+			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
+		}
 	}
 	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 
