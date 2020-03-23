@@ -333,11 +333,11 @@ func (d *Driver) Stop() error {
 	} else {
 		containers, err := runtime.ListContainers(cruntime.ListOptions{Namespaces: constants.DefaultNamespaces})
 		if err != nil {
-			return errors.Wrap(err, "containers")
+			glog.Errorf("unable list containers : %v", err)
 		}
 		if len(containers) > 0 {
 			if err := runtime.StopContainers(containers); err != nil {
-				return errors.Wrap(err, "stop containers")
+				glog.Errorf("unable to stop containers : %v", err)
 			}
 		}
 		glog.Infof("successfully stopped kubernetes!")
