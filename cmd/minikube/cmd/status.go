@@ -103,9 +103,13 @@ var statusCmd = &cobra.Command{
 		api, cc := mustload.Partial(cname)
 
 		var st *Status
+		var err error
 		for _, n := range cc.Nodes {
+			glog.Infof("checking status of %s ...", n.Name)
 			machineName := driver.MachineName(*cc, n)
-			st, err := status(api, machineName, n.ControlPlane)
+			st, err = status(api, machineName, n.ControlPlane)
+			glog.Infof("%s status: %+v", machineName, st)
+
 			if err != nil {
 				glog.Errorf("status error: %v", err)
 			}
@@ -127,6 +131,7 @@ var statusCmd = &cobra.Command{
 			}
 		}
 
+		// TODO: Update for multi-node
 		os.Exit(exitCode(st))
 	},
 }
