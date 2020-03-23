@@ -75,7 +75,8 @@ func Running(name string) ClusterController {
 		exit.WithError("Unable to find control plane", err)
 	}
 
-	hs, err := machine.Status(api, cp.Name)
+	machineName := driver.MachineName(*cc, cp)
+	hs, err := machine.Status(api, machineName)
 	if err != nil {
 		exit.WithError("Unable to get machine status", err)
 	}
