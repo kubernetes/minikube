@@ -54,6 +54,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -550,15 +551,9 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 	if err != nil {
 		exit.WithError("Error getting primary cp", err)
 	}
-	machineName := driver.MachineName(*existing, cp)
-	h, err := api.Load(machineName)
-	if err != nil {
-		glog.Warningf("selectDriver api.Load: %v", err)
-		return
-	}
 
-	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
-		out.V{"profile_name": machineName, "driver": requested, "old_driver": h.Driver.DriverName()})
+	out.ErrT(out.Conflict, `The existing "{{.name}}" ccluster was created using the "{{.old}}" driver, and is incompatible with the "{{.new}}" driver.`,
+		out.V{"name": existing.Name, "new": requested, "old": h.Driver.DriverName()})
 
 	out.ErrT(out.Workaround, `To proceed, either:
 
@@ -566,8 +561,8 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 
 * or *
 
-2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --driver={{.old_driver}}'
-`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": machineName})
+2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} --driver={{.old_driver}}'
+`, out.V{"command": mustload.ExampleCmd(existing.Name, "start"), "old_driver": h.Driver.DriverName(), "profile_name": cname})
 
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
