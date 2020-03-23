@@ -36,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/kubelet"
 )
@@ -320,6 +321,27 @@ func (d *Driver) Stop() error {
 	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
 	if err := kubelet.Stop(d.exec); err != nil {
 		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
+		if err := kubelet.ForceStop(d.exec); err != nil {
+			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
+		}
+	}
+
+	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec})
+	if err != nil { // won't return error because:
+		// even though we can't stop the cotainers inside, we still wanna stop the minikube container itself
+		glog.Errorf("unable to get container runtime: %v", err)
+	} else {
+		containers, err := runtime.ListContainers(cruntime.ListOptions{Namespaces: constants.DefaultNamespaces})
+		if err != nil {
+			return errors.Wrap(err, "containers")
+		}
+		if len(containers) > 0 {
+			if err := runtime.StopContainers(containers); err != nil {
+				return errors.Wrap(err, "stop containers")
+			}
+		}
+		glog.Infof("successfully stopped kubernetes!")
+
 	}
 
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)

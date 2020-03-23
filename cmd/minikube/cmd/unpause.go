@@ -24,6 +24,7 @@ import (
 	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -82,6 +83,6 @@ var unpauseCmd = &cobra.Command{
 }
 
 func init() {
-	unpauseCmd.Flags().StringSliceVarP(&namespaces, "--namespaces", "n", cluster.DefaultNamespaces, "namespaces to unpause")
+	unpauseCmd.Flags().StringSliceVarP(&namespaces, "--namespaces", "n", constants.DefaultNamespaces, "namespaces to unpause")
 	unpauseCmd.Flags().BoolVarP(&allNamespaces, "all-namespaces", "A", false, "If set, unpause all namespaces")
 }
