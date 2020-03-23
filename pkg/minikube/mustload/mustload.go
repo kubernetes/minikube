@@ -153,17 +153,17 @@ func Healthy(name string) ClusterController {
 	return co
 }
 
-// Return a minikube command containing the current profile name
-func minikubeCmd(cname string) string {
+// ExampleCmd Return a minikube command containing the current profile name
+func ExampleCmd(cname string, action string) string {
 	if cname != constants.DefaultClusterName {
-		return fmt.Sprintf("minikube -p %s", cname)
+		return fmt.Sprintf("minikube %s -p %s", action, cname)
 	}
-	return "minikube"
+	return fmt.Sprintf("minikube %s", action)
 }
 
 // exitTip returns an action tip and exits
 func exitTip(action string, profile string, code int) {
-	command := minikubeCmd(profile) + " " + action
+	command := ExampleCmd(profile, action)
 	out.T(out.Workaround, "To fix this, run: {{.command}}", out.V{"command": command})
 	os.Exit(code)
 }
