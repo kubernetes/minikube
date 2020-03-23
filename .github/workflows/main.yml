@@ -113,6 +113,11 @@ jobs:
         docker info || true
         docker version || true
         docker ps || true
+    - name: install lz4
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get -qq -y install liblz4-tool
     - name: Install gopogh
       shell: bash
       run: |
@@ -175,6 +180,11 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     needs: [build_minikube]
     steps:
+    - name: install lz4
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get -qq -y install liblz4-tool
     - name: Docker Info
       shell: bash
       run: |
@@ -268,6 +278,11 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
     steps:
+    - name: install lz4
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get -qq -y install liblz4-tool
     - name: Install gopogh
       shell: bash
       run: |
@@ -330,6 +345,11 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-18.04
     steps:
+    - name: install lz4
+      shell: bash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get -qq -y install liblz4-tool
     - name: Install gopogh
       shell: bash
       run: |
@@ -392,6 +412,11 @@ jobs:
         SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
       runs-on: ubuntu-18.04
       steps:
+      - name: install lz4
+        shell: bash
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get -qq -y install liblz4-tool
       - name: install podman
         shell: bash
         run: |

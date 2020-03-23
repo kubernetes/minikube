@@ -296,11 +296,11 @@ var Addons = map[string]*Addon{
 	}, false, "nvidia-driver-installer"),
 	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml.tmpl",
+			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml",
 			vmpath.GuestAddonsDir,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640",
-			true),
+			false),
 	}, false, "nvidia-gpu-device-plugin"),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(
