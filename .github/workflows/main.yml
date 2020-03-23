@@ -155,7 +155,7 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     needs: [build_minikube]
     steps:
-    - name: install lz4
+    - name: Install lz4
       shell: bash
       run: |
         sudo apt-get update -qq
@@ -362,12 +362,12 @@ jobs:
         SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
       runs-on: ubuntu-18.04
       steps:
-      - name: install lz4
+      - name: Install lz4
         shell: bash
         run: |
           sudo apt-get update -qq
           sudo apt-get -qq -y install liblz4-tool
-      - name: install podman
+      - name: Install podman
         shell: bash
         run: |
           . /etc/os-release
