@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
-	"strings"
-	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
@@ -35,7 +33,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 // cleanupPaths are paths to be removed by cleanup, and are used by both kubeadm and minikube.
@@ -156,8 +153,8 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	if err := stopKubelet(d.exec); err != nil {
-		return errors.Wrap(err, "kubelet")
+	if err := pkgdrivers.StopKubelet(d.exec); err != nil {
+		glog.Warning("couldn't stop kubelet %v. will continue with kill anyways.", err)
 	}
 
 	// First try to gracefully stop containers
@@ -220,8 +217,8 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
-	if err := stopKubelet(d.exec); err != nil {
-		return errors.Wrap(err, "stop kubelet")
+	if err := pkgdrivers.StopKubelet(d.exec); err != nil {
+		glog.Warning("couldn't stop kubelet %v. will continue with stop anyways.", err)
 	}
 	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
@@ -239,32 +236,6 @@ func (d *Driver) Stop() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support ssh commands")
-}
-
-// stopKubelet idempotently stops the kubelet
-func stopKubelet(cr command.Runner) error {
-	glog.Infof("stopping kubelet.service ...")
-	stop := func() error {
-		cmd := exec.Command("sudo", "systemctl", "stop", "kubelet.service")
-		if rr, err := cr.RunCmd(cmd); err != nil {
-			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
-		}
-		cmd = exec.Command("sudo", "systemctl", "show", "-p", "SubState", "kubelet")
-		rr, err := cr.RunCmd(cmd)
-		if err != nil {
-			glog.Errorf("temporary error: for %q : %v", rr.Command(), err)
-		}
-		if !strings.Contains(rr.Stdout.String(), "dead") && !strings.Contains(rr.Stdout.String(), "failed") {
-			return fmt.Errorf("unexpected kubelet state: %q", rr.Stdout.String())
-		}
-		return nil
-	}
-
-	if err := retry.Expo(stop, 2*time.Second, time.Minute*3, 5); err != nil {
-		return errors.Wrapf(err, "error stopping kubelet")
-	}
-
-	return nil
 }
 
 // restartKubelet restarts the kubelet

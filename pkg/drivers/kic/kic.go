@@ -312,6 +312,12 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
+	// docker does not send right SIG for systemd to know to stop the systemd.
+	// to avoid bind adress be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
+	if err := pkgdrivers.StopKubelet(d.exec); err != nil {
+		glog.Warning("couldn't stop kubelet %v", err)
+	}
+
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)
