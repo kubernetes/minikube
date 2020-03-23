@@ -520,7 +520,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	return pick
 }
 
-// hostDriver returns the true driver used without relying on config fields
+// hostDriver returns the actual driver used by a libmachine host, which can differ from our config
 func hostDriver(existing *config.ClusterConfig) string {
 	if existing == nil {
 		return ""
