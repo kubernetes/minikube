@@ -19,6 +19,7 @@ package bsutil
 
 import (
 	"bytes"
+	"os"
 	"path"
 
 	"github.com/pkg/errors"
@@ -60,8 +61,9 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 	if _, ok := extraOpts["node-ip"]; !ok {
 		extraOpts["node-ip"] = cp.IP
 	}
-	if nc.Name != "" {
-		extraOpts["hostname-override"] = driver.MachineName(mc, nc)
+	nodeName := KubeNodeName(mc, nc)
+	if nodeName != "" {
+		extraOpts["hostname-override"] = nodeName
 	}
 
 	pauseImage := images.Pause(version, k8s.ImageRepository)
@@ -115,4 +117,14 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 		return nil, errors.Wrap(err, "template execute")
 	}
 	return b.Bytes(), nil
+}
+
+// KubeNodeName returns the node name registered in Kubernetes
+func KubeNodeName(cc config.ClusterConfig, n config.Node) string {
+	if cc.Driver == driver.None {
+		// Always use hostname for "none" driver
+		hostname, _ := os.Hostname()
+		return hostname
+	}
+	return driver.MachineName(cc, n)
 }
