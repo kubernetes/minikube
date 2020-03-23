@@ -126,7 +126,7 @@ func (d *Driver) Create() error {
 	t := time.Now()
 	glog.Infof("Starting extracting preloaded images to volume")
 	// Extract preloaded images to container
-	if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion), params.Name, BaseImage); err != nil {
+	if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, BaseImage); err != nil {
 		glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
 	} else {
 		glog.Infof("Took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())

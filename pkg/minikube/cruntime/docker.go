@@ -291,6 +291,7 @@ func (r *Docker) SystemLogCmd(len int) string {
 // 3. Remove the tarball within the VM
 func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 	k8sVersion := cfg.KubernetesVersion
+	cRuntime := cfg.ContainerRuntime
 
 	// If images already exist, return
 	images, err := images.Kubeadm(cfg.ImageRepository, k8sVersion)
@@ -307,7 +308,7 @@ func (r *Docker) Preload(cfg config.KubernetesConfig) error {
 		glog.Infof("error saving reference store: %v", err)
 	}
 
-	tarballPath := download.TarballPath(k8sVersion)
+	tarballPath := download.TarballPath(k8sVersion, cRuntime)
 	targetDir := "/"
 	targetName := "preloaded.tar.lz4"
 	dest := path.Join(targetDir, targetName)
