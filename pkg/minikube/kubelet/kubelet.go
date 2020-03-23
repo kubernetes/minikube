@@ -30,9 +30,22 @@ import (
 
 // Stop idempotently stops the kubelet
 func Stop(cr command.Runner) error {
+	return stop(cr, false)
+}
+
+// ForceStop idempotently force stops the kubelet
+func ForceStop(cr command.Runner) error {
+	return stop(cr, true)
+}
+
+// stop dempotently stops the kubelet
+func stop(cr command.Runner, force bool) error {
 	glog.Infof("stopping kubelet ...")
 	stop := func() error {
-		cmd := exec.Command("sudo", "systemctl", "stop", "-f", "kubelet.service")
+		cmd := exec.Command("sudo", "systemctl", "stop", "kubelet.service")
+		if force {
+			cmd = exec.Command("sudo", "systemctl", "stop", "-f", "kubelet.service")
+		}
 		if rr, err := cr.RunCmd(cmd); err != nil {
 			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
 		}
