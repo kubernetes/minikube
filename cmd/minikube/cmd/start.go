@@ -466,8 +466,9 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 
 	// By default, the driver is whatever we used last time
-	if existing != nil && existing.Driver != "" {
-		ds := driver.Status(existing.Driver)
+	if existing != nil {
+		old := hostDriver(existing)
+		ds := driver.Status(old)
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
 		return ds
 	}
@@ -519,46 +520,58 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	return pick
 }
 
+// hostDriver returns the actual driver used by a libmachine host, which can differ from our config
+func hostDriver(existing *config.ClusterConfig) string {
+	if existing == nil {
+		return ""
+	}
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		glog.Warningf("selectDriver NewAPIClient: %v", err)
+		return existing.Driver
+	}
+
+	cp, err := config.PrimaryControlPlane(existing)
+	if err != nil {
+		glog.Warningf("Unable to get control plane from existing config: %v", err)
+		return existing.Driver
+	}
+	machineName := driver.MachineName(*existing, cp)
+	h, err := api.Load(machineName)
+	if err != nil {
+		glog.Warningf("selectDriver api.Load: %v", err)
+		return existing.Driver
+	}
+
+	return h.Driver.DriverName()
+}
+
 // validateSpecifiedDriver makes sure that if a user has passed in a driver
 // it matches the existing cluster if there is one
 func validateSpecifiedDriver(existing *config.ClusterConfig) {
 	if existing == nil {
 		return
 	}
-	old := existing.Driver
+
 	var requested string
 	if d := viper.GetString("driver"); d != "" {
 		requested = d
 	} else if d := viper.GetString("vm-driver"); d != "" {
 		requested = d
 	}
+
 	// Neither --vm-driver or --driver was specified
 	if requested == "" {
 		return
 	}
-	if old == requested {
-		return
-	}
 
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		glog.Warningf("selectDriver NewAPIClient: %v", err)
-		return
-	}
-
-	cp, err := config.PrimaryControlPlane(existing)
-	if err != nil {
-		exit.WithError("Error getting primary cp", err)
-	}
-	machineName := driver.MachineName(*existing, cp)
-	h, err := api.Load(machineName)
-	if err != nil {
-		glog.Warningf("selectDriver api.Load: %v", err)
+	old := hostDriver(existing)
+	if requested == old {
 		return
 	}
 
 	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
-		out.V{"profile_name": machineName, "driver": requested, "old_driver": h.Driver.DriverName()})
+		out.V{"profile_name": existing.Name, "driver": requested, "old_driver": old})
 
 	out.ErrT(out.Workaround, `To proceed, either:
 
@@ -567,7 +580,7 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 * or *
 
 2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --driver={{.old_driver}}'
-`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": machineName})
+`, out.V{"command": minikubeCmd(), "old_driver": old, "profile_name": existing.Name})
 
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
@@ -594,8 +607,10 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		out.ErrLn("")
 
 		if !st.Installed && !viper.GetBool(force) {
-			if existing != nil && name == existing.Driver {
-				exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+			if existing != nil {
+				if old := hostDriver(existing); name == old {
+					exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+				}
 			}
 			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
