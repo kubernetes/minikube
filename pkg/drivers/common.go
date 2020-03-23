@@ -17,11 +17,15 @@ limitations under the License.
 package drivers
 
 import (
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"syscall"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/mcnflag"
@@ -29,6 +33,8 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // This file is for common code shared among internal machine drivers
@@ -137,5 +143,31 @@ func fixMachinePermissions(path string) error {
 			return errors.Wrap(err, "chown file")
 		}
 	}
+	return nil
+}
+
+// StopKubelet idempotently stops the kubelet
+func StopKubelet(cr command.Runner) error {
+	glog.Infof("stopping kubelet.service ...")
+	stop := func() error {
+		cmd := exec.Command("sudo", "systemctl", "stop", "-f", "kubelet.service")
+		if rr, err := cr.RunCmd(cmd); err != nil {
+			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
+		}
+		cmd = exec.Command("sudo", "systemctl", "show", "-p", "SubState", "kubelet")
+		rr, err := cr.RunCmd(cmd)
+		if err != nil {
+			glog.Errorf("temporary error: for %q : %v", rr.Command(), err)
+		}
+		if !strings.Contains(rr.Stdout.String(), "dead") && !strings.Contains(rr.Stdout.String(), "failed") {
+			return fmt.Errorf("unexpected kubelet state: %q", rr.Stdout.String())
+		}
+		return nil
+	}
+
+	if err := retry.Expo(stop, 2*time.Second, time.Minute*3, 5); err != nil {
+		return errors.Wrapf(err, "error stopping kubelet")
+	}
+
 	return nil
 }
