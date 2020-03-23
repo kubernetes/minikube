@@ -154,8 +154,8 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	if err := kubelet.Stop(d.exec); err != nil {
-		glog.Warningf("couldn't stop kubelet. will continue with kill anyways: %v", err)
+	if err := kubelet.ForceStop(d.exec); err != nil {
+		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 
 	// First try to gracefully stop containers

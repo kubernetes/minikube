@@ -247,6 +247,9 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
+	if err := kubelet.ForceStop(d.exec); err != nil {
+		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
+	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "killing kic node %s", d.MachineName)
