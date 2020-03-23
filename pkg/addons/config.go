@@ -18,7 +18,7 @@ package addons
 
 import "k8s.io/minikube/pkg/minikube/config"
 
-type setFn func(string, string, string) error
+type setFn func(*config.ClusterConfig, string, string) error
 
 // Addon represents an addon
 type Addon struct {
@@ -54,7 +54,7 @@ var Addons = []*Addon{
 	{
 		name:        "gvisor",
 		set:         SetBool,
-		validations: []setFn{IsContainerdRuntime},
+		validations: []setFn{IsRuntimeContainerd},
 		callbacks:   []setFn{enableOrDisableAddon},
 	},
 	{
@@ -111,6 +111,13 @@ var Addons = []*Addon{
 		name:      "registry-creds",
 		set:       SetBool,
 		callbacks: []setFn{enableOrDisableAddon},
+	},
+	{
+		name:      "registry-aliases",
+		set:       SetBool,
+		callbacks: []setFn{enableOrDisableAddon},
+		//TODO - add other settings
+		//TODO check if registry addon is enabled
 	},
 	{
 		name:      "storage-provisioner",

@@ -18,13 +18,13 @@ package config
 
 import (
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 
 	"github.com/golang/glog"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/util/lock"
@@ -52,14 +52,35 @@ func (p *Profile) IsValid() bool {
 }
 
 // PrimaryControlPlane gets the node specific config for the first created control plane
-func PrimaryControlPlane(cc ClusterConfig) (Node, error) {
+func PrimaryControlPlane(cc *ClusterConfig) (Node, error) {
 	for _, n := range cc.Nodes {
 		if n.ControlPlane {
 			return n, nil
 		}
 	}
 
-	return Node{}, errors.New("could not find master node")
+	// This config is probably from 1.6 or earlier, let's convert it.
+	cp := Node{
+		Name:              cc.KubernetesConfig.NodeName,
+		IP:                cc.KubernetesConfig.NodeIP,
+		Port:              cc.KubernetesConfig.NodePort,
+		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+		ControlPlane:      true,
+		Worker:            true,
+	}
+
+	cc.Nodes = []Node{cp}
+
+	// Remove old style attribute to avoid confusion
+	cc.KubernetesConfig.NodeName = ""
+	cc.KubernetesConfig.NodeIP = ""
+
+	err := SaveProfile(viper.GetString(ProfileName), cc)
+	if err != nil {
+		return Node{}, err
+	}
+
+	return cp, nil
 }
 
 // ProfileNameInReservedKeywords checks if the profile is an internal keywords
@@ -88,6 +109,23 @@ func ProfileExists(name string, miniHome ...string) bool {
 func CreateEmptyProfile(name string, miniHome ...string) error {
 	cfg := &ClusterConfig{}
 	return SaveProfile(name, cfg, miniHome...)
+}
+
+// SaveNode saves a node to a cluster
+func SaveNode(cfg *ClusterConfig, node *Node) error {
+	update := false
+	for i, n := range cfg.Nodes {
+		if n.Name == node.Name {
+			cfg.Nodes[i] = *node
+			update = true
+			break
+		}
+	}
+
+	if !update {
+		cfg.Nodes = append(cfg.Nodes, *node)
+	}
+	return SaveProfile(viper.GetString(ProfileName), cfg)
 }
 
 // SaveProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json

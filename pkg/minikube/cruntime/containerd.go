@@ -25,9 +25,11 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -112,7 +114,7 @@ type Containerd struct {
 	Socket            string
 	Runner            CommandRunner
 	ImageRepository   string
-	KubernetesVersion string
+	KubernetesVersion semver.Version
 }
 
 // Name is a human readable name for containerd
@@ -155,7 +157,7 @@ func (r *Containerd) DefaultCNI() bool {
 
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "containerd")
+	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "containerd")
 	_, err := r.Runner.RunCmd(c)
 	return err == nil
 }
@@ -170,13 +172,13 @@ func (r *Containerd) Available() error {
 }
 
 // generateContainerdConfig sets up /etc/containerd/config.toml
-func generateContainerdConfig(cr CommandRunner, imageRepository string) error {
+func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semver.Version) error {
 	cPath := containerdConfigFile
 	t, err := template.New("containerd.config.toml").Parse(containerdConfigTemplate)
 	if err != nil {
 		return err
 	}
-	pauseImage := images.Pause(imageRepository)
+	pauseImage := images.Pause(kv, imageRepository)
 	opts := struct{ PodInfraContainerImage string }{PodInfraContainerImage: pauseImage}
 	var b bytes.Buffer
 	if err := t.Execute(&b, opts); err != nil {
@@ -199,7 +201,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
-	if err := generateContainerdConfig(r.Runner, r.ImageRepository); err != nil {
+	if err := generateContainerdConfig(r.Runner, r.ImageRepository, r.KubernetesVersion); err != nil {
 		return err
 	}
 	if err := enableIPForwarding(r.Runner); err != nil {
@@ -215,7 +217,7 @@ func (r *Containerd) Enable(disOthers bool) error {
 
 // Disable idempotently disables containerd on a host
 func (r *Containerd) Disable() error {
-	c := exec.Command("sudo", "systemctl", "stop", "containerd")
+	c := exec.Command("sudo", "systemctl", "stop", "-f", "containerd")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrapf(err, "stop containerd")
 	}
@@ -307,4 +309,9 @@ func (r *Containerd) ContainerLogCmd(id string, len int, follow bool) string {
 // SystemLogCmd returns the command to retrieve system logs
 func (r *Containerd) SystemLogCmd(len int) string {
 	return fmt.Sprintf("sudo journalctl -u containerd -n %d", len)
+}
+
+// Preload preloads the container runtime with k8s images
+func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
+	return fmt.Errorf("not yet implemented for %s", r.Name())
 }

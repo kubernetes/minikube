@@ -23,7 +23,7 @@ imageRepository: test/repo
 apiServerExtraArgs:
   enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 certificatesDir: /var/lib/minikube/certs
-clusterName: kubernetes
+clusterName: mk
 apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
 controlPlaneEndpoint: 1.1.1.1:8443
 etcd:

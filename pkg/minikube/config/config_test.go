@@ -18,6 +18,7 @@ package config
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -43,13 +44,13 @@ var configTestCases = []configTestCase{
     "ReminderWaitPeriodInHours": 99,
     "cpus": 4,
     "disk-size": "20g",
+    "driver": "test-driver",
     "log_dir": "/etc/hosts",
     "show-libmachine-logs": true,
-    "v": 5,
-    "vm-driver": "test-driver"
+    "v": 5
 }`,
 		config: map[string]interface{}{
-			"vm-driver":                 "test-driver",
+			"driver":                    "test-driver",
 			"cpus":                      4,
 			"disk-size":                 "20g",
 			"v":                         5,
@@ -130,7 +131,7 @@ func TestReadConfig(t *testing.T) {
 	}
 
 	expectedConfig := map[string]interface{}{
-		"vm-driver":            "test-driver",
+		"driver":               "test-driver",
 		"cpus":                 4,
 		"disk-size":            "20g",
 		"show-libmachine-logs": true,
@@ -149,7 +150,7 @@ func TestWriteConfig(t *testing.T) {
 	}
 
 	cfg := map[string]interface{}{
-		"vm-driver":            "test-driver",
+		"driver":               "test-driver",
 		"cpus":                 4,
 		"disk-size":            "20g",
 		"show-libmachine-logs": true,
@@ -179,6 +180,8 @@ func TestEncode(t *testing.T) {
 		if err != nil {
 			t.Errorf("Error encoding: %v", err)
 		}
+		fmt.Printf("%+v\n", b.String())
+		fmt.Printf("%+v\n", tt.data)
 		if b.String() != tt.data {
 			t.Errorf("Did not write config correctly, \n\n expected:\n %+v \n\n actual:\n %+v", tt.data, b.String())
 		}

@@ -20,16 +20,20 @@ import (
 	"fmt"
 	"os/exec"
 
+	"github.com/phayes/freeport"
 	v1 "k8s.io/api/core/v1"
+
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 type sshConn struct {
 	name    string
 	service string
 	cmd     *exec.Cmd
+	ports   []int
 }
 
-func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
+func createSSHConn(name, sshPort, sshKey string, svc *v1.Service) *sshConn {
 	// extract sshArgs
 	sshArgs := []string{
 		// TODO: document the options here
@@ -41,6 +45,8 @@ func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
 		"-i", sshKey,
 	}
 
+	askForSudo := false
+	var privilegedPorts []int32
 	for _, port := range svc.Spec.Ports {
 		arg := fmt.Sprintf(
 			"-L %d:%s:%d",
@@ -49,10 +55,31 @@ func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
 			port.Port,
 		)
 
+		// check if any port is privileged
+		if port.Port < 1024 {
+			privilegedPorts = append(privilegedPorts, port.Port)
+			askForSudo = true
+		}
+
 		sshArgs = append(sshArgs, arg)
 	}
 
-	cmd := exec.Command("ssh", sshArgs...)
+	command := "ssh"
+
+	if askForSudo {
+		out.T(
+			out.Warning,
+			"The service {{.service}} requires privileged ports to be exposed: {{.ports}}",
+			out.V{"service": svc.Name, "ports": fmt.Sprintf("%v", privilegedPorts)},
+		)
+
+		out.T(out.Permissions, "sudo permission will be asked for it.")
+
+		command = "sudo"
+		sshArgs = append([]string{"ssh"}, sshArgs...)
+	}
+
+	cmd := exec.Command(command, sshArgs...)
 
 	return &sshConn{
 		name:    name,
@@ -61,8 +88,50 @@ func createSSHConn(name, sshPort, sshKey string, svc v1.Service) *sshConn {
 	}
 }
 
+func createSSHConnWithRandomPorts(name, sshPort, sshKey string, svc *v1.Service) (*sshConn, error) {
+	// extract sshArgs
+	sshArgs := []string{
+		// TODO: document the options here
+		"-o", "UserKnownHostsFile=/dev/null",
+		"-o", "StrictHostKeyChecking no",
+		"-N",
+		"docker@127.0.0.1",
+		"-p", sshPort,
+		"-i", sshKey,
+	}
+
+	usedPorts := make([]int, 0, len(svc.Spec.Ports))
+
+	for _, port := range svc.Spec.Ports {
+		freeport, err := freeport.GetFreePort()
+		if err != nil {
+			return nil, err
+		}
+
+		arg := fmt.Sprintf(
+			"-L %d:%s:%d",
+			freeport,
+			svc.Spec.ClusterIP,
+			port.Port,
+		)
+
+		sshArgs = append(sshArgs, arg)
+		usedPorts = append(usedPorts, freeport)
+	}
+
+	cmd := exec.Command("ssh", sshArgs...)
+
+	return &sshConn{
+		name:    name,
+		service: svc.Name,
+		cmd:     cmd,
+		ports:   usedPorts,
+	}, nil
+}
+
 func (c *sshConn) startAndWait() error {
-	fmt.Printf("starting tunnel for %s\n", c.service)
+	out.T(out.Running, "Starting tunnel for service {{.service}}.", out.V{"service": c.service})
+
 	err := c.cmd.Start()
 	if err != nil {
 		return err
@@ -75,6 +144,7 @@ func (c *sshConn) startAndWait() error {
 }
 
 func (c *sshConn) stop() error {
-	fmt.Printf("stopping tunnel for %s\n", c.service)
+	out.T(out.Stopping, "Stopping tunnel for service {{.service}}.", out.V{"service": c.service})
+
 	return c.cmd.Process.Kill()
 }

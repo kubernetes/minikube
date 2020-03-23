@@ -76,7 +76,7 @@ var tunnelCmd = &cobra.Command{
 			exit.WithError("error creating clientset", err)
 		}
 
-		cfg, err := config.Load(viper.GetString(config.MachineProfile))
+		cfg, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
@@ -90,7 +90,7 @@ var tunnelCmd = &cobra.Command{
 		}()
 
 		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
-			port, err := oci.HostPortBinding(oci.Docker, cfg.Name, 22)
+			port, err := oci.ForwardedPort(oci.Docker, cfg.Name, 22)
 			if err != nil {
 				exit.WithError("error getting ssh port", err)
 			}

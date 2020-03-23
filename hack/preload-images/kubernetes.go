@@ -14,17 +14,27 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cluster
+package main
 
 import (
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"context"
+
+	"github.com/golang/glog"
+	"github.com/google/go-github/github"
 )
 
-// CacheISO downloads and caches ISO.
-func CacheISO(cfg config.ClusterConfig) error {
-	if driver.BareMetal(cfg.Driver) {
-		return nil
+// RecentK8sVersions returns the most recent k8s version, usually around 30
+func RecentK8sVersions() ([]string, error) {
+	client := github.NewClient(nil)
+	k8s := "kubernetes"
+	list, _, err := client.Repositories.ListReleases(context.Background(), k8s, k8s, &github.ListOptions{})
+	if err != nil {
+		return nil, err
 	}
-	return cfg.Downloader.CacheMinikubeISOFromURL(cfg.MinikubeISO)
+	var releases []string
+	for _, r := range list {
+		releases = append(releases, r.GetTagName())
+	}
+	glog.Infof("Got releases: %v", releases)
+	return releases, nil
 }

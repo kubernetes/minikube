@@ -17,81 +17,52 @@ limitations under the License.
 package node
 
 import (
-	"errors"
+	"fmt"
 
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/machine"
 )
 
+// TODO: Share these between cluster and node packages
 const (
-	imageRepository     = "image-repository"
-	cacheImages         = "cache-images"
-	waitUntilHealthy    = "wait"
-	cacheImageConfigKey = "cache"
-	containerRuntime    = "container-runtime"
-	embedCerts          = "embed-certs"
-	keepContext         = "keep-context"
-	mountString         = "mount-string"
-	createMount         = "mount"
-	waitTimeout         = "wait-timeout"
+	mountString = "mount-string"
+	createMount = "mount"
 )
 
 // Add adds a new node config to an existing cluster.
-func Add(cc *config.ClusterConfig, name string, controlPlane bool, worker bool, k8sVersion string, profileName string) (*config.Node, error) {
-	n := config.Node{
-		Name:   name,
-		Worker: true,
+func Add(cc *config.ClusterConfig, n config.Node) error {
+	if err := config.SaveNode(cc, &n); err != nil {
+		return errors.Wrap(err, "save node")
 	}
 
-	if controlPlane {
-		n.ControlPlane = true
-	}
-
-	if worker {
-		n.Worker = true
-	}
-
-	if k8sVersion != "" {
-		n.KubernetesVersion = k8sVersion
-	} else {
-		n.KubernetesVersion = cc.KubernetesConfig.KubernetesVersion
-	}
-
-	cc.Nodes = append(cc.Nodes, n)
-	err := config.SaveProfile(profileName, cc)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = Start(*cc, n, false, nil)
-	return &n, err
+	// TODO: Start should return an error rather than calling exit!
+	Start(*cc, n, nil, false)
+	return nil
 }
 
 // Delete stops and deletes the given node from the given cluster
 func Delete(cc config.ClusterConfig, name string) error {
-	_, index, err := Retrieve(&cc, name)
+	n, index, err := Retrieve(&cc, name)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "retrieve")
 	}
-
-	/*err = Stop(cc, nd)
-	if err != nil {
-		glog.Warningf("Failed to stop node %s. Will still try to delete.", name)
-	}*/
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		return err
 	}
 
-	err = machine.DeleteHost(api, name)
+	err = machine.DeleteHost(api, driver.MachineName(cc, *n))
 	if err != nil {
 		return err
 	}
 
 	cc.Nodes = append(cc.Nodes[:index], cc.Nodes[index+1:]...)
-	return config.SaveProfile(viper.GetString(config.MachineProfile), &cc)
+	return config.SaveProfile(viper.GetString(config.ProfileName), &cc)
 }
 
 // Retrieve finds the node by name in the given cluster
@@ -119,5 +90,10 @@ func Save(cfg *config.ClusterConfig, node *config.Node) error {
 	if !update {
 		cfg.Nodes = append(cfg.Nodes, *node)
 	}
-	return config.SaveProfile(viper.GetString(config.MachineProfile), cfg)
+	return config.SaveProfile(viper.GetString(config.ProfileName), cfg)
+}
+
+// Name returns the appropriate name for the node given the current number of nodes
+func Name(index int) string {
+	return fmt.Sprintf("m%02d", index)
 }

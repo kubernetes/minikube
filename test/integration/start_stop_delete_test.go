@@ -86,7 +86,7 @@ func TestStartStop(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
 
@@ -166,6 +166,51 @@ func TestStartStop(t *testing.T) {
 	})
 }
 
+func TestStartStopWithPreload(t *testing.T) {
+	if NoneDriver() {
+		t.Skipf("skipping %s - incompatible with none driver", t.Name())
+	}
+
+	profile := UniqueProfileName("test-preload")
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
+	defer CleanupWithLogs(t, profile, cancel)
+
+	startArgs := []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}
+	startArgs = append(startArgs, StartArgs()...)
+	k8sVersion := "v1.17.0"
+	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
+
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+
+	// Now, pull the busybox image into the VMs docker daemon
+	image := "busybox"
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "pull", image))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+	// Restart minikube with v1.17.3, which has a preloaded tarball
+	startArgs = []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}
+	startArgs = append(startArgs, StartArgs()...)
+	k8sVersion = "v1.17.3"
+	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+
+	// Ensure that busybox still exists in the daemon
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images"))
+	if err != nil {
+		t.Fatalf("%s failed: %v", rr.Args, err)
+	}
+	if !strings.Contains(rr.Output(), image) {
+		t.Fatalf("Expected to find %s in output of `docker images`, instead got %s", image, rr.Output())
+	}
+}
+
 // testPodScheduling asserts that this configuration can schedule new pods
 func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 	t.Helper()
@@ -215,12 +260,14 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	if err != nil {
 		t.Errorf("images unmarshal: %v", err)
 	}
-	gotImages := []string{}
+	found := map[string]bool{}
 	for _, img := range jv["images"] {
 		for _, i := range img.Tags {
+			// Remove container-specific prefixes for naming consistency
+			i = strings.TrimPrefix(i, "docker.io/")
+			i = strings.TrimPrefix(i, "localhost/")
 			if defaultImage(i) {
-				// Remove docker.io for naming consistency between container runtimes
-				gotImages = append(gotImages, strings.TrimPrefix(i, "docker.io/"))
+				found[i] = true
 			} else {
 				t.Logf("Found non-minikube image: %s", i)
 			}
@@ -229,6 +276,10 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	want, err := images.Kubeadm("", version)
 	if err != nil {
 		t.Errorf("kubeadm images: %v", version)
+	}
+	gotImages := []string{}
+	for k := range found {
+		gotImages = append(gotImages, k)
 	}
 	sort.Strings(want)
 	sort.Strings(gotImages)

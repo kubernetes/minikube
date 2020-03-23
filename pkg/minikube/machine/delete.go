@@ -37,12 +37,6 @@ func deleteOrphanedKIC(ociBin string, name string) {
 	if !(ociBin == oci.Podman || ociBin == oci.Docker) {
 		return
 	}
-	if ociBin == oci.Docker {
-		if err := oci.PointToHostDockerDaemon(); err != nil {
-			glog.Infof("Failed to point to host docker-damon: %v", err)
-			return
-		}
-	}
 
 	_, err := oci.ContainerStatus(ociBin, name)
 	if err != nil {
@@ -70,10 +64,11 @@ func DeleteHost(api libmachine.API, machineName string) error {
 	}
 
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
-	status, err := GetHostStatus(api, machineName)
+	status, err := Status(api, machineName)
 	if err != nil {
-		// Warn, but proceed
-		out.WarningT("Unable to get the status of the {{.name}} cluster.", out.V{"name": machineName})
+		// Assume that the host has already been deleted, log and return
+		glog.Infof("Unable to get host status for %s, assuming it has already been deleted: %v", machineName, err)
+		return nil
 	}
 
 	if status == state.None.String() {

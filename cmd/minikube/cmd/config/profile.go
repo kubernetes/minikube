@@ -35,7 +35,7 @@ var ProfileCmd = &cobra.Command{
 	Long:  "profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			profile := viper.GetString(pkgConfig.MachineProfile)
+			profile := viper.GetString(pkgConfig.ProfileName)
 			out.T(out.Empty, profile)
 			os.Exit(0)
 		}
@@ -65,10 +65,11 @@ var ProfileCmd = &cobra.Command{
 		}
 
 		if !pkgConfig.ProfileExists(profile) {
-			out.FailureT("if you want to create a profile you can by this command: minikube start -p {{.profile_name}}", out.V{"profile_name": profile})
+			out.ErrT(out.Tip, `if you want to create a profile you can by this command: minikube start -p {{.profile_name}}`, out.V{"profile_name": profile})
+			os.Exit(0)
 		}
 
-		err := Set(pkgConfig.MachineProfile, profile)
+		err := Set(pkgConfig.ProfileName, profile)
 		if err != nil {
 			exit.WithError("Setting profile failed", err)
 		}

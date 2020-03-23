@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -32,26 +33,37 @@ import (
 )
 
 func init() {
+	priority := registry.Default
+	// Staged rollout for preferred:
+	// - Linux
+	// - Windows (once "service" command works)
+	// - macOS
+	if runtime.GOOS == "linux" {
+		priority = registry.Preferred
+	}
+
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Docker,
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
-		Priority: registry.Experimental,
+		Priority: priority,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
 }
 
-func configure(mc config.ClusterConfig) (interface{}, error) {
+func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 	return kic.NewDriver(kic.Config{
-		MachineName:   mc.Name,
-		StorePath:     localpath.MiniPath(),
-		ImageDigest:   kic.BaseImage,
-		CPU:           mc.CPUs,
-		Memory:        mc.Memory,
-		OCIBinary:     oci.Docker,
-		APIServerPort: mc.Nodes[0].Port,
+		MachineName:       driver.MachineName(cc, n),
+		StorePath:         localpath.MiniPath(),
+		ImageDigest:       kic.BaseImage,
+		CPU:               cc.CPUs,
+		Memory:            cc.Memory,
+		OCIBinary:         oci.Docker,
+		APIServerPort:     cc.Nodes[0].Port,
+		KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+		ContainerRuntime:  cc.KubernetesConfig.ContainerRuntime,
 	}), nil
 }
 

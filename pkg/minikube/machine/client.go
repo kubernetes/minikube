@@ -36,11 +36,11 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/persist"
-	lib_provision "github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -49,7 +49,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/sshutil"
-	"k8s.io/minikube/pkg/provision"
 )
 
 // NewRPCClient gets a new client.
@@ -167,11 +166,18 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 
 // Create creates the host
 func (api *LocalClient) Create(h *host.Host) error {
+	glog.Infof("LocalClient.Create starting")
+	start := time.Now()
+	defer func() {
+		glog.Infof("LocalClient.Create took %s", time.Since(start))
+	}()
+
 	def := registry.Driver(h.DriverName)
 	if def.Empty() {
 		return fmt.Errorf("driver %q does not exist", h.DriverName)
 	}
 	if def.Init == nil {
+		// NOTE: This will call provision.DetectProvisioner
 		return api.legacyClient.Create(h)
 	}
 
@@ -209,21 +215,17 @@ func (api *LocalClient) Create(h *host.Host) error {
 		{
 			"provisioning",
 			func() error {
+				// Skippable because we don't reconfigure Docker?
 				if driver.BareMetal(h.Driver.DriverName()) {
 					return nil
 				}
-				var pv lib_provision.Provisioner
-				if driver.IsKIC(h.Driver.DriverName()) {
-					pv = provision.NewUbuntuProvisioner(h.Driver)
-				} else {
-					pv = provision.NewBuildrootProvisioner(h.Driver)
-				}
-				return pv.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
+				return provisionDockerMachine(h)
 			},
 		},
 	}
 
 	for _, step := range steps {
+
 		if err := step.f(); err != nil {
 			return errors.Wrap(err, step.name)
 		}

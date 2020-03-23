@@ -29,16 +29,18 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/vmpath"
+	"k8s.io/minikube/pkg/util"
 )
 
 // Container runtimes
 const remoteContainerRuntime = "remote"
 
 // GenerateKubeadmYAML generates the kubeadm.yaml file
-func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.Node) ([]byte, error) {
-	k8s := mc.KubernetesConfig
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Manager) ([]byte, error) {
+	k8s := cc.KubernetesConfig
+	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -50,7 +52,7 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 	}
 
 	// In case of no port assigned, use default
-	cp, err := config.PrimaryControlPlane(mc)
+	cp, err := config.PrimaryControlPlane(&cc)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting control plane")
 	}
@@ -65,41 +67,42 @@ func GenerateKubeadmYAML(mc config.ClusterConfig, r cruntime.Manager, n config.N
 	}
 
 	opts := struct {
-		CertDir           string
-		ServiceCIDR       string
-		PodSubnet         string
-		AdvertiseAddress  string
-		APIServerPort     int
-		KubernetesVersion string
-		EtcdDataDir       string
-		ClusterName       string
-		NodeName          string
-		DNSDomain         string
-		CRISocket         string
-		ImageRepository   string
-		ComponentOptions  []componentOptions
-		FeatureArgs       map[string]bool
-		NoTaintMaster     bool
-		NodeIP            string
-		ControlPlaneIP    string
+		CertDir             string
+		ServiceCIDR         string
+		PodSubnet           string
+		AdvertiseAddress    string
+		APIServerPort       int
+		KubernetesVersion   string
+		EtcdDataDir         string
+		ClusterName         string
+		NodeName            string
+		DNSDomain           string
+		CRISocket           string
+		ImageRepository     string
+		ComponentOptions    []componentOptions
+		FeatureArgs         map[string]bool
+		NoTaintMaster       bool
+		NodeIP              string
+		ControlPlaneAddress string
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
 		PodSubnet:         k8s.ExtraOptions.Get("pod-network-cidr", Kubeadm),
-		AdvertiseAddress:  cp.IP,
+		AdvertiseAddress:  n.IP,
 		APIServerPort:     nodePort,
 		KubernetesVersion: k8s.KubernetesVersion,
 		EtcdDataDir:       EtcdDataDir(),
-		ClusterName:       k8s.ClusterName,
-		NodeName:          cp.Name,
-		CRISocket:         r.SocketPath(),
-		ImageRepository:   k8s.ImageRepository,
-		ComponentOptions:  componentOpts,
-		FeatureArgs:       kubeadmFeatureArgs,
-		NoTaintMaster:     false, // That does not work with k8s 1.12+
-		DNSDomain:         k8s.DNSDomain,
-		NodeIP:            n.IP,
-		ControlPlaneIP:    cp.IP,
+		ClusterName:       cc.Name,
+		//kubeadm uses NodeName as the --hostname-override parameter, so this needs to be the name of the machine
+		NodeName:            driver.MachineName(cc, n),
+		CRISocket:           r.SocketPath(),
+		ImageRepository:     k8s.ImageRepository,
+		ComponentOptions:    componentOpts,
+		FeatureArgs:         kubeadmFeatureArgs,
+		NoTaintMaster:       false, // That does not work with k8s 1.12+
+		DNSDomain:           k8s.DNSDomain,
+		NodeIP:              n.IP,
+		ControlPlaneAddress: cp.IP,
 	}
 
 	if k8s.ServiceCIDR != "" {

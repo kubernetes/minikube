@@ -19,18 +19,16 @@ package provision
 import (
 	"bytes"
 	"fmt"
-	"path"
 	"text/template"
 	"time"
 
 	"github.com/docker/machine/libmachine/auth"
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/engine"
-	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/docker/machine/libmachine/provision/pkgaction"
-	"github.com/docker/machine/libmachine/provision/serviceaction"
 	"github.com/docker/machine/libmachine/swarm"
+	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -43,7 +41,7 @@ type UbuntuProvisioner struct {
 func NewUbuntuProvisioner(d drivers.Driver) provision.Provisioner {
 	return &UbuntuProvisioner{
 		BuildrootProvisioner{
-			provision.NewSystemdProvisioner("ubuntu", d),
+			NewSystemdProvisioner("ubuntu", d),
 		},
 	}
 }
@@ -67,7 +65,7 @@ func (p *UbuntuProvisioner) GenerateDockerOptions(dockerPort int) (*provision.Do
 	noPivot := true
 	// Using pivot_root is not supported on fstype rootfs
 	if fstype, err := rootFileSystemType(p); err == nil {
-		log.Debugf("root file system type: %s", fstype)
+		glog.Infof("root file system type: %s", fstype)
 		noPivot = fstype == "rootfs"
 	}
 
@@ -83,7 +81,7 @@ Requires=docker.socket
 Type=notify
 `
 	if noPivot {
-		log.Warn("Using fundamentally insecure --no-pivot option")
+		glog.Warning("Using fundamentally insecure --no-pivot option")
 		engineConfigTmpl += `
 # DOCKER_RAMDISK disables pivot_root in Docker, using MS_MOVE instead.
 Environment=DOCKER_RAMDISK=yes
@@ -104,7 +102,7 @@ Environment=DOCKER_RAMDISK=yes
 # NOTE: default-ulimit=nofile is set to an arbitrary number for consistency with other
 # container runtimes. If left unlimited, it may result in OOM issues with MySQL.
 ExecStart=
-ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:{{.DockerPort}} -H unix:///var/run/docker.sock --default-ulimit=nofile=1048576:1048576 --tlsverify --tlscacert {{.AuthOptions.CaCertRemotePath}} --tlscert {{.AuthOptions.ServerCertRemotePath}} --tlskey {{.AuthOptions.ServerKeyRemotePath}} {{ range .EngineOptions.Labels }}--label {{.}} {{ end }}{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}{{ range .EngineOptions.ArbitraryFlags }}--{{.}} {{ end }}
+ExecStart=/usr/bin/dockerd -H tcp://0.0.0.0:2376 -H unix:///var/run/docker.sock --default-ulimit=nofile=1048576:1048576 --tlsverify --tlscacert {{.AuthOptions.CaCertRemotePath}} --tlscert {{.AuthOptions.ServerCertRemotePath}} --tlskey {{.AuthOptions.ServerKeyRemotePath}} {{ range .EngineOptions.Labels }}--label {{.}} {{ end }}{{ range .EngineOptions.InsecureRegistry }}--insecure-registry {{.}} {{ end }}{{ range .EngineOptions.RegistryMirror }}--registry-mirror {{.}} {{ end }}{{ range .EngineOptions.ArbitraryFlags }}--{{.}} {{ end }}
 ExecReload=/bin/kill -s HUP $MAINPID
 
 # Having non-zero Limit*s causes performance problems due to accounting overhead
@@ -144,25 +142,11 @@ WantedBy=multi-user.target
 		return nil, err
 	}
 
-	dockerCfg := &provision.DockerOptions{
+	do := &provision.DockerOptions{
 		EngineOptions:     engineCfg.String(),
 		EngineOptionsPath: "/lib/systemd/system/docker.service",
 	}
-
-	log.Info("Setting Docker configuration on the remote daemon...")
-
-	if _, err = p.SSHCommand(fmt.Sprintf("sudo mkdir -p %s && printf %%s \"%s\" | sudo tee %s", path.Dir(dockerCfg.EngineOptionsPath), dockerCfg.EngineOptions, dockerCfg.EngineOptionsPath)); err != nil {
-		return nil, err
-	}
-
-	if err := p.Service("docker", serviceaction.Enable); err != nil {
-		return nil, err
-	}
-
-	if err := p.Service("docker", serviceaction.Restart); err != nil {
-		return nil, err
-	}
-	return dockerCfg, nil
+	return do, updateUnit(p, "docker", do.EngineOptions, do.EngineOptionsPath)
 }
 
 // Package installs a package
@@ -176,32 +160,33 @@ func (p *UbuntuProvisioner) Provision(swarmOptions swarm.Options, authOptions au
 	p.AuthOptions = authOptions
 	p.EngineOptions = engineOptions
 
-	log.Infof("provisioning hostname %q", p.Driver.GetMachineName())
+	glog.Infof("provisioning hostname %q", p.Driver.GetMachineName())
 	if err := p.SetHostname(p.Driver.GetMachineName()); err != nil {
 		return err
 	}
 
 	p.AuthOptions = setRemoteAuthOptions(p)
-	log.Debugf("set auth options %+v", p.AuthOptions)
+	glog.Infof("set auth options %+v", p.AuthOptions)
 
-	log.Debugf("setting up certificates")
+	glog.Infof("setting up certificates")
 	configAuth := func() error {
 		if err := configureAuth(p); err != nil {
-			log.Warnf("configureAuth failed: %v", err)
+			glog.Warningf("configureAuth failed: %v", err)
 			return &retry.RetriableError{Err: err}
 		}
 		return nil
 	}
 
 	err := retry.Expo(configAuth, time.Second, 2*time.Minute)
+
 	if err != nil {
-		log.Debugf("Error configuring auth during provisioning %v", err)
+		glog.Infof("Error configuring auth during provisioning %v", err)
 		return err
 	}
 
-	log.Debugf("setting minikube options for container-runtime")
+	glog.Infof("setting minikube options for container-runtime")
 	if err := setContainerRuntimeOptions(p.Driver.GetMachineName(), p); err != nil {
-		log.Debugf("Error setting container-runtime options during provisioning %v", err)
+		glog.Infof("Error setting container-runtime options during provisioning %v", err)
 		return err
 	}
 

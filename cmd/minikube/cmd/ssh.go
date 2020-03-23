@@ -27,7 +27,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
+)
+
+var (
+	nativeSSHClient bool
 )
 
 // sshCmd represents the docker-ssh command
@@ -41,24 +46,37 @@ var sshCmd = &cobra.Command{
 			exit.WithError("Error getting client", err)
 		}
 		defer api.Close()
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
+		cc, err := config.Load(viper.GetString(config.ProfileName))
 		if err != nil {
 			exit.WithError("Error getting config", err)
 		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
+		var n *config.Node
+		if nodeName == "" {
+			cp, err := config.PrimaryControlPlane(cc)
+			if err != nil {
+				exit.WithError("Getting primary control plane", err)
+			}
+			n = &cp
+		} else {
+			n, _, err = node.Retrieve(cc, nodeName)
+			if err != nil {
+				exit.WithCodeT(exit.Unavailable, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
+			}
+		}
+		host, err := machine.LoadHost(api, driver.MachineName(*cc, *n))
 		if err != nil {
 			exit.WithError("Error getting host", err)
 		}
 		if host.Driver.DriverName() == driver.None {
 			exit.UsageT("'none' driver does not support 'minikube ssh' command")
 		}
-		if viper.GetBool(nativeSSH) {
+		if nativeSSHClient {
 			ssh.SetDefaultClient(ssh.Native)
 		} else {
 			ssh.SetDefaultClient(ssh.External)
 		}
 
-		err = machine.CreateSSHShell(api, args)
+		err = machine.CreateSSHShell(api, *cc, *n, args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)
@@ -70,4 +88,5 @@ var sshCmd = &cobra.Command{
 
 func init() {
 	sshCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
+	sshCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to ssh into. Defaults to the primary control plane.")
 }

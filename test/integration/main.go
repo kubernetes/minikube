@@ -27,7 +27,6 @@ import (
 
 // General configuration: used to set the VM Driver
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
-var defaultDriver = flag.String("expected-default-driver", "", "Expected default driver")
 
 // Flags for faster local integration testing
 var forceProfile = flag.String("profile", "", "force tests to run against a particular profile")
@@ -61,17 +60,12 @@ func Target() string {
 
 // NoneDriver returns whether or not this test is using the none driver
 func NoneDriver() bool {
-	return strings.Contains(*startArgs, "--vm-driver=none")
+	return strings.Contains(*startArgs, "--driver=none")
 }
 
 // HyperVDriver returns whether or not this test is using the Hyper-V driver
 func HyperVDriver() bool {
-	return strings.Contains(*startArgs, "--vm-driver=hyperv")
-}
-
-// ExpectedDefaultDriver returns the expected default driver, if any
-func ExpectedDefaultDriver() string {
-	return *defaultDriver
+	return strings.Contains(*startArgs, "--driver=hyperv")
 }
 
 // CanCleanup returns if cleanup is allowed

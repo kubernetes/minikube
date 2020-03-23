@@ -19,11 +19,11 @@ brew install hyperkit
 Start a cluster using the hyperkit driver:
 
 ```shell
-minikube start --vm-driver=hyperkit
+minikube start --driver=hyperkit
 ```
 
 To make hyperkit the default driver:
 
 ```shell
-minikube config set vm-driver hyperkit
+minikube config set driver hyperkit
 ```

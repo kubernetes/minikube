@@ -30,22 +30,35 @@ import (
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/logs"
 )
 
-// APIServerProcess waits for api server to be healthy returns error if it doesn't
-func APIServerProcess(runner command.Runner, start time.Time, timeout time.Duration) error {
+// minLogCheckTime how long to wait before spamming error logs to console
+const minLogCheckTime = 30 * time.Second
+
+// WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
+func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, start time.Time, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver process to appear ...")
 	err := wait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during process check")
 		}
 
-		if _, ierr := apiServerPID(runner); ierr != nil {
+		if time.Since(start) > minLogCheckTime {
+			announceProblems(r, bs, cfg, cr)
+			time.Sleep(kconst.APICallRetryInterval * 5)
+		}
+
+		if _, ierr := apiServerPID(cr); ierr != nil {
 			return false, nil
 		}
 		return true, nil
@@ -67,14 +80,82 @@ func apiServerPID(cr command.Runner) (int, error) {
 	return strconv.Atoi(s)
 }
 
-// SystemPods verifies essential pods for running kurnetes is running
-func SystemPods(client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
+// ExpectedComponentsRunning returns whether or not all expected components are running
+func ExpectedComponentsRunning(cs *kubernetes.Clientset) error {
+	expected := []string{
+		"kube-dns", // coredns
+		"etcd",
+		"kube-apiserver",
+		"kube-controller-manager",
+		"kube-proxy",
+		"kube-scheduler",
+	}
+
+	found := map[string]bool{}
+
+	pods, err := cs.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, pod := range pods.Items {
+		glog.Infof("found pod: %s", podStatusMsg(pod))
+		if pod.Status.Phase != core.PodRunning {
+			continue
+		}
+		for k, v := range pod.ObjectMeta.Labels {
+			if k == "component" || k == "k8s-app" {
+				found[v] = true
+			}
+		}
+	}
+
+	missing := []string{}
+	for _, e := range expected {
+		if !found[e] {
+			missing = append(missing, e)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("missing components: %v", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+// podStatusMsg returns a human-readable pod status, for generating debug status
+func podStatusMsg(pod core.Pod) string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase))
+	for i, c := range pod.Status.Conditions {
+		if c.Reason != "" {
+			if i == 0 {
+				sb.WriteString(": ")
+			} else {
+				sb.WriteString(" / ")
+			}
+			sb.WriteString(fmt.Sprintf("%s:%s", c.Type, c.Reason))
+		}
+		if c.Message != "" {
+			sb.WriteString(fmt.Sprintf(" (%s)", c.Message))
+		}
+	}
+	return sb.String()
+}
+
+// WaitForSystemPods verifies essential pods for running kurnetes is running
+func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
 	glog.Info("waiting for kube-system pods to appear ...")
 	pStart := time.Now()
+
 	podList := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during pod check")
 		}
+		if time.Since(start) > minLogCheckTime {
+			announceProblems(r, bs, cfg, cr)
+			time.Sleep(kconst.APICallRetryInterval * 5)
+		}
+
 		// Wait for any system pod, as waiting for apiserver may block until etcd
 		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
 		if err != nil {
@@ -82,6 +163,10 @@ func SystemPods(client *kubernetes.Clientset, start time.Time, timeout time.Dura
 			return false, nil
 		}
 		glog.Infof("%d kube-system pods found", len(pods.Items))
+		for _, pod := range pods.Items {
+			glog.Infof(podStatusMsg(pod))
+		}
+
 		if len(pods.Items) < 2 {
 			return false, nil
 		}
@@ -94,13 +179,19 @@ func SystemPods(client *kubernetes.Clientset, start time.Time, timeout time.Dura
 	return nil
 }
 
-// APIServerIsRunning waits for api server status to be running
-func APIServerIsRunning(start time.Time, ip string, port int, timeout time.Duration) error {
+// WaitForHealthyAPIServer waits for api server status to be running
+func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, start time.Time, ip string, port int, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
+
 	healthz := func() (bool, error) {
 		if time.Since(start) > timeout {
 			return false, fmt.Errorf("cluster wait timed out during healthz check")
+		}
+
+		if time.Since(start) > minLogCheckTime {
+			announceProblems(r, bs, cfg, cr)
+			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
 
 		status, err := apiServerHealthz(net.ParseIP(ip), port)
@@ -121,13 +212,22 @@ func APIServerIsRunning(start time.Time, ip string, port int, timeout time.Durat
 	return nil
 }
 
+// announceProblems checks for problems, and slows polling down if any are found
+func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner) {
+	problems := logs.FindProblems(r, bs, cfg, cr)
+	if len(problems) > 0 {
+		logs.OutputProblems(problems, 5)
+		time.Sleep(kconst.APICallRetryInterval * 15)
+	}
+}
+
 // APIServerStatus returns apiserver status in libmachine style state.State
 func APIServerStatus(cr command.Runner, ip net.IP, port int) (state.State, error) {
 	glog.Infof("Checking apiserver status ...")
 
 	pid, err := apiServerPID(cr)
 	if err != nil {
-		glog.Warningf("unable to get apiserver pid: %v", err)
+		glog.Warningf("stopped: unable to get apiserver pid: %v", err)
 		return state.Stopped, nil
 	}
 
@@ -173,7 +273,12 @@ func apiServerHealthz(ip net.IP, port int) (state.State, error) {
 	resp, err := client.Get(url)
 	// Connection refused, usually.
 	if err != nil {
+		glog.Infof("stopped: %s: %v", url, err)
 		return state.Stopped, nil
+	}
+	if resp.StatusCode == http.StatusUnauthorized {
+		glog.Errorf("%s returned code %d (unauthorized). Please ensure that your apiserver authorization settings make sense!", url, resp.StatusCode)
+		return state.Error, nil
 	}
 	if resp.StatusCode != http.StatusOK {
 		glog.Warningf("%s response: %v %+v", url, err, resp)

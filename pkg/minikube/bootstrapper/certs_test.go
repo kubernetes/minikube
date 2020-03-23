@@ -24,7 +24,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/tests"
 	"k8s.io/minikube/pkg/util"
 )
@@ -52,26 +51,14 @@ func TestSetupCerts(t *testing.T) {
 	}
 
 	expected := map[string]string{
-		`sudo /bin/bash -c "test -f /usr/share/ca-certificates/mycert.pem || ln -fs /etc/ssl/certs/mycert.pem /usr/share/ca-certificates/mycert.pem"`:             "-",
-		`sudo /bin/bash -c "test -f /usr/share/ca-certificates/minikubeCA.pem || ln -fs /etc/ssl/certs/minikubeCA.pem /usr/share/ca-certificates/minikubeCA.pem"`: "-",
+		`sudo /bin/bash -c "test -f /usr/share/ca-certificates/mycert.pem && ln -fs /usr/share/ca-certificates/mycert.pem /etc/ssl/certs/mycert.pem"`:             "-",
+		`sudo /bin/bash -c "test -f /usr/share/ca-certificates/minikubeCA.pem && ln -fs /usr/share/ca-certificates/minikubeCA.pem /etc/ssl/certs/minikubeCA.pem"`: "-",
 	}
 	f := command.NewFakeCommandRunner()
 	f.SetCommandToOutput(expected)
 
-	var filesToBeTransferred []string
-	for _, cert := range certs {
-		filesToBeTransferred = append(filesToBeTransferred, filepath.Join(localpath.MiniPath(), cert))
-	}
-	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(localpath.MiniPath(), "ca.crt"))
-	filesToBeTransferred = append(filesToBeTransferred, filepath.Join(localpath.MiniPath(), "certs", "mycert.pem"))
-
-	if err := SetupCerts(f, k8s, config.Node{}); err != nil {
+	_, err := SetupCerts(f, k8s, config.Node{})
+	if err != nil {
 		t.Fatalf("Error starting cluster: %v", err)
-	}
-	for _, cert := range filesToBeTransferred {
-		_, err := f.GetFileToContents(cert)
-		if err != nil {
-			t.Errorf("Cert not generated: %s", cert)
-		}
 	}
 }

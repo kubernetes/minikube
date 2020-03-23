@@ -17,17 +17,14 @@ limitations under the License.
 package machine
 
 import (
-	"io/ioutil"
-	"path/filepath"
+	"time"
 
-	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
-	"github.com/docker/machine/libmachine/state"
+	libprovision "github.com/docker/machine/libmachine/provision"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/provision"
 )
 
 // Machine contains information about a machine
@@ -63,37 +60,14 @@ func (h *Machine) IsValid() bool {
 	return true
 }
 
-// List return all valid and invalid machines
-// If a machine is valid or invalid is determined by the cluster.IsValid function
-func List(miniHome ...string) (validMachines []*Machine, inValidMachines []*Machine, err error) {
-	pDirs, err := machineDirs(miniHome...)
-	if err != nil {
-		return nil, nil, err
-	}
-	for _, n := range pDirs {
-		p, err := Load(n)
-		if err != nil {
-			glog.Infof("%s not valid: %v", n, err)
-			inValidMachines = append(inValidMachines, p)
-			continue
-		}
-		if !p.IsValid() {
-			inValidMachines = append(inValidMachines, p)
-			continue
-		}
-		validMachines = append(validMachines, p)
-	}
-	return validMachines, inValidMachines, nil
-}
-
-// Load loads a machine or throws an error if the machine could not be loadedG
-func Load(name string) (*Machine, error) {
+// LoadMachine returns a Machine abstracting a libmachine.Host
+func LoadMachine(name string) (*Machine, error) {
 	api, err := NewAPIClient()
 	if err != nil {
 		return nil, err
 	}
 
-	h, err := CheckIfHostExistsAndLoad(api, name)
+	h, err := LoadHost(api, name)
 	if err != nil {
 		return nil, err
 	}
@@ -104,45 +78,33 @@ func Load(name string) (*Machine, error) {
 	} else {
 		return nil, errors.New("host is nil")
 	}
-
 	return &mm, nil
 }
 
-func machineDirs(miniHome ...string) (dirs []string, err error) {
-	miniPath := localpath.MiniPath()
-	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
+// provisionDockerMachine provides fast provisioning of a docker machine
+func provisionDockerMachine(h *host.Host) error {
+	glog.Infof("provisioning docker machine ...")
+	start := time.Now()
+	defer func() {
+		glog.Infof("provisioned docker machine in %s", time.Since(start))
+	}()
+
+	p, err := fastDetectProvisioner(h)
+	if err != nil {
+		return errors.Wrap(err, "fast detect")
 	}
-	mRootDir := filepath.Join(miniPath, "machines")
-	items, err := ioutil.ReadDir(mRootDir)
-	for _, f := range items {
-		if f.IsDir() {
-			dirs = append(dirs, f.Name())
-		}
-	}
-	return dirs, err
+	return p.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
 }
 
-// CreateSSHShell creates a new SSH shell / client
-func CreateSSHShell(api libmachine.API, args []string) error {
-	machineName := viper.GetString(config.MachineProfile)
-	host, err := CheckIfHostExistsAndLoad(api, machineName)
-	if err != nil {
-		return errors.Wrap(err, "host exists and load")
+// fastDetectProvisioner provides a shortcut for provisioner detection
+func fastDetectProvisioner(h *host.Host) (libprovision.Provisioner, error) {
+	d := h.Driver.DriverName()
+	switch {
+	case driver.IsKIC(d):
+		return provision.NewUbuntuProvisioner(h.Driver), nil
+	case driver.BareMetal(d):
+		return libprovision.DetectProvisioner(h.Driver)
+	default:
+		return provision.NewBuildrootProvisioner(h.Driver), nil
 	}
-
-	currentState, err := host.Driver.GetState()
-	if err != nil {
-		return errors.Wrap(err, "state")
-	}
-
-	if currentState != state.Running {
-		return errors.Errorf("%q is not running", machineName)
-	}
-
-	client, err := host.CreateSSHClient()
-	if err != nil {
-		return errors.Wrap(err, "Creating ssh client")
-	}
-	return client.Shell(args...)
 }

@@ -31,7 +31,7 @@ scheduler:
   extraArgs:
     scheduler-name: "mini-scheduler"
 certificatesDir: /var/lib/minikube/certs
-clusterName: kubernetes
+clusterName: mk
 controlPlaneEndpoint: 1.1.1.1:8443
 dns:
   type: CoreDNS

@@ -41,8 +41,8 @@ const (
 	WantKubectlDownloadMsg = "WantKubectlDownloadMsg"
 	// WantNoneDriverWarning is the key for WantNoneDriverWarning
 	WantNoneDriverWarning = "WantNoneDriverWarning"
-	// MachineProfile is the key for MachineProfile
-	MachineProfile = "profile"
+	// ProfileName represents the key for the global profile parameter
+	ProfileName = "profile"
 	// ShowDriverDeprecationNotification is the key for ShowDriverDeprecationNotification
 	ShowDriverDeprecationNotification = "ShowDriverDeprecationNotification"
 	// ShowBootstrapperDeprecationNotification is the key for ShowBootstrapperDeprecationNotification
@@ -52,6 +52,14 @@ const (
 var (
 	// ErrKeyNotFound is the error returned when a key doesn't exist in the config file
 	ErrKeyNotFound = errors.New("specified key could not be found in config")
+	// DockerEnv contains the environment variables
+	DockerEnv []string
+	// DockerOpt contains the option parameters
+	DockerOpt []string
+	// ExtraOptions contains extra options (if any)
+	ExtraOptions ExtraOptionSlice
+	// AddonList contains the list of addons
+	AddonList []string
 )
 
 // ErrNotExist is the error returned when a config does not exist
