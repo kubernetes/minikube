@@ -147,7 +147,7 @@ func Healthy(name string) ClusterController {
 
 	if as != state.Running {
 		out.T(out.Shrug, `This control plane is not running! (state={{.state}})`, out.V{"state": as.String()})
-		out.T(out.Warning, `This is unusual - you may want to investigate using "{{.command}} logs"`, out.V{"command": minikubeCmd(name)})
+		out.T(out.Warning, `This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
 		exitTip("start", name, exit.Unavailable)
 	}
 	return co

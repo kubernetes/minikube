@@ -402,7 +402,7 @@ func deleteProfileDirectory(profile string) {
 		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
 		err := os.RemoveAll(machineDir)
 		if err != nil {
-			exit.WithError("Unable to remove machine directory: %v", err)
+			exit.WithError("Unable to remove machine directory", err)
 		}
 	}
 }

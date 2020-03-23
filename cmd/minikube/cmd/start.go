@@ -467,8 +467,9 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 
 	// By default, the driver is whatever we used last time
-	if existing != nil && existing.Driver != "" {
-		ds := driver.Status(existing.Driver)
+	if existing != nil {
+		old := hostDriver(existing)
+		ds := driver.Status(old)
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
 		return ds
 	}
@@ -520,49 +521,67 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	return pick
 }
 
+// hostDriver returns the actual driver used by a libmachine host, which can differ from our config
+func hostDriver(existing *config.ClusterConfig) string {
+	if existing == nil {
+		return ""
+	}
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		glog.Warningf("selectDriver NewAPIClient: %v", err)
+		return existing.Driver
+	}
+
+	cp, err := config.PrimaryControlPlane(existing)
+	if err != nil {
+		glog.Warningf("Unable to get control plane from existing config: %v", err)
+		return existing.Driver
+	}
+	machineName := driver.MachineName(*existing, cp)
+	h, err := api.Load(machineName)
+	if err != nil {
+		glog.Warningf("selectDriver api.Load: %v", err)
+		return existing.Driver
+	}
+
+	return h.Driver.DriverName()
+}
+
 // validateSpecifiedDriver makes sure that if a user has passed in a driver
 // it matches the existing cluster if there is one
 func validateSpecifiedDriver(existing *config.ClusterConfig) {
 	if existing == nil {
 		return
 	}
-	old := existing.Driver
+
 	var requested string
 	if d := viper.GetString("driver"); d != "" {
 		requested = d
 	} else if d := viper.GetString("vm-driver"); d != "" {
 		requested = d
 	}
+
 	// Neither --vm-driver or --driver was specified
 	if requested == "" {
 		return
 	}
-	if old == requested {
+
+	old := hostDriver(existing)
+	if requested == old {
 		return
 	}
 
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		glog.Warningf("selectDriver NewAPIClient: %v", err)
-		return
-	}
-
-	cp, err := config.PrimaryControlPlane(existing)
-	if err != nil {
-		exit.WithError("Error getting primary cp", err)
-	}
-
-	out.ErrT(out.Conflict, `The existing "{{.name}}" ccluster was created using the "{{.old}}" driver, and is incompatible with the "{{.new}}" driver.`,
-		out.V{"name": existing.Name, "new": requested, "old": h.Driver.DriverName()})
+	out.ErrT(out.Conflict, `The existing "{{.name}}" VM was created using the "{{.old}}" driver, and is incompatible with the "{{.new}}" driver.`,
+		out.V{"name": existing.Name, "new": requested, "old": old})
 
 	out.ErrT(out.Workaround, `To proceed, either:
 
-1) Delete the existing "{{.profile_name}}" cluster using: '{{.command}} delete'
+1) Delete the existing "{{.name}}" cluster using: '{{.command}} delete'
 
 * or *
 
-2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} --driver={{.old_driver}}'
-`, out.V{"command": mustload.ExampleCmd(existing.Name, "start"), "old_driver": h.Driver.DriverName(), "profile_name": cname})
+2) Start the existing "{{.name}}" cluster using: '{{.command}} --driver={{.old}}'
+`, out.V{"command": mustload.ExampleCmd(existing.Name, "start"), "old": old, "name": existing.Name})
 
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
@@ -589,8 +608,10 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		out.ErrLn("")
 
 		if !st.Installed && !viper.GetBool(force) {
-			if existing != nil && name == existing.Driver {
-				exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+			if existing != nil {
+				if old := hostDriver(existing); name == old {
+					exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+				}
 			}
 			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
@@ -673,9 +694,10 @@ func validateUser(drvName string) {
 	if !useForce {
 		os.Exit(exit.Permissions)
 	}
-	_, err = config.Load(ClusterFlagValue())
+	cname := ClusterFlagValue()
+	_, err = config.Load(cname)
 	if err == nil || !config.IsNotExist(err) {
-		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
+		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
 	}
 	if !useForce {
 		exit.WithCodeT(exit.Permissions, "Exiting")
