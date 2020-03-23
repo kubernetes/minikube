@@ -42,7 +42,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/logs"
 )
 
-// minLogCheckTime how long to wait before spamming error logs to console
+// minLogCheckTime how long to wait before spamming error logs to console.
 const minLogCheckTime = 30 * time.Second
 
 // WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
