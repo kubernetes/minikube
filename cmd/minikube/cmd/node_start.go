@@ -45,7 +45,7 @@ var nodeStartCmd = &cobra.Command{
 			exit.WithError("creating api client", err)
 		}
 
-		if machine.IsHostRunning(api, name) {
+		if machine.IsRunning(api, name) {
 			out.T(out.Check, "{{.name}} is already running", out.V{"name": name})
 			os.Exit(0)
 		}
@@ -61,10 +61,7 @@ var nodeStartCmd = &cobra.Command{
 		}
 
 		// Start it up baby
-		_, err = node.Start(*cc, *n, false, nil)
-		if err != nil {
-			out.FatalT("Failed to start node {{.name}}", out.V{"name": name})
-		}
+		node.Start(*cc, *n, nil, false)
 	},
 }
 

@@ -133,7 +133,7 @@ func (r *CRIO) Enable(disOthers bool) error {
 
 // Disable idempotently disables CRIO on a host
 func (r *CRIO) Disable() error {
-	if _, err := r.Runner.RunCmd(exec.Command("sudo", "systemctl", "stop", "crio")); err != nil {
+	if _, err := r.Runner.RunCmd(exec.Command("sudo", "systemctl", "stop", "-f", "crio")); err != nil {
 		return errors.Wrapf(err, "disable crio.")
 	}
 	return nil

@@ -56,9 +56,8 @@ kind: ClusterConfiguration
 {{range $i, $val := .FeatureArgs}}{{$i}}: {{$val}}
 {{end -}}{{end -}}
 certificatesDir: {{.CertDir}}
-clusterName: kubernetes
+clusterName: mk
 controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
-controllerManager: {}
 dns:
   type: CoreDNS
 etcd:

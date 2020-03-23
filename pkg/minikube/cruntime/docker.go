@@ -37,10 +37,12 @@ import (
 // KubernetesContainerPrefix is the prefix of each kubernetes container
 const KubernetesContainerPrefix = "k8s_"
 
+// ErrISOFeature is the error returned when disk image is missing features
 type ErrISOFeature struct {
 	missing string
 }
 
+// NewErrISOFeature creates a new ErrISOFeature
 func NewErrISOFeature(missing string) *ErrISOFeature {
 	return &ErrISOFeature{
 		missing: missing,
@@ -125,7 +127,7 @@ func (r *Docker) Restart() error {
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
-	c := exec.Command("sudo", "systemctl", "stop", "docker", "docker.socket")
+	c := exec.Command("sudo", "systemctl", "stop", "-f", "docker", "docker.socket")
 	if _, err := r.Runner.RunCmd(c); err != nil {
 		return errors.Wrap(err, "disable docker")
 	}

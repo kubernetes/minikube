@@ -24,8 +24,8 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GetHostStatus gets the status of the host VM.
-func GetHostStatus(api libmachine.API, machineName string) (string, error) {
+// Status returns the status of a libmachine host
+func Status(api libmachine.API, machineName string) (string, error) {
 	exists, err := api.Exists(machineName)
 	if err != nil {
 		return "", errors.Wrapf(err, "%s exists", machineName)
@@ -46,9 +46,9 @@ func GetHostStatus(api libmachine.API, machineName string) (string, error) {
 	return s.String(), nil
 }
 
-// IsHostRunning asserts that this profile's primary host is in state "Running"
-func IsHostRunning(api libmachine.API, name string) bool {
-	s, err := GetHostStatus(api, name)
+// IsRunning asserts that a libmachine host is in state "Running"
+func IsRunning(api libmachine.API, name string) bool {
+	s, err := Status(api, name)
 	if err != nil {
 		glog.Warningf("host status for %q returned error: %v", name, err)
 		return false
@@ -60,8 +60,8 @@ func IsHostRunning(api libmachine.API, name string) bool {
 	return true
 }
 
-// CheckIfHostExistsAndLoad checks if a host exists, and loads it if it does
-func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Host, error) {
+// LoadHost returns a libmachine host by name
+func LoadHost(api libmachine.API, machineName string) (*host.Host, error) {
 	glog.Infof("Checking if %q exists ...", machineName)
 	exists, err := api.Exists(machineName)
 	if err != nil {
@@ -71,9 +71,9 @@ func CheckIfHostExistsAndLoad(api libmachine.API, machineName string) (*host.Hos
 		return nil, errors.Errorf("machine %q does not exist", machineName)
 	}
 
-	host, err := api.Load(machineName)
+	h, err := api.Load(machineName)
 	if err != nil {
 		return nil, errors.Wrapf(err, "loading machine %q", machineName)
 	}
-	return host, nil
+	return h, nil
 }
