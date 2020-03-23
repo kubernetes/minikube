@@ -221,7 +221,8 @@ func (d *Driver) Stop() error {
 	if err := kubelet.Stop(d.exec); err != nil {
 		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
 	}
-	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
+	containers, err := d.runtime.ListContainers(cruntime.ListOptions{Namespaces: constants.DefaultNamespaces})
+
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
