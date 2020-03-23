@@ -17,6 +17,8 @@ limitations under the License.
 package cmd
 
 import (
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -25,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/out"
 )
 
 const (
@@ -73,7 +76,10 @@ var logsCmd = &cobra.Command{
 		}
 		err = logs.Output(cr, bs, *co.Config, co.CPRunner, numberOfLines)
 		if err != nil {
-			exit.WithError("Error getting machine logs", err)
+			out.Ln("")
+			// Avoid exit.WithError, since it outputs the issue URL
+			out.T(out.Warning, "{{.error}}", out.V{"error": err})
+			os.Exit(exit.Unavailable)
 		}
 	},
 }
