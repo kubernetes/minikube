@@ -29,7 +29,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-	"time"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -147,16 +146,16 @@ func TestDownloadOnly(t *testing.T) {
 	}
 }
 
-func TestDownloadOnlyDocker(t *testing.T) {
-	if !runningDockerDriver(StartArgs()) {
-		t.Skip("this test only runs with the docker driver")
+func TestDownloadOnlyKic(t *testing.T) {
+	if !KicDriver() {
+		t.Skip("skipping, only for docker or podman driver")
 	}
-
 	profile := UniqueProfileName("download-docker")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
 
-	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", "--driver=docker"}
+	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr"}
+	args = append(args, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("%s failed: %v:\n%s", args, err, rr.Output())
@@ -177,13 +176,4 @@ func TestDownloadOnlyDocker(t *testing.T) {
 	if string(remoteChecksum) != string(checksum[:]) {
 		t.Errorf("checksum of %s does not match remote checksum (%s != %s)", tarball, string(remoteChecksum), string(checksum[:]))
 	}
-}
-
-func runningDockerDriver(startArgs []string) bool {
-	for _, s := range startArgs {
-		if s == "--driver=docker" {
-			return true
-		}
-	}
-	return false
 }

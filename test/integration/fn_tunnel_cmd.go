@@ -119,7 +119,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 		return nil
 	}
-	if err = retry.Expo(fetch, time.Millisecond*500, Minutes(2), 6); err != nil {
+	if err = retry.Expo(fetch, time.Millisecond*500, Minutes(2), 13); err != nil {
 		t.Errorf("failed to contact nginx at %s: %v", nginxIP, err)
 	}
 
