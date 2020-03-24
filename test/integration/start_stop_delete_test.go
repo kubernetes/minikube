@@ -52,7 +52,6 @@ func TestStartStop(t *testing.T) {
 				"--disable-driver-mounts",
 				"--keep-context=false",
 				"--container-runtime=docker",
-				"--wait=all",
 			}},
 			{"newest-cni", constants.NewestKubernetesVersion, []string{
 				"--feature-gates",
@@ -60,20 +59,17 @@ func TestStartStop(t *testing.T) {
 				"--network-plugin=cni",
 				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
-				"--wait=all",
 			}},
 			{"containerd", constants.DefaultKubernetesVersion, []string{
 				"--container-runtime=containerd",
 				"--docker-opt",
 				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
-				"--wait=all",
 			}},
 			{"crio", "v1.15.7", []string{
 				"--container-runtime=crio",
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification"
-				"--wait=all",
 			}},
 		}
 
@@ -90,7 +86,7 @@ func TestStartStop(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
+				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=all"}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
 
