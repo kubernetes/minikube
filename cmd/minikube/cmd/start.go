@@ -179,7 +179,7 @@ func initMinikubeFlags() {
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
 func initKubernetesFlags() {
-	startCmd.Flags().String(kubernetesVersion, "", "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
+	startCmd.Flags().String(kubernetesVersion, "", fmt.Sprintf("The kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for %s, 'latest' for %s). Defaults to 'stable'.", constants.DefaultKubernetesVersion, constants.NewestKubernetesVersion))
 	startCmd.Flags().Var(&config.ExtraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
@@ -480,10 +480,10 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		if vmd := viper.GetString("vm-driver"); vmd != "" {
 			// Output a warning
 			warning := `Both driver={{.driver}} and vm-driver={{.vmd}} have been set.
-			
+
     Since vm-driver is deprecated, minikube will default to driver={{.driver}}.
 
-    If vm-driver is set in the global config, please run "minikube config unset vm-driver" to resolve this warning.			
+    If vm-driver is set in the global config, please run "minikube config unset vm-driver" to resolve this warning.
 			`
 			out.T(out.Warning, warning, out.V{"driver": d, "vmd": vmd})
 		}
@@ -1065,13 +1065,15 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 func getKubernetesVersion(old *config.ClusterConfig) string {
 	paramVersion := viper.GetString(kubernetesVersion)
 
-	if paramVersion == "" { // if the user did not specify any version then ...
-		if old != nil { // .. use the old version from config (if any)
-			paramVersion = old.KubernetesConfig.KubernetesVersion
-		}
-		if paramVersion == "" { // .. otherwise use the default version
-			paramVersion = constants.DefaultKubernetesVersion
-		}
+	// try to load the old version first if the user didn't specify anything
+	if paramVersion == "" && old != nil {
+		paramVersion = old.KubernetesConfig.KubernetesVersion
+	}
+
+	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
+		paramVersion = constants.DefaultKubernetesVersion
+	} else if strings.EqualFold(paramVersion, "latest") {
+		paramVersion = constants.NewestKubernetesVersion
 	}
 
 	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
