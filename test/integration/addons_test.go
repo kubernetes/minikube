@@ -129,7 +129,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 		return nil
 	}
 
-	if err := retry.Expo(checkIngress, 500*time.Millisecond, Minutes(1)); err != nil {
+	if err := retry.Expo(checkIngress, 500*time.Millisecond, Seconds(90)); err != nil {
 		t.Errorf("ingress never responded as expected on 127.0.0.1:80: %v", err)
 	}
 
@@ -241,7 +241,7 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 	}
 
 	// metrics-server takes some time to be able to collect metrics
-	if err := retry.Expo(checkMetricsServer, Seconds(13), Minutes(6)); err != nil {
+	if err := retry.Expo(checkMetricsServer, time.Second*3, Minutes(6)); err != nil {
 		t.Errorf(err.Error())
 	}
 
