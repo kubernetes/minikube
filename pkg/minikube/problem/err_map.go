@@ -179,6 +179,7 @@ var vmProblems = map[string]match{
 		GOOS:   []string{"linux"},
 		Issues: []int{5950},
 	},
+
 	// None
 	"NONE_APISERVER_MISSING": {
 		Regexp: re(`apiserver process never appeared`),
@@ -225,6 +226,12 @@ var vmProblems = map[string]match{
 		Issues: []int{6083, 5636},
 		GOOS:   []string{"linux"},
 	},
+	"NONE_CONNTRACK": {
+		Regexp: re(`[ERROR FileExisting-conntrack]: conntrack not found in system path`),
+		Advice: "Kubernetes 1.18 and higher requires conntrack to be installed, to install it on your machine for the none driver simply run `apt-get install conntrack` as root.",
+		GOOS:   []string{"linux"},
+	},
+
 	// VirtualBox
 	"VBOX_BLOCKED": {
 		Regexp: re(`NS_ERROR_FAILURE.*0x80004005`),
