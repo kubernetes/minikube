@@ -123,6 +123,7 @@ const (
 	hostOnlyNicType         = "host-only-nic-type"
 	natNicType              = "nat-nic-type"
 	nodes                   = "nodes"
+	preload                 = "preload"
 )
 
 var (
@@ -175,6 +176,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
+	startCmd.Flags().Bool(preload, true, "If true, download tarball of preloaded images if available to improve start time.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
