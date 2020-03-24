@@ -207,8 +207,8 @@ func setRemoteAuthOptions(p provision.Provisioner) auth.Options {
 	return authOptions
 }
 
-func setContainerRuntimeOptions(name string, cluster string, p miniProvisioner) error {
-	c, err := config.Load(cluster)
+func setContainerRuntimeOptions(name string, p miniProvisioner) error {
+	c, err := config.Load(name)
 	if err != nil {
 		return errors.Wrap(err, "getting cluster config")
 	}
