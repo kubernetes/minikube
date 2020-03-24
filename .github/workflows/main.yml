@@ -93,6 +93,10 @@ jobs:
       run: |
         sudo apt-get update -qq
         sudo apt-get -qq -y install liblz4-tool
+    - name: Install conntrack
+      shell: bash
+      run: |
+        sudo apt-get -qq -y install conntrack
     - name: Install gopogh
       shell: bash
       run: |
@@ -160,6 +164,10 @@ jobs:
       run: |
         sudo apt-get update -qq
         sudo apt-get -qq -y install liblz4-tool
+    - name: Install conntrack
+      shell: bash
+      run: |
+        sudo apt-get -qq -y install conntrack
     - name: Docker Info
       shell: bash
       run: |
@@ -228,14 +236,10 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
     steps:
-    - name: Install lz4
-      shell: bash
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get -qq -y install liblz4-tool
     - name: Install conntrack
       shell: bash
       run: |
+        sudo apt-get update -qq
         sudo apt-get -qq -y install conntrack
     - name: Install gopogh
       shell: bash
@@ -299,14 +303,10 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-18.04
     steps:
-    - name: Install lz4
-      shell: bash
-      run: |
-        sudo apt-get update -qq
-        sudo apt-get -qq -y install liblz4-tool
     - name: Install conntrack
       shell: bash
       run: |
+        sudo apt-get update -qq
         sudo apt-get -qq -y install conntrack
     - name: Install gopogh
       shell: bash
@@ -375,6 +375,10 @@ jobs:
         run: |
           sudo apt-get update -qq
           sudo apt-get -qq -y install liblz4-tool
+      - name: Install conntrack
+        shell: bash
+        run: |
+          sudo apt-get -qq -y install conntrack
       - name: Install podman
         shell: bash
         run: |
