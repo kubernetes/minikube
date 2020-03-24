@@ -164,8 +164,8 @@ func CreateContainerNode(p CreateParams) error {
 	}
 
 	// retry up to up 5 seconds to make sure the created container status is running.
-	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*5); err != nil {
-		glog.Warningf("The created container %q failed to report to be running in 5 seconds.", p.Name)
+	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*10); err != nil {
+		return errors.Wrapf(err, "check container %q running", p.Name)
 	}
 
 	return nil
