@@ -37,12 +37,14 @@ import (
 // BuildrootProvisioner provisions the custom system based on Buildroot
 type BuildrootProvisioner struct {
 	provision.SystemdProvisioner
+	clusterName string
 }
 
 // NewBuildrootProvisioner creates a new BuildrootProvisioner
 func NewBuildrootProvisioner(d drivers.Driver) provision.Provisioner {
 	return &BuildrootProvisioner{
 		NewSystemdProvisioner("buildroot", d),
+		viper.GetString(config.ProfileName),
 	}
 }
 
@@ -182,7 +184,7 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	}
 
 	glog.Infof("setting minikube options for container-runtime")
-	if err := setContainerRuntimeOptions(p.Driver.GetMachineName(), viper.GetString(config.ProfileName), p); err != nil {
+	if err := setContainerRuntimeOptions(p.Driver.GetMachineName(), p.clusterName, p); err != nil {
 		glog.Infof("Error setting container-runtime options during provisioning %v", err)
 		return err
 	}
