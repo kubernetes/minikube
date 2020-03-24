@@ -30,10 +30,10 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
