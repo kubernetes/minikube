@@ -333,7 +333,7 @@ func (d *Driver) Stop() error {
 	} else {
 		containers, err := runtime.ListContainers(cruntime.ListOptions{Namespaces: constants.DefaultNamespaces})
 		if err != nil {
-			glog.Errorf("unable list containers : %v", err)
+			glog.Infof("unable list containers : %v", err)
 		}
 		if len(containers) > 0 {
 			if err := runtime.StopContainers(containers); err != nil {
