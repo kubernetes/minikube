@@ -156,6 +156,10 @@ func CreateContainerNode(p CreateParams) error {
 		if s != "running" {
 			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
 		}
+		if s == "running" {
+			glog.Infof("the created container %q has a running status.", p.Name)
+			return nil
+		}
 		return nil
 	}
 
