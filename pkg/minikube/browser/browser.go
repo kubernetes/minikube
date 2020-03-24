@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -14,21 +14,24 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package browser
 
 import (
-	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/mustload"
+	"os/exec"
+	"runtime"
+
+	"github.com/pkg/browser"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// ipCmd represents the ip command
-var ipCmd = &cobra.Command{
-	Use:   "ip",
-	Short: "Retrieves the IP address of the running cluster",
-	Long:  `Retrieves the IP address of the running cluster, and writes it to STDOUT.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		co := mustload.Running(ClusterFlagValue())
-		out.Ln(co.DriverIP.String())
-	},
+// OpenURL opens a new browser window pointing to URL.
+func OpenURL(url string) error {
+	if runtime.GOOS == "linux" {
+		_, err := exec.LookPath("xdg-open")
+		if err != nil {
+			out.T(out.URL, url)
+			return nil
+		}
+	}
+	return browser.OpenURL(url)
 }

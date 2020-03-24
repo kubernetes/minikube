@@ -57,7 +57,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 
 	// Ensure the addon-manager has created the StorageClass before creating a claim, otherwise it won't be bound
-	if err := retry.Expo(checkStorageClass, time.Second, 90*time.Second); err != nil {
+	if err := retry.Expo(checkStorageClass, time.Millisecond*500, Seconds(100)); err != nil {
 		t.Errorf("no default storage class after retry: %v", err)
 	}
 

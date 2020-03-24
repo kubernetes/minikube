@@ -698,7 +698,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	if NoneDriver() {
 		t.Skipf("skipping: ssh unsupported by none")
 	}
-	want := "hello\r\n"
+	want := "hello\n"
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello")))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Args, err)
@@ -725,7 +725,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
 		return err
 	}
-	if err = retry.Expo(mysql, 5*time.Second, 180*time.Second); err != nil {
+	if err = retry.Expo(mysql, 2*time.Second, Seconds(180)); err != nil {
 		t.Errorf("mysql failing: %v", err)
 	}
 }

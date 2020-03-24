@@ -49,7 +49,15 @@ sudo rm -rf /var/lib/minikube/*
 # Stop any leftover kubelet
 sudo systemctl is-active --quiet kubelet \
   && echo "stopping kubelet" \
-  && sudo systemctl stop kubelet
+  && sudo systemctl stop -f kubelet
+
+ # conntrack is required for kubernetes 1.18 and higher for none driver
+if ! conntrack --version &>/dev/null; then
+  echo "WARNING: No contrack is not installed"
+  sudo apt-get update -qq
+  sudo apt-get -qq -y install conntrack
+fi
+
 
 mkdir -p cron && gsutil -m rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"
