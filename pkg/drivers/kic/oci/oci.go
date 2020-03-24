@@ -163,8 +163,8 @@ func CreateContainerNode(p CreateParams) error {
 		return nil
 	}
 
-	// retry up to up 5 seconds to make sure the created container status is running.
-	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*10); err != nil {
+	// retry up to up 13 seconds to make sure the created container status is running.
+	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*13); err != nil {
 		return errors.Wrapf(err, "check container %q running", p.Name)
 	}
 
