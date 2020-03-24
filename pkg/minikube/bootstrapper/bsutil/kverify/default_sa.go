@@ -16,3 +16,41 @@ limitations under the License.
 
 // Package kverify verifies a running kubernetes cluster is healthy
 package kverify
+
+import (
+	"fmt"
+	"time"
+
+	"github.com/golang/glog"
+	"github.com/pkg/errors"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/minikube/pkg/util/retry"
+)
+
+// WaitForDefaultSA waits for the default service account to be created.
+func WaitForDefaultSA(cs *kubernetes.Clientset) error {
+	glog.Info("waiting for default service account to be created ...")
+	pStart := time.Now()
+	saReady := func() error {
+		// equivalent to manual check of 'kubectl --context profile get serviceaccount default'
+		sas, err := cs.CoreV1().ServiceAccounts("default").List(meta.ListOptions{})
+		if err != nil {
+			glog.Infof("temproary error waiting for default SA: %v", err)
+			return err
+		}
+		for _, sa := range sas.Items {
+			if sa.Name == "default" {
+				glog.Infof("found service account: %q", sa.Name)
+				return nil
+			}
+		}
+		return fmt.Errorf("couldn't find default service account")
+	}
+	if err := retry.Expo(saReady, 500*time.Millisecond, 30*time.Second); err != nil {
+		return errors.Wrapf(err, "waited %s for SA", time.Since(pStart))
+	}
+
+	glog.Infof("duration metric: took %s for default service account to be created ...", time.Since(pStart))
+	return nil
+}

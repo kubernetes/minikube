@@ -310,22 +310,24 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
-	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
-	if err != nil {
-		return err
-	}
-
-	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
-		return err
-	}
-
 	ip, port, err := k.controlPlaneEndpoint(cfg)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "get control plane ip")
+	}
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return errors.Wrap(err, "create cruntime manager")
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, start, ip, port, timeout); err != nil {
-		return err
+	if cfg.WaitForAPIServer {
+		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
+			return errors.Wrap(err, "verify apiserver proc")
+		}
+
+		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, start, ip, port, timeout); err != nil {
+			return errors.Wrap(err, "wait for healthy apiserver")
+		}
+
 	}
 
 	c, err := k.client(ip, port)
@@ -333,8 +335,16 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, c, start, timeout); err != nil {
-		return errors.Wrap(err, "waiting for system pods")
+	if cfg.WaitForSystemPods {
+		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, c, start, timeout); err != nil {
+			return errors.Wrap(err, "waiting for system pods")
+		}
+	}
+
+	if cfg.WaitForDefaultSA {
+		if err := kverify.WaitForDefaultSA(c); err != nil {
+			return errors.Wrap(err, "waiting for default sa")
+		}
 	}
 	return nil
 }

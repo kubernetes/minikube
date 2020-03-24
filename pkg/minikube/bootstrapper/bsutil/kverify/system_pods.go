@@ -34,6 +34,43 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
+// WaitForSystemPods verifies essential pods for running kurnetes is running
+func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
+	glog.Info("waiting for kube-system pods to appear ...")
+	pStart := time.Now()
+
+	podList := func() (bool, error) {
+		if time.Since(start) > timeout {
+			return false, fmt.Errorf("cluster wait timed out during pod check")
+		}
+		if time.Since(start) > minLogCheckTime {
+			announceProblems(r, bs, cfg, cr)
+			time.Sleep(kconst.APICallRetryInterval * 5)
+		}
+
+		// Wait for any system pod, as waiting for apiserver may block until etcd
+		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+		if err != nil {
+			glog.Warningf("pod list returned error: %v", err)
+			return false, nil
+		}
+		glog.Infof("%d kube-system pods found", len(pods.Items))
+		for _, pod := range pods.Items {
+			glog.Infof(podStatusMsg(pod))
+		}
+
+		if len(pods.Items) < 2 {
+			return false, nil
+		}
+		return true, nil
+	}
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
+		return fmt.Errorf("apiserver never returned a pod list")
+	}
+	glog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
+	return nil
+}
+
 // ExpectedComponentsRunning returns whether or not all expected components are running
 func ExpectedComponentsRunning(cs *kubernetes.Clientset) error {
 	expected := []string{
@@ -73,42 +110,5 @@ func ExpectedComponentsRunning(cs *kubernetes.Clientset) error {
 	if len(missing) > 0 {
 		return fmt.Errorf("missing components: %v", strings.Join(missing, ", "))
 	}
-	return nil
-}
-
-// WaitForSystemPods verifies essential pods for running kurnetes is running
-func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
-	glog.Info("waiting for kube-system pods to appear ...")
-	pStart := time.Now()
-
-	podList := func() (bool, error) {
-		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during pod check")
-		}
-		if time.Since(start) > minLogCheckTime {
-			announceProblems(r, bs, cfg, cr)
-			time.Sleep(kconst.APICallRetryInterval * 5)
-		}
-
-		// Wait for any system pod, as waiting for apiserver may block until etcd
-		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
-		if err != nil {
-			glog.Warningf("pod list returned error: %v", err)
-			return false, nil
-		}
-		glog.Infof("%d kube-system pods found", len(pods.Items))
-		for _, pod := range pods.Items {
-			glog.Infof(podStatusMsg(pod))
-		}
-
-		if len(pods.Items) < 2 {
-			return false, nil
-		}
-		return true, nil
-	}
-	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
-		return fmt.Errorf("apiserver never returned a pod list")
-	}
-	glog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
 	return nil
 }

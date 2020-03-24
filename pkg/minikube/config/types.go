@@ -65,6 +65,9 @@ type ClusterConfig struct {
 	KubernetesConfig        KubernetesConfig
 	Nodes                   []Node
 	Addons                  map[string]bool
+	WaitForAPIServer        bool // wait for api server to be running
+	WaitForSystemPods       bool // wait for all k8s system pods
+	WaitForDefaultSA        bool // wait for the default service account to be created
 }
 
 // KubernetesConfig contains the parameters used to configure the VM Kubernetes.
