@@ -36,7 +36,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/kubelet"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -246,6 +248,11 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
+	// on init this doesn't get filled when called from cmd
+	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
+	if err := kubelet.ForceStop(d.exec); err != nil {
+		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
+	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "killing kic node %s", d.MachineName)
@@ -312,6 +319,35 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
+	// on init this doesn't get filled when called from cmd
+	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
+	// docker does not send right SIG for systemd to know to stop the systemd.
+	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
+	if err := kubelet.Stop(d.exec); err != nil {
+		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
+		if err := kubelet.ForceStop(d.exec); err != nil {
+			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
+		}
+	}
+
+	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec})
+	if err != nil { // won't return error because:
+		// even though we can't stop the cotainers inside, we still wanna stop the minikube container itself
+		glog.Errorf("unable to get container runtime: %v", err)
+	} else {
+		containers, err := runtime.ListContainers(cruntime.ListOptions{Namespaces: constants.DefaultNamespaces})
+		if err != nil {
+			glog.Infof("unable list containers : %v", err)
+		}
+		if len(containers) > 0 {
+			if err := runtime.StopContainers(containers); err != nil {
+				glog.Errorf("unable to stop containers : %v", err)
+			}
+		}
+		glog.Infof("successfully stopped kubernetes!")
+
+	}
+
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)

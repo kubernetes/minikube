@@ -21,12 +21,12 @@ import (
 
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -41,42 +41,30 @@ var sshCmd = &cobra.Command{
 	Short: "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
 	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.",
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
+		cname := ClusterFlagValue()
+		co := mustload.Running(cname)
+		if co.CPHost.DriverName == driver.None {
+			exit.UsageT("'none' driver does not support 'minikube ssh' command")
 		}
-		defer api.Close()
-		cc, err := config.Load(viper.GetString(config.ProfileName))
-		if err != nil {
-			exit.WithError("Error getting config", err)
-		}
+
+		var err error
 		var n *config.Node
 		if nodeName == "" {
-			cp, err := config.PrimaryControlPlane(cc)
-			if err != nil {
-				exit.WithError("Getting primary control plane", err)
-			}
-			n = &cp
+			n = co.CPNode
 		} else {
-			n, _, err = node.Retrieve(cc, nodeName)
+			n, _, err = node.Retrieve(co.Config, nodeName)
 			if err != nil {
 				exit.WithCodeT(exit.Unavailable, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
 			}
 		}
-		host, err := machine.LoadHost(api, driver.MachineName(*cc, *n))
-		if err != nil {
-			exit.WithError("Error getting host", err)
-		}
-		if host.Driver.DriverName() == driver.None {
-			exit.UsageT("'none' driver does not support 'minikube ssh' command")
-		}
+
 		if nativeSSHClient {
 			ssh.SetDefaultClient(ssh.Native)
 		} else {
 			ssh.SetDefaultClient(ssh.External)
 		}
 
-		err = machine.CreateSSHShell(api, *cc, *n, args)
+		err = machine.CreateSSHShell(co.API, *co.Config, *n, args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)
