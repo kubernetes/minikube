@@ -52,6 +52,7 @@ func TestStartStop(t *testing.T) {
 				"--disable-driver-mounts",
 				"--keep-context=false",
 				"--container-runtime=docker",
+				"--wait=all",
 			}},
 			{"newest-cni", constants.NewestKubernetesVersion, []string{
 				"--feature-gates",
@@ -59,17 +60,20 @@ func TestStartStop(t *testing.T) {
 				"--network-plugin=cni",
 				"--extra-config=kubelet.network-plugin=cni",
 				"--extra-config=kubeadm.pod-network-cidr=192.168.111.111/16",
+				"--wait=all",
 			}},
 			{"containerd", constants.DefaultKubernetesVersion, []string{
 				"--container-runtime=containerd",
 				"--docker-opt",
 				"containerd=/var/run/containerd/containerd.sock",
 				"--apiserver-port=8444",
+				"--wait=all",
 			}},
 			{"crio", "v1.15.7", []string{
 				"--container-runtime=crio",
 				"--disable-driver-mounts",
-				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
+				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification"
+				"--wait=all",
 			}},
 		}
 
