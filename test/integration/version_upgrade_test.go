@@ -76,7 +76,7 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 
 	// Retry to allow flakiness for the previous release
-	if err := retry.Expo(r, 1*time.Second, Minutes(30), 3); err != nil {
+	if err := retry.Expo(r, 1*time.Second, Minutes(30), 2); err != nil {
 		t.Fatalf("release start failed: %v", err)
 	}
 
@@ -120,14 +120,8 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 
 	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
-	rr = &RunResult{}
-	r = func() error {
-		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
-		return err
-	}
-
-	if err := retry.Expo(r, 1*time.Second, Minutes(30), 3); err == nil {
-		t.Fatalf("downgrading kubernetes should not be allowed: %v", err)
+	if rr, err := Run(t, exec.CommandContext(ctx, tf.Name(), args...)); err == nil {
+		t.Fatalf("downgrading kubernetes should not be allowed. expected to see error but got %v for %q", err, rr.Args())
 	}
 
 	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
