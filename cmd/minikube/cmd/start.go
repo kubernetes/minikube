@@ -577,7 +577,7 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 
 	out.ErrT(out.Workaround, `To proceed, either:
 
-1) Delete the existing "{{.name}}" cluster using: '{{.command}} delete'
+1) Delete the existing "{{.name}}" cluster using: 'minikube delete -p {{.name}}'
 
 * or *
 
