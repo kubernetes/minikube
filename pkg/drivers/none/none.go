@@ -225,7 +225,6 @@ func (d *Driver) Stop() error {
 		}
 	}
 	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
-
 	if err != nil {
 		return errors.Wrap(err, "containers")
 	}
