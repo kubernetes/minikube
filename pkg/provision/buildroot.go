@@ -29,6 +29,8 @@ import (
 	"github.com/docker/machine/libmachine/provision/pkgaction"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/golang/glog"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -180,7 +182,7 @@ func (p *BuildrootProvisioner) Provision(swarmOptions swarm.Options, authOptions
 	}
 
 	glog.Infof("setting minikube options for container-runtime")
-	if err := setContainerRuntimeOptions(p.Driver.GetMachineName(), p); err != nil {
+	if err := setContainerRuntimeOptions(p.Driver.GetMachineName(), viper.GetString(config.ProfileName), p); err != nil {
 		glog.Infof("Error setting container-runtime options during provisioning %v", err)
 		return err
 	}

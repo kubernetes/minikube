@@ -31,6 +31,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cluster"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -107,7 +108,7 @@ var statusCmd = &cobra.Command{
 		for _, n := range cc.Nodes {
 			glog.Infof("checking status of %s ...", n.Name)
 			machineName := driver.MachineName(*cc, n)
-			st, err = status(api, machineName, n.ControlPlane)
+			st, err = status(api, *cc, n)
 			glog.Infof("%s status: %+v", machineName, st)
 
 			if err != nil {
@@ -150,12 +151,12 @@ func exitCode(st *Status) int {
 	return c
 }
 
-func status(api libmachine.API, name string, controlPlane bool) (*Status, error) {
+func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
 
-	profile, node := driver.ClusterNameFromMachine(name)
+	controlPlane := n.ControlPlane
 
 	st := &Status{
-		Name:       node,
+		Name:       n.Name,
 		Host:       Nonexistent,
 		APIServer:  Nonexistent,
 		Kubelet:    Nonexistent,
@@ -163,6 +164,7 @@ func status(api libmachine.API, name string, controlPlane bool) (*Status, error)
 		Worker:     !controlPlane,
 	}
 
+	name := driver.MachineName(cc, n)
 	hs, err := machine.Status(api, name)
 	glog.Infof("%s host status = %q (err=%v)", name, hs, err)
 	if err != nil {
@@ -205,7 +207,7 @@ func status(api libmachine.API, name string, controlPlane bool) (*Status, error)
 	}
 
 	if st.Kubeconfig != Irrelevant {
-		ok, err := kubeconfig.IsClusterInConfig(ip, profile)
+		ok, err := kubeconfig.IsClusterInConfig(ip, cc.Name)
 		glog.Infof("%s is in kubeconfig at ip %s: %v (err=%v)", name, ip, ok, err)
 		if ok {
 			st.Kubeconfig = Configured

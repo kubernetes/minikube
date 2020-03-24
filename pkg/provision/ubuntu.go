@@ -185,7 +185,7 @@ func (p *UbuntuProvisioner) Provision(swarmOptions swarm.Options, authOptions au
 	}
 
 	glog.Infof("setting minikube options for container-runtime")
-	if err := setContainerRuntimeOptions(p.Driver.GetMachineName(), p); err != nil {
+	if err := setContainerRuntimeOptions(p.Driver.GetMachineName(), p.SwarmOptions.ArbitraryFlags[0], p); err != nil {
 		glog.Infof("Error setting container-runtime options during provisioning %v", err)
 		return err
 	}

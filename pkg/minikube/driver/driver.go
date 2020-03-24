@@ -234,13 +234,5 @@ func MachineName(cc config.ClusterConfig, n config.Node) string {
 	if len(cc.Nodes) == 1 || n.ControlPlane {
 		return cc.Name
 	}
-	return fmt.Sprintf("%s---%s", cc.Name, n.Name)
-}
-
-// ClusterNameFromMachine retrieves the cluster name embedded in the machine name
-func ClusterNameFromMachine(name string) (string, string) {
-	if strings.Contains(name, "---") {
-		return strings.Split(name, "---")[0], strings.Split(name, "---")[1]
-	}
-	return name, name
+	return fmt.Sprintf("%s-%s", cc.Name, n.Name)
 }

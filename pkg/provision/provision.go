@@ -36,10 +36,10 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
@@ -76,6 +76,9 @@ func NewSystemdProvisioner(osReleaseID string, d drivers.Driver) provision.Syste
 			DaemonOptionsFile: "/etc/systemd/system/docker.service.d/10-machine.conf",
 			OsReleaseID:       osReleaseID,
 			Driver:            d,
+			SwarmOptions: swarm.Options{
+				ArbitraryFlags: []string{viper.GetString(config.ProfileName)},
+			},
 		},
 	}
 }
@@ -208,8 +211,7 @@ func setRemoteAuthOptions(p provision.Provisioner) auth.Options {
 	return authOptions
 }
 
-func setContainerRuntimeOptions(name string, p miniProvisioner) error {
-	cluster, _ := driver.ClusterNameFromMachine(name)
+func setContainerRuntimeOptions(name string, cluster string, p miniProvisioner) error {
 	c, err := config.Load(cluster)
 	if err != nil {
 		return errors.Wrap(err, "getting cluster config")
