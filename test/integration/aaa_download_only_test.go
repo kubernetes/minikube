@@ -71,14 +71,16 @@ func TestDownloadOnly(t *testing.T) {
 						t.Errorf("%s failed: %v", args, err)
 					}
 
-					if download.PreloadExists(v, r) {
-						// Just make sure the tarball path exists
-						if _, err := os.Stat(download.TarballPath(v)); err != nil {
-							t.Errorf("preloaded tarball path doesn't exist: %v", err)
+					// skip for none, as none driver does not have preload feature.
+					if !NoneDriver() {
+						if download.PreloadExists(v, r) {
+							// Just make sure the tarball path exists
+							if _, err := os.Stat(download.TarballPath(v)); err != nil {
+								t.Errorf("preloaded tarball path doesn't exist: %v", err)
+							}
+							return
 						}
-						return
 					}
-
 					imgs, err := images.Kubeadm("", v)
 					if err != nil {
 						t.Errorf("kubeadm images: %v %+v", v, err)
