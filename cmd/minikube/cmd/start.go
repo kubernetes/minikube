@@ -61,6 +61,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
+	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
@@ -827,6 +828,16 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		runtime := viper.GetString(containerRuntime)
 		if runtime != "docker" {
 			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
+		}
+
+		// conntrack is required starting with kubernetes 1.18, include the release candidates for completion
+		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
+		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
+			err := exec.Command("conntrack").Run()
+			if err != nil {
+				exit.WithCodeT(exit.Config, "The none driver requires conntrack to be installed for kubernetes version {{.k8sVersion}}", out.V{"k8sVersion": version.String()})
+
+			}
 		}
 	}
 
