@@ -24,14 +24,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubelet"
 )
 
-// DefaultNamespaces are namespaces used by minikube, including addons
-var DefaultNamespaces = []string{
-	"kube-system",
-	"kubernetes-dashboard",
-	"storage-gluster",
-	"istio-operator",
-}
-
 // Pause pauses a Kubernetes cluster
 func Pause(cr cruntime.Manager, r command.Runner, namespaces []string) ([]string, error) {
 	ids := []string{}

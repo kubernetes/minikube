@@ -83,6 +83,8 @@ var styles = map[StyleEnum]style{
 	Sparkle:       {Prefix: "✨  "},
 	Pause:         {Prefix: "⏸️  "},
 	Unpause:       {Prefix: "⏯️  "},
+	Confused:      {Prefix: "😕  "},
+	Shrug:         {Prefix: "🤷  "},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},
