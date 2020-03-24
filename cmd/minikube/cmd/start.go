@@ -577,12 +577,12 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 
 	out.ErrT(out.Workaround, `To proceed, either:
 
-1) Delete the existing "{{.name}}" cluster using: 'minikube delete -p {{.name}}'
+1) Delete the existing "{{.name}}" cluster using: '{{.delcommand}}'
 
 * or *
 
 2) Start the existing "{{.name}}" cluster using: '{{.command}} --driver={{.old}}'
-`, out.V{"command": mustload.ExampleCmd(existing.Name, "start"), "old": old, "name": existing.Name})
+`, out.V{"command": mustload.ExampleCmd(existing.Name, "start"), "delcommand": mustload.ExampleCmd(existing.Name, "delete"), "old": old, "name": existing.Name})
 
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
