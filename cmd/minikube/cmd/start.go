@@ -834,6 +834,16 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		if runtime != "docker" {
 			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
 		}
+
+		conntrackK8sVersion, _ := semver.Make("1.18.0-rc.0")
+		currentK8sVersion, _ := semver.Make(strings.TrimPrefix(getKubernetesVersion(nil), version.VersionPrefix))
+		if currentK8sVersion.GE(conntrackK8sVersion) {
+			err := exec.Command("conntrack").Run()
+			if err != nil {
+				exit.WithCodeT(exit.Config, "The none driver requires conntrack to be installed for kubernetes version {{.k8sVersion}}", out.V{"k8sVersion": currentK8sVersion.String()})
+
+			}
+		}
 	}
 
 	// check that kubeadm extra args contain only whitelisted parameters
