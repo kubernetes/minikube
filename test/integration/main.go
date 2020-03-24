@@ -60,12 +60,12 @@ func Target() string {
 
 // NoneDriver returns whether or not this test is using the none driver
 func NoneDriver() bool {
-	return strings.Contains(*startArgs, "--driver=none")
+	return strings.Contains(*startArgs, "--driver=none") || strings.Contains(*startArgs, "--vm-driver=none")
 }
 
 // HyperVDriver returns whether or not this test is using the Hyper-V driver
 func HyperVDriver() bool {
-	return strings.Contains(*startArgs, "--driver=hyperv")
+	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
 }
 
 // CanCleanup returns if cleanup is allowed
