@@ -18,6 +18,7 @@ package out
 
 import (
 	"bytes"
+	"runtime"
 	"strings"
 	"text/template"
 
@@ -75,7 +76,7 @@ var styles = map[StyleEnum]style{
 	Deleted:       {Prefix: "💀  "},
 	URL:           {Prefix: "👉  ", LowPrefix: lowIndent},
 	Documentation: {Prefix: "📘  "},
-	Issues:        {Prefix: "⁉️   "},
+	Issues:        {Prefix: "⁉️  "},
 	Issue:         {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	Check:         {Prefix: "✅  "},
 	Celebration:   {Prefix: "🎉  "},
@@ -92,7 +93,7 @@ var styles = map[StyleEnum]style{
 	Caching:          {Prefix: "🤹  "},
 	StartingVM:       {Prefix: "🔥  "},
 	StartingNone:     {Prefix: "🤹  "},
-	Provisioner:      {Prefix: "ℹ️   "},
+	Provisioner:      {Prefix: "ℹ️  "},
 	Resetting:        {Prefix: "🔄  "},
 	DeletingHost:     {Prefix: "🔥  "},
 	Copying:          {Prefix: "✨  "},
@@ -117,9 +118,15 @@ var styles = map[StyleEnum]style{
 	Unmount:          {Prefix: "🔥  "},
 	MountOptions:     {Prefix: "💾  "},
 	Fileserver:       {Prefix: "🚀  ", OmitNewline: true},
-	DryRun:           {Prefix: "🏜️   "},
+	DryRun:           {Prefix: "🏜️  "},
 	AddonEnable:      {Prefix: "🌟  "},
 	AddonDisable:     {Prefix: "🌑  "},
+}
+
+var platformSpecificStyles = map[StyleEnum]struct{}{
+	Provisioner: {},
+	DryRun:      {},
+	Issues:      {},
 }
 
 // Add a prefix to a string
@@ -158,6 +165,13 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 
 	if !useColor {
 		return applyPrefix(lowPrefix(s), format)
+	}
+
+	// Certain emoji are misaligned on mac, so we need to add an additional space.
+	if runtime.GOOS == "darwin" {
+		if _, ok := platformSpecificStyles[style]; ok {
+			s.Prefix = s.Prefix + " "
+		}
 	}
 	return applyPrefix(s.Prefix, format)
 }
