@@ -20,10 +20,9 @@ import (
 	"fmt"
 	"text/template"
 
-	"github.com/pkg/browser"
-
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"

@@ -27,11 +27,12 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/pkg/browser"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	pkgaddons "k8s.io/minikube/pkg/addons"
+	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/assets"
+
+	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -74,7 +75,7 @@ var dashboardCmd = &cobra.Command{
 			// Send status messages to stderr for folks re-using this output.
 			out.ErrT(out.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = pkgaddons.Set("dashboard", "true", cname)
+			err = addons.Set("dashboard", "true", cname)
 			if err != nil {
 				exit.WithError("Unable to enable dashboard", err)
 			}
