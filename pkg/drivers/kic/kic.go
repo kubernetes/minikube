@@ -248,6 +248,8 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
+	// on init this doesn't get filled when called from cmd
+	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
 	if err := kubelet.ForceStop(d.exec); err != nil {
 		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
@@ -317,6 +319,8 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
+	// on init this doesn't get filled when called from cmd
+	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
 	// docker does not send right SIG for systemd to know to stop the systemd.
 	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
 	if err := kubelet.Stop(d.exec); err != nil {
