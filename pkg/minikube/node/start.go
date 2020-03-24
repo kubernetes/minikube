@@ -48,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
@@ -335,7 +336,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 		}
 	}
 
-	// Try again, but just once to avoid copious error messages
+	// Try again, but just once to avoid making the logs overly confusing
 	time.Sleep(5 * time.Second)
 
 	host, exists, err = machine.StartHost(api, cc, n)
@@ -344,19 +345,11 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 	}
 
 	out.T(out.FailureType, "StartHost failed again: {{.error}}", out.V{"error": err})
-	out.T(out.Workaround, `Run: "{{.cmd}} delete", then "{{.cmd}} start --alsologtostderr -v=1" to try again with more logs`,
-		out.V{"cmd": minikubeCmd()})
+	out.T(out.Workaround, `Run: "{{.delete}}", then "{{.start}} --alsologtostderr -v=1" to try again with more logging`,
+		out.V{"delete": mustload.ExampleCmd(cc.Name, "delete"), "start": mustload.ExampleCmd(cc.Name, "start")})
 
 	exit.WithError("Unable to start VM after repeated tries. Please try {{'minikube delete' if possible", err)
 	return host, exists
-}
-
-// Return a minikube command containing the current profile name
-func minikubeCmd() string {
-	if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
-		return fmt.Sprintf("minikube -p %s", config.ProfileName)
-	}
-	return "minikube"
 }
 
 // validateNetwork tries to catch network problems as soon as possible
