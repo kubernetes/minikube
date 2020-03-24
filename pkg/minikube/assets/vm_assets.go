@@ -120,7 +120,10 @@ func (f *FileAsset) GetLength() (flen int) {
 // GetModTime returns modification time of the file
 func (f *FileAsset) GetModTime() (time.Time, error) {
 	fi, err := os.Stat(f.AssetName)
-	return fi.ModTime(), err
+	if err != nil {
+		return time.Time{}, err
+	}
+	return fi.ModTime(), nil
 }
 
 // Read reads the asset
