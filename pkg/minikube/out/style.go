@@ -170,7 +170,7 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 	// Certain emoji are misaligned on mac, so we need to add an additional space.
 	if runtime.GOOS == "darwin" {
 		if _, ok := platformSpecificStyles[style]; ok {
-			s.Prefix = s.Prefix + " "
+			s.Prefix += " "
 		}
 	}
 	return applyPrefix(s.Prefix, format)
