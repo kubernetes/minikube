@@ -92,7 +92,11 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 	for _, image := range images {
 		image := image
 		g.Go(func() error {
-			err := needsTransfer(imgClient, image, cr)
+			// Put a ten second limit on deciding if an image needs transfer
+			// because it takes much less than that time to just transfer the image.
+			// This is needed because if running in offline mode, we can spend minutes here
+			// waiting for i/o timeout.
+			err := timedNeedsTransfer(imgClient, image, cr, 10*time.Second)
 			if err == nil {
 				return nil
 			}
@@ -105,6 +109,28 @@ func LoadImages(cc *config.ClusterConfig, runner command.Runner, images []string
 	}
 	glog.Infoln("Successfully loaded all cached images")
 	return nil
+}
+
+func timedNeedsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager, t time.Duration) error {
+	timeout := make(chan bool, 1)
+	go func() {
+		time.Sleep(t)
+		timeout <- true
+	}()
+
+	transferFinished := make(chan bool, 1)
+	var err error
+	go func() {
+		err = needsTransfer(imgClient, imgName, cr)
+		transferFinished <- true
+	}()
+
+	select {
+	case <-transferFinished:
+		return err
+	case <-timeout:
+		return fmt.Errorf("needs transfer timed out in %f seconds", t.Seconds())
+	}
 }
 
 // needsTransfer returns an error if an image needs to be retransfered

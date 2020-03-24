@@ -54,12 +54,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
+	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
@@ -291,7 +293,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	existing, err := config.Load(viper.GetString(config.ProfileName))
+	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
@@ -390,8 +392,8 @@ func updateDriver(driverName string) {
 
 func displayVersion(version string) {
 	prefix := ""
-	if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
-		prefix = fmt.Sprintf("[%s] ", viper.GetString(config.ProfileName))
+	if ClusterFlagValue() != constants.DefaultClusterName {
+		prefix = fmt.Sprintf("[%s] ", ClusterFlagValue())
 	}
 
 	versionState := out.Happy
@@ -570,17 +572,17 @@ func validateSpecifiedDriver(existing *config.ClusterConfig) {
 		return
 	}
 
-	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
-		out.V{"profile_name": existing.Name, "driver": requested, "old_driver": old})
+	out.ErrT(out.Conflict, `The existing "{{.name}}" VM was created using the "{{.old}}" driver, and is incompatible with the "{{.new}}" driver.`,
+		out.V{"name": existing.Name, "new": requested, "old": old})
 
 	out.ErrT(out.Workaround, `To proceed, either:
 
-1) Delete the existing "{{.profile_name}}" cluster using: '{{.command}} delete'
+1) Delete the existing "{{.name}}" cluster using: '{{.command}} delete'
 
 * or *
 
-2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --driver={{.old_driver}}'
-`, out.V{"command": minikubeCmd(), "old_driver": old, "profile_name": existing.Name})
+2) Start the existing "{{.name}}" cluster using: '{{.command}} --driver={{.old}}'
+`, out.V{"command": mustload.ExampleCmd(existing.Name, "start"), "old": old, "name": existing.Name})
 
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
@@ -668,14 +670,6 @@ func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string
 	return false, fallback, nil
 }
 
-// Return a minikube command containing the current profile name
-func minikubeCmd() string {
-	if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
-		return fmt.Sprintf("minikube -p %s", config.ProfileName)
-	}
-	return "minikube"
-}
-
 // validateUser validates minikube is run by the recommended user (privileged or regular)
 func validateUser(drvName string) {
 	u, err := user.Current()
@@ -701,9 +695,10 @@ func validateUser(drvName string) {
 	if !useForce {
 		os.Exit(exit.Permissions)
 	}
-	_, err = config.Load(viper.GetString(config.ProfileName))
+	cname := ClusterFlagValue()
+	_, err = config.Load(cname)
 	if err == nil || !config.IsNotExist(err) {
-		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
+		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
 	}
 	if !useForce {
 		exit.WithCodeT(exit.Permissions, "Exiting")
@@ -826,13 +821,23 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if driver.BareMetal(drvName) {
-		if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
+		if ClusterFlagValue() != constants.DefaultClusterName {
 			exit.WithCodeT(exit.Config, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 		}
 
 		runtime := viper.GetString(containerRuntime)
 		if runtime != "docker" {
 			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
+		}
+
+		// conntrack is required starting with kubernetes 1.18, include the release candidates for completion
+		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
+		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
+			err := exec.Command("conntrack").Run()
+			if err != nil {
+				exit.WithCodeT(exit.Config, "The none driver requires conntrack to be installed for kubernetes version {{.k8sVersion}}", out.V{"k8sVersion": version.String()})
+
+			}
 		}
 	}
 
@@ -953,7 +958,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 	}
 
 	cfg := config.ClusterConfig{
-		Name:                    viper.GetString(config.ProfileName),
+		Name:                    ClusterFlagValue(),
 		KeepContext:             viper.GetBool(keepContext),
 		EmbedCerts:              viper.GetBool(embedCerts),
 		MinikubeISO:             viper.GetString(isoURL),
@@ -986,7 +991,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 		NatNicType:              viper.GetString(natNicType),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
-			ClusterName:            viper.GetString(config.ProfileName),
+			ClusterName:            ClusterFlagValue(),
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,
 			APIServerIPs:           apiServerIPs,

@@ -61,6 +61,7 @@ const (
 	DeletingHost
 	Copying
 	Connectivity
+	Confused
 	Internet
 	Mounting
 	Celebrate
@@ -89,4 +90,5 @@ const (
 	DryRun
 	AddonEnable
 	AddonDisable
+	Shrug
 )
