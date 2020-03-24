@@ -36,7 +36,6 @@ import (
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -76,9 +75,6 @@ func NewSystemdProvisioner(osReleaseID string, d drivers.Driver) provision.Syste
 			DaemonOptionsFile: "/etc/systemd/system/docker.service.d/10-machine.conf",
 			OsReleaseID:       osReleaseID,
 			Driver:            d,
-			SwarmOptions: swarm.Options{
-				ArbitraryFlags: []string{viper.GetString(config.ProfileName)},
-			},
 		},
 	}
 }
