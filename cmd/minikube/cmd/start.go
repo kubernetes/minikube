@@ -835,12 +835,12 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
 		}
 
-		conntrackK8sVersion, _ := semver.Make("1.18.0-rc.0")
-		currentK8sVersion, _ := semver.Make(strings.TrimPrefix(getKubernetesVersion(nil), version.VersionPrefix))
-		if currentK8sVersion.GE(conntrackK8sVersion) {
+		connVer, _ := semver.Make("1.18.0-rc.0")
+		k8sVersion, _ := semver.Make(strings.TrimPrefix(getKubernetesVersion(nil), version.VersionPrefix))
+		if k8sVersion.GE(connVer) {
 			err := exec.Command("conntrack").Run()
 			if err != nil {
-				exit.WithCodeT(exit.Config, "The none driver requires conntrack to be installed for kubernetes version {{.k8sVersion}}", out.V{"k8sVersion": currentK8sVersion.String()})
+				exit.WithCodeT(exit.Config, "The none driver requires conntrack to be installed for kubernetes version {{.k8sVersion}}", out.V{"k8sVersion": k8sVersion.String()})
 
 			}
 		}
