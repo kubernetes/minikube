@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -17,18 +17,11 @@ limitations under the License.
 package cmd
 
 import (
-	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/mustload"
-	"k8s.io/minikube/pkg/minikube/out"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/config"
 )
 
-// ipCmd represents the ip command
-var ipCmd = &cobra.Command{
-	Use:   "ip",
-	Short: "Retrieves the IP address of the running cluster",
-	Long:  `Retrieves the IP address of the running cluster, and writes it to STDOUT.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		co := mustload.Running(ClusterFlagValue())
-		out.Ln(co.DriverIP.String())
-	},
+// ClusterFlagValue returns the current cluster name based on flags
+func ClusterFlagValue() string {
+	return viper.GetString(config.ProfileName)
 }

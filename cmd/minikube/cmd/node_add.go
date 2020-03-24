@@ -19,10 +19,10 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -36,11 +36,8 @@ var nodeAddCmd = &cobra.Command{
 	Short: "Adds a node to the given cluster.",
 	Long:  "Adds a node to the given cluster config, and starts it.",
 	Run: func(cmd *cobra.Command, args []string) {
-		profile := viper.GetString(config.ProfileName)
-		cc, err := config.Load(profile)
-		if err != nil {
-			exit.WithError("Error getting config", err)
-		}
+		co := mustload.Healthy(ClusterFlagValue())
+		cc := co.Config
 
 		if driver.BareMetal(cc.Driver) {
 			out.ErrT(out.FailureType, "none driver does not support multi-node clusters")
@@ -48,7 +45,7 @@ var nodeAddCmd = &cobra.Command{
 
 		name := node.Name(len(cc.Nodes) + 1)
 
-		out.T(out.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": profile})
+		out.T(out.Happy, "Adding node {{.name}} to cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 
 		// TODO: Deal with parameters better. Ideally we should be able to acceot any node-specific minikube start params here.
 		n := config.Node{
@@ -58,12 +55,11 @@ var nodeAddCmd = &cobra.Command{
 			KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 		}
 
-		err = node.Add(cc, n)
-		if err != nil {
+		if err := node.Add(cc, n); err != nil {
 			exit.WithError("Error adding node to cluster", err)
 		}
 
-		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": profile})
+		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})
 	},
 }
 
