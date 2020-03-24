@@ -44,6 +44,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -109,7 +110,7 @@ const (
 	downloadOnly            = "download-only"
 	dnsProxy                = "dns-proxy"
 	hostDNSResolver         = "host-dns-resolver"
-	waitUntilHealthy        = "wait"
+	waitComponents          = "wait"
 	force                   = "force"
 	dryRun                  = "dry-run"
 	interactive             = "interactive"
@@ -169,7 +170,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
-	startCmd.Flags().Bool(waitUntilHealthy, true, "Block until the apiserver is servicing API requests")
+	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaits, fmt.Sprintf("list of kuberentes components to block till ready. available options: %s . can also specify 'all' or 'none' or 'false'", kverify.AvailableWaits))
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
@@ -924,6 +925,53 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 		repository, selectedEnableDefaultCNI, selectedNetworkPlugin)
 }
 
+// interpretWaitFlag interprets the wait flag and respects the legacy minikube users
+func interpretWaitFlag(cmd cobra.Command) (bool, bool, bool) {
+	// the legacy settings
+	waitForAPI := true
+	waitForSysPod := true
+	waitForSA := false
+	if !cmd.Flags().Changed(waitComponents) {
+		return waitForAPI, waitForSysPod, waitForSA
+	}
+
+	waitCompo, err := cmd.Flags().GetStringSlice(waitComponents)
+	if err != nil {
+		glog.Infof("failed to get wait from flags")
+		return waitForAPI, waitForSysPod, waitForSA
+	}
+
+	// respecting legacy flag format --wait=false
+	// before minikube 1.9.0, wait flag was boolean
+	if (len(waitCompo) == 1 && waitCompo[0] == "false") || len(waitCompo) == 1 && waitCompo[0] == "none" {
+		waitForAPI = false
+		waitForSysPod = false
+		waitForSA = false
+	}
+
+	// respecting legacy flag format --wait=true
+	// before minikube 1.9.0, wait flag was boolean
+	if len(waitCompo) == 1 && waitCompo[0] == "true" {
+		waitForAPI = true
+		waitForSysPod = true
+		waitForSA = false
+	}
+
+	for _, wc := range waitCompo {
+		if wc == kverify.APIServer {
+			waitForAPI = true
+		}
+		if wc == kverify.DefaultSA {
+			waitForSA = true
+		}
+		if wc == kverify.SystemPods {
+			waitForSysPod = true
+		}
+
+	}
+	return waitForAPI, waitForSysPod, waitForSA
+}
+
 func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repository string,
 	selectedEnableDefaultCNI bool, selectedNetworkPlugin string) (config.ClusterConfig, config.Node, error) {
 
@@ -1008,6 +1056,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 		},
 		Nodes: []config.Node{cp},
 	}
+	cfg.WaitForAPIServer, cfg.WaitForSystemPods, cfg.WaitForDefaultSA = interpretWaitFlag(*cmd)
 	return cfg, cp, nil
 }
 

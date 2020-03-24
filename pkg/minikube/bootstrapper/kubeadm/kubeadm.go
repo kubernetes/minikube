@@ -303,6 +303,10 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 
 // WaitForNode blocks until the node appears to be healthy
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
+	if cfg.WaitForAPIServer == false && cfg.WaitForSystemPods == false && cfg.WaitForDefaultSA == false {
+		glog.Infof("skip waiting for node")
+		return nil
+	}
 	start := time.Now()
 
 	if !n.ControlPlane {
@@ -320,6 +324,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.WaitForAPIServer {
+		glog.Info("Waiting for api server ...")
 		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
 			return errors.Wrap(err, "verify apiserver proc")
 		}
@@ -336,12 +341,14 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.WaitForSystemPods {
+		glog.Info("Waiting for system pods ...")
 		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, c, start, timeout); err != nil {
 			return errors.Wrap(err, "waiting for system pods")
 		}
 	}
 
 	if cfg.WaitForDefaultSA {
+		glog.Info("Waiting for default SA ...")
 		if err := kverify.WaitForDefaultSA(c); err != nil {
 			return errors.Wrap(err, "waiting for default sa")
 		}

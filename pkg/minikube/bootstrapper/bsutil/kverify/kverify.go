@@ -34,6 +34,21 @@ import (
 	"k8s.io/minikube/pkg/minikube/logs"
 )
 
+const (
+	// APIServer is the name used in the flags for k8s api server
+	APIServer = "apiserver"
+	// SystemPod is the name used in the flags for pods in the kube system
+	SystemPods = "system_pods"
+	// DefaultSA is the name used in the flags for default service account
+	DefaultSA = "default_sa"
+)
+
+// DefaultWaits is the default components to wait for
+var DefaultWaits = []string{APIServer, SystemPods}
+
+// AvailableWaits is list of possible components that user can choose to wait for
+var AvailableWaits = []string{APIServer, SystemPods, DefaultSA}
+
 // minLogCheckTime how long to wait before spamming error logs to console
 const minLogCheckTime = 30 * time.Second
 
