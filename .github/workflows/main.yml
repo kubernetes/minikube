@@ -228,7 +228,7 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
     steps:
-    # conntrack is required for kubernetes 1.18 and highter
+    # conntrack is required for kubernetes 1.18 and higher
     - name: Install conntrack
       shell: bash
       run: |
@@ -296,7 +296,7 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-18.04
     steps:
-    # conntrack is required for kubernetes 1.18 and highter
+    # conntrack is required for kubernetes 1.18 and higher
     - name: Install conntrack
       shell: bash
       run: |
