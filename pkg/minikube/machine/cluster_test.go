@@ -17,11 +17,13 @@ limitations under the License.
 package machine
 
 import (
+	"flag"
 	"fmt"
 	"testing"
 	"time"
 
 	// Driver used by testdata
+	"k8s.io/minikube/pkg/minikube/constants"
 	_ "k8s.io/minikube/pkg/minikube/registry/drvs/virtualbox"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -41,6 +43,9 @@ func createMockDriverHost(c config.ClusterConfig, n config.Node) (interface{}, e
 }
 
 func RegisterMockDriver(t *testing.T) {
+	// Debugging this test is a nightmare.
+	flag.Lookup("logtostderr").Value.Set("true")
+
 	t.Helper()
 	if !registry.Driver(driver.Mock).Empty() {
 		return
@@ -163,7 +168,7 @@ func TestStartHostErrMachineNotExist(t *testing.T) {
 	// This should pass with creating host, while machine does not exist.
 	h, _, err = StartHost(api, mc, n)
 	if err != nil {
-		if err != ErrorMachineNotExist {
+		if err != constants.ErrMachineMissing {
 			t.Fatalf("Error starting host: %v", err)
 		}
 	}

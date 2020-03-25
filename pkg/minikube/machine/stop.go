@@ -17,6 +17,8 @@ limitations under the License.
 package machine
 
 import (
+	"time"
+
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -30,6 +32,7 @@ import (
 
 // StopHost stops the host VM, saving state to disk.
 func StopHost(api libmachine.API, machineName string) error {
+	glog.Infof("StopHost: %v", machineName)
 	h, err := api.Load(machineName)
 	if err != nil {
 		return errors.Wrapf(err, "load")
@@ -41,6 +44,7 @@ func StopHost(api libmachine.API, machineName string) error {
 
 // stop forcibly stops a host without needing to load
 func stop(h *host.Host) error {
+	start := time.Now()
 	if h.DriverName == driver.HyperV {
 		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
 		if err := trySSHPowerOff(h); err != nil {
@@ -49,12 +53,15 @@ func stop(h *host.Host) error {
 	}
 
 	if err := h.Stop(); err != nil {
-		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
-		if ok && alreadyInStateError.State == state.Stopped {
+		glog.Infof("stop err: %v", err)
+		st, ok := err.(mcnerror.ErrHostAlreadyInState)
+		if ok && st.State == state.Stopped {
+			glog.Infof("host is already stopped")
 			return nil
 		}
 		return &retry.RetriableError{Err: errors.Wrap(err, "stop")}
 	}
+	glog.Infof("stop complete within %s", time.Since(start))
 	return nil
 }
 

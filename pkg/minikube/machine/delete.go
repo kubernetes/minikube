@@ -94,7 +94,7 @@ func DeleteHost(api libmachine.API, machineName string) error {
 func delete(api libmachine.API, h *host.Host, machineName string) error {
 	if err := h.Driver.Remove(); err != nil {
 		glog.Warningf("remove failed, will retry: %v", err)
-		time.Sleep(2 * time.Second)
+		time.Sleep(1 * time.Second)
 
 		nerr := h.Driver.Remove()
 		if nerr != nil {
@@ -111,9 +111,7 @@ func delete(api libmachine.API, h *host.Host, machineName string) error {
 // demolish destroys a host by any means necessary - use only if state is inconsistent
 func demolish(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) {
 	machineName := driver.MachineName(cc, n)
-	glog.Infof("destroying %s ...", machineName)
-
-	// First try using the friendly API's.
+	glog.Infof("DEMOLISHING %s ...", machineName)
 
 	// This will probably fail
 	err := stop(h)
