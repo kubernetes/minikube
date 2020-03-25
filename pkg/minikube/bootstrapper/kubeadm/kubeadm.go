@@ -524,15 +524,20 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "kubeadm images")
 	}
 
-	if cfg.KubernetesConfig.ShouldLoadCachedImages {
-		if err := machine.LoadImages(&cfg, k.c, images, constants.ImageCacheDir); err != nil {
-			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
-		}
-	}
 	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime,
 		Runner: k.c, Socket: cfg.KubernetesConfig.CRISocket})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
+	}
+
+	if err := r.Preload(cfg.KubernetesConfig); err != nil {
+		return errors.Wrap(err, "preloading")
+	}
+
+	if cfg.KubernetesConfig.ShouldLoadCachedImages {
+		if err := machine.LoadImages(&cfg, k.c, images, constants.ImageCacheDir); err != nil {
+			out.FailureT("Unable to load cached images: {{.error}}", out.V{"error": err})
+		}
 	}
 
 	for _, n := range cfg.Nodes {
