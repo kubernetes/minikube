@@ -47,11 +47,6 @@ const (
 	maxClockDesyncSeconds = 2.1
 )
 
-var (
-	// ErrorMachineNotExist is returned when virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C)
-	ErrorMachineNotExist = errors.New("machine does not exist")
-)
-
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
 func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, error) {
 	start := time.Now()
@@ -109,21 +104,26 @@ func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node
 		// If virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C), recreate virtual machine
 		me, err := machineExists(h.Driver.DriverName(), s, serr)
 		glog.Infof("exists: %v err=%v", me, err)
+		glog.Infof("%q vs %q", err, constants.ErrMachineMissing)
 
-		if !me || err == ErrorMachineNotExist {
+		if !me || err == constants.ErrMachineMissing {
 			out.T(out.Shrug, `{{.driver_name}} "{{.cluster}}" {{.machine_type}} is missing, will recreate.`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
 			demolish(api, cc, n, h)
+
+			glog.Infof("Sleeping 1 second for extra luck!")
 			time.Sleep(1 * time.Second)
+
 			h, err = createHost(api, cc, n)
 			if err != nil {
 				return nil, errors.Wrap(err, "recreate")
 			}
+
 			recreated = true
 			s, serr = h.Driver.GetState()
 		}
 	}
 
-	if serr != ErrorMachineNotExist {
+	if serr != constants.ErrMachineMissing {
 		glog.Warningf("unexpected machine state, will restart: %v", serr)
 	}
 
@@ -219,7 +219,7 @@ func adjustGuestClock(h hostRunner, t time.Time) error {
 
 func machineExistsState(s state.State, err error) (bool, error) {
 	if s == state.None {
-		return false, ErrorMachineNotExist
+		return false, constants.ErrMachineMissing
 	}
 	return true, err
 }
@@ -228,7 +228,7 @@ func machineExistsError(s state.State, err error, drverr error) (bool, error) {
 	_ = s // not used
 	if err == drverr {
 		// if the error matches driver error
-		return false, ErrorMachineNotExist
+		return false, constants.ErrMachineMissing
 	}
 	return true, err
 }
@@ -236,7 +236,7 @@ func machineExistsError(s state.State, err error, drverr error) (bool, error) {
 func machineExistsMessage(s state.State, err error, msg string) (bool, error) {
 	if s == state.None || (err != nil && err.Error() == msg) {
 		// if the error contains the message
-		return false, ErrorMachineNotExist
+		return false, constants.ErrMachineMissing
 	}
 	return true, err
 }
@@ -244,10 +244,10 @@ func machineExistsMessage(s state.State, err error, msg string) (bool, error) {
 func machineExistsDocker(s state.State, err error) (bool, error) {
 	if s == state.Error {
 		// if the kic image is not present on the host machine, when user cancel `minikube start`, state.Error will be return
-		return false, ErrorMachineNotExist
+		return false, constants.ErrMachineMissing
 	} else if s == state.None {
 		// if the kic image is present on the host machine, when user cancel `minikube start`, state.None will be return
-		return false, ErrorMachineNotExist
+		return false, constants.ErrMachineMissing
 	}
 	return true, err
 }
@@ -279,7 +279,7 @@ func machineExists(d string, s state.State, err error) (bool, error) {
 		return machineExistsDocker(s, err)
 	case driver.Mock:
 		if s == state.Error {
-			return false, ErrorMachineNotExist
+			return false, constants.ErrMachineMissing
 		}
 		return true, err
 	default:

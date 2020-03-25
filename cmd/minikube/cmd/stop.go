@@ -69,8 +69,9 @@ func runStop(cmd *cobra.Command, args []string) {
 
 func stop(api libmachine.API, cluster config.ClusterConfig, n config.Node) bool {
 	nonexistent := false
-	stop := func() (err error) {
-		machineName := driver.MachineName(cluster, n)
+	machineName := driver.MachineName(cluster, n)
+
+	tryStop := func() (err error) {
 		err = machine.StopHost(api, machineName)
 		if err == nil {
 			return nil
@@ -87,7 +88,7 @@ func stop(api libmachine.API, cluster config.ClusterConfig, n config.Node) bool 
 		}
 	}
 
-	if err := retry.Expo(stop, 5*time.Second, 3*time.Minute, 5); err != nil {
+	if err := retry.Expo(tryStop, 1*time.Second, 30*time.Second, 3); err != nil {
 		exit.WithError("Unable to stop VM", err)
 	}
 
