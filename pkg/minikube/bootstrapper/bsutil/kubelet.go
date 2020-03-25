@@ -62,7 +62,7 @@ func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manage
 		extraOpts["node-ip"] = cp.IP
 	}
 	nodeName := KubeNodeName(mc, nc)
-	if nodeName != "" {
+	if _, ok := extraOpts["hostname-override"]; !ok {
 		extraOpts["hostname-override"] = nodeName
 	}
 
