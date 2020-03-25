@@ -61,6 +61,8 @@ github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d h1:G0m3OIz70MZUW
 github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d/go.mod h1:3eOhrUMpNV+6aFIbp5/iudMxNCF27Vw2OZgy4xEx0Fg=
 github.com/VividCortex/ewma v1.1.1 h1:MnEK4VOv6n0RSY4vtRe3h11qjxL3+t0B8yOL8iMXdcM=
 github.com/VividCortex/ewma v1.1.1/go.mod h1:2Tkkvm3sRDVXaiyucHiACn4cqf7DpdyLvmxzcbUokwA=
+github.com/afbjorklund/go-containerregistry v0.0.0-20200329163843-4f5ebd05922c h1:6fbgFHLPMCieDysTguJY03Zer8hNr8+GbvpD291DOXA=
+github.com/afbjorklund/go-containerregistry v0.0.0-20200329163843-4f5ebd05922c/go.mod h1:pD1UFYs7MCAx+ZLShBdttcaOSbyc8F9Na/9IZLNwJeA=
 github.com/afbjorklund/go-getter v1.4.1-0.20190910175809-eb9f6c26742c h1:18gEt7qzn7CW7qMkfPTFyyotlPbvPQo9o4IDV8jZqP4=
 github.com/afbjorklund/go-getter v1.4.1-0.20190910175809-eb9f6c26742c/go.mod h1:7qxyCd8rBfcShwsvxgIguu4KbS3l8bUCwg2Umn7RjeY=
 github.com/agnivade/levenshtein v1.0.1/go.mod h1:CURSv5d9Uaml+FovSIICkLbAUZ9S4RqaHDIsdSBg7lM=
