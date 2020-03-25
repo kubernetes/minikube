@@ -32,7 +32,7 @@ const (
 	// Version is the current version of kic
 	Version = "v0.0.9"
 	// SHA of the kic base image
-	baseImageSHA = "0f44fcc781bf84b1b6a2ea6f8d347990db28e375206794cb290e4824302a905f"
+	baseImageSHA = "9860c1e0dd883bf67bfdb2aeb984a97fddb7cee9d8fc4bc74a83f41a0056c535"
 
 	// OverlayImage is the cni plugin used for overlay image, created by kind.
 	// CNI plugin image used for kic drivers created by kind.

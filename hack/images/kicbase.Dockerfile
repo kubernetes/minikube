@@ -14,12 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     openssh-server=1:8.0p1-6build1 \
     dnsutils=1:9.11.5.P4+dfsg-5.1ubuntu2.1 \
     && rm /etc/crictl.yaml
-# remove crictl in the base image
 # install crictl same version as VM ISO https://github.com/kubernetes/minikube/blob/master/deploy/iso/minikube-iso/package/crictl-bin/crictl-bin.mk#L7
 RUN curl -LO https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.17.0/crictl-v1.17.0-linux-amd64.tar.gz && \
     tar zxvf crictl-v1.17.0-linux-amd64.tar.gz -C /usr/local/bin && \
     rm -f crictl-v1.17.0-linux-amd64.tar.gz
-# remove containerd in the base image
 # install containerd same version as VM ISO https://github.com/kubernetes/minikube/blob/master/deploy/iso/minikube-iso/package/containerd-bin/containerd-bin.mk#L6
 RUN apt-get remove -y containerd && rm /etc/containerd/config.toml && \ 
     curl -LO https://download.docker.com/linux/ubuntu/dists/eoan/pool/stable/amd64/containerd.io_1.2.13-1_amd64.deb && \
@@ -40,7 +38,7 @@ RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/lib
 # install podman same version as VM ISO https://github.com/kubernetes/minikube/blob/master/deploy/iso/minikube-iso/package/podman/podman.mk#L1
 RUN apt-get install -y --no-install-recommends podman=1.8.2~1
 # disable non-docker runtimes by default
-RUN systemctl disable containerd && systemctl disable crio
+RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
 # enable docker which is default
 RUN systemctl enable docker
 # making SSH work for docker container 
