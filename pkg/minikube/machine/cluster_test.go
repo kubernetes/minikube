@@ -44,7 +44,9 @@ func createMockDriverHost(c config.ClusterConfig, n config.Node) (interface{}, e
 
 func RegisterMockDriver(t *testing.T) {
 	// Debugging this test is a nightmare.
-	flag.Lookup("logtostderr").Value.Set("true")
+	if err := flag.Lookup("logtostderr").Value.Set("true"); err != nil {
+		t.Logf("unable to set logtostderr: %v", err)
+	}
 
 	t.Helper()
 	if !registry.Driver(driver.Mock).Empty() {
