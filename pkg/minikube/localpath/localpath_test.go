@@ -17,10 +17,15 @@ limitations under the License.
 package localpath
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
+
+	"k8s.io/client-go/util/homedir"
 )
 
 func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
@@ -59,5 +64,39 @@ func TestHasWindowsDriveLetter(t *testing.T) {
 		if hasWindowsDriveLetter(tc.path) != tc.want {
 			t.Errorf("%s have a Windows drive letter: %t", tc.path, tc.want)
 		}
+	}
+}
+
+func TestConfigFile(t *testing.T) {
+	configFile := ConfigFile()
+	if !strings.Contains(configFile, "config.json") {
+		t.Errorf("ConfigFile returned path without 'config.json': %s", configFile)
+	}
+}
+
+func TestMiniPath(t *testing.T) {
+	var testCases = []struct {
+		env, basePath string
+	}{
+		{"/tmp/.minikube", "/tmp/"},
+		{"/tmp/", "/tmp"},
+		{"", homedir.HomeDir()},
+	}
+	for _, tc := range testCases {
+		originalEnv := os.Getenv(MinikubeHome)
+		defer func() { // revert to pre-test env var
+			err := os.Setenv(MinikubeHome, originalEnv)
+			if err != nil {
+				t.Fatalf("Error reverting env %s to its original value (%s) var after test ", MinikubeHome, originalEnv)
+			}
+		}()
+		t.Run(fmt.Sprintf("%s", tc.env), func(t *testing.T) {
+			expectedPath := filepath.Join(tc.basePath, ".minikube")
+			os.Setenv(MinikubeHome, tc.env)
+			path := MiniPath()
+			if path != expectedPath {
+				t.Errorf("MiniPath expected to return '%s', but got '%s'", expectedPath, path)
+			}
+		})
 	}
 }
