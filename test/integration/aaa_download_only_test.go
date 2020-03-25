@@ -74,7 +74,7 @@ func TestDownloadOnly(t *testing.T) {
 					if !NoneDriver() {
 						if download.PreloadExists(v, r) {
 							// Just make sure the tarball path exists
-							if _, err := os.Stat(download.TarballPath(v)); err != nil {
+							if _, err := os.Stat(download.TarballPath(v, r)); err != nil {
 								t.Errorf("preloaded tarball path doesn't exist: %v", err)
 							}
 							return
@@ -153,6 +153,8 @@ func TestDownloadOnlyKic(t *testing.T) {
 	profile := UniqueProfileName("download-docker")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
+
+	cRuntime := "docker"
 
 	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr"}
 	args = append(args, StartArgs()...)
