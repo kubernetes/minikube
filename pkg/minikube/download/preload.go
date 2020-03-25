@@ -31,6 +31,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -76,6 +77,13 @@ func remoteTarballURL(k8sVersion string) string {
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime string) bool {
+	if !viper.GetBool("preload") {
+		return false
+	}
+
+	// See https://github.com/kubernetes/minikube/issues/6933
+	// and https://github.com/kubernetes/minikube/issues/6934
+	// to track status of adding containerd & crio
 	if containerRuntime != "docker" {
 		return false
 	}
