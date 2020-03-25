@@ -531,7 +531,7 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 	}
 
 	if err := r.Preload(cfg.KubernetesConfig); err != nil {
-		return errors.Wrap(err, "preloading")
+		glog.Infof("prelaoding failed, will try to load cached images: %v", err)
 	}
 
 	if cfg.KubernetesConfig.ShouldLoadCachedImages {
