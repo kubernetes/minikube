@@ -233,11 +233,13 @@ jobs:
     runs-on: ubuntu-16.04
     steps:
     # conntrack is required for kubernetes 1.18 and higher
-    - name: Install conntrack
+    # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
+    - name: Install tools for none
       shell: bash
       run: |
         sudo apt-get update -qq
         sudo apt-get -qq -y install conntrack
+        sudo apt-get -qq -y install socat
     - name: Install gopogh
       shell: bash
       run: |
@@ -303,11 +305,13 @@ jobs:
     runs-on: ubuntu-18.04
     steps:
     # conntrack is required for kubernetes 1.18 and higher
-    - name: Install conntrack
+    # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
+    - name: Install tools for none
       shell: bash
       run: |
         sudo apt-get update -qq
         sudo apt-get -qq -y install conntrack
+        sudo apt-get -qq -y install socat
     - name: Install gopogh
       shell: bash
       run: |
