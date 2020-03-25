@@ -239,6 +239,7 @@ jobs:
       run: |
         sudo apt-get update -qq
         sudo apt-get -qq -y install conntrack
+        sudo apt-get -qq -y install socat
     - name: Install gopogh
       shell: bash
       run: |
@@ -310,6 +311,7 @@ jobs:
       run: |
         sudo apt-get update -qq
         sudo apt-get -qq -y install conntrack
+        sudo apt-get -qq -y install socat
     - name: Install gopogh
       shell: bash
       run: |
