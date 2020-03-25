@@ -87,11 +87,16 @@ func DeleteHost(api libmachine.API, machineName string) error {
 	}
 
 	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
-	if err := host.Driver.Remove(); err != nil {
+	return delete(api, host, machineName)
+}
+
+// delete removes a host and it's local data files
+func delete(api libmachine.API, h *host.Host, machineName string) error {
+	if err := h.Driver.Remove(); err != nil {
 		glog.Warningf("remove failed, will retry: %v", err)
 		time.Sleep(2 * time.Second)
 
-		nerr := host.Driver.Remove()
+		nerr := h.Driver.Remove()
 		if nerr != nil {
 			return errors.Wrap(nerr, "host remove retry")
 		}
@@ -103,18 +108,17 @@ func DeleteHost(api libmachine.API, machineName string) error {
 	return nil
 }
 
-// destroy demolishes a host by any means necessary
-// Use only when the machine state appears to be inconsistent
-func destroy(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) {
+// demolish destroys a host by any means necessary - use only if state is inconsistent
+func demolish(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) {
 	machineName := driver.MachineName(cc, n)
 	glog.Infof("destroying %s ...", machineName)
 
-	// First try using the official friendly API's.
+	// First try using the friendly API's.
 
 	// This will probably fail
-	err := StopHost(api, machineName)
+	err := stop(h)
 	if err != nil {
-		glog.Infof("stophost failed: %v", err)
+		glog.Infof("stophost failed (probably ok): %v", err)
 	}
 
 	// For 95% of cases, this should be enough
@@ -123,13 +127,6 @@ func destroy(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host
 		glog.Warningf("deletehost failed: %v", err)
 	}
 
-	// DeleteHost may have returned success prematurely. Go further.
-	if err = h.Driver.Remove(); err != nil {
-		glog.Warningf("driver remove failed: %v", err)
-	}
-
-	// Clean up the local files relating to this machine
-	if err = api.Remove(cc.Name); err != nil {
-		glog.Warningf("api remove failed: %v", err)
-	}
+	err = delete(api, h, machineName)
+	glog.Warningf("delete failed (probably ok) %v", err)
 }
