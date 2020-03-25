@@ -267,9 +267,17 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 		t.Fatalf("wait: %v", err)
 	}
 
+	if NoneDriver() {
+		_, err := exec.LookPath("socat")
+		if err != nil {
+			t.Skipf("socat is required by kubectl to complete this test")
+		}
+	}
+
 	want := "Server: &version.Version"
 	// Test from inside the cluster (`helm version` use pod.list permission. we use tiller serviceaccount in kube-system to list pod)
 	checkHelmTiller := func() error {
+
 		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "helm-test", "--restart=Never", "--image=alpine/helm:2.16.3", "-it", "--namespace=kube-system", "--serviceaccount=tiller", "--", "version"))
 		if err != nil {
 			return err

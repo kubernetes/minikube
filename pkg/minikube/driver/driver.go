@@ -164,8 +164,8 @@ func FlagDefaults(name string) FlagHints {
 }
 
 // Choices returns a list of drivers which are possible on this system
-func Choices() []registry.DriverState {
-	options := registry.Available()
+func Choices(vm bool) []registry.DriverState {
+	options := registry.Available(vm)
 
 	// Descending priority for predictability and appearance
 	sort.Slice(options, func(i, j int) bool {
