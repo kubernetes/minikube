@@ -121,7 +121,7 @@ func (d *Driver) Create() error {
 		return errors.Wrap(err, "prepare kic ssh")
 	}
 
-	// return now if no preload is available
+	// If preload doesn't exist, don't bother extracting tarball to volume
 	if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
 		return nil
 	}

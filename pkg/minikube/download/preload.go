@@ -23,7 +23,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 	"runtime"
 
 	"cloud.google.com/go/storage"
@@ -32,6 +32,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -60,14 +61,14 @@ func targetDir() string {
 	return localpath.MakeMiniPath("cache", "preloaded-tarball")
 }
 
-// PreloadChecksumPath returns path to checksum file
+// PreloadChecksumPath returns the local path to the cached checksum file
 func PreloadChecksumPath(k8sVersion, containerRuntime string) string {
-	return path.Join(targetDir(), checksumName(k8sVersion, containerRuntime))
+	return filepath.Join(targetDir(), checksumName(k8sVersion, containerRuntime))
 }
 
-// TarballPath returns the path to the preloaded tarball
+// TarballPath returns the local path to the cached preload tarball
 func TarballPath(k8sVersion, containerRuntime string) string {
-	return path.Join(targetDir(), TarballName(k8sVersion, containerRuntime))
+	return filepath.Join(targetDir(), TarballName(k8sVersion, containerRuntime))
 }
 
 // remoteTarballURL returns the URL for the remote tarball in GCS
@@ -77,6 +78,13 @@ func remoteTarballURL(k8sVersion, containerRuntime string) string {
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime string) bool {
+	if !viper.GetBool("preload") {
+		return false
+	}
+
+	// See https://github.com/kubernetes/minikube/issues/6933
+	// and https://github.com/kubernetes/minikube/issues/6934
+	// to track status of adding containerd & crio
 	if containerRuntime != "docker" {
 		return false
 	}
@@ -120,7 +128,7 @@ func Preload(k8sVersion, containerRuntime string) error {
 		return nil
 	}
 
-	out.T(out.FileDownload, "Downloading preloaded images tarball for k8s {{.version}} ...", out.V{"version": k8sVersion})
+	out.T(out.FileDownload, "Downloading Kubernetes {{.version}} preload ...", out.V{"version": k8sVersion})
 	url := remoteTarballURL(k8sVersion, containerRuntime)
 
 	tmpDst := targetPath + ".download"
