@@ -34,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/storageclass"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // defaultStorageClassProvisioner is the name of the default storage class provisioner
@@ -211,13 +212,17 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 	}
 
 	command := kubectlCommand(cc, deployFiles, enable)
-	glog.Infof("Running: %v", command)
-	rr, err := cmd.RunCmd(command)
-	if err != nil {
-		return errors.Wrapf(err, "addon apply")
+
+	// Retry, because sometimes we race against an apiserver restart
+	apply := func() error {
+		_, err := cmd.RunCmd(command)
+		if err != nil {
+			glog.Warningf("apply failed, will retry: %v", err)
+		}
+		return err
 	}
-	glog.Infof("output:\n%s", rr.Output())
-	return nil
+
+	return retry.Expo(apply, 1*time.Second, time.Second*30)
 }
 
 // enableOrDisableStorageClasses enables or disables storage classes

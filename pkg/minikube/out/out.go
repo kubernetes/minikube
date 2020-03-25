@@ -68,6 +68,9 @@ func T(style StyleEnum, format string, a ...V) {
 
 // String writes a basic formatted string to stdout
 func String(format string, a ...interface{}) {
+	// Flush log buffer so that output order makes sense
+	glog.Flush()
+
 	if outFile == nil {
 		glog.Warningf("[unset outFile]: %s", fmt.Sprintf(format, a...))
 		return

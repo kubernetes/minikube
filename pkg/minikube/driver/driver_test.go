@@ -162,7 +162,7 @@ func TestSuggest(t *testing.T) {
 				}
 			}
 
-			got := Choices()
+			got := Choices(false)
 			gotNames := []string{}
 			for _, c := range got {
 				gotNames = append(gotNames, c.Name)
