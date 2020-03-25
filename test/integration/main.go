@@ -68,6 +68,11 @@ func HyperVDriver() bool {
 	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
 }
 
+// KicDriver returns whether or not this test is using the docker or podman driver
+func KicDriver() bool {
+	return strings.Contains(*startArgs, "--driver=docker") || strings.Contains(*startArgs, "--vm-driver=docker") || strings.Contains(*startArgs, "--vm-driver=podman") || strings.Contains(*startArgs, "driver=podman")
+}
+
 // CanCleanup returns if cleanup is allowed
 func CanCleanup() bool {
 	return *cleanup

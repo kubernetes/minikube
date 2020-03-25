@@ -156,12 +156,13 @@ func CreateContainerNode(p CreateParams) error {
 		if s != "running" {
 			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
 		}
+		glog.Infof("the created container %q has a running status.", p.Name)
 		return nil
 	}
 
-	// retry up to up 5 seconds to make sure the created container status is running.
-	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*5); err != nil {
-		glog.Warningf("The created container %q failed to report to be running in 5 seconds.", p.Name)
+	// retry up to up 13 seconds to make sure the created container status is running.
+	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*13); err != nil {
+		return errors.Wrapf(err, "check container %q running", p.Name)
 	}
 
 	return nil

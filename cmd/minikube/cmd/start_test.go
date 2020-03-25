@@ -26,7 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-func TestGetKuberneterVersion(t *testing.T) {
+func TestGetKubernetesVersion(t *testing.T) {
 	var tests = []struct {
 		description     string
 		expectedVersion string
@@ -54,6 +54,16 @@ func TestGetKuberneterVersion(t *testing.T) {
 			expectedVersion: "v1.16.0",
 			paramVersion:    "v1.16.0",
 			cfg:             &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
+		},
+		{
+			description:     "kubernetes-version given as 'stable', no config",
+			expectedVersion: constants.DefaultKubernetesVersion,
+			paramVersion:    "stable",
+		},
+		{
+			description:     "kubernetes-version given as 'latest', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "latest",
 		},
 	}
 
