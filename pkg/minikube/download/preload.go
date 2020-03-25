@@ -47,7 +47,7 @@ const (
 
 // TarballName returns name of the tarball
 func TarballName(k8sVersion, containerRuntime string) string {
-	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-overlay2-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, runtime.GOOS)
+	return fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-overlay2-%s.tar.lz4", PreloadVersion, k8sVersion, containerRuntime, runtime.GOARCH)
 }
 
 // returns the name of the checksum file
