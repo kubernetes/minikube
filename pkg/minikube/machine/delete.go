@@ -22,11 +22,13 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -99,4 +101,35 @@ func DeleteHost(api libmachine.API, machineName string) error {
 		return errors.Wrap(err, "api remove")
 	}
 	return nil
+}
+
+// destroy demolishes a host by any means necessary
+// Use only when the machine state appears to be inconsistent
+func destroy(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) {
+	machineName := driver.MachineName(cc, n)
+	glog.Infof("destroying %s ...", machineName)
+
+	// First try using the official friendly API's.
+
+	// This will probably fail
+	err := StopHost(api, machineName)
+	if err != nil {
+		glog.Infof("stophost failed: %v", err)
+	}
+
+	// For 95% of cases, this should be enough
+	err = DeleteHost(api, machineName)
+	if err != nil {
+		glog.Warningf("deletehost failed: %v", err)
+	}
+
+	// DeleteHost may have returned success prematurely. Go further.
+	if err = h.Driver.Remove(); err != nil {
+		glog.Warningf("driver remove failed: %v", err)
+	}
+
+	// Clean up the local files relating to this machine
+	if err = api.Remove(cc.Name); err != nil {
+		glog.Warningf("api remove failed: %v", err)
+	}
 }
