@@ -54,8 +54,6 @@ var (
 
 // fixHost fixes up a previously configured VM so that it is ready to run Kubernetes
 func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, error) {
-	out.T(out.Waiting, "Reconfiguring existing host ...")
-
 	start := time.Now()
 	glog.Infof("fixHost starting: %s", n.Name)
 	defer func() {
@@ -101,43 +99,35 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 }
 
 func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) (*host.Host, error) {
+	machineName := driver.MachineName(cc, n)
+	machineType := driver.MachineType(cc.Driver)
+
 	s, err := h.Driver.GetState()
+	glog.Infof("recreateIfNeeded on %s: state=%s err=%v", machineName, s, err)
 	if err != nil || s == state.Stopped || s == state.None {
 		// If virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C), recreate virtual machine
 		me, err := machineExists(h.Driver.DriverName(), s, err)
-		if !me {
-			// If the error is that virtual machine does not exist error, handle error(recreate virtual machine)
-			if err == ErrorMachineNotExist {
-				// remove virtual machine
-				if err := h.Driver.Remove(); err != nil {
-					// skip returning error since it may be before docker image pulling(so, no host exist)
-					if h.Driver.DriverName() != driver.Docker {
-						return nil, errors.Wrap(err, "host remove")
-					}
-				}
-				// remove machine config directory
-				if err := api.Remove(cc.Name); err != nil {
-					return nil, errors.Wrap(err, "api remove")
-				}
-				// recreate virtual machine
-				out.T(out.Meh, "machine '{{.name}}' does not exist. Proceeding ahead with recreating VM.", out.V{"name": cc.Name})
-				h, err = createHost(api, cc, n)
-				if err != nil {
-					return nil, errors.Wrap(err, "Error recreating VM")
-				}
-				// return ErrMachineNotExist err to initialize preExists flag
-				return h, ErrorMachineNotExist
+		glog.Infof("exists: %v err=%v", me, err)
+
+		if !me || err == ErrorMachineNotExist {
+			out.T(out.Provisioning, `Recreating {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+			destroy(api, cc, n, h)
+			time.Sleep(1 * time.Second)
+			h, err = createHost(api, cc, n)
+			if err != nil {
+				return nil, errors.Wrap(err, "recreate")
 			}
-			// If the error is not that virtual machine does not exist error, return error
-			return nil, errors.Wrap(err, "Error getting state for host")
+			s, err = h.Driver.GetState()
+			if err != nil {
+				return nil, errors.Wrap(err, "recreated state")
+			}
 		}
 	}
 
-	machineType := driver.MachineType(cc.Driver)
 	if s == state.Running {
-		out.T(out.Running, `Using the running {{.driver_name}} "{{.profile_name}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "profile_name": cc.Name, "machine_type": machineType})
+		out.T(out.Running, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
 	} else {
-		out.T(out.Restarting, `Starting existing {{.driver_name}} {{.machine_type}} for "{{.profile_name}}" ...`, out.V{"driver_name": cc.Driver, "profile_name": cc.Name, "machine_type": machineType})
+		out.T(out.Restarting, `Retarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
 		if err := h.Driver.Start(); err != nil {
 			return h, errors.Wrap(err, "driver start")
 		}
