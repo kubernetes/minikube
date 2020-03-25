@@ -8,22 +8,39 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     lz4=1.9.1-1 \
     gnupg=2.2.12-1ubuntu3 \ 
+    # libglib2.0-0 is required for conmon, which is required for podman
+    libglib2.0-0=2.62.1-1 \ 
     sudo=1.8.27-1ubuntu4.1 \
-    docker.io=19.03.2-0ubuntu1 \
     openssh-server=1:8.0p1-6build1 \
     dnsutils=1:9.11.5.P4+dfsg-5.1ubuntu2.1 \
-    # libglib2.0-0 is required for conmon, which is required for podman
-    libglib2.0-0=2.62.1-1 \
     && rm /etc/crictl.yaml
-# install cri-o based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
+# remove crictl in the base image
+# install crictl same version as VM ISO https://github.com/kubernetes/minikube/blob/master/deploy/iso/minikube-iso/package/crictl-bin/crictl-bin.mk#L7
+RUN curl -LO https://github.com/kubernetes-sigs/cri-tools/releases/download/v1.17.0/crictl-v1.17.0-linux-amd64.tar.gz && \
+    tar zxvf crictl-v1.17.0-linux-amd64.tar.gz -C /usr/local/bin && \
+    rm -f crictl-v1.17.0-linux-amd64.tar.gz
+# remove containerd in the base image
+# install containerd same version as VM ISO https://github.com/kubernetes/minikube/blob/master/deploy/iso/minikube-iso/package/containerd-bin/containerd-bin.mk#L6
+RUN apt-get remove -y containerd && rm /etc/containerd/config.toml && \ 
+    curl -LO https://download.docker.com/linux/ubuntu/dists/eoan/pool/stable/amd64/containerd.io_1.2.13-1_amd64.deb && \
+    dpkg -i containerd.io_1.2.13-1_amd64.deb && \
+    rm containerd.io_1.2.13-1_amd64.deb
+# install docker same version as VM ISO https://github.com/kubernetes/minikube/blob/master/deploy/iso/minikube-iso/package/docker-bin/docker-bin.mk#L7
+RUN curl -LO https://download.docker.com/linux/ubuntu/dists/eoan/pool/stable/amd64/docker-ce-cli_19.03.8~3-0~ubuntu-eoan_amd64.deb && \
+    curl -LO https://download.docker.com/linux/ubuntu/dists/eoan/pool/stable/amd64/docker-ce_19.03.8~3-0~ubuntu-eoan_amd64.deb && \
+    dpkg -i docker-ce-cli_19.03.8~3-0~ubuntu-eoan_amd64.deb && \
+    dpkg -i docker-ce_19.03.8~3-0~ubuntu-eoan_amd64.deb && \
+    rm docker-ce-cli_19.03.8~3-0~ubuntu-eoan_amd64.deb && rm docker-ce_19.03.8~3-0~ubuntu-eoan_amd64.deb
+# install cri-o same version as VM ISO https://github.com/kubernetes/minikube/blob/master/deploy/iso/minikube-iso/package/crio-bin/crio-bin.mk#L7
+# based on https://github.com/cri-o/cri-o/commit/96b0c34b31a9fc181e46d7d8e34fb8ee6c4dc4e1#diff-04c6e90faac2675aa89e2176d2eec7d8R128
 RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \    
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
     apt-key add - < Release.key && apt-get update && \
     apt-get install -y --no-install-recommends cri-o-1.17=1.17.0-3
-# install podman
+# install podman same version as VM ISO https://github.com/kubernetes/minikube/blob/master/deploy/iso/minikube-iso/package/podman/podman.mk#L1
 RUN apt-get install -y --no-install-recommends podman=1.8.2~1
 # disable non-docker runtimes by default
-RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
+RUN systemctl disable containerd && systemctl disable crio
 # enable docker which is default
 RUN systemctl enable docker
 # making SSH work for docker container 
