@@ -233,7 +233,8 @@ func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 
 // validateMinikubeKubectl validates that the `minikube kubectl` command returns content
 func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) {
-	kubectlArgs := []string{"kubectl", "--", "get", "pods"}
+	// Must set the profile so that it knows what version of Kubernetes to use
+	kubectlArgs := []string{"-p", profile, "kubectl", "--", "--context", profile, "get", "pods"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), kubectlArgs...))
 	if err != nil {
 		t.Fatalf("%s failed: %v", rr.Args, err)
