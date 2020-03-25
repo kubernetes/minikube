@@ -51,6 +51,7 @@ func TestCalculateSizeInMB(t *testing.T) {
 		{"1024KB", 1},
 		{"1024mb", 1024},
 		{"1024b", 0},
+		{"1g", 1024},
 	}
 
 	for _, tt := range testData {
@@ -59,7 +60,7 @@ func TestCalculateSizeInMB(t *testing.T) {
 			t.Fatalf("unexpected err: %v", err)
 		}
 		if number != tt.expectedNumber {
-			t.Fatalf("Expected '%d'' but got '%d'", tt.expectedNumber, number)
+			t.Fatalf("Expected '%d' but got '%d' from size '%s'", tt.expectedNumber, number, tt.size)
 		}
 	}
 }
