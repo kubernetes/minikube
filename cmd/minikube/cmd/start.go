@@ -123,6 +123,7 @@ const (
 	hostOnlyNicType         = "host-only-nic-type"
 	natNicType              = "nat-nic-type"
 	nodes                   = "nodes"
+	preload                 = "preload"
 )
 
 var (
@@ -175,11 +176,12 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
+	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
 func initKubernetesFlags() {
-	startCmd.Flags().String(kubernetesVersion, "", "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
+	startCmd.Flags().String(kubernetesVersion, "", fmt.Sprintf("The kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for %s, 'latest' for %s). Defaults to 'stable'.", constants.DefaultKubernetesVersion, constants.NewestKubernetesVersion))
 	startCmd.Flags().Var(&config.ExtraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
@@ -198,6 +200,7 @@ func initDriverFlags() {
 	startCmd.Flags().String("driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.DisplaySupportedDrivers()))
 	startCmd.Flags().String("vm-driver", "", "DEPRECATED, use `driver` instead.")
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
+	startCmd.Flags().Bool("vm", false, "Filter to use only VM Drivers")
 
 	// kvm2
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (kvm2 driver only)")
@@ -480,10 +483,10 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		if vmd := viper.GetString("vm-driver"); vmd != "" {
 			// Output a warning
 			warning := `Both driver={{.driver}} and vm-driver={{.vmd}} have been set.
-			
+
     Since vm-driver is deprecated, minikube will default to driver={{.driver}}.
 
-    If vm-driver is set in the global config, please run "minikube config unset vm-driver" to resolve this warning.			
+    If vm-driver is set in the global config, please run "minikube config unset vm-driver" to resolve this warning.
 			`
 			out.T(out.Warning, warning, out.V{"driver": d, "vmd": vmd})
 		}
@@ -505,7 +508,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		return ds
 	}
 
-	pick, alts := driver.Suggest(driver.Choices())
+	pick, alts := driver.Suggest(driver.Choices(viper.GetBool("vm")))
 	if pick.Name == "" {
 		exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
 	}
@@ -1065,13 +1068,15 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 func getKubernetesVersion(old *config.ClusterConfig) string {
 	paramVersion := viper.GetString(kubernetesVersion)
 
-	if paramVersion == "" { // if the user did not specify any version then ...
-		if old != nil { // .. use the old version from config (if any)
-			paramVersion = old.KubernetesConfig.KubernetesVersion
-		}
-		if paramVersion == "" { // .. otherwise use the default version
-			paramVersion = constants.DefaultKubernetesVersion
-		}
+	// try to load the old version first if the user didn't specify anything
+	if paramVersion == "" && old != nil {
+		paramVersion = old.KubernetesConfig.KubernetesVersion
+	}
+
+	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
+		paramVersion = constants.DefaultKubernetesVersion
+	} else if strings.EqualFold(paramVersion, "latest") {
+		paramVersion = constants.NewestKubernetesVersion
 	}
 
 	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
