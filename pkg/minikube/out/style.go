@@ -92,7 +92,7 @@ var styles = map[StyleEnum]style{
 	Caching:          {Prefix: "🤹  "},
 	StartingVM:       {Prefix: "🔥  "},
 	StartingNone:     {Prefix: "🤹  "},
-	Provisioner:      {Prefix: "ℹ️   "},
+	Provisioner:      {Prefix: "ℹ️  "},
 	Resetting:        {Prefix: "🔄  "},
 	DeletingHost:     {Prefix: "🔥  "},
 	Copying:          {Prefix: "✨  "},
@@ -117,7 +117,7 @@ var styles = map[StyleEnum]style{
 	Unmount:          {Prefix: "🔥  "},
 	MountOptions:     {Prefix: "💾  "},
 	Fileserver:       {Prefix: "🚀  ", OmitNewline: true},
-	DryRun:           {Prefix: "🏜️   "},
+	DryRun:           {Prefix: "🌵  "},
 	AddonEnable:      {Prefix: "🌟  "},
 	AddonDisable:     {Prefix: "🌑  "},
 }
