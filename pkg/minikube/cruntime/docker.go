@@ -290,6 +290,9 @@ func (r *Docker) SystemLogCmd(len int) string {
 // 2. Extract the preloaded tarball to the correct directory
 // 3. Remove the tarball within the VM
 func (r *Docker) Preload(cfg config.KubernetesConfig) error {
+	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
+		return nil
+	}
 	k8sVersion := cfg.KubernetesVersion
 	cRuntime := cfg.ContainerRuntime
 
