@@ -53,14 +53,14 @@ sudo systemctl is-active --quiet kubelet \
 
  # conntrack is required for kubernetes 1.18 and higher for none driver
 if ! conntrack --version &>/dev/null; then
-  echo "WARNING: No contrack is not installed"
+  echo "WARNING: contrack is not installed. will try to install."
   sudo apt-get update -qq
   sudo apt-get -qq -y install conntrack
 fi
 
  # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
 if ! which socat &>/dev/null; then
-  echo "WARNING: No socat is not installed"
+  echo "WARNING: socat is not installed. will try to install."
   sudo apt-get update -qq
   sudo apt-get -qq -y install socat
 fi
