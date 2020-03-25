@@ -101,41 +101,48 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) (*host.Host, error) {
 	machineName := driver.MachineName(cc, n)
 	machineType := driver.MachineType(cc.Driver)
+	recreated := false
+	s, serr := h.Driver.GetState()
 
-	s, err := h.Driver.GetState()
-	glog.Infof("recreateIfNeeded on %s: state=%s err=%v", machineName, s, err)
-	if err != nil || s == state.Stopped || s == state.None {
+	glog.Infof("recreateIfNeeded on %s: state=%s err=%v", machineName, s, serr)
+	if serr != nil || s == state.Stopped || s == state.None {
 		// If virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C), recreate virtual machine
-		me, err := machineExists(h.Driver.DriverName(), s, err)
+		me, err := machineExists(h.Driver.DriverName(), s, serr)
 		glog.Infof("exists: %v err=%v", me, err)
 
 		if !me || err == ErrorMachineNotExist {
-			out.T(out.Provisioning, `Recreating {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
-			destroy(api, cc, n, h)
+			out.T(out.Shrug, `{{.driver_name}} "{{.cluster}}" {{.machine_type}} is missing, will recreate.`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+			demolish(api, cc, n, h)
 			time.Sleep(1 * time.Second)
 			h, err = createHost(api, cc, n)
 			if err != nil {
 				return nil, errors.Wrap(err, "recreate")
 			}
-			s, err = h.Driver.GetState()
-			if err != nil {
-				return nil, errors.Wrap(err, "recreated state")
-			}
+			recreated = true
+			s, serr = h.Driver.GetState()
 		}
+	}
+
+	if serr != ErrorMachineNotExist {
+		glog.Warningf("unexpected machine state, will restart: %v", serr)
 	}
 
 	if s == state.Running {
-		out.T(out.Running, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
-	} else {
-		out.T(out.Restarting, `Retarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
-		if err := h.Driver.Start(); err != nil {
-			return h, errors.Wrap(err, "driver start")
+		if !recreated {
+			out.T(out.Running, `Updating the running {{.driver_name}} "{{.cluster}}" {{.machine_type}} ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
 		}
-		if err := api.Save(h); err != nil {
-			return h, errors.Wrap(err, "save")
-		}
+		return h, nil
 	}
 
+	if !recreated {
+		out.T(out.Restarting, `Retarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+	}
+	if err := h.Driver.Start(); err != nil {
+		return h, errors.Wrap(err, "driver start")
+	}
+	if err := api.Save(h); err != nil {
+		return h, errors.Wrap(err, "save")
+	}
 	return h, nil
 }
 
