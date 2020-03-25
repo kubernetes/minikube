@@ -23,7 +23,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"path"
+	"path/filepath"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -59,14 +59,14 @@ func targetDir() string {
 	return localpath.MakeMiniPath("cache", "preloaded-tarball")
 }
 
-// PreloadChecksumPath returns path to checksum file
+// PreloadChecksumPath returns the local path to the cached checksum file
 func PreloadChecksumPath(k8sVersion string) string {
-	return path.Join(targetDir(), checksumName(k8sVersion))
+	return filepath.Join(targetDir(), checksumName(k8sVersion))
 }
 
-// TarballPath returns the path to the preloaded tarball
+// TarballPath returns the local path to the cached preload tarball
 func TarballPath(k8sVersion string) string {
-	return path.Join(targetDir(), TarballName(k8sVersion))
+	return filepath.Join(targetDir(), TarballName(k8sVersion))
 }
 
 // remoteTarballURL returns the URL for the remote tarball in GCS
@@ -122,7 +122,7 @@ func Preload(k8sVersion, containerRuntime string) error {
 		return nil
 	}
 
-	out.T(out.FileDownload, "Downloading preloaded images tarball for k8s {{.version}} ...", out.V{"version": k8sVersion})
+	out.T(out.FileDownload, "Downloading Kubernetes {{.version}} preload ...", out.V{"version": k8sVersion})
 	url := remoteTarballURL(k8sVersion)
 
 	tmpDst := targetPath + ".download"
