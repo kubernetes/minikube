@@ -50,6 +50,9 @@ brew upgrade minikube
 ## Hypervisor Setup
 
 {{% tabs %}}
+{{% tab "Docker" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/docker_usage.inc" %}}
+{{% /tab %}}
 {{% tab "Hyperkit" %}}
 {{% readfile file="/docs/Reference/Drivers/includes/hyperkit_usage.inc" %}}
 {{% /tab %}}
@@ -61,6 +64,9 @@ brew upgrade minikube
 {{% /tab %}}
 {{% tab "VMware" %}}
 {{% readfile file="/docs/Reference/Drivers/includes/vmware_macos_usage.inc" %}}
+{{% /tab %}}
+{{% tab "Podman (experimental)" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/podman_usage.inc" %}}
 {{% /tab %}}
 
 {{% /tabs %}}

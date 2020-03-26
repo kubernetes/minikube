@@ -4,7 +4,7 @@ linkTitle: "Disk cache"
 weight: 6
 date: 2019-08-01
 description: >
-  Cache Rules Everything Around Minikube
+  Cache Rules Everything Around minikube
 ---
 
 minikube has built-in support for caching downloaded resources into `$MINIKUBE_HOME/cache`. Here are the important file locations:
