@@ -137,7 +137,7 @@ func TestFunctional(t *testing.T) {
 func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "nodes", "--output=go-template", "--template='{{range $k, $v := (index .items 0).metadata.labels}}{{$k}} {{end}}'"))
 	if err != nil {
-		t.Errorf("failed to 'kubectl get nodes' with args %q: %v", rr.Args, err)
+		t.Errorf("failed to 'kubectl get nodes' with args %q: %v", rr.Command(), err)
 	}
 	expectedLabels := []string{"minikube.k8s.io/commit", "minikube.k8s.io/version", "minikube.k8s.io/updated_at", "minikube.k8s.io/name"}
 	for _, el := range expectedLabels {
@@ -167,7 +167,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	c = exec.CommandContext(mctx, "/bin/bash", "-c", "eval $("+Target()+" -p "+profile+" docker-env) && docker images")
 	rr, err = Run(t, c)
 	if err != nil {
-		t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Args, err)
+		t.Fatalf("failed to run minikube docker-env. args %q : %v ", rr.Command(), err)
 	}
 
 	expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
@@ -192,7 +192,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	c.Env = env
 	rr, err := Run(t, c)
 	if err != nil {
-		t.Errorf("failed minikube start. args %q: %v", rr.Args, err)
+		t.Errorf("failed minikube start. args %q: %v", rr.Command(), err)
 	}
 
 	want := "Found network options:"
@@ -210,7 +210,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "config", "current-context"))
 	if err != nil {
-		t.Errorf("failed to get current-context. args %q : %v", rr.Args, err)
+		t.Errorf("failed to get current-context. args %q : %v", rr.Command(), err)
 	}
 	if !strings.Contains(rr.Stdout.String(), profile) {
 		t.Errorf("expected current-context = %q, but got *%q*", profile, rr.Stdout.String())
@@ -221,7 +221,7 @@ func validateKubeContext(ctx context.Context, t *testing.T, profile string) {
 func validateKubectlGetPods(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "po", "-A"))
 	if err != nil {
-		t.Errorf("failed to get kubectl pods: args %q : %v", rr.Args, err)
+		t.Errorf("failed to get kubectl pods: args %q : %v", rr.Command(), err)
 	}
 	if rr.Stderr.String() != "" {
 		t.Errorf("expected stderr to be empty but got *%q*: args %q", rr.Stderr, rr.Command())
@@ -237,7 +237,7 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 	kubectlArgs := []string{"-p", profile, "kubectl", "--", "--context", profile, "get", "pods"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), kubectlArgs...))
 	if err != nil {
-		t.Fatalf("failed to get pods. args %q: %v", rr.Args, err)
+		t.Fatalf("failed to get pods. args %q: %v", rr.Command(), err)
 	}
 }
 
@@ -245,12 +245,12 @@ func validateMinikubeKubectl(ctx context.Context, t *testing.T, profile string) 
 func validateComponentHealth(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "cs", "-o=json"))
 	if err != nil {
-		t.Fatalf("failed to get components. args %q: %v", rr.Args, err)
+		t.Fatalf("failed to get components. args %q: %v", rr.Command(), err)
 	}
 	cs := api.ComponentStatusList{}
 	d := json.NewDecoder(bytes.NewReader(rr.Stdout.Bytes()))
 	if err := d.Decode(&cs); err != nil {
-		t.Fatalf("failed to decode kubectl json output: args %q : %v", rr.Args, err)
+		t.Fatalf("failed to decode kubectl json output: args %q : %v", rr.Command(), err)
 	}
 
 	for _, i := range cs.Items {
@@ -270,41 +270,41 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
 	if err != nil {
-		t.Errorf("failed to run minikube status. args %q : %v", rr.Args, err)
+		t.Errorf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
 
 	// Custom format
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-f", "host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubeconfig:{{.Kubeconfig}}"))
 	if err != nil {
-		t.Errorf("failed to run minikube status with custom format: args %q: %v", rr.Args, err)
+		t.Errorf("failed to run minikube status with custom format: args %q: %v", rr.Command(), err)
 	}
 	re := `host:([A-z]+),kublet:([A-z]+),apiserver:([A-z]+),kubeconfig:([A-z]+)`
 	match, _ := regexp.MatchString(re, rr.Stdout.String())
 	if !match {
-		t.Errorf("failed to match regex %q for minikube status with custom format. args %q. output %q", re, rr.Args, rr.Output())
+		t.Errorf("failed to match regex %q for minikube status with custom format. args %q. output %q", re, rr.Command(), rr.Output())
 	}
 
 	// Json output
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-o", "json"))
 	if err != nil {
-		t.Errorf("failed to run minikube status with json output. args %q : %v", rr.Args, err)
+		t.Errorf("failed to run minikube status with json output. args %q : %v", rr.Command(), err)
 	}
 	var jsonObject map[string]interface{}
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
 	if err != nil {
-		t.Errorf("failed to decode json from minikube status. args %q. %v", rr.Args, err)
+		t.Errorf("failed to decode json from minikube status. args %q. %v", rr.Command(), err)
 	}
 	if _, ok := jsonObject["Host"]; !ok {
-		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Args, err, "Host")
+		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Command(), err, "Host")
 	}
 	if _, ok := jsonObject["Kubelet"]; !ok {
-		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Args, err, "Kubelet")
+		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Command(), err, "Kubelet")
 	}
 	if _, ok := jsonObject["APIServer"]; !ok {
-		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Args, err, "APIServer")
+		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Command(), err, "APIServer")
 	}
 	if _, ok := jsonObject["Kubeconfig"]; !ok {
-		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Args, err, "Kubeconfig")
+		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Command(), err, "Kubeconfig")
 	}
 }
 
@@ -350,7 +350,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 	if err != nil {
-		t.Fatalf("failed to kubectl replace busybox : args %q: %v", rr.Args, err)
+		t.Fatalf("failed to kubectl replace busybox : args %q: %v", rr.Command(), err)
 	}
 
 	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4))
@@ -410,21 +410,21 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			for _, img := range []string{"busybox:latest", "busybox:1.28.4-glibc", "k8s.gcr.io/pause:latest"} {
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", img))
 				if err != nil {
-					t.Errorf("failed to cache add image %q. args %q err %v", img, rr.Args, err)
+					t.Errorf("failed to cache add image %q. args %q err %v", img, rr.Command(), err)
 				}
 			}
 		})
 		t.Run("delete_busybox:1.28.4-glibc", func(t *testing.T) {
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "delete", "busybox:1.28.4-glibc"))
 			if err != nil {
-				t.Errorf("failed to delete image busybox:1.28.4-glibc from cache. args %q: %v", rr.Args, err)
+				t.Errorf("failed to delete image busybox:1.28.4-glibc from cache. args %q: %v", rr.Command(), err)
 			}
 		})
 
 		t.Run("list", func(t *testing.T) {
 			rr, err := Run(t, exec.CommandContext(ctx, Target(), "cache", "list"))
 			if err != nil {
-				t.Errorf("failed to do cache list. args %q: %v", rr.Args, err)
+				t.Errorf("failed to do cache list. args %q: %v", rr.Command(), err)
 			}
 			if !strings.Contains(rr.Output(), "k8s.gcr.io/pause") {
 				t.Errorf("expected 'cache list' output to include 'k8s.gcr.io/pause' but got:\n ***%q***", rr.Output())
@@ -491,7 +491,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 		args := append([]string{"-p", profile, "config"}, tc.args...)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 		if err != nil && tc.wantErr == "" {
-			t.Errorf("failed to config minikube. args %q : %v", rr.Args, err)
+			t.Errorf("failed to config minikube. args %q : %v", rr.Command(), err)
 		}
 
 		got := strings.TrimSpace(rr.Stdout.String())
@@ -509,7 +509,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "logs"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 	for _, word := range []string{"Docker", "apiserver", "Linux", "kubelet"} {
 		if !strings.Contains(rr.Stdout.String(), word) {
@@ -525,16 +525,16 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 		nonexistentProfile := "lis"
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", nonexistentProfile))
 		if err != nil {
-			t.Errorf("%s failed: %v", rr.Args, err)
+			t.Errorf("%s failed: %v", rr.Command(), err)
 		}
 		rr, err = Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
 		if err != nil {
-			t.Errorf("%s failed: %v", rr.Args, err)
+			t.Errorf("%s failed: %v", rr.Command(), err)
 		}
 		var profileJSON map[string][]map[string]interface{}
 		err = json.Unmarshal(rr.Stdout.Bytes(), &profileJSON)
 		if err != nil {
-			t.Errorf("%s failed: %v", rr.Args, err)
+			t.Errorf("%s failed: %v", rr.Command(), err)
 		}
 		for profileK := range profileJSON {
 			for _, p := range profileJSON[profileK] {
@@ -550,7 +550,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 		// List profiles
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list"))
 		if err != nil {
-			t.Errorf("failed to list profiles: args %q : %v", rr.Args, err)
+			t.Errorf("failed to list profiles: args %q : %v", rr.Command(), err)
 		}
 
 		// Table output
@@ -564,7 +564,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 			}
 		}
 		if !profileExists {
-			t.Errorf("expected 'profile list' output to include %q but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Args)
+			t.Errorf("expected 'profile list' output to include %q but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Command())
 		}
 	})
 
@@ -572,12 +572,12 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 		// Json output
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "profile", "list", "--output", "json"))
 		if err != nil {
-			t.Errorf("failed to list profiles with json format. args %q: %v", rr.Args, err)
+			t.Errorf("failed to list profiles with json format. args %q: %v", rr.Command(), err)
 		}
 		var jsonObject map[string][]map[string]interface{}
 		err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
 		if err != nil {
-			t.Errorf("failed to decode json from profile list: args %q: %v", rr.Args, err)
+			t.Errorf("failed to decode json from profile list: args %q: %v", rr.Command(), err)
 		}
 		validProfiles := jsonObject["valid"]
 		profileExists := false
@@ -588,7 +588,7 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 			}
 		}
 		if !profileExists {
-			t.Errorf("expected the json of 'profile list' to include %q but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Args)
+			t.Errorf("expected the json of 'profile list' to include %q but got *%q*. args: %q", profile, rr.Stdout.String(), rr.Command())
 		}
 
 	})
@@ -598,11 +598,11 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=gcr.io/hello-minikube-zero-install/hello-node"))
 	if err != nil {
-		t.Logf("%q failed: %v (may not be an error).", rr.Args, err)
+		t.Logf("%q failed: %v (may not be an error).", rr.Command(), err)
 	}
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
 	if err != nil {
-		t.Logf("%q failed: %v (may not be an error)", rr.Args, err)
+		t.Logf("%q failed: %v (may not be an error)", rr.Command(), err)
 	}
 
 	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {
@@ -611,7 +611,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "list"))
 	if err != nil {
-		t.Errorf("failed to do service list. args %q : %v", rr.Args, err)
+		t.Errorf("failed to do service list. args %q : %v", rr.Command(), err)
 	}
 	if !strings.Contains(rr.Stdout.String(), "hello-node") {
 		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
@@ -620,7 +620,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	// Test --https --url mode
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node"))
 	if err != nil {
-		t.Fatalf("failed to get service url. args %q : %v", rr.Args, err)
+		t.Fatalf("failed to get service url. args %q : %v", rr.Command(), err)
 	}
 	if rr.Stderr.String() != "" {
 		t.Errorf("expected stderr to be empty but got *%q*", rr.Stderr)
@@ -638,16 +638,16 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	// Test --format=IP
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url", "--format={{.IP}}"))
 	if err != nil {
-		t.Errorf("failed to get service url with custom format. args %q: %v", rr.Args, err)
+		t.Errorf("failed to get service url with custom format. args %q: %v", rr.Command(), err)
 	}
 	if strings.TrimSpace(rr.Stdout.String()) != u.Hostname() {
-		t.Errorf("expected 'service --format={{.IP}}' output to be -%q- but got *%q* . args %q.", u.Hostname(), rr.Stdout.String(), rr.Args)
+		t.Errorf("expected 'service --format={{.IP}}' output to be -%q- but got *%q* . args %q.", u.Hostname(), rr.Stdout.String(), rr.Command())
 	}
 
 	// Test a regular URLminikube
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "hello-node", "--url"))
 	if err != nil {
-		t.Errorf("failed to get service url. args: %q: %v", rr.Args, err)
+		t.Errorf("failed to get service url. args: %q: %v", rr.Command(), err)
 	}
 
 	endpoint = strings.TrimSpace(rr.Stdout.String())
@@ -674,7 +674,7 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 	// Table output
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list"))
 	if err != nil {
-		t.Errorf("failed to do addon list: args %q : %v", rr.Args, err)
+		t.Errorf("failed to do addon list: args %q : %v", rr.Command(), err)
 	}
 	for _, a := range []string{"dashboard", "ingress", "ingress-dns"} {
 		if !strings.Contains(rr.Output(), a) {
@@ -685,7 +685,7 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 	// Json output
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "list", "-o", "json"))
 	if err != nil {
-		t.Errorf("failed to do addon list with json output. args %q: %v", rr.Args, err)
+		t.Errorf("failed to do addon list with json output. args %q: %v", rr.Command(), err)
 	}
 	var jsonObject map[string]interface{}
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
@@ -702,10 +702,10 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 	want := "hello\n"
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("echo hello")))
 	if err != nil {
-		t.Errorf("failed to run an ssh command. args %q : %v", rr.Args, err)
+		t.Errorf("failed to run an ssh command. args %q : %v", rr.Command(), err)
 	}
 	if rr.Stdout.String() != want {
-		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Args)
+		t.Errorf("expected minikube ssh command output to be -%q- but got *%q*. args %q", want, rr.Stdout.String(), rr.Command())
 	}
 }
 
@@ -713,7 +713,7 @@ func validateSSHCmd(ctx context.Context, t *testing.T, profile string) {
 func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "mysql.yaml")))
 	if err != nil {
-		t.Fatalf("failed to kubectl replace mysql: args %q failed: %v", rr.Args, err)
+		t.Fatalf("failed to kubectl replace mysql: args %q failed: %v", rr.Command(), err)
 	}
 
 	names, err := PodWait(ctx, t, profile, "default", "app=mysql", Minutes(10))
@@ -776,7 +776,7 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 	t.Logf("Checking for existence of %s within VM", vp)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 	got := rr.Stdout.String()
 	t.Logf("file sync test content: %s", got)
@@ -813,7 +813,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("Checking for existence of %s within VM", vp)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
 		if err != nil {
-			t.Errorf("failed to check existence of %q inside minikube. args %q: %v", vp, rr.Args, err)
+			t.Errorf("failed to check existence of %q inside minikube. args %q: %v", vp, rr.Command(), err)
 		}
 
 		// Strip carriage returned by ssh
@@ -828,7 +828,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "update-context", "--alsologtostderr", "-v=2"))
 	if err != nil {
-		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Args, err)
+		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
 	}
 
 	want := []byte("IP was already correctly configured")

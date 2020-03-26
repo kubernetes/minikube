@@ -50,18 +50,18 @@ func TestGvisorAddon(t *testing.T) {
 	startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--container-runtime=containerd", "--docker-opt", "containerd=/var/run/containerd/containerd.sock"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
-		t.Fatalf("failed to start minikube: args %q: %v", rr.Args, err)
+		t.Fatalf("failed to start minikube: args %q: %v", rr.Command(), err)
 	}
 
 	// If it exists, include a locally built gvisor image
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "add", "gcr.io/k8s-minikube/gvisor-addon:2"))
 	if err != nil {
-		t.Logf("%s failed: %v (won't test local image)", rr.Args, err)
+		t.Logf("%s failed: %v (won't test local image)", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "enable", "gvisor"))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
 	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", Minutes(4)); err != nil {
@@ -71,12 +71,12 @@ func TestGvisorAddon(t *testing.T) {
 	// Create an untrusted workload
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-untrusted.yaml")))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 	// Create gvisor workload
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-gvisor.yaml")))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
 	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", Minutes(4)); err != nil {
@@ -89,12 +89,12 @@ func TestGvisorAddon(t *testing.T) {
 	// Ensure that workloads survive a restart
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
 	if err != nil {
-		t.Fatalf("faild stopping minikube. args %q : %v", rr.Args, err)
+		t.Fatalf("faild stopping minikube. args %q : %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
-		t.Fatalf("failed starting minikube after a stop. args %q, %v", rr.Args, err)
+		t.Fatalf("failed starting minikube after a stop. args %q, %v", rr.Command(), err)
 	}
 	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", Minutes(4)); err != nil {
 		t.Errorf("failed waiting for 'gvisor controller' pod : %v", err)

@@ -46,22 +46,22 @@ func TestChangeNoneUser(t *testing.T) {
 	startArgs := append([]string{"CHANGE_MINIKUBE_NONE_USER=true", Target(), "start", "--wait=false"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, "/usr/bin/env", startArgs...))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, "/usr/bin/env", startArgs...))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "status"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 
 	username := os.Getenv("SUDO_USER")
