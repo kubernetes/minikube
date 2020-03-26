@@ -64,7 +64,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	// Now create a testpvc
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "pvc.yaml")))
 	if err != nil {
-		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Args, err)
+		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}
 
 	checkStoragePhase := func() error {

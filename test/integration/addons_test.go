@@ -43,7 +43,7 @@ func TestAddons(t *testing.T) {
 	args := append([]string{"start", "-p", profile, "--wait=false", "--memory=2600", "--alsologtostderr", "-v=1", "--addons=ingress", "--addons=registry", "--addons=metrics-server", "--addons=helm-tiller"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
 	// Parallelized tests
@@ -69,15 +69,15 @@ func TestAddons(t *testing.T) {
 	// Assert that disable/enable works offline
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
 	if err != nil {
-		t.Errorf("failed to stop minikube. args %q : %v", rr.Args, err)
+		t.Errorf("failed to stop minikube. args %q : %v", rr.Command(), err)
 	}
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
 	if err != nil {
-		t.Errorf("failed to enable dashboard addon: args %q : %v", rr.Args, err)
+		t.Errorf("failed to enable dashboard addon: args %q : %v", rr.Command(), err)
 	}
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "disable", "dashboard", "-p", profile))
 	if err != nil {
-		t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Args, err)
+		t.Errorf("failed to disable dashboard addon: args %q : %v", rr.Command(), err)
 	}
 }
 
@@ -100,11 +100,11 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-ing.yaml")))
 	if err != nil {
-		t.Errorf("failed to kubectl replace nginx-ing. args %q. %v", rr.Args, err)
+		t.Errorf("failed to kubectl replace nginx-ing. args %q. %v", rr.Command(), err)
 	}
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "nginx-pod-svc.yaml")))
 	if err != nil {
-		t.Errorf("failed to kubectl replace nginx-pod-svc. args %q. %v", rr.Args, err)
+		t.Errorf("failed to kubectl replace nginx-pod-svc. args %q. %v", rr.Command(), err)
 	}
 
 	if _, err := PodWait(ctx, t, profile, "default", "run=nginx", Minutes(4)); err != nil {
@@ -121,10 +121,10 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 			return err
 		}
 		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s (may be temproary)", rr.Args, rr.Stderr)
+			t.Logf("%v: unexpected stderr: %s (may be temproary)", rr.Command(), rr.Stderr)
 		}
 		if !strings.Contains(rr.Stdout.String(), want) {
-			return fmt.Errorf("%v stdout = %q, want %q", rr.Args, rr.Stdout, want)
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), rr.Stdout, want)
 		}
 		return nil
 	}
@@ -135,7 +135,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "ingress", "--alsologtostderr", "-v=1"))
 	if err != nil {
-		t.Errorf("failed to disable ingress addon. args %q : %v", rr.Args, err)
+		t.Errorf("failed to disable ingress addon. args %q : %v", rr.Command(), err)
 	}
 }
 
@@ -161,12 +161,12 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	// Test from inside the cluster (no curl available on busybox)
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "delete", "po", "-l", "run=registry-test", "--now"))
 	if err != nil {
-		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Args, err)
+		t.Logf("pre-cleanup %s failed: %v (not a problem)", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "run", "--rm", "registry-test", "--restart=Never", "--image=busybox", "-it", "--", "sh", "-c", "wget --spider -S http://registry.kube-system.svc.cluster.local"))
 	if err != nil {
-		t.Errorf("failed to hit registry.kube-system.svc.cluster.local. args %q failed: %v", rr.Args, err)
+		t.Errorf("failed to hit registry.kube-system.svc.cluster.local. args %q failed: %v", rr.Command(), err)
 	}
 	want := "HTTP/1.1 200"
 	if !strings.Contains(rr.Stdout.String(), want) {
@@ -176,10 +176,10 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 	// Test from outside the cluster
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ip"))
 	if err != nil {
-		t.Fatalf("failed run minikube ip. args %q : %v", rr.Args, err)
+		t.Fatalf("failed run minikube ip. args %q : %v", rr.Command(), err)
 	}
 	if rr.Stderr.String() != "" {
-		t.Errorf("expected stderr to be -empty- but got: *%q* .  args %q", rr.Stderr, rr.Args)
+		t.Errorf("expected stderr to be -empty- but got: *%q* .  args %q", rr.Stderr, rr.Command())
 	}
 
 	endpoint := fmt.Sprintf("http://%s:%d", strings.TrimSpace(rr.Stdout.String()), 5000)
@@ -205,7 +205,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "registry", "--alsologtostderr", "-v=1"))
 	if err != nil {
-		t.Errorf("failed to disable registry addon. args %q: %v", rr.Args, err)
+		t.Errorf("failed to disable registry addon. args %q: %v", rr.Command(), err)
 	}
 }
 
@@ -232,10 +232,10 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 			return err
 		}
 		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s", rr.Args, rr.Stderr)
+			t.Logf("%v: unexpected stderr: %s", rr.Command(), rr.Stderr)
 		}
 		if !strings.Contains(rr.Stdout.String(), want) {
-			return fmt.Errorf("%v stdout = %q, want %q", rr.Args, rr.Stdout, want)
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), rr.Stdout, want)
 		}
 		return nil
 	}
@@ -247,7 +247,7 @@ func validateMetricsServerAddon(ctx context.Context, t *testing.T, profile strin
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "metrics-server", "--alsologtostderr", "-v=1"))
 	if err != nil {
-		t.Errorf("failed to disable metrics-server addon: args %q: %v", rr.Args, err)
+		t.Errorf("failed to disable metrics-server addon: args %q: %v", rr.Command(), err)
 	}
 }
 
@@ -283,10 +283,10 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 			return err
 		}
 		if rr.Stderr.String() != "" {
-			t.Logf("%v: unexpected stderr: %s", rr.Args, rr.Stderr)
+			t.Logf("%v: unexpected stderr: %s", rr.Command(), rr.Stderr)
 		}
 		if !strings.Contains(rr.Stdout.String(), want) {
-			return fmt.Errorf("%v stdout = %q, want %q", rr.Args, rr.Stdout, want)
+			return fmt.Errorf("%v stdout = %q, want %q", rr.Command(), rr.Stdout, want)
 		}
 		return nil
 	}
@@ -297,6 +297,6 @@ func validateHelmTillerAddon(ctx context.Context, t *testing.T, profile string) 
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "addons", "disable", "helm-tiller", "--alsologtostderr", "-v=1"))
 	if err != nil {
-		t.Errorf("failed disabling helm-tiller addon. arg %q.s %v", rr.Args, err)
+		t.Errorf("failed disabling helm-tiller addon. arg %q.s %v", rr.Command(), err)
 	}
 }

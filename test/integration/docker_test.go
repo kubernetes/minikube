@@ -39,12 +39,12 @@ func TestDockerFlags(t *testing.T) {
 	args := append([]string{"start", "-p", profile, "--cache-images=false", "--memory=1800", "--install-addons=false", "--wait=false", "--docker-env=FOO=BAR", "--docker-env=BAZ=BAT", "--docker-opt=debug", "--docker-opt=icc=true", "--alsologtostderr", "-v=5"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("failed to start minikube with args: %q : %v", rr.Args, err)
+		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo systemctl show docker --property=Environment --no-pager"))
 	if err != nil {
-		t.Errorf("failed to 'systemctl show docker' inside minikube. args %q: %v", rr.Args, err)
+		t.Errorf("failed to 'systemctl show docker' inside minikube. args %q: %v", rr.Command(), err)
 	}
 
 	for _, envVar := range []string{"FOO=BAR", "BAZ=BAT"} {
@@ -55,7 +55,7 @@ func TestDockerFlags(t *testing.T) {
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo systemctl show docker --property=ExecStart --no-pager"))
 	if err != nil {
-		t.Errorf("failed on the second 'systemctl show docker' inside minikube. args %q: %v", rr.Args, err)
+		t.Errorf("failed on the second 'systemctl show docker' inside minikube. args %q: %v", rr.Command(), err)
 	}
 	for _, opt := range []string{"--debug", "--icc=true"} {
 		if !strings.Contains(rr.Stdout.String(), opt) {

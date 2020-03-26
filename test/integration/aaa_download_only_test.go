@@ -129,7 +129,7 @@ func TestDownloadOnly(t *testing.T) {
 				}
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
 				if err != nil {
-					t.Errorf("failed to delete all. args: %q : %v", rr.Args, err)
+					t.Errorf("failed to delete all. args: %q : %v", rr.Command(), err)
 				}
 			})
 			// Delete should always succeed, even if previously partially or fully deleted.
@@ -139,7 +139,7 @@ func TestDownloadOnly(t *testing.T) {
 				}
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
 				if err != nil {
-					t.Errorf("failed to delete. args: %q: %v", rr.Args, err)
+					t.Errorf("failed to delete. args: %q: %v", rr.Command(), err)
 				}
 			})
 		})

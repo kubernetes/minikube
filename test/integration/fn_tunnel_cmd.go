@@ -69,7 +69,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	// Start the "nginx" pod.
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "testsvc.yaml")))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 	if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", Minutes(4)); err != nil {
 		t.Fatalf("wait: %v", err)
@@ -97,7 +97,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 
 		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc"))
 		if err != nil {
-			t.Errorf("%s failed: %v", rr.Args, err)
+			t.Errorf("%s failed: %v", rr.Command(), err)
 		}
 		t.Logf("failed to kubectl get svc nginx-svc:\n%s", rr.Stdout)
 	}
