@@ -30,13 +30,13 @@ func uploadTarball(tarballFilename string) error {
 	hostPath := path.Join("out/", tarballFilename)
 	gcsDest := fmt.Sprintf("gs://%s", download.PreloadBucket)
 	cmd := exec.Command("gsutil", "cp", hostPath, gcsDest)
-	if output, err := cmd.Output(); err != nil {
+	if output, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "uploading %s to GCS bucket: %v\n%s", hostPath, err, string(output))
 	}
 	// Make tarball public to all users
 	gcsPath := fmt.Sprintf("%s/%s", gcsDest, tarballFilename)
 	cmd = exec.Command("gsutil", "acl", "ch", "-u", "AllUsers:R", gcsPath)
-	if output, err := cmd.Output(); err != nil {
+	if output, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "uploading %s to GCS bucket: %v\n%s", hostPath, err, string(output))
 	}
 	return nil
