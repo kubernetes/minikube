@@ -39,32 +39,39 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-{{< la
 {{% /tab %}}
 {{% /tabs %}}
 
-## Hypervisor Setup
-
-Verify that your system has virtualization support enabled:
-
-```shell
-egrep -q 'vmx|svm' /proc/cpuinfo && echo yes || echo no
-```
-
-If the above command outputs "no":
-
-- If you are running within a VM, your hypervisor does not allow nested virtualization. You will need to use the *None (bare-metal)* driver
-- If you are running on a physical machine, ensure that your BIOS has hardware virtualization enabled
+## Driver Setup
 
 {{% tabs %}}
+{{% tab "Docker" %}}
+## Check container support
+{{% readfile file="/docs/Reference/Drivers/includes/docker_usage.inc" %}}
+{{% /tab %}}
 
 {{% tab "KVM" %}}
+## Check virtualization support
+{{% readfile file="/docs/Reference/Drivers/includes/check_virtualization_linux.inc" %}}
+
 {{% readfile file="/docs/Reference/Drivers/includes/kvm2_usage.inc" %}}
 {{% /tab %}}
 {{% tab "VirtualBox" %}}
+## Check virtualization support
+{{% readfile file="/docs/Reference/Drivers/includes/check_virtualization_linux.inc" %}}
+
 {{% readfile file="/docs/Reference/Drivers/includes/virtualbox_usage.inc" %}}
 {{% /tab %}}
 {{% tab "None (bare-metal)" %}}
+## Check baremetal support
+{{% readfile file="/docs/Reference/Drivers/includes/check_baremetal_linux.inc" %}}
+
 If you are already running minikube from inside a VM, it is possible to skip the creation of an additional VM layer by using the `none` driver.
 
 {{% readfile file="/docs/Reference/Drivers/includes/none_usage.inc" %}}
 {{% /tab %}}
+{{% tab "Podman (experimental)" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/podman_usage.inc" %}}
+{{% /tab %}}
+
+
 {{% /tabs %}}
 
 {{% readfile file="/docs/Start/includes/post_install.inc" %}}
