@@ -9,7 +9,7 @@ description: >
 
 ## Overview
 
-The Docker driver is the newest minikube driver, which runs kubernetes in container with full feature parity with VM minikube.
+The Docker driver is the newest minikube driver. which runs kubernetes in container VM-free ! with full feature parity with minikube in VM.
 
 {{% readfile file="/docs/Reference/Drivers/includes/docker_usage.inc" %}}
 
