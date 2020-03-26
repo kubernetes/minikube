@@ -1,4 +1,4 @@
-### Getting to know Kubernetes
+## Getting to know Kubernetes
 
 Once started, you can use any regular Kubernetes command to interact with your minikube cluster. For example, you can see the pod states by running:
 
