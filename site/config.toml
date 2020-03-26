@@ -112,7 +112,10 @@ github_project_repo = ""
 github_subdir = "site"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
-gcs_engine_id = "005331096405080631692:s7c4yfpw9sy"
+# gcs_engine_id = "005331096405080631692:s7c4yfpw9sy"
+
+# enabling local search https://www.docsy.dev/docs/adding-content/navigation/#configure-local-search-with-lunr
+offlineSearch = true
 
 # User interface configuration
 [params.ui]

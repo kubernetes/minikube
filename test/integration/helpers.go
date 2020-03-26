@@ -63,14 +63,24 @@ func (rr RunResult) Command() string {
 	return sb.String()
 }
 
+// indentLines indents every line in a bytes.Buffer and returns it as string
+func indentLines(b []byte) string {
+	scanner := bufio.NewScanner(bytes.NewReader(b))
+	var lines string
+	for scanner.Scan() {
+		lines = lines + "\t" + scanner.Text() + "\n"
+	}
+	return lines
+}
+
 // Output returns human-readable output for an execution result
 func (rr RunResult) Output() string {
 	var sb strings.Builder
 	if rr.Stdout.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("-- stdout --\n%s\n-- /stdout --", rr.Stdout.Bytes()))
+		sb.WriteString(fmt.Sprintf("\n-- stdout --\n%s\n-- /stdout --", indentLines(rr.Stdout.Bytes())))
 	}
 	if rr.Stderr.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n** /stderr **", rr.Stderr.Bytes()))
+		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n** /stderr **", indentLines(rr.Stderr.Bytes())))
 	}
 	return sb.String()
 }
