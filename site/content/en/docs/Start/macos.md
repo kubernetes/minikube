@@ -50,6 +50,9 @@ brew upgrade minikube
 ## Hypervisor Setup
 
 {{% tabs %}}
+{{% tab "Docker" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/docker_usage.inc" %}}
+{{% /tab %}}
 {{% tab "Hyperkit" %}}
 {{% readfile file="/docs/Reference/Drivers/includes/hyperkit_usage.inc" %}}
 {{% /tab %}}
