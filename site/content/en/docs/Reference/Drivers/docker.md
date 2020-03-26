@@ -9,13 +9,12 @@ description: >
 
 ## Overview
 
-The Docker driver is a VM-free driver.
+The Docker driver is the newest minikube driver, which runs kubernetes in container with full feature parity with VM minikube.
 
 {{% readfile file="/docs/Reference/Drivers/includes/docker_usage.inc" %}}
 
 
 ## Special features
-
 - Cross platform (linux, macos, windows)
 - No hypervisor required when run on Linux.
 

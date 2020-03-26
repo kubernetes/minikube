@@ -67,6 +67,11 @@ If you are already running minikube from inside a VM, it is possible to skip the
 
 {{% readfile file="/docs/Reference/Drivers/includes/none_usage.inc" %}}
 {{% /tab %}}
+{{% tab "Podman (experimental)" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/podman_usage.inc" %}}
+{{% /tab %}}
+
+
 {{% /tabs %}}
 
 {{% readfile file="/docs/Start/includes/post_install.inc" %}}
