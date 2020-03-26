@@ -37,6 +37,13 @@ func uploadTarball(tarballFilename string) error {
 	gcsPath := fmt.Sprintf("%s/%s", gcsDest, tarballFilename)
 	cmd = exec.Command("gsutil", "acl", "ch", "-u", "AllUsers:R", gcsPath)
 	if output, err := cmd.CombinedOutput(); err != nil {
+		fmt.Printf(`Failed to update ACLs on this tarball in GCS. Please run
+		
+gsutil acl ch -u AllUsers:R %s
+
+manually to make this link public, or rerun this script to rebuild and reupload the tarball.
+		
+		`, gcsPath)
 		return errors.Wrapf(err, "uploading %s to GCS bucket: %v\n%s", hostPath, err, string(output))
 	}
 	return nil
