@@ -56,6 +56,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
+	"k8s.io/minikube/pkg/util/retry"
 	"k8s.io/minikube/pkg/version"
 )
 
@@ -251,6 +252,27 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	return nil
 }
 
+// unpause unpauses any Kubernetes backplane components
+func (k *Bootstrapper) unpause(cfg config.ClusterConfig) error {
+
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	if err != nil {
+		return err
+	}
+
+	ids, err := cr.ListContainers(cruntime.ListOptions{State: cruntime.Paused, Namespaces: []string{"kube-system"}})
+	if err != nil {
+		return errors.Wrap(err, "list paused")
+	}
+
+	if len(ids) > 0 {
+		if err := cr.UnpauseContainers(ids); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // StartCluster starts the cluster
 func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	start := time.Now()
@@ -258,6 +280,11 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 	defer func() {
 		glog.Infof("StartCluster complete in %s", time.Since(start))
 	}()
+
+	// Before we start, ensure that no paused components are lurking around
+	if err := k.unpause(cfg); err != nil {
+		glog.Warningf("unpause failed: %v", err)
+	}
 
 	if err := bsutil.ExistingConfig(k.c); err == nil {
 		glog.Infof("found existing configuration files, will attempt cluster restart")
@@ -349,23 +376,23 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return err
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, start, ip, port, timeout); err != nil {
-		return err
-	}
-
-	c, err := k.client(ip, port)
+	client, err := k.client(ip, port)
 	if err != nil {
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, c, start, timeout); err != nil {
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, ip, port, timeout); err != nil {
+		return err
+	}
+
+	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
 		return errors.Wrap(err, "waiting for system pods")
 	}
 	return nil
 }
 
 // needsReset returns whether or not the cluster needs to be reconfigured
-func (k *Bootstrapper) needsReset(conf string, ip string, port int, client *kubernetes.Clientset) bool {
+func (k *Bootstrapper) needsReset(conf string, ip string, port int, client *kubernetes.Clientset, version string) bool {
 	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
 		glog.Infof("needs reset: configs differ:\n%s", rr.Output())
 		return true
@@ -386,6 +413,12 @@ func (k *Bootstrapper) needsReset(conf string, ip string, port int, client *kube
 		glog.Infof("needs reset: %v", err)
 		return true
 	}
+
+	if err := kverify.APIServerVersionMatch(client, version); err != nil {
+		glog.Infof("needs reset: %v", err)
+		return true
+	}
+
 	return false
 }
 
@@ -426,7 +459,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 
 	// If the cluster is running, check if we have any work to do.
 	conf := bsutil.KubeadmYamlPath
-	if !k.needsReset(conf, ip, port, client) {
+	if !k.needsReset(conf, ip, port, client, cfg.KubernetesConfig.KubernetesVersion) {
 		glog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
 		return nil
 	}
@@ -466,12 +499,22 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), ip, port, kconst.DefaultControlPlaneTimeout); err != nil {
+		return errors.Wrap(err, "apiserver health")
+	}
+
 	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
 	}
 
-	if rr, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, conf))); err != nil {
-		return errors.Wrapf(err, fmt.Sprintf("addon phase cmd:%q", rr.Command()))
+	// This can fail during upgrades if the old pods have not shut down yet
+	addonPhase := func() error {
+		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, conf)))
+		return err
+	}
+	if err = retry.Expo(addonPhase, 1*time.Second, 30*time.Second); err != nil {
+		glog.Warningf("addon install failed, wil retry: %v", err)
+		return errors.Wrap(err, "addons")
 	}
 
 	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
