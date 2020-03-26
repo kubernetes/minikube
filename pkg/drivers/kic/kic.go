@@ -220,15 +220,21 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-
+	
+	start := time.Now()
 	cmd := exec.CommandContext(ctx, d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
 	out, err := cmd.CombinedOutput()
+	
+	if time.Since(start) > 2*time.Second {
+		glog.Errorf("%s took an unusually long time. Restarting the %s daemon may improve performance.", cmd.Args(), d.OCIBinary)
+	}
+	
 	if ctx.Err() == context.DeadlineExceeded {
-		glog.Errorf("GetState for %s took longer than normal. Restarting your %s daemon might fix this issue.", d.MachineName, d.OCIBinary)
 		return state.Error, fmt.Errorf("inspect %s timeout", d.MachineName)
 	}
+	
 	o := strings.TrimSpace(string(out))
 	if err != nil {
 		return state.Error, errors.Wrapf(err, "%s: %s", strings.Join(cmd.Args, " "), o)
