@@ -17,7 +17,6 @@ limitations under the License.
 package kic
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"os/exec"
@@ -220,20 +219,12 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	// allow no more than 2 seconds for this. when this takes long this means deadline passed
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
-	out, err := cmd.CombinedOutput()
-	if ctx.Err() == context.DeadlineExceeded {
-		glog.Errorf("GetState for %s took longer than normal. Restarting your %s daemon might fix this issue.", d.MachineName, d.OCIBinary)
-		return state.Error, fmt.Errorf("inspect %s timeout", d.MachineName)
-	}
-	o := strings.TrimSpace(string(out))
+	out, err := oci.WarnIfSlow(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
 	if err != nil {
-		return state.Error, errors.Wrapf(err, "%s: %s", strings.Join(cmd.Args, " "), o)
+		return state.Error, err
 	}
+
+	o := strings.TrimSpace(string(out))
 	switch o {
 	case "running":
 		return state.Running, nil
