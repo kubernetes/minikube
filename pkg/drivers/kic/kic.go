@@ -220,8 +220,7 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	// allow no more than 2 seconds for this. when this takes long this means deadline passed
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
