@@ -77,8 +77,8 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 		return h, err
 	}
 
+	// Avoid reprovisioning "none" driver because provision.Detect requires SSH
 	if !driver.BareMetal(h.Driver.DriverName()) {
-		glog.Infof("%s is local, skipping re-provision as it requires SSH", driverName)
 		e := engineOptions(cc)
 		h.HostOptions.EngineOptions.Env = e.Env
 		err = provisionDockerMachine(h)
