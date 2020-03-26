@@ -586,8 +586,14 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 		}
 	}
 
+	// In case of no port assigned, use default
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "getting control plane")
+	}
+
 	for _, n := range cfg.Nodes {
-		err := k.UpdateNode(cfg, n, r)
+		err := k.UpdateNode(cfg, n, r, cp)
 		if err != nil {
 			return errors.Wrap(err, "updating node")
 		}
@@ -597,7 +603,9 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 }
 
 // UpdateNode updates a node.
-func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.Manager) error {
+func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.Manager, cp config.Node) error {
+	glog.Infof("UPDATING NODE: %v", n.Name)
+
 	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, n, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
@@ -628,6 +636,10 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
 	if err := copyFiles(k.c, files); err != nil {
 		return err
+	}
+
+	if err := machine.AddHostAlias(k.c, constants.ControlPlaneAlias, net.ParseIP(cp.IP)); err != nil {
+		return errors.Wrap(err, "host alias")
 	}
 
 	if err := reloadKubelet(k.c); err != nil {
