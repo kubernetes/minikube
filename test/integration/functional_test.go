@@ -335,7 +335,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 
 	resp, err := retryablehttp.Get(u.String())
 	if err != nil {
-		t.Errorf("failed to http get %q : %v", u.String(), err)
+		t.Fatalf("failed to http get %q : %v", u.String(), err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
