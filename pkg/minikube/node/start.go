@@ -100,6 +100,14 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	cr := configureRuntimes(mRunner, cc.Driver, cc.KubernetesConfig, sv)
 	showVersionInfo(n.KubernetesVersion, cr)
 
+	hostIP, err := cluster.GetVMHostIP(host)
+	if err != nil {
+		exit.WithError("Unable to get VM IP", err)
+	}
+	if err := machine.AddHostAlias(mRunner, constants.HostAlias, hostIP); err != nil {
+		exit.WithError("Unable to add host alias", err)
+	}
+
 	var bs bootstrapper.Bootstrapper
 	var kubeconfig *kubeconfig.Settings
 	if apiServer {
@@ -138,6 +146,12 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		addons.Start(viper.GetString(config.ProfileName), existingAddons, config.AddonList)
 	}
 
+	// In case of no port assigned, use default
+	cp, err := config.PrimaryControlPlane(&cc)
+	if err != nil {
+		exit.WithError("Unable to get control plane", err)
+	}
+
 	if apiServer {
 		// special ops for none , like change minikube directory.
 		// multinode super doesn't work on the none driver
@@ -152,7 +166,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 			}
 		}
 	} else {
-		if err := bs.UpdateNode(cc, n, cr); err != nil {
+		if err := bs.UpdateNode(cc, n, cr, cp); err != nil {
 			exit.WithError("Updating node", err)
 		}
 
