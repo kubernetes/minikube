@@ -212,7 +212,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 		showLocalOsRelease()
 	}
 	if driver.IsVM(mc.Driver) {
-		logRemoteOsRelease(h.Driver)
+		logRemoteOsRelease(r)
 	}
 	return syncLocalAssets(r)
 }
