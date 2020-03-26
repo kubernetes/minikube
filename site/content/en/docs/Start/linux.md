@@ -44,8 +44,6 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-{{< la
 {{% tabs %}}
 {{% tab "Docker" %}}
 ## Check container support
-{{% readfile file="/docs/Reference/Drivers/includes/check_container.inc" %}}
-
 {{% readfile file="/docs/Reference/Drivers/includes/docker_usage.inc" %}}
 {{% /tab %}}
 
