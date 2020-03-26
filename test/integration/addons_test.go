@@ -179,7 +179,7 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed run minikube ip. args %q : %v", rr.Args, err)
 	}
 	if rr.Stderr.String() != "" {
-		t.Errorf("expected stderr to be -empty- but got: *%q*", rr.Args, rr.Stderr)
+		t.Errorf("expected stderr to be -empty- but got: *%q* .  args %q", rr.Stderr, rr.Args)
 	}
 
 	endpoint := fmt.Sprintf("http://%s:%d", strings.TrimSpace(rr.Stdout.String()), 5000)
