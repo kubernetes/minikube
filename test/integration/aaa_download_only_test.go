@@ -29,7 +29,6 @@ import (
 	"runtime"
 	"strings"
 	"testing"
-	"time"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -68,20 +67,22 @@ func TestDownloadOnly(t *testing.T) {
 					}
 
 					if err != nil {
-						t.Errorf("%s failed: %v", args, err)
+						t.Errorf("failed to download only. args: %q %v", args, err)
 					}
 
-					if download.PreloadExists(v, r) {
-						// Just make sure the tarball path exists
-						if _, err := os.Stat(download.TarballPath(v)); err != nil {
-							t.Errorf("preloaded tarball path doesn't exist: %v", err)
+					// skip for none, as none driver does not have preload feature.
+					if !NoneDriver() {
+						if download.PreloadExists(v, r) {
+							// Just make sure the tarball path exists
+							if _, err := os.Stat(download.TarballPath(v)); err != nil {
+								t.Errorf("failed to verify preloaded tarball file exists: %v", err)
+							}
+							return
 						}
-						return
 					}
-
 					imgs, err := images.Kubeadm("", v)
 					if err != nil {
-						t.Errorf("kubeadm images: %v %+v", v, err)
+						t.Errorf("failed to get kubeadm images for %v: %+v", v, err)
 					}
 
 					// skip verify for cache images if --driver=none
@@ -128,7 +129,7 @@ func TestDownloadOnly(t *testing.T) {
 				}
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "--all"))
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
+					t.Errorf("failed to delete all. args: %q : %v", rr.Command(), err)
 				}
 			})
 			// Delete should always succeed, even if previously partially or fully deleted.
@@ -138,50 +139,41 @@ func TestDownloadOnly(t *testing.T) {
 				}
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
+					t.Errorf("failed to delete. args: %q: %v", rr.Command(), err)
 				}
 			})
 		})
 	}
 }
 
-func TestDownloadOnlyDocker(t *testing.T) {
-	if !runningDockerDriver(StartArgs()) {
-		t.Skip("this test only runs with the docker driver")
+func TestDownloadOnlyKic(t *testing.T) {
+	if !KicDriver() {
+		t.Skip("skipping, only for docker or podman driver")
 	}
-
 	profile := UniqueProfileName("download-docker")
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(15))
 	defer Cleanup(t, profile, cancel)
 
-	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr", "--driver=docker"}
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
-	if err != nil {
-		t.Errorf("%s failed: %v:\n%s", args, err, rr.Output())
+	args := []string{"start", "--download-only", "-p", profile, "--force", "--alsologtostderr"}
+	args = append(args, StartArgs()...)
+
+	if _, err := Run(t, exec.CommandContext(ctx, Target(), args...)); err != nil {
+		t.Errorf("start with download only failed %q : %v", args, err)
 	}
 
 	// Make sure the downloaded image tarball exists
 	tarball := download.TarballPath(constants.DefaultKubernetesVersion)
 	contents, err := ioutil.ReadFile(tarball)
 	if err != nil {
-		t.Errorf("reading tarball: %v", err)
+		t.Errorf("failed to read tarball file %q: %v", tarball, err)
 	}
 	// Make sure it has the correct checksum
 	checksum := md5.Sum(contents)
 	remoteChecksum, err := ioutil.ReadFile(download.PreloadChecksumPath(constants.DefaultKubernetesVersion))
 	if err != nil {
-		t.Errorf("reading checksum file: %v", err)
+		t.Errorf("failed to read checksum file %q : %v", download.PreloadChecksumPath(constants.DefaultKubernetesVersion), err)
 	}
 	if string(remoteChecksum) != string(checksum[:]) {
-		t.Errorf("checksum of %s does not match remote checksum (%s != %s)", tarball, string(remoteChecksum), string(checksum[:]))
+		t.Errorf("failed to verify checksum. checksum of %q does not match remote checksum (%q != %q)", tarball, string(remoteChecksum), string(checksum[:]))
 	}
-}
-
-func runningDockerDriver(startArgs []string) bool {
-	for _, s := range startArgs {
-		if s == "--driver=docker" {
-			return true
-		}
-	}
-	return false
 }

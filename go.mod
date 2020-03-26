@@ -17,7 +17,7 @@ require (
 	github.com/docker/cli v0.0.0-20200303162255-7d407207c304 // indirect
 	github.com/docker/docker v1.13.1
 	github.com/docker/go-units v0.4.0
-	github.com/docker/machine v0.7.1-0.20190718054102-a555e4f7a8f5 // version is 0.7.1 to pin to a555e4f7a8f5
+	github.com/docker/machine v0.7.1-0.20190902101342-b170508bf44c // v0.16.2^
 	github.com/elazarl/goproxy v0.0.0-20190421051319-9d40249d3c2f
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
@@ -35,7 +35,7 @@ require (
 	github.com/hooklift/iso9660 v0.0.0-20170318115843-1cf07e5970d8
 	github.com/imdario/mergo v0.3.8 // indirect
 	github.com/intel-go/cpuid v0.0.0-20181003105527-1a4a6f06a1c6 // indirect
-	github.com/johanneswuerbach/nfsexports v0.0.0-20181204082207-1aa528dcb345
+	github.com/johanneswuerbach/nfsexports v0.0.0-20200318065542-c48c3734757f
 	github.com/juju/clock v0.0.0-20190205081909-9c5c9712527c
 	github.com/juju/errors v0.0.0-20190806202954-0232dcc7464d // indirect
 	github.com/juju/loggo v0.0.0-20190526231331-6e530bcce5d8 // indirect
@@ -95,7 +95,7 @@ require (
 replace (
 	git.apache.org/thrift.git => github.com/apache/thrift v0.0.0-20180902110319-2566ecd5d999
 	github.com/docker/docker => github.com/docker/docker v1.4.2-0.20190924003213-a8608b5b67c7
-	github.com/docker/machine => github.com/medyagh/machine v0.16.4
+	github.com/docker/machine => github.com/machine-drivers/machine v0.7.1-0.20200323212942-41eb826190d8
 	github.com/hashicorp/go-getter => github.com/afbjorklund/go-getter v1.4.1-0.20190910175809-eb9f6c26742c
 	github.com/samalba/dockerclient => github.com/sayboras/dockerclient v0.0.0-20191231050035-015626177a97
 	k8s.io/api => k8s.io/api v0.17.3

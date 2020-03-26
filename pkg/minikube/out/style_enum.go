@@ -32,7 +32,6 @@ const (
 	Running
 	Provisioning
 	Restarting
-	Reconfiguring
 	Stopping
 	Stopped
 	Warning
@@ -61,6 +60,7 @@ const (
 	DeletingHost
 	Copying
 	Connectivity
+	Confused
 	Internet
 	Mounting
 	Celebrate
@@ -89,4 +89,5 @@ const (
 	DryRun
 	AddonEnable
 	AddonDisable
+	Shrug
 )

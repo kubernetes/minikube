@@ -141,10 +141,10 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.UsageT("usage: minikube delete")
 		}
 
-		profileName := viper.GetString(config.ProfileName)
-		profile, err := config.LoadProfile(profileName)
+		cname := ClusterFlagValue()
+		profile, err := config.LoadProfile(cname)
 		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": profileName})
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cname})
 		}
 
 		errs := DeleteProfiles([]*config.Profile{profile})
@@ -272,13 +272,13 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 	}
 }
 
-func deleteConfig(profileName string) error {
-	if err := config.DeleteProfile(profileName); err != nil {
+func deleteConfig(cname string) error {
+	if err := config.DeleteProfile(cname); err != nil {
 		if config.IsNotExist(err) {
-			delErr := profileDeletionErr(profileName, fmt.Sprintf("\"%s\" profile does not exist", profileName))
+			delErr := profileDeletionErr(cname, fmt.Sprintf("\"%s\" profile does not exist", cname))
 			return DeletionError{Err: delErr, Errtype: MissingProfile}
 		}
-		delErr := profileDeletionErr(profileName, fmt.Sprintf("failed to remove profile %v", err))
+		delErr := profileDeletionErr(cname, fmt.Sprintf("failed to remove profile %v", err))
 		return DeletionError{Err: delErr, Errtype: Fatal}
 	}
 	return nil
@@ -317,8 +317,8 @@ func deleteInvalidProfile(profile *config.Profile) []error {
 	return errs
 }
 
-func profileDeletionErr(profileName string, additionalInfo string) error {
-	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
+func profileDeletionErr(cname string, additionalInfo string) error {
+	return fmt.Errorf("error deleting profile \"%s\": %s", cname, additionalInfo)
 }
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
@@ -402,7 +402,7 @@ func deleteProfileDirectory(profile string) {
 		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
 		err := os.RemoveAll(machineDir)
 		if err != nil {
-			exit.WithError("Unable to remove machine directory: %v", err)
+			exit.WithError("Unable to remove machine directory", err)
 		}
 	}
 }

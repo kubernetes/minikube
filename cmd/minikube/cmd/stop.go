@@ -24,13 +24,12 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/config"
-	pkg_config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 )
@@ -46,17 +45,10 @@ itself, leaving all files intact. The cluster can be started again with the "sta
 
 // runStop handles the executes the flow of "minikube stop"
 func runStop(cmd *cobra.Command, args []string) {
-	profile := viper.GetString(pkg_config.ProfileName)
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		exit.WithError("Error getting client", err)
-	}
-	defer api.Close()
+	cname := ClusterFlagValue()
 
-	cc, err := config.Load(profile)
-	if err != nil {
-		exit.WithError("Error getting cluster config", err)
-	}
+	api, cc := mustload.Partial(cname)
+	defer api.Close()
 
 	for _, n := range cc.Nodes {
 		nonexistent := stop(api, *cc, n)
@@ -70,16 +62,16 @@ func runStop(cmd *cobra.Command, args []string) {
 		out.T(out.Warning, "Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
-	err = kubeconfig.UnsetCurrentContext(profile, kubeconfig.PathFromEnv())
-	if err != nil {
+	if err := kubeconfig.UnsetCurrentContext(cname, kubeconfig.PathFromEnv()); err != nil {
 		exit.WithError("update config", err)
 	}
 }
 
 func stop(api libmachine.API, cluster config.ClusterConfig, n config.Node) bool {
 	nonexistent := false
-	stop := func() (err error) {
-		machineName := driver.MachineName(cluster, n)
+	machineName := driver.MachineName(cluster, n)
+
+	tryStop := func() (err error) {
 		err = machine.StopHost(api, machineName)
 		if err == nil {
 			return nil
@@ -96,7 +88,7 @@ func stop(api libmachine.API, cluster config.ClusterConfig, n config.Node) bool 
 		}
 	}
 
-	if err := retry.Expo(stop, 5*time.Second, 3*time.Minute, 5); err != nil {
+	if err := retry.Expo(tryStop, 1*time.Second, 30*time.Second, 3); err != nil {
 		exit.WithError("Unable to stop VM", err)
 	}
 

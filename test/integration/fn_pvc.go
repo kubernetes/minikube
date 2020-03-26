@@ -38,7 +38,7 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	defer cancel()
 
 	if _, err := PodWait(ctx, t, profile, "kube-system", "integration-test=storage-provisioner", Minutes(4)); err != nil {
-		t.Fatalf("wait: %v", err)
+		t.Fatalf("failed waiting for storage-provisioner: %v", err)
 	}
 
 	checkStorageClass := func() error {
@@ -57,14 +57,14 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 
 	// Ensure the addon-manager has created the StorageClass before creating a claim, otherwise it won't be bound
-	if err := retry.Expo(checkStorageClass, time.Second, 90*time.Second); err != nil {
-		t.Errorf("no default storage class after retry: %v", err)
+	if err := retry.Expo(checkStorageClass, time.Millisecond*500, Seconds(100)); err != nil {
+		t.Errorf("failed to check for storage class: %v", err)
 	}
 
 	// Now create a testpvc
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "pvc.yaml")))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("kubectl apply pvc.yaml failed: args %q: %v", rr.Command(), err)
 	}
 
 	checkStoragePhase := func() error {
@@ -84,6 +84,6 @@ func validatePersistentVolumeClaim(ctx context.Context, t *testing.T, profile st
 	}
 
 	if err := retry.Expo(checkStoragePhase, 2*time.Second, Minutes(4)); err != nil {
-		t.Fatalf("PV Creation failed with error: %v", err)
+		t.Fatalf("failed to check storage phase: %v", err)
 	}
 }

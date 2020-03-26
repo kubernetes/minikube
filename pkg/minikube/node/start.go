@@ -48,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
@@ -112,7 +113,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		bs = setupKubeAdm(machineAPI, cc, n)
 		err = bs.StartCluster(cc)
 		if err != nil {
-			exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, mRunner))
+			exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, cc, mRunner))
 		}
 	} else {
 		bs, err = cluster.Bootstrapper(machineAPI, viper.GetString(cmdcfg.Bootstrapper), cc, n)
@@ -320,11 +321,34 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, mc config.ClusterConfig, n config.Node) (*host.Host, bool) {
-	host, exists, err := machine.StartHost(api, mc, n)
-	if err != nil {
-		exit.WithError("Unable to start VM. Please investigate and run 'minikube delete' if possible", err)
+func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, bool) {
+	host, exists, err := machine.StartHost(api, cc, n)
+	if err == nil {
+		return host, exists
 	}
+	out.T(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
+
+	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
+	if !exists {
+		err := machine.DeleteHost(api, driver.MachineName(cc, n))
+		if err != nil {
+			glog.Warningf("delete host: %v", err)
+		}
+	}
+
+	// Try again, but just once to avoid making the logs overly confusing
+	time.Sleep(5 * time.Second)
+
+	host, exists, err = machine.StartHost(api, cc, n)
+	if err == nil {
+		return host, exists
+	}
+
+	out.T(out.FailureType, "StartHost failed again: {{.error}}", out.V{"error": err})
+	out.T(out.Workaround, `Run: "{{.delete}}", then "{{.start}} --alsologtostderr -v=1" to try again with more logging`,
+		out.V{"delete": mustload.ExampleCmd(cc.Name, "delete"), "start": mustload.ExampleCmd(cc.Name, "start")})
+
+	exit.WithError("Unable to start VM after repeated tries. Please try {{'minikube delete' if possible", err)
 	return host, exists
 }
 

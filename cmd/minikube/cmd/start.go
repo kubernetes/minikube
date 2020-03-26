@@ -54,12 +54,14 @@ import (
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/minikube/registry"
 	"k8s.io/minikube/pkg/minikube/translate"
+	"k8s.io/minikube/pkg/util"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/version"
 )
@@ -121,6 +123,7 @@ const (
 	hostOnlyNicType         = "host-only-nic-type"
 	natNicType              = "nat-nic-type"
 	nodes                   = "nodes"
+	preload                 = "preload"
 )
 
 var (
@@ -173,11 +176,12 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
+	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
 func initKubernetesFlags() {
-	startCmd.Flags().String(kubernetesVersion, "", "The kubernetes version that the minikube VM will use (ex: v1.2.3)")
+	startCmd.Flags().String(kubernetesVersion, "", fmt.Sprintf("The kubernetes version that the minikube VM will use (ex: v1.2.3, 'stable' for %s, 'latest' for %s). Defaults to 'stable'.", constants.DefaultKubernetesVersion, constants.NewestKubernetesVersion))
 	startCmd.Flags().Var(&config.ExtraOptions, "extra-config",
 		`A set of key=value pairs that describe configuration that may be passed to different components.
 		The key should be '.' separated, and the first part before the dot is the component to apply the configuration to.
@@ -196,6 +200,7 @@ func initDriverFlags() {
 	startCmd.Flags().String("driver", "", fmt.Sprintf("Driver is one of: %v (defaults to auto-detect)", driver.DisplaySupportedDrivers()))
 	startCmd.Flags().String("vm-driver", "", "DEPRECATED, use `driver` instead.")
 	startCmd.Flags().Bool(disableDriverMounts, false, "Disables the filesystem mounts provided by the hypervisors")
+	startCmd.Flags().Bool("vm", false, "Filter to use only VM Drivers")
 
 	// kvm2
 	startCmd.Flags().String(kvmNetwork, "default", "The KVM network name. (kvm2 driver only)")
@@ -291,7 +296,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		registryMirror = viper.GetStringSlice("registry_mirror")
 	}
 
-	existing, err := config.Load(viper.GetString(config.ProfileName))
+	existing, err := config.Load(ClusterFlagValue())
 	if err != nil && !config.IsNotExist(err) {
 		exit.WithCodeT(exit.Data, "Unable to load config: {{.error}}", out.V{"error": err})
 	}
@@ -390,8 +395,8 @@ func updateDriver(driverName string) {
 
 func displayVersion(version string) {
 	prefix := ""
-	if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
-		prefix = fmt.Sprintf("[%s] ", viper.GetString(config.ProfileName))
+	if ClusterFlagValue() != constants.DefaultClusterName {
+		prefix = fmt.Sprintf("[%s] ", ClusterFlagValue())
 	}
 
 	versionState := out.Happy
@@ -466,8 +471,9 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 
 	// By default, the driver is whatever we used last time
-	if existing != nil && existing.Driver != "" {
-		ds := driver.Status(existing.Driver)
+	if existing != nil {
+		old := hostDriver(existing)
+		ds := driver.Status(old)
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
 		return ds
 	}
@@ -477,10 +483,10 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		if vmd := viper.GetString("vm-driver"); vmd != "" {
 			// Output a warning
 			warning := `Both driver={{.driver}} and vm-driver={{.vmd}} have been set.
-			
+
     Since vm-driver is deprecated, minikube will default to driver={{.driver}}.
 
-    If vm-driver is set in the global config, please run "minikube config unset vm-driver" to resolve this warning.			
+    If vm-driver is set in the global config, please run "minikube config unset vm-driver" to resolve this warning.
 			`
 			out.T(out.Warning, warning, out.V{"driver": d, "vmd": vmd})
 		}
@@ -502,7 +508,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		return ds
 	}
 
-	pick, alts := driver.Suggest(driver.Choices())
+	pick, alts := driver.Suggest(driver.Choices(viper.GetBool("vm")))
 	if pick.Name == "" {
 		exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
 	}
@@ -519,55 +525,67 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	return pick
 }
 
+// hostDriver returns the actual driver used by a libmachine host, which can differ from our config
+func hostDriver(existing *config.ClusterConfig) string {
+	if existing == nil {
+		return ""
+	}
+	api, err := machine.NewAPIClient()
+	if err != nil {
+		glog.Warningf("selectDriver NewAPIClient: %v", err)
+		return existing.Driver
+	}
+
+	cp, err := config.PrimaryControlPlane(existing)
+	if err != nil {
+		glog.Warningf("Unable to get control plane from existing config: %v", err)
+		return existing.Driver
+	}
+	machineName := driver.MachineName(*existing, cp)
+	h, err := api.Load(machineName)
+	if err != nil {
+		glog.Warningf("selectDriver api.Load: %v", err)
+		return existing.Driver
+	}
+
+	return h.Driver.DriverName()
+}
+
 // validateSpecifiedDriver makes sure that if a user has passed in a driver
 // it matches the existing cluster if there is one
 func validateSpecifiedDriver(existing *config.ClusterConfig) {
 	if existing == nil {
 		return
 	}
-	old := existing.Driver
+
 	var requested string
 	if d := viper.GetString("driver"); d != "" {
 		requested = d
 	} else if d := viper.GetString("vm-driver"); d != "" {
 		requested = d
 	}
+
 	// Neither --vm-driver or --driver was specified
 	if requested == "" {
 		return
 	}
-	if old == requested {
+
+	old := hostDriver(existing)
+	if requested == old {
 		return
 	}
 
-	api, err := machine.NewAPIClient()
-	if err != nil {
-		glog.Warningf("selectDriver NewAPIClient: %v", err)
-		return
-	}
-
-	cp, err := config.PrimaryControlPlane(existing)
-	if err != nil {
-		exit.WithError("Error getting primary cp", err)
-	}
-	machineName := driver.MachineName(*existing, cp)
-	h, err := api.Load(machineName)
-	if err != nil {
-		glog.Warningf("selectDriver api.Load: %v", err)
-		return
-	}
-
-	out.ErrT(out.Conflict, `The existing "{{.profile_name}}" VM was created using the "{{.old_driver}}" driver, and is incompatible with the "{{.driver}}" driver.`,
-		out.V{"profile_name": machineName, "driver": requested, "old_driver": h.Driver.DriverName()})
+	out.ErrT(out.Conflict, `The existing "{{.name}}" VM was created using the "{{.old}}" driver, and is incompatible with the "{{.new}}" driver.`,
+		out.V{"name": existing.Name, "new": requested, "old": old})
 
 	out.ErrT(out.Workaround, `To proceed, either:
 
-1) Delete the existing "{{.profile_name}}" cluster using: '{{.command}} delete'
+1) Delete the existing "{{.name}}" cluster using: '{{.delcommand}}'
 
 * or *
 
-2) Start the existing "{{.profile_name}}" cluster using: '{{.command}} start --driver={{.old_driver}}'
-`, out.V{"command": minikubeCmd(), "old_driver": h.Driver.DriverName(), "profile_name": machineName})
+2) Start the existing "{{.name}}" cluster using: '{{.command}} --driver={{.old}}'
+`, out.V{"command": mustload.ExampleCmd(existing.Name, "start"), "delcommand": mustload.ExampleCmd(existing.Name, "delete"), "old": old, "name": existing.Name})
 
 	exit.WithCodeT(exit.Config, "Exiting.")
 }
@@ -594,8 +612,10 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		out.ErrLn("")
 
 		if !st.Installed && !viper.GetBool(force) {
-			if existing != nil && name == existing.Driver {
-				exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+			if existing != nil {
+				if old := hostDriver(existing); name == old {
+					exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed, but is specified by an existing profile. Please run 'minikube delete' or install {{.driver}}", out.V{"driver": name})
+				}
 			}
 			exit.WithCodeT(exit.Unavailable, "{{.driver}} does not appear to be installed", out.V{"driver": name})
 		}
@@ -653,14 +673,6 @@ func selectImageRepository(mirrorCountry string, v semver.Version) (bool, string
 	return false, fallback, nil
 }
 
-// Return a minikube command containing the current profile name
-func minikubeCmd() string {
-	if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
-		return fmt.Sprintf("minikube -p %s", config.ProfileName)
-	}
-	return "minikube"
-}
-
 // validateUser validates minikube is run by the recommended user (privileged or regular)
 func validateUser(drvName string) {
 	u, err := user.Current()
@@ -686,9 +698,10 @@ func validateUser(drvName string) {
 	if !useForce {
 		os.Exit(exit.Permissions)
 	}
-	_, err = config.Load(viper.GetString(config.ProfileName))
+	cname := ClusterFlagValue()
+	_, err = config.Load(cname)
 	if err == nil || !config.IsNotExist(err) {
-		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}} delete", out.V{"cmd": minikubeCmd()})
+		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
 	}
 	if !useForce {
 		exit.WithCodeT(exit.Permissions, "Exiting")
@@ -811,13 +824,23 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 	}
 
 	if driver.BareMetal(drvName) {
-		if viper.GetString(config.ProfileName) != constants.DefaultClusterName {
+		if ClusterFlagValue() != constants.DefaultClusterName {
 			exit.WithCodeT(exit.Config, "The '{{.name}} driver does not support multiple profiles: https://minikube.sigs.k8s.io/docs/reference/drivers/none/", out.V{"name": drvName})
 		}
 
 		runtime := viper.GetString(containerRuntime)
 		if runtime != "docker" {
 			out.WarningT("Using the '{{.runtime}}' runtime with the 'none' driver is an untested configuration!", out.V{"runtime": runtime})
+		}
+
+		// conntrack is required starting with kubernetes 1.18, include the release candidates for completion
+		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
+		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
+			err := exec.Command("conntrack").Run()
+			if err != nil {
+				exit.WithCodeT(exit.Config, "The none driver requires conntrack to be installed for kubernetes version {{.k8sVersion}}", out.V{"k8sVersion": version.String()})
+
+			}
 		}
 	}
 
@@ -938,7 +961,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 	}
 
 	cfg := config.ClusterConfig{
-		Name:                    viper.GetString(config.ProfileName),
+		Name:                    ClusterFlagValue(),
 		KeepContext:             viper.GetBool(keepContext),
 		EmbedCerts:              viper.GetBool(embedCerts),
 		MinikubeISO:             viper.GetString(isoURL),
@@ -971,7 +994,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 		NatNicType:              viper.GetString(natNicType),
 		KubernetesConfig: config.KubernetesConfig{
 			KubernetesVersion:      k8sVersion,
-			ClusterName:            viper.GetString(config.ProfileName),
+			ClusterName:            ClusterFlagValue(),
 			APIServerName:          viper.GetString(apiServerName),
 			APIServerNames:         apiServerNames,
 			APIServerIPs:           apiServerIPs,
@@ -1045,13 +1068,15 @@ func autoSetDriverOptions(cmd *cobra.Command, drvName string) (err error) {
 func getKubernetesVersion(old *config.ClusterConfig) string {
 	paramVersion := viper.GetString(kubernetesVersion)
 
-	if paramVersion == "" { // if the user did not specify any version then ...
-		if old != nil { // .. use the old version from config (if any)
-			paramVersion = old.KubernetesConfig.KubernetesVersion
-		}
-		if paramVersion == "" { // .. otherwise use the default version
-			paramVersion = constants.DefaultKubernetesVersion
-		}
+	// try to load the old version first if the user didn't specify anything
+	if paramVersion == "" && old != nil {
+		paramVersion = old.KubernetesConfig.KubernetesVersion
+	}
+
+	if paramVersion == "" || strings.EqualFold(paramVersion, "stable") {
+		paramVersion = constants.DefaultKubernetesVersion
+	} else if strings.EqualFold(paramVersion, "latest") {
+		paramVersion = constants.NewestKubernetesVersion
 	}
 
 	nvs, err := semver.Make(strings.TrimPrefix(paramVersion, version.VersionPrefix))
