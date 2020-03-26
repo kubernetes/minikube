@@ -76,11 +76,9 @@ func indentLines(b *bytes.Buffer) string {
 // Output returns human-readable output for an execution result
 func (rr RunResult) Output() string {
 	var sb strings.Builder
-
 	if rr.Stdout.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("-- stdout --\n%s\n-- /stdout --", indentLines(rr.Stdout)))
+		sb.WriteString(fmt.Sprintf("\n-- stdout --\n%s\n-- /stdout --", indentLines(rr.Stdout)))
 	}
-
 	if rr.Stderr.Len() > 0 {
 		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n** /stderr **", indentLines(rr.Stderr)))
 	}
