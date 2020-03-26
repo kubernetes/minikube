@@ -32,7 +32,6 @@ const (
 	Running
 	Provisioning
 	Restarting
-	Reconfiguring
 	Stopping
 	Stopped
 	Warning

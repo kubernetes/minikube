@@ -17,6 +17,7 @@ limitations under the License.
 package constants
 
 import (
+	"errors"
 	"path/filepath"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -100,4 +101,7 @@ var (
 		"storage-gluster",
 		"istio-operator",
 	}
+
+	// ErrMachineMissing is returned when virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C)
+	ErrMachineMissing = errors.New("machine does not exist")
 )

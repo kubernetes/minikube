@@ -60,7 +60,6 @@ var styles = map[StyleEnum]style{
 	Running:       {Prefix: "🏃  "},
 	Provisioning:  {Prefix: "🌱  "},
 	Restarting:    {Prefix: "🔄  "},
-	Reconfiguring: {Prefix: "📯  "},
 	Stopping:      {Prefix: "✋  "},
 	Stopped:       {Prefix: "🛑  "},
 	Warning:       {Prefix: "❗  ", LowPrefix: lowWarning},
