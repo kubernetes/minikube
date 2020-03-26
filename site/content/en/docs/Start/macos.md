@@ -32,7 +32,7 @@ curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin
 {{% /tab %}}
 {{% /tabs %}}
 
-### Upgrading minikube
+### Upgrading Minikube
 
 {{% tabs %}}
 {{% tab "Brew" %}}
