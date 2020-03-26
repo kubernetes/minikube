@@ -50,7 +50,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("client: %v", err)
+		t.Fatalf("failed to get kubernetes client for %q: %v", profile, err)
 	}
 
 	// Pre-Cleanup
@@ -62,7 +62,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"-p", profile, "tunnel", "--alsologtostderr", "-v=1"}
 	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("%s failed: %v", args, err)
+		t.Errorf("failed to start a tunnel: args %q: %v", args, err)
 	}
 	defer ss.Stop(t)
 
@@ -99,7 +99,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		if err != nil {
 			t.Errorf("%s failed: %v", rr.Args, err)
 		}
-		t.Logf("kubectl get svc nginx-svc:\n%s", rr.Stdout)
+		t.Logf("failed to kubectl get svc nginx-svc:\n%s", rr.Stdout)
 	}
 
 	got := []byte{}
@@ -120,11 +120,11 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		return nil
 	}
 	if err = retry.Expo(fetch, time.Millisecond*500, Minutes(2), 13); err != nil {
-		t.Errorf("failed to contact nginx at %s: %v", nginxIP, err)
+		t.Errorf("failed to hit nginx at %q: %v", nginxIP, err)
 	}
 
 	want := "Welcome to nginx!"
 	if !strings.Contains(string(got), want) {
-		t.Errorf("body = %q, want *%s*", got, want)
+		t.Errorf("expected body to contain %q, but got *%q*", want, got)
 	}
 }
