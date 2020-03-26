@@ -26,7 +26,6 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -109,10 +108,6 @@ func Running(name string) ClusterController {
 	ips, err := host.Driver.GetIP()
 	if err != nil {
 		exit.WithError("Unable to get driver IP", err)
-	}
-
-	if driver.IsKIC(host.DriverName) {
-		ips = oci.DefaultBindIPV4
 	}
 
 	ip := net.ParseIP(ips)
