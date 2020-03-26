@@ -17,7 +17,7 @@ description: >
 
 ## Check virtualization support
 
-{{% readfile file="/docs/Reference/Drivers/includes/virtualization_check_linux.inc" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/check_virtualization_linux.inc" %}}
 
 ## Special features
 
