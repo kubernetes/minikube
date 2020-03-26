@@ -62,7 +62,7 @@ func main() {
 	for _, kv := range k8sVersions {
 		for _, cr := range containerRuntimes {
 			tf := download.TarballName(kv)
-			if tarballExists(tf) {
+			if download.PreloadExists(kv, cr) {
 				fmt.Printf("A preloaded tarball for k8s version %s already exists, skipping generation.\n", kv)
 				continue
 			}
@@ -75,13 +75,6 @@ func main() {
 			}
 		}
 	}
-}
-
-func tarballExists(tarballFilename string) bool {
-	fmt.Println("Checking if tarball already exists...")
-	gcsPath := fmt.Sprintf("gs://%s/%s", download.PreloadBucket, tarballFilename)
-	cmd := exec.Command("gsutil", "stat", gcsPath)
-	return cmd.Run() == nil
 }
 
 func verifyDockerStorage() error {
