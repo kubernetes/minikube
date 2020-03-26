@@ -87,6 +87,7 @@ jobs:
       run: |
         curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
         sudo install kubectl /usr/local/bin/kubectl
+        kubectl version
     - name: Docker Info
       shell: bash
       run: |
@@ -175,6 +176,7 @@ jobs:
       run: |
         curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
         sudo install kubectl /usr/local/bin/kubectl
+        kubectl version
     - name: Install lz4
       shell: bash
       run: |
@@ -263,6 +265,7 @@ jobs:
       run: |
         curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
         sudo install kubectl /usr/local/bin/kubectl
+        kubectl version
     # conntrack is required for kubernetes 1.18 and higher
     # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
     - name: Install tools for none
@@ -340,6 +343,7 @@ jobs:
       run: |
         curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
         sudo install kubectl /usr/local/bin/kubectl
+        kubectl version
     # conntrack is required for kubernetes 1.18 and higher
     # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
     - name: Install tools for none
@@ -417,6 +421,7 @@ jobs:
         run: |
           curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
           sudo install kubectl /usr/local/bin/kubectl
+          kubectl version
       - name: Install podman
         shell: bash
         run: |
