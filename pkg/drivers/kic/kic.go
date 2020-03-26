@@ -228,7 +228,7 @@ func (d *Driver) GetState() (state.State, error) {
 	out, err := cmd.CombinedOutput()
 	
 	if time.Since(start) > 2*time.Second {
-		glog.Errorf("%s took an unusually long time. Restarting the %s daemon may improve performance.", cmd.Args(), d.OCIBinary)
+		glog.Errorf("%s took an unusually long time. Restarting the %s daemon may improve performance.", cmd, d.OCIBinary)
 	}
 	
 	if ctx.Err() == context.DeadlineExceeded {
