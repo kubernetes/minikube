@@ -115,13 +115,13 @@ func TestStartStop(t *testing.T) {
 				// Enable an addon to assert it comes up afterwards
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
 				if err != nil {
-					t.Errorf("failed to enable an addon while minikube is stopped. args %q:  ", rr.Args, err)
+					t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Args, err)
 				}
 
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
-					t.Fatalf("Failed to start minikube after stop -Second Start-. args %q: %v", rr.Args, err)
+					t.Fatalf("failed to start minikube post-stop. args %q: %v", rr.Args, err)
 				}
 
 				if strings.Contains(tc.name, "cni") {

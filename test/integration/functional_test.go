@@ -598,11 +598,11 @@ func validateProfileCmd(ctx context.Context, t *testing.T, profile string) {
 func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "deployment", "hello-node", "--image=gcr.io/hello-minikube-zero-install/hello-node"))
 	if err != nil {
-		t.Logf("% failed: %v (may not be an error)", rr.Args, err)
+		t.Logf("%q failed: %v (may not be an error).", rr.Args, err)
 	}
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "expose", "deployment", "hello-node", "--type=NodePort", "--port=8080"))
 	if err != nil {
-		t.Logf("%s failed: %v (may not be an error)", rr.Args, err)
+		t.Logf("%q failed: %v (may not be an error)", rr.Args, err)
 	}
 
 	if _, err := PodWait(ctx, t, profile, "default", "app=hello-node", Minutes(10)); err != nil {
@@ -656,7 +656,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to parse %q: %v", endpoint, err)
 	}
 	if u.Scheme != "http" {
-		t.Fatalf("expected scheme to be -'http'- got scheme: *%q*", "http", u.Scheme)
+		t.Fatalf("expected scheme to be -%q- got scheme: *%q*", "http", u.Scheme)
 	}
 
 	t.Logf("url: %s", endpoint)
@@ -665,7 +665,7 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("get failed: %v\nresp: %v", err, resp)
 	}
 	if resp.StatusCode != http.StatusOK {
-		t.Fatalf("expeced status code for %q to be -%q- but got *%q*", endpoint, http.StatusOK, resp.StatusCode)
+		t.Fatalf("expected status code for %q to be -%q- but got *%q*", endpoint, http.StatusOK, resp.StatusCode)
 	}
 }
 
@@ -813,7 +813,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 		t.Logf("Checking for existence of %s within VM", vp)
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
 		if err != nil {
-			t.Errorf("failed to check existance of %q inside minikube. args %q: %v", vp, rr.Args, err)
+			t.Errorf("failed to check existence of %q inside minikube. args %q: %v", vp, rr.Args, err)
 		}
 
 		// Strip carriage returned by ssh
