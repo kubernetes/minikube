@@ -37,6 +37,8 @@ import (
 
 // TransferBinaries transfers all required Kubernetes binaries
 func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
+	binaryIf := download.GetBinaryInterface()
+
 	ok, err := binariesExist(cfg, c)
 	if err == nil && ok {
 		glog.Info("Found k8s binaries, skipping transfer")
@@ -59,7 +61,7 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 	for _, name := range constants.KubernetesReleaseBinaries {
 		name := name
 		g.Go(func() error {
-			src, err := download.Binary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)
+			src, err := binaryIf.Binary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", name)
 			}

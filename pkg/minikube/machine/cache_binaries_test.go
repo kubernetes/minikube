@@ -25,6 +25,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/download/intf"
 )
 
 type copyFailRunner struct {
@@ -112,7 +113,9 @@ func TestCacheBinariesForBootstrapper(t *testing.T) {
 	for _, test := range tc {
 		t.Run(test.version, func(t *testing.T) {
 			os.Setenv("MINIKUBE_HOME", test.minikubeHome)
-			err := CacheBinariesForBootstrapper(test.version, test.clusterBootstrapper)
+			mockBinary := &intf.MockBinary{ExpectedError: test.err}
+			err := cacheBinariesForBootstrapperHelper(test.version, test.clusterBootstrapper, mockBinary)
+
 			if err != nil && !test.err {
 				t.Fatalf("Got unexpected error %v", err)
 			}

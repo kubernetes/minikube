@@ -24,6 +24,8 @@ import (
 )
 
 func TestCacheBinary(t *testing.T) {
+	binaryIf := GetBinaryInterface()
+
 	oldMinikubeHome := os.Getenv("MINIKUBE_HOME")
 	defer os.Setenv("MINIKUBE_HOME", oldMinikubeHome)
 
@@ -105,7 +107,7 @@ func TestCacheBinary(t *testing.T) {
 	for _, test := range tc {
 		t.Run(test.desc, func(t *testing.T) {
 			os.Setenv("MINIKUBE_HOME", test.minikubeHome)
-			_, err := Binary(test.binary, test.version, test.osName, test.archName)
+			_, err := binaryIf.Binary(test.binary, test.version, test.osName, test.archName)
 			if err != nil && !test.err {
 				t.Fatalf("Got unexpected error %v", err)
 			}

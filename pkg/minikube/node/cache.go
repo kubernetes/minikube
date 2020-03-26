@@ -85,12 +85,14 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string)
 
 // CacheKubectlBinary caches the kubectl binary
 func CacheKubectlBinary(k8sVerison string) (string, error) {
+	binaryIf := download.GetBinaryInterface()
+
 	binary := "kubectl"
 	if runtime.GOOS == "windows" {
 		binary = "kubectl.exe"
 	}
 
-	return download.Binary(binary, k8sVerison, runtime.GOOS, runtime.GOARCH)
+	return binaryIf.Binary(binary, k8sVerison, runtime.GOOS, runtime.GOARCH)
 }
 
 // doCacheBinaries caches Kubernetes binaries in the foreground

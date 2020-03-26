@@ -26,17 +26,23 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/download/intf"
 )
 
 // CacheBinariesForBootstrapper will cache binaries for a bootstrapper
 func CacheBinariesForBootstrapper(version string, clusterBootstrapper string) error {
+	binaryIf := download.GetBinaryInterface()
+	return cacheBinariesForBootstrapperHelper(version, clusterBootstrapper, binaryIf)
+}
+
+func cacheBinariesForBootstrapperHelper(version string, clusterBootstrapper string, binaryIf intf.BinaryIf) error {
 	binaries := bootstrapper.GetCachedBinaryList(clusterBootstrapper)
 
 	var g errgroup.Group
 	for _, bin := range binaries {
 		bin := bin // https://golang.org/doc/faq#closures_and_goroutines
 		g.Go(func() error {
-			if _, err := download.Binary(bin, version, "linux", runtime.GOARCH); err != nil {
+			if _, err := binaryIf.Binary(bin, version, "linux", runtime.GOARCH); err != nil {
 				return errors.Wrapf(err, "caching binary %s", bin)
 			}
 			return nil

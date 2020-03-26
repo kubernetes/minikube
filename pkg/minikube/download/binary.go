@@ -26,11 +26,19 @@ import (
 	"github.com/golang/glog"
 	"github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/download/intf"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
+// GetBinaryInterface ...
+func GetBinaryInterface() intf.BinaryIf {
+	return &binary{}
+}
+
+type binary struct{}
+
 // binaryWithChecksumURL gets the location of a Kubernetes binary
-func binaryWithChecksumURL(binaryName, version, osName, archName string) (string, error) {
+func (b *binary) binaryWithChecksumURL(binaryName, version, osName, archName string) (string, error) {
 	base := fmt.Sprintf("https://storage.googleapis.com/kubernetes-release/release/%s/bin/%s/%s/%s", version, osName, archName, binaryName)
 	v, err := semver.Make(version[1:])
 	if err != nil {
@@ -44,11 +52,11 @@ func binaryWithChecksumURL(binaryName, version, osName, archName string) (string
 }
 
 // Binary will download a binary onto the host
-func Binary(binary, version, osName, archName string) (string, error) {
+func (b *binary) Binary(binary, version, osName, archName string) (string, error) {
 	targetDir := localpath.MakeMiniPath("cache", osName, version)
 	targetFilepath := path.Join(targetDir, binary)
 
-	url, err := binaryWithChecksumURL(binary, version, osName, archName)
+	url, err := b.binaryWithChecksumURL(binary, version, osName, archName)
 	if err != nil {
 		return "", err
 	}
