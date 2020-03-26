@@ -270,40 +270,40 @@ func validateComponentHealth(ctx context.Context, t *testing.T, profile string) 
 func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%q failed: %v", rr.Args, err)
 	}
 
 	// Custom format
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-f", "host:{{.Host}},kublet:{{.Kubelet}},apiserver:{{.APIServer}},kubeconfig:{{.Kubeconfig}}"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%q failed: %v", rr.Args, err)
 	}
 	match, _ := regexp.MatchString(`host:([A-z]+),kublet:([A-z]+),apiserver:([A-z]+),kubeconfig:([A-z]+)`, rr.Stdout.String())
 	if !match {
-		t.Errorf("%s failed: %v. Output for custom format did not match", rr.Args, err)
+		t.Errorf("%q failed: %v. Output for custom format did not match", rr.Args, err)
 	}
 
 	// Json output
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status", "-o", "json"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%q failed: %v", rr.Args, err)
 	}
 	var jsonObject map[string]interface{}
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jsonObject)
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%q failed: %v", rr.Args, err)
 	}
 	if _, ok := jsonObject["Host"]; !ok {
-		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "Host")
+		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Args, err, "Host")
 	}
 	if _, ok := jsonObject["Kubelet"]; !ok {
-		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "Kubelet")
+		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Args, err, "Kubelet")
 	}
 	if _, ok := jsonObject["APIServer"]; !ok {
-		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "APIServer")
+		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Args, err, "APIServer")
 	}
 	if _, ok := jsonObject["Kubeconfig"]; !ok {
-		t.Errorf("%s failed: %v. Missing key %s in json object", rr.Args, err, "Kubeconfig")
+		t.Errorf("%q failed: %v. Missing key %s in json object", rr.Args, err, "Kubeconfig")
 	}
 }
 
@@ -312,7 +312,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"dashboard", "--url", "-p", profile, "--alsologtostderr", "-v=1"}
 	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("%s failed: %v", args, err)
+		t.Errorf("%q failed: %v", args, err)
 	}
 	defer func() {
 		ss.Stop(t)
@@ -334,7 +334,7 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 
 	resp, err := retryablehttp.Get(u.String())
 	if err != nil {
-		t.Errorf("failed get: %v", err)
+		t.Errorf("failed to http get %q : %v", u.String(), err)
 	}
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
@@ -349,12 +349,12 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 func validateDNS(ctx context.Context, t *testing.T, profile string) {
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%q failed: %v", rr.Args, err)
 	}
 
 	names, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4))
 	if err != nil {
-		t.Fatalf("wait: %v", err)
+		t.Fatalf("failed waiting for busybox pod : %v", err)
 	}
 
 	nslookup := func() error {
@@ -364,12 +364,12 @@ func validateDNS(ctx context.Context, t *testing.T, profile string) {
 
 	// If the coredns process was stable, this retry wouldn't be necessary.
 	if err = retry.Expo(nslookup, 1*time.Second, Minutes(1)); err != nil {
-		t.Errorf("nslookup failing: %v", err)
+		t.Errorf("failed to do nslookup on kubernetes.default: %v", err)
 	}
 
 	want := []byte("10.96.0.1")
 	if !bytes.Contains(rr.Stdout.Bytes(), want) {
-		t.Errorf("nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
+		t.Errorf("failed nslookup: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 	}
 }
 
@@ -454,17 +454,17 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 			// make sure the image is deleted.
 			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "inspecti", img))
 			if err == nil {
-				t.Errorf("expected the image be deleted and get  error but got nil error ! cmd: %q", rr.Command())
+				t.Errorf("expected an error. because image should not exist. but got *nil error* ! cmd: %q", rr.Command())
 			}
 			// minikube cache reload.
 			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "cache", "reload"))
 			if err != nil {
-				t.Errorf("expected %q to run successfully but got error %v", rr.Command(), err)
+				t.Errorf("expected %q to run successfully but got error: %v", rr.Command(), err)
 			}
 			// make sure 'cache reload' brought back the manually deleted image.
 			rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "sudo", "crictl", "inspecti", img))
 			if err != nil {
-				t.Errorf("expected to get no error for %q but got %v", rr.Command(), err)
+				t.Errorf("expected %q to run successfully but got error: %v", rr.Command(), err)
 			}
 		})
 
