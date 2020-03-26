@@ -65,6 +65,9 @@ brew upgrade minikube
 {{% tab "VMware" %}}
 {{% readfile file="/docs/Reference/Drivers/includes/vmware_macos_usage.inc" %}}
 {{% /tab %}}
+{{% tab "Podman (experimental)" %}}
+{{% readfile file="/docs/Reference/Drivers/includes/podman_usage.inc" %}}
+{{% /tab %}}
 
 {{% /tabs %}}
 

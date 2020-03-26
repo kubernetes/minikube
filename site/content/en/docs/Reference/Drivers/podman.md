@@ -14,7 +14,7 @@ podman driver is currently experimental.
 and only supported on Linux and MacOs (with a remote podman server)
 
 
-## try with CRI-O run time.
+## Try it with CRI-O container runtime.
 ```shell
 minikube start --driver=podman --container-runtime=cri-o
 ```
