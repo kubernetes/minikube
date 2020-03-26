@@ -7,7 +7,6 @@ date: 2018-08-05
 description: >
   Microsoft Hyper-V driver
 ---
-
 ## Overview
 
 Hyper-V is a native hypervisor built in to modern versions of Microsoft Windows.

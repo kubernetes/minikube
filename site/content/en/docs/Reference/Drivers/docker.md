@@ -4,28 +4,18 @@ linkTitle: "docker"
 weight: 3
 date: 2020-02-05
 description: >
-  Docker driver (EXPERIMENTAL)
+  Docker driver 
 ---
 
 ## Overview
 
-The Docker driver is an experimental VM-free driver that ships with minikube v1.7.
+The Docker driver is the newest minikube driver. which runs kubernetes in container VM-free ! with full feature parity with minikube in VM.
 
-This driver was inspired by the [kind project](https://kind.sigs.k8s.io/), and uses a modified version of its base image.
+{{% readfile file="/docs/Reference/Drivers/includes/docker_usage.inc" %}}
+
 
 ## Special features
+- Cross platform (linux, macos, windows)
+- No hypervisor required when run on Linux.
 
-No hypervisor required when run on Linux.
 
-## Limitations
-
-As an experimental driver, not all commands are supported on all platforms. Notably: `mount,` `service`, `tunnel`, and others. Most of these limitations will be addressed by minikube v1.8 (March 2020)
-
-## Issues
-
-* [Full list of open 'kic-driver' issues](https://github.com/kubernetes/minikube/labels/co%2Fkic-driver)
-
-## Troubleshooting
-
-* Run `minikube start --alsologtostderr -v=1` to debug crashes
-* If your docker is too slow on mac os try [Improving docker performance](https://docs.docker.com/docker-for-mac/osxfs-caching/)
