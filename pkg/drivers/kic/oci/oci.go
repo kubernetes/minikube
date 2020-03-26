@@ -378,10 +378,6 @@ func generatePortMappings(portMappings ...PortMapping) []string {
 		// let docker pick a host port by leaving it as ::
 		// example --publish=127.0.0.17::8443 will get a random host port for 8443
 		publish := fmt.Sprintf("--publish=%s::%d", pm.ListenAddress, pm.ContainerPort)
-		// if host port is specified, use that
-		if pm.HostPort != 0 {
-			publish = fmt.Sprintf("--publish=%s:%d:%d", pm.ListenAddress, pm.HostPort, pm.ContainerPort)
-		}
 		result = append(result, publish)
 	}
 	return result

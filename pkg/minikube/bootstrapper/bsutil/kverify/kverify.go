@@ -45,7 +45,7 @@ import (
 )
 
 // minLogCheckTime how long to wait before spamming error logs to console
-const minLogCheckTime = 30 * time.Second
+const minLogCheckTime = 60 * time.Second
 
 // WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
 func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, start time.Time, timeout time.Duration) error {
