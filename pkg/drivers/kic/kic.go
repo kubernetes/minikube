@@ -93,6 +93,11 @@ func (d *Driver) Create() error {
 			ListenAddress: oci.DefaultBindIPV4,
 			ContainerPort: constants.DockerDaemonPort,
 		},
+		oci.PortMapping{
+			ListenAddress: oci.DefaultBindIPV4,
+			ContainerPort: constants.RegistryPort,
+			HostPort:      constants.RegistryPort,
+		},
 	)
 
 	exists, err := oci.ContainerExists(d.OCIBinary, params.Name)
