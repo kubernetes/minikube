@@ -1,7 +1,7 @@
 ## experimental
 
 This is an experimental driver. please use it only for experimental reasons.
-for a better kubernetes in container experience, use docker [driver](https://5e7c6ab90d754e000860cdfd--kubernetes-sigs-minikube.netlify.com/docs/reference/drivers/docker/).
+for a better kubernetes in container experience, use docker [driver](https://minikube.sigs.k8s.io/docs/reference/drivers/docker).
 
 ## Install Podman
 
