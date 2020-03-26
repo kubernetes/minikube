@@ -274,6 +274,9 @@ jobs:
         sudo apt-get update -qq
         sudo apt-get -qq -y install conntrack
         sudo apt-get -qq -y install socat
+        VERSION="v1.17.0"
+        curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
+        sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
     - name: Install gopogh
       shell: bash
       run: |
@@ -352,6 +355,9 @@ jobs:
         sudo apt-get update -qq
         sudo apt-get -qq -y install conntrack
         sudo apt-get -qq -y install socat
+        VERSION="v1.17.0"
+        curl -L https://github.com/kubernetes-sigs/cri-tools/releases/download/$VERSION/crictl-${VERSION}-linux-amd64.tar.gz --output crictl-${VERSION}-linux-amd64.tar.gz
+        sudo tar zxvf crictl-$VERSION-linux-amd64.tar.gz -C /usr/local/bin
     - name: Install gopogh
       shell: bash
       run: |
