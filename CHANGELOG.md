@@ -11,7 +11,6 @@ New features & improvements
 * gpu addon: privileged mode no longer required [#7149](https://github.com/kubernetes/minikube/pull/7149)
 * Add sch_tbf and extend filter ipset kernel module for bandwidth shaping [#7255](https://github.com/kubernetes/minikube/pull/7255)
 * Parse --disk-size and --memory sizes with binary suffixes [#7206](https://github.com/kubernetes/minikube/pull/7206)
-* local search for the site [#7253](https://github.com/kubernetes/minikube/pull/7253)
 
 
 Bug Fixes
