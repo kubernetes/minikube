@@ -11,7 +11,7 @@ description: >
 
 Most organizations deploy their own Root Certificate and CA service inside the corporate networks.
 Internal websites, image repositories and other resources may install SSL server certificates issued by this CA service for security and privacy concerns.
-You may install the Root Certificate into the minikube VM to access these corporate resources within the cluster.
+You may install the Root Certificate into the minikube cluster to access these corporate resources within the cluster.
 
 ## Prerequisites
 
@@ -26,13 +26,13 @@ You may install the Root Certificate into the minikube VM to access these corpor
 openssl x509 -inform der -in my_company.cer -out my_company.pem
 ```
 
-* You may need to delete existing minikube VM
+* You may need to delete existing minikube cluster
 
 ```shell
 minikube delete
 ```
 
-* Copy the certificate before creating the minikube VM
+* Copy the certificate before creating the minikube cluster
 
 ```shell
 mkdir -p $HOME/.minikube/certs

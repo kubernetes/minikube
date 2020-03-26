@@ -1,4 +1,4 @@
-### Getting to know Kubernetes
+## Getting to know Kubernetes
 
 Once started, you can use any regular Kubernetes command to interact with your minikube cluster. For example, you can see the pod states by running:
 
@@ -6,16 +6,16 @@ Once started, you can use any regular Kubernetes command to interact with your m
  kubectl get po -A
 ```
 
-### Increasing memory allocation
+## Increasing memory allocation
 
-minikube only allocates 2GB of RAM by default, which is only enough for trivial deployments. For larger 
+minikube auto-selects the memory size based on your system up to 6000mb. For larger 
 deployments, increase the memory allocation using the `--memory` flag, or make the setting persistent using:
 
 ```shell
-minikube config set memory 4096
+minikube config set memory 8096
 ```
 
-### Where to go next?
+## Where to go next?
 
 Visit the [examples](/docs/examples) page to get an idea of what you can do with minikube.
 
