@@ -121,14 +121,14 @@ func (d *Driver) Create() error {
 		return errors.Wrap(err, "prepare kic ssh")
 	}
 
-	// If preload doesn't exist, don't both extracting tarball to volume
+	// If preload doesn't exist, don't bother extracting tarball to volume
 	if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
 		return nil
 	}
 	t := time.Now()
 	glog.Infof("Starting extracting preloaded images to volume")
 	// Extract preloaded images to container
-	if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion), params.Name, BaseImage); err != nil {
+	if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, BaseImage); err != nil {
 		glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
 	} else {
 		glog.Infof("Took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
