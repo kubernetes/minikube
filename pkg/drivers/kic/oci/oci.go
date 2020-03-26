@@ -235,8 +235,8 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 
 // WarnIfSlow runs an oci command, warning about performance issues
 func WarnIfSlow(arg ...string) ([]byte, error) {
-	killTime := 3 * time.Millisecond
-	warnTime := 1 * time.Millisecond
+	killTime := 15 * time.Second
+	warnTime := 2 * time.Second
 
 	ctx, cancel := context.WithTimeout(context.Background(), killTime)
 	defer cancel()
