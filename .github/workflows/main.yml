@@ -499,15 +499,15 @@ jobs:
       run: |
         mkdir -p all_reports
         cp -r docker_ubuntu_18_04 ./all_reports/
-    - name: download results docker_windows_NT
+    - name: download results docker_windows_shell
       uses: actions/download-artifact@v1
       with:
-        name: docker_windows_NT
+        name: docker_windows_shell
     - name: cp to all_report
       shell: bash
       run: |
         mkdir -p all_reports
-        cp -r docker_windows_NT ./all_reports/
+        cp -r docker_windows_shell ./all_reports/
     - name: Download Results none_ubuntu16_04
       uses: actions/download-artifact@v1
       with:
