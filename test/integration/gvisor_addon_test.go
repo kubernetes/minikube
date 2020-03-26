@@ -50,7 +50,7 @@ func TestGvisorAddon(t *testing.T) {
 	startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--container-runtime=containerd", "--docker-opt", "containerd=/var/run/containerd/containerd.sock"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("failed to start minikube: args %q: %v", rr.Args, err)
 	}
 
 	// If it exists, include a locally built gvisor image
@@ -65,7 +65,7 @@ func TestGvisorAddon(t *testing.T) {
 	}
 
 	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", Minutes(4)); err != nil {
-		t.Fatalf("waiting for gvisor controller to be up: %v", err)
+		t.Fatalf("failed waiting for 'gvisor controller' pod: %v", err)
 	}
 
 	// Create an untrusted workload
@@ -80,29 +80,29 @@ func TestGvisorAddon(t *testing.T) {
 	}
 
 	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", Minutes(4)); err != nil {
-		t.Errorf("nginx: %v", err)
+		t.Errorf("failed waiting for nginx pod: %v", err)
 	}
 	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", Minutes(4)); err != nil {
-		t.Errorf("nginx: %v", err)
+		t.Errorf("failed waitinf for gvisor pod: %v", err)
 	}
 
 	// Ensure that workloads survive a restart
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("faild stopping minikube. args %q : %v", rr.Args, err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("failed starting minikube after a stop. args %q, %v", rr.Args, err)
 	}
 	if _, err := PodWait(ctx, t, profile, "kube-system", "kubernetes.io/minikube-addons=gvisor", Minutes(4)); err != nil {
-		t.Errorf("waiting for gvisor controller to be up: %v", err)
+		t.Errorf("failed waiting for 'gvisor controller' pod : %v", err)
 	}
 	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,untrusted=true", Minutes(4)); err != nil {
-		t.Errorf("nginx: %v", err)
+		t.Errorf("failed waiting for 'nginx' pod : %v", err)
 	}
 	if _, err := PodWait(ctx, t, profile, "default", "run=nginx,runtime=gvisor", Minutes(4)); err != nil {
-		t.Errorf("nginx: %v", err)
+		t.Errorf("failed waiting for 'gvisor' pod : %v", err)
 	}
 }
