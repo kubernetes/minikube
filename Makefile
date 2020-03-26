@@ -625,7 +625,7 @@ release-kvm-driver: install-kvm-driver checksum  ## Release KVM Driver
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
 
-site/themes/docsy/assets/vendor/bootstrap/package.js:
+site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
 	git submodule update -f --init --recursive
 
 out/hugo/hugo:
