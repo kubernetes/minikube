@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
@@ -45,6 +46,7 @@ func init() {
 	if k8sVersion != "" {
 		k8sVersions = append(k8sVersions, k8sVersion)
 	}
+	viper.Set("preload", "true")
 }
 
 func main() {
@@ -62,7 +64,7 @@ func main() {
 	for _, kv := range k8sVersions {
 		for _, cr := range containerRuntimes {
 			tf := download.TarballName(kv)
-			if tarballExists(tf) {
+			if download.PreloadExists(kv, cr) {
 				fmt.Printf("A preloaded tarball for k8s version %s already exists, skipping generation.\n", kv)
 				continue
 			}
@@ -75,13 +77,6 @@ func main() {
 			}
 		}
 	}
-}
-
-func tarballExists(tarballFilename string) bool {
-	fmt.Println("Checking if tarball already exists...")
-	gcsPath := fmt.Sprintf("gs://%s/%s", download.PreloadBucket, tarballFilename)
-	cmd := exec.Command("gsutil", "stat", gcsPath)
-	return cmd.Run() == nil
 }
 
 func verifyDockerStorage() error {

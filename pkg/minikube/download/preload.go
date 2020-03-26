@@ -77,6 +77,7 @@ func remoteTarballURL(k8sVersion string) string {
 
 // PreloadExists returns true if there is a preloaded tarball that can be used
 func PreloadExists(k8sVersion, containerRuntime string) bool {
+	glog.Infof("Checking if preload exists for k8s version %s and runtime %s", k8sVersion, containerRuntime)
 	if !viper.GetBool("preload") {
 		return false
 	}
@@ -85,6 +86,7 @@ func PreloadExists(k8sVersion, containerRuntime string) bool {
 	// and https://github.com/kubernetes/minikube/issues/6934
 	// to track status of adding containerd & crio
 	if containerRuntime != "docker" {
+		glog.Info("Container runtime isn't docker, skipping preload")
 		return false
 	}
 
