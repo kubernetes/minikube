@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
@@ -45,6 +46,7 @@ func init() {
 	if k8sVersion != "" {
 		k8sVersions = append(k8sVersions, k8sVersion)
 	}
+	viper.Set("preload", "true")
 }
 
 func main() {
