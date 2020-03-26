@@ -81,13 +81,27 @@ jobs:
       GOPOGH_RESULT: ""
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
-    steps:
+    steps:    
+    - name: Install kubectl
+      shell: bash
+      run: |
+        curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+        sudo install kubectl /usr/local/bin/kubectl
+        kubectl version --client=true
     - name: Docker Info
       shell: bash
       run: |
-        docker info || true
+        echo "--------------------------"
         docker version || true
+        echo "--------------------------"
+        docker info || true
+        echo "--------------------------"
+        docker system df || true
+        echo "--------------------------"
+        docker system info || true
+        echo "--------------------------"
         docker ps || true
+        echo "--------------------------"
     - name: Install lz4
       shell: bash
       run: |
@@ -157,6 +171,12 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     needs: [build_minikube]
     steps:
+    - name: Install kubectl
+      shell: bash
+      run: |
+        curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+        sudo install kubectl /usr/local/bin/kubectl
+        kubectl version --client=true
     - name: Install lz4
       shell: bash
       run: |
@@ -165,9 +185,17 @@ jobs:
     - name: Docker Info
       shell: bash
       run: |
-        docker info || true
+        echo "--------------------------"
         docker version || true
+        echo "--------------------------"
+        docker info || true
+        echo "--------------------------"
+        docker system df || true
+        echo "--------------------------"
+        docker system info || true
+        echo "--------------------------"
         docker ps || true
+        echo "--------------------------"
     - name: Install gopogh
       shell: bash
       run: |
@@ -232,6 +260,12 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-16.04
     steps:
+    - name: Install kubectl
+      shell: bash
+      run: |
+        curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+        sudo install kubectl /usr/local/bin/kubectl
+        kubectl version --client=true
     # conntrack is required for kubernetes 1.18 and higher
     # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
     - name: Install tools for none
@@ -304,6 +338,12 @@ jobs:
       SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
     runs-on: ubuntu-18.04
     steps:
+    - name: Install kubectl
+      shell: bash
+      run: |
+        curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+        sudo install kubectl /usr/local/bin/kubectl
+        kubectl version --client=true
     # conntrack is required for kubernetes 1.18 and higher
     # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
     - name: Install tools for none
@@ -376,11 +416,12 @@ jobs:
         SHELL: "/bin/bash" # To prevent https://github.com/kubernetes/minikube/issues/6643
       runs-on: ubuntu-18.04
       steps:
-      - name: Install lz4
+      - name: Install kubectl
         shell: bash
         run: |
-          sudo apt-get update -qq
-          sudo apt-get -qq -y install liblz4-tool
+          curl -LO https://storage.googleapis.com/kubernetes-release/release/v1.18.0/bin/linux/amd64/kubectl
+          sudo install kubectl /usr/local/bin/kubectl
+          kubectl version --client=true
       - name: Install podman
         shell: bash
         run: |
