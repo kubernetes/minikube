@@ -228,11 +228,11 @@ func (d *Driver) GetState() (state.State, error) {
 	out, err := cmd.CombinedOutput()
 	
 	if time.Since(start) > 2*time.Second {
-		glog.Errorf("%s took an unusually long time. Restarting the %s daemon may improve performance.", cmd, d.OCIBinary)
+		glog.Errorf("%s took an unusually long time. Restarting the %s daemon may improve performance.", strings.Join(cmd.Args, " "), d.OCIBinary)
 	}
 	
 	if ctx.Err() == context.DeadlineExceeded {
-		return state.Error, fmt.Errorf("inspect %s timeout", d.MachineName)
+		return state.Error, fmt.Errorf("timed out: %s", strings.Join(cmd.Args, " "))
 	}
 	
 	o := strings.TrimSpace(string(out))
