@@ -57,7 +57,6 @@ type match struct {
 
 // Display problem metadata to the console
 func (p *Problem) Display() {
-	out.ErrT(out.FailureType, "Error: [{{.id}}] {{.error}}", out.V{"id": p.ID, "error": p.Err})
 	out.ErrT(out.Tip, "Suggestion: {{.advice}}", out.V{"advice": translate.T(p.Advice)})
 	if p.URL != "" {
 		out.ErrT(out.Documentation, "Documentation: {{.url}}", out.V{"url": p.URL})
@@ -65,6 +64,12 @@ func (p *Problem) Display() {
 	if len(p.Issues) == 0 {
 		return
 	}
+
+	if len(p.Issues) == 1 {
+		out.ErrT(out.Issues, "Related issue: {{.url}}", out.V{"url": fmt.Sprintf("%s/%d", issueBase, p.Issues[0])})
+		return
+	}
+
 	out.ErrT(out.Issues, "Related issues:")
 	issues := p.Issues
 	if len(issues) > 3 {
