@@ -211,21 +211,15 @@ jobs:
         echo $STAT | jq '.FailedTests' || true
         echo "-------------------------------------------------------"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  docker_windows_shell:
+  docker_windows_NT:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
-      JOB_NAME: "Docker_windows_shell"
+      JOB_NAME: "Docker_windows_NT"
       COMMIT_STATUS: ""
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v2
-    - name: Docker Info
-      shell: bash
-      run: |
-        docker info || true
-        docker version || true
-        docker ps || true
     - name: Download gopogh
       run: |
         curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh.exe
@@ -262,7 +256,7 @@ jobs:
       shell: bash
     - uses: actions/upload-artifact@v1
       with:
-        name: docker_windows_shell
+        name: docker_windows_NT
         path: report
     - name: The End Result
       run: |
@@ -271,8 +265,6 @@ jobs:
         echo "----------------${numFail} Failures----------------------------"
         echo $STAT | jq '.FailedTests' || true
         echo "--------------------------------------------"
-        numPass=$(echo $STAT | jq '.NumberOfPass')
-        echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
       shell: bash
   none_ubuntu16_04:
