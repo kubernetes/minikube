@@ -138,7 +138,7 @@ func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node
 	}
 
 	if !recreated {
-		out.T(out.Restarting, `Retarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+		out.T(out.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
 	}
 	if err := h.Driver.Start(); err != nil {
 		return h, errors.Wrap(err, "driver start")
