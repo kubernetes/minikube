@@ -49,7 +49,7 @@ func TestGuestEnvironment(t *testing.T) {
 				t.Parallel()
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("which %s", pkg)))
 				if err != nil {
-					t.Errorf("failed to verify existance of %q binary : args %q: %v", pkg, rr.Command(), err)
+					t.Errorf("failed to verify existence of %q binary : args %q: %v", pkg, rr.Command(), err)
 				}
 			})
 		}
@@ -70,7 +70,7 @@ func TestGuestEnvironment(t *testing.T) {
 				t.Parallel()
 				rr, err := Run(t, exec.CommandContext(ctx, Targt(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount)))
 				if err != nil {
-					t.Errorf("failed to verify existance of %q mount. args %q: %v", mount, rr.Command(), err)
+					t.Errorf("failed to verify existence of %q mount. args %q: %v", mount, rr.Command(), err)
 				}
 			})
 		}
