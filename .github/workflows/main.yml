@@ -100,7 +100,7 @@ jobs:
       with:
         name: minikube_binaries
     - name: Run Integration Test
-      continue-on-error: true
+      continue-on-error: false
       # bash {0} to allow test to continue to next step. in case of
       shell: bash {0}
       run: |
