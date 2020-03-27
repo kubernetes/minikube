@@ -48,8 +48,8 @@ All translations are stored in the top-level `translations` directory.
 	```
 	~/minikube$ vi translations/fr.json
 	{
-                \[...\]
-		"Amount of time to wait for a service in seconds": "",
+                [...]
+        	"Amount of time to wait for a service in seconds": "",
         	"Amount of time to wait for service in seconds": "",
         	"Another hypervisor, such as VirtualBox, is conflicting with KVM. Please stop the other hypervisor, or use --driver to switch to it.": "",
         	"Automatically selected the {{.driver}} driver": "Choix automatique du driver {{.driver}}",
@@ -57,7 +57,7 @@ All translations are stored in the top-level `translations` directory.
         	"Available Commands": "",
         	"Basic Commands:": "",
         	"Because you are using docker driver on Mac, the terminal needs to be open to run it.": "",
-		\[...\]
+        	[...]
 	}
         ```
 	
