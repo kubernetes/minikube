@@ -12,7 +12,7 @@ All translations are stored in the top-level `translations` directory.
 * Add a new json file in the translations directory with the locale code of the language you want to add
   translations for, e.g. fr for French.
 	```
-	~/minikube$ touch translations/ar.json
+	~/minikube$ touch translations/fr.json
 	~/minikube$ ls translations/
 	de.json		es.json		fr.json		ja.json		ko.json		pl.json		zh-CN.json
 	```
@@ -31,8 +31,7 @@ All translations are stored in the top-level `translations` directory.
 	Writing to zh-CN.json
 	Done!
 	```
-* Add translated strings as the value of the map where the English phrase is the key.
-	* The file will be json file with all of the English phrases as the keys of a map
+* Add translated strings to the json file as the value of the map where the English phrase is the key.
 	```
 	~/minikube$ head translations/fr.json 
 	{
@@ -47,21 +46,24 @@ All translations are stored in the top-level `translations` directory.
 	```
 	* Add the translations as the values of the map, keeping in mind that anything in double braces `{{}}` are variable names describing what gets injected and should not be translated.
 	```
-	~/minikube$ vi translations/ar.json
+	~/minikube$ vi translations/fr.json
 	{
-                "\"The '{{.minikube_addon}}' addon is disabled": "",
-                "\"{{.machineName}}\" does not exist, nothing to stop": "\""{{.machineName}} n'exist pas, rien a arrêter.",
-                "\"{{.name}}\" profile does not exist, trying anyways.": "",
-                "'none' driver does not support 'minikube docker-env' command": "",
-                "'none' driver does not support 'minikube mount' command": "",
-                "'none' driver does not support 'minikube podman-env' command": "",
-                "'none' driver does not support 'minikube ssh' command": "",
-                "'{{.driver}}' driver reported an issue: {{.error}}": "",
+        	[...]
+        	"Amount of time to wait for a service in seconds": "",
+        	"Amount of time to wait for service in seconds": "",
+        	"Another hypervisor, such as VirtualBox, is conflicting with KVM. Please stop the other hypervisor, or use --driver to switch to it.": "",
+        	"Automatically selected the {{.driver}} driver": "Choix automatique du driver {{.driver}}",
+        	"Automatically selected the {{.driver}} driver. Other choices: {{.alternates}}": "Choix automatique du driver {{.driver}}. Autres choix: {{.alternatives}}",
+        	"Available Commands": "",
+        	"Basic Commands:": "",
+        	"Because you are using docker driver on Mac, the terminal needs to be open to run it.": "",
+        	[...]
+	}
         ```
 	
 ### Adding Translations To an Existing Language
 * Run `make extract` to make sure all strings are up to date
-* Edit the appropriate json file in the 'translations' directory, in the same way described above.
+* Edit the appropriate json file in the 'translations' directory, in the same way as described above.
 
 ### Testing translations
 * Once you have all the translations you want, save the file and rebuild the minikube from scratch to pick up your new translations:
