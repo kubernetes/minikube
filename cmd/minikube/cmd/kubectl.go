@@ -43,17 +43,12 @@ minikube kubectl -- get pods --namespace kube-system`,
 		co := mustload.Healthy(ClusterFlagValue())
 
 		version := co.Config.KubernetesConfig.KubernetesVersion
-		if version == "" {
-			version = constants.DefaultKubernetesVersion
-		}
-
-		path, err := node.CacheKubectlBinary(version)
+		c, err := KubectlCommand(version, args...)
 		if err != nil {
 			out.ErrLn("Error caching kubectl: %v", err)
 		}
 
 		glog.Infof("Running %s %v", path, args)
-		c := exec.Command(path, args...)
 		c.Stdin = os.Stdin
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
@@ -69,4 +64,18 @@ minikube kubectl -- get pods --namespace kube-system`,
 			os.Exit(rc)
 		}
 	},
+}
+
+// KubectlCommand will return kubectl command with a version matching the cluster
+func KubectlCommand(version string, args ...string) (*exec.Cmd, error) {
+	if version == "" {
+		version = constants.DefaultKubernetesVersion
+	}
+
+	path, err := node.CacheKubectlBinary(version)
+	if err != nil {
+		return nil, err
+	}
+
+	return exec.Command(path, args...), nil
 }
