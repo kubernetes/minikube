@@ -83,7 +83,7 @@ func TestMiniPath(t *testing.T) {
 				t.Fatalf("Error reverting env %s to its original value (%s) var after test ", MinikubeHome, originalEnv)
 			}
 		}()
-		t.Run(fmt.Sprintf("%s", tc.env), func(t *testing.T) {
+		t.Run(tc.env, func(t *testing.T) {
 			expectedPath := filepath.Join(tc.basePath, ".minikube")
 			os.Setenv(MinikubeHome, tc.env)
 			path := MiniPath()
@@ -94,44 +94,66 @@ func TestMiniPath(t *testing.T) {
 	}
 }
 
+func TestMachinePath(t *testing.T) {
+	var testCases = []struct {
+		miniHome []string
+		contains string
+	}{
+		{[]string{"tmp", "foo", "bar", "baz"}, "tmp"},
+		{[]string{"tmp"}, "tmp"},
+		{[]string{}, MiniPath()},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%s", tc.miniHome), func(t *testing.T) {
+			machinePath := MachinePath("foo", tc.miniHome...)
+			if !strings.Contains(machinePath, tc.contains) {
+				t.Errorf("Function MachinePath returned (%v) which doesn't contain expected (%v)", machinePath, tc.contains)
+			}
+		})
+	}
+}
+
 type propertyFnWithArg func(string) string
-type propertyFnWithoutArg func() string
 
 func TestPropertyWithNameArg(t *testing.T) {
 	var testCases = []struct {
 		propertyFunc propertyFnWithArg
+		name         string
 	}{
-		{Profile},
-		{ClientCert},
-		{ClientKey},
+		{Profile, "Profile"},
+		{ClientCert, "ClientCert"},
+		{ClientKey, "ClientKey"},
 	}
 	miniPath := MiniPath()
 	mockedName := "foo"
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%v", tc.propertyFunc), func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			if !strings.Contains(tc.propertyFunc(mockedName), MiniPath()) {
-				t.Errorf("Propert %v doesn't contain miniPat %v", tc.propertyFunc, miniPath)
+				t.Errorf("Propert %s(%v) doesn't contain miniPat %v", tc.name, tc.propertyFunc, miniPath)
 			}
 			if !strings.Contains(tc.propertyFunc(mockedName), mockedName) {
-				t.Errorf("Propert %v doesn't contain passed name inpath %v", tc.propertyFunc, mockedName)
+				t.Errorf("Propert %s(%v) doesn't contain passed name inpath %v", tc.name, tc.propertyFunc, mockedName)
 			}
 		})
 
 	}
 }
 
+type propertyFnWithoutArg func() string
+
 func TestPropertyWithoutNameArg(t *testing.T) {
 	var testCases = []struct {
 		propertyFunc propertyFnWithoutArg
+		name         string
 	}{
-		{ConfigFile},
-		{CACert},
+		{ConfigFile, "ConfigFile"},
+		{CACert, "CACert"},
 	}
 	miniPath := MiniPath()
 	for _, tc := range testCases {
-		t.Run(fmt.Sprintf("%v", tc.propertyFunc), func(t *testing.T) {
+		t.Run(tc.name, func(t *testing.T) {
 			if !strings.Contains(tc.propertyFunc(), MiniPath()) {
-				t.Errorf("Propert %v doesn't contain miniPat %v", tc.propertyFunc, miniPath)
+				t.Errorf("Propert %s(%v) doesn't contain miniPat %v", tc.name, tc.propertyFunc, miniPath)
 			}
 		})
 	}
