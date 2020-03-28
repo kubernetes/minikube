@@ -129,10 +129,10 @@ func TestPropertyWithNameArg(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if !strings.Contains(tc.propertyFunc(mockedName), MiniPath()) {
-				t.Errorf("Propert %s(%v) doesn't contain miniPat %v", tc.name, tc.propertyFunc, miniPath)
+				t.Errorf("Property %s(%v) doesn't contain miniPath %v", tc.name, tc.propertyFunc, miniPath)
 			}
 			if !strings.Contains(tc.propertyFunc(mockedName), mockedName) {
-				t.Errorf("Propert %s(%v) doesn't contain passed name inpath %v", tc.name, tc.propertyFunc, mockedName)
+				t.Errorf("Property %s(%v) doesn't contain passed name %v", tc.name, tc.propertyFunc, mockedName)
 			}
 		})
 
@@ -153,7 +153,7 @@ func TestPropertyWithoutNameArg(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			if !strings.Contains(tc.propertyFunc(), MiniPath()) {
-				t.Errorf("Propert %s(%v) doesn't contain miniPat %v", tc.name, tc.propertyFunc, miniPath)
+				t.Errorf("Property %s(%v) doesn't contain expected miniPath %v", tc.name, tc.propertyFunc, miniPath)
 			}
 		})
 	}
