@@ -67,13 +67,6 @@ func TestHasWindowsDriveLetter(t *testing.T) {
 	}
 }
 
-func TestConfigFile(t *testing.T) {
-	configFile := ConfigFile()
-	if !strings.Contains(configFile, "config.json") {
-		t.Errorf("ConfigFile returned path without 'config.json': %s", configFile)
-	}
-}
-
 func TestMiniPath(t *testing.T) {
 	var testCases = []struct {
 		env, basePath string
@@ -96,6 +89,49 @@ func TestMiniPath(t *testing.T) {
 			path := MiniPath()
 			if path != expectedPath {
 				t.Errorf("MiniPath expected to return '%s', but got '%s'", expectedPath, path)
+			}
+		})
+	}
+}
+
+type propertyFnWithArg func(string) string
+type propertyFnWithoutArg func() string
+
+func TestPropertyWithNameArg(t *testing.T) {
+	var testCases = []struct {
+		propertyFunc propertyFnWithArg
+	}{
+		{Profile},
+		{ClientCert},
+		{ClientKey},
+	}
+	miniPath := MiniPath()
+	mockedName := "foo"
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%v", tc.propertyFunc), func(t *testing.T) {
+			if !strings.Contains(tc.propertyFunc(mockedName), MiniPath()) {
+				t.Errorf("Propert %v doesn't contain miniPat %v", tc.propertyFunc, miniPath)
+			}
+			if !strings.Contains(tc.propertyFunc(mockedName), mockedName) {
+				t.Errorf("Propert %v doesn't contain passed name inpath %v", tc.propertyFunc, mockedName)
+			}
+		})
+
+	}
+}
+
+func TestPropertyWithoutNameArg(t *testing.T) {
+	var testCases = []struct {
+		propertyFunc propertyFnWithoutArg
+	}{
+		{ConfigFile},
+		{CACert},
+	}
+	miniPath := MiniPath()
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%v", tc.propertyFunc), func(t *testing.T) {
+			if !strings.Contains(tc.propertyFunc(), MiniPath()) {
+				t.Errorf("Propert %v doesn't contain miniPat %v", tc.propertyFunc, miniPath)
 			}
 		})
 	}
