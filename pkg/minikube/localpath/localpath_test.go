@@ -75,8 +75,8 @@ func TestMiniPath(t *testing.T) {
 		{"/tmp/", "/tmp"},
 		{"", homedir.HomeDir()},
 	}
+	originalEnv := os.Getenv(MinikubeHome)
 	for _, tc := range testCases {
-		originalEnv := os.Getenv(MinikubeHome)
 		defer func() { // revert to pre-test env var
 			err := os.Setenv(MinikubeHome, originalEnv)
 			if err != nil {
