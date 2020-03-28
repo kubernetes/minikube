@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// mustload loads minikube clusters, exiting with user-friendly messages
+// Package mustload loads minikube clusters, exiting with user-friendly messages
 package mustload
 
 import (
@@ -37,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
+// ClusterController holds all the needed information for a minikube cluster
 type ClusterController struct {
 	Config   *config.ClusterConfig
 	API      libmachine.API
