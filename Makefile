@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 9
-VERSION_BUILD ?= 0-beta.2
+VERSION_BUILD ?= 0
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -625,7 +625,7 @@ release-kvm-driver: install-kvm-driver checksum  ## Release KVM Driver
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
 
-site/themes/docsy/assets/vendor/bootstrap/package.js:
+site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
 	git submodule update -f --init --recursive
 
 out/hugo/hugo:

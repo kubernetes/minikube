@@ -62,6 +62,7 @@ If the issue is specific to an operating system, hypervisor, container, addon, o
   - `co/kvm2`
   - `co/none-driver`
   - `co/docker-driver`
+  - `co/podman-driver`
   - `co/virtualbox`
 
 **co/[kubernetes component]**  - When the issue appears specific to a k8s component

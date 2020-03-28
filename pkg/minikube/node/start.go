@@ -348,7 +348,8 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 	out.T(out.Workaround, `Run: "{{.delete}}", then "{{.start}} --alsologtostderr -v=1" to try again with more logging`,
 		out.V{"delete": mustload.ExampleCmd(cc.Name, "delete"), "start": mustload.ExampleCmd(cc.Name, "start")})
 
-	exit.WithError("Unable to start VM after repeated tries. Please try {{'minikube delete' if possible", err)
+	drv := cc.Driver
+	exit.WithError(fmt.Sprintf(`Failed to start %s %s. "%s" may fix it.`, drv, driver.MachineType(drv), mustload.ExampleCmd(cc.Name, "start")), err)
 	return host, exists
 }
 

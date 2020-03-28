@@ -17,6 +17,7 @@ limitations under the License.
 package constants
 
 import (
+	"errors"
 	"path/filepath"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -26,9 +27,9 @@ import (
 
 const (
 	// DefaultKubernetesVersion is the default kubernetes version
-	DefaultKubernetesVersion = "v1.18.0-rc.1"
+	DefaultKubernetesVersion = "v1.18.0"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
-	NewestKubernetesVersion = "v1.18.0-rc.1"
+	NewestKubernetesVersion = "v1.18.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.11.10"
 	// DefaultClusterName is the default nane for the k8s cluster
@@ -100,4 +101,7 @@ var (
 		"storage-gluster",
 		"istio-operator",
 	}
+
+	// ErrMachineMissing is returned when virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C)
+	ErrMachineMissing = errors.New("machine does not exist")
 )
