@@ -129,6 +129,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	return copyableFiles, nil
 }
 
+// CACerts has cert and key for CA (and Proxy)
 type CACerts struct {
 	caCert    string
 	caKey     string
