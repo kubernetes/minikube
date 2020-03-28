@@ -164,5 +164,3 @@ func (router *osRouter) Cleanup(route *Route) error {
 	}
 	return nil
 }
-
-
