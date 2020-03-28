@@ -98,7 +98,7 @@ to expose GPUs with `--driver=kvm2`. Please don't mix these instructions.
 
 ## Why does minikube not support NVIDIA GPUs on macOS?
 
-VM drivers supported by minikube for macOS doesn't support GPU passthrough:
+drivers supported by minikube for macOS doesn't support GPU passthrough:
 
 - [mist64/xhyve#108](https://github.com/mist64/xhyve/issues/108)
 - [moby/hyperkit#159](https://github.com/moby/hyperkit/issues/159)

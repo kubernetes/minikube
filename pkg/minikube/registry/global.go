@@ -24,6 +24,40 @@ import (
 	"github.com/golang/glog"
 )
 
+const (
+	// Podman is Kubernetes in container using podman driver
+	Podman = "podman"
+	// Docker is Kubernetes in container using docker driver
+	Docker = "docker"
+	// Mock driver
+	Mock = "mock"
+	// None driver
+	None = "none"
+)
+
+// IsKIC checks if the driver is a kubernetes in container
+func IsKIC(name string) bool {
+	return name == Docker || name == Podman
+}
+
+// IsMock checks if the driver is a mock
+func IsMock(name string) bool {
+	return name == Mock
+}
+
+// IsVM checks if the driver is a VM
+func IsVM(name string) bool {
+	if IsKIC(name) || IsMock(name) || BareMetal(name) {
+		return false
+	}
+	return true
+}
+
+// BareMetal returns if this driver is unisolated
+func BareMetal(name string) bool {
+	return name == None || name == Mock
+}
+
 var (
 	// globalRegistry is a globally accessible driver registry
 	globalRegistry = newRegistry()
@@ -59,7 +93,7 @@ func Driver(name string) DriverDef {
 }
 
 // Available returns a list of available drivers in the global registry
-func Available() []DriverState {
+func Available(vm bool) []DriverState {
 	sts := []DriverState{}
 	glog.Infof("Querying for installed drivers using PATH=%s", os.Getenv("PATH"))
 
@@ -76,7 +110,13 @@ func Available() []DriverState {
 			priority = Unhealthy
 		}
 
-		sts = append(sts, DriverState{Name: d.Name, Priority: priority, State: s})
+		if vm {
+			if IsVM(d.Name) {
+				sts = append(sts, DriverState{Name: d.Name, Priority: priority, State: s})
+			}
+		} else {
+			sts = append(sts, DriverState{Name: d.Name, Priority: priority, State: s})
+		}
 	}
 
 	// Descending priority for predictability

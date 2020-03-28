@@ -17,6 +17,8 @@ limitations under the License.
 package machine
 
 import (
+	"time"
+
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
@@ -30,26 +32,36 @@ import (
 
 // StopHost stops the host VM, saving state to disk.
 func StopHost(api libmachine.API, machineName string) error {
-	host, err := api.Load(machineName)
+	glog.Infof("StopHost: %v", machineName)
+	h, err := api.Load(machineName)
 	if err != nil {
 		return errors.Wrapf(err, "load")
 	}
 
-	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
-	if host.DriverName == driver.HyperV {
+	out.T(out.Stopping, `Stopping "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": h.DriverName})
+	return stop(h)
+}
+
+// stop forcibly stops a host without needing to load
+func stop(h *host.Host) error {
+	start := time.Now()
+	if h.DriverName == driver.HyperV {
 		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
-		if err := trySSHPowerOff(host); err != nil {
+		if err := trySSHPowerOff(h); err != nil {
 			return errors.Wrap(err, "ssh power off")
 		}
 	}
 
-	if err := host.Stop(); err != nil {
-		alreadyInStateError, ok := err.(mcnerror.ErrHostAlreadyInState)
-		if ok && alreadyInStateError.State == state.Stopped {
+	if err := h.Stop(); err != nil {
+		glog.Infof("stop err: %v", err)
+		st, ok := err.(mcnerror.ErrHostAlreadyInState)
+		if ok && st.State == state.Stopped {
+			glog.Infof("host is already stopped")
 			return nil
 		}
-		return &retry.RetriableError{Err: errors.Wrapf(err, "Stop: %s", machineName)}
+		return &retry.RetriableError{Err: errors.Wrap(err, "stop")}
 	}
+	glog.Infof("stop complete within %s", time.Since(start))
 	return nil
 }
 

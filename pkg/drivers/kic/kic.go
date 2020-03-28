@@ -17,7 +17,6 @@ limitations under the License.
 package kic
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"os/exec"
@@ -121,14 +120,14 @@ func (d *Driver) Create() error {
 		return errors.Wrap(err, "prepare kic ssh")
 	}
 
-	// If preload doesn't exist, don't both extracting tarball to volume
+	// If preload doesn't exist, don't bother extracting tarball to volume
 	if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
 		return nil
 	}
 	t := time.Now()
 	glog.Infof("Starting extracting preloaded images to volume")
 	// Extract preloaded images to container
-	if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion), params.Name, BaseImage); err != nil {
+	if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, BaseImage); err != nil {
 		glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
 	} else {
 		glog.Infof("Took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
@@ -220,20 +219,12 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	// allow no more than 2 seconds for this. when this takes long this means deadline passed
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
-	out, err := cmd.CombinedOutput()
-	if ctx.Err() == context.DeadlineExceeded {
-		glog.Errorf("GetState for %s took longer than normal. Restarting your %s daemon might fix this issue.", d.MachineName, d.OCIBinary)
-		return state.Error, fmt.Errorf("inspect %s timeout", d.MachineName)
-	}
-	o := strings.TrimSpace(string(out))
+	out, err := oci.WarnIfSlow(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
 	if err != nil {
-		return state.Error, errors.Wrapf(err, "%s: %s", strings.Join(cmd.Args, " "), o)
+		return state.Error, err
 	}
+
+	o := strings.TrimSpace(string(out))
 	switch o {
 	case "running":
 		return state.Running, nil
