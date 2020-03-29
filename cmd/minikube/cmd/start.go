@@ -836,10 +836,8 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		// conntrack is required starting with kubernetes 1.18, include the release candidates for completion
 		version, _ := util.ParseKubernetesVersion(getKubernetesVersion(nil))
 		if version.GTE(semver.MustParse("1.18.0-beta.1")) {
-			err := exec.Command("conntrack").Run()
-			if err != nil {
-				exit.WithCodeT(exit.Config, "The none driver requires conntrack to be installed for kubernetes version {{.k8sVersion}}", out.V{"k8sVersion": version.String()})
-
+			if _, err := exec.LookPath("conntrack"); err != nil {
+				exit.WithCodeT(exit.Config, "Sorry, Kubernetes v{{.k8sVersion}} requires conntrack to be installed in root's path", out.V{"k8sVersion": version.String()})
 			}
 		}
 	}
