@@ -21,8 +21,6 @@ import (
 	"net"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -183,7 +181,7 @@ var addonsConfigureCmd = &cobra.Command{
 			}
 
 		case "metallb":
-			profile := viper.GetString(config.MachineProfile)
+			profile := ClusterFlagValue()
 			cfg, err := config.Load(profile)
 			if err != nil {
 				out.ErrT(out.FatalType, "Failed to load config {{.profile}}", out.V{"profile": profile})
