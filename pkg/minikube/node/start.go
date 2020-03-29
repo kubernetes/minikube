@@ -101,10 +101,10 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	showVersionInfo(n.KubernetesVersion, cr)
 
 	var bs bootstrapper.Bootstrapper
-	var kubeconfig *kubeconfig.Settings
+	var kcs *kubeconfig.Settings
 	if apiServer {
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-		kubeconfig, err = setupKubeconfig(host, &cc, &n, cc.Name)
+		kcs = setupKubeconfig(host, &cc, &n, cc.Name)
 		if err != nil {
 			exit.WithError("Failed to setup kubeconfig", err)
 		}
@@ -115,6 +115,11 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		if err != nil {
 			exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, cc, mRunner))
 		}
+
+		// write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper
+		if err := kubeconfig.Update(kcs); err != nil {
+			exit.WithError("Failed to update kubeconfig file.", err)
+		}
 	} else {
 		bs, err = cluster.Bootstrapper(machineAPI, viper.GetString(cmdcfg.Bootstrapper), cc, n)
 		if err != nil {
@@ -124,7 +129,6 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		if err = bs.SetupCerts(cc.KubernetesConfig, n); err != nil {
 			exit.WithError("setting up certs", err)
 		}
-
 	}
 
 	configureMounts()
@@ -175,8 +179,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		}
 	}
 
-	return kubeconfig
-
+	return kcs
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
@@ -239,7 +242,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node) 
 	return bs
 }
 
-func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
+func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) *kubeconfig.Settings {
 	addr, err := apiServerURL(*h, *cc, *n)
 	if err != nil {
 		exit.WithError("Failed to get API Server URL", err)
@@ -259,10 +262,7 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 	}
 
 	kcs.SetPath(kubeconfig.PathFromEnv())
-	if err := kubeconfig.Update(kcs); err != nil {
-		return kcs, err
-	}
-	return kcs, nil
+	return kcs
 }
 
 func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
