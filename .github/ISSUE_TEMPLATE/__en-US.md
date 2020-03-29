@@ -8,15 +8,15 @@ about: Report an issue
 2. 
 3.
 
-**The full output of the command that failed:** <!-- hint: "--alsologtostderr -v=1" for more logs -->
+**Full output of failed command:** <!-- use the "--alsologtostderr" flag for more logs -->
 
 
 
-**Optional: The full output of the `minikube start` command used, if not already included:**
+**Full output of `minikube start` command used, if not already included:**
 
 
 
-**Optional: The full output of the `minikube logs` command:**
+**Optional: Full output of `minikube logs` command:**
 <details>
 
 
