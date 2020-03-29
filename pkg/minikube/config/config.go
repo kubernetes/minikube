@@ -41,8 +41,8 @@ const (
 	WantKubectlDownloadMsg = "WantKubectlDownloadMsg"
 	// WantNoneDriverWarning is the key for WantNoneDriverWarning
 	WantNoneDriverWarning = "WantNoneDriverWarning"
-	// MachineProfile is the key for MachineProfile
-	MachineProfile = "profile"
+	// ProfileName represents the key for the global profile parameter
+	ProfileName = "profile"
 	// ShowDriverDeprecationNotification is the key for ShowDriverDeprecationNotification
 	ShowDriverDeprecationNotification = "ShowDriverDeprecationNotification"
 	// ShowBootstrapperDeprecationNotification is the key for ShowBootstrapperDeprecationNotification
@@ -52,6 +52,14 @@ const (
 var (
 	// ErrKeyNotFound is the error returned when a key doesn't exist in the config file
 	ErrKeyNotFound = errors.New("specified key could not be found in config")
+	// DockerEnv contains the environment variables
+	DockerEnv []string
+	// DockerOpt contains the option parameters
+	DockerOpt []string
+	// ExtraOptions contains extra options (if any)
+	ExtraOptions ExtraOptionSlice
+	// AddonList contains the list of addons
+	AddonList []string
 )
 
 // ErrNotExist is the error returned when a config does not exist
@@ -76,7 +84,7 @@ type MinikubeConfig map[string]interface{}
 
 // Get gets a named value from config
 func Get(name string) (string, error) {
-	m, err := ReadConfig(localpath.ConfigFile)
+	m, err := ReadConfig(localpath.ConfigFile())
 	if err != nil {
 		return "", err
 	}
@@ -111,13 +119,13 @@ func ReadConfig(configFile string) (MinikubeConfig, error) {
 		if os.IsNotExist(err) {
 			return make(map[string]interface{}), nil
 		}
-		return nil, fmt.Errorf("open %s: %v", localpath.ConfigFile, err)
+		return nil, fmt.Errorf("open %s: %v", localpath.ConfigFile(), err)
 	}
 	defer f.Close()
 
 	m, err := decode(f)
 	if err != nil {
-		return nil, fmt.Errorf("decode %s: %v", localpath.ConfigFile, err)
+		return nil, fmt.Errorf("decode %s: %v", localpath.ConfigFile(), err)
 	}
 
 	return m, nil
@@ -141,19 +149,19 @@ func encode(w io.Writer, m MinikubeConfig) error {
 }
 
 // Load loads the kubernetes and machine config for the current machine
-func Load(profile string) (*MachineConfig, error) {
+func Load(profile string) (*ClusterConfig, error) {
 	return DefaultLoader.LoadConfigFromFile(profile)
 }
 
 // Write writes the kubernetes and machine config for the current machine
-func Write(profile string, cc *MachineConfig) error {
+func Write(profile string, cc *ClusterConfig) error {
 	return DefaultLoader.WriteConfigToFile(profile, cc)
 }
 
 // Loader loads the kubernetes and machine config based on the machine profile name
 type Loader interface {
-	LoadConfigFromFile(profile string, miniHome ...string) (*MachineConfig, error)
-	WriteConfigToFile(profileName string, cc *MachineConfig, miniHome ...string) error
+	LoadConfigFromFile(profile string, miniHome ...string) (*ClusterConfig, error)
+	WriteConfigToFile(profileName string, cc *ClusterConfig, miniHome ...string) error
 }
 
 type simpleConfigLoader struct{}
@@ -161,8 +169,8 @@ type simpleConfigLoader struct{}
 // DefaultLoader is the default config loader
 var DefaultLoader Loader = &simpleConfigLoader{}
 
-func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*MachineConfig, error) {
-	var cc MachineConfig
+func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*ClusterConfig, error) {
+	var cc ClusterConfig
 	// Move to profile package
 	path := profileFilePath(profileName, miniHome...)
 
@@ -184,7 +192,7 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 	return &cc, nil
 }
 
-func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *MachineConfig, miniHome ...string) error {
+func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *ClusterConfig, miniHome ...string) error {
 	// Move to profile package
 	path := profileFilePath(profileName, miniHome...)
 	contents, err := json.MarshalIndent(cc, "", "	")

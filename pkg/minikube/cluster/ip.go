@@ -33,6 +33,10 @@ import (
 // GetVMHostIP gets the ip address to be used for mapping host -> VM and VM -> host
 func GetVMHostIP(host *host.Host) (net.IP, error) {
 	switch host.DriverName {
+	case driver.Docker:
+		return oci.RoutableHostIPFromInside(oci.Docker, host.Name)
+	case driver.Podman:
+		return oci.RoutableHostIPFromInside(oci.Podman, host.Name)
 	case driver.KVM2:
 		return net.ParseIP("192.168.39.1"), nil
 	case driver.HyperV:
@@ -75,7 +79,7 @@ func GetVMHostIP(host *host.Host) (net.IP, error) {
 
 // GetHostDriverIP gets the ip address of the current minikube cluster
 func GetHostDriverIP(api libmachine.API, machineName string) (net.IP, error) {
-	host, err := machine.CheckIfHostExistsAndLoad(api, machineName)
+	host, err := machine.LoadHost(api, machineName)
 	if err != nil {
 		return nil, err
 	}

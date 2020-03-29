@@ -20,10 +20,8 @@ import (
 	"path/filepath"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -33,10 +31,7 @@ var sshKeyCmd = &cobra.Command{
 	Short: "Retrieve the ssh identity key path of the specified cluster",
 	Long:  "Retrieve the ssh identity key path of the specified cluster.",
 	Run: func(cmd *cobra.Command, args []string) {
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
-		if err != nil {
-			exit.WithError("Getting machine config failed", err)
-		}
+		_, cc := mustload.Partial(ClusterFlagValue())
 		out.Ln(filepath.Join(localpath.MiniPath(), "machines", cc.Name, "id_rsa"))
 	},
 }

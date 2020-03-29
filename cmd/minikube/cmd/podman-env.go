@@ -27,16 +27,13 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/ssh"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
 )
@@ -67,15 +64,16 @@ func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShel
 }
 
 // isPodmanAvailable checks if Podman is available
-func isPodmanAvailable(host *host.Host) (bool, error) {
-	// we need both "varlink bridge" and "podman varlink"
-	if _, err := host.RunSSHCommand("which varlink"); err != nil {
-		return false, err
+func isPodmanAvailable(r command.Runner) bool {
+	if _, err := r.RunCmd(exec.Command("which", "varlink")); err != nil {
+		return false
 	}
-	if _, err := host.RunSSHCommand("which podman"); err != nil {
-		return false, err
+
+	if _, err := r.RunCmd(exec.Command("which", "podman")); err != nil {
+		return false
 	}
-	return true, nil
+
+	return true
 }
 
 func createExternalSSHClient(d drivers.Driver) (*ssh.ExternalClient, error) {
@@ -108,42 +106,19 @@ var podmanEnvCmd = &cobra.Command{
 	Short: "Sets up podman env variables; similar to '$(podman-machine env)'",
 	Long:  `Sets up podman env variables; similar to '$(podman-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
+		cname := ClusterFlagValue()
+		co := mustload.Running(cname)
+		driverName := co.CPHost.DriverName
 
-		profile := viper.GetString(config.MachineProfile)
-		cc, err := config.Load(profile)
-		if err != nil {
-			exit.WithError("Error getting config", err)
-		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
-		if err != nil {
-			exit.WithError("Error getting host", err)
-		}
-		if host.Driver.DriverName() == driver.None {
+		if driverName == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube podman-env' command`)
 		}
 
-		hostSt, err := machine.GetHostStatus(api, cc.Name)
-		if err != nil {
-			exit.WithError("Error getting host status", err)
-		}
-		if hostSt != state.Running.String() {
-			exit.WithCodeT(exit.Unavailable, `'{{.profile}}' is not running`, out.V{"profile": profile})
-		}
-		ok, err := isPodmanAvailable(host)
-		if err != nil {
-			exit.WithError("Error getting service status", err)
+		if ok := isPodmanAvailable(co.CPRunner); !ok {
+			exit.WithCodeT(exit.Unavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
 		}
 
-		if !ok {
-			exit.WithCodeT(exit.Unavailable, `The podman service within '{{.profile}}' is not active`, out.V{"profile": profile})
-		}
-
-		client, err := createExternalSSHClient(host.Driver)
+		client, err := createExternalSSHClient(co.CPHost.Driver)
 		if err != nil {
 			exit.WithError("Error getting ssh client", err)
 		}
@@ -153,8 +128,8 @@ var podmanEnvCmd = &cobra.Command{
 		}
 		ec := PodmanEnvConfig{
 			EnvConfig: sh,
-			profile:   profile,
-			driver:    host.DriverName,
+			profile:   cname,
+			driver:    driverName,
 			client:    client,
 		}
 

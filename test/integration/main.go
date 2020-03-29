@@ -27,13 +27,13 @@ import (
 
 // General configuration: used to set the VM Driver
 var startArgs = flag.String("minikube-start-args", "", "Arguments to pass to minikube start")
-var defaultDriver = flag.String("expected-default-driver", "", "Expected default driver")
 
 // Flags for faster local integration testing
 var forceProfile = flag.String("profile", "", "force tests to run against a particular profile")
 var cleanup = flag.Bool("cleanup", true, "cleanup failed test run")
 var enableGvisor = flag.Bool("gvisor", false, "run gvisor integration test (slow)")
 var postMortemLogs = flag.Bool("postmortem-logs", true, "show logs after a failed test run")
+var timeOutMultiplier = flag.Float64("timeout-multiplier", 1, "multiply the timeout for the tests")
 
 // Paths to files - normally set for CI
 var binaryPath = flag.String("binary", "../../out/minikube", "path to minikube binary")
@@ -60,20 +60,25 @@ func Target() string {
 
 // NoneDriver returns whether or not this test is using the none driver
 func NoneDriver() bool {
-	return strings.Contains(*startArgs, "--vm-driver=none")
+	return strings.Contains(*startArgs, "--driver=none") || strings.Contains(*startArgs, "--vm-driver=none")
 }
 
 // HyperVDriver returns whether or not this test is using the Hyper-V driver
 func HyperVDriver() bool {
-	return strings.Contains(*startArgs, "--vm-driver=hyperv")
-}
-
-// ExpectedDefaultDriver returns the expected default driver, if any
-func ExpectedDefaultDriver() string {
-	return *defaultDriver
+	return strings.Contains(*startArgs, "--driver=hyperv") || strings.Contains(*startArgs, "--vm-driver=hyperv")
 }
 
 // CanCleanup returns if cleanup is allowed
 func CanCleanup() bool {
 	return *cleanup
+}
+
+// Minutes will return timeout in minutes based on how slow the machine is
+func Minutes(n int) time.Duration {
+	return time.Duration(*timeOutMultiplier) * time.Duration(n) * time.Minute
+}
+
+// Seconds will return timeout in minutes based on how slow the machine is
+func Seconds(n int) time.Duration {
+	return time.Duration(*timeOutMultiplier) * time.Duration(n) * time.Second
 }

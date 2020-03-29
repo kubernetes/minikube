@@ -63,7 +63,7 @@ var styles = map[StyleEnum]style{
 	Reconfiguring: {Prefix: "📯  "},
 	Stopping:      {Prefix: "✋  "},
 	Stopped:       {Prefix: "🛑  "},
-	WarningType:   {Prefix: "⚠️  ", LowPrefix: lowWarning},
+	Warning:       {Prefix: "❗  ", LowPrefix: lowWarning},
 	Waiting:       {Prefix: "⌛  "},
 	Usage:         {Prefix: "💡  "},
 	Launch:        {Prefix: "🚀  "},
@@ -83,6 +83,8 @@ var styles = map[StyleEnum]style{
 	Sparkle:       {Prefix: "✨  "},
 	Pause:         {Prefix: "⏸️  "},
 	Unpause:       {Prefix: "⏯️  "},
+	Confused:      {Prefix: "😕  "},
+	Shrug:         {Prefix: "🤷  "},
 
 	// Specialized purpose styles
 	ISODownload:      {Prefix: "💿  "},

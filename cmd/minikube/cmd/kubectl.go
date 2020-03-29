@@ -24,10 +24,8 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -42,21 +40,11 @@ Examples:
 minikube kubectl -- --help
 minikube kubectl -- get pods --namespace kube-system`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(1)
-		}
-		defer api.Close()
+		co := mustload.Healthy(ClusterFlagValue())
 
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
-		if err != nil && !config.IsNotExist(err) {
-			out.ErrLn("Error loading profile config: %v", err)
-		}
-
-		version := constants.DefaultKubernetesVersion
-		if cc != nil {
-			version = cc.KubernetesConfig.KubernetesVersion
+		version := co.Config.KubernetesConfig.KubernetesVersion
+		if version == "" {
+			version = constants.DefaultKubernetesVersion
 		}
 
 		path, err := node.CacheKubectlBinary(version)

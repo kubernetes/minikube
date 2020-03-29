@@ -18,17 +18,13 @@ package config
 
 import (
 	"fmt"
-	"os"
 	"text/template"
 
-	"github.com/pkg/browser"
-
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
-	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
 )
@@ -60,24 +56,17 @@ var addonsOpenCmd = &cobra.Command{
 			exit.UsageT("usage: minikube addons open ADDON_NAME")
 		}
 		addonName := args[0]
-		// TODO(r2d4): config should not reference API, pull this out
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
 
-		profileName := viper.GetString(pkg_config.MachineProfile)
-		if !machine.IsHostRunning(api, profileName) {
-			os.Exit(1)
-		}
+		cname := ClusterFlagValue()
+		co := mustload.Healthy(cname)
+
 		addon, ok := assets.Addons[addonName] // validate addon input
 		if !ok {
 			exit.WithCodeT(exit.Data, `addon '{{.name}}' is not a valid addon packaged with minikube.
 To see the list of available addons run:
 minikube addons list`, out.V{"name": addonName})
 		}
-		ok, err = addon.IsEnabled(profileName)
+		ok, err := addon.IsEnabled(cname)
 		if err != nil {
 			exit.WithError("IsEnabled failed", err)
 		}
@@ -102,7 +91,7 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 			svc := serviceList.Items[i].ObjectMeta.Name
 			var urlString []string
 
-			if urlString, err = service.WaitForService(api, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
+			if urlString, err = service.WaitForService(co.API, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
 				exit.WithCodeT(exit.Unavailable, "Wait failed: {{.error}}", out.V{"error": err})
 			}
 

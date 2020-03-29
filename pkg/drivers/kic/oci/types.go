@@ -19,18 +19,26 @@ package oci
 const (
 	// DefaultBindIPV4 is The default IP the container will listen on.
 	DefaultBindIPV4 = "127.0.0.1"
-	Docker          = "docker"
-	Podman          = "podman"
-	// ClusterLabelKey is applied to each node docker container for identification
-	ClusterLabelKey = "io.x-k8s.kic.cluster"
+	// Docker is docker
+	Docker = "docker"
+	// Podman is podman
+	Podman = "podman"
+	// ProfileLabelKey is applied to any container or volume created by a specific minikube profile name.minikube.sigs.k8s.io=PROFILE_NAME
+	ProfileLabelKey = "name.minikube.sigs.k8s.io"
+	// NodeLabelKey is applied to each volume so it can be referred to by name
+	NodeLabelKey = "mode.minikube.sigs.k8s.io"
 	// NodeRoleKey is used to identify if it is control plane or worker
-	nodeRoleKey = "io.k8s.sigs.kic.role"
+	nodeRoleLabelKey = "role.minikube.sigs.k8s.io"
+	// CreatedByLabelKey is applied to any container/volume that is created by minikube created_by.minikube.sigs.k8s.io=true
+	CreatedByLabelKey = "created_by.minikube.sigs.k8s.io"
 )
 
+// CreateParams are parameters needed to create a container
 type CreateParams struct {
 	Name          string            // used for container name and hostname
 	Image         string            // container image to use to create the node.
-	ClusterLabel  string            // label the containers we create using minikube so we can clean up
+	ClusterLabel  string            // label the clusters we create using minikube so we can clean up
+	NodeLabel     string            // label the nodes so we can clean up by node name
 	Role          string            // currently only role supported is control-plane
 	Mounts        []Mount           // volume mounts
 	APIServerPort int               // kubernetes api server port

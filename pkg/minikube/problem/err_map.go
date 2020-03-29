@@ -66,19 +66,19 @@ var vmProblems = map[string]match{
 	},
 	"HYPERKIT_NOT_FOUND": {
 		Regexp: re(`Driver "hyperkit" not found.`),
-		Advice: "Please install the minikube hyperkit VM driver, or select an alternative --vm-driver",
+		Advice: "Please install the minikube hyperkit VM driver, or select an alternative --driver",
 		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/hyperkit/",
 		GOOS:   []string{"darwin"},
 	},
 	"HYPERKIT_VMNET_FRAMEWORK": {
 		Regexp: re(`error from vmnet.framework: -1`),
-		Advice: "Hyperkit networking is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --vm-driver",
+		Advice: "Hyperkit networking is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver",
 		Issues: []int{6028, 5594},
 		GOOS:   []string{"darwin"},
 	},
 	"HYPERKIT_CRASHED": {
 		Regexp: re(`hyperkit crashed!`),
-		Advice: "Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --vm-driver",
+		Advice: "Hyperkit is broken. Upgrade to the latest hyperkit version and/or Docker for Desktop. Alternatively, you may choose an alternate --driver",
 		Issues: []int{6079, 5780},
 		GOOS:   []string{"darwin"},
 	},
@@ -109,11 +109,17 @@ var vmProblems = map[string]match{
 		Issues: []int{4511},
 		GOOS:   []string{"windows"},
 	},
+	"HYPERV_FILE_DELETE_FAILURE": {
+		Regexp: re(`Unable to remove machine directory`),
+		Advice: "You may need to stop the Hyper-V Manager and run `minikube delete` again.",
+		Issues: []int{6804},
+		GOOS:   []string{"windows"},
+	},
 
 	// KVM
 	"KVM2_NOT_FOUND": {
 		Regexp: re(`Driver "kvm2" not found. Do you have the plugin binary .* accessible in your PATH`),
-		Advice: "Please install the minikube kvm2 VM driver, or select an alternative --vm-driver",
+		Advice: "Please install the minikube kvm2 VM driver, or select an alternative --driver",
 		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
 		GOOS:   []string{"linux"},
 	},
@@ -125,7 +131,7 @@ var vmProblems = map[string]match{
 	},
 	"KVM_CREATE_CONFLICT": {
 		Regexp: re(`KVM_CREATE_VM.* failed:.* Device or resource busy`),
-		Advice: "Another hypervisor, such as VirtualBox, is conflicting with KVM. Please stop the other hypervisor, or use --vm-driver to switch to it.",
+		Advice: "Another hypervisor, such as VirtualBox, is conflicting with KVM. Please stop the other hypervisor, or use --driver to switch to it.",
 		Issues: []int{4913},
 		GOOS:   []string{"linux"},
 	},
@@ -136,7 +142,7 @@ var vmProblems = map[string]match{
 	},
 	"KVM2_START_NO_IP": {
 		Regexp: re(`Error in driver during machine creation: Machine didn't return an IP after 120 seconds`),
-		Advice: "Check your firewall rules for interference, and run 'virt-host-validate' to check for KVM configuration issues. If you are running minikube within a VM, consider using --vm-driver=none",
+		Advice: "Check your firewall rules for interference, and run 'virt-host-validate' to check for KVM configuration issues. If you are running minikube within a VM, consider using --driver=none",
 		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
 		Issues: []int{4249, 3566},
 		GOOS:   []string{"linux"},
@@ -173,6 +179,7 @@ var vmProblems = map[string]match{
 		GOOS:   []string{"linux"},
 		Issues: []int{5950},
 	},
+
 	// None
 	"NONE_APISERVER_MISSING": {
 		Regexp: re(`apiserver process never appeared`),
@@ -189,7 +196,7 @@ var vmProblems = map[string]match{
 	},
 	"NONE_DOCKER_EXIT_5": {
 		Regexp: re(`sudo systemctl start docker: exit status 5`),
-		Advice: "Ensure that Docker is installed and healthy: Run 'sudo systemctl start docker' and 'journalctl -u docker'. Alternatively, select another value for --vm-driver",
+		Advice: "Ensure that Docker is installed and healthy: Run 'sudo systemctl start docker' and 'journalctl -u docker'. Alternatively, select another value for --driver",
 		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/none",
 		Issues: []int{5532},
 		GOOS:   []string{"linux"},
@@ -215,10 +222,11 @@ var vmProblems = map[string]match{
 	},
 	"NONE_DEFAULT_ROUTE": {
 		Regexp: re(`(No|from) default routes`),
-		Advice: "Configure a default route on this Linux host, or use another --vm-driver that does not require it",
+		Advice: "Configure a default route on this Linux host, or use another --driver that does not require it",
 		Issues: []int{6083, 5636},
 		GOOS:   []string{"linux"},
 	},
+
 	// VirtualBox
 	"VBOX_BLOCKED": {
 		Regexp: re(`NS_ERROR_FAILURE.*0x80004005`),
@@ -264,17 +272,17 @@ var vmProblems = map[string]match{
 	},
 	"VBOX_HYPERV_64_BOOT": {
 		Regexp: re(`VirtualBox won't boot a 64bits VM when Hyper-V is activated`),
-		Advice: "VirtualBox and Hyper-V are having a conflict. Use '--vm-driver=hyperv' or disable Hyper-V using: 'bcdedit /set hypervisorlaunchtype off'",
+		Advice: "VirtualBox and Hyper-V are having a conflict. Use '--driver=hyperv' or disable Hyper-V using: 'bcdedit /set hypervisorlaunchtype off'",
 		Issues: []int{4051, 4783},
 	},
 	"VBOX_HYPERV_NEM_VM": {
 		Regexp: re(`vrc=VERR_NEM_VM_CREATE_FAILED`),
-		Advice: "VirtualBox and Hyper-V are having a conflict. Use '--vm-driver=hyperv' or disable Hyper-V using: 'bcdedit /set hypervisorlaunchtype off'",
+		Advice: "VirtualBox and Hyper-V are having a conflict. Use '--driver=hyperv' or disable Hyper-V using: 'bcdedit /set hypervisorlaunchtype off'",
 		Issues: []int{4587},
 	},
 	"VBOX_NOT_FOUND": {
 		Regexp: re(`VBoxManage not found. Make sure VirtualBox is installed and VBoxManage is in the path`),
-		Advice: "Install VirtualBox, or select an alternative value for --vm-driver",
+		Advice: "Install VirtualBox, or select an alternative value for --driver",
 		URL:    "https://minikube.sigs.k8s.io/docs/start/",
 		Issues: []int{3784},
 	},
@@ -285,17 +293,17 @@ var vmProblems = map[string]match{
 	},
 	"VBOX_VTX_DISABLED": {
 		Regexp: re(`This computer doesn't have VT-X/AMD-v enabled`),
-		Advice: "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
+		Advice: "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--driver=none'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
 		Issues: []int{3900, 4730},
 	},
 	"VERR_VERR_VMX_DISABLED": {
 		Regexp: re(`VT-x is disabled.*VERR_VMX_MSR_ALL_VMX_DISABLED`),
-		Advice: "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
+		Advice: "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--driver=none'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
 		Issues: []int{5282, 5456},
 	},
 	"VBOX_VERR_VMX_NO_VMX": {
 		Regexp: re(`VT-x is not available.*VERR_VMX_NO_VMX`),
-		Advice: "Your host does not support virtualization. If you are running minikube within a VM, try '--vm-driver=none'. Otherwise, enable virtualization in your BIOS",
+		Advice: "Your host does not support virtualization. If you are running minikube within a VM, try '--driver=none'. Otherwise, enable virtualization in your BIOS",
 		Issues: []int{1994, 5326},
 	},
 	"VBOX_HOST_NETWORK": {

@@ -29,7 +29,8 @@ import (
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/pkg/errors"
 
-	cfg "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/registry"
@@ -52,16 +53,16 @@ func init() {
 	}
 }
 
-func configure(config cfg.MachineConfig) (interface{}, error) {
-	d := hyperv.NewDriver(config.Name, localpath.MiniPath())
-	d.Boot2DockerURL = config.Downloader.GetISOFileURI(config.MinikubeISO)
-	d.VSwitch = config.HypervVirtualSwitch
-	if d.VSwitch == "" && config.HypervUseExternalSwitch {
-		switchName, adapter, err := chooseSwitch(config.HypervExternalAdapter)
+func configure(cfg config.ClusterConfig, n config.Node) (interface{}, error) {
+	d := hyperv.NewDriver(driver.MachineName(cfg, n), localpath.MiniPath())
+	d.Boot2DockerURL = download.LocalISOResource(cfg.MinikubeISO)
+	d.VSwitch = cfg.HypervVirtualSwitch
+	if d.VSwitch == "" && cfg.HypervUseExternalSwitch {
+		switchName, adapter, err := chooseSwitch(cfg.HypervExternalAdapter)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to choose switch for Hyper-V driver")
 		}
-		if config.HypervExternalAdapter == "" && switchName == "" {
+		if cfg.HypervExternalAdapter == "" && switchName == "" {
 			// create a switch on the returned adapter
 			switchName = defaultExternalSwitchName
 			err := createVMSwitch(switchName, adapter)
@@ -71,9 +72,9 @@ func configure(config cfg.MachineConfig) (interface{}, error) {
 		}
 		d.VSwitch = switchName
 	}
-	d.MemSize = config.Memory
-	d.CPU = config.CPUs
-	d.DiskSize = config.DiskSize
+	d.MemSize = cfg.Memory
+	d.CPU = cfg.CPUs
+	d.DiskSize = cfg.DiskSize
 	d.SSHUser = "docker"
 	d.DisableDynamicMemory = true // default to disable dynamic memory as minikube is unlikely to work properly with dynamic memory
 	return d, nil
@@ -85,14 +86,22 @@ func status() registry.State {
 		return registry.State{Error: err}
 	}
 
-	// Allow no more than 2 seconds for querying state
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, path, "Get-WindowsOptionalFeature", "-FeatureName", "Microsoft-Hyper-V-All", "-Online")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		return registry.State{Installed: false, Error: fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out), Fix: "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'", Doc: docURL}
+		errorMessage := fmt.Errorf("%s failed:\n%s", strings.Join(cmd.Args, " "), out)
+		fixMessage := "Start PowerShell as Administrator, and run: 'Enable-WindowsOptionalFeature -Online -FeatureName Microsoft-Hyper-V -All'"
+
+		// If timed out, prompt different error and suggestion messages
+		// See https://github.com/kubernetes/minikube/issues/6579
+		if ctx.Err() != nil {
+			errorMessage = fmt.Errorf("%s exited unexpectedly:\n%s", strings.Join(cmd.Args, " "), ctx.Err())
+			fixMessage = "If you have Hyper-V configured correctly, please try start again with `--force` specified"
+		}
+		return registry.State{Installed: false, Error: errorMessage, Fix: fixMessage, Doc: docURL}
 	}
 	return registry.State{Installed: true, Healthy: true}
 }

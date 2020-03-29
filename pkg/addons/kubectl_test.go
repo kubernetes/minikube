@@ -19,6 +19,8 @@ package addons
 import (
 	"strings"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/config"
 )
 
 func TestKubectlCommand(t *testing.T) {
@@ -41,18 +43,15 @@ func TestKubectlCommand(t *testing.T) {
 		},
 	}
 
+	cc := &config.ClusterConfig{
+		KubernetesConfig: config.KubernetesConfig{
+			KubernetesVersion: "v1.17.0",
+		},
+	}
+
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			originalK8sVersion := k8sVersion
-			defer func() { k8sVersion = originalK8sVersion }()
-			k8sVersion = func(_ string) (string, error) {
-				return "v1.17.0", nil
-			}
-
-			command, err := kubectlCommand("", test.files, test.enable)
-			if err != nil {
-				t.Fatalf("error getting kubectl command: %v", err)
-			}
+			command := kubectlCommand(cc, test.files, test.enable)
 			actual := strings.Join(command.Args, " ")
 
 			if actual != test.expected {

@@ -29,19 +29,20 @@ import (
 var KubeadmYamlPath = path.Join(vmpath.GuestEphemeralDir, "kubeadm.yaml")
 
 const (
+	//DefaultCNIConfigPath is the configuration file for CNI networks
 	DefaultCNIConfigPath = "/etc/cni/net.d/k8s.conf"
-	KubeletServiceFile   = "/lib/systemd/system/kubelet.service"
-	// enum to differentiate kubeadm command line parameters from kubeadm config file parameters (see the
-	// KubeadmExtraArgsWhitelist variable for more info)
+	// KubeletServiceFile is the file for the systemd kubelet.service
+	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
+	// KubeletSystemdConfFile is config for the systemd kubelet.service
 	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
 )
 
 // ConfigFileAssets returns configuration file assets
 func ConfigFileAssets(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte, defaultCNIConfig []byte) []assets.CopyableFile {
 	fs := []assets.CopyableFile{
-		assets.NewMemoryAssetTarget(kubeadm, KubeadmYamlPath, "0640"),
-		assets.NewMemoryAssetTarget(kubelet, KubeletSystemdConfFile, "0644"),
-		assets.NewMemoryAssetTarget(kubeletSvc, KubeletServiceFile, "0644"),
+		assets.NewMemoryAssetTarget(kubeadm, KubeadmYamlPath+".new", "0640"),
+		assets.NewMemoryAssetTarget(kubelet, KubeletSystemdConfFile+".new", "0644"),
+		assets.NewMemoryAssetTarget(kubeletSvc, KubeletServiceFile+".new", "0644"),
 	}
 	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
 	// start a Pod in the case a user hasn't manually installed any CNI plugin

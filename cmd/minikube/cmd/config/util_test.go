@@ -20,12 +20,12 @@ import (
 	"fmt"
 	"testing"
 
-	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+	config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 )
 
-var minikubeConfig = pkgConfig.MinikubeConfig{
-	"vm-driver":            driver.KVM2,
+var minikubeConfig = config.MinikubeConfig{
+	"driver":               driver.KVM2,
 	"cpus":                 12,
 	"show-libmachine-logs": true,
 }
@@ -38,17 +38,17 @@ func TestFindSettingNotFound(t *testing.T) {
 }
 
 func TestFindSetting(t *testing.T) {
-	s, err := findSetting("vm-driver")
+	s, err := findSetting("driver")
 	if err != nil {
-		t.Fatalf("Couldn't find setting, vm-driver: %v", err)
+		t.Fatalf("Couldn't find setting, driver: %v", err)
 	}
-	if s.name != "vm-driver" {
-		t.Fatalf("Found wrong setting, expected vm-driver, got %s", s.name)
+	if s.name != "driver" {
+		t.Fatalf("Found wrong setting, expected driver, got %s", s.name)
 	}
 }
 
 func TestSetString(t *testing.T) {
-	err := SetString(minikubeConfig, "vm-driver", driver.VirtualBox)
+	err := SetString(minikubeConfig, "driver", driver.VirtualBox)
 	if err != nil {
 		t.Fatalf("Couldn't set string: %v", err)
 	}
@@ -83,21 +83,10 @@ func TestSetBool(t *testing.T) {
 }
 
 func TestValidateProfile(t *testing.T) {
-	testCases := []struct {
-		profileName string
-	}{
-		{
-			profileName: "82374328742_2974224498",
-		},
-		{
-			profileName: "validate_test",
-		},
-	}
-
-	for _, test := range testCases {
-		profileNam := test.profileName
-		expected := fmt.Sprintf("profile %q not found", test.profileName)
-		err, ok := ValidateProfile(profileNam)
+	testCases := []string{"82374328742_2974224498", "validate_test"}
+	for _, name := range testCases {
+		expected := fmt.Sprintf("profile %q not found", name)
+		err, ok := ValidateProfile(name)
 		if !ok && err.Error() != expected {
 			t.Errorf("got error %q, expected %q", err, expected)
 		}

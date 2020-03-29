@@ -6,7 +6,7 @@ description: >
   Development Roadmap
 ---
 
-This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2019, divided by how they apply to our [guiding principles](principles.md)
+This roadmap is a living document outlining the major technical improvements which we would like to see in minikube during 2020, divided by how they apply to our [guiding principles](principles.md)
 
 Please send a PR to suggest any improvements to it.
 
@@ -14,9 +14,9 @@ Please send a PR to suggest any improvements to it.
 
 ## (#1) Inclusive and community-driven
 
-- [ ] Maintainers from 4 countries, 4 companies
+- [x] Maintainers from 4 countries, 4 companies
 - [ ] Installation documentation in 5+ written languages
-- [ ] Enhancements approved by a community-driven process
+- [x] Enhancements approved by a community-driven process
 
 ## (#2) User-friendly
 
@@ -33,7 +33,7 @@ Please send a PR to suggest any improvements to it.
 
 ## (#4) Cross-platform
 
-- [ ] VM-free deployment to containers (Docker, Podman)
+- [x] VM-free deployment to containers (Docker, Podman)
 - [ ] Windows as a first-class citizen
 - [ ] WSL2 support (no additional VM required)
 - [ ] Firecracker VM support
@@ -49,7 +49,7 @@ Please send a PR to suggest any improvements to it.
 
 - [ ] Startup latency under 30s
 - [ ] Kernel-assisted mounts (CIFS, NFS) by default
-- [ ] Suspend and Resume
+- [x] Pause support
 - [ ] <25% CPU overhead on a single core
 
 ## (#7) Developer Focused

@@ -29,44 +29,60 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/machine"
-	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/mustload"
 )
 
 var statusFormat string
 var output string
 
 const (
-	// Additional states used by kubeconfig
-	Configured    = "Configured"    // ~state.Saved
+	// # Additional states used by kubeconfig:
+
+	// Configured means configured
+	Configured = "Configured" // ~state.Saved
+	// Misconfigured means misconfigured
 	Misconfigured = "Misconfigured" // ~state.Error
-	// Additional states used for clarity
+
+	// # Additional states used for clarity:
+
+	// Nonexistent means nonexistent
 	Nonexistent = "Nonexistent" // ~state.None
+	// Irrelevant is used for statuses that aren't meaningful for worker nodes
+	Irrelevant = "Irrelevant"
 )
 
 // Status holds string representations of component states
 type Status struct {
+	Name       string
 	Host       string
 	Kubelet    string
 	APIServer  string
 	Kubeconfig string
+	Worker     bool
 }
 
 const (
 	minikubeNotRunningStatusFlag = 1 << 0
 	clusterNotRunningStatusFlag  = 1 << 1
 	k8sNotRunningStatusFlag      = 1 << 2
-	defaultStatusFormat          = `host: {{.Host}}
+	defaultStatusFormat          = `{{.Name}}
+host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
 kubeconfig: {{.Kubeconfig}}
+
+`
+	workerStatusFormat = `{{.Name}}
+host: {{.Host}}
+kubelet: {{.Kubelet}}
+
 `
 )
 
@@ -83,34 +99,39 @@ var statusCmd = &cobra.Command{
 			exit.UsageT("Cannot use both --output and --format options")
 		}
 
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithCodeT(exit.Unavailable, "Error getting client: {{.error}}", out.V{"error": err})
-		}
-		defer api.Close()
+		cname := ClusterFlagValue()
+		api, cc := mustload.Partial(cname)
 
-		machineName := viper.GetString(config.MachineProfile)
-		st, err := status(api, machineName)
-		if err != nil {
-			glog.Errorf("status error: %v", err)
-		}
-		if st.Host == Nonexistent {
-			glog.Errorf("The %q cluster does not exist!", machineName)
-		}
+		var st *Status
+		var err error
+		for _, n := range cc.Nodes {
+			glog.Infof("checking status of %s ...", n.Name)
+			machineName := driver.MachineName(*cc, n)
+			st, err = status(api, machineName, n.ControlPlane)
+			glog.Infof("%s status: %+v", machineName, st)
 
-		switch strings.ToLower(output) {
-		case "text":
-			if err := statusText(st, os.Stdout); err != nil {
-				exit.WithError("status text failure", err)
+			if err != nil {
+				glog.Errorf("status error: %v", err)
 			}
-		case "json":
-			if err := statusJSON(st, os.Stdout); err != nil {
-				exit.WithError("status json failure", err)
+			if st.Host == Nonexistent {
+				glog.Errorf("The %q host does not exist!", machineName)
 			}
-		default:
-			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
+
+			switch strings.ToLower(output) {
+			case "text":
+				if err := statusText(st, os.Stdout); err != nil {
+					exit.WithError("status text failure", err)
+				}
+			case "json":
+				if err := statusJSON(st, os.Stdout); err != nil {
+					exit.WithError("status json failure", err)
+				}
+			default:
+				exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'text', 'json'", output))
+			}
 		}
 
+		// TODO: Update for multi-node
 		os.Exit(exitCode(st))
 	},
 }
@@ -120,24 +141,29 @@ func exitCode(st *Status) int {
 	if st.Host != state.Running.String() {
 		c |= minikubeNotRunningStatusFlag
 	}
-	if st.APIServer != state.Running.String() || st.Kubelet != state.Running.String() {
+	if (st.APIServer != state.Running.String() && st.APIServer != Irrelevant) || st.Kubelet != state.Running.String() {
 		c |= clusterNotRunningStatusFlag
 	}
-	if st.Kubeconfig != Configured {
+	if st.Kubeconfig != Configured && st.Kubeconfig != Irrelevant {
 		c |= k8sNotRunningStatusFlag
 	}
 	return c
 }
 
-func status(api libmachine.API, name string) (*Status, error) {
+func status(api libmachine.API, name string, controlPlane bool) (*Status, error) {
+
+	profile, node := driver.ClusterNameFromMachine(name)
+
 	st := &Status{
+		Name:       node,
 		Host:       Nonexistent,
 		APIServer:  Nonexistent,
 		Kubelet:    Nonexistent,
 		Kubeconfig: Nonexistent,
+		Worker:     !controlPlane,
 	}
 
-	hs, err := machine.GetHostStatus(api, name)
+	hs, err := machine.Status(api, name)
 	glog.Infof("%s host status = %q (err=%v)", name, hs, err)
 	if err != nil {
 		return st, errors.Wrap(err, "host")
@@ -173,13 +199,20 @@ func status(api libmachine.API, name string) (*Status, error) {
 	}
 
 	st.Kubeconfig = Misconfigured
-	ok, err := kubeconfig.IsClusterInConfig(ip, name)
-	glog.Infof("%s is in kubeconfig at ip %s: %v (err=%v)", name, ip, ok, err)
-	if ok {
-		st.Kubeconfig = Configured
+	if !controlPlane {
+		st.Kubeconfig = Irrelevant
+		st.APIServer = Irrelevant
 	}
 
-	host, err := machine.CheckIfHostExistsAndLoad(api, name)
+	if st.Kubeconfig != Irrelevant {
+		ok, err := kubeconfig.IsClusterInConfig(ip, profile)
+		glog.Infof("%s is in kubeconfig at ip %s: %v (err=%v)", name, ip, ok, err)
+		if ok {
+			st.Kubeconfig = Configured
+		}
+	}
+
+	host, err := machine.LoadHost(api, name)
 	if err != nil {
 		return st, err
 	}
@@ -199,14 +232,16 @@ func status(api libmachine.API, name string) (*Status, error) {
 		st.Kubelet = stk.String()
 	}
 
-	sta, err := kverify.APIServerStatus(cr, ip, port)
-	glog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
+	if st.APIServer != Irrelevant {
+		sta, err := kverify.APIServerStatus(cr, ip, port)
+		glog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
 
-	if err != nil {
-		glog.Errorln("Error apiserver status:", err)
-		st.APIServer = state.Error.String()
-	} else {
-		st.APIServer = sta.String()
+		if err != nil {
+			glog.Errorln("Error apiserver status:", err)
+			st.APIServer = state.Error.String()
+		} else {
+			st.APIServer = sta.String()
+		}
 	}
 
 	return st, nil
@@ -222,6 +257,9 @@ For the list accessible variables for the template, see the struct values here: 
 
 func statusText(st *Status, w io.Writer) error {
 	tmpl, err := template.New("status").Parse(statusFormat)
+	if st.Worker && statusFormat == defaultStatusFormat {
+		tmpl, err = template.New("worker-status").Parse(workerStatusFormat)
+	}
 	if err != nil {
 		return err
 	}

@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -29,12 +30,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
@@ -98,25 +97,16 @@ var mountCmd = &cobra.Command{
 		if glog.V(1) {
 			debugVal = 1 // ufs.StartServer takes int debug param
 		}
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
-		if err != nil {
-			exit.WithError("Error getting config", err)
-		}
-		host, err := api.Load(cc.Name)
-		if err != nil {
-			exit.WithError("Error loading api", err)
-		}
-		if host.Driver.DriverName() == driver.None {
+
+		co := mustload.Running(ClusterFlagValue())
+		if co.CPHost.Driver.DriverName() == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube mount' command`)
 		}
+
 		var ip net.IP
+		var err error
 		if mountIP == "" {
-			ip, err = cluster.GetVMHostIP(host)
+			ip, err = cluster.GetVMHostIP(co.CPHost)
 			if err != nil {
 				exit.WithError("Error getting the host IP address to use from within the VM", err)
 			}
@@ -151,6 +141,15 @@ var mountCmd = &cobra.Command{
 			cfg.Options[parts[0]] = parts[1]
 		}
 
+		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
+		if !supportedFilesystems[cfg.Type] {
+			out.T(out.Warning, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
+		}
+
+		bindIP := ip.String() // the ip to listen on the user's host machine
+		if driver.IsKIC(co.CPHost.Driver.DriverName()) && runtime.GOOS != "linux" {
+			bindIP = "127.0.0.1"
+		}
 		out.T(out.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
 		out.T(out.Option, "Mount type:   {{.name}}", out.V{"type": cfg.Type})
 		out.T(out.Option, "User ID:      {{.userID}}", out.V{"userID": cfg.UID})
@@ -159,27 +158,17 @@ var mountCmd = &cobra.Command{
 		out.T(out.Option, "Message Size: {{.size}}", out.V{"size": cfg.MSize})
 		out.T(out.Option, "Permissions:  {{.octalMode}} ({{.writtenMode}})", out.V{"octalMode": fmt.Sprintf("%o", cfg.Mode), "writtenMode": cfg.Mode})
 		out.T(out.Option, "Options:      {{.options}}", out.V{"options": cfg.Options})
-
-		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
-		if !supportedFilesystems[cfg.Type] {
-			out.T(out.WarningType, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
-		}
+		out.T(out.Option, "Bind Address: {{.Address}}", out.V{"Address": net.JoinHostPort(bindIP, fmt.Sprint(port))})
 
 		var wg sync.WaitGroup
 		if cfg.Type == nineP {
 			wg.Add(1)
 			go func() {
 				out.T(out.Fileserver, "Userspace file server: ")
-				ufs.StartServer(net.JoinHostPort(ip.String(), strconv.Itoa(port)), debugVal, hostPath)
+				ufs.StartServer(net.JoinHostPort(bindIP, strconv.Itoa(port)), debugVal, hostPath)
 				out.T(out.Stopped, "Userspace file server is shutdown")
 				wg.Done()
 			}()
-		}
-
-		// Use CommandRunner, as the native docker ssh service dies when Ctrl-C is received.
-		runner, err := machine.CommandRunner(host)
-		if err != nil {
-			exit.WithError("Failed to get command runner", err)
 		}
 
 		// Unmount if Ctrl-C or kill request is received.
@@ -188,7 +177,7 @@ var mountCmd = &cobra.Command{
 		go func() {
 			for sig := range c {
 				out.T(out.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
-				err := cluster.Unmount(runner, vmPath)
+				err := cluster.Unmount(co.CPRunner, vmPath)
 				if err != nil {
 					out.ErrT(out.FailureType, "Failed unmount: {{.error}}", out.V{"error": err})
 				}
@@ -196,7 +185,7 @@ var mountCmd = &cobra.Command{
 			}
 		}()
 
-		err = cluster.Mount(runner, ip.String(), vmPath, cfg)
+		err = cluster.Mount(co.CPRunner, ip.String(), vmPath, cfg)
 		if err != nil {
 			exit.WithError("mount failed", err)
 		}

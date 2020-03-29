@@ -18,8 +18,11 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -33,13 +36,16 @@ var nodeStopCmd = &cobra.Command{
 		}
 
 		name := args[0]
+		api, cc := mustload.Partial(ClusterFlagValue())
 
-		api, err := machine.NewAPIClient()
+		n, _, err := node.Retrieve(cc, name)
 		if err != nil {
-			exit.WithError("creating api client", err)
+			exit.WithError("retrieving node", err)
 		}
 
-		err = machine.StopHost(api, name)
+		machineName := driver.MachineName(*cc, *n)
+
+		err = machine.StopHost(api, machineName)
 		if err != nil {
 			out.FatalT("Failed to stop node {{.name}}", out.V{"name": name})
 		}

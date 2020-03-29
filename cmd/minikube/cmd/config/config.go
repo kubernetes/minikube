@@ -43,6 +43,12 @@ type Setting struct {
 // and their validation and callback fn run on Set
 var settings = []Setting{
 	{
+		name:        "driver",
+		set:         SetString,
+		validations: []setFn{IsValidDriver},
+		callbacks:   []setFn{RequiresRestartMsg},
+	},
+	{
 		name:        "vm-driver",
 		set:         SetString,
 		validations: []setFn{IsValidDriver},
@@ -126,7 +132,7 @@ var settings = []Setting{
 		set:  SetBool,
 	},
 	{
-		name: config.MachineProfile,
+		name: config.ProfileName,
 		set:  SetString,
 	},
 	{
@@ -172,7 +178,7 @@ var settings = []Setting{
 var ConfigCmd = &cobra.Command{
 	Use:   "config SUBCOMMAND [flags]",
 	Short: "Modify minikube config",
-	Long: `config modifies minikube config files using subcommands like "minikube config set vm-driver kvm"
+	Long: `config modifies minikube config files using subcommands like "minikube config set driver kvm"
 Configurable fields: ` + "\n\n" + configurableFields(),
 	Run: func(cmd *cobra.Command, args []string) {
 		if err := cmd.Help(); err != nil {
@@ -191,7 +197,7 @@ func configurableFields() string {
 
 // ListConfigMap list entries from config file
 func ListConfigMap(name string) ([]string, error) {
-	configFile, err := config.ReadConfig(localpath.ConfigFile)
+	configFile, err := config.ReadConfig(localpath.ConfigFile())
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +217,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig(localpath.ConfigFile)
+	cfg, err := config.ReadConfig(localpath.ConfigFile())
 	if err != nil {
 		return err
 	}
@@ -228,7 +234,7 @@ func AddToConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(localpath.ConfigFile, cfg)
+	return config.WriteConfig(localpath.ConfigFile(), cfg)
 }
 
 // DeleteFromConfigMap deletes entries from a map in the config file
@@ -238,7 +244,7 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Set the values
-	cfg, err := config.ReadConfig(localpath.ConfigFile)
+	cfg, err := config.ReadConfig(localpath.ConfigFile())
 	if err != nil {
 		return err
 	}
@@ -253,5 +259,5 @@ func DeleteFromConfigMap(name string, images []string) error {
 		return err
 	}
 	// Write the values
-	return config.WriteConfig(localpath.ConfigFile, cfg)
+	return config.WriteConfig(localpath.ConfigFile(), cfg)
 }

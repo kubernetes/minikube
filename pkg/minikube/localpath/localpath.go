@@ -32,7 +32,9 @@ import (
 const MinikubeHome = "MINIKUBE_HOME"
 
 // ConfigFile is the path of the config file
-var ConfigFile = MakeMiniPath("config", "config.json")
+func ConfigFile() string {
+	return MakeMiniPath("config", "config.json")
+}
 
 // MiniPath returns the path to the user's minikube dir
 func MiniPath() string {
@@ -50,6 +52,26 @@ func MakeMiniPath(fileName ...string) string {
 	args := []string{MiniPath()}
 	args = append(args, fileName...)
 	return filepath.Join(args...)
+}
+
+// Profile returns the path to a profile
+func Profile(name string) string {
+	return filepath.Join(MiniPath(), "profiles", name)
+}
+
+// ClientCert returns client certificate path, used by kubeconfig
+func ClientCert(name string) string {
+	return filepath.Join(Profile(name), "client.crt")
+}
+
+// ClientKey returns client certificate path, used by kubeconfig
+func ClientKey(name string) string {
+	return filepath.Join(Profile(name), "client.key")
+}
+
+// CACert returns the minikube CA certificate shared between profiles
+func CACert() string {
+	return filepath.Join(MiniPath(), "ca.crt")
 }
 
 // MachinePath returns the Minikube machine path of a machine

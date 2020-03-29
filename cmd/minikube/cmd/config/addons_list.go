@@ -26,7 +26,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -98,7 +97,7 @@ var printAddonsList = func() {
 	table.SetAutoFormatHeaders(true)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
-	pName := viper.GetString(config.MachineProfile)
+	pName := ClusterFlagValue()
 
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
@@ -123,7 +122,7 @@ var printAddonsList = func() {
 
 var printAddonsJSON = func() {
 	addonNames := make([]string, 0, len(assets.Addons))
-	pName := viper.GetString(config.MachineProfile)
+	pName := ClusterFlagValue()
 	for addonName := range assets.Addons {
 		addonNames = append(addonNames, addonName)
 	}

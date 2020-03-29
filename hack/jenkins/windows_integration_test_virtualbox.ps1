@@ -19,7 +19,7 @@ gsutil.cmd -m cp -r gs://minikube-builds/$env:MINIKUBE_LOCATION/testdata .
 
 ./out/minikube-windows-amd64.exe delete
 
-out/e2e-windows-amd64.exe -minikube-start-args="--vm-driver=virtualbox" -expected-default-driver=hyperv -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=30m
+out/e2e-windows-amd64.exe -minikube-start-args="--driver=virtualbox" -binary=out/minikube-windows-amd64.exe -test.v -test.timeout=30m
 $env:result=$lastexitcode
 # If the last exit code was 0->success, x>0->error
 If($env:result -eq 0){$env:status="success"}
