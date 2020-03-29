@@ -76,13 +76,13 @@ func TestMiniPath(t *testing.T) {
 		{"", homedir.HomeDir()},
 	}
 	originalEnv := os.Getenv(MinikubeHome)
+	defer func() { // revert to pre-test env var
+		err := os.Setenv(MinikubeHome, originalEnv)
+		if err != nil {
+			t.Fatalf("Error reverting env %s to its original value (%s) var after test ", MinikubeHome, originalEnv)
+		}
+	}()
 	for _, tc := range testCases {
-		defer func() { // revert to pre-test env var
-			err := os.Setenv(MinikubeHome, originalEnv)
-			if err != nil {
-				t.Fatalf("Error reverting env %s to its original value (%s) var after test ", MinikubeHome, originalEnv)
-			}
-		}()
 		t.Run(tc.env, func(t *testing.T) {
 			expectedPath := filepath.Join(tc.basePath, ".minikube")
 			os.Setenv(MinikubeHome, tc.env)
