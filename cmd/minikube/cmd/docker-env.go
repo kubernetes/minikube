@@ -161,7 +161,7 @@ var dockerEnvCmd = &cobra.Command{
 			EnvConfig: sh,
 			profile:   cname,
 			driver:    driverName,
-			hostIP:    co.DriverIP.String(),
+			hostIP:    co.CP.ForwardedIP.String(),
 			port:      port,
 			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,

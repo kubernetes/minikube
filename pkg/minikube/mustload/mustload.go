@@ -39,10 +39,9 @@ import (
 
 // ClusterController holds all the needed information for a minikube cluster
 type ClusterController struct {
-	Config   *config.ClusterConfig
-	API      libmachine.API
-	DriverIP net.IP
-	CP       ControlPlane
+	Config *config.ClusterConfig
+	API    libmachine.API
+	CP     ControlPlane
 }
 
 type ControlPlane struct {
@@ -143,7 +142,6 @@ func Running(name string) ClusterController {
 			ForwardedIP:   net.ParseIP(cpIP),
 			ForwardedPort: cpPort,
 		},
-		DriverIP: ip,
 	}
 }
 
