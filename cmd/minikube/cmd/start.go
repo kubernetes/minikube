@@ -122,8 +122,6 @@ const (
 	autoUpdate              = "auto-update-drivers"
 	hostOnlyNicType         = "host-only-nic-type"
 	natNicType              = "nat-nic-type"
-	loadBalancerStartIP     = "load-balancer-start-ip"
-	loadBalancerEndIP       = "load-balancer-end-ip"
 	nodes                   = "nodes"
 )
 
@@ -193,8 +191,6 @@ func initKubernetesFlags() {
 	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
-	startCmd.Flags().String(loadBalancerStartIP, "", "The first Load Balancer IP within a range.  This can be used if you want to set up Load Balancer (MetalLB)")
-	startCmd.Flags().String(loadBalancerEndIP, "", "The last Load Balancer IP within a range.  This can be used if you want to set up Load Balancer (MetalLB)")
 }
 
 // initDriverFlags inits the commandline flags for vm drivers
@@ -1009,8 +1005,6 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 			ExtraOptions:           config.ExtraOptions,
 			ShouldLoadCachedImages: viper.GetBool(cacheImages),
 			EnableDefaultCNI:       selectedEnableDefaultCNI,
-			LoadBalancerStartIP:    viper.GetString(loadBalancerStartIP),
-			LoadBalancerEndIP:      viper.GetString(loadBalancerEndIP),
 		},
 		Nodes: []config.Node{cp},
 	}
