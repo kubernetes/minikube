@@ -25,11 +25,15 @@ import (
 	"github.com/blang/semver"
 )
 
-// Pause returns the image name to pull for the pause image
-func Pause(mirror string) string {
+// Pause returns the image name to pull for a given Kubernetes version
+func Pause(v semver.Version, mirror string) string {
 	// Should match `PauseVersion` in:
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	return path.Join(kubernetesRepo(mirror), "pause"+archTag(false)+"3.1")
+	pv := "3.2"
+	if semver.MustParseRange("<1.18.0-alpha.0")(v) {
+		pv = "3.1"
+	}
+	return path.Join(kubernetesRepo(mirror), "pause"+archTag(false)+pv)
 }
 
 // essentials returns images needed too bootstrap a kubenretes
@@ -41,7 +45,7 @@ func essentials(mirror string, v semver.Version) []string {
 		componentImage("kube-apiserver", v, mirror),
 		coreDNS(v, mirror),
 		etcd(v, mirror),
-		Pause(mirror),
+		Pause(v, mirror),
 	}
 	return imgs
 }
@@ -61,8 +65,10 @@ func componentImage(name string, v semver.Version, mirror string) string {
 func coreDNS(v semver.Version, mirror string) string {
 	// Should match `CoreDNSVersion` in
 	// https://github.com/kubernetes/kubernetes/blob/master/cmd/kubeadm/app/constants/constants.go
-	cv := "1.6.5"
+	cv := "1.6.7"
 	switch v.Minor {
+	case 17:
+		cv = "1.6.5"
 	case 16:
 		cv = "1.6.2"
 	case 15, 14:
@@ -129,7 +135,7 @@ func dashboardFrontend(repo string) string {
 		repo = "kubernetesui"
 	}
 	// See 'kubernetes-dashboard' in deploy/addons/dashboard/dashboard-dp.yaml
-	return path.Join(repo, "dashboard:v2.0.0-beta8")
+	return path.Join(repo, "dashboard:v2.0.0-rc6")
 }
 
 // dashboardMetrics returns the image used for the dashboard metrics scraper

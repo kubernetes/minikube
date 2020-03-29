@@ -31,12 +31,37 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// rootCauseRe is a regular expression that matches known failure root causes
-var rootCauseRe = regexp.MustCompile(`^error: |eviction manager: pods.* evicted|unknown flag: --|forbidden.*no providers available|eviction manager:.*evicted|tls: bad certificate|kubelet.*no API client|kubelet.*No api server|STDIN.*127.0.0.1:8080|failed to create listener|address already in use|unable to evict any pods|eviction manager: unexpected error`)
+// rootCauses are regular expressions that match known failures
+var rootCauses = []string{
+	`^error: `,
+	`eviction manager: pods.* evicted`,
+	`unknown flag: --`,
+	`forbidden.*no providers available`,
+	`eviction manager:.*evicted`,
+	`tls: bad certificate`,
+	`kubelet.*no API client`,
+	`kubelet.*No api server`,
+	`STDIN.*127.0.0.1:8080`,
+	`failed to create listener`,
+	`address already in use`,
+	`unable to evict any pods`,
+	`eviction manager: unexpected error`,
+	`Resetting AnonymousAuth to false`,
+	`Unable to register node.*forbidden`,
+	`Failed to initialize CSINodeInfo.*forbidden`,
+	`Failed to admit pod`,
+	`failed to "StartContainer"`,
+	`kubelet.*forbidden.*cannot \w+ resource`,
+	`leases.*forbidden.*cannot \w+ resource`,
+}
+
+// rootCauseRe combines rootCauses into a single regex
+var rootCauseRe = regexp.MustCompile(strings.Join(rootCauses, "|"))
 
 // ignoreCauseRe is a regular expression that matches spurious errors to not surface
 var ignoreCauseRe = regexp.MustCompile("error: no objects passed to apply")
@@ -44,6 +69,7 @@ var ignoreCauseRe = regexp.MustCompile("error: no objects passed to apply")
 // importantPods are a list of pods to retrieve logs for, in addition to the bootstrapper logs.
 var importantPods = []string{
 	"kube-apiserver",
+	"etcd",
 	"coredns",
 	"kube-scheduler",
 	"kube-proxy",
@@ -62,9 +88,9 @@ type logRunner interface {
 const lookBackwardsCount = 400
 
 // Follow follows logs from multiple files in tail(1) format
-func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr logRunner) error {
+func Follow(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr logRunner) error {
 	cs := []string{}
-	for _, v := range logCommands(r, bs, 0, true) {
+	for _, v := range logCommands(r, bs, cfg, 0, true) {
 		cs = append(cs, v+" &")
 	}
 	cs = append(cs, "wait")
@@ -84,9 +110,9 @@ func IsProblem(line string) bool {
 }
 
 // FindProblems finds possible root causes among the logs
-func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cr logRunner) map[string][]string {
+func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr logRunner) map[string][]string {
 	pMap := map[string][]string{}
-	cmds := logCommands(r, bs, lookBackwardsCount, false)
+	cmds := logCommands(r, bs, cfg, lookBackwardsCount, false)
 	for name := range cmds {
 		glog.Infof("Gathering logs for %s ...", name)
 		var b bytes.Buffer
@@ -128,8 +154,8 @@ func OutputProblems(problems map[string][]string, maxLines int) {
 }
 
 // Output displays logs from multiple sources in tail(1) format
-func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Runner, lines int) error {
-	cmds := logCommands(r, bs, lines, false)
+func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, runner command.Runner, lines int) error {
+	cmds := logCommands(r, bs, cfg, lines, false)
 	cmds["kernel"] = "uptime && uname -a && grep PRETTY /etc/os-release"
 
 	names := []string{}
@@ -166,8 +192,8 @@ func Output(r cruntime.Manager, bs bootstrapper.Bootstrapper, runner command.Run
 }
 
 // logCommands returns a list of commands that would be run to receive the anticipated logs
-func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, follow bool) map[string]string {
-	cmds := bs.LogCommands(bootstrapper.LogOptions{Lines: length, Follow: follow})
+func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, length int, follow bool) map[string]string {
+	cmds := bs.LogCommands(cfg, bootstrapper.LogOptions{Lines: length, Follow: follow})
 	for _, pod := range importantPods {
 		ids, err := r.ListContainers(cruntime.ListOptions{Name: pod})
 		if err != nil {
@@ -186,5 +212,6 @@ func logCommands(r cruntime.Manager, bs bootstrapper.Bootstrapper, length int, f
 	}
 	cmds[r.Name()] = r.SystemLogCmd(length)
 	cmds["container status"] = cruntime.ContainerStatusCommand()
+
 	return cmds
 }

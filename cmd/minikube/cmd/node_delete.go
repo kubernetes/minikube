@@ -18,9 +18,8 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -36,17 +35,11 @@ var nodeDeleteCmd = &cobra.Command{
 		}
 		name := args[0]
 
-		profile := viper.GetString(config.MachineProfile)
-		out.T(out.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": profile})
+		co := mustload.Healthy(ClusterFlagValue())
+		out.T(out.DeletingHost, "Deleting node {{.name}} from cluster {{.cluster}}", out.V{"name": name, "cluster": co.Config.Name})
 
-		cc, err := config.Load(profile)
-		if err != nil {
-			exit.WithError("loading config", err)
-		}
-
-		err = node.Delete(*cc, name)
-		if err != nil {
-			out.FatalT("Failed to delete node {{.name}}", out.V{"name": name})
+		if err := node.Delete(*co.Config, name); err != nil {
+			exit.WithError("deleting node", err)
 		}
 
 		out.T(out.Deleted, "Node {{.name}} was successfully deleted.", out.V{"name": name})

@@ -24,20 +24,18 @@ import (
 	"io"
 	"net"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 
-	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
 )
@@ -117,18 +115,10 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 }
 
 // isDockerActive checks if Docker is active
-func isDockerActive(d drivers.Driver) (bool, error) {
-	client, err := drivers.GetSSHClientFromDriver(d)
-	if err != nil {
-		return false, err
-	}
-	output, err := client.Output("sudo systemctl is-active docker")
-	if err != nil {
-		return false, err
-	}
-	// systemd returns error code on inactive
-	s := strings.TrimSpace(output)
-	return err == nil && s == "active", nil
+func isDockerActive(r command.Runner) bool {
+	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "docker")
+	_, err := r.RunCmd(c)
+	return err == nil
 }
 
 // dockerEnvCmd represents the docker-env command
@@ -137,64 +127,41 @@ var dockerEnvCmd = &cobra.Command{
 	Short: "Sets up docker env variables; similar to '$(docker-machine env)'",
 	Long:  `Sets up docker env variables; similar to '$(docker-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
+		cname := ClusterFlagValue()
+		co := mustload.Running(cname)
+		driverName := co.CPHost.DriverName
 
-		profile := viper.GetString(config.MachineProfile)
-		cc, err := config.Load(profile)
-		if err != nil {
-			exit.WithError("Error getting config", err)
-		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
-		if err != nil {
-			exit.WithError("Error getting host", err)
-		}
-		if host.Driver.DriverName() == driver.None {
+		if driverName == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
 		}
 
-		hostSt, err := machine.GetHostStatus(api, cc.Name)
-		if err != nil {
-			exit.WithError("Error getting host status", err)
-		}
-		if hostSt != state.Running.String() {
-			exit.WithCodeT(exit.Unavailable, `'{{.profile}}' is not running`, out.V{"profile": profile})
-		}
-		ok, err := isDockerActive(host.Driver)
-		if err != nil {
-			exit.WithError("Error getting service status", err)
+		if co.Config.KubernetesConfig.ContainerRuntime != "docker" {
+			exit.WithCodeT(exit.BadUsage, `The docker-env command is only compatible with the "docker" runtime, but this cluster was configured to use the "{{.runtime}}" runtime.`,
+				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
-		if !ok {
-			exit.WithCodeT(exit.Unavailable, `The docker service within '{{.profile}}' is not active`, out.V{"profile": profile})
-		}
-
-		hostIP, err := host.Driver.GetIP()
-		if err != nil {
-			exit.WithError("Error getting host IP", err)
+		if ok := isDockerActive(co.CPRunner); !ok {
+			exit.WithCodeT(exit.Unavailable, `The docker service within '{{.name}}' is not active`, out.V{"name": cname})
 		}
 
 		sh := shell.EnvConfig{
 			Shell: shell.ForceShell,
 		}
 
+		var err error
 		port := constants.DockerDaemonPort
-		if driver.IsKIC(host.DriverName) { // for kic we need to find what port docker/podman chose for us
-			hostIP = oci.DefaultBindIPV4
-			port, err = oci.HostPortBinding(host.DriverName, profile, port)
+		if driver.IsKIC(driverName) {
+			port, err = oci.ForwardedPort(driverName, cname, port)
 			if err != nil {
-				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": host.DriverName, "error": err})
+				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
 			}
 		}
 
 		ec := DockerEnvConfig{
 			EnvConfig: sh,
-			profile:   profile,
-			driver:    host.DriverName,
-			hostIP:    hostIP,
+			profile:   cname,
+			driver:    driverName,
+			hostIP:    co.DriverIP.String(),
 			port:      port,
 			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,

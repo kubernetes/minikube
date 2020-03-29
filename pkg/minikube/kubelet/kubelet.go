@@ -30,16 +30,29 @@ import (
 
 // Stop idempotently stops the kubelet
 func Stop(cr command.Runner) error {
+	return stop(cr, false)
+}
+
+// ForceStop idempotently force stops the kubelet
+func ForceStop(cr command.Runner) error {
+	return stop(cr, true)
+}
+
+// stop dempotently stops the kubelet
+func stop(cr command.Runner, force bool) error {
 	glog.Infof("stopping kubelet ...")
-	stop := func() error {
+	stp := func() error {
 		cmd := exec.Command("sudo", "systemctl", "stop", "kubelet.service")
+		if force {
+			cmd = exec.Command("sudo", "systemctl", "stop", "-f", "kubelet.service")
+		}
 		if rr, err := cr.RunCmd(cmd); err != nil {
-			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
+			return fmt.Errorf("temporary error for %q : %v", rr.Command(), err)
 		}
 		cmd = exec.Command("sudo", "systemctl", "show", "-p", "SubState", "kubelet")
 		rr, err := cr.RunCmd(cmd)
 		if err != nil {
-			glog.Errorf("temporary error: for %q : %v", rr.Command(), err)
+			return fmt.Errorf("temporary error: for %q : %v", rr.Command(), err)
 		}
 		if !strings.Contains(rr.Stdout.String(), "dead") && !strings.Contains(rr.Stdout.String(), "failed") {
 			return fmt.Errorf("unexpected kubelet state: %q", rr.Stdout.String())
@@ -47,10 +60,9 @@ func Stop(cr command.Runner) error {
 		return nil
 	}
 
-	if err := retry.Expo(stop, 2*time.Second, time.Minute*3, 5); err != nil {
+	if err := retry.Expo(stp, 1*time.Second, time.Minute, 2); err != nil {
 		return errors.Wrapf(err, "error stopping kubelet")
 	}
-
 	return nil
 }
 
@@ -77,7 +89,7 @@ func Restart(cr command.Runner) error {
 // Check checks on the status of the kubelet
 func Check(cr command.Runner) error {
 	glog.Infof("checking for running kubelet ...")
-	c := exec.Command("systemctl", "is-active", "--quiet", "service", "kubelet")
+	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "kubelet")
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "check kubelet")
 	}

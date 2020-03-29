@@ -19,6 +19,7 @@ package bsutil
 
 import (
 	"bytes"
+	"os"
 	"path"
 
 	"github.com/pkg/errors"
@@ -26,13 +27,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/util"
 )
 
-// NewKubeletConfig generates a new systemd unit containing a configured kubelet
-// based on the options present in the KubernetesConfig.
-func NewKubeletConfig(mc config.MachineConfig, nc config.Node, r cruntime.Manager) ([]byte, error) {
+func extraKubeletOpts(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) (map[string]string, error) {
 	k8s := mc.KubernetesConfig
-	version, err := ParseKubernetesVersion(k8s.KubernetesVersion)
+	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -53,18 +54,19 @@ func NewKubeletConfig(mc config.MachineConfig, nc config.Node, r cruntime.Manage
 	if k8s.NetworkPlugin != "" {
 		extraOpts["network-plugin"] = k8s.NetworkPlugin
 	}
-	cp, err := config.PrimaryControlPlane(mc)
+	cp, err := config.PrimaryControlPlane(&mc)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting master node")
 	}
 	if _, ok := extraOpts["node-ip"]; !ok {
 		extraOpts["node-ip"] = cp.IP
 	}
-	if nc.Name != "" {
-		extraOpts["hostname-override"] = nc.Name
+	nodeName := KubeNodeName(mc, nc)
+	if nodeName != "" {
+		extraOpts["hostname-override"] = nodeName
 	}
 
-	pauseImage := images.Pause(k8s.ImageRepository)
+	pauseImage := images.Pause(version, k8s.ImageRepository)
 	if _, ok := extraOpts["pod-infra-container-image"]; !ok && k8s.ImageRepository != "" && pauseImage != "" && k8s.ContainerRuntime != remoteContainerRuntime {
 		extraOpts["pod-infra-container-image"] = pauseImage
 	}
@@ -79,7 +81,18 @@ func NewKubeletConfig(mc config.MachineConfig, nc config.Node, r cruntime.Manage
 		extraOpts["feature-gates"] = kubeletFeatureArgs
 	}
 
+	return extraOpts, nil
+}
+
+// NewKubeletConfig generates a new systemd unit containing a configured kubelet
+// based on the options present in the KubernetesConfig.
+func NewKubeletConfig(mc config.ClusterConfig, nc config.Node, r cruntime.Manager) ([]byte, error) {
 	b := bytes.Buffer{}
+	extraOpts, err := extraKubeletOpts(mc, nc, r)
+	if err != nil {
+		return nil, err
+	}
+	k8s := mc.KubernetesConfig
 	opts := struct {
 		ExtraOptions     string
 		ContainerRuntime string
@@ -104,4 +117,14 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 		return nil, errors.Wrap(err, "template execute")
 	}
 	return b.Bytes(), nil
+}
+
+// KubeNodeName returns the node name registered in Kubernetes
+func KubeNodeName(cc config.ClusterConfig, n config.Node) string {
+	if cc.Driver == driver.None {
+		// Always use hostname for "none" driver
+		hostname, _ := os.Hostname()
+		return hostname
+	}
+	return driver.MachineName(cc, n)
 }

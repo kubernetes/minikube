@@ -20,9 +20,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	pkgConfig "k8s.io/minikube/pkg/minikube/config"
-	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -35,7 +33,7 @@ var ProfileCmd = &cobra.Command{
 	Long:  "profile sets the current minikube profile, or gets the current profile if no arguments are provided.  This is used to run and manage multiple minikube instance.  You can return to the default minikube profile by running `minikube profile default`",
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
-			profile := viper.GetString(pkgConfig.MachineProfile)
+			profile := ClusterFlagValue()
 			out.T(out.Empty, profile)
 			os.Exit(0)
 		}
@@ -49,7 +47,7 @@ var ProfileCmd = &cobra.Command{
 		we need to add code over here to check whether the profile
 		name is in the list of reserved keywords
 		*/
-		if pkgConfig.ProfileNameInReservedKeywords(profile) {
+		if config.ProfileNameInReservedKeywords(profile) {
 			out.ErrT(out.FailureType, `Profile name "{{.profilename}}" is minikube keyword. To delete profile use command minikube delete -p <profile name>  `, out.V{"profilename": profile})
 			os.Exit(0)
 		}
@@ -64,21 +62,18 @@ var ProfileCmd = &cobra.Command{
 			}
 		}
 
-		if !pkgConfig.ProfileExists(profile) {
-			err := pkgConfig.CreateEmptyProfile(profile)
-			if err != nil {
-				exit.WithError("Creating a new profile failed", err)
-			}
-			out.SuccessT("Created a new profile : {{.profile_name}}", out.V{"profile_name": profile})
+		if !config.ProfileExists(profile) {
+			out.ErrT(out.Tip, `if you want to create a profile you can by this command: minikube start -p {{.profile_name}}`, out.V{"profile_name": profile})
+			os.Exit(0)
 		}
 
-		err := Set(pkgConfig.MachineProfile, profile)
+		err := Set(config.ProfileName, profile)
 		if err != nil {
 			exit.WithError("Setting profile failed", err)
 		}
-		cc, err := pkgConfig.Load(profile)
+		cc, err := config.Load(profile)
 		// might err when loading older version of cfg file that doesn't have KeepContext field
-		if err != nil && !pkg_config.IsNotExist(err) {
+		if err != nil && !config.IsNotExist(err) {
 			out.ErrT(out.Sad, `Error loading profile config: {{.error}}`, out.V{"error": err})
 		}
 		if err == nil {
@@ -91,7 +86,7 @@ var ProfileCmd = &cobra.Command{
 					out.ErrT(out.Sad, `Error while setting kubectl current context :  {{.error}}`, out.V{"error": err})
 				}
 			}
+			out.SuccessT("minikube profile was successfully set to {{.profile_name}}", out.V{"profile_name": profile})
 		}
-		out.SuccessT("minikube profile was successfully set to {{.profile_name}}", out.V{"profile_name": profile})
 	},
 }

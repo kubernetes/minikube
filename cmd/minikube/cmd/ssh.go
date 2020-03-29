@@ -21,13 +21,18 @@ import (
 
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
+	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
+)
+
+var (
+	nativeSSHClient bool
 )
 
 // sshCmd represents the docker-ssh command
@@ -36,29 +41,30 @@ var sshCmd = &cobra.Command{
 	Short: "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'",
 	Long:  "Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'.",
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
-		cc, err := config.Load(viper.GetString(config.MachineProfile))
-		if err != nil {
-			exit.WithError("Error getting config", err)
-		}
-		host, err := machine.CheckIfHostExistsAndLoad(api, cc.Name)
-		if err != nil {
-			exit.WithError("Error getting host", err)
-		}
-		if host.Driver.DriverName() == driver.None {
+		cname := ClusterFlagValue()
+		co := mustload.Running(cname)
+		if co.CPHost.DriverName == driver.None {
 			exit.UsageT("'none' driver does not support 'minikube ssh' command")
 		}
-		if viper.GetBool(nativeSSH) {
+
+		var err error
+		var n *config.Node
+		if nodeName == "" {
+			n = co.CPNode
+		} else {
+			n, _, err = node.Retrieve(co.Config, nodeName)
+			if err != nil {
+				exit.WithCodeT(exit.Unavailable, "Node {{.nodeName}} does not exist.", out.V{"nodeName": nodeName})
+			}
+		}
+
+		if nativeSSHClient {
 			ssh.SetDefaultClient(ssh.Native)
 		} else {
 			ssh.SetDefaultClient(ssh.External)
 		}
 
-		err = machine.CreateSSHShell(api, args)
+		err = machine.CreateSSHShell(co.API, *co.Config, *n, args)
 		if err != nil {
 			// This is typically due to a non-zero exit code, so no need for flourish.
 			out.ErrLn("ssh: %v", err)
@@ -70,4 +76,5 @@ var sshCmd = &cobra.Command{
 
 func init() {
 	sshCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
+	sshCmd.Flags().StringVarP(&nodeName, "node", "n", "", "The node to ssh into. Defaults to the primary control plane.")
 }

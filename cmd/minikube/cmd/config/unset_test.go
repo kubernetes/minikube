@@ -23,6 +23,7 @@ import (
 )
 
 func TestUnsetConfig(t *testing.T) {
+	createTestConfig(t)
 	propName := "cpus"
 	propValue := "1"
 	err := Set(propName, propValue)

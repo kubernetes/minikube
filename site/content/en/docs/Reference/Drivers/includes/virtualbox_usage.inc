@@ -7,10 +7,10 @@
 Start a cluster using the virtualbox driver:
 
 ```shell
-minikube start --vm-driver=virtualbox
+minikube start --driver=virtualbox
 ```
 To make virtualbox the default driver:
 
 ```shell
-minikube config set vm-driver virtualbox
+minikube config set driver virtualbox
 ```

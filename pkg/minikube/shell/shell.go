@@ -30,11 +30,11 @@ import (
 
 const (
 	fishSetPfx   = "set -gx "
-	fishSetSfx   = "\"\n"
+	fishSetSfx   = "\";\n" // semi-colon required for fish 2.7
 	fishSetDelim = " \""
 
 	fishUnsetPfx = "set -e "
-	fishUnsetSfx = "\n"
+	fishUnsetSfx = ";\n"
 
 	psSetPfx   = "$Env:"
 	psSetSfx   = "\"\n"
@@ -97,7 +97,7 @@ func generateUsageHint(sh, usgPlz, usgCmd string) string {
 `, usgPlz, usgCmd),
 		"fish": fmt.Sprintf(`
 # %s
-# eval (%s)
+# %s | source
 `, usgPlz, usgCmd),
 		"powershell": fmt.Sprintf(`# %s
 # & %s | Invoke-Expression

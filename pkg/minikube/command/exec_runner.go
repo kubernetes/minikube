@@ -46,6 +46,8 @@ func NewExecRunner() Runner {
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
 func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	rr := &RunResult{Args: cmd.Args}
+	glog.Infof("Run: %v", rr.Command())
+
 	var outb, errb io.Writer
 	if cmd.Stdout == nil {
 		var so bytes.Buffer

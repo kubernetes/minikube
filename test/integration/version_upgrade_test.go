@@ -43,7 +43,7 @@ import (
 func TestVersionUpgrade(t *testing.T) {
 	MaybeParallel(t)
 	profile := UniqueProfileName("vupgrade")
-	ctx, cancel := context.WithTimeout(context.Background(), 55*time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), Minutes(55))
 
 	defer CleanupWithLogs(t, profile, cancel)
 
@@ -55,7 +55,7 @@ func TestVersionUpgrade(t *testing.T) {
 	tf.Close()
 
 	url := pkgutil.GetBinaryDownloadURL("latest", runtime.GOOS)
-	if err := retry.Expo(func() error { return getter.GetFile(tf.Name(), url) }, 3*time.Second, 3*time.Minute); err != nil {
+	if err := retry.Expo(func() error { return getter.GetFile(tf.Name(), url) }, 3*time.Second, Minutes(3)); err != nil {
 		t.Fatalf("get failed: %v", err)
 	}
 
@@ -65,7 +65,10 @@ func TestVersionUpgrade(t *testing.T) {
 		}
 	}
 
-	args := append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	// Assert that --iso-url works without a sha checksum, and that we can upgrade from old ISO's
+	// Some day, this will break an implicit assumption that a tool is available in the ISO :)
+	oldISO := "https://storage.googleapis.com/minikube/iso/integration-test.iso"
+	args := append([]string{"start", "-p", profile, "--memory=2200", fmt.Sprintf("--iso-url=%s", oldISO), fmt.Sprintf("--kubernetes-version=%s", constants.OldestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
 	rr := &RunResult{}
 	r := func() error {
 		rr, err = Run(t, exec.CommandContext(ctx, tf.Name(), args...))
@@ -73,7 +76,7 @@ func TestVersionUpgrade(t *testing.T) {
 	}
 
 	// Retry to allow flakiness for the previous release
-	if err := retry.Expo(r, 1*time.Second, 30*time.Minute, 3); err != nil {
+	if err := retry.Expo(r, 1*time.Second, Minutes(30), 3); err != nil {
 		t.Fatalf("release start failed: %v", err)
 	}
 
@@ -123,7 +126,13 @@ func TestVersionUpgrade(t *testing.T) {
 		return err
 	}
 
-	if err := retry.Expo(r, 1*time.Second, 30*time.Minute, 3); err == nil {
+	if err := retry.Expo(r, 1*time.Second, Minutes(30), 3); err == nil {
 		t.Fatalf("downgrading kubernetes should not be allowed: %v", err)
+	}
+
+	args = append([]string{"start", "-p", profile, fmt.Sprintf("--kubernetes-version=%s", constants.NewestKubernetesVersion), "--alsologtostderr", "-v=1"}, StartArgs()...)
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Errorf("%s failed: %v", rr.Args, err)
 	}
 }

@@ -18,9 +18,7 @@ package config
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/addons"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -35,7 +33,7 @@ var addonsDisableCmd = &cobra.Command{
 		}
 
 		addon := args[0]
-		err := addons.Set(addon, "false", viper.GetString(config.MachineProfile))
+		err := addons.Set(addon, "false", ClusterFlagValue())
 		if err != nil {
 			exit.WithError("disable failed", err)
 		}

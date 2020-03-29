@@ -20,8 +20,6 @@ import (
 	"fmt"
 	"net"
 	"os/exec"
-	"strings"
-	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/state"
@@ -34,8 +32,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
+	"k8s.io/minikube/pkg/minikube/kubelet"
 	"k8s.io/minikube/pkg/minikube/vmpath"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 // cleanupPaths are paths to be removed by cleanup, and are used by both kubeadm and minikube.
@@ -115,8 +113,9 @@ func (d *Driver) GetSSHPort() (int, error) {
 	return 0, fmt.Errorf("driver does not support ssh commands")
 }
 
-// GetURL returns a Docker compatible host URL for connecting to this host
+// GetURL returns a Docker URL inside this host
 // e.g. tcp://1.2.3.4:2376
+// more info https://github.com/docker/machine/blob/b170508bf44c3405e079e26d5fdffe35a64c6972/libmachine/provision/utils.go#L159_L175
 func (d *Driver) GetURL() (string, error) {
 	ip, err := d.GetIP()
 	if err != nil {
@@ -155,8 +154,8 @@ func (d *Driver) GetState() (state.State, error) {
 
 // Kill stops a host forcefully, including any containers that we are managing.
 func (d *Driver) Kill() error {
-	if err := stopKubelet(d.exec); err != nil {
-		return errors.Wrap(err, "kubelet")
+	if err := kubelet.ForceStop(d.exec); err != nil {
+		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 
 	// First try to gracefully stop containers
@@ -219,8 +218,11 @@ func (d *Driver) Start() error {
 
 // Stop a host gracefully, including any containers that we are managing.
 func (d *Driver) Stop() error {
-	if err := stopKubelet(d.exec); err != nil {
-		return errors.Wrap(err, "stop kubelet")
+	if err := kubelet.Stop(d.exec); err != nil {
+		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
+		if err := kubelet.ForceStop(d.exec); err != nil {
+			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
+		}
 	}
 	containers, err := d.runtime.ListContainers(cruntime.ListOptions{})
 	if err != nil {
@@ -238,32 +240,6 @@ func (d *Driver) Stop() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support ssh commands")
-}
-
-// stopKubelet idempotently stops the kubelet
-func stopKubelet(cr command.Runner) error {
-	glog.Infof("stopping kubelet.service ...")
-	stop := func() error {
-		cmd := exec.Command("sudo", "systemctl", "stop", "kubelet.service")
-		if rr, err := cr.RunCmd(cmd); err != nil {
-			glog.Errorf("temporary error for %q : %v", rr.Command(), err)
-		}
-		cmd = exec.Command("sudo", "systemctl", "show", "-p", "SubState", "kubelet")
-		rr, err := cr.RunCmd(cmd)
-		if err != nil {
-			glog.Errorf("temporary error: for %q : %v", rr.Command(), err)
-		}
-		if !strings.Contains(rr.Stdout.String(), "dead") && !strings.Contains(rr.Stdout.String(), "failed") {
-			return fmt.Errorf("unexpected kubelet state: %q", rr.Stdout.String())
-		}
-		return nil
-	}
-
-	if err := retry.Expo(stop, 2*time.Second, time.Minute*3, 5); err != nil {
-		return errors.Wrapf(err, "error stopping kubelet")
-	}
-
-	return nil
 }
 
 // restartKubelet restarts the kubelet

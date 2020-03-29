@@ -17,21 +17,29 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
+	"os/signal"
+	"path/filepath"
+	"runtime"
+	"strconv"
+	"strings"
 	"text/template"
+	"time"
 
 	"github.com/golang/glog"
-	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
-	pkg_config "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
+	"k8s.io/minikube/pkg/minikube/tunnel/kic"
 )
 
 const defaultServiceFormatTemplate = "http://{{.IP}}:{{.Port}}"
@@ -66,39 +74,26 @@ var serviceCmd = &cobra.Command{
 		}
 
 		svc := args[0]
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
 
-		profileName := viper.GetString(pkg_config.MachineProfile)
-		if !machine.IsHostRunning(api, profileName) {
-			os.Exit(1)
+		cname := ClusterFlagValue()
+		co := mustload.Healthy(cname)
+
+		if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
+			startKicServiceTunnel(svc, cname)
+			return
 		}
 
-		urls, err := service.WaitForService(api, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
+		urls, err := service.WaitForService(co.API, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
+			var s *service.SVCNotFoundError
+			if errors.As(err, &s) {
+				exit.WithCodeT(exit.Data, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
+You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": svc, "namespace": namespace})
+			}
 			exit.WithError("Error opening service", err)
 		}
 
-		for _, u := range urls {
-			_, err := url.Parse(u)
-			if err != nil {
-				glog.Warningf("failed to parse url %q: %v (will not open)", u, err)
-				out.String(fmt.Sprintf("%s\n", u))
-				continue
-			}
-
-			if serviceURLMode {
-				out.String(fmt.Sprintf("%s\n", u))
-				continue
-			}
-			out.T(out.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
-			if err := browser.OpenURL(u); err != nil {
-				exit.WithError(fmt.Sprintf("open url failed: %s", u), err)
-			}
-		}
+		openURLs(svc, urls)
 	},
 }
 
@@ -111,4 +106,64 @@ func init() {
 
 	serviceCmd.PersistentFlags().StringVar(&serviceURLFormat, "format", defaultServiceFormatTemplate, "Format to output service URL in. This format will be applied to each url individually and they will be printed one at a time.")
 
+}
+
+func startKicServiceTunnel(svc, configName string) {
+	ctrlC := make(chan os.Signal, 1)
+	signal.Notify(ctrlC, os.Interrupt)
+
+	clientset, err := service.K8s.GetClientset(1 * time.Second)
+	if err != nil {
+		exit.WithError("error creating clientset", err)
+	}
+
+	port, err := oci.ForwardedPort(oci.Docker, configName, 22)
+	if err != nil {
+		exit.WithError("error getting ssh port", err)
+	}
+	sshPort := strconv.Itoa(port)
+	sshKey := filepath.Join(localpath.MiniPath(), "machines", configName, "id_rsa")
+
+	serviceTunnel := kic.NewServiceTunnel(sshPort, sshKey, clientset.CoreV1())
+	urls, err := serviceTunnel.Start(svc, namespace)
+	if err != nil {
+		exit.WithError("error starting tunnel", err)
+	}
+
+	// wait for tunnel to come up
+	time.Sleep(1 * time.Second)
+
+	data := [][]string{{namespace, svc, "", strings.Join(urls, "\n")}}
+	service.PrintServiceList(os.Stdout, data)
+
+	openURLs(svc, urls)
+	out.T(out.Warning, "Because you are using docker driver on Mac, the terminal needs to be open to run it.")
+
+	<-ctrlC
+
+	err = serviceTunnel.Stop()
+	if err != nil {
+		exit.WithError("error stopping tunnel", err)
+	}
+}
+
+func openURLs(svc string, urls []string) {
+	for _, u := range urls {
+		_, err := url.Parse(u)
+		if err != nil {
+			glog.Warningf("failed to parse url %q: %v (will not open)", u, err)
+			out.String(fmt.Sprintf("%s\n", u))
+			continue
+		}
+
+		if serviceURLMode {
+			out.String(fmt.Sprintf("%s\n", u))
+			continue
+		}
+
+		out.T(out.Celebrate, "Opening service {{.namespace_name}}/{{.service_name}} in default browser...", out.V{"namespace_name": namespace, "service_name": svc})
+		if err := browser.OpenURL(u); err != nil {
+			exit.WithError(fmt.Sprintf("open url failed: %s", u), err)
+		}
+	}
 }
