@@ -9,12 +9,12 @@ for a better kubernetes in container experience, use docker [driver](https://min
 
 ## Usage
 
-Start a cluster using the docker driver:
+Start a cluster using the podman driver:
 
 ```shell
 minikube start --driver=podman
 ```
-To make docker the default driver:
+To make podman the default driver:
 
 ```shell
 minikube config set driver podman
