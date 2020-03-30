@@ -54,3 +54,16 @@ Even with this schedule, it is assumed that release dates may slip.
 ### Release branches
 
 Rather than considering master to always be in a releasable state, we could maintain long-lived release branches. This adds a lot of overhead to the release manager, as they have to manage cherry-picks.
+
+### Extending cycle by a week
+
+As this process assumes a regression release at Day 7, it begs the question on whether or not a 5-week feature release cycle makes more sense:
+
+* Day 0: Create milestones for the next regression & feature release
+* Day 7: Regression release (optional)
+* Day 21: Beta release
+* Day 28: Beta 2 release
+* Day 31: Feature freeze and optional final beta
+* Day 35: Feature release
+
+The downside is a slightly lower release velocity, the upside may be more a more stable final release.
