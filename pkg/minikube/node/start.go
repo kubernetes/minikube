@@ -66,7 +66,6 @@ const (
 
 // Start spins up a guest and starts the kubernetes node.
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) *kubeconfig.Settings {
-
 	cp := ""
 	if apiServer {
 		cp = "control plane "
