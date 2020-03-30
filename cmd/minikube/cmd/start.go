@@ -371,6 +371,7 @@ func runStart(cmd *cobra.Command, args []string) {
 					ControlPlane:      false,
 					KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 				}
+				out.Ln("") // extra newline for clarity on the command line
 				err := node.Add(&cc, n)
 				if err != nil {
 					exit.WithError("adding node", err)
