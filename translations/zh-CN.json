@@ -387,7 +387,7 @@
 	"Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.": "",
 	"Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}": "请求的内存分配 {{.requested_size}} 小于允许的 {{.minimum_size}} 最小值",
 	"Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum}}MB": "",
-	"Retarting existing {{.driver_name}} {{.machine_type}} for \"{{.cluster}}\" ...": "",
+	"Restarting existing {{.driver_name}} {{.machine_type}} for \"{{.cluster}}\" ...": "",
 	"Retrieve the ssh identity key path of the specified cluster": "检索指定集群的 ssh 密钥路径",
 	"Retrieve the ssh identity key path of the specified cluster.": "检索指定集群的 ssh 密钥路径。",
 	"Retrieves the IP address of the running cluster": "检索正在运行的群集的 IP 地址",
