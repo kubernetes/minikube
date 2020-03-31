@@ -9,7 +9,7 @@ description: >
 
 ## Overview
 
-Most continuous integration environments are already running inside a VM, and may not support nested virtualization. The `none` driver was designed for this use case. or you could alternatively use the [Docker](https://minikube.sigs.k8s.io/docs/reference/drivers/docker).
+Most continuous integration environments are already running inside a VM, and may not support nested virtualization. The `none` driver was designed for this use case. or you could alternatively use the [Docker](https://minikube.sigs.k8s.io/docs/Drivers/docker).
 
 ## Prerequisites
 
@@ -42,4 +42,4 @@ sudo -E minikube start --driver=none
 
 ##  Alternative ways
 
-you could alternatively use minikube's container drivers such as [Docker](https://minikube.sigs.k8s.io/docs/reference/drivers/docker) or [Podman](https://minikube.sigs.k8s.io/docs/reference/drivers/podman).
+you could alternatively use minikube's container drivers such as [Docker](https://minikube.sigs.k8s.io/docs/Drivers/docker) or [Podman](https://minikube.sigs.k8s.io/docs/Drivers/podman).
