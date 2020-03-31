@@ -331,7 +331,7 @@
 	"Requested memory allocation ({{.requested}}MB) is less than the recommended minimum {{.recommended}}MB. Kubernetes may crash unexpectedly.": "",
 	"Requested memory allocation {{.requested_size}} is less than the minimum allowed of {{.minimum_size}}": "Die angeforderte Speicherzuweisung {{.requested_size}} liegt unter dem zulässigen Mindestwert von {{.minimum_size}}.",
 	"Requested memory allocation {{.requested}}MB is less than the usable minimum of {{.minimum}}MB": "",
-	"Retarting existing {{.driver_name}} {{.machine_type}} for \"{{.cluster}}\" ...": "",
+	"Restarting existing {{.driver_name}} {{.machine_type}} for \"{{.cluster}}\" ...": "",
 	"Retrieve the ssh identity key path of the specified cluster": "",
 	"Retrieve the ssh identity key path of the specified cluster.": "",
 	"Retrieves the IP address of the running cluster": "",
