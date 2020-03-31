@@ -66,6 +66,13 @@ const (
 
 // Start spins up a guest and starts the kubernetes node.
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) *kubeconfig.Settings {
+	cp := ""
+	if apiServer {
+		cp = "control plane "
+	}
+
+	out.T(out.ThumbsUp, "Starting {{.controlPlane}}node {{.name}} in cluster {{.cluster}}", out.V{"controlPlane": cp, "name": n.Name, "cluster": cc.Name})
+
 	var kicGroup errgroup.Group
 	if driver.IsKIC(cc.Driver) {
 		beginDownloadKicArtifacts(&kicGroup)
