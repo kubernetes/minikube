@@ -1,7 +1,6 @@
 ---
 title: "Pushing images"
-date: 2019-08-05
-weight: 4
+weight: 5
 description: >
   There are many ways to push images into minikube.
 ---

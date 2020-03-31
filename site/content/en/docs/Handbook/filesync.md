@@ -1,8 +1,6 @@
 ---
 title: "File Sync"
-linkTitle: "File Sync"
-weight: 15
-date: 2019-08-01
+weight: 12
 description: >
   How to sync files into minikube
 ---

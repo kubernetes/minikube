@@ -1,7 +1,6 @@
 
 ---
 title: "Basic controls"
-linkTitle: "Basic controls"
 weight: 1
 description: >
   See minikube in action!
