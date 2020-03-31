@@ -27,6 +27,8 @@ Some features can only be accessed by environment variables, here is a list of t
 
 * **MINIKUBE_ENABLE_PROFILING** - (int, `1` enables it) enables trace profiling to be generated for minikube
 
+* **KUBECONFIG** - (string) sets the path/filname for the .kube/config file that [kubectl](https://kubernetes.io/docs/tasks/access-application-cluster/configure-access-multiple-clusters/#set-the-kubeconfig-environment-variable
+) uses as input 
 
 ## Example: Disabling emoji
 
