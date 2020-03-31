@@ -22,6 +22,14 @@ If installing with brew, you may need to run `brew link minikube` for installati
 brew link minikube
 ```
 
+If `which minikube` fails after installing with brew, you may need to uninstall the cask and reinstall by running:
+
+```
+brew cask uninstall minikube
+
+brew install minikube
+```
+
 {{% /tab %}}
 {{% tab "Direct" %}}
 
