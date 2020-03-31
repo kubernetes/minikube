@@ -178,7 +178,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
-	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again.")
+	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -357,7 +357,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	kubeconfig, err := node.Start(cc, n, existingAddons, true)
 	if err != nil && viper.GetBool(deleteOnFailure) {
-		out.T(out.Warning, "Cluster {{.name}} failed to start, deleting and trying again.", out.V{"name": cc.Name})
+		out.T(out.Warning, "Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
 		// Start failed, delete the cluster and try again
 		profile, err := config.LoadProfile(cc.Name)
 		if err != nil {
@@ -366,8 +366,7 @@ func runStart(cmd *cobra.Command, args []string) {
 
 		err = deleteProfile(profile)
 		if err != nil {
-			// We failed to delete? That's not good. Error out.
-			exit.WithError("deleting cluster failed", err)
+			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": cc.Name})
 		}
 
 		kubeconfig, err = node.Start(cc, n, existingAddons, true)
