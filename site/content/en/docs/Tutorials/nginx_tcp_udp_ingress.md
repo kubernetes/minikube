@@ -23,9 +23,9 @@ is only configured to listen on ports 80 and 443. TCP and UDP services listening
 
 ## Configuring TCP and UDP services with the nginx ingress controller
 
-### Enable the ingress addon 
+### Enable the ingress addon
 
-Enable the minikube ingress addon with the following command: 
+Enable the minikube ingress addon with the following command:
 
 ```shell
 minikube addons enable ingress

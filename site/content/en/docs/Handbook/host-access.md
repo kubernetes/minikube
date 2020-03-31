@@ -1,7 +1,7 @@
 ---
 title: "Host access"
 date: 2017-01-05
-weight: 10
+weight: 9
 description: >
   How to access host resources from a pod
 ---

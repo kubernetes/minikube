@@ -1,5 +1,5 @@
 ---
-title: "Configuration & Tuning"
+title: "Configuration"
 weight: 4
 description: >
   Configuring your cluster 

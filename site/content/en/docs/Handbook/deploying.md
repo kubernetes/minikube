@@ -1,6 +1,5 @@
 ---
 title: "Deploying apps"
-linkTitle: "Deploying apps"
 weight: 2
 description: >
   How to deploy an application to minikube
