@@ -1,5 +1,7 @@
-{{/* minikube hack: temporarily forked from docsy/layouts/partials/sidebar-tree.html due to hugo v0.69 compatibility issues */}}
+{{/* minikube hack: temporarily forked from docsy/layouts/partials/sidebar-tree.html for hugo v0.69 compatibility */}}
 
+{{/* We cache this partial for bigger sites and set the active class client side. */}}
+{{ $shouldDelayActive := ge (len .Site.Pages) 2000 }}
 <div id="td-sidebar-menu" class="td-sidebar__inner{{ if $shouldDelayActive }} d-none{{ end }}">
   {{ if not .Site.Params.ui.sidebar_search_disable }}
   <form class="td-sidebar__search d-flex align-items-center">
