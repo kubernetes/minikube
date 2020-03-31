@@ -231,6 +231,7 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 	return nil
 }
 
+// APIServerVersionMatch checks if the server version matches the expected
 func APIServerVersionMatch(client *kubernetes.Clientset, expected string) error {
 	vi, err := client.ServerVersion()
 	if err != nil {
