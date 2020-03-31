@@ -44,7 +44,6 @@ func TestDisplay(t *testing.T) {
 			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test")},
 			description: "url, id and err",
 			expected: `
-* Error: [example] test
 * Suggestion: 
 * Documentation: example.com
 `,
@@ -53,7 +52,6 @@ func TestDisplay(t *testing.T) {
 			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test"), Issues: []int{0, 1}, Advice: "you need a hug"},
 			description: "with 2 issues and suggestion",
 			expected: `
-* Error: [example] test
 * Suggestion: you need a hug
 * Documentation: example.com
 * Related issues:
@@ -65,7 +63,6 @@ func TestDisplay(t *testing.T) {
 			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test"), Issues: []int{0, 1}},
 			description: "with 2 issues",
 			expected: `
-* Error: [example] test
 * Suggestion: 
 * Documentation: example.com
 * Related issues:
@@ -78,7 +75,6 @@ func TestDisplay(t *testing.T) {
 			problem:     Problem{ID: "example", URL: "example.com", Err: fmt.Errorf("test"), Issues: []int{0, 1, 2, 3, 4, 5}},
 			description: "with 6 issues",
 			expected: `
-* Error: [example] test
 * Suggestion: 
 * Documentation: example.com
 * Related issues:

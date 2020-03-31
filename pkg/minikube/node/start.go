@@ -48,6 +48,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/logs"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util"
@@ -65,6 +66,13 @@ const (
 
 // Start spins up a guest and starts the kubernetes node.
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) *kubeconfig.Settings {
+	cp := ""
+	if apiServer {
+		cp = "control plane "
+	}
+
+	out.T(out.ThumbsUp, "Starting {{.controlPlane}}node {{.name}} in cluster {{.cluster}}", out.V{"controlPlane": cp, "name": n.Name, "cluster": cc.Name})
+
 	var kicGroup errgroup.Group
 	if driver.IsKIC(cc.Driver) {
 		beginDownloadKicArtifacts(&kicGroup)
@@ -100,10 +108,10 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	showVersionInfo(n.KubernetesVersion, cr)
 
 	var bs bootstrapper.Bootstrapper
-	var kubeconfig *kubeconfig.Settings
+	var kcs *kubeconfig.Settings
 	if apiServer {
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-		kubeconfig, err = setupKubeconfig(host, &cc, &n, cc.Name)
+		kcs = setupKubeconfig(host, &cc, &n, cc.Name)
 		if err != nil {
 			exit.WithError("Failed to setup kubeconfig", err)
 		}
@@ -114,6 +122,11 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		if err != nil {
 			exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, cc, mRunner))
 		}
+
+		// write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper
+		if err := kubeconfig.Update(kcs); err != nil {
+			exit.WithError("Failed to update kubeconfig file.", err)
+		}
 	} else {
 		bs, err = cluster.Bootstrapper(machineAPI, viper.GetString(cmdcfg.Bootstrapper), cc, n)
 		if err != nil {
@@ -123,7 +136,6 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		if err = bs.SetupCerts(cc.KubernetesConfig, n); err != nil {
 			exit.WithError("setting up certs", err)
 		}
-
 	}
 
 	configureMounts()
@@ -174,8 +186,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		}
 	}
 
-	return kubeconfig
-
+	return kcs
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
@@ -238,7 +249,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node) 
 	return bs
 }
 
-func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
+func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) *kubeconfig.Settings {
 	addr, err := apiServerURL(*h, *cc, *n)
 	if err != nil {
 		exit.WithError("Failed to get API Server URL", err)
@@ -258,10 +269,7 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 	}
 
 	kcs.SetPath(kubeconfig.PathFromEnv())
-	if err := kubeconfig.Update(kcs); err != nil {
-		return kcs, err
-	}
-	return kcs, nil
+	return kcs
 }
 
 func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
@@ -345,7 +353,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 
 	// Don't use host.Driver to avoid nil pointer deref
 	drv := cc.Driver
-	exit.WithError(fmt.Sprintf(`%s %s start failed`, drv, driver.MachineType(drv)), err)
+	exit.WithError(fmt.Sprintf(`Failed to start %s %s. "%s" may fix it.`, drv, driver.MachineType(drv), mustload.ExampleCmd(cc.Name, "start")), err)
 	return host, exists
 }
 

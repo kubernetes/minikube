@@ -117,6 +117,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	}
 
 	for _, f := range copyableFiles {
+		glog.Infof("copying: %s/%s", f.GetTargetDir(), f.GetTargetName())
 		if err := cmd.Copy(f); err != nil {
 			return nil, errors.Wrapf(err, "Copy %s", f.GetAssetName())
 		}
@@ -128,6 +129,7 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	return copyableFiles, nil
 }
 
+// CACerts has cert and key for CA (and Proxy)
 type CACerts struct {
 	caCert    string
 	caKey     string
@@ -325,6 +327,7 @@ func collectCACerts() (map[string]string, error) {
 		if info != nil && !info.IsDir() {
 			ext := strings.ToLower(filepath.Ext(hostpath))
 			if ext == ".crt" || ext == ".pem" {
+				glog.Infof("found cert: %s (%d bytes)", info.Name(), info.Size())
 				validPem, err := isValidPEMCertificate(hostpath)
 				if err != nil {
 					return err
@@ -360,9 +363,16 @@ func collectCACerts() (map[string]string, error) {
 
 // getSubjectHash calculates Certificate Subject Hash for creating certificate symlinks
 func getSubjectHash(cr command.Runner, filePath string) (string, error) {
+	lrr, err := cr.RunCmd(exec.Command("ls", "-la", filePath))
+	if err != nil {
+		return "", err
+	}
+	glog.Infof("hashing: %s", lrr.Stdout.String())
+
 	rr, err := cr.RunCmd(exec.Command("openssl", "x509", "-hash", "-noout", "-in", filePath))
 	if err != nil {
-		return "", errors.Wrapf(err, rr.Command())
+		crr, _ := cr.RunCmd(exec.Command("cat", filePath))
+		return "", errors.Wrapf(err, "cert:\n%s\n---\n%s", lrr.Output(), crr.Stdout.String())
 	}
 	stringHash := strings.TrimSpace(rr.Stdout.String())
 	return stringHash, nil

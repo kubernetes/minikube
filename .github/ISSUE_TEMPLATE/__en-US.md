@@ -2,21 +2,24 @@
 name: English
 about: Report an issue
 ---
-<!-- Please use this template while reporting an issue, providing as much information as possible. Failure to do so may result in a delayed response. Thank you! -->
+<!--- Please include the "minikube start" command you used in your reproduction steps --->
+**Steps to reproduce the issue:** 
 
-**The exact command to reproduce the issue**:
+1.
+2. 
+3.
+
+<!--- TIP: Add the "--alsologtostderr" flag to the command-line for more logs --->
+**Full output of failed command:** 
 
 
-**The full output of the command that failed**:<details>
 
+**Full output of `minikube start` command used, if not already included:**
+
+
+
+**Optional: Full output of `minikube logs` command:**
+<details>
 
 
 </details>
-
-**The output of the `minikube logs` command**:<details>
-
-
-
-</details>
-
-**The operating system version**:
