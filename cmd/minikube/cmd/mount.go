@@ -99,14 +99,14 @@ var mountCmd = &cobra.Command{
 		}
 
 		co := mustload.Running(ClusterFlagValue())
-		if co.CPHost.Driver.DriverName() == driver.None {
+		if co.CP.Host.Driver.DriverName() == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube mount' command`)
 		}
 
 		var ip net.IP
 		var err error
 		if mountIP == "" {
-			ip, err = cluster.GetVMHostIP(co.CPHost)
+			ip, err = cluster.GetVMHostIP(co.CP.Host)
 			if err != nil {
 				exit.WithError("Error getting the host IP address to use from within the VM", err)
 			}
@@ -147,7 +147,7 @@ var mountCmd = &cobra.Command{
 		}
 
 		bindIP := ip.String() // the ip to listen on the user's host machine
-		if driver.IsKIC(co.CPHost.Driver.DriverName()) && runtime.GOOS != "linux" {
+		if driver.IsKIC(co.CP.Host.Driver.DriverName()) && runtime.GOOS != "linux" {
 			bindIP = "127.0.0.1"
 		}
 		out.T(out.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
@@ -177,7 +177,7 @@ var mountCmd = &cobra.Command{
 		go func() {
 			for sig := range c {
 				out.T(out.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
-				err := cluster.Unmount(co.CPRunner, vmPath)
+				err := cluster.Unmount(co.CP.Runner, vmPath)
 				if err != nil {
 					out.ErrT(out.FailureType, "Failed unmount: {{.error}}", out.V{"error": err})
 				}
@@ -185,7 +185,7 @@ var mountCmd = &cobra.Command{
 			}
 		}()
 
-		err = cluster.Mount(co.CPRunner, ip.String(), vmPath, cfg)
+		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
 		if err != nil {
 			exit.WithError("mount failed", err)
 		}
