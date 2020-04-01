@@ -433,22 +433,12 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 		return nil
 	}
 
-	j, err := exec.Command(path, "version", "--client", "--output=json").Output()
+	gitVersion, err := kubectlVersion(path)
 	if err != nil {
-		return errors.Wrap(err, "exec")
+		return err
 	}
 
-	cv := struct {
-		ClientVersion struct {
-			GitVersion string `json:"gitVersion"`
-		} `json:"clientVersion"`
-	}{}
-	err = json.Unmarshal(j, &cv)
-	if err != nil {
-		return errors.Wrap(err, "unmarshal")
-	}
-
-	client, err := semver.Make(strings.TrimPrefix(cv.ClientVersion.GitVersion, version.VersionPrefix))
+	client, err := semver.Make(strings.TrimPrefix(gitVersion, version.VersionPrefix))
 	if err != nil {
 		return errors.Wrap(err, "client semver")
 	}
@@ -465,6 +455,31 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 			out.V{"path": path, "client_version": client})
 	}
 	return nil
+}
+
+func kubectlVersion(path string) (string, error) {
+	j, err := exec.Command(path, "version", "--client", "--output=json").Output()
+	if err != nil {
+		// really old kubernetes clients did not have the --output parameter
+		b, err := exec.Command(path, "version", "--client", "--short").Output()
+		if err != nil {
+			return "", errors.Wrap(err, "exec")
+		}
+		s := strings.TrimSpace(string(b))
+		return strings.Replace(s, "Client Version: ", "", 1), nil
+	}
+
+	cv := struct {
+		ClientVersion struct {
+			GitVersion string `json:"gitVersion"`
+		} `json:"clientVersion"`
+	}{}
+	err = json.Unmarshal(j, &cv)
+	if err != nil {
+		return "", errors.Wrap(err, "unmarshal")
+	}
+
+	return cv.ClientVersion.GitVersion, nil
 }
 
 func selectDriver(existing *config.ClusterConfig) registry.DriverState {
