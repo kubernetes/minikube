@@ -68,19 +68,6 @@ networking:
   dnsDomain: {{if .DNSDomain}}{{.DNSDomain}}{{else}}cluster.local{{end}}
   podSubnet: "{{.PodSubnet }}"
   serviceSubnet: {{.ServiceCIDR}}
-apiVersion: kubelet.config.k8s.io/v1beta1
-kind: KubeletConfiguration
-imageGCHighThresholdPercent: 70
-EvictionSoft
-  memory.available: "300mb"
-  nodefs.available: "30%"
-  nodefs.inodesFree: "20%"
-  imagefs.available: "30%"
-evictionHard:
-  memory.available: "100mb"
-  nodefs.available: "10%"
-  nodefs.inodesFree: "5%"
-  imagefs.available: "10%"  
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
