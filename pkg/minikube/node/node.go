@@ -39,7 +39,6 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 		return errors.Wrap(err, "save node")
 	}
 
-	// TODO: Start should return an error rather than calling exit!
 	_, err := Start(*cc, n, nil, false)
 	return err
 }

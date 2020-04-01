@@ -49,15 +49,15 @@ var nodeStartCmd = &cobra.Command{
 			exit.WithError("retrieving node", err)
 		}
 
-		// Start it up baby
 		_, err = node.Start(*cc, *n, nil, false)
 		if err != nil {
-			exit.WithError("starting node", err)
+			maybeDeleteAndRetry(*cc, *n, nil, err)
 		}
 	},
 }
 
 func init() {
 	nodeStartCmd.Flags().String("name", "", "The name of the node to start")
+	nodeStartCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	nodeCmd.AddCommand(nodeStartCmd)
 }
