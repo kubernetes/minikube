@@ -39,12 +39,17 @@ import (
 
 // ClusterController holds all the needed information for a minikube cluster
 type ClusterController struct {
-	Config   *config.ClusterConfig
-	API      libmachine.API
-	CPHost   *host.Host
-	CPNode   *config.Node
-	CPRunner command.Runner
-	DriverIP net.IP
+	Config *config.ClusterConfig
+	API    libmachine.API
+	CP     ControlPlane
+}
+
+type ControlPlane struct {
+	Host          *host.Host
+	Node          *config.Node
+	Runner        command.Runner
+	ForwardedIP   net.IP
+	ForwardedPort int
 }
 
 // Partial is a cmd-friendly way to load a cluster which may or may not be running
@@ -107,27 +112,36 @@ func Running(name string) ClusterController {
 		exit.WithError("Unable to get command runner", err)
 	}
 
-	ips, err := host.Driver.GetIP()
+	ipStr, err := host.Driver.GetIP()
 	if err != nil {
 		exit.WithError("Unable to get driver IP", err)
 	}
 
-	if driver.IsKIC(host.DriverName) {
-		ips = oci.DefaultBindIPV4
+	ip := net.ParseIP(ipStr)
+	if ip == nil {
+		exit.WithCodeT(exit.Software, fmt.Sprintf("Unable to parse driver IP: %q", ipStr))
 	}
 
-	ip := net.ParseIP(ips)
-	if ip == nil {
-		exit.WithCodeT(exit.Software, fmt.Sprintf("Unable to parse driver IP: %q", ips))
+	cpIP := cp.IP
+	cpPort := cp.Port
+	if driver.IsKIC(host.DriverName) {
+		cpIP = oci.DefaultBindIPV4
+		cpPort, err = oci.ForwardedPort(cc.Driver, cc.Name, cp.Port)
+		if err != nil {
+			exit.WithError("Unable to get forwarded port", err)
+		}
 	}
 
 	return ClusterController{
-		API:      api,
-		Config:   cc,
-		CPRunner: cr,
-		CPHost:   host,
-		CPNode:   &cp,
-		DriverIP: ip,
+		API:    api,
+		Config: cc,
+		CP: ControlPlane{
+			Runner:        cr,
+			Host:          host,
+			Node:          &cp,
+			ForwardedIP:   net.ParseIP(cpIP),
+			ForwardedPort: cpPort,
+		},
 	}
 }
 
@@ -135,7 +149,7 @@ func Running(name string) ClusterController {
 func Healthy(name string) ClusterController {
 	co := Running(name)
 
-	as, err := kverify.APIServerStatus(co.CPRunner, net.ParseIP(co.CPNode.IP), co.CPNode.Port)
+	as, err := kverify.APIServerStatus(co.CP.Runner, co.CP.ForwardedIP, co.CP.ForwardedPort)
 	if err != nil {
 		out.T(out.FailureType, `Unable to get control plane status: {{.error}}`, out.V{"error": err})
 		exitTip("delete", name, exit.Unavailable)
@@ -165,6 +179,6 @@ func ExampleCmd(cname string, action string) string {
 // exitTip returns an action tip and exits
 func exitTip(action string, profile string, code int) {
 	command := ExampleCmd(profile, action)
-	out.T(out.Workaround, "To fix this, run: {{.command}}", out.V{"command": command})
+	out.T(out.Workaround, `To fix this, run: "{{.command}}"`, out.V{"command": command})
 	os.Exit(code)
 }
