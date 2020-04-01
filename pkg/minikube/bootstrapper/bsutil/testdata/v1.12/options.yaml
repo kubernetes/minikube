@@ -41,7 +41,14 @@ networking:
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
+imageGCHighThresholdPercent: 85
+evictionSoft:
+  memory.available: "300mb"
+  nodefs.available: "30%"
+  nodefs.inodesFree: "20%"
+  imagefs.available: "30%"
 evictionHard:
-  nodefs.available: "0%"
-  nodefs.inodesFree: "0%"
-  imagefs.available: "0%"
+  memory.available: "100mb"
+  nodefs.available: "10%"
+  nodefs.inodesFree: "5%"
+  imagefs.available: "10%"
