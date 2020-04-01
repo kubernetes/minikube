@@ -150,15 +150,7 @@ var dockerEnvCmd = &cobra.Command{
 
 		var err error
 		port := constants.DockerDaemonPort
-		hostIP := co.DriverIP.String()
 		if driver.IsKIC(driverName) {
-			// Update host ip to bind iP
-			dockerIP := net.ParseIP(oci.DefaultBindIPV4)
-			if dockerIP == nil {
-				exit.WithCodeT(exit.Software, fmt.Sprintf("Unable to parse driver IP: %q", dockerIP))
-			}
-			hostIP = dockerIP.String()
-
 			port, err = oci.ForwardedPort(driverName, cname, port)
 			if err != nil {
 				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
