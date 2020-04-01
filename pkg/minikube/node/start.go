@@ -64,6 +64,13 @@ const (
 
 // Start spins up a guest and starts the kubernetes node.
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) *kubeconfig.Settings {
+	cp := ""
+	if apiServer {
+		cp = "control plane "
+	}
+
+	out.T(out.ThumbsUp, "Starting {{.controlPlane}}node {{.name}} in cluster {{.cluster}}", out.V{"controlPlane": cp, "name": n.Name, "cluster": cc.Name})
+
 	var kicGroup errgroup.Group
 	if driver.IsKIC(cc.Driver) {
 		beginDownloadKicArtifacts(&kicGroup)
@@ -99,10 +106,10 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	showVersionInfo(n.KubernetesVersion, cr)
 
 	var bs bootstrapper.Bootstrapper
-	var kubeconfig *kubeconfig.Settings
+	var kcs *kubeconfig.Settings
 	if apiServer {
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-		kubeconfig, err = setupKubeconfig(host, &cc, &n, cc.Name)
+		kcs = setupKubeconfig(host, &cc, &n, cc.Name)
 		if err != nil {
 			exit.WithError("Failed to setup kubeconfig", err)
 		}
@@ -113,6 +120,11 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		if err != nil {
 			exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, cc, mRunner))
 		}
+
+		// write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper
+		if err := kubeconfig.Update(kcs); err != nil {
+			exit.WithError("Failed to update kubeconfig file.", err)
+		}
 	} else {
 		bs, err = cluster.Bootstrapper(machineAPI, viper.GetString(cmdcfg.Bootstrapper), cc, n)
 		if err != nil {
@@ -122,7 +134,6 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		if err = bs.SetupCerts(cc.KubernetesConfig, n); err != nil {
 			exit.WithError("setting up certs", err)
 		}
-
 	}
 
 	configureMounts()
@@ -173,8 +184,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		}
 	}
 
-	return kubeconfig
-
+	return kcs
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
@@ -237,7 +247,7 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node) 
 	return bs
 }
 
-func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
+func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) *kubeconfig.Settings {
 	addr, err := apiServerURL(*h, *cc, *n)
 	if err != nil {
 		exit.WithError("Failed to get API Server URL", err)
@@ -257,10 +267,7 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 	}
 
 	kcs.SetPath(kubeconfig.PathFromEnv())
-	if err := kubeconfig.Update(kcs); err != nil {
-		return kcs, err
-	}
-	return kcs, nil
+	return kcs
 }
 
 func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
@@ -325,10 +332,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 		return host, exists
 	}
 
-	out.T(out.FailureType, "StartHost failed again: {{.error}}", out.V{"error": err})
-	out.T(out.Workaround, `Run: "{{.delete}}", then "{{.start}} --alsologtostderr -v=1" to try again with more logging`,
-		out.V{"delete": mustload.ExampleCmd(cc.Name, "delete"), "start": mustload.ExampleCmd(cc.Name, "start")})
-
+	// Don't use host.Driver to avoid nil pointer deref
 	drv := cc.Driver
 	exit.WithError(fmt.Sprintf(`Failed to start %s %s. "%s" may fix it.`, drv, driver.MachineType(drv), mustload.ExampleCmd(cc.Name, "start")), err)
 	return host, exists
@@ -363,8 +367,8 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 		trySSH(h, ip)
 	}
 
-	tryLookup(r)
-	tryRegistry(r)
+	// Non-blocking
+	go tryRegistry(r, h.Driver.DriverName())
 	return ip
 }
 
@@ -405,21 +409,12 @@ func trySSH(h *host.Host, ip string) {
 	}
 }
 
-func tryLookup(r command.Runner) {
-	// DNS check
-	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io", "-type=ns")); err != nil {
-		glog.Infof("%s failed: %v which might be okay will retry nslookup without query type", rr.Args, err)
-		// will try with without query type for ISOs with different busybox versions.
-		if _, err = r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
-			glog.Warningf("nslookup failed: %v", err)
-			out.WarningT("Node may be unable to resolve external DNS records")
-		}
-	}
-}
-func tryRegistry(r command.Runner) {
-	// Try an HTTPS connection to the image repository
+// tryRegistry tries to connect to the image repository
+func tryRegistry(r command.Runner, driverName string) {
+	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
+	opts := []string{"-sS", "-m", "2"}
+
 	proxy := os.Getenv("HTTPS_PROXY")
-	opts := []string{"-sS"}
 	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
 		opts = append([]string{"-x", proxy}, opts...)
 	}
@@ -432,7 +427,8 @@ func tryRegistry(r command.Runner) {
 	opts = append(opts, fmt.Sprintf("https://%s/", repo))
 	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
 		glog.Warningf("%s failed: %v", rr.Args, err)
-		out.WarningT("VM is unable to access {{.repository}}, you may need to configure a proxy or set --image-repository", out.V{"repository": repo})
+		out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}}", out.V{"repository": repo, "type": driver.MachineType(driverName)})
+		out.T(out.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
 	}
 }
 

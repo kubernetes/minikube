@@ -2,13 +2,15 @@
 name: English
 about: Report an issue
 ---
-**Steps to reproduce the issue:** <!-- include the "minikube start" command! -->
+<!--- Please include the "minikube start" command you used in your reproduction steps --->
+**Steps to reproduce the issue:** 
 
 1.
 2. 
 3.
 
-**Full output of failed command:** <!-- use the "--alsologtostderr" flag for more logs -->
+<!--- TIP: Add the "--alsologtostderr" flag to the command-line for more logs --->
+**Full output of failed command:** 
 
 
 
