@@ -38,7 +38,7 @@ import (
 func Docs(root *cobra.Command, path string) error {
 	cmds := root.Commands()
 	for _, c := range cmds {
-		contents, err := docForCommand(c)
+		contents, err := DocForCommand(c)
 		if err != nil {
 			return errors.Wrapf(err, "generating doc for %s", c.Name)
 		}
@@ -49,7 +49,7 @@ func Docs(root *cobra.Command, path string) error {
 	return nil
 }
 
-func docForCommand(command *cobra.Command) ([]byte, error) {
+func DocForCommand(command *cobra.Command) ([]byte, error) {
 	buf := bytes.NewBuffer([]byte{})
 	if err := generateTitle(command, buf); err != nil {
 		return nil, errors.Wrap(err, "generating title")
