@@ -219,8 +219,8 @@ func CacheAndLoadImages(images []string) error {
 		}
 	}
 
-	glog.Infof("succeeded pushing to: ", strings.Join(succeeded, " "))
-	glog.Infof("failed pushing to: ", strings.Join(failed, " "))
+	glog.Infof("succeeded pushing to: %s", strings.Join(succeeded, " "))
+	glog.Infof("failed pushing to: %s", strings.Join(failed, " "))
 	// Live pushes are not considered a failure
 	return nil
 }
