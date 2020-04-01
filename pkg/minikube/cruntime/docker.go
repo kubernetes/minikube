@@ -91,8 +91,10 @@ func (r *Docker) DefaultCNI() bool {
 
 // Available returns an error if it is not possible to use this runtime on a host
 func (r *Docker) Available() error {
-	_, err := exec.LookPath("docker")
-	return err
+	if _, err := exec.LookPath("docker"); err != nil {
+		return errors.New("docker not found in $PATH. please install docker or try adding it to the $PATH")
+	}
+	return nil
 }
 
 // Active returns if docker is active on the host
