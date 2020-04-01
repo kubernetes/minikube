@@ -18,6 +18,7 @@ package cmd
 
 import (
 	"encoding/json"
+
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
 	"k8s.io/minikube/pkg/minikube/exit"
