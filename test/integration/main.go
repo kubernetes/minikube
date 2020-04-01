@@ -74,7 +74,8 @@ func KicDriver() bool {
 	return strings.Contains(*startArgs, "--driver=docker") || strings.Contains(*startArgs, "--vm-driver=docker") || strings.Contains(*startArgs, "--vm-driver=podman") || strings.Contains(*startArgs, "driver=podman")
 }
 
-// NeedsPortForward requires whether or not this host needs port forwarding
+// NeedsPortForward returns access to endpoints with this driver needs port forwarding
+// (Docker on non-Linux platforms requires ports to be forwarded to 127.0.0.1)
 func NeedsPortForward() bool {
 	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin")
 }
