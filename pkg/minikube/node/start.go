@@ -351,10 +351,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 		return host, exists
 	}
 
-	out.T(out.FailureType, "StartHost failed again: {{.error}}", out.V{"error": err})
-	out.T(out.Workaround, `Run: "{{.delete}}", then "{{.start}} --alsologtostderr -v=1" to try again with more logging`,
-		out.V{"delete": mustload.ExampleCmd(cc.Name, "delete"), "start": mustload.ExampleCmd(cc.Name, "start")})
-
+	// Don't use host.Driver to avoid nil pointer deref
 	drv := cc.Driver
 	exit.WithError(fmt.Sprintf(`Failed to start %s %s. "%s" may fix it.`, drv, driver.MachineType(drv), mustload.ExampleCmd(cc.Name, "start")), err)
 	return host, exists
