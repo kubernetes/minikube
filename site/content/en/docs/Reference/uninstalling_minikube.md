@@ -69,4 +69,3 @@ If you have installed minikube using the direct download method, follow the belo
 If you have installed minikube using [Homebrew](https://brew.sh/), follow the below steps to uninstall minikube completely from your system -
 - In the shell, type in `minikube delete` to delete the minikube cluster.
 - Uninstall the minikube package using `brew uninstall minikube`
-- Remove the directory containing the minikube configuration `rm -rf ~/.minikube`
