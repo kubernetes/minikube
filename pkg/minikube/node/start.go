@@ -29,12 +29,10 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
@@ -266,26 +264,9 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 }
 
 func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
-	hostname := ""
-	port := n.Port
-	var err error
-	if driver.IsKIC(h.DriverName) {
-		// for kic drivers we use 127.0.0.1 instead of node IP,
-		// because of Docker on MacOs limitations for reaching to container's IP.
-		hostname = oci.DefaultBindIPV4
-		port, err = oci.ForwardedPort(h.DriverName, h.Name, port)
-		if err != nil {
-			return "", errors.Wrap(err, "host port binding")
-		}
-	} else {
-		hostname, err = h.Driver.GetIP()
-		if err != nil {
-			return "", errors.Wrap(err, "get ip")
-		}
-	}
-
-	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		hostname = cc.KubernetesConfig.APIServerName
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cc, &n, h.DriverName)
+	if err != nil {
+		return "", err
 	}
 	return fmt.Sprintf("https://" + net.JoinHostPort(hostname, strconv.Itoa(port))), nil
 }
