@@ -351,10 +351,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 		return host, exists
 	}
 
-	out.T(out.FailureType, "StartHost failed again: {{.error}}", out.V{"error": err})
-	out.T(out.Workaround, `Run: "{{.delete}}", then "{{.start}} --alsologtostderr -v=1" to try again with more logging`,
-		out.V{"delete": mustload.ExampleCmd(cc.Name, "delete"), "start": mustload.ExampleCmd(cc.Name, "start")})
-
+	// Don't use host.Driver to avoid nil pointer deref
 	drv := cc.Driver
 	exit.WithError(fmt.Sprintf(`Failed to start %s %s. "%s" may fix it.`, drv, driver.MachineType(drv), mustload.ExampleCmd(cc.Name, "start")), err)
 	return host, exists
@@ -389,8 +386,8 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 		trySSH(h, ip)
 	}
 
-	tryLookup(r)
-	tryRegistry(r)
+	// Non-blocking
+	go tryRegistry(r, h.Driver.DriverName())
 	return ip
 }
 
@@ -431,21 +428,12 @@ func trySSH(h *host.Host, ip string) {
 	}
 }
 
-func tryLookup(r command.Runner) {
-	// DNS check
-	if rr, err := r.RunCmd(exec.Command("nslookup", "kubernetes.io", "-type=ns")); err != nil {
-		glog.Infof("%s failed: %v which might be okay will retry nslookup without query type", rr.Args, err)
-		// will try with without query type for ISOs with different busybox versions.
-		if _, err = r.RunCmd(exec.Command("nslookup", "kubernetes.io")); err != nil {
-			glog.Warningf("nslookup failed: %v", err)
-			out.WarningT("Node may be unable to resolve external DNS records")
-		}
-	}
-}
-func tryRegistry(r command.Runner) {
-	// Try an HTTPS connection to the image repository
+// tryRegistry tries to connect to the image repository
+func tryRegistry(r command.Runner, driverName string) {
+	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
+	opts := []string{"-sS", "-m", "2"}
+
 	proxy := os.Getenv("HTTPS_PROXY")
-	opts := []string{"-sS"}
 	if proxy != "" && !strings.HasPrefix(proxy, "localhost") && !strings.HasPrefix(proxy, "127.0") {
 		opts = append([]string{"-x", proxy}, opts...)
 	}
@@ -458,7 +446,8 @@ func tryRegistry(r command.Runner) {
 	opts = append(opts, fmt.Sprintf("https://%s/", repo))
 	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
 		glog.Warningf("%s failed: %v", rr.Args, err)
-		out.WarningT("VM is unable to access {{.repository}}, you may need to configure a proxy or set --image-repository", out.V{"repository": repo})
+		out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}}", out.V{"repository": repo, "type": driver.MachineType(driverName)})
+		out.T(out.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
 	}
 }
 

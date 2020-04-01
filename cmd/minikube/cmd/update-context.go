@@ -33,14 +33,17 @@ var updateContextCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
-		updated, err := kubeconfig.UpdateIP(co.DriverIP, cname, kubeconfig.PathFromEnv())
+		ip := co.CP.ForwardedIP
+
+		// ??? For KIC, should we also update the port ???
+		updated, err := kubeconfig.UpdateIP(ip, cname, kubeconfig.PathFromEnv())
 		if err != nil {
 			exit.WithError("update config", err)
 		}
 		if updated {
-			out.T(out.Celebrate, "{{.cluster}} IP has been updated to point at {{.ip}}", out.V{"cluster": cname, "ip": co.DriverIP})
+			out.T(out.Celebrate, "{{.cluster}} IP has been updated to point at {{.ip}}", out.V{"cluster": cname, "ip": ip})
 		} else {
-			out.T(out.Meh, "{{.cluster}} IP was already correctly configured for {{.ip}}", out.V{"cluster": cname, "ip": co.DriverIP})
+			out.T(out.Meh, "{{.cluster}} IP was already correctly configured for {{.ip}}", out.V{"cluster": cname, "ip": ip})
 		}
 
 	},
