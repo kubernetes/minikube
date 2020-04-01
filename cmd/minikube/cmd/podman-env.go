@@ -108,17 +108,17 @@ var podmanEnvCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
-		driverName := co.CPHost.DriverName
+		driverName := co.CP.Host.DriverName
 
 		if driverName == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube podman-env' command`)
 		}
 
-		if ok := isPodmanAvailable(co.CPRunner); !ok {
+		if ok := isPodmanAvailable(co.CP.Runner); !ok {
 			exit.WithCodeT(exit.Unavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
 		}
 
-		client, err := createExternalSSHClient(co.CPHost.Driver)
+		client, err := createExternalSSHClient(co.CP.Host.Driver)
 		if err != nil {
 			exit.WithError("Error getting ssh client", err)
 		}

@@ -129,7 +129,7 @@ var dockerEnvCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
-		driverName := co.CPHost.DriverName
+		driverName := co.CP.Host.DriverName
 
 		if driverName == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube docker-env' command`)
@@ -140,7 +140,7 @@ var dockerEnvCmd = &cobra.Command{
 				out.V{"runtime": co.Config.KubernetesConfig.ContainerRuntime})
 		}
 
-		if ok := isDockerActive(co.CPRunner); !ok {
+		if ok := isDockerActive(co.CP.Runner); !ok {
 			exit.WithCodeT(exit.Unavailable, `The docker service within '{{.name}}' is not active`, out.V{"name": cname})
 		}
 
@@ -161,7 +161,7 @@ var dockerEnvCmd = &cobra.Command{
 			EnvConfig: sh,
 			profile:   cname,
 			driver:    driverName,
-			hostIP:    co.DriverIP.String(),
+			hostIP:    co.CP.ForwardedIP.String(),
 			port:      port,
 			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,
