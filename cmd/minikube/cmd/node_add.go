@@ -18,10 +18,8 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -56,7 +54,7 @@ var nodeAddCmd = &cobra.Command{
 		}
 
 		if err := node.Add(cc, n); err != nil {
-			exit.WithError("Error adding node to cluster", err)
+			maybeDeleteAndRetry(*cc, n, nil, err)
 		}
 
 		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})
@@ -64,13 +62,10 @@ var nodeAddCmd = &cobra.Command{
 }
 
 func init() {
+	//We should figure out which minikube start flags to actually import
 	nodeAddCmd.Flags().BoolVar(&cp, "control-plane", false, "If true, the node added will also be a control plane in addition to a worker.")
 	nodeAddCmd.Flags().BoolVar(&worker, "worker", true, "If true, the added node will be marked for work. Defaults to true.")
-	//We should figure out which of these flags to actually import
-	startCmd.Flags().Visit(
-		func(f *pflag.Flag) {
-			nodeAddCmd.Flags().AddFlag(f)
-		},
-	)
+	nodeAddCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
+
 	nodeCmd.AddCommand(nodeAddCmd)
 }

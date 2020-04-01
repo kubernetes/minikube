@@ -356,24 +356,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	kubeconfig, err := node.Start(cc, n, existingAddons, true)
-	if err != nil && viper.GetBool(deleteOnFailure) {
-		out.T(out.Warning, "Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
-		// Start failed, delete the cluster and try again
-		profile, err := config.LoadProfile(cc.Name)
-		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cc.Name})
-		}
-
-		err = deleteProfile(profile)
-		if err != nil {
-			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": cc.Name})
-		}
-
-		kubeconfig, err = node.Start(cc, n, existingAddons, true)
-		if err != nil {
-			// Ok we failed again, let's bail
-			exit.WithError("Start failed after cluster deletion", err)
-		}
+	if err != nil {
+		kubeconfig = maybeDeleteAndRetry(cc, n, existingAddons, err)
 	}
 
 	numNodes := viper.GetInt(nodes)
@@ -485,6 +469,38 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 		out.T(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
 			out.V{"path": path, "client_version": client})
 	}
+	return nil
+}
+
+func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) *kubeconfig.Settings {
+	if viper.GetBool(deleteOnFailure) {
+		out.T(out.Warning, "Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
+		// Start failed, delete the cluster and try again
+		profile, err := config.LoadProfile(cc.Name)
+		if err != nil {
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cc.Name})
+		}
+
+		err = deleteProfile(profile)
+		if err != nil {
+			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": cc.Name})
+		}
+
+		var kubeconfig *kubeconfig.Settings
+		for _, v := range cc.Nodes {
+			k, err := node.Start(cc, v, existingAddons, v.ControlPlane)
+			if v.ControlPlane {
+				kubeconfig = k
+			}
+			if err != nil {
+				// Ok we failed again, let's bail
+				exit.WithError("Start failed after cluster deletion", err)
+			}
+		}
+		return kubeconfig
+	}
+	// Don't delete the cluster unless they ask
+	exit.WithError("startup failed", originalErr)
 	return nil
 }
 
