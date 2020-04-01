@@ -62,7 +62,7 @@ type V map[string]interface{}
 
 // T writes a stylized and templated message to stdout
 func T(style StyleEnum, format string, a ...V) {
-	outStyled := applyTemplateFormatting(style, useColor, format, a...)
+	outStyled := ApplyTemplateFormatting(style, useColor, format, a...)
 	String(outStyled)
 }
 
@@ -88,7 +88,7 @@ func Ln(format string, a ...interface{}) {
 
 // ErrT writes a stylized and templated error message to stderr
 func ErrT(style StyleEnum, format string, a ...V) {
-	errStyled := applyTemplateFormatting(style, useColor, format, a...)
+	errStyled := ApplyTemplateFormatting(style, useColor, format, a...)
 	Err(errStyled)
 }
 
