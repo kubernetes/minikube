@@ -831,7 +831,7 @@ func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string)
 		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
 	}
 
-	want := []byte("IP was already correctly configured")
+	want := []byte("No changes")
 	if !bytes.Contains(rr.Stdout.Bytes(), want) {
 		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 	}
