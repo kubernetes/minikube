@@ -86,4 +86,4 @@ evictionHard:
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
 metricsBindAddress: {{.AdvertiseAddress}}:10249
-  `))
+`))
