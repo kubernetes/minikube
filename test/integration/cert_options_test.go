@@ -35,7 +35,7 @@ func TestCertOptions(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
-	args := append([]string{"start", "-p", profile, "--apiserver-ips=127.0.0.1,192.168.15.15", "--apiserver-names=localhost,www.google.com", "--apiserver-port=8555"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=1900", "--apiserver-ips=127.0.0.1,192.168.15.15", "--apiserver-names=localhost,www.google.com", "--apiserver-port=8555"}, StartArgs()...)
 
 	// We can safely override --apiserver-name with
 	if NeedsPortForward() {
