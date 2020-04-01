@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"runtime"
 
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
@@ -124,7 +125,7 @@ func Running(name string) ClusterController {
 
 	cpIP := cp.IP
 	cpPort := cp.Port
-	if driver.IsKIC(host.DriverName) {
+	if driver.IsKIC(host.DriverName) && runtime.GOOS != "linux" {
 		cpIP = oci.DefaultBindIPV4
 		cpPort, err = oci.ForwardedPort(cc.Driver, cc.Name, cp.Port)
 		if err != nil {
