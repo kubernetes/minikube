@@ -24,7 +24,7 @@ import (
 	"testing"
 )
 
-func TestCertOptionFlags(t *testing.T) {
+func TestCertOptions(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("skipping: none driver does not support ssh or bundle docker")
 	}
@@ -37,10 +37,9 @@ func TestCertOptionFlags(t *testing.T) {
 	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
 	args := append([]string{"start", "-p", profile, "--apiserver-ips=127.0.0.1,192.168.15.15", "--apiserver-names=localhost,www.google.com", "--apiserver-port=8555"}, StartArgs()...)
 
-	// We can safely override --apiserver-name with unique that works
+	// We can safely override --apiserver-name with
 	if NeedsPortForward() {
-		args = append(args, "--apiserver-name=kubernetes.docker.internal")
-
+		args = append(args, "--apiserver-name=localhost")
 	}
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
