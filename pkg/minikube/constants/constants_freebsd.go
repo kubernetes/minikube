@@ -1,3 +1,5 @@
+// +build linux, !gendocs
+
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
 
@@ -14,21 +16,11 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package constants
 
 import (
-	"github.com/spf13/cobra"
-	"k8s.io/minikube/pkg/minikube/mustload"
-	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/client-go/util/homedir"
 )
 
-// ipCmd represents the ip command
-var ipCmd = &cobra.Command{
-	Use:   "ip",
-	Short: "Retrieves the IP address of the running cluster",
-	Long:  `Retrieves the IP address of the running cluster, and writes it to STDOUT.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		co := mustload.Running(ClusterFlagValue())
-		out.Ln(co.CP.ForwardedIP.String())
-	},
-}
+// DefaultMountDir is the default mount dir
+var DefaultMountDir = homedir.HomeDir()

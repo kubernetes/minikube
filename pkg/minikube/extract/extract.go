@@ -29,6 +29,10 @@ import (
 	"strconv"
 	"strings"
 
+	// initflag must be imported before any other minikube pkg.
+	// Fix for https://github.com/kubernetes/minikube/issues/4866
+	_ "k8s.io/minikube/pkg/initflag"
+
 	"github.com/golang-collections/collections/stack"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/util/lock"
@@ -45,6 +49,7 @@ var blacklist = []string{
 	"env {{.docker_env}}",
 	"\\n",
 	"==\u003e {{.name}} \u003c==",
+	"- {{.profile}}",
 }
 
 // ErrMapFile is a constant to refer to the err_map file, which contains the Advice strings.
@@ -450,14 +455,17 @@ func writeStringsToFiles(e *state, output string) error {
 			return nil
 		}
 		fmt.Printf("Writing to %s\n", filepath.Base(path))
-		var currentTranslations map[string]interface{}
+		currentTranslations := make(map[string]interface{})
 		f, err := ioutil.ReadFile(path)
 		if err != nil {
 			return errors.Wrap(err, "reading translation file")
 		}
-		err = json.Unmarshal(f, &currentTranslations)
-		if err != nil {
-			return errors.Wrap(err, "unmarshalling current translations")
+		// Unmarhsal nonempty files
+		if len(f) > 0 {
+			err = json.Unmarshal(f, &currentTranslations)
+			if err != nil {
+				return errors.Wrap(err, "unmarshalling current translations")
+			}
 		}
 
 		// Make sure to not overwrite already translated strings

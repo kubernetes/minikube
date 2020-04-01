@@ -1,5 +1,39 @@
 # Release Notes
 
+## Version 1.9.0- 2020-03-26
+
+New features & improvements
+
+* Update DefaultKubernetesVersion to v1.18.0 [#7235](https://github.com/kubernetes/minikube/pull/7235)
+* Add --vm flag for users who want to autoselect only VM's [#7068](https://github.com/kubernetes/minikube/pull/7068)
+* Add 'stable' and 'latest' as valid kubernetes-version values [#7212](https://github.com/kubernetes/minikube/pull/7212)
+
+* gpu addon: privileged mode no longer required [#7149](https://github.com/kubernetes/minikube/pull/7149)
+* Add sch_tbf and extend filter ipset kernel module for bandwidth shaping [#7255](https://github.com/kubernetes/minikube/pull/7255)
+* Parse --disk-size and --memory sizes with binary suffixes [#7206](https://github.com/kubernetes/minikube/pull/7206)
+
+
+Bug Fixes
+
+* Re-initalize failed Kubernetes clusters [#7234](https://github.com/kubernetes/minikube/pull/7234)
+* do not override hostname if extraConfig is specified [#7238](https://github.com/kubernetes/minikube/pull/7238)
+* Enable HW_RANDOM_VIRTIO to fix sshd startup delays [#7208](https://github.com/kubernetes/minikube/pull/7208)
+* hyperv Delete: call StopHost before removing VM [#7160](https://github.com/kubernetes/minikube/pull/7160)
+
+Huge thank you for this release towards our contributors: 
+
+- Anders F Björklund
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- Tom
+- Vincent Link
+- Yang Keao
+- Zhongcheng Lao
+- vikkyomkar
+
+
 ## Version 1.9.0-beta.2 - 2020-03-21
 
 New features & improvements
