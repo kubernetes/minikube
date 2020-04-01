@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -71,6 +72,11 @@ func HyperVDriver() bool {
 // KicDriver returns whether or not this test is using the docker or podman driver
 func KicDriver() bool {
 	return strings.Contains(*startArgs, "--driver=docker") || strings.Contains(*startArgs, "--vm-driver=docker") || strings.Contains(*startArgs, "--vm-driver=podman") || strings.Contains(*startArgs, "driver=podman")
+}
+
+// NeedsPortForward requires whether or not this host needs port forwarding
+func NeedsPortForward() bool {
+	return KicDriver() && (runtime.GOOS == "windows" || runtime.GOOS == "darwin")
 }
 
 // CanCleanup returns if cleanup is allowed
