@@ -26,7 +26,7 @@ import (
 	"k8s.io/minikube/pkg/generate"
 )
 
-func TestCommandsDocs(t *testing.T) {
+func TestGenerateDocs(t *testing.T) {
 	dir := "../../../site/content/en/docs/Reference/Commands/"
 
 	for _, sc := range RootCmd.Commands() {
