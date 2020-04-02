@@ -2,18 +2,24 @@
 title: "config"
 linkTitle: "config"
 weight: 1
-date: 2019-08-01
+date: 2020-04-02
 description: >
   Modify minikube config
 ---
 
-### Overview
+
+
+## minikube config
+
+Modify minikube config
+
+### Synopsis
 
 config modifies minikube config files using subcommands like "minikube config set driver kvm"
-
 Configurable fields: 
 
  * driver
+ * vm-driver
  * container-runtime
  * feature-gates
  * v
@@ -41,50 +47,167 @@ Configurable fields:
  * embed-certs
  * native-ssh
 
+```
+minikube config SUBCOMMAND [flags]
+```
 
-### subcommands
+### Options
 
-- **get**: Gets the value of PROPERTY_NAME from the minikube config file
+```
+  -h, --help   help for config
+```
+
+### Options inherited from parent commands
+
+```
+      --alsologtostderr                  log to standard error as well as files
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                   If non-empty, write log files in this directory
+      --logtostderr                      log to standard error instead of files
+  -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+  -v, --v Level                          log level for V logs
+      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+```
 
 ## minikube config get
 
-Returns the value of PROPERTY_NAME from the minikube config file.  Can be overwritten at runtime by flags or environmental variables.
+Gets the value of PROPERTY_NAME from the minikube config file
 
-### Usage
+### Synopsis
+
+Returns the value of PROPERTY_NAME from the minikube config file.  Can be overwritten at runtime by flags or environmental variables.
 
 ```
 minikube config get PROPERTY_NAME [flags]
 ```
 
+### Options
+
+```
+  -h, --help   help for get
+```
+
+### Options inherited from parent commands
+
+```
+      --alsologtostderr                  log to standard error as well as files
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                   If non-empty, write log files in this directory
+      --logtostderr                      log to standard error instead of files
+  -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+  -v, --v Level                          log level for V logs
+      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+```
+
+## minikube config help
+
+Help about any command
+
+### Synopsis
+
+Help provides help for any command in the application.
+Simply type config help [path to command] for full details.
+
+```
+minikube config help [command] [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for help
+```
+
+### Options inherited from parent commands
+
+```
+      --alsologtostderr                  log to standard error as well as files
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                   If non-empty, write log files in this directory
+      --logtostderr                      log to standard error instead of files
+  -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+  -v, --v Level                          log level for V logs
+      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+```
+
 ## minikube config set
+
+Sets an individual value in a minikube config file
+
+### Synopsis
 
 Sets the PROPERTY_NAME config value to PROPERTY_VALUE
 	These values can be overwritten by flags or environment variables at runtime.
-
-### Usage
 
 ```
 minikube config set PROPERTY_NAME PROPERTY_VALUE [flags]
 ```
 
+### Options
+
+```
+  -h, --help   help for set
+```
+
+### Options inherited from parent commands
+
+```
+      --alsologtostderr                  log to standard error as well as files
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                   If non-empty, write log files in this directory
+      --logtostderr                      log to standard error instead of files
+  -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+  -v, --v Level                          log level for V logs
+      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+```
+
 ## minikube config unset
 
-unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags or environmental variables
+unsets an individual value in a minikube config file
 
-### Usage
+### Synopsis
+
+unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags or environmental variables
 
 ```
 minikube config unset PROPERTY_NAME [flags]
 ```
 
+### Options
+
+```
+  -h, --help   help for unset
+```
+
+### Options inherited from parent commands
+
+```
+      --alsologtostderr                  log to standard error as well as files
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                   If non-empty, write log files in this directory
+      --logtostderr                      log to standard error instead of files
+  -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+  -v, --v Level                          log level for V logs
+      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+```
 
 ## minikube config view
 
-### Overview
+Display values currently set in the minikube config file
+
+### Synopsis
 
 Display values currently set in the minikube config file.
-
-### Usage
 
 ```
 minikube config view [flags]
@@ -111,3 +234,4 @@ minikube config view [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+

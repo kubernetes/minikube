@@ -177,7 +177,7 @@ func TestApplyTemplateFormating(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
-			rawGot := applyTemplateFormatting(test.styleEnum, test.useColor, test.format, test.a...)
+			rawGot := ApplyTemplateFormatting(test.styleEnum, test.useColor, test.format, test.a...)
 			got := strings.TrimSpace(rawGot)
 			if got != test.expected {
 				t.Errorf("Expected '%v' but got '%v'", test.expected, got)

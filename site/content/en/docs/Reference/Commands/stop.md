@@ -2,20 +2,30 @@
 title: "stop"
 linkTitle: "stop"
 weight: 1
-date: 2019-08-01
+date: 2020-04-02
 description: >
-  Stops a running local Kubernetes cluster
+  Stops a running local kubernetes cluster
 ---
 
-### Overview
 
-Stops a local Kubernetes cluster running in Virtualbox. This command stops the VM
+
+## minikube stop
+
+Stops a running local kubernetes cluster
+
+### Synopsis
+
+Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
 itself, leaving all files intact. The cluster can be started again with the "start" command.
-
-### Usage
 
 ```
 minikube stop [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for stop
 ```
 
 ### Options inherited from parent commands
@@ -31,3 +41,4 @@ minikube stop [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+

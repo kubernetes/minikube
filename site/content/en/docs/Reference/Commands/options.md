@@ -1,30 +1,30 @@
 ---
-title: "update-check"
-linkTitle: "update-check"
+title: "options"
+linkTitle: "options"
 weight: 1
 date: 2020-04-02
 description: >
-  Print current and latest version number
+  Show a list of global command-line options (applies to all commands).
 ---
 
 
 
-## minikube update-check
+## minikube options
 
-Print current and latest version number
+Show a list of global command-line options (applies to all commands).
 
 ### Synopsis
 
-Print current and latest version number
+Show a list of global command-line options (applies to all commands).
 
 ```
-minikube update-check [flags]
+minikube options [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for update-check
+  -h, --help   help for options
 ```
 
 ### Options inherited from parent commands

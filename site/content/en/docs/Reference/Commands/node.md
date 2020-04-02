@@ -1,26 +1,30 @@
 ---
-title: "cache"
-linkTitle: "cache"
+title: "node"
+linkTitle: "node"
 weight: 1
 date: 2020-04-02
 description: >
-  Add or delete an image from the local cache.
+  Node operations
 ---
 
 
 
-## minikube cache
+## minikube node
 
-Add or delete an image from the local cache.
+Node operations
 
 ### Synopsis
 
-Add or delete an image from the local cache.
+Operations on nodes
+
+```
+minikube node [flags]
+```
 
 ### Options
 
 ```
-  -h, --help   help for cache
+  -h, --help   help for node
 ```
 
 ### Options inherited from parent commands
@@ -37,22 +41,24 @@ Add or delete an image from the local cache.
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube cache add
+## minikube node add
 
-Add an image to local cache.
+Adds a node to the given cluster.
 
 ### Synopsis
 
-Add an image to local cache.
+Adds a node to the given cluster config, and starts it.
 
 ```
-minikube cache add [flags]
+minikube node add [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for add
+      --control-plane   If true, the node added will also be a control plane in addition to a worker.
+  -h, --help            help for add
+      --worker          If true, the added node will be marked for work. Defaults to true. (default true)
 ```
 
 ### Options inherited from parent commands
@@ -69,16 +75,16 @@ minikube cache add [flags]
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube cache delete
+## minikube node delete
 
-Delete an image from the local cache.
+Deletes a node from a cluster.
 
 ### Synopsis
 
-Delete an image from the local cache.
+Deletes a node from a cluster.
 
 ```
-minikube cache delete [flags]
+minikube node delete [flags]
 ```
 
 ### Options
@@ -101,17 +107,17 @@ minikube cache delete [flags]
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube cache help
+## minikube node help
 
 Help about any command
 
 ### Synopsis
 
 Help provides help for any command in the application.
-Simply type cache help [path to command] for full details.
+Simply type node help [path to command] for full details.
 
 ```
-minikube cache help [command] [flags]
+minikube node help [command] [flags]
 ```
 
 ### Options
@@ -134,24 +140,23 @@ minikube cache help [command] [flags]
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube cache list
+## minikube node start
 
-List all available images from the local cache.
+Starts a node.
 
 ### Synopsis
 
-List all available images from the local cache.
+Starts an existing stopped node in a cluster.
 
 ```
-minikube cache list [flags]
+minikube node start [flags]
 ```
 
 ### Options
 
 ```
-      --format string   Go template format string for the cache list output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
-                        For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd#CacheListTemplate (default "{{.CacheImage}}\n")
-  -h, --help            help for list
+  -h, --help          help for start
+      --name string   The name of the node to start
 ```
 
 ### Options inherited from parent commands
@@ -168,22 +173,23 @@ minikube cache list [flags]
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube cache reload
+## minikube node stop
 
-reload cached images.
+Stops a node in a cluster.
 
 ### Synopsis
 
-reloads images previously added using the 'cache add' subcommand
+Stops a node in a cluster.
 
 ```
-minikube cache reload [flags]
+minikube node stop [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for reload
+  -h, --help          help for stop
+      --name string   The name of the node to delete
 ```
 
 ### Options inherited from parent commands
