@@ -561,9 +561,15 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		return ds
 	}
 
-	pick, alts := driver.Suggest(driver.Choices(viper.GetBool("vm")))
+	choices := driver.Choices(viper.GetBool("vm"))
+	pick, alts, rejects := driver.Suggest(choices)
 	if pick.Name == "" {
-		exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		out.T(out.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
+		for _, r := range rejects {
+			out.T(out.Option, "{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
+		}
+		out.T(out.Workaround, "Try specifying a --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		os.Exit(exit.Unavailable)
 	}
 
 	if len(alts) > 1 {
