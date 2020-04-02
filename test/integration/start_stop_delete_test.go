@@ -71,6 +71,9 @@ func TestStartStop(t *testing.T) {
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
+			{"embed-certs", constants.DefaultKubernetesVersion, []string{
+				"--embed-certs",
+			}},
 		}
 
 		for _, tc := range tests {
