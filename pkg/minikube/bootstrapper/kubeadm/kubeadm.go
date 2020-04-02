@@ -291,7 +291,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		if rerr == nil {
 			return nil
 		}
-		out.T(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
+		out.ErrT(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			glog.Warningf("delete failed: %v", err)
 		}
@@ -308,7 +308,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	out.T(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
+	out.ErrT(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
 	if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 		glog.Warningf("delete failed: %v", err)
 	}
