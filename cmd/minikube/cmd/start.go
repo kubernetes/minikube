@@ -434,7 +434,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
-		out.T(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		out.ErrT(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		return nil
 	}
 
@@ -454,9 +454,9 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	if client.Major != cluster.Major || minorSkew > 1 {
 		out.Ln("")
-		out.T(out.Warning, "{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
+		out.WarningT("{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
-		out.T(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
+		out.ErrT(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
 			out.V{"path": path, "client_version": client})
 	}
 	return nil
@@ -464,7 +464,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) *kubeconfig.Settings {
 	if viper.GetBool(deleteOnFailure) {
-		out.T(out.Warning, "Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
+		out.WarningT("Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
 		// Start failed, delete the cluster and try again
 		profile, err := config.LoadProfile(cc.Name)
 		if err != nil {
@@ -541,7 +541,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 
     If vm-driver is set in the global config, please run "minikube config unset vm-driver" to resolve this warning.
 			`
-			out.T(out.Warning, warning, out.V{"driver": d, "vmd": vmd})
+			out.WarningT(warning, out.V{"driver": d, "vmd": vmd})
 		}
 		ds := driver.Status(d)
 		if ds.Name == "" {
@@ -750,9 +750,9 @@ func validateUser(drvName string) {
 		return
 	}
 
-	out.T(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
-	out.T(out.Tip, "If you are running minikube within a VM, consider using --driver=none:")
-	out.T(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+	out.ErrT(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
+	out.ErrT(out.Tip, "If you are running minikube within a VM, consider using --driver=none:")
+	out.ErrT(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 
 	if !useForce {
 		os.Exit(exit.Permissions)
@@ -760,7 +760,7 @@ func validateUser(drvName string) {
 	cname := ClusterFlagValue()
 	_, err = config.Load(cname)
 	if err == nil || !config.IsNotExist(err) {
-		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
+		out.ErrT(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
 	}
 	if !useForce {
 		exit.WithCodeT(exit.Permissions, "Exiting")

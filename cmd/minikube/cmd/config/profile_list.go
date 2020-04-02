@@ -91,13 +91,13 @@ var printProfilesTable = func() {
 	table.Render()
 
 	if invalidProfiles != nil {
-		out.T(out.Warning, "Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})
+		out.WarningT("Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})
 		for _, p := range invalidProfiles {
-			out.T(out.Empty, "\t "+p.Name)
+			out.ErrT(out.Empty, "\t "+p.Name)
 		}
-		out.T(out.Tip, "You can delete them using the following command(s): ")
+		out.ErrT(out.Tip, "You can delete them using the following command(s): ")
 		for _, p := range invalidProfiles {
-			out.String(fmt.Sprintf("\t $ minikube delete -p %s \n", p.Name))
+			out.Err(fmt.Sprintf("\t $ minikube delete -p %s \n", p.Name))
 		}
 
 	}
