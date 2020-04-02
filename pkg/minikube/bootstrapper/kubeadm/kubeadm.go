@@ -341,38 +341,55 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 // WaitForNode blocks until the node appears to be healthy
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
-
 	if !n.ControlPlane {
 		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
+		return nil
+	}
+	if cfg.WaitForCompos == kverify.NoWaitsCompos {
+		glog.Infof("skip waiting for components based on config.")
 		return nil
 	}
 
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
-		return err
-	}
-
-	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
-		return err
+		return errors.Wrap(err, "new cruntime")
 	}
 
 	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	client, err := k.client(hostname, port)
-	if err != nil {
-		return errors.Wrap(err, "get k8s client")
+	if cfg.WaitForCompos[kverify.APIServerWait] {
+		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
+			return errors.Wrap(err, "wait for apiserver proc")
+		}
+
+		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, start, ip, port, timeout); err != nil {
+			return errors.Wrap(err, "wait for healthy API server")
+		}
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
-		return err
+	if cfg.WaitForCompos[kverify.SystemPodsWait] {
+		client, err := k.client(ip, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
+			return errors.Wrap(err, "waiting for system pods")
+		}
 	}
 
-	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
-		return errors.Wrap(err, "waiting for system pods")
+	if cfg.WaitForCompos[kverify.DefaultServiceAccountWait] {
+		client, err := k.client(ip, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
+			return errors.Wrap(err, "waiting for system pods")
+		}
 	}
+	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.WaitForCompos)
 	return nil
 }
 

@@ -39,8 +39,8 @@ const (
 	APIServerWait = "apiserver"
 	// SystemPodsWait is the name used in the flags for pods in the kube system
 	SystemPodsWait = "system_pods"
-	// DefaultSAWait is the name used in the flags for default service account
-	DefaultSAWait = "default_sa"
+	// DefaultServiceAccountWait is the name used in the flags for default service account
+	DefaultServiceAccountWait = "default_sa"
 )
 
 // DefaultWaits is map of the the default components to wait for
@@ -50,13 +50,13 @@ var DefaultWaits = map[string]bool{APIServerWait: true, SystemPodsWait: true}
 var DefaultWaitsKeys = []string{APIServerWait, SystemPodsWait}
 
 // NoWaitsCompos is map of componets to wait for if specified 'none' or 'false'
-var NoWaitsCompos = map[string]bool{}
+var NoWaitsCompos = map[string]bool{APIServerWait: false, SystemPodsWait: false, DefaultServiceAccountWait: false}
 
 // AllWaitsCompo is map for waiting for all components.
-var AllWaitsCompo = map[string]bool{APIServerWait: true, SystemPodsWait: true, DefaultSAWait: true}
+var AllWaitsCompo = map[string]bool{APIServerWait: true, SystemPodsWait: true, DefaultServiceAccountWait: true}
 
 // AllValidWaitsList list of all valid components to wait for
-var AllValidWaitsList = []string{APIServerWait, SystemPodsWait, DefaultSAWait}
+var AllValidWaitsList = []string{APIServerWait, SystemPodsWait, DefaultServiceAccountWait}
 
 // minLogCheckTime how long to wait before spamming error logs to console
 const minLogCheckTime = 30 * time.Second
