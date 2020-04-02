@@ -142,7 +142,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	expectedLabels := []string{"minikube.k8s.io/commit", "minikube.k8s.io/version", "minikube.k8s.io/updated_at", "minikube.k8s.io/name"}
 	for _, el := range expectedLabels {
 		if !strings.Contains(rr.Output(), el) {
-			t.Errorf("expected to have label %q in node labels: %q", expectedLabels, rr.Output())
+			t.Errorf("expected to have label %q in node labels but got : %s", el, rr.Output())
 		}
 	}
 }
