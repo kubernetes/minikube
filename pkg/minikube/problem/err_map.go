@@ -63,7 +63,7 @@ var vmProblems = map[string]match{
 		Issues: []int{7300},
 	},
 	"CREATE_TIMEOUT": {
-		Regexp: re(`create host timed out in 120`),
+		Regexp: re(`create host timed out in \d`),
 		Advice: "Try 'minikube delete', and disable any conflicting VPN or firewall software",
 		Issues: []int{7072},
 	},
@@ -175,12 +175,12 @@ var vmProblems = map[string]match{
 		GOOS:   []string{"linux"},
 	},
 	"KVM2_RESTART_NO_IP": {
-		Regexp: re(`Error starting stopped host: Machine didn't return an IP after 120 seconds`),
+		Regexp: re(`Error starting stopped host: Machine didn't return an IP after \d+ seconds`),
 		Advice: "The KVM driver is unable to resurrect this old VM. Please run `minikube delete` to delete it and try again.",
 		Issues: []int{3901, 3434},
 	},
 	"KVM2_START_NO_IP": {
-		Regexp: re(`Error in driver during machine creation: Machine didn't return an IP after 120 seconds`),
+		Regexp: re(`Error in driver during machine creation: Machine didn't return an IP after \d+ seconds`),
 		Advice: "Check your firewall rules for interference, and run 'virt-host-validate' to check for KVM configuration issues. If you are running minikube within a VM, consider using --driver=none",
 		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
 		Issues: []int{4249, 3566},
