@@ -39,7 +39,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -103,8 +102,8 @@ func (k *Bootstrapper) GetKubeletStatus() (string, error) {
 }
 
 // GetAPIServerStatus returns the api-server status
-func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, port int) (string, error) {
-	s, err := kverify.APIServerStatus(k.c, ip, port)
+func (k *Bootstrapper) GetAPIServerStatus(hostname string, port int) (string, error) {
+	s, err := kverify.APIServerStatus(k.c, hostname, port)
 	if err != nil {
 		return state.Error.String(), err
 	}
@@ -292,7 +291,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		if rerr == nil {
 			return nil
 		}
-		out.T(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
+		out.ErrT(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			glog.Warningf("delete failed: %v", err)
 		}
@@ -309,25 +308,11 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	out.T(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
+	out.ErrT(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
 	if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 		glog.Warningf("delete failed: %v", err)
 	}
 	return k.init(cfg)
-}
-
-func (k *Bootstrapper) controlPlaneEndpoint(cfg config.ClusterConfig) (string, int, error) {
-	cp, err := config.PrimaryControlPlane(&cfg)
-	if err != nil {
-		return "", 0, err
-	}
-
-	if driver.IsKIC(cfg.Driver) {
-		ip := oci.DefaultBindIPV4
-		port, err := oci.ForwardedPort(cfg.Driver, cfg.Name, cp.Port)
-		return ip, port, err
-	}
-	return cp.IP, cp.Port, nil
 }
 
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
@@ -371,17 +356,17 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return err
 	}
 
-	ip, port, err := k.controlPlaneEndpoint(cfg)
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
 	if err != nil {
 		return err
 	}
 
-	client, err := k.client(ip, port)
+	client, err := k.client(hostname, port)
 	if err != nil {
 		return errors.Wrap(err, "get k8s client")
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, ip, port, timeout); err != nil {
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
 		return err
 	}
 
@@ -392,13 +377,13 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 }
 
 // needsReset returns whether or not the cluster needs to be reconfigured
-func (k *Bootstrapper) needsReset(conf string, ip string, port int, client *kubernetes.Clientset, version string) bool {
+func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client *kubernetes.Clientset, version string) bool {
 	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
 		glog.Infof("needs reset: configs differ:\n%s", rr.Output())
 		return true
 	}
 
-	st, err := kverify.APIServerStatus(k.c, net.ParseIP(ip), port)
+	st, err := kverify.APIServerStatus(k.c, hostname, port)
 	if err != nil {
 		glog.Infof("needs reset: apiserver error: %v", err)
 		return true
@@ -447,19 +432,24 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		glog.Errorf("failed to create compat symlinks: %v", err)
 	}
 
-	ip, port, err := k.controlPlaneEndpoint(cfg)
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "primary control plane")
+	}
+
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &cp, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "control plane")
 	}
 
-	client, err := k.client(ip, port)
+	client, err := k.client(hostname, port)
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
 	}
 
 	// If the cluster is running, check if we have any work to do.
 	conf := bsutil.KubeadmYamlPath
-	if !k.needsReset(conf, ip, port, client, cfg.KubernetesConfig.KubernetesVersion) {
+	if !k.needsReset(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
 		glog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
 		return nil
 	}
@@ -499,7 +489,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), ip, port, kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), hostname, port, kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver health")
 	}
 

@@ -68,6 +68,8 @@ type DriverState struct {
 	Name     string
 	Priority Priority
 	State    State
+	// Rejection is why we chose not to use this driver
+	Rejection string
 }
 
 func (d DriverState) String() string {

@@ -335,8 +335,9 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 
 	resp, err := retryablehttp.Get(u.String())
 	if err != nil {
-		t.Fatalf("failed to http get %q : %v", u.String(), err)
+		t.Fatalf("failed to http get %q: %v\nresponse: %+v", u.String(), err, resp)
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -481,7 +482,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 	}{
 		{[]string{"unset", "cpus"}, "", ""},
 		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
-		{[]string{"set", "cpus", "2"}, "! These changes will take effect upon a minikube delete and then a minikube start", ""},
+		{[]string{"set", "cpus", "2"}, "", "! These changes will take effect upon a minikube delete and then a minikube start"},
 		{[]string{"get", "cpus"}, "2", ""},
 		{[]string{"unset", "cpus"}, "", ""},
 		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
@@ -615,6 +616,10 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	if !strings.Contains(rr.Stdout.String(), "hello-node") {
 		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
+	}
+
+	if NeedsPortForward() {
+		t.Skipf("test is broken for port-forwarded drivers: https://github.com/kubernetes/minikube/issues/7383")
 	}
 
 	// Test --https --url mode
@@ -774,7 +779,7 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 
 	vp := vmSyncTestPath()
 	t.Logf("Checking for existence of %s within VM", vp)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", vp)))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
@@ -811,7 +816,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 	}
 	for _, vp := range paths {
 		t.Logf("Checking for existence of %s within VM", vp)
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", vp)))
 		if err != nil {
 			t.Errorf("failed to check existence of %q inside minikube. args %q: %v", vp, rr.Command(), err)
 		}
@@ -831,7 +836,7 @@ func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string)
 		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
 	}
 
-	want := []byte("IP was already correctly configured")
+	want := []byte("No changes")
 	if !bytes.Contains(rr.Stdout.Bytes(), want) {
 		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 	}

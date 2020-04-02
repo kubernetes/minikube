@@ -18,7 +18,6 @@ package none
 
 import (
 	"fmt"
-	"net"
 	"os/exec"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -126,20 +125,14 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	glog.Infof("GetState called")
-	ip, err := d.GetIP()
-	if err != nil {
-		return state.Error, err
-	}
-
-	port, err := kubeconfig.Port(d.BaseDriver.MachineName)
+	hostname, port, err := kubeconfig.Endpoint(d.BaseDriver.MachineName)
 	if err != nil {
 		glog.Warningf("unable to get port: %v", err)
 		port = constants.APIServerPort
 	}
 
 	// Confusing logic, as libmachine.Stop will loop until the state == Stopped
-	ast, err := kverify.APIServerStatus(d.exec, net.ParseIP(ip), port)
+	ast, err := kverify.APIServerStatus(d.exec, hostname, port)
 	if err != nil {
 		return ast, err
 	}
