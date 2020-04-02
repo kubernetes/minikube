@@ -66,7 +66,7 @@ func status() registry.State {
 	}
 
 	if u.Uid != "0" {
-		return registry.State{Error: fmt.Errorf("The 'none' driver must be run as the root user"), Healthy: false, Fix: "For non-root usage, try the newer 'docker' driver", Installed: true}
+		return registry.State{Error: fmt.Errorf("the 'none' driver must be run as the root user"), Healthy: false, Fix: "For non-root usage, try the newer 'docker' driver", Installed: true}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
