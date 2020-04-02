@@ -29,6 +29,7 @@ import (
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
