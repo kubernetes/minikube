@@ -41,6 +41,7 @@ const (
 	Launch
 	Sad
 	ThumbsUp
+	ThumbsDown
 	Option
 	Command
 	LogEntry

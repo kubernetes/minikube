@@ -774,7 +774,7 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 
 	vp := vmSyncTestPath()
 	t.Logf("Checking for existence of %s within VM", vp)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", vp)))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
@@ -811,7 +811,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 	}
 	for _, vp := range paths {
 		t.Logf("Checking for existence of %s within VM", vp)
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", vp)))
 		if err != nil {
 			t.Errorf("failed to check existence of %q inside minikube. args %q: %v", vp, rr.Command(), err)
 		}

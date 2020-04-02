@@ -456,9 +456,9 @@ func prepareNone() {
 	out.T(out.StartingNone, "Configuring local host environment ...")
 	if viper.GetBool(config.WantNoneDriverWarning) {
 		out.ErrT(out.Empty, "")
-		out.WarningT("The 'none' driver provides limited isolation and may reduce system security and reliability.")
-		out.WarningT("For more information, see:")
-		out.ErrT(out.URL, "https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+		out.WarningT("The 'none' driver is designed for experts who need to integrate with an existing VM")
+		out.ErrT(out.Tip, "Most users should use the newer 'docker' driver instead, which does not require root!")
+		out.ErrT(out.Documentation, "For more information, see: https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 		out.ErrT(out.Empty, "")
 	}
 
