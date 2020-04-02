@@ -65,7 +65,7 @@ const (
 )
 
 // Start spins up a guest and starts the kubernetes node.
-func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) *kubeconfig.Settings {
+func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) (*kubeconfig.Settings, error) {
 	cp := ""
 	if apiServer {
 		cp = "control plane "
@@ -100,7 +100,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 
 	sv, err := util.ParseKubernetesVersion(n.KubernetesVersion)
 	if err != nil {
-		exit.WithError("Failed to parse kubernetes version", err)
+		return nil, errors.Wrap(err, "Failed to parse kubernetes version")
 	}
 
 	// configure the runtime (docker, containerd, crio)
@@ -113,7 +113,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
 		kcs = setupKubeconfig(host, &cc, &n, cc.Name)
 		if err != nil {
-			exit.WithError("Failed to setup kubeconfig", err)
+			return nil, errors.Wrap(err, "Failed to setup kubeconfig")
 		}
 
 		// setup kubeadm (must come after setupKubeconfig)
@@ -125,16 +125,16 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 
 		// write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper
 		if err := kubeconfig.Update(kcs); err != nil {
-			exit.WithError("Failed to update kubeconfig file.", err)
+			return nil, errors.Wrap(err, "Failed to update kubeconfig file.")
 		}
 	} else {
 		bs, err = cluster.Bootstrapper(machineAPI, viper.GetString(cmdcfg.Bootstrapper), cc, n)
 		if err != nil {
-			exit.WithError("Failed to get bootstrapper", err)
+			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
 		if err = bs.SetupCerts(cc.KubernetesConfig, n); err != nil {
-			exit.WithError("setting up certs", err)
+			return nil, errors.Wrap(err, "setting up certs")
 		}
 	}
 
@@ -159,34 +159,34 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		// Skip pre-existing, because we already waited for health
 		if viper.GetBool(waitUntilHealthy) && !preExists {
 			if err := bs.WaitForNode(cc, n, viper.GetDuration(waitTimeout)); err != nil {
-				exit.WithError("Wait failed", err)
+				return nil, errors.Wrap(err, "Wait failed")
 			}
 		}
 	} else {
 		if err := bs.UpdateNode(cc, n, cr); err != nil {
-			exit.WithError("Updating node", err)
+			return nil, errors.Wrap(err, "Updating node")
 		}
 
 		cp, err := config.PrimaryControlPlane(&cc)
 		if err != nil {
-			exit.WithError("Getting primary control plane", err)
+			return nil, errors.Wrap(err, "Getting primary control plane")
 		}
 		cpBs, err := cluster.Bootstrapper(machineAPI, viper.GetString(cmdcfg.Bootstrapper), cc, cp)
 		if err != nil {
-			exit.WithError("Getting bootstrapper", err)
+			return nil, errors.Wrap(err, "Getting bootstrapper")
 		}
 
 		joinCmd, err := cpBs.GenerateToken(cc)
 		if err != nil {
-			exit.WithError("generating join token", err)
+			return nil, errors.Wrap(err, "generating join token")
 		}
 
 		if err = bs.JoinCluster(cc, n, joinCmd); err != nil {
-			exit.WithError("joining cluster", err)
+			return nil, errors.Wrap(err, "joining cluster")
 		}
 	}
 
-	return kcs
+	return kcs, nil
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
@@ -351,10 +351,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 		return host, exists
 	}
 
-	out.T(out.FailureType, "StartHost failed again: {{.error}}", out.V{"error": err})
-	out.T(out.Workaround, `Run: "{{.delete}}", then "{{.start}} --alsologtostderr -v=1" to try again with more logging`,
-		out.V{"delete": mustload.ExampleCmd(cc.Name, "delete"), "start": mustload.ExampleCmd(cc.Name, "start")})
-
+	// Don't use host.Driver to avoid nil pointer deref
 	drv := cc.Driver
 	exit.WithError(fmt.Sprintf(`Failed to start %s %s. "%s" may fix it.`, drv, driver.MachineType(drv), mustload.ExampleCmd(cc.Name, "start")), err)
 	return host, exists

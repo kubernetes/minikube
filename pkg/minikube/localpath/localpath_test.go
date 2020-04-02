@@ -17,10 +17,15 @@ limitations under the License.
 package localpath
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
+
+	"k8s.io/client-go/util/homedir"
 )
 
 func TestReplaceWinDriveLetterToVolumeName(t *testing.T) {
@@ -59,5 +64,97 @@ func TestHasWindowsDriveLetter(t *testing.T) {
 		if hasWindowsDriveLetter(tc.path) != tc.want {
 			t.Errorf("%s have a Windows drive letter: %t", tc.path, tc.want)
 		}
+	}
+}
+
+func TestMiniPath(t *testing.T) {
+	var testCases = []struct {
+		env, basePath string
+	}{
+		{"/tmp/.minikube", "/tmp/"},
+		{"/tmp/", "/tmp"},
+		{"", homedir.HomeDir()},
+	}
+	originalEnv := os.Getenv(MinikubeHome)
+	defer func() { // revert to pre-test env var
+		err := os.Setenv(MinikubeHome, originalEnv)
+		if err != nil {
+			t.Fatalf("Error reverting env %s to its original value (%s) var after test ", MinikubeHome, originalEnv)
+		}
+	}()
+	for _, tc := range testCases {
+		t.Run(tc.env, func(t *testing.T) {
+			expectedPath := filepath.Join(tc.basePath, ".minikube")
+			os.Setenv(MinikubeHome, tc.env)
+			path := MiniPath()
+			if path != expectedPath {
+				t.Errorf("MiniPath expected to return '%s', but got '%s'", expectedPath, path)
+			}
+		})
+	}
+}
+
+func TestMachinePath(t *testing.T) {
+	var testCases = []struct {
+		miniHome []string
+		contains string
+	}{
+		{[]string{"tmp", "foo", "bar", "baz"}, "tmp"},
+		{[]string{"tmp"}, "tmp"},
+		{[]string{}, MiniPath()},
+	}
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("%s", tc.miniHome), func(t *testing.T) {
+			machinePath := MachinePath("foo", tc.miniHome...)
+			if !strings.Contains(machinePath, tc.contains) {
+				t.Errorf("Function MachinePath returned (%v) which doesn't contain expected (%v)", machinePath, tc.contains)
+			}
+		})
+	}
+}
+
+type propertyFnWithArg func(string) string
+
+func TestPropertyWithNameArg(t *testing.T) {
+	var testCases = []struct {
+		propertyFunc propertyFnWithArg
+		name         string
+	}{
+		{Profile, "Profile"},
+		{ClientCert, "ClientCert"},
+		{ClientKey, "ClientKey"},
+	}
+	miniPath := MiniPath()
+	mockedName := "foo"
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if !strings.Contains(tc.propertyFunc(mockedName), MiniPath()) {
+				t.Errorf("Property %s(%v) doesn't contain miniPath %v", tc.name, tc.propertyFunc, miniPath)
+			}
+			if !strings.Contains(tc.propertyFunc(mockedName), mockedName) {
+				t.Errorf("Property %s(%v) doesn't contain passed name %v", tc.name, tc.propertyFunc, mockedName)
+			}
+		})
+
+	}
+}
+
+type propertyFnWithoutArg func() string
+
+func TestPropertyWithoutNameArg(t *testing.T) {
+	var testCases = []struct {
+		propertyFunc propertyFnWithoutArg
+		name         string
+	}{
+		{ConfigFile, "ConfigFile"},
+		{CACert, "CACert"},
+	}
+	miniPath := MiniPath()
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			if !strings.Contains(tc.propertyFunc(), MiniPath()) {
+				t.Errorf("Property %s(%v) doesn't contain expected miniPath %v", tc.name, tc.propertyFunc, miniPath)
+			}
+		})
 	}
 }
