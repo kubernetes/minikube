@@ -43,10 +43,7 @@ apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
 # disable disk resource management by default
 imageGCHighThresholdPercent: 100
-evictionSoft:
-  memory.available: "300mb"
 evictionHard:
-  memory.available: "100mb"
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
