@@ -158,7 +158,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to do minikube status after eval-ing docker-env %s", err)
 	}
 	if !strings.Contains(rr.Output(), "Running") {
-		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%q*", rr.Output())
+		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
 	}
 
 	mctx, cancel = context.WithTimeout(ctx, Seconds(13))
@@ -172,7 +172,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 
 	expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
 	if !strings.Contains(rr.Output(), expectedImgInside) {
-		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%q*", expectedImgInside, rr.Output())
+		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
 	}
 
 }
@@ -281,7 +281,7 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	re := `host:([A-z]+),kublet:([A-z]+),apiserver:([A-z]+),kubeconfig:([A-z]+)`
 	match, _ := regexp.MatchString(re, rr.Stdout.String())
 	if !match {
-		t.Errorf("failed to match regex %q for minikube status with custom format. args %q. output %q", re, rr.Command(), rr.Output())
+		t.Errorf("failed to match regex %q for minikube status with custom format. args %q. output: %s", re, rr.Command(), rr.Output())
 	}
 
 	// Json output
@@ -427,10 +427,10 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				t.Errorf("failed to do cache list. args %q: %v", rr.Command(), err)
 			}
 			if !strings.Contains(rr.Output(), "k8s.gcr.io/pause") {
-				t.Errorf("expected 'cache list' output to include 'k8s.gcr.io/pause' but got:\n ***%q***", rr.Output())
+				t.Errorf("expected 'cache list' output to include 'k8s.gcr.io/pause' but got:\n ***%s***", rr.Output())
 			}
 			if strings.Contains(rr.Output(), "busybox:1.28.4-glibc") {
-				t.Errorf("expected 'cache list' output not to include busybox:1.28.4-glibc but got:\n ***%q***", rr.Output())
+				t.Errorf("expected 'cache list' output not to include busybox:1.28.4-glibc but got:\n ***%s***", rr.Output())
 			}
 		})
 
@@ -440,7 +440,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
 			if !strings.Contains(rr.Output(), "1.28.4-glibc") {
-				t.Errorf("expected '1.28.4-glibc' to be in the output but got %q", rr.Output())
+				t.Errorf("expected '1.28.4-glibc' to be in the output but got *%s*", rr.Output())
 			}
 
 		})
@@ -513,7 +513,7 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	for _, word := range []string{"Docker", "apiserver", "Linux", "kubelet"} {
 		if !strings.Contains(rr.Stdout.String(), word) {
-			t.Errorf("excpeted minikube logs to include word: -%q- but got \n***%q***\n", word, rr.Output())
+			t.Errorf("excpeted minikube logs to include word: -%q- but got \n***%s***\n", word, rr.Output())
 		}
 	}
 }
@@ -678,7 +678,7 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	for _, a := range []string{"dashboard", "ingress", "ingress-dns"} {
 		if !strings.Contains(rr.Output(), a) {
-			t.Errorf("expected 'addon list' output to include -%q- but got *%q*", a, rr.Output())
+			t.Errorf("expected 'addon list' output to include -%q- but got *%s*", a, rr.Output())
 		}
 	}
 
