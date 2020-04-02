@@ -304,11 +304,15 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	validateSpecifiedDriver(existing)
-	ds := selectDriver(existing)
+	ds, alts := selectDriver(existing)
+
+}
+
+func startWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) error {
 	driverName := ds.Name
 	glog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
-	err = autoSetDriverOptions(cmd, driverName)
+	err := autoSetDriverOptions(cmd, driverName)
 	if err != nil {
 		glog.Errorf("Error autoSetOptions : %v", err)
 	}
@@ -330,7 +334,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	// This is about as far as we can go without overwriting config files
 	if viper.GetBool(dryRun) {
 		out.T(out.DryRun, `dry-run validation complete!`)
-		return
+		return nil
 	}
 
 	if driver.IsVM(driverName) {
@@ -388,6 +392,8 @@ func runStart(cmd *cobra.Command, args []string) {
 	if err := showKubectlInfo(kubeconfig, k8sVersion, cc.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
 	}
+
+	return nil
 }
 
 func updateDriver(driverName string) {
@@ -519,7 +525,7 @@ func kubectlVersion(path string) (string, error) {
 	return cv.ClientVersion.GitVersion, nil
 }
 
-func selectDriver(existing *config.ClusterConfig) registry.DriverState {
+func selectDriver(existing *config.ClusterConfig) (registry.DriverState, []registry.DriverState) {
 	// Technically unrelated, but important to perform before detection
 	driver.SetLibvirtURI(viper.GetString(kvmQemuURI))
 
@@ -528,7 +534,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		old := hostDriver(existing)
 		ds := driver.Status(old)
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on existing profile`, out.V{"driver": ds.String()})
-		return ds
+		return ds, nil
 	}
 
 	// Default to looking at the new driver parameter
@@ -548,7 +554,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 			exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
 		}
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
-		return ds
+		return ds, nil
 	}
 
 	// Fallback to old driver parameter
@@ -558,7 +564,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 			exit.WithCodeT(exit.Unavailable, "The driver '{{.driver}}' is not supported on {{.os}}", out.V{"driver": d, "os": runtime.GOOS})
 		}
 		out.T(out.Sparkle, `Using the {{.driver}} driver based on user configuration`, out.V{"driver": ds.String()})
-		return ds
+		return ds, nil
 	}
 
 	pick, alts := driver.Suggest(driver.Choices(viper.GetBool("vm")))
@@ -575,7 +581,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 	} else {
 		out.T(out.Sparkle, `Automatically selected the {{.driver}} driver`, out.V{"driver": pick.String()})
 	}
-	return pick
+	return pick, alts
 }
 
 // hostDriver returns the actual driver used by a libmachine host, which can differ from our config
