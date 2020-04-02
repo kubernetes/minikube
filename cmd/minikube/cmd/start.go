@@ -44,6 +44,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -109,7 +110,7 @@ const (
 	downloadOnly            = "download-only"
 	dnsProxy                = "dns-proxy"
 	hostDNSResolver         = "host-dns-resolver"
-	waitUntilHealthy        = "wait"
+	waitComponents          = "wait"
 	force                   = "force"
 	dryRun                  = "dry-run"
 	interactive             = "interactive"
@@ -171,7 +172,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
-	startCmd.Flags().Bool(waitUntilHealthy, true, "Block until the apiserver is servicing API requests")
+	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitsKeys, fmt.Sprintf("comma separated list of kuberentes components to wait to verify after start. defaults to %q, available options: %q . can also specify 'all' or 'none'", kverify.DefaultWaitsKeys, kverify.AllWaitsKeys))
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
@@ -1199,4 +1200,46 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
 	return nv
+}
+
+// interpretWaitFlag interprets the wait flag and respects the legacy minikube users
+// returns 	waitForAPI, waitForSysPod, waitForSA
+func interpretWaitFlag(cmd cobra.Command) map[string]bool {
+	if !cmd.Flags().Changed(waitComponents) {
+		glog.Infof("Wait Components : %+v", kverify.DefaultWaits)
+		return kverify.DefaultWaits
+	}
+
+	waitFlags, err := cmd.Flags().GetStringSlice(waitComponents)
+	if err != nil {
+		glog.Infof("failed to get wait from flags, will use default wait components : %+v", kverify.DefaultWaits)
+		return kverify.DefaultWaits
+	}
+
+	// before minikube 1.9.0, wait flag was boolean
+	if (len(waitFlags) == 1 && waitFlags[0] == "true") || (len(waitFlags) == 1 && waitFlags[0] == "all") {
+		return kverify.AllWaitsCompo
+	}
+
+	// respecting legacy flag format --wait=false
+	// before minikube 1.9.0, wait flag was boolean
+	if (len(waitFlags) == 1 && waitFlags[0] == "false") || len(waitFlags) == 1 && waitFlags[0] == "none" {
+		return kverify.NoWaitsCompo
+	}
+
+	waitCompos := map[string]bool{}
+	for _, wc := range waitFlags {
+		seen := false
+		for _, valid := range kverify.AllValidWaitsList {
+			if wc == valid {
+				waitCompos[wc] = true
+				seen = true
+				continue
+			}
+		}
+		if !seen {
+			glog.Warning("invalid wait component flag %q. valid options are %q", wc, strings.Join(kverify.AllValidWaitsList, ","))
+		}
+	}
+	return waitCompos
 }

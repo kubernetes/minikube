@@ -35,19 +35,28 @@ import (
 )
 
 const (
-	// APIServer is the name used in the flags for k8s api server
-	APIServer = "apiserver"
-	// SystemPod is the name used in the flags for pods in the kube system
-	SystemPods = "system_pods"
-	// DefaultSA is the name used in the flags for default service account
-	DefaultSA = "default_sa"
+	// APIServerWait is the name used in the flags for k8s api server
+	APIServerWait = "apiserver"
+	// SystemPodsWait is the name used in the flags for pods in the kube system
+	SystemPodsWait = "system_pods"
+	// DefaultSAWait is the name used in the flags for default service account
+	DefaultSAWait = "default_sa"
 )
 
-// DefaultWaits is the default components to wait for
-var DefaultWaits = []string{APIServer, SystemPods}
+// DefaultWaits is map of the the default components to wait for
+var DefaultWaits = map[string]bool{APIServerWait: true, SystemPodsWait: true}
 
-// AvailableWaits is list of possible components that user can choose to wait for
-var AvailableWaits = []string{APIServer, SystemPods, DefaultSA}
+// DefaultWaitsKeys is list of all default components to wait for
+var DefaultWaitsKeys = []string{APIServerWait, SystemPodsWait}
+
+// NoWaitsCompo is map of componets to wait for if specified 'none' or 'false'
+var NoWaitsCompo = map[string]bool{}
+
+// AllWaitsCompo is map for waiting for all components.
+var AllWaitsCompo = map[string]bool{APIServerWait: true, SystemPodsWait: true, DefaultSAWait: true}
+
+// AllValidWaitsList list of all valid components to wait for
+var AllValidWaitsList = []string{APIServerWait, SystemPodsWait, DefaultSAWait}
 
 // minLogCheckTime how long to wait before spamming error logs to console
 const minLogCheckTime = 30 * time.Second
