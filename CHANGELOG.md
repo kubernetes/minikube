@@ -8,26 +8,22 @@ Improvements:
 * Run dashboard with internal kubectl if not in path [#7299](https://github.com/kubernetes/minikube/pull/7299)
 * Implement options for the minikube version command [#7325](https://github.com/kubernetes/minikube/pull/7325)
 * service list cmd: display target port and name  [#6879](https://github.com/kubernetes/minikube/pull/6879)
-* none: check for docker and root uid [#7388](https://github.com/kubernetes/minikube/pull/7388)
-* Update Japanese translations [#7359](https://github.com/kubernetes/minikube/pull/7359)
 * Add rejection reason to 'unable to find driver' error [#7379](https://github.com/kubernetes/minikube/pull/7379)
+* Update Japanese translations [#7359](https://github.com/kubernetes/minikube/pull/7359)
 
 Bug fixes:
 
 * Make eviction and image GC settings consistent across kubeadm API versions [#7364](https://github.com/kubernetes/minikube/pull/7364)
 * Move errors and warnings to output to stderr [#7382](https://github.com/kubernetes/minikube/pull/7382)
 * Correct assumptions for forwarded hostname & IP handling [#7360](https://github.com/kubernetes/minikube/pull/7360)
-* Run sudo for file display due to umask [#7384](https://github.com/kubernetes/minikube/pull/7384)
-* Make live cache pushes non-fatal in case of stop/delete race [#7362](https://github.com/kubernetes/minikube/pull/7362)
 * Extend maximum stop retry from 30s to 120s [#7363](https://github.com/kubernetes/minikube/pull/7363)
 * Use kubectl version --short if --output=json fails [#7356](https://github.com/kubernetes/minikube/pull/7356)
 * Fix embed certs by updating kubeconfig after certs are populated [#7309](https://github.com/kubernetes/minikube/pull/7309)
 * none: Use LookPath to verify conntrack install [#7305](https://github.com/kubernetes/minikube/pull/7305)
 * Show all global flags in options command [#7292](https://github.com/kubernetes/minikube/pull/7292)
 * Fix null deref in start host err [#7278](https://github.com/kubernetes/minikube/pull/7278)
-* Fix StartHost error formatting mistake, improve err msg [#7277](https://github.com/kubernetes/minikube/pull/7277)
 * Increase Docker "slow" timeouts to 15s [#7268](https://github.com/kubernetes/minikube/pull/7268)
-* mustload: Replace DriverIP with Forwarded(IP|Port) [#7310](https://github.com/kubernetes/minikube/pull/7310)
+* none: check for docker and root uid [#7388](https://github.com/kubernetes/minikube/pull/7388)
 
 Thank you to our contributors for this release!
 
