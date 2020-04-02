@@ -56,9 +56,10 @@ minikube node add [flags]
 ### Options
 
 ```
-      --control-plane   If true, the node added will also be a control plane in addition to a worker.
-  -h, --help            help for add
-      --worker          If true, the added node will be marked for work. Defaults to true. (default true)
+      --control-plane       If true, the node added will also be a control plane in addition to a worker.
+      --delete-on-failure   If set, delete the current cluster if start fails and try again. Defaults to false.
+  -h, --help                help for add
+      --worker              If true, the added node will be marked for work. Defaults to true. (default true)
 ```
 
 ### Options inherited from parent commands
@@ -155,8 +156,9 @@ minikube node start [flags]
 ### Options
 
 ```
-  -h, --help          help for start
-      --name string   The name of the node to start
+      --delete-on-failure   If set, delete the current cluster if start fails and try again. Defaults to false.
+  -h, --help                help for start
+      --name string         The name of the node to start
 ```
 
 ### Options inherited from parent commands
