@@ -151,7 +151,7 @@ func Healthy(name string) ClusterController {
 
 	as, err := kverify.APIServerStatus(co.CP.Runner, co.CP.ForwardedIP, co.CP.ForwardedPort)
 	if err != nil {
-		out.T(out.FailureType, `Unable to get control plane status: {{.error}}`, out.V{"error": err})
+		out.FailureT(`Unable to get control plane status: {{.error}}`, out.V{"error": err})
 		exitTip("delete", name, exit.Unavailable)
 	}
 
@@ -162,7 +162,7 @@ func Healthy(name string) ClusterController {
 
 	if as != state.Running {
 		out.T(out.Shrug, `This control plane is not running! (state={{.state}})`, out.V{"state": as.String()})
-		out.T(out.Warning, `This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
+		out.WarningT(`This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
 		exitTip("start", name, exit.Unavailable)
 	}
 	return co

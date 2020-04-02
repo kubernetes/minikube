@@ -78,7 +78,7 @@ var logsCmd = &cobra.Command{
 		if err != nil {
 			out.Ln("")
 			// Avoid exit.WithError, since it outputs the issue URL
-			out.T(out.Warning, "{{.error}}", out.V{"error": err})
+			out.WarningT("{{.error}}", out.V{"error": err})
 			os.Exit(exit.Unavailable)
 		}
 	},

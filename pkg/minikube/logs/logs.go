@@ -143,7 +143,7 @@ func FindProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.C
 // OutputProblems outputs discovered problems.
 func OutputProblems(problems map[string][]string, maxLines int) {
 	for name, lines := range problems {
-		out.T(out.FailureType, "Problems detected in {{.name}}:", out.V{"name": name})
+		out.FailureT("Problems detected in {{.name}}:", out.V{"name": name})
 		if len(lines) > maxLines {
 			lines = lines[len(lines)-maxLines:]
 		}
