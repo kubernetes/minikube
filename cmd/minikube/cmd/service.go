@@ -137,7 +137,7 @@ func startKicServiceTunnel(svc, configName string) {
 	service.PrintServiceList(os.Stdout, data)
 
 	openURLs(svc, urls)
-	out.T(out.Warning, "Because you are using docker driver on Mac, the terminal needs to be open to run it.")
+	out.WarningT("Because you are using docker driver on Mac, the terminal needs to be open to run it.")
 
 	<-ctrlC
 
