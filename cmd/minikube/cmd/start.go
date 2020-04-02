@@ -1203,7 +1203,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 }
 
 // interpretWaitFlag interprets the wait flag and respects the legacy minikube users
-// returns 	waitForAPI, waitForSysPod, waitForSA
+// returns map of components to wait for
 func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 	if !cmd.Flags().Changed(waitComponents) {
 		glog.Infof("Wait Components : %+v", kverify.DefaultWaits)
@@ -1224,10 +1224,10 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 	// respecting legacy flag format --wait=false
 	// before minikube 1.9.0, wait flag was boolean
 	if (len(waitFlags) == 1 && waitFlags[0] == "false") || len(waitFlags) == 1 && waitFlags[0] == "none" {
-		return kverify.NoWaitsCompo
+		return kverify.NoWaitsCompos
 	}
 
-	waitCompos := map[string]bool{}
+	waitCompos := kverify.NoWaitsCompos
 	for _, wc := range waitFlags {
 		seen := false
 		for _, valid := range kverify.AllValidWaitsList {
