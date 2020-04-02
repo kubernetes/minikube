@@ -82,7 +82,7 @@ func podStatusMsg(pod core.Pod) string {
 
 // DontWait will return true if the config is no need to wait
 func DontWait(wcs map[string]bool) bool {
-	return wcs[APIServerWait] == false && wcs[SystemPodsWait] == false && wcs[DefaultServiceAccountWait] == false
+	return !wcs[APIServerWait] && !wcs[SystemPodsWait] && !wcs[DefaultServiceAccountWait]
 }
 
 // announceProblems checks for problems, and slows polling down if any are found
