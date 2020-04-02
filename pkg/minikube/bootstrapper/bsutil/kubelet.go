@@ -119,6 +119,33 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
+func NewSysVTemplate(k8s config.KubernetesConfig ([]byte, error) {
+	opts := struct {
+
+		KubeletPath      string
+	}{
+		ExtraOptions:     convertToFlags(extraOpts),
+		ContainerRuntime: k8s.ContainerRuntime,
+		KubeletPath:      path.Join(binRoot(k8s.KubernetesVersion), "kubelet"),
+	}
+	if err := ktmpl.KubeletSystemdTemplate.Execute(&b, opts); err != nil {
+		return nil, err
+	}
+
+	return b.Bytes(), nil
+}
+
+// NewKubeletService returns a generated systemd unit file for the kubelet
+func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
+	var b bytes.Buffer
+	opts := struct{ KubeletPath string }{KubeletPath: path.Join(binRoot(cfg.KubernetesVersion), "kubelet")}
+	if err := ktmpl.KubeletServiceTemplate.Execute(&b, opts); err != nil {
+		return nil, errors.Wrap(err, "template execute")
+	}
+	return b.Bytes(), nil
+}
+
+
 // KubeNodeName returns the node name registered in Kubernetes
 func KubeNodeName(cc config.ClusterConfig, n config.Node) string {
 	if cc.Driver == driver.None {
