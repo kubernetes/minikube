@@ -86,7 +86,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
 	if err := config.SaveProfile(viper.GetString(config.ProfileName), &cc); err != nil {
-		exit.WithError("Failed to save config", err)
+		return nil, errors.Wrap(err, "Failed to save config")
 	}
 
 	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
@@ -120,7 +120,8 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		bs = setupKubeAdm(machineAPI, cc, n)
 		err = bs.StartCluster(cc)
 		if err != nil {
-			exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, cc, mRunner))
+			out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, cc, mRunner))
+			return nil, err
 		}
 
 		// write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper
