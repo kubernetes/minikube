@@ -335,8 +335,9 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 
 	resp, err := retryablehttp.Get(u.String())
 	if err != nil {
-		t.Fatalf("failed to http get %q : %v", u.String(), err)
+		t.Fatalf("failed to http get %q: %v\nresponse: %+v", u.String(), err, resp)
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -617,6 +618,10 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
 	}
 
+	if NeedsPortForward() {
+		t.Skipf("test is broken for port-forwarded drivers: https://github.com/kubernetes/minikube/issues/7383")
+	}
+
 	// Test --https --url mode
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node"))
 	if err != nil {
@@ -831,7 +836,7 @@ func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string)
 		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
 	}
 
-	want := []byte("IP was already correctly configured")
+	want := []byte("No changes")
 	if !bytes.Contains(rr.Stdout.Bytes(), want) {
 		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 	}

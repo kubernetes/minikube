@@ -19,6 +19,7 @@ package driver
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -126,6 +127,12 @@ func BareMetal(name string) bool {
 // NeedsRoot returns true if driver needs to run with root privileges
 func NeedsRoot(name string) bool {
 	return name == None || name == Podman
+}
+
+// NeedsPortForward returns true if driver is unable provide direct IP connectivity
+func NeedsPortForward(name string) bool {
+	// Docker for Desktop
+	return IsKIC(name) && (runtime.GOOS == "darwin" || runtime.GOOS == "windows")
 }
 
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.

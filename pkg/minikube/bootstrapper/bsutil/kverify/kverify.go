@@ -183,7 +183,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 }
 
 // WaitForHealthyAPIServer waits for api server status to be running
-func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, ip string, port int, timeout time.Duration) error {
+func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, hostname string, port int, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
 
@@ -197,7 +197,7 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 			time.Sleep(kconst.APICallRetryInterval * 5)
 		}
 
-		status, err := apiServerHealthz(net.ParseIP(ip), port)
+		status, err := apiServerHealthz(hostname, port)
 		if err != nil {
 			glog.Warningf("status: %v", err)
 			return false, nil
@@ -254,7 +254,7 @@ func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg conf
 }
 
 // APIServerStatus returns apiserver status in libmachine style state.State
-func APIServerStatus(cr command.Runner, ip net.IP, port int) (state.State, error) {
+func APIServerStatus(cr command.Runner, hostname string, port int) (state.State, error) {
 	glog.Infof("Checking apiserver status ...")
 
 	pid, err := apiServerPID(cr)
@@ -267,7 +267,7 @@ func APIServerStatus(cr command.Runner, ip net.IP, port int) (state.State, error
 	rr, err := cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", fmt.Sprintf("/proc/%d/cgroup", pid)))
 	if err != nil {
 		glog.Warningf("unable to find freezer cgroup: %v", err)
-		return apiServerHealthz(ip, port)
+		return apiServerHealthz(hostname, port)
 
 	}
 	freezer := strings.TrimSpace(rr.Stdout.String())
@@ -275,13 +275,13 @@ func APIServerStatus(cr command.Runner, ip net.IP, port int) (state.State, error
 	fparts := strings.Split(freezer, ":")
 	if len(fparts) != 3 {
 		glog.Warningf("unable to parse freezer - found %d parts: %s", len(fparts), freezer)
-		return apiServerHealthz(ip, port)
+		return apiServerHealthz(hostname, port)
 	}
 
 	rr, err = cr.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup/freezer", fparts[2], "freezer.state")))
 	if err != nil {
 		glog.Errorf("unable to get freezer state: %s", rr.Stderr.String())
-		return apiServerHealthz(ip, port)
+		return apiServerHealthz(hostname, port)
 	}
 
 	fs := strings.TrimSpace(rr.Stdout.String())
@@ -289,12 +289,12 @@ func APIServerStatus(cr command.Runner, ip net.IP, port int) (state.State, error
 	if fs == "FREEZING" || fs == "FROZEN" {
 		return state.Paused, nil
 	}
-	return apiServerHealthz(ip, port)
+	return apiServerHealthz(hostname, port)
 }
 
 // apiServerHealthz hits the /healthz endpoint and returns libmachine style state.State
-func apiServerHealthz(ip net.IP, port int) (state.State, error) {
-	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(ip.String(), fmt.Sprint(port)))
+func apiServerHealthz(hostname string, port int) (state.State, error) {
+	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(hostname, fmt.Sprint(port)))
 	glog.Infof("Checking apiserver healthz at %s ...", url)
 	// To avoid: x509: certificate signed by unknown authority
 	tr := &http.Transport{
