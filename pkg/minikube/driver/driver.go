@@ -174,8 +174,8 @@ func Choices(vm bool) []registry.DriverState {
 	return options
 }
 
-// Suggest returns a suggested driver from a set of options
-func Suggest(options []registry.DriverState) (registry.DriverState, []registry.DriverState) {
+// Suggest returns a suggested driver, alternate drivers, and rejected drivers
+func Suggest(options []registry.DriverState) (registry.DriverState, []registry.DriverState, []registry.DriverState) {
 	pick := registry.DriverState{}
 	for _, ds := range options {
 		if !ds.State.Installed {
@@ -198,17 +198,30 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 	}
 
 	alternates := []registry.DriverState{}
+	rejects := []registry.DriverState{}
 	for _, ds := range options {
 		if ds != pick {
-			if !ds.State.Healthy || !ds.State.Installed {
+			glog.Errorf("%s: %s", ds.Name, ds.Rejection)
+			if !ds.State.Installed {
+				ds.Rejection = fmt.Sprintf("Not installed: %v", ds.State.Error)
+				rejects = append(rejects, ds)
 				continue
 			}
+
+			if !ds.State.Healthy {
+				ds.Rejection = fmt.Sprintf("Not healthy: %v", ds.State.Error)
+				rejects = append(rejects, ds)
+				continue
+			}
+
+			ds.Rejection = fmt.Sprintf("%s is preferred", pick.Name)
 			alternates = append(alternates, ds)
 		}
 	}
 	glog.Infof("Picked: %+v", pick)
 	glog.Infof("Alternatives: %+v", alternates)
-	return pick, alternates
+	glog.Infof("Rejects: %+v", rejects)
+	return pick, alternates, rejects
 }
 
 // Status returns the status of a driver
