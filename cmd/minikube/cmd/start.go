@@ -172,7 +172,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
-	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitsKeys, fmt.Sprintf("comma separated list of kuberentes components to wait to verify after start. defaults to %q, available options: %q . can also specify 'all' or 'none'", kverify.DefaultWaitsKeys, kverify.AllValidWaitsList))
+	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitsKeys, fmt.Sprintf("comma separated list of kuberentes components to verify and wait for after starting a cluster. defaults to %q, available options: %q . other acceptable values are 'all' or 'none', 'true' and 'false'", strings.Join(kverify.DefaultWaitsKeys, ","), strings.Join(kverify.AllValidWaitsList, ",")))
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
@@ -1069,6 +1069,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 		},
 		Nodes: []config.Node{cp},
 	}
+	cfg.WaitForCompos = interpretWaitFlag(*cmd)
 	return cfg, cp, nil
 }
 
@@ -1238,7 +1239,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 			}
 		}
 		if !seen {
-			glog.Warning("invalid wait component flag %q. valid options are %q", wc, strings.Join(kverify.AllValidWaitsList, ","))
+			glog.Warningf("The value %q is invalid for --wait flag s! valid options are %q", wc, strings.Join(kverify.AllValidWaitsList, ","))
 		}
 	}
 	return waitCompos
