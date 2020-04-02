@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2019 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,24 +18,14 @@ limitations under the License.
 package kverify
 
 import (
-	"crypto/tls"
 	"fmt"
-	"net"
-	"net/http"
 	"os/exec"
-	"path"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
-	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"k8s.io/apimachinery/pkg/version"
-	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -44,86 +34,23 @@ import (
 	"k8s.io/minikube/pkg/minikube/logs"
 )
 
+const (
+	// APIServer is the name used in the flags for k8s api server
+	APIServer = "apiserver"
+	// SystemPod is the name used in the flags for pods in the kube system
+	SystemPods = "system_pods"
+	// DefaultSA is the name used in the flags for default service account
+	DefaultSA = "default_sa"
+)
+
+// DefaultWaits is the default components to wait for
+var DefaultWaits = []string{APIServer, SystemPods}
+
+// AvailableWaits is list of possible components that user can choose to wait for
+var AvailableWaits = []string{APIServer, SystemPods, DefaultSA}
+
 // minLogCheckTime how long to wait before spamming error logs to console
-const minLogCheckTime = 60 * time.Second
-
-// WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
-func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, start time.Time, timeout time.Duration) error {
-	glog.Infof("waiting for apiserver process to appear ...")
-	err := wait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
-		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during process check")
-		}
-
-		if time.Since(start) > minLogCheckTime {
-			announceProblems(r, bs, cfg, cr)
-			time.Sleep(kconst.APICallRetryInterval * 5)
-		}
-
-		if _, ierr := apiServerPID(cr); ierr != nil {
-			return false, nil
-		}
-
-		return true, nil
-	})
-	if err != nil {
-		return fmt.Errorf("apiserver process never appeared")
-	}
-	glog.Infof("duration metric: took %s to wait for apiserver process to appear ...", time.Since(start))
-	return nil
-}
-
-// apiServerPID returns our best guess to the apiserver pid
-func apiServerPID(cr command.Runner) (int, error) {
-	rr, err := cr.RunCmd(exec.Command("sudo", "pgrep", "-xnf", "kube-apiserver.*minikube.*"))
-	if err != nil {
-		return 0, err
-	}
-	s := strings.TrimSpace(rr.Stdout.String())
-	return strconv.Atoi(s)
-}
-
-// ExpectedComponentsRunning returns whether or not all expected components are running
-func ExpectedComponentsRunning(cs *kubernetes.Clientset) error {
-	expected := []string{
-		"kube-dns", // coredns
-		"etcd",
-		"kube-apiserver",
-		"kube-controller-manager",
-		"kube-proxy",
-		"kube-scheduler",
-	}
-
-	found := map[string]bool{}
-
-	pods, err := cs.CoreV1().Pods("kube-system").List(meta.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, pod := range pods.Items {
-		glog.Infof("found pod: %s", podStatusMsg(pod))
-		if pod.Status.Phase != core.PodRunning {
-			continue
-		}
-		for k, v := range pod.ObjectMeta.Labels {
-			if k == "component" || k == "k8s-app" {
-				found[v] = true
-			}
-		}
-	}
-
-	missing := []string{}
-	for _, e := range expected {
-		if !found[e] {
-			missing = append(missing, e)
-		}
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("missing components: %v", strings.Join(missing, ", "))
-	}
-	return nil
-}
+const minLogCheckTime = 30 * time.Second
 
 // podStatusMsg returns a human-readable pod status, for generating debug status
 func podStatusMsg(pod core.Pod) string {
@@ -253,6 +180,7 @@ func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg conf
 	}
 }
 
+<<<<<<< HEAD
 // APIServerStatus returns apiserver status in libmachine style state.State
 func APIServerStatus(cr command.Runner, hostname string, port int) (state.State, error) {
 	glog.Infof("Checking apiserver status ...")
@@ -319,6 +247,75 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 	return state.Running, nil
 }
 
+||||||| merged common ancestors
+// APIServerStatus returns apiserver status in libmachine style state.State
+func APIServerStatus(cr command.Runner, ip net.IP, port int) (state.State, error) {
+	glog.Infof("Checking apiserver status ...")
+
+	pid, err := apiServerPID(cr)
+	if err != nil {
+		glog.Warningf("stopped: unable to get apiserver pid: %v", err)
+		return state.Stopped, nil
+	}
+
+	// Get the freezer cgroup entry for this pid
+	rr, err := cr.RunCmd(exec.Command("sudo", "egrep", "^[0-9]+:freezer:", fmt.Sprintf("/proc/%d/cgroup", pid)))
+	if err != nil {
+		glog.Warningf("unable to find freezer cgroup: %v", err)
+		return apiServerHealthz(ip, port)
+
+	}
+	freezer := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("apiserver freezer: %q", freezer)
+	fparts := strings.Split(freezer, ":")
+	if len(fparts) != 3 {
+		glog.Warningf("unable to parse freezer - found %d parts: %s", len(fparts), freezer)
+		return apiServerHealthz(ip, port)
+	}
+
+	rr, err = cr.RunCmd(exec.Command("sudo", "cat", path.Join("/sys/fs/cgroup/freezer", fparts[2], "freezer.state")))
+	if err != nil {
+		glog.Errorf("unable to get freezer state: %s", rr.Stderr.String())
+		return apiServerHealthz(ip, port)
+	}
+
+	fs := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("freezer state: %q", fs)
+	if fs == "FREEZING" || fs == "FROZEN" {
+		return state.Paused, nil
+	}
+	return apiServerHealthz(ip, port)
+}
+
+// apiServerHealthz hits the /healthz endpoint and returns libmachine style state.State
+func apiServerHealthz(ip net.IP, port int) (state.State, error) {
+	url := fmt.Sprintf("https://%s/healthz", net.JoinHostPort(ip.String(), fmt.Sprint(port)))
+	glog.Infof("Checking apiserver healthz at %s ...", url)
+	// To avoid: x509: certificate signed by unknown authority
+	tr := &http.Transport{
+		Proxy:           nil, // To avoid connectiv issue if http(s)_proxy is set.
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+	client := &http.Client{Transport: tr}
+	resp, err := client.Get(url)
+	// Connection refused, usually.
+	if err != nil {
+		glog.Infof("stopped: %s: %v", url, err)
+		return state.Stopped, nil
+	}
+	if resp.StatusCode == http.StatusUnauthorized {
+		glog.Errorf("%s returned code %d (unauthorized). Please ensure that your apiserver authorization settings make sense!", url, resp.StatusCode)
+		return state.Error, nil
+	}
+	if resp.StatusCode != http.StatusOK {
+		glog.Warningf("%s response: %v %+v", url, err, resp)
+		return state.Error, nil
+	}
+	return state.Running, nil
+}
+
+=======
+>>>>>>> break down kverify package to files
 // KubeletStatus checks the kubelet status
 func KubeletStatus(cr command.Runner) (state.State, error) {
 	glog.Infof("Checking kubelet status ...")
