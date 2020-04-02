@@ -141,7 +141,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	configureMounts()
 
 	if err := CacheAndLoadImagesInConfig(); err != nil {
-		out.T(out.FailureType, "Unable to load cached images from config file.")
+		out.FailureT("Unable to load cached images from config file.")
 	}
 
 	// enable addons, both old and new!
@@ -211,7 +211,7 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 		if err := cr.Preload(k8s); err != nil {
 			switch err.(type) {
 			case *cruntime.ErrISOFeature:
-				out.T(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
+				out.ErrT(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
 			default:
 				glog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
 			}
@@ -314,7 +314,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
 	if err != nil {
-		out.ErrT(out.FailureType, "Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
+		out.FailureT("Failed to set NO_PROXY Env. Please use `export NO_PROXY=$NO_PROXY,{{.ip}}`.", out.V{"ip": ip})
 	}
 
 	// Save IP to config file for subsequent use
@@ -333,7 +333,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 	if err == nil {
 		return host, exists
 	}
-	out.T(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
+	out.ErrT(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
 
 	// NOTE: People get very cranky if you delete their prexisting VM. Only delete new ones.
 	if !exists {
@@ -447,7 +447,7 @@ func tryRegistry(r command.Runner, driverName string) {
 	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
 		glog.Warningf("%s failed: %v", rr.Args, err)
 		out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}}", out.V{"repository": repo, "type": driver.MachineType(driverName)})
-		out.T(out.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
+		out.ErrT(out.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
 	}
 }
 
@@ -455,11 +455,11 @@ func tryRegistry(r command.Runner, driverName string) {
 func prepareNone() {
 	out.T(out.StartingNone, "Configuring local host environment ...")
 	if viper.GetBool(config.WantNoneDriverWarning) {
-		out.T(out.Empty, "")
+		out.ErrT(out.Empty, "")
 		out.WarningT("The 'none' driver provides limited isolation and may reduce system security and reliability.")
 		out.WarningT("For more information, see:")
-		out.T(out.URL, "https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
-		out.T(out.Empty, "")
+		out.ErrT(out.URL, "https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+		out.ErrT(out.Empty, "")
 	}
 
 	if os.Getenv("CHANGE_MINIKUBE_NONE_USER") == "" {
@@ -467,12 +467,12 @@ func prepareNone() {
 		out.WarningT("kubectl and minikube configuration will be stored in {{.home_folder}}", out.V{"home_folder": home})
 		out.WarningT("To use kubectl or minikube commands as your own user, you may need to relocate them. For example, to overwrite your own settings, run:")
 
-		out.T(out.Empty, "")
-		out.T(out.Command, "sudo mv {{.home_folder}}/.kube {{.home_folder}}/.minikube $HOME", out.V{"home_folder": home})
-		out.T(out.Command, "sudo chown -R $USER $HOME/.kube $HOME/.minikube")
-		out.T(out.Empty, "")
+		out.ErrT(out.Empty, "")
+		out.ErrT(out.Command, "sudo mv {{.home_folder}}/.kube {{.home_folder}}/.minikube $HOME", out.V{"home_folder": home})
+		out.ErrT(out.Command, "sudo chown -R $USER $HOME/.kube $HOME/.minikube")
+		out.ErrT(out.Empty, "")
 
-		out.T(out.Tip, "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
+		out.ErrT(out.Tip, "This can also be done automatically by setting the env var CHANGE_MINIKUBE_NONE_USER=true")
 	}
 
 	if err := util.MaybeChownDirRecursiveToMinikubeUser(localpath.MiniPath()); err != nil {
