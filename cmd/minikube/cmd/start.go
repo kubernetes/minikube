@@ -172,7 +172,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
-	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitsKeys, fmt.Sprintf("comma separated list of kuberentes components to wait to verify after start. defaults to %q, available options: %q . can also specify 'all' or 'none'", kverify.DefaultWaitsKeys, kverify.AllWaitsKeys))
+	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitsKeys, fmt.Sprintf("comma separated list of kuberentes components to wait to verify after start. defaults to %q, available options: %q . can also specify 'all' or 'none'", kverify.DefaultWaitsKeys, kverify.AllValidWaitsList))
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
@@ -1218,7 +1218,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 
 	// before minikube 1.9.0, wait flag was boolean
 	if (len(waitFlags) == 1 && waitFlags[0] == "true") || (len(waitFlags) == 1 && waitFlags[0] == "all") {
-		return kverify.AllWaitsCompo
+		return kverify.AllWaitsCompos
 	}
 
 	// respecting legacy flag format --wait=false
