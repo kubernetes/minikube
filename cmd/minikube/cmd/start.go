@@ -307,12 +307,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateSpecifiedDriver(existing)
 	ds, alts, specified := selectDriver(existing)
 	err = startWithDriver(cmd, ds, existing)
-	if err != nil {
-		if specified {
-			// User specified an invalid or broken driver
-			exit.WithCodeT(exit.Failure, "Startup with {{.driver}} driver failed: {{.error}}", out.V{"driver": ds.Name, "error": err})
-		}
-
+	if err != nil && !specified {
 		// Walk down the rest of the options
 		for _, alt := range alts {
 			out.WarningT("Startup with {{.old_driver}} driver failed, trying with {{.new_driver}}.", out.V{"old_driver": ds.Name, "new_driver": alt.Name})
@@ -330,9 +325,15 @@ func runStart(cmd *cobra.Command, args []string) {
 			err = startWithDriver(cmd, ds, existing)
 			if err != nil {
 				continue
+			} else {
+				// Success!
+				os.Exit(0)
 			}
 		}
 	}
+
+	// Use the most recent error
+	exit.WithError("startup failed", err)
 
 }
 
