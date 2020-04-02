@@ -49,8 +49,8 @@ var DefaultWaits = map[string]bool{APIServerWait: true, SystemPodsWait: true}
 // DefaultWaitsKeys is list of all default components to wait for
 var DefaultWaitsKeys = []string{APIServerWait, SystemPodsWait}
 
-// NoWaitsCompo is map of componets to wait for if specified 'none' or 'false'
-var NoWaitsCompo = map[string]bool{}
+// NoWaitsCompos is map of componets to wait for if specified 'none' or 'false'
+var NoWaitsCompos = map[string]bool{}
 
 // AllWaitsCompo is map for waiting for all components.
 var AllWaitsCompo = map[string]bool{APIServerWait: true, SystemPodsWait: true, DefaultSAWait: true}
