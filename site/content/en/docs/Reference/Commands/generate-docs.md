@@ -1,30 +1,37 @@
 ---
-title: "update-check"
-linkTitle: "update-check"
+title: "generate-docs"
+linkTitle: "generate-docs"
 weight: 1
 date: 2020-04-02
 description: >
-  Print current and latest version number
+  Populates the specified folder with documentation in markdown about minikube
 ---
 
 
 
-## minikube update-check
+## minikube generate-docs
 
-Print current and latest version number
+Populates the specified folder with documentation in markdown about minikube
 
 ### Synopsis
 
-Print current and latest version number
+Populates the specified folder with documentation in markdown about minikube
 
 ```
-minikube update-check [flags]
+minikube generate-docs [flags]
+```
+
+### Examples
+
+```
+minikube generate-docs --path <FOLDER_PATH>
 ```
 
 ### Options
 
 ```
-  -h, --help   help for update-check
+  -h, --help          help for generate-docs
+      --path string   The path on the file system where the docs in markdown need to be saved
 ```
 
 ### Options inherited from parent commands

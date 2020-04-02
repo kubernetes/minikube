@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"k8s.io/minikube/pkg/generate"
 )
 
@@ -39,8 +40,8 @@ func TestCommandsDocs(t *testing.T) {
 			if err != nil {
 				t.Fatalf("error getting contents: %v", err)
 			}
-			if string(actualContents) != string(expectedContents) {
-				t.Fatalf("Docs are not updated. Please run `make generate-docs` to update commands documentation.")
+			if diff := cmp.Diff(actualContents, string(expectedContents)); diff != "" {
+				t.Fatalf("Docs are not updated. Please run `make generate-docs` to update commands documentation: %s", diff)
 			}
 		})
 	}

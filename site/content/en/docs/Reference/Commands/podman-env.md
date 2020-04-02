@@ -1,30 +1,32 @@
 ---
-title: "update-check"
-linkTitle: "update-check"
+title: "podman-env"
+linkTitle: "podman-env"
 weight: 1
 date: 2020-04-02
 description: >
-  Print current and latest version number
+  Sets up podman env variables; similar to '$(podman-machine env)'
 ---
 
 
 
-## minikube update-check
+## minikube podman-env
 
-Print current and latest version number
+Sets up podman env variables; similar to '$(podman-machine env)'
 
 ### Synopsis
 
-Print current and latest version number
+Sets up podman env variables; similar to '$(podman-machine env)'.
 
 ```
-minikube update-check [flags]
+minikube podman-env [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for update-check
+  -h, --help           help for podman-env
+      --shell string   Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect
+  -u, --unset          Unset variables instead of setting them
 ```
 
 ### Options inherited from parent commands

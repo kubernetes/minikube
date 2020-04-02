@@ -1,30 +1,31 @@
 ---
-title: "update-check"
-linkTitle: "update-check"
+title: "help"
+linkTitle: "help"
 weight: 1
 date: 2020-04-02
 description: >
-  Print current and latest version number
+  Help about any command
 ---
 
 
 
-## minikube update-check
+## minikube help
 
-Print current and latest version number
+Help about any command
 
 ### Synopsis
 
-Print current and latest version number
+Help provides help for any command in the application.
+Simply type minikube help [path to command] for full details.
 
 ```
-minikube update-check [flags]
+minikube help [command] [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for update-check
+  -h, --help   help for help
 ```
 
 ### Options inherited from parent commands

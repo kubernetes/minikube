@@ -1,8 +1,19 @@
+---
+title: "version"
+linkTitle: "version"
+weight: 1
+date: 2020-04-02
+description: >
+  Print the version of minikube
+---
+
+
+
 ## minikube version
 
 Print the version of minikube
 
-### Overview
+### Synopsis
 
 Print the version of minikube.
 

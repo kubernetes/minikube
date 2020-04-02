@@ -17,8 +17,8 @@ limitations under the License.
 package generate
 
 var title = `---
-title: {{.Command}}
-linkTitle: {{.Command}}
+title: "{{.Command}}"
+linkTitle: "{{.Command}}"
 weight: 1
 date: {{.Date}}
 description: >

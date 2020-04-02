@@ -2,12 +2,20 @@
 title: "mount"
 linkTitle: "mount"
 weight: 1
-date: 2019-08-01
+date: 2020-04-02
 description: >
   Mounts the specified directory into minikube
 ---
 
-### Usage
+
+
+## minikube mount
+
+Mounts the specified directory into minikube
+
+### Synopsis
+
+Mounts the specified directory into minikube.
 
 ```
 minikube mount [flags] <source directory>:<target directory>
@@ -41,3 +49,4 @@ minikube mount [flags] <source directory>:<target directory>
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+
