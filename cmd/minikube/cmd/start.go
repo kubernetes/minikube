@@ -20,7 +20,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"math/rand"
 	"net"
 	"net/url"
 	"os"
@@ -338,9 +337,6 @@ func runStart(cmd *cobra.Command, args []string) {
 }
 
 func startWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) error {
-	if rand.Int()%2 == 0 {
-		return errors.New("OH NO RANDOM FAILURE")
-	}
 	driverName := ds.Name
 	glog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
