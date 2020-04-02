@@ -35,6 +35,9 @@ func rewriteFlags(command *cobra.Command, contents string) string {
 		"start": []rewrite{{
 			flag:        "--driver",
 			description: "Used to specify the driver to run kubernetes in. The list of available drivers depends on operating system.",
+		}, {
+			flag:        "--mount-string",
+			description: "The argument to pass the minikube mount command on start.",
 		}},
 	}
 	rws, ok := rewrites[command.Name()]
