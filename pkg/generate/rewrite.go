@@ -51,10 +51,12 @@ func rewriteFlag(contents, flag, description string) string {
 	lines := strings.Split(contents, "\n")
 	for i, l := range lines {
 		if strings.Contains(l, flag) {
-			spacesBetween := 42 - len(flag)
 			// docs start with a prefix of 6 spaces
 			replacement := "      "
 			replacement += flag
+			// there are 36 spaces between the start of the flag name
+			// and the description
+			spacesBetween := 36 - len(flag)
 			for i := 0; i < spacesBetween; i++ {
 				replacement += " "
 			}
@@ -62,5 +64,5 @@ func rewriteFlag(contents, flag, description string) string {
 			lines[i] = replacement
 		}
 	}
-	return strings.Join(lines, "")
+	return strings.Join(lines, "\n")
 }
