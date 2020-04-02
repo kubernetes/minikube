@@ -31,6 +31,9 @@ func TestGenerateDocs(t *testing.T) {
 
 	for _, sc := range RootCmd.Commands() {
 		t.Run(sc.Name(), func(t *testing.T) {
+			if sc.Hidden {
+				t.Skip()
+			}
 			fp := filepath.Join(dir, fmt.Sprintf("%s.md", sc.Name()))
 			expectedContents, err := ioutil.ReadFile(fp)
 			if err != nil {
