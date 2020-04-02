@@ -12,6 +12,10 @@ minikube's documentation is in [Markdown](https://www.markdownguide.org/cheat-sh
 
 In production, the minikube website is served using [Netlify](https://netlify.com/)
 
+## Small or cosmetic contributions
+
+Use Github's repositories and markdown editor as described by [Kubernetes's general guideline for documentation contributing](https://kubernetes.io/docs/contribute/start/#submit-a-pull-request)
+
 ## Local documentation website
 
 To serve documentation pages locally, clone the `minikube` repository and run:
