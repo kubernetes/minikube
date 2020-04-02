@@ -345,7 +345,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
 		return nil
 	}
-	if cfg.WaitForCompos == kverify.NoWaitsCompos {
+	if kverify.DontWait(cfg.WaitForCompos) {
 		glog.Infof("skip waiting for components based on config.")
 		return nil
 	}
@@ -361,11 +361,15 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.WaitForCompos[kverify.APIServerWait] {
+		client, err := k.client(ip, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
 		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
 			return errors.Wrap(err, "wait for apiserver proc")
 		}
 
-		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, start, ip, port, timeout); err != nil {
+		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, ip, port, timeout); err != nil {
 			return errors.Wrap(err, "wait for healthy API server")
 		}
 	}

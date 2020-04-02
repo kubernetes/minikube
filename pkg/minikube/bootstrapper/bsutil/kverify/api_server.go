@@ -30,7 +30,10 @@ import (
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/apimachinery/pkg/version"
+	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -39,7 +42,7 @@ import (
 )
 
 // WaitForHealthyAPIServer waits for api server status to be running
-func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, start time.Time, ip string, port int, timeout time.Duration) error {
+func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, ip string, port int, timeout time.Duration) error {
 	glog.Infof("waiting for apiserver healthz status ...")
 	hStart := time.Now()
 
@@ -67,7 +70,23 @@ func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, healthz); err != nil {
 		return fmt.Errorf("apiserver healthz never reported healthy")
 	}
-	glog.Infof("duration metric: took %s to wait for apiserver healthz status ...", time.Since(hStart))
+
+	vcheck := func() (bool, error) {
+		if time.Since(start) > timeout {
+			return false, fmt.Errorf("cluster wait timed out during version check")
+		}
+		if err := APIServerVersionMatch(client, cfg.KubernetesConfig.KubernetesVersion); err != nil {
+			glog.Warningf("api server version match failed: %v", err)
+			return false, nil
+		}
+		return true, nil
+	}
+
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, vcheck); err != nil {
+		return fmt.Errorf("controlPlane never updated to %s", cfg.KubernetesConfig.KubernetesVersion)
+	}
+
+	glog.Infof("duration metric: took %s to wait for apiserver health ...", time.Since(hStart))
 	return nil
 }
 
@@ -87,6 +106,7 @@ func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, c
 		if _, ierr := apiServerPID(cr); ierr != nil {
 			return false, nil
 		}
+
 		return true, nil
 	})
 	if err != nil {
@@ -170,4 +190,17 @@ func apiServerHealthz(ip net.IP, port int) (state.State, error) {
 		return state.Error, nil
 	}
 	return state.Running, nil
+}
+
+// APIServerVersionMatch checks if the server version matches the expected
+func APIServerVersionMatch(client *kubernetes.Clientset, expected string) error {
+	vi, err := client.ServerVersion()
+	if err != nil {
+		return errors.Wrap(err, "server version")
+	}
+	glog.Infof("control plane version: %s", vi)
+	if version.CompareKubeAwareVersionStrings(vi.String(), expected) != 0 {
+		return fmt.Errorf("controlPane = %q, expected: %q", vi.String(), expected)
+	}
+	return nil
 }
