@@ -1239,7 +1239,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 			}
 		}
 		if !seen {
-			glog.Warningf("The value %q is invalid for --wait flag s! valid options are %q", wc, strings.Join(kverify.AllValidWaitsList, ","))
+			glog.Warningf("The value %q is invalid for --wait flag. valid options are %q", wc, strings.Join(kverify.AllValidWaitsList, ","))
 		}
 	}
 	return waitCompos
