@@ -24,7 +24,9 @@ minikube version [flags]
 ### Options
 
 ```
-  -h, --help   help for version
+  -h, --help            help for version
+  -o, --output string   One of 'yaml' or 'json'.
+      --short           Print just the version number.
 ```
 
 ### Options inherited from parent commands
