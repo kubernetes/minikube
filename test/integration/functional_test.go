@@ -335,8 +335,9 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 
 	resp, err := retryablehttp.Get(u.String())
 	if err != nil {
-		t.Fatalf("failed to http get %q : %v", u.String(), err)
+		t.Fatalf("failed to http get %q: %v\nresponse: %+v", u.String(), err, resp)
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -615,6 +616,10 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	if !strings.Contains(rr.Stdout.String(), "hello-node") {
 		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
+	}
+
+	if NeedsPortForward() {
+		t.Skipf("test is broken for port-forwarded drivers: https://github.com/kubernetes/minikube/issues/7383")
 	}
 
 	// Test --https --url mode
