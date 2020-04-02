@@ -38,6 +38,10 @@ import (
 func Docs(root *cobra.Command, path string) error {
 	cmds := root.Commands()
 	for _, c := range cmds {
+		if c.Hidden {
+			glog.Infof("Skipping generating doc for %s as it's a hidden command", c.Name())
+			continue
+		}
 		contents, err := DocForCommand(c)
 		if err != nil {
 			return errors.Wrapf(err, "generating doc for %s", c.Name())
