@@ -334,9 +334,6 @@ var vmProblems = map[string]match{
 		Advice: "The VM that minikube is configured for no longer exists. Run 'minikube delete'",
 		Issues: []int{4694},
 	},
-}
-
-var vmProblems5 = map[string]match{
 	"VBOX_VTX_DISABLED": {
 		Regexp: re(`This computer doesn't have VT-X/AMD-v enabled`),
 		Advice: "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--driver=docker'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
