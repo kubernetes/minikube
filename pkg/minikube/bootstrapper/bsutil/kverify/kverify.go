@@ -1,5 +1,5 @@
 /*
-Copyright 2019 The Kubernetes Authors All rights reserved.
+Copyright 2016 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -26,6 +26,8 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	core "k8s.io/api/core/v1"
+	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -34,31 +36,78 @@ import (
 	"k8s.io/minikube/pkg/minikube/logs"
 )
 
+// minLogCheckTime how long to wait before spamming error logs to console
+const minLogCheckTime = 60 * time.Second
+
 const (
-	// minLogCheckTime how long to wait before spamming error logs to console
-	minLogCheckTime = 30 * time.Second
-	// APIServerWait is the name used in the flags for k8s api server
-	APIServerWait = "apiserver"
-	// SystemPodsWait is the name used in the flags for pods in the kube system
-	SystemPodsWait = "system_pods"
-	// DefaultServiceAccountWait is the name used in the flags for default service account
-	DefaultServiceAccountWait = "default_sa"
+	// APIServerWaitKey is the name used in the flags for k8s api server
+	APIServerWaitKey = "apiserver"
+	// SystemPodsWaitKey is the name used in the flags for pods in the kube system
+	SystemPodsWaitKey = "system_pods"
+	// DefaultSAWaitKey is the name used in the flags for default service account
+	DefaultSAWaitKey = "default_sa"
 )
 
-// DefaultWaits is map of the the default components to wait for
-var DefaultWaits = map[string]bool{APIServerWait: true, SystemPodsWait: true}
+//  vars related to the --wait flag
+var (
+	// DefaultWaitComponents is map of the the default components to wait for
+	DefaultWaitComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true}
+	// NoWaitComponents is map of componets to wait for if specified 'none' or 'false'
+	NoWaitComponents = map[string]bool{APIServerWaitKey: false, SystemPodsWaitKey: false, DefaultSAWaitKey: false}
+	// AllWaitComponents is map for waiting for all components.
+	AllWaitComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, DefaultSAWaitKey: true}
+	// DefaultWaitList is list of all default components to wait for
+	DefaultWaitList = []string{APIServerWaitKey, SystemPodsWaitKey}
+	// AllValidWaitList list of all valid components to wait for
+	AllValidWaitList = []string{APIServerWaitKey, SystemPodsWaitKey, DefaultSAWaitKey}
+)
 
-// DefaultWaitsKeys is list of all default components to wait for
-var DefaultWaitsKeys = []string{APIServerWait, SystemPodsWait}
+// ShouldWait will return true if the config says need to wait
+func ShouldWait(wcs map[string]bool) bool {
+	return wcs[APIServerWaitKey] || wcs[SystemPodsWaitKey] || wcs[DefaultSAWaitKey]
+}
 
-// NoWaitsCompos is map of componets to wait for if specified 'none' or 'false'
-var NoWaitsCompos = map[string]bool{APIServerWait: false, SystemPodsWait: false, DefaultServiceAccountWait: false}
+// ExpectedComponentsRunning returns whether or not all expected components are running
+func ExpectedComponentsRunning(cs *kubernetes.Clientset) error {
+	expected := []string{
+		"kube-dns", // coredns
+		"etcd",
+		"kube-apiserver",
+		"kube-controller-manager",
+		"kube-proxy",
+		"kube-scheduler",
+	}
 
-// AllWaitsCompos is map for waiting for all components.
-var AllWaitsCompos = map[string]bool{APIServerWait: true, SystemPodsWait: true, DefaultServiceAccountWait: true}
+	found := map[string]bool{}
 
-// AllValidWaitsList list of all valid components to wait for
-var AllValidWaitsList = []string{APIServerWait, SystemPodsWait, DefaultServiceAccountWait}
+	pods, err := cs.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, pod := range pods.Items {
+		glog.Infof("found pod: %s", podStatusMsg(pod))
+		if pod.Status.Phase != core.PodRunning {
+			continue
+		}
+		for k, v := range pod.ObjectMeta.Labels {
+			if k == "component" || k == "k8s-app" {
+				found[v] = true
+			}
+		}
+	}
+
+	missing := []string{}
+	for _, e := range expected {
+		if !found[e] {
+			missing = append(missing, e)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("missing components: %v", strings.Join(missing, ", "))
+	}
+	return nil
+}
 
 // podStatusMsg returns a human-readable pod status, for generating debug status
 func podStatusMsg(pod core.Pod) string {
@@ -78,11 +127,6 @@ func podStatusMsg(pod core.Pod) string {
 		}
 	}
 	return sb.String()
-}
-
-// DontWait will return true if the config is no need to wait
-func DontWait(wcs map[string]bool) bool {
-	return !wcs[APIServerWait] && !wcs[SystemPodsWait] && !wcs[DefaultServiceAccountWait]
 }
 
 // announceProblems checks for problems, and slows polling down if any are found
