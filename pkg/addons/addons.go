@@ -19,6 +19,7 @@ package addons
 import (
 	"fmt"
 	"path"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -120,6 +121,11 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 		if !enable {
 			return nil
 		}
+	}
+
+	// to match both ingress and ingress-dns adons
+	if strings.HasPrefix(name, "ingress") && enable && driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
+		exit.UsageT("Due to {{.driver_name}} networking limitations on {{.os_name}}, {{.addon_name}} addon is not supported for this driver. meanwhile a different driver such as 'hyperkit' or 'virtualbox' or 'hypev'. To track the update on this feature being worked on please check https://github.com/kubernetes/minikube/issues/7332", out.V{"driver_name": cc.Driver, "os_name": runtime.GOOS, "addon_name": name})
 	}
 
 	if strings.HasPrefix(name, "istio") && enable {
