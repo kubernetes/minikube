@@ -16,12 +16,6 @@ weight: 2
 
 If the [Brew Package Manager](https://brew.sh/) is installed, use it to download and install minikube:
 
-If installing with brew, you may need to run `brew link minikube` for installation to complete successfully.
-
-```shell
-brew link minikube
-```
-
 If `which minikube` fails after installing with brew, you may need to uninstall the cask and reinstall by running:
 
 ```
