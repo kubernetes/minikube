@@ -47,7 +47,7 @@ func WaitForDefaultSA(cs *kubernetes.Clientset) error {
 		}
 		return fmt.Errorf("couldn't find default service account")
 	}
-	if err := retry.Expo(saReady, 500*time.Millisecond, 30*time.Second); err != nil {
+	if err := retry.Expo(saReady, 500*time.Millisecond, 60*time.Second); err != nil {
 		return errors.Wrapf(err, "waited %s for SA", time.Since(pStart))
 	}
 

@@ -1,12 +1,9 @@
 /*
 Copyright 2016 The Kubernetes Authors All rights reserved.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -341,18 +338,19 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 // WaitForNode blocks until the node appears to be healthy
 func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
+
 	if !n.ControlPlane {
 		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
 		return nil
 	}
-	if kverify.DontWait(cfg.WaitForCompos) {
+	if !kverify.ShouldWait(cfg.WaitForCompos) {
 		glog.Infof("skip waiting for components based on config.")
 		return nil
 	}
 
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
-		return errors.Wrap(err, "new cruntime")
+		return err
 	}
 
 	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
@@ -360,8 +358,8 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	if cfg.WaitForCompos[kverify.APIServerWait] {
-		client, err := k.client(ip, port)
+	if cfg.WaitForCompos[kverify.APIServerWaitKey] {
+		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
@@ -369,13 +367,13 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			return errors.Wrap(err, "wait for apiserver proc")
 		}
 
-		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, ip, port, timeout); err != nil {
+		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
 			return errors.Wrap(err, "wait for healthy API server")
 		}
 	}
 
-	if cfg.WaitForCompos[kverify.SystemPodsWait] {
-		client, err := k.client(ip, port)
+	if cfg.WaitForCompos[kverify.SystemPodsWaitKey] {
+		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
@@ -384,8 +382,8 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 	}
 
-	if cfg.WaitForCompos[kverify.DefaultServiceAccountWait] {
-		client, err := k.client(ip, port)
+	if cfg.WaitForCompos[kverify.DefaultSAWaitKey] {
+		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
