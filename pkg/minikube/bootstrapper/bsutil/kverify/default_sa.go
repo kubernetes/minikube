@@ -33,10 +33,6 @@ func WaitForDefaultSA(cs *kubernetes.Clientset, timeout time.Duration) error {
 	glog.Info("waiting for default service account to be created ...")
 	start := time.Now()
 	saReady := func() error {
-		if time.Since(start) > timeout {
-			glog.Error("exceeded max time to wait to verify cluster during waiting for default service account. will skip waiting.")
-			return nil
-		}
 		// equivalent to manual check of 'kubectl --context profile get serviceaccount default'
 		sas, err := cs.CoreV1().ServiceAccounts("default").List(meta.ListOptions{})
 		if err != nil {
@@ -51,7 +47,7 @@ func WaitForDefaultSA(cs *kubernetes.Clientset, timeout time.Duration) error {
 		}
 		return fmt.Errorf("couldn't find default service account")
 	}
-	if err := retry.Expo(saReady, 500*time.Millisecond, 120*time.Second); err != nil {
+	if err := retry.Expo(saReady, 500*time.Millisecond, timeout); err != nil {
 		return errors.Wrapf(err, "waited %s for SA", time.Since(start))
 	}
 
