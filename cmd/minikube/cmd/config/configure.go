@@ -113,8 +113,8 @@ var addonsConfigureCmd = &cobra.Command{
 					"aws-assume-role":       awsRole,
 				},
 				map[string]string{
-					"app":   "registry-creds",
-					"cloud": "ecr",
+					"app":                           "registry-creds",
+					"cloud":                         "ecr",
 					"kubernetes.io/minikube-addons": "registry-creds",
 				})
 
@@ -128,11 +128,11 @@ var addonsConfigureCmd = &cobra.Command{
 				"registry-creds-gcr",
 				map[string]string{
 					"application_default_credentials.json": gcrApplicationDefaultCredentials,
-					"gcrurl": gcrURL,
+					"gcrurl":                               gcrURL,
 				},
 				map[string]string{
-					"app":   "registry-creds",
-					"cloud": "gcr",
+					"app":                           "registry-creds",
+					"cloud":                         "gcr",
 					"kubernetes.io/minikube-addons": "registry-creds",
 				})
 
@@ -150,8 +150,8 @@ var addonsConfigureCmd = &cobra.Command{
 					"DOCKER_PRIVATE_REGISTRY_PASSWORD": dockerPass,
 				},
 				map[string]string{
-					"app":   "registry-creds",
-					"cloud": "dpr",
+					"app":                           "registry-creds",
+					"cloud":                         "dpr",
 					"kubernetes.io/minikube-addons": "registry-creds",
 				})
 
@@ -169,8 +169,8 @@ var addonsConfigureCmd = &cobra.Command{
 					"ACR_PASSWORD":  acrPassword,
 				},
 				map[string]string{
-					"app":   "registry-creds",
-					"cloud": "acr",
+					"app":                           "registry-creds",
+					"cloud":                         "acr",
 					"kubernetes.io/minikube-addons": "registry-creds",
 				})
 
