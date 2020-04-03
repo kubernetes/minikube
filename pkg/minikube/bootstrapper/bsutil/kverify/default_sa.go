@@ -29,10 +29,14 @@ import (
 )
 
 // WaitForDefaultSA waits for the default service account to be created.
-func WaitForDefaultSA(cs *kubernetes.Clientset) error {
+func WaitForDefaultSA(cs *kubernetes.Clientset, timeout time.Duration) error {
 	glog.Info("waiting for default service account to be created ...")
-	pStart := time.Now()
+	start := time.Now()
 	saReady := func() error {
+		if time.Since(start) > timeout {
+			glog.Error("exceeded max time to wait to verify cluster during waiting for default service account. will skip waiting.")
+			return nil
+		}
 		// equivalent to manual check of 'kubectl --context profile get serviceaccount default'
 		sas, err := cs.CoreV1().ServiceAccounts("default").List(meta.ListOptions{})
 		if err != nil {
