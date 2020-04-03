@@ -30,6 +30,12 @@ brew cask uninstall minikube
 brew install minikube
 ```
 
+You can't have a cask and a formula of the same thing installed since they will install the same files. If you uninstall the cask it will automatically link again. (and you only need one install anyway).
+
+To fix this run:
+`brew cask uninstall minikube` and then either `brew link minikube` or `brew reinstall minikube`.
+
+
 {{% /tab %}}
 {{% tab "Direct" %}}
 
