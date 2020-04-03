@@ -21,25 +21,26 @@ import "text/template"
 var RestartWrapper = `#!/bin/bash
 # Wrapper script to emulate systemd restart on non-systemd systems
 binary=$1
-unitfile=$2
+conf=$2
 args=""
 
 while [[ -x "${binary}" ]]; do
-  if [[ -f "${unitfile}" ]]; then
-          args=$(egrep "^ExecStart=${binary}" "${unitfile}" | cut -d" " -f2-)
+  if [[ -f "${conf}" ]]; then
+          args=$(egrep "^ExecStart=${binary}" "${conf}" | cut -d" " -f2-)
   fi
   ${binary} ${args}
   sleep 1
 done
 `
 
-var KubeletSysVTemplate = template.Must(template.New("kubeletSysVTemplate").Parse(`#!/bin/sh
+var KubeletInitTemplate = template.Must(template.New("kubeletSysVTemplate").Parse(`#!/bin/bash
 # SysV style init script for kubelet
 
-readonly KUBELET={{.KubeletPath}}
-readonly KUBELET_WRAPPER={{.KubeletWrapperPath}}
+readonly KUBELET="{{.KubeletPath}}"
+readonly KUBELET_WRAPPER="{{.WrapperPath}}"
+readonly KUBELET_CONF="{{.ConfPath}}"
 readonly KUBELET_PIDFILE="/var/run/kubelet.pid"
-readonly KUBELET_LOGFILE=/var/run/nohup.out
+readonly KUBELET_LOGFILE="/var/run/nohup.out"
 
 if [[ ! -x "${KUBELET}" ]]; then
 	echo "$KUBELET not present or not executable"
@@ -48,7 +49,7 @@ fi
 
 function start() {
     cd /var/run
-    nohup "${KUBELET_WRAPPER}" &
+    nohup "${KUBELET_WRAPPER}" "${KUBELET}" "${KUBELET_CONF}" &
     echo $! > "${KUBELET_PIDFILE}"
 }
 

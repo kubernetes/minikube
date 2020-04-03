@@ -117,6 +117,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 
 		// setup kubeadm (must come after setupKubeconfig)
 		bs = setupKubeAdm(machineAPI, cc, n)
+
 		err = bs.StartCluster(cc)
 		if err != nil {
 			exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, cc, mRunner))
@@ -192,7 +193,8 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig, kv semver.Version) cruntime.Manager {
 	co := cruntime.Config{
 		Type:   viper.GetString(containerRuntime),
-		Runner: runner, ImageRepository: k8s.ImageRepository,
+		Runner: runner,
+		ImageRepository: k8s.ImageRepository,
 		KubernetesVersion: kv,
 	}
 	cr, err := cruntime.New(co)

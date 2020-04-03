@@ -21,6 +21,8 @@ import (
 	"os/exec"
 )
 
+const SysVName = "Sys-V"
+
 // SysV is a service manager for SysV-like init systems
 type SysV struct {
 	r Runner
@@ -28,7 +30,7 @@ type SysV struct {
 
 // Name returns the name of the init system
 func (s *SysV) Name() string {
-	return "SysV"
+	return SysVName
 }
 
 // Active checks if a service is running

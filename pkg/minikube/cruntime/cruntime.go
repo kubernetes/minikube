@@ -133,25 +133,25 @@ type ListOptions struct {
 // New returns an appropriately configured runtime
 func New(c Config) (Manager, error) {
 	sm := sysinit.New(c.Runner)
-	
+
 	switch c.Type {
 	case "", "docker":
 		return &Docker{Socket: c.Socket, Runner: c.Runner, Init: sm}, nil
 	case "crio", "cri-o":
 		return &CRIO{
-			Socket: c.Socket,
-			Runner: c.Runner,
-			ImageRepository: c.ImageRepository,
+			Socket:            c.Socket,
+			Runner:            c.Runner,
+			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
-			Init: sm,
+			Init:              sm,
 		}, nil
 	case "containerd":
 		return &Containerd{
-			Socket: c.Socket,
-			Runner: c.Runner,
-			ImageRepository: c.ImageRepository,
+			Socket:            c.Socket,
+			Runner:            c.Runner,
+			ImageRepository:   c.ImageRepository,
 			KubernetesVersion: c.KubernetesVersion,
-			Init: sm,
+			Init:              sm,
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)

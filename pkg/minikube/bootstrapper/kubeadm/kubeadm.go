@@ -43,6 +43,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -190,7 +191,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	extraFlags := bsutil.CreateFlagsFromExtraArgs(cfg.KubernetesConfig.ExtraOptions)
-	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime})
+	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return err
 	}
@@ -655,17 +656,28 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		return errors.Wrap(err, "downloading binaries")
 	}
 
-	var cniFile []byte
+	files := []assets.CopyableFile{
+		assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"),
+		assets.NewMemoryAssetTarget(kubeletCfg, bsutil.KubeletSystemdConfFile+".new", "0644"),
+		assets.NewMemoryAssetTarget(kubeletService, bsutil.KubeletServiceFile+".new", "0644"),
+	}
+	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
+	// start a Pod in the case a user hasn't manually installed any CNI plugin
+	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
 	if cfg.KubernetesConfig.EnableDefaultCNI {
-		cniFile = []byte(defaultCNIConfig)
+		files = append(files, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), bsutil.DefaultCNIConfigPath, "0644"))
 	}
 
-	// Install assets into temporary files
-	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
-
+	glog.Infof("sysinit says: %v", sm.Name())
 	// Install SysV-like init scripts if necessary
-	if sm.Name() == "sysv" {
-		files = append(files)
+	if sm.Name() == sysinit.SysVName {
+		initScript, err := bsutil.NewInitScript(cfg.KubernetesConfig.KubernetesVersion, bsutil.InitRestartWrapper)
+		if err != nil {
+			return errors.Wrap(err, "init script")
+		}
+
+		files = append(files, assets.NewMemoryAssetTarget([]byte(ktmpl.RestartWrapper), bsutil.InitRestartWrapper, "0755"))
+		files = append(files, assets.NewMemoryAssetTarget(initScript, bsutil.KubeletInitPath, "0755"))
 	}
 
 	if err := copyFiles(k.c, files); err != nil {

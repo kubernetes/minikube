@@ -2,9 +2,13 @@ package sysinit
 
 import (
 	"os/exec"
+	"runtime"
 
+	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/command"
 )
+
+var cachedSystemdCheck *bool
 
 // Runner is the subset of command.Runner this package consumes
 type Runner interface {
@@ -34,11 +38,23 @@ type Manager interface {
 
 // New returns an appropriately configured service manager
 func New(r Runner) Manager {
-	// If we aren't passed a runner, pretend we are systemd as always
+	_, file, no, _ := runtime.Caller(1)
+
 	if r == nil {
-		return &Systemd{r: r}
+		glog.Warningf("manager from %s:%d: nil runner! (systemd)", file, no)
+		return nil
 	}
-	if usesSystemd(r) {
+
+	var systemd bool
+	if cachedSystemdCheck != nil {
+		systemd = *cachedSystemdCheck
+	} else {
+		glog.Errorf("uncached systemd check from %s:%d", file, no)
+		systemd = usesSystemd(r)
+		cachedSystemdCheck = &systemd
+	}
+
+	if systemd {
 		return &Systemd{r: r}
 	}
 	return &SysV{r: r}
