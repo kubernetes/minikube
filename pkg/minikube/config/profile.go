@@ -239,7 +239,40 @@ func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 		Name:   name,
 		Config: cfg,
 	}
+	if !p.IsValid() || (err != nil && err.Error() == "unmarshal") {
+		cfgOld, err := DefaultLoader.TryLoadConfigFromFileVersion162(name, miniHome...)
+		if err == nil {
+			translatedCfg, err := translateFrom163ToCurrent(cfgOld)
+			if err == nil {
+				p.Config = translatedCfg
+			}
+		}
+	}
+
 	return p, err
+}
+
+func translateFrom163ToCurrent(oldConfig *MachineConfigV162) (*ClusterConfig, error) {
+	hypervUseExternalSwitch := (oldConfig.HypervVirtualSwitch != "")
+
+	return &ClusterConfig{
+		Name:                    oldConfig.Name,
+		KeepContext:             oldConfig.KeepContext,
+		EmbedCerts:              oldConfig.EmbedCerts,
+		MinikubeISO:             oldConfig.MinikubeISO,
+		Memory:                  oldConfig.Memory,
+		CPUs:                    oldConfig.CPUs,
+		DiskSize:                oldConfig.DiskSize,
+		Driver:                  oldConfig.VMDriver,
+		HyperkitVpnKitSock:      oldConfig.HyperkitVpnKitSock,
+		HyperkitVSockPorts:      oldConfig.HyperkitVSockPorts,
+		DockerEnv:               oldConfig.DockerEnv,
+		InsecureRegistry:        oldConfig.InsecureRegistry,
+		RegistryMirror:          oldConfig.RegistryMirror,
+		HostOnlyCIDR:            oldConfig.HostOnlyCIDR,
+		HypervUseExternalSwitch: hypervUseExternalSwitch,
+		KVMNetwork:              oldConfig.KVMNetwork,
+	}, nil //TODO: Implement
 }
 
 // profileDirs gets all the folders in the user's profiles folder regardless of valid or invalid config
