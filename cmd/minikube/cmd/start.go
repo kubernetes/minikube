@@ -124,6 +124,7 @@ const (
 	natNicType              = "nat-nic-type"
 	nodes                   = "nodes"
 	preload                 = "preload"
+	deleteOnFailure         = "delete-on-failure"
 )
 
 var (
@@ -177,6 +178,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
+	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -353,7 +355,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubeconfig := node.Start(cc, n, existingAddons, true)
+	kubeconfig, err := node.Start(cc, n, existingAddons, true)
+	if err != nil {
+		kubeconfig = maybeDeleteAndRetry(cc, n, existingAddons, err)
+	}
 
 	numNodes := viper.GetInt(nodes)
 	if numNodes == 1 && existing != nil {
@@ -429,7 +434,7 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
-		out.T(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		out.ErrT(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		return nil
 	}
 
@@ -449,11 +454,43 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	if client.Major != cluster.Major || minorSkew > 1 {
 		out.Ln("")
-		out.T(out.Warning, "{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
+		out.WarningT("{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
-		out.T(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
+		out.ErrT(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
 			out.V{"path": path, "client_version": client})
 	}
+	return nil
+}
+
+func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) *kubeconfig.Settings {
+	if viper.GetBool(deleteOnFailure) {
+		out.WarningT("Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
+		// Start failed, delete the cluster and try again
+		profile, err := config.LoadProfile(cc.Name)
+		if err != nil {
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cc.Name})
+		}
+
+		err = deleteProfile(profile)
+		if err != nil {
+			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": cc.Name})
+		}
+
+		var kubeconfig *kubeconfig.Settings
+		for _, v := range cc.Nodes {
+			k, err := node.Start(cc, v, existingAddons, v.ControlPlane)
+			if v.ControlPlane {
+				kubeconfig = k
+			}
+			if err != nil {
+				// Ok we failed again, let's bail
+				exit.WithError("Start failed after cluster deletion", err)
+			}
+		}
+		return kubeconfig
+	}
+	// Don't delete the cluster unless they ask
+	exit.WithError("startup failed", originalErr)
 	return nil
 }
 
@@ -504,7 +541,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 
     If vm-driver is set in the global config, please run "minikube config unset vm-driver" to resolve this warning.
 			`
-			out.T(out.Warning, warning, out.V{"driver": d, "vmd": vmd})
+			out.WarningT(warning, out.V{"driver": d, "vmd": vmd})
 		}
 		ds := driver.Status(d)
 		if ds.Name == "" {
@@ -524,9 +561,15 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		return ds
 	}
 
-	pick, alts := driver.Suggest(driver.Choices(viper.GetBool("vm")))
+	choices := driver.Choices(viper.GetBool("vm"))
+	pick, alts, rejects := driver.Suggest(choices)
 	if pick.Name == "" {
-		exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		out.T(out.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
+		for _, r := range rejects {
+			out.T(out.Option, "{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
+		}
+		out.T(out.Workaround, "Try specifying a --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		os.Exit(exit.Unavailable)
 	}
 
 	if len(alts) > 1 {
@@ -707,9 +750,9 @@ func validateUser(drvName string) {
 		return
 	}
 
-	out.T(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
-	out.T(out.Tip, "If you are running minikube within a VM, consider using --driver=none:")
-	out.T(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+	out.ErrT(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
+	out.ErrT(out.Tip, "If you are running minikube within a VM, consider using --driver=none:")
+	out.ErrT(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 
 	if !useForce {
 		os.Exit(exit.Permissions)
@@ -717,7 +760,7 @@ func validateUser(drvName string) {
 	cname := ClusterFlagValue()
 	_, err = config.Load(cname)
 	if err == nil || !config.IsNotExist(err) {
-		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
+		out.ErrT(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
 	}
 	if !useForce {
 		exit.WithCodeT(exit.Permissions, "Exiting")

@@ -45,6 +45,9 @@ export HOMEBREW_GITHUB_API_TOKEN="${access_token}"
 # sh -c "$(curl -fsSL https://raw.githubusercontent.com/Linuxbrew/install/master/install.sh)"
 export PATH=/home/linuxbrew/.linuxbrew/bin:$PATH
 
+# avoid "error: you need to resolve your current index first" message
+cd "${SRC_DIR}"
+
 brew bump-formula-pr \
   --strict minikube \
   --revision="${revision}" \
