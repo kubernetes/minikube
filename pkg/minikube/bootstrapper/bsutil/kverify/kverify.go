@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -50,16 +50,16 @@ const (
 
 //  vars related to the --wait flag
 var (
-	// DefaultWaitComponents is map of the the default components to wait for
-	DefaultWaitComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true}
+	// DefaultComponents is map of the the default components to wait for
+	DefaultComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true}
 	// NoWaitComponents is map of componets to wait for if specified 'none' or 'false'
-	NoWaitComponents = map[string]bool{APIServerWaitKey: false, SystemPodsWaitKey: false, DefaultSAWaitKey: false}
-	// AllWaitComponents is map for waiting for all components.
-	AllWaitComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, DefaultSAWaitKey: true}
-	// DefaultWaitList is list of all default components to wait for
+	NoComponents = map[string]bool{APIServerWaitKey: false, SystemPodsWaitKey: false, DefaultSAWaitKey: false}
+	// AllComponents is map for waiting for all components.
+	AllComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, DefaultSAWaitKey: true}
+	// DefaultWaitList is list of all default components to wait for. only names to be used for start flags.
 	DefaultWaitList = []string{APIServerWaitKey, SystemPodsWaitKey}
-	// AllValidWaitList list of all valid components to wait for
-	AllValidWaitList = []string{APIServerWaitKey, SystemPodsWaitKey, DefaultSAWaitKey}
+	// AllComponentsList list of all valid components keys to wait for. only names to be used used for start flags.
+	AllComponentsList = []string{APIServerWaitKey, SystemPodsWaitKey, DefaultSAWaitKey}
 )
 
 // ShouldWait will return true if the config says need to wait
