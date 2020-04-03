@@ -16,13 +16,14 @@ weight: 2
 
 If the [Brew Package Manager](https://brew.sh/) is installed, use it to download and install minikube:
 
-If `which minikube` fails after installing with brew, you may need to uninstall the cask and reinstall by running:
-
 ```
 brew cask uninstall minikube
 
 brew install minikube
+
 ```
+
+If `which minikube` fails after installing with brew, you may need to uninstall the cask and reinstall by running:
 
 You can't have a cask and a formula of the same thing installed since they will install the same files. If you uninstall the cask it will automatically link again. (and you only need one install anyway).
 
