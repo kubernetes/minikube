@@ -51,10 +51,10 @@ func WaitForDefaultSA(cs *kubernetes.Clientset, timeout time.Duration) error {
 		}
 		return fmt.Errorf("couldn't find default service account")
 	}
-	if err := retry.Expo(saReady, 500*time.Millisecond, 60*time.Second); err != nil {
-		return errors.Wrapf(err, "waited %s for SA", time.Since(pStart))
+	if err := retry.Expo(saReady, 500*time.Millisecond, 120*time.Second); err != nil {
+		return errors.Wrapf(err, "waited %s for SA", time.Since(start))
 	}
 
-	glog.Infof("duration metric: took %s for default service account to be created ...", time.Since(pStart))
+	glog.Infof("duration metric: took %s for default service account to be created ...", time.Since(start))
 	return nil
 }
