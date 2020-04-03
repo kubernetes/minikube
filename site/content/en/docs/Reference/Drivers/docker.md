@@ -20,6 +20,7 @@ The Docker driver is the newest minikube driver. which runs kubernetes in contai
 
 ## Known Issues.
 
-- The 'ingress' and 'ingress-dns' addons is only supported on Linux and they are  not supported in Docker Driver on MacOS and Windows yet. to get updates on the work in progress please check [issue page](https://github.com/kubernetes/minikube/issues/7332)
+- The 'ingress' and 'ingress-dns' addons are only supported on Linux. 
+these addons are not supported for Docker Driver on MacOS and Windows yet. to get updates on the work in progress please check [issue page](https://github.com/kubernetes/minikube/issues/7332)
 
 - a known [docker issue for MacOs](https://github.com/docker/for-mac/issues/1835), a containers on Docker on MacOS might hang and get stuck while other containers can get created. The current workaround is restarting docker.
