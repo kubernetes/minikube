@@ -260,7 +260,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	}{}
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
 	if err != nil {
-		t.Errorf("failed to decode images json %v. output: %q", err, rr.Output())
+		t.Errorf("failed to decode images json %v. output: %s", err, rr.Output())
 	}
 	found := map[string]bool{}
 	for _, img := range jv["images"] {
