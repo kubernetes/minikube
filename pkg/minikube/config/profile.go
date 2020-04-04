@@ -23,6 +23,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	v162 "k8s.io/minikube/pkg/minikube/config/v162"
+
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
@@ -252,7 +254,7 @@ func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 	return p, err
 }
 
-func translateFrom163ToCurrent(oldConfig *MachineConfigV162) (*ClusterConfig, error) {
+func translateFrom163ToCurrent(oldConfig *v162.MachineConfig) (*ClusterConfig, error) {
 	hypervUseExternalSwitch := (oldConfig.HypervVirtualSwitch != "")
 
 	return &ClusterConfig{
@@ -272,6 +274,47 @@ func translateFrom163ToCurrent(oldConfig *MachineConfigV162) (*ClusterConfig, er
 		HostOnlyCIDR:            oldConfig.HostOnlyCIDR,
 		HypervUseExternalSwitch: hypervUseExternalSwitch,
 		KVMNetwork:              oldConfig.KVMNetwork,
+		KVMQemuURI:              oldConfig.KVMQemuURI,
+		KVMGPU:                  oldConfig.KVMGPU,
+		KVMHidden:               oldConfig.KVMHidden,
+		DockerOpt:               oldConfig.DockerOpt,
+		DisableDriverMounts:     oldConfig.DisableDriverMounts,
+		NFSShare:                oldConfig.NFSShare,
+		NFSSharesRoot:           oldConfig.NFSSharesRoot,
+		UUID:                    oldConfig.UUID,
+		NoVTXCheck:              oldConfig.NoVTXCheck,
+		DNSProxy:                oldConfig.DNSProxy,
+		HostDNSResolver:         oldConfig.HostDNSResolver,
+		HostOnlyNicType:         oldConfig.HostOnlyNicType,
+		NatNicType:              oldConfig.NatNicType,
+		Nodes: []Node{Node{
+			Name:              oldConfig.KubernetesConfig.NodeName,
+			ControlPlane:      true, //TODO: make sure that this is correct
+			IP:                oldConfig.KubernetesConfig.NodeIP,
+			KubernetesVersion: oldConfig.KubernetesConfig.KubernetesVersion,
+			Port:              oldConfig.KubernetesConfig.NodePort,
+			Worker:            true,
+		}},
+		KubernetesConfig: KubernetesConfig{
+			KubernetesVersion: oldConfig.KubernetesConfig.KubernetesVersion,
+			ClusterName:       oldConfig.Name,
+			APIServerName:     oldConfig.KubernetesConfig.APIServerName,
+			APIServerNames:    oldConfig.KubernetesConfig.APIServerNames,
+			APIServerIPs:      oldConfig.KubernetesConfig.APIServerIPs,
+			DNSDomain:         oldConfig.KubernetesConfig.DNSDomain,
+			ContainerRuntime:  oldConfig.KubernetesConfig.ContainerRuntime,
+			CRISocket:         oldConfig.KubernetesConfig.CRISocket,
+			NetworkPlugin:     oldConfig.KubernetesConfig.NetworkPlugin,
+			FeatureGates:      oldConfig.KubernetesConfig.FeatureGates,
+			ServiceCIDR:       oldConfig.KubernetesConfig.ServiceCIDR,
+			ImageRepository:   oldConfig.KubernetesConfig.ImageRepository,
+			// ExtraOptions:           oldConfig.KubernetesConfig.ExtraOptions,
+			ShouldLoadCachedImages: oldConfig.KubernetesConfig.ShouldLoadCachedImages,
+			EnableDefaultCNI:       oldConfig.KubernetesConfig.EnableDefaultCNI,
+			NodeIP:                 oldConfig.KubernetesConfig.NodeIP,
+			NodePort:               oldConfig.KubernetesConfig.NodePort,
+			NodeName:               oldConfig.KubernetesConfig.NodeName,
+		},
 	}, nil //TODO: Implement
 }
 

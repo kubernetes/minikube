@@ -21,6 +21,7 @@ import (
 
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/config"
+	v162 "k8s.io/minikube/pkg/minikube/config/v162"
 )
 
 type recordingReporter struct {
@@ -92,4 +93,8 @@ func (l *stubConfigLoader) WriteConfigToFile(profileName string, cc *config.Clus
 
 func (l *stubConfigLoader) LoadConfigFromFile(profile string, miniHome ...string) (*config.ClusterConfig, error) {
 	return l.c, l.e
+}
+
+func (l *stubConfigLoader) TryLoadConfigFromFileVersion162(profileName string, miniHome ...string) (*v162.MachineConfig, error) {
+	return nil, nil
 }
