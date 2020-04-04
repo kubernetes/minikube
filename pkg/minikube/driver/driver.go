@@ -208,7 +208,6 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 	rejects := []registry.DriverState{}
 	for _, ds := range options {
 		if ds != pick {
-			glog.Errorf("%s: %s", ds.Name, ds.Rejection)
 			if !ds.State.Installed {
 				ds.Rejection = fmt.Sprintf("Not installed: %v", ds.State.Error)
 				rejects = append(rejects, ds)
