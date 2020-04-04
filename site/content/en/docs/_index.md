@@ -1,54 +1,26 @@
 ---
 title: "Welcome!"
 linkTitle: "Documentation"
-weight: 1
-menu:
-  main:
-    weight: 1
-description: >
-  What is minikube?
 no_list: true
+weight: 1
+aliases:
+  - /docs/overview
 ---
 
 minikube implements a local Kubernetes cluster on macOS, Linux, and Windows.
 
-minikube's [primary goals](https://minikube.sigs.k8s.io/docs/concepts/principles/) are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit.
+![Screenshot](/images/screenshot.png)
 
-minikube runs the latest stable release of Kubernetes, with support for standard Kubernetes features like:
+## Highlights
 
-* [LoadBalancer](https://minikube.sigs.k8s.io/docs/Handbook/loadbalancer/) - using `minikube tunnel`
-* Multi-cluster - using `minikube start -p <name>`
-* NodePorts - using `minikube service`
-* [Persistent Volumes](https://minikube.sigs.k8s.io/docs/reference/persistent_volumes/)
-* Ingress
-* RBAC
-* [Dashboard](https://minikube.sigs.k8s.io/docs/Handbook/dashboard/) - `minikube dashboard`
-* [Container runtimes](https://minikube.sigs.k8s.io/docs/reference/runtimes/) - `start --container-runtime`
-* [Configure apiserver and kubelet options](https://minikube.sigs.k8s.io/docs/reference/configuration/kubernetes/) via command-line flags
+* Supports the latest Kubernetes release (+6 previous minor versions)
+* Cross-platform (Linux, macOS, Windows)
+* Deploy as a VM, a container, or on bare-metal
+* Multiple container runtimes (CRI-O, containerd, docker)
+* Docker API endpoint for blazing fast image pushes
+* Advanced features such as [LoadBalancer](https://minikube.sigs.k8s.io/Handbook/loadbalancer/), filesystem mounts, and FeatureGates
+* [Addons](https://minikube.sigs.k8s.io/Handbook/addons/) for easily installed Kubernetes applications
 
-As well as developer-friendly features:
+## Survey
 
-* [Addons](https://minikube.sigs.k8s.io/docs/Handbook/addons/) - a marketplace for developers to share configurations for running services on minikube
-* [GPU support](https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/) - for machine learning
-* [Filesystem mounts](https://minikube.sigs.k8s.io/docs/Handbook/mount/)
-* Automatic failure analysis
-
-## Why do I want it?
-
-If you would like to develop Kubernetes applications:
-
-* locally
-* offline
-* using the latest version of Kubernetes
-
-Then minikube is for you.
-
-* **What is it good for?** Developing local Kubernetes applications
-* **What is it not good for?** Production Kubernetes deployments
-
-## Where should I go next?
-
-* [Getting Started](/docs/start/): Get started with minikube
-* [Examples](/docs/examples/): Check out some minikube examples!
-
-📣😀 **Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A)** so that we can learn how & why you use minikube, and what improvements we should make. Thank you! 💃🏽🎉
+Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A) so that we can learn how & why you use minikube, and what improvements we should make. Thank you! 💃🏽🎉

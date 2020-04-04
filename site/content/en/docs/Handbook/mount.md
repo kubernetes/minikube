@@ -4,6 +4,8 @@ date: 2017-01-05
 weight: 11
 description: >
   How to mount a host directory into the VM
+aliases:
+  - /docs/tasks/mount
 ---
 
 ## 9P Mounts

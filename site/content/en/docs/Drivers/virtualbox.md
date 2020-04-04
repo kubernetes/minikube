@@ -1,17 +1,15 @@
 ---
 title: "virtualbox"
-linkTitle: "virtualbox"
 weight: 5
-date: 2018-08-08
-description: >
-  VirtualBox driver
+aliases:
+  - /docs/reference/drivers/virtualbox
 ---
 
 ## Overview
 
-VirtualBox is the oldest and most stable VM driver for minikube.
+VirtualBox is minikube's original driver. It may not provide the fastest start-up time, but it is the most stable driver available for users of Microsoft Windows Home.
 
-{{% readfile file="/docs/Drivers/includes/virtualbox_usage.inc" %}}
+{{% readfile file="/docs/drivers/includes/virtualbox_usage.inc" %}}
 
 ## Special features
 

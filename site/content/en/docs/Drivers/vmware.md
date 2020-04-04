@@ -1,10 +1,8 @@
 ---
 title: "vmware"
-linkTitle: "vmware"
 weight: 6
-date: 2018-08-08
-description: >
-  VMware driver
+aliases:
+    - /docs/reference/drivers/vmware
 ---
 
 ## Overview
@@ -13,7 +11,7 @@ The vmware driver supports virtualization across all VMware based hypervisors.
 
 {{% tabs %}}
 {{% tab "macOS" %}}
-{{% readfile file="/docs/Drivers/includes/vmware_macos_usage.inc" %}}
+{{% readfile file="/docs/drivers/includes/vmware_macos_usage.inc" %}}
 {{% /tab %}}
 {{% tab "Linux" %}}
 No documentation is available yet.

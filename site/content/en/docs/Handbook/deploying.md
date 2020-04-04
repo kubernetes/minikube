@@ -3,6 +3,8 @@ title: "Deploying apps"
 weight: 2
 description: >
   How to deploy an application to minikube
+aliases:
+  - /docs/tasks/addons
 ---
 
 ## kubectl

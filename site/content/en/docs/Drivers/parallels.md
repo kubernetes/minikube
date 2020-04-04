@@ -1,17 +1,15 @@
 ---
 title: "parallels"
-linkTitle: "parallels"
 weight: 4
-date: 2018-08-08
-description: >
-  Parallels driver
+aliases:
+    - /docs/reference/drivers/parallels
 ---
 
 ## Overview
 
 The Parallels driver is particularly useful for users who own Parallels Desktop, as it does not require VT-x hardware support.
 
-{{% readfile file="/docs/Drivers/includes/parallels_usage.inc" %}}
+{{% readfile file="/docs/drivers/includes/parallels_usage.inc" %}}
 
 ## Issues
 

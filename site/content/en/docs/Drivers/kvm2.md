@@ -1,11 +1,10 @@
 ---
 title: "kvm2"
-linkTitle: "kvm2"
 weight: 2
-date: 2017-01-05
-date: 2018-08-05
 description: >
   Linux KVM (Kernel-based Virtual Machine) driver
+aliases:
+    - /docs/reference/drivers/kvm2
 ---
 
 
@@ -13,11 +12,11 @@ description: >
 
 [KVM (Kernel-based Virtual Machine)](https://www.linux-kvm.org/page/Main_Page) is a full virtualization solution for Linux on x86 hardware containing virtualization extensions. To work with KVM, minikube uses the [libvirt virtualization API](https://libvirt.org/)
 
-{{% readfile file="/docs/Drivers/includes/kvm2_usage.inc" %}}
+{{% readfile file="/docs/drivers/includes/kvm2_usage.inc" %}}
 
 ## Check virtualization support
 
-{{% readfile file="/docs/Drivers/includes/check_virtualization_linux.inc" %}}
+{{% readfile file="/docs/drivers/includes/check_virtualization_linux.inc" %}}
 
 ## Special features
 

@@ -3,6 +3,8 @@ title: "File Sync"
 weight: 12
 description: >
   How to sync files into minikube
+aliases:
+  - /docs/tasks/sync/
 ---
 
 ## Built-in sync

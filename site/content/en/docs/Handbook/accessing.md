@@ -3,6 +3,9 @@ title: "Accessing apps"
 weight: 3
 description: >
   How to access applications running within minikube
+aliases:
+ - /docs/tasks/loadbalancer
+ - /docs/tasks/nodeport
 ---
 
 There are two major categories of services in Kubernetes:

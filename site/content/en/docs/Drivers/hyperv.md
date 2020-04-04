@@ -1,17 +1,14 @@
 ---
 title: "hyperv"
-linkTitle: "hyperv"
 weight: 2
-date: 2017-01-05
-date: 2018-08-05
-description: >
-  Microsoft Hyper-V driver
+aliases:
+    - /docs/reference/drivers/hyperv
 ---
 ## Overview
 
 Hyper-V is a native hypervisor built in to modern versions of Microsoft Windows.
 
-{{% readfile file="/docs/Drivers/includes/hyperv_usage.inc" %}}
+{{% readfile file="/docs/drivers/includes/hyperv_usage.inc" %}}
 
 ## Special features
 

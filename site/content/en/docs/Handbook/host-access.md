@@ -4,6 +4,8 @@ date: 2017-01-05
 weight: 9
 description: >
   How to access host resources from a pod
+aliases:
+  - docs/tasks/accessing-host-resources/
 ---
 
 {{% pageinfo %}}

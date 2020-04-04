@@ -3,6 +3,8 @@ title: "Dashboard"
 weight: 4
 description: >
   Dashboard
+aliases:
+  - /docs/tasks/dashboard/
 ---
 
 minikube has integrated support for the [Kubernetes Dashboard UI](https://github.com/kubernetes/dashboard).

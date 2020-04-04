@@ -1,17 +1,18 @@
 ---
 title: "Principles"
-date: 2019-06-18T15:31:58+08:00
+aliases:
+ - /docs/concepts/principles
 ---
 
 The primary goal of minikube is to make it simple to run Kubernetes locally, for day-to-day development workflows and learning purposes. Here are the guiding principles for minikube, in rough priority order:
 
 1.  Inclusive and community-driven
-1.  User-friendly
-1.  Support all Kubernetes features
-1.  Cross-platform
-1.  Reliable
-1.  High Performance
-1.  Developer Focused
+2.  User-friendly
+3.  Support all Kubernetes features
+4.  Cross-platform
+5.  Reliable
+6.  High Performance
+7.  Developer Focused
 
 Here are some specific minikube features that align with our goal:
 

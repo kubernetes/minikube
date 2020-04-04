@@ -1,17 +1,15 @@
 ---
 title: "hyperkit"
-linkTitle: "hyperkit"
 weight: 1
-date: 2018-08-08
-description: >
-  HyperKit driver
+aliases:
+    - /docs/reference/drivers/hyperkit
 ---
 
 ## Overview
 
 [HyperKit](https://github.com/moby/hyperkit) is an open-source hypervisor for macOS hypervisor, optimized for lightweight virtual machines and container deployment.
 
-{{% readfile file="/docs/Drivers/includes/hyperkit_usage.inc" %}}
+{{% readfile file="/docs/drivers/includes/hyperkit_usage.inc" %}}
 
 ## Special features
 

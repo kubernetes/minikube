@@ -1,26 +1,22 @@
 ---
 title: "podman"
-linkTitle: "podman"
 weight: 3
-date: 2020-03-26
-description: >
-  Podman driver 
+aliases:
+    - /docs/reference/drivers/podman
 ---
 
 ## Overview
 
-The podman driver is another kubernetes in container driver for minikube. simmilar to [docker](https://minikube.sigs.k8s.io/docs/Drivers/docker/) driver.
-podman driver is currently experimental. 
-and only supported on Linux and MacOs (with a remote podman server)
+{{% pageinfo %}}
+This driver is experimental and in active development. Help wanted!
+{{% /pageinfo %}}
 
+The podman driver is another kubernetes in container driver for minikube. similar to [docker](https://minikube.sigs.k8s.io/Drivers/docker/) driver. The podman driver is  experimental, and only supported on Linux and macOS (with a remote podman server)
 
 ## Try it with CRI-O container runtime.
+
 ```shell
 minikube start --driver=podman --container-runtime=cri-o
 ```
 
-
-{{% readfile file="/docs/Drivers/includes/podman_usage.inc" %}}
-
-
-
+{{% readfile file="/docs/drivers/includes/podman_usage.inc" %}}
