@@ -235,7 +235,7 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 
 // WarnIfSlow runs an oci command, warning about performance issues
 func WarnIfSlow(args ...string) ([]byte, error) {
-	killTime := 18 * time.Second
+	killTime := 19 * time.Second
 	warnTime := 2 * time.Second
 
 	if args[1] == "volume" || args[1] == "ps" { // volume and ps requires more time than inspect
