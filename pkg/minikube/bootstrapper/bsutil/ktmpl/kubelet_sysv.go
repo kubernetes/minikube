@@ -50,55 +50,27 @@ if [[ ! -x "${KUBELET}" ]]; then
 fi
 
 function start() {
-    cd /var/run
-    pid=$(bash -c 'cd /; setsid nohup "${KUBELET_WRAPPER}" "${KUBELET}" "${KUBELET_CONF}" </dev/null &>/dev/null & jobs -p %1')
-    # nohup "${KUBELET_WRAPPER}" "${KUBELET}" "${KUBELET_CONF}" &
-    # disown
-    echo "wrapper started at ${pid}"
-    echo $pid > "${KUBELET_PIDFILE}"
+    start-stop-daemon --pid "${KUBELET_PIDFILE}" --background --start --make-pidfile --exec "${KUBELET_WRAPPER}" "${KUBELET}" "${KUBELET_CONF}"
 }
 
 function stop() {
-    if [[ -f "${KUBELET_PIDFILE}" ]]; then
-        kill $(cat ${KUBELET_PIDFILE})
-    fi
-    pkill "${KUBELET_WRAPPER}"
-    pkill kubelet
+    start-stop-daemon --pid "${KUBELET_PIDFILE}" --stop
 }
 
 
 case "$1" in
     start)
         start
-        exit 0
 		;;
-
     stop)
         stop
-        exit 0
 		;;
-
     restart)
         stop
         start
-        exit 0
 		;;
-
     status)
-        if [[ -f "${KUBELET_PIDFILE}" ]]; then
-            kill -0 $(cat ${KUBELET_PIDFILE})
-            if [[ "$?" != 0 ]]; then
-              echo "${KUBELET_PIDFILE} is stale"
-              exit 1
-            fi
-        else
-            echo "${KUBELET_PIDFILE} is missing"
-            exit 2
-        fi
-
-        echo "matching processes:"
-        pgrep -f kubelet
-        exit 0
+        start-stop-daemon --pid "${KUBELET_PIDFILE}" --status
 		;;
 	*)
 		echo "Usage: service kubelet {start|stop|restart|status}"
