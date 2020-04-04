@@ -36,5 +36,5 @@ const (
 	// InitRestartWrapper is ...
 	InitRestartWrapper = "/etc/init.d/.restart_wrapper.sh"
 	// KubeletInitPath is where Sys-V style init script is installed
-	KubeletInitPath = "/etc/init.d/kubelet_sysv"
+	KubeletInitPath = "/etc/init.d/kubelet"
 )
