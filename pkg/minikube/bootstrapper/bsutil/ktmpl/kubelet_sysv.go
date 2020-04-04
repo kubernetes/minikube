@@ -77,9 +77,21 @@ case "$1" in
 		;;
 
     status)
-        pgrep kubelet
-		;;
+        if [[ -f "${KUBELET_PIDFILE}" ]]; then
+            kill -0 $(cat ${KUBELET_PIDFILE})
+            if [[ "$?" != 0 ]]; then
+              echo "${KUBELET_PIDFILE} is stale"
+              exit 1
+            fi
+        else
+            echo "${KUBELET_PIDFILE} is missing"
+            exit 2
+        fi
 
+        echo "matching processes:"
+        pgrep -f kubelet
+        exit 0
+		;;
 	*)
 		echo "Usage: service kubelet {start|stop|restart|status}"
 		exit 1

@@ -85,22 +85,8 @@ func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, n config.Node)
 
 // GetKubeletStatus returns the kubelet status
 func (k *Bootstrapper) GetKubeletStatus() (string, error) {
-	rr, err := k.c.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
-	if err != nil {
-		// Do not return now, as we still have parsing to do!
-		glog.Warningf("%s returned error: %v", rr.Command(), err)
-	}
-	s := strings.TrimSpace(rr.Stdout.String())
-	glog.Infof("kubelet is-active: %s", s)
-	switch s {
-	case "active":
-		return state.Running.String(), nil
-	case "inactive":
-		return state.Stopped.String(), nil
-	case "activating":
-		return state.Starting.String(), nil
-	}
-	return state.Error.String(), nil
+	st, err := kverify.KubeletStatus(k.c)
+	return st.String(), err
 }
 
 // GetAPIServerStatus returns the api-server status

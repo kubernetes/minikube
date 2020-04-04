@@ -42,6 +42,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/logs"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // minLogCheckTime how long to wait before spamming error logs to console
@@ -322,20 +323,10 @@ func apiServerHealthz(hostname string, port int) (state.State, error) {
 // KubeletStatus checks the kubelet status
 func KubeletStatus(cr command.Runner) (state.State, error) {
 	glog.Infof("Checking kubelet status ...")
-	rr, err := cr.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
-	if err != nil {
-		// Do not return now, as we still have parsing to do!
-		glog.Warningf("%s returned error: %v", rr.Command(), err)
-	}
-	s := strings.TrimSpace(rr.Stdout.String())
-	glog.Infof("kubelet is-active: %s", s)
-	switch s {
-	case "active":
+
+	active := sysinit.New(cr).Active("kubelet")
+	if active {
 		return state.Running, nil
-	case "inactive":
-		return state.Stopped, nil
-	case "activating":
-		return state.Starting, nil
 	}
-	return state.Error, nil
+	return state.Stopped, nil
 }

@@ -25,6 +25,7 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/command"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -89,9 +90,9 @@ func Restart(cr command.Runner) error {
 // Check checks on the status of the kubelet
 func Check(cr command.Runner) error {
 	glog.Infof("checking for running kubelet ...")
-	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "kubelet")
-	if _, err := cr.RunCmd(c); err != nil {
-		return errors.Wrap(err, "check kubelet")
+	active := sysinit.New(cr).Active("kubelet")
+	if !active {
+		return fmt.Errorf("inactive")
 	}
 	return nil
 }

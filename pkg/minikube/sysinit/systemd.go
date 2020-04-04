@@ -74,6 +74,6 @@ func (s *Systemd) ForceStop(svc string) error {
 }
 
 func usesSystemd(r Runner) bool {
-	_, err := r.RunCmd(exec.Command("xsystemctl", "--version"))
+	_, err := r.RunCmd(exec.Command("systemctl", "--version"))
 	return err == nil
 }
