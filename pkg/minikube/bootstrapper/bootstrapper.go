@@ -17,7 +17,6 @@ limitations under the License.
 package bootstrapper
 
 import (
-	"net"
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
@@ -47,7 +46,7 @@ type Bootstrapper interface {
 	LogCommands(config.ClusterConfig, LogOptions) map[string]string
 	SetupCerts(config.KubernetesConfig, config.Node) error
 	GetKubeletStatus() (string, error)
-	GetAPIServerStatus(net.IP, int) (string, error)
+	GetAPIServerStatus(string, int) (string, error)
 }
 
 const (

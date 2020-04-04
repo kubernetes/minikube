@@ -112,6 +112,7 @@ func TestSuggest(t *testing.T) {
 		choices []string
 		pick    string
 		alts    []string
+		rejects []string
 	}{
 		{
 			def: registry.DriverDef{
@@ -122,6 +123,7 @@ func TestSuggest(t *testing.T) {
 			choices: []string{"unhealthy"},
 			pick:    "",
 			alts:    []string{},
+			rejects: []string{"unhealthy"},
 		},
 		{
 			def: registry.DriverDef{
@@ -132,6 +134,7 @@ func TestSuggest(t *testing.T) {
 			choices: []string{"discouraged", "unhealthy"},
 			pick:    "",
 			alts:    []string{"discouraged"},
+			rejects: []string{"unhealthy"},
 		},
 		{
 			def: registry.DriverDef{
@@ -142,6 +145,7 @@ func TestSuggest(t *testing.T) {
 			choices: []string{"default", "discouraged", "unhealthy"},
 			pick:    "default",
 			alts:    []string{"discouraged"},
+			rejects: []string{"unhealthy"},
 		},
 		{
 			def: registry.DriverDef{
@@ -152,6 +156,7 @@ func TestSuggest(t *testing.T) {
 			choices: []string{"preferred", "default", "discouraged", "unhealthy"},
 			pick:    "preferred",
 			alts:    []string{"default", "discouraged"},
+			rejects: []string{"unhealthy"},
 		},
 	}
 	for _, tc := range tests {
@@ -172,7 +177,7 @@ func TestSuggest(t *testing.T) {
 				t.Errorf("choices mismatch (-want +got):\n%s", diff)
 			}
 
-			pick, alts := Suggest(got)
+			pick, alts, rejects := Suggest(got)
 			if pick.Name != tc.pick {
 				t.Errorf("pick = %q, expected %q", pick.Name, tc.pick)
 			}
@@ -184,6 +189,15 @@ func TestSuggest(t *testing.T) {
 			if diff := cmp.Diff(gotAlts, tc.alts); diff != "" {
 				t.Errorf("alts mismatch (-want +got):\n%s", diff)
 			}
+
+			gotRejects := []string{}
+			for _, r := range rejects {
+				gotRejects = append(gotRejects, r.Name)
+			}
+			if diff := cmp.Diff(gotRejects, tc.rejects); diff != "" {
+				t.Errorf("rejects mismatch (-want +got):\n%s", diff)
+			}
+
 		})
 	}
 }

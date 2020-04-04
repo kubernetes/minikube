@@ -18,7 +18,10 @@ To serve documentation pages locally, clone the `minikube` repository and run:
 
 `make site`
 
-NOTE: On Windows, our site currently causes Hugo to `panic`.
+Notes :
+
+* On GNU/Linux, golang package shipped with the distribution may not be recent enough. Use the latest version.
+* On Windows, our site currently causes Hugo to `panic`.
 
 ## Lint
 
