@@ -50,11 +50,11 @@ if [[ ! -x "${KUBELET}" ]]; then
 fi
 
 function start() {
-    start-stop-daemon --pid "${KUBELET_PIDFILE}" --background --start --make-pidfile --exec "${KUBELET_WRAPPER}" "${KUBELET}" "${KUBELET_CONF}"
+    start-stop-daemon --oknodo --pidfile "${KUBELET_PIDFILE}" --background --start --make-pidfile --exec "${KUBELET_WRAPPER}" "${KUBELET}" "${KUBELET_CONF}"
 }
 
 function stop() {
-    start-stop-daemon --pid "${KUBELET_PIDFILE}" --stop
+    start-stop-daemon --oknodo --pidfile "${KUBELET_PIDFILE}" --stop
 }
 
 
@@ -73,7 +73,7 @@ case "$1" in
         start-stop-daemon --pid "${KUBELET_PIDFILE}" --status
 		;;
 	*)
-		echo "Usage: service kubelet {start|stop|restart|status}"
+	    echo "Usage: service kubelet {start|stop|restart|status}"
 		exit 1
 		;;
 esac
