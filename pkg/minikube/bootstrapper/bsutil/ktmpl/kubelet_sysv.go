@@ -28,7 +28,9 @@ while [[ -x "${binary}" ]]; do
   if [[ -f "${conf}" ]]; then
           args=$(egrep "^ExecStart=${binary}" "${conf}" | cut -d" " -f2-)
   fi
+  echo "$(date) binary=${binary} args=${args}"
   ${binary} ${args}
+  echo ""
   sleep 1
 done
 `
