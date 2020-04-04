@@ -18,7 +18,11 @@ limitations under the License.
 package sysinit
 
 import (
+	"context"
 	"os/exec"
+	"time"
+
+	"github.com/golang/glog"
 )
 
 const SysVName = "Sys-V"
@@ -44,7 +48,11 @@ func (s *SysV) Start(svc string) error {
 	if s.Active(svc) {
 		return nil
 	}
-	_, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "start"))
+	ctx, cb := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cb()
+
+	rr, err := s.r.RunCmd(exec.CommandContext(ctx, "sudo", "service", svc, "start"))
+	glog.Infof("rr: %v", rr.Output())
 	return err
 }
 

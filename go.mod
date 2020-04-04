@@ -79,6 +79,7 @@ require (
 	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9
 	golang.org/x/text v0.3.2
 	google.golang.org/api v0.9.0
+	google.golang.org/appengine v1.6.1
 	google.golang.org/genproto v0.0.0-20200117163144-32f20d992d24 // indirect
 	google.golang.org/grpc v1.26.0 // indirect
 	gopkg.in/mgo.v2 v2.0.0-20190816093944-a6b53ec6cb22 // indirect

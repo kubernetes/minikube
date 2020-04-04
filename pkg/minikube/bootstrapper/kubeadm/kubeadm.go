@@ -619,6 +619,11 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 
 // UpdateNode updates a node.
 func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.Manager) error {
+	now := time.Now()
+	defer func() {
+		glog.Infof("reloadKubelet took %s", time.Since(now))
+	}()
+
 	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, n, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
@@ -697,6 +702,11 @@ func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
 }
 
 func reloadKubelet(runner command.Runner, sm sysinit.Manager) error {
+	now := time.Now()
+	defer func() {
+		glog.Infof("reloadKubelet took %s", time.Since(now))
+	}()
+
 	svc := bsutil.KubeletServiceFile
 	conf := bsutil.KubeletSystemdConfFile
 

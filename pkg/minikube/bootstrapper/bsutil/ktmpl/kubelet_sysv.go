@@ -52,6 +52,7 @@ fi
 function start() {
     cd /var/run
     nohup "${KUBELET_WRAPPER}" "${KUBELET}" "${KUBELET_CONF}" &
+    disown
     echo $! > "${KUBELET_PIDFILE}"
 }
 
@@ -67,15 +68,18 @@ function stop() {
 case "$1" in
     start)
         start
+        exit 0
 		;;
 
     stop)
         stop
+        exit 0
 		;;
 
     restart)
         stop
         start
+        exit 0
 		;;
 
     status)
