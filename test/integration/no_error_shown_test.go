@@ -25,8 +25,8 @@ import (
 	"testing"
 )
 
-// TestMultiNodeNoError asserts that there are no errors displayed
-func TestMultiNodeNoError(t *testing.T) {
+// TestNoErrorShown asserts that there are no errors displayed
+func TestNoErrorShown(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver always shows a warning")
 	}
@@ -40,8 +40,8 @@ func TestMultiNodeNoError(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(20))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
-	args := append([]string{"start", "-p", profile, "--memory=1900", "-n=2", "--wait=false"}, StartArgs()...)
+	// TODO: make this multi-node once it's stable
+	args := append([]string{"start", "-p", profile, "--memory=1900", "--wait=false"}, StartArgs()...)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
