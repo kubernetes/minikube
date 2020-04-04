@@ -1213,7 +1213,7 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 
 	waitFlags, err := cmd.Flags().GetStringSlice(waitComponents)
 	if err != nil {
-		glog.Infof("failed to get wait from flags, will use default wait components : %+v", kverify.DefaultComponents)
+		glog.Warningf("Failed to read --wait from flags: %v.\n Moving on will use the default wait components: %+v", err, kverify.DefaultComponents)
 		return kverify.DefaultComponents
 	}
 
