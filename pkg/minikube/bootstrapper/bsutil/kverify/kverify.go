@@ -64,7 +64,12 @@ var (
 
 // ShouldWait will return true if the config says need to wait
 func ShouldWait(wcs map[string]bool) bool {
-	return wcs[APIServerWaitKey] || wcs[SystemPodsWaitKey] || wcs[DefaultSAWaitKey]
+	for _, c := range AllComponentsList {
+		if wcs[c] {
+			return true
+		}
+	}
+	return false
 }
 
 // ExpectedComponentsRunning returns whether or not all expected components are running
