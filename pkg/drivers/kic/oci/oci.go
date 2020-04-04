@@ -234,21 +234,26 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 }
 
 // WarnIfSlow runs an oci command, warning about performance issues
-func WarnIfSlow(arg ...string) ([]byte, error) {
-	killTime := 15 * time.Second
+func WarnIfSlow(args ...string) ([]byte, error) {
+	killTime := 19 * time.Second
 	warnTime := 2 * time.Second
+
+	if args[1] == "volume" || args[1] == "ps" { // volume and ps requires more time than inspect
+		killTime = 30 * time.Second
+		warnTime = 3 * time.Second
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), killTime)
 	defer cancel()
 
 	start := time.Now()
-	glog.Infof("executing with %s timeout: %v", arg, killTime)
-	cmd := exec.CommandContext(ctx, arg[0], arg[1:]...)
+	glog.Infof("executing with %s timeout: %v", args, killTime)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	stdout, err := cmd.Output()
 	d := time.Since(start)
 	if d > warnTime {
 		out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": strings.Join(cmd.Args, " "), "duration": d})
-		out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": arg[0]})
+		out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": args[0]})
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
