@@ -36,6 +36,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -57,7 +58,6 @@ import (
 
 const (
 	waitTimeout      = "wait-timeout"
-	waitUntilHealthy = "wait"
 	embedCerts       = "embed-certs"
 	keepContext      = "keep-context"
 	imageRepository  = "image-repository"
@@ -157,7 +157,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		}
 
 		// Skip pre-existing, because we already waited for health
-		if viper.GetBool(waitUntilHealthy) && !preExists {
+		if kverify.ShouldWait(cc.VerifyComponents) && !preExists {
 			if err := bs.WaitForNode(cc, n, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
 			}
