@@ -55,7 +55,42 @@ var vmProblems = map[string]match{
 		Issues:        []int{6098},
 		ShowIssueLink: true,
 	},
-
+	"FILE_IN_USE": {
+		Regexp: re(`The process cannot access the file because it is being used by another process`),
+		Advice: "Another program is using a file required by minikube. If you are using Hyper-V, try stopping the minikube VM from within the Hyper-V manager",
+		URL:    "https://docs.docker.com/machine/drivers/hyper-v/",
+		GOOS:   []string{"windows"},
+		Issues: []int{7300},
+	},
+	"CREATE_TIMEOUT": {
+		Regexp: re(`create host timed out in \d`),
+		Advice: "Try 'minikube delete', and disable any conflicting VPN or firewall software",
+		Issues: []int{7072},
+	},
+	"IMAGE_ARCH": {
+		Regexp: re(`Error: incompatible image architecture`),
+		Advice: "This driver does not yet work on your architecture. Maybe try --driver=none",
+		GOOS:   []string{"linux"},
+		Issues: []int{7071},
+	},
+	// Docker
+	"DOCKER_WSL2_MOUNT": {
+		Regexp: re(`cannot find cgroup mount destination: unknown`),
+		Advice: "Run: 'sudo mkdir /sys/fs/cgroup/systemd && sudo mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd'",
+		URL:    "https://github.com/microsoft/WSL/issues/4189",
+		Issues: []int{5392},
+		GOOS:   []string{"linux"},
+	},
+	"DOCKER_READONLY": {
+		Regexp: re(`mkdir /var/lib/docker/volumes.*: read-only file system`),
+		Advice: "Restart Docker",
+		Issues: []int{6825},
+	},
+	"DOCKER_CHROMEOS": {
+		Regexp: re(`Container.*is not running.*chown docker:docker`),
+		Advice: "minikube is not yet compatible with ChromeOS",
+		Issues: []int{6411},
+	},
 	// Hyperkit
 	"HYPERKIT_NO_IP": {
 		Regexp: re(`IP address never found in dhcp leases file Temporary Error: Could not find an IP address for`),
@@ -82,7 +117,6 @@ var vmProblems = map[string]match{
 		Issues: []int{6079, 5780},
 		GOOS:   []string{"darwin"},
 	},
-
 	// Hyper-V
 	"HYPERV_NO_VSWITCH": {
 		Regexp: re(`no External vswitch found. A valid vswitch must be available for this command to run.`),
@@ -98,15 +132,21 @@ var vmProblems = map[string]match{
 	},
 	"HYPERV_POWERSHELL_NOT_FOUND": {
 		Regexp: re(`Powershell was not found in the path`),
-		Advice: "To start minikube with HyperV Powershell must be in your PATH`",
+		Advice: "To start minikube with Hyper-V, Powershell must be in your PATH`",
 		URL:    "https://docs.docker.com/machine/drivers/hyper-v/",
 		GOOS:   []string{"windows"},
 	},
 	"HYPERV_AS_ADMIN": {
 		Regexp: re(`Hyper-v commands have to be run as an Administrator`),
-		Advice: "Run the minikube command as an Administrator",
+		Advice: "Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode.",
 		URL:    "https://rominirani.com/docker-machine-windows-10-hyper-v-troubleshooting-tips-367c1ea73c24",
 		Issues: []int{4511},
+		GOOS:   []string{"windows"},
+	},
+	"HYPERV_NEEDS_ESC": {
+		Regexp: re(`The requested operation requires elevation.`),
+		Advice: "Right-click the PowerShell icon and select Run as Administrator to open PowerShell in elevated mode.",
+		Issues: []int{7347},
 		GOOS:   []string{"windows"},
 	},
 	"HYPERV_FILE_DELETE_FAILURE": {
@@ -115,7 +155,6 @@ var vmProblems = map[string]match{
 		Issues: []int{6804},
 		GOOS:   []string{"windows"},
 	},
-
 	// KVM
 	"KVM2_NOT_FOUND": {
 		Regexp: re(`Driver "kvm2" not found. Do you have the plugin binary .* accessible in your PATH`),
@@ -136,12 +175,12 @@ var vmProblems = map[string]match{
 		GOOS:   []string{"linux"},
 	},
 	"KVM2_RESTART_NO_IP": {
-		Regexp: re(`Error starting stopped host: Machine didn't return an IP after 120 seconds`),
+		Regexp: re(`Error starting stopped host: Machine didn't return an IP after \d+ seconds`),
 		Advice: "The KVM driver is unable to resurrect this old VM. Please run `minikube delete` to delete it and try again.",
 		Issues: []int{3901, 3434},
 	},
 	"KVM2_START_NO_IP": {
-		Regexp: re(`Error in driver during machine creation: Machine didn't return an IP after 120 seconds`),
+		Regexp: re(`Error in driver during machine creation: Machine didn't return an IP after \d+ seconds`),
 		Advice: "Check your firewall rules for interference, and run 'virt-host-validate' to check for KVM configuration issues. If you are running minikube within a VM, consider using --driver=none",
 		URL:    "https://minikube.sigs.k8s.io/docs/reference/drivers/kvm2/",
 		Issues: []int{4249, 3566},
@@ -179,7 +218,12 @@ var vmProblems = map[string]match{
 		GOOS:   []string{"linux"},
 		Issues: []int{5950},
 	},
-
+	"KVM_OOM": {
+		Regexp: re(`cannot set up guest memory.*Cannot allocate memory`),
+		Advice: "Choose a smaller value for --memory, such as 2000",
+		GOOS:   []string{"linux"},
+		Issues: []int{6366},
+	},
 	// None
 	"NONE_APISERVER_MISSING": {
 		Regexp: re(`apiserver process never appeared`),
@@ -226,7 +270,6 @@ var vmProblems = map[string]match{
 		Issues: []int{6083, 5636},
 		GOOS:   []string{"linux"},
 	},
-
 	// VirtualBox
 	"VBOX_BLOCKED": {
 		Regexp: re(`NS_ERROR_FAILURE.*0x80004005`),
@@ -293,18 +336,23 @@ var vmProblems = map[string]match{
 	},
 	"VBOX_VTX_DISABLED": {
 		Regexp: re(`This computer doesn't have VT-X/AMD-v enabled`),
-		Advice: "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--driver=none'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
+		Advice: "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--driver=docker'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
 		Issues: []int{3900, 4730},
 	},
 	"VERR_VERR_VMX_DISABLED": {
 		Regexp: re(`VT-x is disabled.*VERR_VMX_MSR_ALL_VMX_DISABLED`),
-		Advice: "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--driver=none'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
+		Advice: "Virtualization support is disabled on your computer. If you are running minikube within a VM, try '--driver=docker'. Otherwise, consult your systems BIOS manual for how to enable virtualization.",
 		Issues: []int{5282, 5456},
 	},
 	"VBOX_VERR_VMX_NO_VMX": {
 		Regexp: re(`VT-x is not available.*VERR_VMX_NO_VMX`),
-		Advice: "Your host does not support virtualization. If you are running minikube within a VM, try '--driver=none'. Otherwise, enable virtualization in your BIOS",
+		Advice: "Your host does not support virtualization. If you are running minikube within a VM, try '--driver=docker'. Otherwise, enable virtualization in your BIOS",
 		Issues: []int{1994, 5326},
+	},
+	"VERR_SVM_DISABLED": {
+		Regexp: re(`VERR_SVM_DISABLED`),
+		Advice: "Your host does not support virtualization. If you are running minikube within a VM, try '--driver=docker'. Otherwise, enable virtualization in your BIOS",
+		Issues: []int{7074},
 	},
 	"VBOX_HOST_NETWORK": {
 		Regexp: re(`Error setting up host only network on machine start.*Unspecified error`),
@@ -355,10 +403,10 @@ var netProblems = map[string]match{
 		Issues: []int{3922, 6109, 6123},
 	},
 	"PULL_TIMEOUT_EXCEEDED": {
-		Regexp: re(`failed to pull image.*Client.Timeout exceeded while awaiting headers`),
-		Advice: "A firewall is blocking Docker the minikube VM from reaching the internet. You may need to configure it to use a proxy.",
+		Regexp: re(`ImagePull.*Timeout exceeded while awaiting headers`),
+		Advice: "A firewall is blocking Docker the minikube VM from reaching the image repository. You may need to select --image-repository, or use a proxy.",
 		URL:    proxyDoc,
-		Issues: []int{3898},
+		Issues: []int{3898, 6070},
 	},
 	"SSH_AUTH_FAILURE": {
 		Regexp: re(`ssh: handshake failed: ssh: unable to authenticate.*, no supported methods remain`),
@@ -388,6 +436,12 @@ var netProblems = map[string]match{
 		Issues: []int{6107},
 		URL:    proxyDoc,
 	},
+	"NOT_A_TLS_HANDSHAKE": {
+		Regexp: re(`tls: first record does not look like a TLS handshake`),
+		Advice: "Ensure that your value for HTTPS_PROXY points to an HTTPS proxy rather than an HTTP proxy",
+		Issues: []int{7286},
+		URL:    proxyDoc,
+	},
 }
 
 // deployProblems are Kubernetes deployment problems.
@@ -407,7 +461,7 @@ var deployProblems = map[string]match{
 	},
 	"APISERVER_MISSING": {
 		Regexp: re(`apiserver process never appeared`),
-		Advice: "Check that the provided apiserver flags are valid",
+		Advice: "Check that the provided apiserver flags are valid, and that SELinux is disabled",
 		Issues: []int{4536, 6014},
 	},
 	"APISERVER_TIMEOUT": {
@@ -446,6 +500,21 @@ var deployProblems = map[string]match{
 		Advice: "Confirm that you have a working internet connection and that your VM has not run out of resources by using: 'minikube logs'",
 		Issues: []int{4749},
 	},
+	"CERT_NOT_SIGNED_BY_CA": {
+		Regexp: re(`not signed by CA certificate ca: crypto/rsa: verification error`),
+		Advice: "Try 'minikube delete' to force new SSL certificates to be installed",
+		Issues: []int{6596},
+	},
+	"DOCKER_RESTART_FAILED": {
+		Regexp: re(`systemctl -f restart docker`),
+		Advice: "Remove the incompatible --docker-opt flag if one was provided",
+		Issues: []int{7070},
+	},
+	"WAITING_FOR_SSH": {
+		Regexp: re(`waiting for SSH to be available`),
+		Advice: "Try 'minikube delete', and disable any conflicting VPN or firewall software",
+		Issues: []int{4617},
+	},
 }
 
 // osProblems are operating-system specific issues
@@ -472,6 +541,12 @@ var osProblems = map[string]match{
 		GOOS:   []string{"darwin", "linux"},
 		Issues: []int{5714},
 	},
+	"JUJU_LOCK_DENIED": {
+		Regexp: re(`unable to open /tmp/juju.*: permission denied`),
+		Advice: "Run 'sudo sysctl fs.protected_regular=1', or try a driver which does not require root, such as '--driver=docker'",
+		GOOS:   []string{"linux"},
+		Issues: []int{6391},
+	},
 }
 
 // stateProblems are issues relating to local state
@@ -490,5 +565,10 @@ var stateProblems = map[string]match{
 		Regexp: re(`Error getting ssh host name for driver: IP not found`),
 		Advice: "The minikube VM is offline. Please run 'minikube start' to start it again.",
 		Issues: []int{3849, 3648},
+	},
+	"DASHBOARD_ROLE_REF": {
+		Regexp: re(`dashboard.*cannot change roleRef`),
+		Advice: "Run: 'kubectl delete clusterrolebinding kubernetes-dashboard'",
+		Issues: []int{7256},
 	},
 }

@@ -21,6 +21,7 @@ package none
 import (
 	"fmt"
 	"os/exec"
+	"os/user"
 
 	"github.com/docker/machine/libmachine/drivers"
 	"k8s.io/minikube/pkg/drivers/none"
@@ -51,9 +52,22 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
-	_, err := exec.LookPath("systemctl")
-	if err != nil {
+	if _, err := exec.LookPath("systemctl"); err != nil {
 		return registry.State{Error: err, Fix: "Use a systemd based Linux distribution", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
+
+	if _, err := exec.LookPath("docker"); err != nil {
+		return registry.State{Error: err, Installed: false, Fix: "Install docker", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
+	}
+
+	u, err := user.Current()
+	if err != nil {
+		return registry.State{Error: err, Healthy: false, Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
+	}
+
+	if u.Uid != "0" {
+		return registry.State{Error: fmt.Errorf("the 'none' driver must be run as the root user"), Healthy: false, Fix: "For non-root usage, try the newer 'docker' driver", Installed: true}
+	}
+
 	return registry.State{Installed: true, Healthy: true}
 }

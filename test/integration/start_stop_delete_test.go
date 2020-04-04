@@ -71,6 +71,9 @@ func TestStartStop(t *testing.T) {
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
+			{"embed-certs", constants.DefaultKubernetesVersion, []string{
+				"--embed-certs",
+			}},
 		}
 
 		for _, tc := range tests {
@@ -257,7 +260,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	}{}
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
 	if err != nil {
-		t.Errorf("failed to decode images json %v. output: %q", err, rr.Output())
+		t.Errorf("failed to decode images json %v. output: %s", err, rr.Output())
 	}
 	found := map[string]bool{}
 	for _, img := range jv["images"] {

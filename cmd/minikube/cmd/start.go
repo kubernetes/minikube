@@ -44,6 +44,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -109,7 +110,7 @@ const (
 	downloadOnly            = "download-only"
 	dnsProxy                = "dns-proxy"
 	hostDNSResolver         = "host-dns-resolver"
-	waitUntilHealthy        = "wait"
+	waitComponents          = "wait"
 	force                   = "force"
 	dryRun                  = "dry-run"
 	interactive             = "interactive"
@@ -124,6 +125,7 @@ const (
 	natNicType              = "nat-nic-type"
 	nodes                   = "nodes"
 	preload                 = "preload"
+	deleteOnFailure         = "delete-on-failure"
 )
 
 var (
@@ -170,13 +172,14 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
-	startCmd.Flags().Bool(waitUntilHealthy, true, "Block until the apiserver is servicing API requests")
+	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitList, fmt.Sprintf("comma separated list of kubernetes components to verify and wait for after starting a cluster. defaults to %q, available options: %q . other acceptable values are 'all' or 'none', 'true' and 'false'", strings.Join(kverify.DefaultWaitList, ","), strings.Join(kverify.AllComponentsList, ",")))
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
 	startCmd.Flags().Bool(installAddons, true, "If set, install addons. Defaults to true.")
 	startCmd.Flags().IntP(nodes, "n", 1, "The number of nodes to spin up. Defaults to 1.")
 	startCmd.Flags().Bool(preload, true, "If set, download tarball of preloaded images if available to improve start time. Defaults to true.")
+	startCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 }
 
 // initKubernetesFlags inits the commandline flags for kubernetes related options
@@ -190,7 +193,7 @@ func initKubernetesFlags() {
 	startCmd.Flags().String(featureGates, "", "A set of key=value pairs that describe feature gates for alpha/experimental features.")
 	startCmd.Flags().String(dnsDomain, constants.ClusterDNSDomain, "The cluster dns domain name used in the kubernetes cluster")
 	startCmd.Flags().Int(apiServerPort, constants.APIServerPort, "The apiserver listening port")
-	startCmd.Flags().String(apiServerName, constants.APIServerName, "The apiserver name which is used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
+	startCmd.Flags().String(apiServerName, constants.APIServerName, "The authoritative apiserver hostname for apiserver certificates and connectivity. This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().StringArrayVar(&apiServerNames, "apiserver-names", nil, "A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 	startCmd.Flags().IPSliceVar(&apiServerIPs, "apiserver-ips", nil, "A set of apiserver IP Addresses which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine")
 }
@@ -353,7 +356,10 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	kubeconfig := node.Start(cc, n, existingAddons, true)
+	kubeconfig, err := node.Start(cc, n, existingAddons, true)
+	if err != nil {
+		kubeconfig = maybeDeleteAndRetry(cc, n, existingAddons, err)
+	}
 
 	numNodes := viper.GetInt(nodes)
 	if numNodes == 1 && existing != nil {
@@ -371,6 +377,7 @@ func runStart(cmd *cobra.Command, args []string) {
 					ControlPlane:      false,
 					KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
 				}
+				out.Ln("") // extra newline for clarity on the command line
 				err := node.Add(&cc, n)
 				if err != nil {
 					exit.WithError("adding node", err)
@@ -428,26 +435,16 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	path, err := exec.LookPath("kubectl")
 	if err != nil {
-		out.T(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
+		out.ErrT(out.Tip, "For best results, install kubectl: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
 		return nil
 	}
 
-	j, err := exec.Command(path, "version", "--client", "--output=json").Output()
+	gitVersion, err := kubectlVersion(path)
 	if err != nil {
-		return errors.Wrap(err, "exec")
+		return err
 	}
 
-	cv := struct {
-		ClientVersion struct {
-			GitVersion string `json:"gitVersion"`
-		} `json:"clientVersion"`
-	}{}
-	err = json.Unmarshal(j, &cv)
-	if err != nil {
-		return errors.Wrap(err, "unmarshal")
-	}
-
-	client, err := semver.Make(strings.TrimPrefix(cv.ClientVersion.GitVersion, version.VersionPrefix))
+	client, err := semver.Make(strings.TrimPrefix(gitVersion, version.VersionPrefix))
 	if err != nil {
 		return errors.Wrap(err, "client semver")
 	}
@@ -458,12 +455,69 @@ func showKubectlInfo(kcs *kubeconfig.Settings, k8sVersion string, machineName st
 
 	if client.Major != cluster.Major || minorSkew > 1 {
 		out.Ln("")
-		out.T(out.Warning, "{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
+		out.WarningT("{{.path}} is v{{.client_version}}, which may be incompatible with Kubernetes v{{.cluster_version}}.",
 			out.V{"path": path, "client_version": client, "cluster_version": cluster})
-		out.T(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
+		out.ErrT(out.Tip, "You can also use 'minikube kubectl -- get pods' to invoke a matching version",
 			out.V{"path": path, "client_version": client})
 	}
 	return nil
+}
+
+func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, originalErr error) *kubeconfig.Settings {
+	if viper.GetBool(deleteOnFailure) {
+		out.WarningT("Node {{.name}} failed to start, deleting and trying again.", out.V{"name": n.Name})
+		// Start failed, delete the cluster and try again
+		profile, err := config.LoadProfile(cc.Name)
+		if err != nil {
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cc.Name})
+		}
+
+		err = deleteProfile(profile)
+		if err != nil {
+			out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": cc.Name})
+		}
+
+		var kubeconfig *kubeconfig.Settings
+		for _, v := range cc.Nodes {
+			k, err := node.Start(cc, v, existingAddons, v.ControlPlane)
+			if v.ControlPlane {
+				kubeconfig = k
+			}
+			if err != nil {
+				// Ok we failed again, let's bail
+				exit.WithError("Start failed after cluster deletion", err)
+			}
+		}
+		return kubeconfig
+	}
+	// Don't delete the cluster unless they ask
+	exit.WithError("startup failed", originalErr)
+	return nil
+}
+
+func kubectlVersion(path string) (string, error) {
+	j, err := exec.Command(path, "version", "--client", "--output=json").Output()
+	if err != nil {
+		// really old kubernetes clients did not have the --output parameter
+		b, err := exec.Command(path, "version", "--client", "--short").Output()
+		if err != nil {
+			return "", errors.Wrap(err, "exec")
+		}
+		s := strings.TrimSpace(string(b))
+		return strings.Replace(s, "Client Version: ", "", 1), nil
+	}
+
+	cv := struct {
+		ClientVersion struct {
+			GitVersion string `json:"gitVersion"`
+		} `json:"clientVersion"`
+	}{}
+	err = json.Unmarshal(j, &cv)
+	if err != nil {
+		return "", errors.Wrap(err, "unmarshal")
+	}
+
+	return cv.ClientVersion.GitVersion, nil
 }
 
 func selectDriver(existing *config.ClusterConfig) registry.DriverState {
@@ -488,7 +542,7 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 
     If vm-driver is set in the global config, please run "minikube config unset vm-driver" to resolve this warning.
 			`
-			out.T(out.Warning, warning, out.V{"driver": d, "vmd": vmd})
+			out.WarningT(warning, out.V{"driver": d, "vmd": vmd})
 		}
 		ds := driver.Status(d)
 		if ds.Name == "" {
@@ -508,9 +562,15 @@ func selectDriver(existing *config.ClusterConfig) registry.DriverState {
 		return ds
 	}
 
-	pick, alts := driver.Suggest(driver.Choices(viper.GetBool("vm")))
+	choices := driver.Choices(viper.GetBool("vm"))
+	pick, alts, rejects := driver.Suggest(choices)
 	if pick.Name == "" {
-		exit.WithCodeT(exit.Config, "Unable to determine a default driver to use. Try specifying --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		out.T(out.ThumbsDown, "Unable to pick a default driver. Here is what was considered, in preference order:")
+		for _, r := range rejects {
+			out.T(out.Option, "{{ .name }}: {{ .rejection }}", out.V{"name": r.Name, "rejection": r.Rejection})
+		}
+		out.T(out.Workaround, "Try specifying a --driver, or see https://minikube.sigs.k8s.io/docs/start/")
+		os.Exit(exit.Unavailable)
 	}
 
 	if len(alts) > 1 {
@@ -691,9 +751,9 @@ func validateUser(drvName string) {
 		return
 	}
 
-	out.T(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
-	out.T(out.Tip, "If you are running minikube within a VM, consider using --driver=none:")
-	out.T(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
+	out.ErrT(out.Stopped, `The "{{.driver_name}}" driver should not be used with root privileges.`, out.V{"driver_name": drvName})
+	out.ErrT(out.Tip, "If you are running minikube within a VM, consider using --driver=none:")
+	out.ErrT(out.Documentation, "  https://minikube.sigs.k8s.io/docs/reference/drivers/none/")
 
 	if !useForce {
 		os.Exit(exit.Permissions)
@@ -701,7 +761,7 @@ func validateUser(drvName string) {
 	cname := ClusterFlagValue()
 	_, err = config.Load(cname)
 	if err == nil || !config.IsNotExist(err) {
-		out.T(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
+		out.ErrT(out.Tip, "Tip: To remove this root owned cluster, run: sudo {{.cmd}}", out.V{"cmd": mustload.ExampleCmd(cname, "delete")})
 	}
 	if !useForce {
 		exit.WithCodeT(exit.Permissions, "Exiting")
@@ -1009,6 +1069,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 		},
 		Nodes: []config.Node{cp},
 	}
+	cfg.VerifyComponents = interpretWaitFlag(*cmd)
 	return cfg, cp, nil
 }
 
@@ -1140,4 +1201,49 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
 	return nv
+}
+
+// interpretWaitFlag interprets the wait flag and respects the legacy minikube users
+// returns map of components to wait for
+func interpretWaitFlag(cmd cobra.Command) map[string]bool {
+	if !cmd.Flags().Changed(waitComponents) {
+		glog.Infof("Wait components to verify : %+v", kverify.DefaultComponents)
+		return kverify.DefaultComponents
+	}
+
+	waitFlags, err := cmd.Flags().GetStringSlice(waitComponents)
+	if err != nil {
+		glog.Warningf("Failed to read --wait from flags: %v.\n Moving on will use the default wait components: %+v", err, kverify.DefaultComponents)
+		return kverify.DefaultComponents
+	}
+
+	if len(waitFlags) == 1 {
+		// respecting legacy flag before minikube 1.9.0, wait flag was boolean
+		if waitFlags[0] == "false" || waitFlags[0] == "none" {
+			glog.Infof("Waiting for no components: %+v", kverify.NoComponents)
+			return kverify.NoComponents
+		}
+		// respecting legacy flag before minikube 1.9.0, wait flag was boolean
+		if waitFlags[0] == "true" || waitFlags[0] == "all" {
+			glog.Infof("Waiting for all components: %+v", kverify.AllComponents)
+			return kverify.AllComponents
+		}
+	}
+
+	waitComponents := kverify.NoComponents
+	for _, wc := range waitFlags {
+		seen := false
+		for _, valid := range kverify.AllComponentsList {
+			if wc == valid {
+				waitComponents[wc] = true
+				seen = true
+				continue
+			}
+		}
+		if !seen {
+			glog.Warningf("The value %q is invalid for --wait flag. valid options are %q", wc, strings.Join(kverify.AllComponentsList, ","))
+		}
+	}
+	glog.Infof("Waiting for components: %+v", waitComponents)
+	return waitComponents
 }

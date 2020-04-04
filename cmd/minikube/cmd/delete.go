@@ -236,7 +236,7 @@ func deleteProfile(profile *config.Profile) error {
 	}
 
 	if err := killMountProcess(); err != nil {
-		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
+		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
 	deleteHosts(api, cc)
@@ -264,7 +264,7 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 				case mcnerror.ErrHostDoesNotExist:
 					glog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
 				default:
-					out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
+					out.FailureT("Failed to delete cluster: {{.error}}", out.V{"error": err})
 					out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
 				}
 			}

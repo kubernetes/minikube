@@ -39,9 +39,8 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 		return errors.Wrap(err, "save node")
 	}
 
-	// TODO: Start should return an error rather than calling exit!
-	Start(*cc, n, nil, false)
-	return nil
+	_, err := Start(*cc, n, nil, false)
+	return err
 }
 
 // Delete stops and deletes the given node from the given cluster

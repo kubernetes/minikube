@@ -61,16 +61,16 @@ func WithCodeT(code int, format string, a ...out.V) {
 func WithError(msg string, err error) {
 	p := problem.FromError(err, runtime.GOOS)
 	if p != nil {
-		WithProblem(msg, p)
+		WithProblem(msg, err, p)
 	}
 	displayError(msg, err)
 	os.Exit(Software)
 }
 
 // WithProblem outputs info related to a known problem and exits.
-func WithProblem(msg string, p *problem.Problem) {
+func WithProblem(msg string, err error, p *problem.Problem) {
 	out.ErrT(out.Empty, "")
-	out.FatalT(msg)
+	out.FailureT("[{{.id}}] {{.msg}} {{.error}}", out.V{"msg": msg, "id": p.ID, "error": p.Err})
 	p.Display()
 	if p.ShowIssueLink {
 		out.ErrT(out.Empty, "")
@@ -85,7 +85,7 @@ func WithLogEntries(msg string, err error, entries map[string][]string) {
 	displayError(msg, err)
 
 	for name, lines := range entries {
-		out.T(out.FailureType, "Problems detected in {{.entry}}:", out.V{"entry": name})
+		out.FailureT("Problems detected in {{.entry}}:", out.V{"entry": name})
 		if len(lines) > MaxLogEntries {
 			lines = lines[:MaxLogEntries]
 		}
