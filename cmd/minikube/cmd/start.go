@@ -305,38 +305,49 @@ func runStart(cmd *cobra.Command, args []string) {
 
 	validateSpecifiedDriver(existing)
 	ds, alts, specified := selectDriver(existing)
-	err = startWithDriver(cmd, ds, existing)
+	starter, err := provisionWithDriver(cmd, ds, existing)
 	if err != nil && !specified {
+		success := false
 		// Walk down the rest of the options
 		for _, alt := range alts {
-			out.WarningT("Startup with {{.old_driver}} driver failed, trying with {{.new_driver}}.", out.V{"old_driver": ds.Name, "new_driver": alt.Name})
+			out.WarningT("Startup with {{.old_driver}} driver failed, trying with {{.new_driver}}: {{.error}}", out.V{"old_driver": ds.Name, "new_driver": alt.Name, "error": err})
 			ds = alt
 			// Delete the existing cluster and try again with the next driver on the list
 			profile, err := config.LoadProfile(ClusterFlagValue())
 			if err != nil {
-				out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": ClusterFlagValue()})
+				glog.Warningf("%s profile does not exist, trying anyways.", ClusterFlagValue())
 			}
 
 			err = deleteProfile(profile)
 			if err != nil {
 				out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
 			}
-			err = startWithDriver(cmd, ds, existing)
+			starter, err = provisionWithDriver(cmd, ds, existing)
 			if err != nil {
 				continue
 			} else {
 				// Success!
-				os.Exit(0)
+				success = true
+				break
 			}
+		}
+		if !success {
+			exit.WithError("error provisioning host", err)
 		}
 	}
 
-	// Use the most recent error
-	exit.WithError("startup failed", err)
+	kubeconfig, err := startWithDriver(starter, existing)
+	if err != nil {
+		exit.WithError("failed to start node", err)
+	}
+
+	if err := showKubectlInfo(kubeconfig, starter.Node.KubernetesVersion, starter.Cfg.Name); err != nil {
+		glog.Errorf("kubectl info: %v", err)
+	}
 
 }
 
-func startWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) error {
+func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *config.ClusterConfig) (node.Starter, error) {
 	driverName := ds.Name
 	glog.Infof("selected driver: %s", driverName)
 	validateDriver(ds, existing)
@@ -356,19 +367,19 @@ func startWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *conf
 	k8sVersion := getKubernetesVersion(existing)
 	cc, n, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
-		return errors.Wrap(err, "Failed to generate config")
+		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
 	}
 
 	// This is about as far as we can go without overwriting config files
 	if viper.GetBool(dryRun) {
 		out.T(out.DryRun, `dry-run validation complete!`)
-		return nil
+		return node.Starter{}, nil
 	}
 
 	if driver.IsVM(driverName) {
 		url, err := download.ISO(viper.GetStringSlice(isoURL), cmd.Flags().Changed(isoURL))
 		if err != nil {
-			return errors.Wrap(err, "Failed to cache ISO")
+			return node.Starter{}, errors.Wrap(err, "Failed to cache ISO")
 		}
 		cc.MinikubeISO = url
 	}
@@ -387,11 +398,29 @@ func startWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *conf
 		}
 	}
 
-	kubeconfig, err := node.Start(cc, n, existingAddons, true)
+	mRunner, preExists, mAPI, host, err := node.Provision(cc, n, true)
 	if err != nil {
-		kubeconfig, err = maybeDeleteAndRetry(cc, n, existingAddons, err)
+		return node.Starter{}, err
+	}
+
+	return node.Starter{
+		Runner:         mRunner,
+		PreExists:      preExists,
+		MachineAPI:     mAPI,
+		Host:           host,
+		ExistingAddons: existingAddons,
+		Cfg:            cc,
+		Node:           n,
+	}, nil
+}
+
+func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
+
+	kubeconfig, err := node.Start(starter, true)
+	if err != nil {
+		kubeconfig, err = maybeDeleteAndRetry(starter.Cfg, starter.Node, starter.ExistingAddons, err)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
@@ -400,7 +429,7 @@ func startWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *conf
 		numNodes = len(existing.Nodes)
 	}
 	if numNodes > 1 {
-		if driver.BareMetal(driverName) {
+		if driver.BareMetal(starter.Cfg.Driver) {
 			exit.WithCodeT(exit.Config, "The none driver is not compatible with multi-node clusters.")
 		} else {
 			for i := 1; i < numNodes; i++ {
@@ -409,22 +438,18 @@ func startWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *conf
 					Name:              nodeName,
 					Worker:            true,
 					ControlPlane:      false,
-					KubernetesVersion: cc.KubernetesConfig.KubernetesVersion,
+					KubernetesVersion: starter.Cfg.KubernetesConfig.KubernetesVersion,
 				}
 				out.Ln("") // extra newline for clarity on the command line
-				err := node.Add(&cc, n)
+				err := node.Add(&starter.Cfg, n)
 				if err != nil {
-					return errors.Wrap(err, "adding node")
+					return nil, errors.Wrap(err, "adding node")
 				}
 			}
 		}
 	}
 
-	if err := showKubectlInfo(kubeconfig, k8sVersion, cc.Name); err != nil {
-		glog.Errorf("kubectl info: %v", err)
-	}
-
-	return nil
+	return kubeconfig, nil
 }
 
 func updateDriver(driverName string) {
@@ -514,9 +539,24 @@ func maybeDeleteAndRetry(cc config.ClusterConfig, n config.Node, existingAddons 
 		}
 
 		var kubeconfig *kubeconfig.Settings
-		for _, v := range cc.Nodes {
-			k, err := node.Start(cc, v, existingAddons, v.ControlPlane)
-			if v.ControlPlane {
+		for _, n := range cc.Nodes {
+			r, p, m, h, err := node.Provision(cc, n, n.ControlPlane)
+			s := node.Starter{
+				Runner:         r,
+				PreExists:      p,
+				MachineAPI:     m,
+				Host:           h,
+				Cfg:            cc,
+				Node:           n,
+				ExistingAddons: existingAddons,
+			}
+			if err != nil {
+				// Ok we failed again, let's bail
+				return nil, err
+			}
+
+			k, err := node.Start(s, n.ControlPlane)
+			if n.ControlPlane {
 				kubeconfig = k
 			}
 			if err != nil {
