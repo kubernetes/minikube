@@ -44,6 +44,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -109,7 +110,7 @@ const (
 	downloadOnly            = "download-only"
 	dnsProxy                = "dns-proxy"
 	hostDNSResolver         = "host-dns-resolver"
-	waitUntilHealthy        = "wait"
+	waitComponents          = "wait"
 	force                   = "force"
 	dryRun                  = "dry-run"
 	interactive             = "interactive"
@@ -171,7 +172,7 @@ func initMinikubeFlags() {
 	startCmd.Flags().String(criSocket, "", "The cri socket path to be used.")
 	startCmd.Flags().String(networkPlugin, "", "The name of the network plugin.")
 	startCmd.Flags().Bool(enableDefaultCNI, false, "Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with \"--network-plugin=cni\".")
-	startCmd.Flags().Bool(waitUntilHealthy, true, "Block until the apiserver is servicing API requests")
+	startCmd.Flags().StringSlice(waitComponents, kverify.DefaultWaitList, fmt.Sprintf("comma separated list of kubernetes components to verify and wait for after starting a cluster. defaults to %q, available options: %q . other acceptable values are 'all' or 'none', 'true' and 'false'", strings.Join(kverify.DefaultWaitList, ","), strings.Join(kverify.AllComponentsList, ",")))
 	startCmd.Flags().Duration(waitTimeout, 6*time.Minute, "max time to wait per Kubernetes core services to be healthy.")
 	startCmd.Flags().Bool(nativeSSH, true, "Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'.")
 	startCmd.Flags().Bool(autoUpdate, true, "If set, automatically updates drivers to the latest version. Defaults to true.")
@@ -1068,6 +1069,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 		},
 		Nodes: []config.Node{cp},
 	}
+	cfg.VerifyComponents = interpretWaitFlag(*cmd)
 	return cfg, cp, nil
 }
 
@@ -1199,4 +1201,49 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 		out.T(out.ThumbsUp, "Kubernetes {{.new}} is now available. If you would like to upgrade, specify: --kubernetes-version={{.new}}", out.V{"new": defaultVersion})
 	}
 	return nv
+}
+
+// interpretWaitFlag interprets the wait flag and respects the legacy minikube users
+// returns map of components to wait for
+func interpretWaitFlag(cmd cobra.Command) map[string]bool {
+	if !cmd.Flags().Changed(waitComponents) {
+		glog.Infof("Wait components to verify : %+v", kverify.DefaultComponents)
+		return kverify.DefaultComponents
+	}
+
+	waitFlags, err := cmd.Flags().GetStringSlice(waitComponents)
+	if err != nil {
+		glog.Warningf("Failed to read --wait from flags: %v.\n Moving on will use the default wait components: %+v", err, kverify.DefaultComponents)
+		return kverify.DefaultComponents
+	}
+
+	if len(waitFlags) == 1 {
+		// respecting legacy flag before minikube 1.9.0, wait flag was boolean
+		if waitFlags[0] == "false" || waitFlags[0] == "none" {
+			glog.Infof("Waiting for no components: %+v", kverify.NoComponents)
+			return kverify.NoComponents
+		}
+		// respecting legacy flag before minikube 1.9.0, wait flag was boolean
+		if waitFlags[0] == "true" || waitFlags[0] == "all" {
+			glog.Infof("Waiting for all components: %+v", kverify.AllComponents)
+			return kverify.AllComponents
+		}
+	}
+
+	waitComponents := kverify.NoComponents
+	for _, wc := range waitFlags {
+		seen := false
+		for _, valid := range kverify.AllComponentsList {
+			if wc == valid {
+				waitComponents[wc] = true
+				seen = true
+				continue
+			}
+		}
+		if !seen {
+			glog.Warningf("The value %q is invalid for --wait flag. valid options are %q", wc, strings.Join(kverify.AllComponentsList, ","))
+		}
+	}
+	glog.Infof("Waiting for components: %+v", waitComponents)
+	return waitComponents
 }
