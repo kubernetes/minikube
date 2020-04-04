@@ -346,7 +346,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
 		return nil
 	}
-	if !kverify.ShouldWait(cfg.WaitForCompos) {
+	if !kverify.ShouldWait(cfg.VerifyComponents) {
 		glog.Infof("skip waiting for components based on config.")
 		return nil
 	}
@@ -361,7 +361,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	if cfg.WaitForCompos[kverify.APIServerWaitKey] {
+	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -375,7 +375,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 	}
 
-	if cfg.WaitForCompos[kverify.SystemPodsWaitKey] {
+	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -385,7 +385,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		}
 	}
 
-	if cfg.WaitForCompos[kverify.DefaultSAWaitKey] {
+	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -394,7 +394,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			return errors.Wrap(err, "waiting for default service account")
 		}
 	}
-	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.WaitForCompos)
+	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
 	return nil
 }
 

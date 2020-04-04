@@ -1069,7 +1069,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 		},
 		Nodes: []config.Node{cp},
 	}
-	cfg.WaitForCompos = interpretWaitFlag(*cmd)
+	cfg.VerifyComponents = interpretWaitFlag(*cmd)
 	return cfg, cp, nil
 }
 
@@ -1207,7 +1207,7 @@ func getKubernetesVersion(old *config.ClusterConfig) string {
 // returns map of components to wait for
 func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 	if !cmd.Flags().Changed(waitComponents) {
-		glog.Infof("Wait Components : %+v", kverify.DefaultComponents)
+		glog.Infof("Wait components to verify : %+v", kverify.DefaultComponents)
 		return kverify.DefaultComponents
 	}
 
@@ -1220,10 +1220,12 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 	if len(waitFlags) == 1 {
 		// respecting legacy flag before minikube 1.9.0, wait flag was boolean
 		if waitFlags[0] == "false" || waitFlags[0] == "none" {
+			glog.Infof("Waiting for no components: %+v", kverify.NoComponents)
 			return kverify.NoComponents
 		}
 		// respecting legacy flag before minikube 1.9.0, wait flag was boolean
 		if waitFlags[0] == "true" || waitFlags[0] == "all" {
+			glog.Infof("Waiting for all components: %+v", kverify.AllComponents)
 			return kverify.AllComponents
 		}
 	}
@@ -1242,5 +1244,6 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 			glog.Warningf("The value %q is invalid for --wait flag. valid options are %q", wc, strings.Join(kverify.AllComponentsList, ","))
 		}
 	}
+	glog.Infof("Waiting for components: %+v", waitComponents)
 	return waitComponents
 }

@@ -156,7 +156,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		}
 
 		// Skip pre-existing, because we already waited for health
-		if kverify.ShouldWait(cc.WaitForCompos) && !preExists {
+		if kverify.ShouldWait(cc.VerifyComponents) && !preExists {
 			if err := bs.WaitForNode(cc, n, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
 			}
