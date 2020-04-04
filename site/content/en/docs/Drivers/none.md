@@ -1,18 +1,22 @@
 ---
 title: "none"
-linkTitle: "none"
 weight: 3
-date: 2017-01-05
-date: 2018-08-05
 description: >
   Linux none (bare-metal) driver
+aliases:
+    - /docs/reference/drivers/none
 ---
 
 ## Overview
 
-This document is written for system integrators who are familiar with minikube, and wish to run it within a customized VM environment. The `none` driver allows advanced minikube users to skip VM creation, allowing minikube to be run on a user-supplied VM.
+{{% pageinfo %}}
+Most users of this driver should consider the newer [Docker driver]({{< ref "docker.md" >}}), as it is
+significantly easier to configure and does not require root access. The 'none' driver is recommended for advanced users only.
+{{% /pageinfo %}}
 
-{{% readfile file="/docs/Drivers/includes/none_usage.inc" %}}
+This document is written for system integrators who wish to run minikube within a customized VM environment. The `none` driver allows advanced minikube users to skip VM creation, allowing minikube to be run on a user-supplied VM.
+
+{{% readfile file="/docs/drivers/includes/none_usage.inc" %}}
 
 ## Issues
 

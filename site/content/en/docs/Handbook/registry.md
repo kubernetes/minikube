@@ -2,9 +2,13 @@
 title: "Registries"
 linkTitle: "Registries"
 weight: 6
-date: 2017-01-05
 description: >
-  How to interact with Docker registries.
+  How to interact with registries
+aliases:
+ - /docs/tasks/registry
+ - /docs/tasks/docker_registry
+ - /docs/tasks/registry/private
+ - /docs/tasks/registry/insecure
 ---
 
 ## Using a Private Registry

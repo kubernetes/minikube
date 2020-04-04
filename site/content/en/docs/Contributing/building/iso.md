@@ -1,5 +1,5 @@
 ---
-linkTitle: "ISO"
+linkTitle: "ISO Build"
 title: "Building the minikube ISO"
 date: 2019-08-09
 weight: 4

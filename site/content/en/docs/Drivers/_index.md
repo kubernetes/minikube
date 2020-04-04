@@ -2,8 +2,6 @@
 title: "Drivers"
 linkTitle: "Drivers"
 weight: 8
-date: 2017-01-05
-date: 2018-08-05
 description: >
   Configuring various minikube drivers
 ---

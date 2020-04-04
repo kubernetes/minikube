@@ -3,6 +3,11 @@ title: "Pushing images"
 weight: 5
 description: >
   There are many ways to push images into minikube.
+aliases:
+ - /docs/tasks/building
+ - /docs/tasks/caching
+ - /docs/tasks/podman_service
+ - /docs/tasks/docker_daemon
 ---
 
 ## Cached Images
@@ -30,7 +35,7 @@ minikube cache delete <image name>
 
 For more information, see:
 
-* [Reference: cache command]({{< ref "/docs/Commands/cache.md" >}})
+* [Reference: cache command]({{< ref "/docs/commands/cache.md" >}})
 
 You must be using minikube with the container runtime set to Docker. This is the default setting.
 
@@ -71,11 +76,11 @@ Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPre
 
 ## Pushing to an in-cluster Registry
 
-For illustration purpose, we will assume that minikube VM has one of the ip from `192.168.39.0/24` subnet. If you have not overridden these subnets as per [networking guide](https://minikube.sigs.k8s.io/docs/reference/networking/), you can find out default subnet being used by minikube for a specific OS and driver combination [here](https://github.com/kubernetes/minikube/blob/dfd9b6b83d0ca2eeab55588a16032688bc26c348/pkg/minikube/cluster/cluster.go#L408) which is subject to change. Replace `192.168.39.0/24` with appropriate values for your environment wherever applicable.
+For illustration purpose, we will assume that minikube VM has one of the ip from `192.168.39.0/24` subnet. If you have not overridden these subnets as per [networking guide](https://minikube.sigs.k8s.io/reference/networking/), you can find out default subnet being used by minikube for a specific OS and driver combination [here](https://github.com/kubernetes/minikube/blob/dfd9b6b83d0ca2eeab55588a16032688bc26c348/pkg/minikube/cluster/cluster.go#L408) which is subject to change. Replace `192.168.39.0/24` with appropriate values for your environment wherever applicable.
 
 Ensure that docker is configured to use `192.168.39.0/24` as insecure registry. Refer [here](https://docs.docker.com/registry/insecure/) for instructions.
 
-Ensure that `192.168.39.0/24` is enabled as insecure registry in minikube. Refer [here](https://minikube.sigs.k8s.io/docs/Handbook/registry/insecure/) for instructions..
+Ensure that `192.168.39.0/24` is enabled as insecure registry in minikube. Refer [here](https://minikube.sigs.k8s.io/Handbook/registry/insecure/) for instructions..
 
 Enable minikube registry addon:
 
