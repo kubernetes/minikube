@@ -51,9 +51,11 @@ fi
 
 function start() {
     cd /var/run
-    nohup "${KUBELET_WRAPPER}" "${KUBELET}" "${KUBELET_CONF}" &
-    disown
-    echo $! > "${KUBELET_PIDFILE}"
+    pid=$(bash -c 'cd /; setsid nohup "${KUBELET_WRAPPER}" "${KUBELET}" "${KUBELET_CONF}" </dev/null &>/dev/null & jobs -p %1')
+    # nohup "${KUBELET_WRAPPER}" "${KUBELET}" "${KUBELET_CONF}" &
+    # disown
+    echo "wrapper started at ${pid}"
+    echo $pid > "${KUBELET_PIDFILE}"
 }
 
 function stop() {
