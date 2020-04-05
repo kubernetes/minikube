@@ -103,13 +103,27 @@ func TestStartStop(t *testing.T) {
 					t.Fatalf("failed starting minikube -first start-. args %q: %v", rr.Command(), err)
 				}
 
+				// Soft Start this should not take longer than 10 seconds
+				softStartArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=3"}
+				rr, err = Run(t, exec.CommandContext(ctx, Target(), softStartArgs...))
+				if err != nil {
+					t.Fatalf("failed to soft start minikube. args %q: %v", rr.Command(), err)
+				}
+
+				// if this fails means, our soft start was a hard start.
+				softLog:= "the cluster does not need a reset"
+				if !strings.Contains(rr.Output(), softLog) {
+					t.Errorf("Expected the soft start logs to include %q but got",softLog, rr.Output())
+				}
+
+			
 				if !strings.Contains(tc.name, "cni") {
 					testPodScheduling(ctx, t, profile)
 				}
 
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
 				if err != nil {
-					t.Errorf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
+					t.Errorf("failed stopping minikube - post soft start -. args %q : %v", rr.Command(), err)
 				}
 
 				// The none driver never really stops
@@ -172,50 +186,6 @@ func TestStartStop(t *testing.T) {
 			})
 		}
 	})
-}
-
-func TestStartStopWithPreload(t *testing.T) {
-	if NoneDriver() {
-		t.Skipf("skipping %s - incompatible with none driver", t.Name())
-	}
-
-	profile := UniqueProfileName("test-preload")
-	ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
-	defer CleanupWithLogs(t, profile, cancel)
-
-	startArgs := []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true", "--preload=false"}
-	startArgs = append(startArgs, StartArgs()...)
-	k8sVersion := "v1.17.0"
-	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
-
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-
-	// Now, pull the busybox image into the VMs docker daemon
-	image := "busybox"
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "pull", image))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-
-	// Restart minikube with v1.17.3, which has a preloaded tarball
-	startArgs = []string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}
-	startArgs = append(startArgs, StartArgs()...)
-	k8sVersion = "v1.17.3"
-	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images"))
-	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Command(), err)
-	}
-	if !strings.Contains(rr.Output(), image) {
-		t.Fatalf("Expected to find %s in output of `docker images`, instead got %s", image, rr.Output())
-	}
 }
 
 // testPodScheduling asserts that this configuration can schedule new pods
