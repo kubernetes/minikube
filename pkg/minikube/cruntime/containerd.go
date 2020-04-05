@@ -194,11 +194,13 @@ func generateContainerdConfig(cr CommandRunner, imageRepository string, kv semve
 
 // Enable idempotently enables containerd on a host
 func (r *Containerd) Enable(disOthers bool) error {
-	if disOthers {
-		if err := disableOthers(r, r.Runner); err != nil {
-			glog.Warningf("disableOthers: %v", err)
+	go func() {
+		if disOthers {
+			if err := disableOthers(r, r.Runner); err != nil {
+				glog.Warningf("disableOthers: %v", err)
+			}
 		}
-	}
+	}()
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
