@@ -17,6 +17,7 @@ limitations under the License.
 package kubeadm
 
 import (
+	"bytes"
 	"context"
 	"os/exec"
 	"path"
@@ -37,6 +38,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -227,6 +229,13 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), conf, extraFlags, strings.Join(ignore, ",")))
 	if _, err := k.c.RunCmd(c); err != nil {
 		return errors.Wrap(err, "run")
+	}
+
+	// this is only required for containerd and cri-o runtime to avoid
+	if cfg.Driver == driver.Docker && cfg.KubernetesConfig.ContainerRuntime != "docker" {
+		if err := k.applyKicOverlay(cfg); err != nil {
+			return errors.Wrap(err, "apply kic overlay")
+		}
 	}
 
 	if err := k.applyNodeLabels(cfg); err != nil {
@@ -726,6 +735,25 @@ func reloadKubelet(runner command.Runner) error {
 	startCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cp %s.new %s && sudo cp %s.new %s && sudo systemctl daemon-reload && sudo systemctl restart kubelet", svc, svc, conf, conf))
 	if _, err := runner.RunCmd(startCmd); err != nil {
 		return errors.Wrap(err, "starting kubelet")
+	}
+	return nil
+}
+
+// applyKicOverlay applies the CNI plugin needed to make kic work
+func (k *Bootstrapper) applyKicOverlay(cfg config.ClusterConfig) error {
+	// Allow no more than 5 seconds for apply kic overlay
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "sudo",
+		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
+		"-f", "-")
+	b := bytes.Buffer{}
+	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
+		return err
+	}
+	cmd.Stdin = bytes.NewReader(b.Bytes())
+	if rr, err := k.c.RunCmd(cmd); err != nil {
+		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
 	}
 	return nil
 }
