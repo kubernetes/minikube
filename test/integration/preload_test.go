@@ -16,7 +16,17 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// TestPreload tests that images are not over-written by preload 
+package integration
+
+import (
+	"context"
+	"fmt"
+	"os/exec"
+	"strings"
+	"testing"
+)
+
+// TestPreload tests that images are not over-written by preload
 func TestPreload(t *testing.T) {
 	if NoneDriver() {
 		t.Skipf("skipping %s - incompatible with none driver", t.Name())

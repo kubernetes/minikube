@@ -111,12 +111,11 @@ func TestStartStop(t *testing.T) {
 				}
 
 				// if this fails means, our soft start was a hard start.
-				softLog:= "the cluster does not need a reset"
+				softLog := "the cluster does not need a reset"
 				if !strings.Contains(rr.Output(), softLog) {
-					t.Errorf("Expected the soft start logs to include %q but got",softLog, rr.Output())
+					t.Errorf("Expected the soft start log outputs to include %q but got: %s", softLog, rr.Output())
 				}
 
-			
 				if !strings.Contains(tc.name, "cni") {
 					testPodScheduling(ctx, t, profile)
 				}
