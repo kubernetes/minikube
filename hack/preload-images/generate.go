@@ -68,7 +68,7 @@ func generateTarball(kubernetesVersion, tarballFilename string) error {
 		return errors.Wrap(err, "kubeadm images")
 	}
 
-	for _, img := range append(imgs, kic.OverlayImage) {
+	for _, img := range imgs {
 		cmd := exec.Command("docker", "exec", profile, "docker", "pull", img)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
