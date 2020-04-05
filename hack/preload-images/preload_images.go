@@ -69,7 +69,7 @@ func main() {
 				continue
 			}
 			fmt.Printf("A preloaded tarball for k8s version %s doesn't exist, generating now...\n", kv)
-			if err := generateTarball(kv, tf); err != nil {
+			if err := generateTarball(kv, cr, tf); err != nil {
 				exit.WithError(fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr), err)
 			}
 			if err := uploadTarball(tf); err != nil {
