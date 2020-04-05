@@ -443,15 +443,15 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 	}
 
 	if err := kverify.ExpectAppsRunning(client, kverify.AppsRunningList); err != nil {
-		glog.Infof("needs reset: %v", err)
+		glog.Infof("needs reset because expected components to be running : %v", err)
 		return true
 	}
 
 	if err := kverify.APIServerVersionMatch(client, version); err != nil {
-		glog.Infof("needs reset: %v", err)
+		glog.Infof("needs reset because API server version match : %v", err)
 		return true
 	}
-
+	glog.Infof("the %q cluster does not need a reset.", hostname)
 	return false
 }
 

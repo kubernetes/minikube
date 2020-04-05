@@ -213,6 +213,10 @@ func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, k
 	if driver.BareMetal(cc.Driver) {
 		disableOthers = false
 	}
+	// in kic driver, the docker service binds to containerd service https://github.com/kubernetes/minikube/issues/7433
+	if driver.IsKIC(drvName) && k8s.ContainerRuntime == "docker" {
+		disableOthers = false
+	}
 
 	// Preload is overly invasive for bare metal, and caching is not meaningful. KIC handled elsewhere.
 	if driver.IsVM(cc.Driver) {
