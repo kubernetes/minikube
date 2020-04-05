@@ -111,11 +111,13 @@ func (r *CRIO) Active() bool {
 
 // Enable idempotently enables CRIO on a host
 func (r *CRIO) Enable(disOthers bool) error {
-	if disOthers {
-		if err := disableOthers(r, r.Runner); err != nil {
-			glog.Warningf("disableOthers: %v", err)
+	go func() {
+		if disOthers {
+			if err := disableOthers(r, r.Runner); err != nil {
+				glog.Warningf("disableOthers: %v", err)
+			}
 		}
-	}
+	}()
 	if err := populateCRIConfig(r.Runner, r.SocketPath()); err != nil {
 		return err
 	}
