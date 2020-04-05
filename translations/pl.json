@@ -46,7 +46,6 @@
 	"Basic Commands:": "Podstawowe polecenia",
 	"Because you are using docker driver on Mac, the terminal needs to be open to run it.": "",
 	"Bind Address: {{.Address}}": "",
-	"Block until the apiserver is servicing API requests": "",
 	"Both driver={{.driver}} and vm-driver={{.vmd}} have been set.\n\n    Since vm-driver is deprecated, minikube will default to driver={{.driver}}.\n\n    If vm-driver is set in the global config, please run \"minikube config unset vm-driver\" to resolve this warning.": "",
 	"Cannot find directory {{.path}} for mount": "Nie można odnoleść folderu {{.path}} do zamontowania",
 	"Cannot use both --output and --format options": "",
