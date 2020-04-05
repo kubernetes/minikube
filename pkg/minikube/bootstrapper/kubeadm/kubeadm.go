@@ -232,7 +232,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	// this is only required for containerd and cri-o runtime to avoid
-	if cfg.Driver == driver.Docker && cfg.KubernetesConfig.ContainerRuntime != "docker" {
+	if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
 		if err := k.applyKicOverlay(cfg); err != nil {
 			return errors.Wrap(err, "apply kic overlay")
 		}
