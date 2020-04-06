@@ -247,12 +247,60 @@ func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 			translatedCfg, err := translateFrom163ToCurrent(cfgOld)
 			if err == nil {
 				p.Config = translatedCfg
+				if !p.IsValid() {
+
+				}
 			}
 		}
 	}
 
 	return p, err
 }
+
+/*
+
+tryTranslate() {
+	loadFromFile
+	if no error {
+		TryTranslateToNext
+		if no error {
+			TryTranslate
+		}
+	}
+}
+
+*/
+
+func tryTranslate([]VersionConfigTranslator) (interface{}, error) {
+	var translatedConfigLesser interface{}
+	version := arr[0]
+	result, error := version.TryLoadFromFile()
+	if error != nil && !version.IsValid(result) {
+		translatedConfigLesser, _ = tryTranslate(arr[1:])
+	}
+	translatedConfig, err := version.TranslateToNextVersion(translatedConfigLesser)
+	return translatedConfig, err
+}
+
+var arr = []VersionConfigTranslator{
+	{
+		TryLoadFromFile: func() (interface{}, error) {
+			return nil, nil
+		},
+		TranslateToNextVersion: func(interface{}) (interface{}, error) {
+			return nil, nil
+		},
+	},
+}
+
+type VersionConfigTranslator struct {
+	TryLoadFromFile        tryLoadFromFile
+	TranslateToNextVersion translateToNextVersion
+	IsValid                isValid
+}
+type translateToNextVersion func(interface{}) (interface{}, error)
+type tryLoadFromFile func() (interface{}, error)
+type isValid func(interface{}) bool
 
 func translateFrom163ToCurrent(oldConfig *v162.MachineConfig) (*ClusterConfig, error) {
 	hypervUseExternalSwitch := (oldConfig.HypervVirtualSwitch != "")
@@ -315,7 +363,7 @@ func translateFrom163ToCurrent(oldConfig *v162.MachineConfig) (*ClusterConfig, e
 			NodePort:               oldConfig.KubernetesConfig.NodePort,
 			NodeName:               oldConfig.KubernetesConfig.NodeName,
 		},
-	}, nil //TODO: Implement
+	}, nil
 }
 
 // profileDirs gets all the folders in the user's profiles folder regardless of valid or invalid config
