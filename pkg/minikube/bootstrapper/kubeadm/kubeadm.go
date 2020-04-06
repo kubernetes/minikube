@@ -400,7 +400,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList); err != nil {
+		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
 			return errors.Wrap(err, "waiting for apps_running")
 		}
 	}
