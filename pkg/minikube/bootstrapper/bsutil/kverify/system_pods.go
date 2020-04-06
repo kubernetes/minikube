@@ -19,9 +19,13 @@ package kverify
 
 import (
 	"fmt"
+	"os/exec"
+	"strings"
 	"time"
 
+	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
@@ -30,6 +34,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
+	"k8s.io/minikube/pkg/minikube/logs"
 )
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
@@ -67,4 +72,87 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 	}
 	glog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
 	return nil
+}
+
+// WaitForAppsRunning returns whether or not all expected k8s-apps are running
+func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string) error {
+	found := map[string]bool{}
+
+	pods, err := cs.CoreV1().Pods("kube-system").List(meta.ListOptions{})
+	if err != nil {
+		return err
+	}
+
+	for _, pod := range pods.Items {
+		glog.Infof("found pod: %s", podStatusMsg(pod))
+		if pod.Status.Phase != core.PodRunning {
+			continue
+		}
+		for k, v := range pod.ObjectMeta.Labels {
+			if k == "component" || k == "k8s-app" {
+				found[v] = true
+			}
+		}
+	}
+
+	missing := []string{}
+	for _, e := range expected {
+		if !found[e] {
+			missing = append(missing, e)
+		}
+	}
+	if len(missing) > 0 {
+		return fmt.Errorf("missing components: %v", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+// podStatusMsg returns a human-readable pod status, for generating debug status
+func podStatusMsg(pod core.Pod) string {
+	var sb strings.Builder
+	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase))
+	for i, c := range pod.Status.Conditions {
+		if c.Reason != "" {
+			if i == 0 {
+				sb.WriteString(": ")
+			} else {
+				sb.WriteString(" / ")
+			}
+			sb.WriteString(fmt.Sprintf("%s:%s", c.Type, c.Reason))
+		}
+		if c.Message != "" {
+			sb.WriteString(fmt.Sprintf(" (%s)", c.Message))
+		}
+	}
+	return sb.String()
+}
+
+// announceProblems checks for problems, and slows polling down if any are found
+func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner) {
+	problems := logs.FindProblems(r, bs, cfg, cr)
+	if len(problems) > 0 {
+		logs.OutputProblems(problems, 5)
+		time.Sleep(kconst.APICallRetryInterval * 15)
+	}
+}
+
+// KubeletStatus checks the kubelet status
+func KubeletStatus(cr command.Runner) (state.State, error) {
+	glog.Infof("Checking kubelet status ...")
+	rr, err := cr.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
+	if err != nil {
+		// Do not return now, as we still have parsing to do!
+		glog.Warningf("%s returned error: %v", rr.Command(), err)
+	}
+	s := strings.TrimSpace(rr.Stdout.String())
+	glog.Infof("kubelet is-active: %s", s)
+	switch s {
+	case "active":
+		return state.Running, nil
+	case "inactive":
+		return state.Stopped, nil
+	case "activating":
+		return state.Starting, nil
+	}
+	return state.Error, nil
 }
