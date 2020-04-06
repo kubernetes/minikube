@@ -38,7 +38,7 @@ var nodeAddCmd = &cobra.Command{
 		cc := co.Config
 
 		if driver.BareMetal(cc.Driver) {
-			out.ErrT(out.FailureType, "none driver does not support multi-node clusters")
+			out.FailureT("none driver does not support multi-node clusters")
 		}
 
 		name := node.Name(len(cc.Nodes) + 1)

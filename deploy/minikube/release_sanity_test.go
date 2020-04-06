@@ -26,7 +26,6 @@ import (
 	"testing"
 
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
-	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/notify"
 	"k8s.io/minikube/pkg/util"
 )

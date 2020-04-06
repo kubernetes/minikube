@@ -150,7 +150,7 @@ var dockerEnvCmd = &cobra.Command{
 
 		var err error
 		port := constants.DockerDaemonPort
-		if driver.IsKIC(driverName) {
+		if driver.NeedsPortForward(driverName) {
 			port, err = oci.ForwardedPort(driverName, cname, port)
 			if err != nil {
 				exit.WithCodeT(exit.Failure, "Error getting port binding for '{{.driver_name}} driver: {{.error}}", out.V{"driver_name": driverName, "error": err})
@@ -161,7 +161,7 @@ var dockerEnvCmd = &cobra.Command{
 			EnvConfig: sh,
 			profile:   cname,
 			driver:    driverName,
-			hostIP:    co.CP.ForwardedIP.String(),
+			hostIP:    co.CP.IP.String(),
 			port:      port,
 			certsDir:  localpath.MakeMiniPath("certs"),
 			noProxy:   noProxy,

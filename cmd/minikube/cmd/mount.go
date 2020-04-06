@@ -143,7 +143,7 @@ var mountCmd = &cobra.Command{
 
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
 		if !supportedFilesystems[cfg.Type] {
-			out.T(out.Warning, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
+			out.WarningT("{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
 		}
 
 		bindIP := ip.String() // the ip to listen on the user's host machine
@@ -179,7 +179,7 @@ var mountCmd = &cobra.Command{
 				out.T(out.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
 				err := cluster.Unmount(co.CP.Runner, vmPath)
 				if err != nil {
-					out.ErrT(out.FailureType, "Failed unmount: {{.error}}", out.V{"error": err})
+					out.FailureT("Failed unmount: {{.error}}", out.V{"error": err})
 				}
 				exit.WithCodeT(exit.Interrupted, "Received {{.name}} signal", out.V{"name": sig})
 			}

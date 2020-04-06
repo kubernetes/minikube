@@ -173,6 +173,10 @@ func validateRegistryAddon(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected curl response be %q, but got *%s*", want, rr.Stdout.String())
 	}
 
+	if NeedsPortForward() {
+		t.Skipf("Unable to complete rest of the test due to connectivity assumptions")
+	}
+
 	// Test from outside the cluster
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ip"))
 	if err != nil {
