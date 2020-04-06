@@ -58,6 +58,14 @@ As of September 2019, this means that minikube supports and actively tests again
 
 For more up to date information, see `OldestKubernetesVersion` and `NewestKubernetesVersion` in [constants.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/constants/constants.go)
 
+### Enabling feature gates
+
+Kubernetes alpha/experimental features can be enabled or disabled by the `--feature-gates` flag on the `minikube start` command. It takes a string of the form `key=value` where key is the `component` name and value is the `status` of it.
+
+```shell
+minikube start --feature-gates=EphemeralContainers=true
+```
+
 ### Modifying Kubernetes defaults
 
 The kubeadm bootstrapper can be configured by the `--extra-config` flag on the `minikube start` command.  It takes a string of the form `component.key=value` where `component` is one of the strings
