@@ -307,33 +307,38 @@ func runStart(cmd *cobra.Command, args []string) {
 	validateSpecifiedDriver(existing)
 	ds, alts, specified := selectDriver(existing)
 	starter, err := provisionWithDriver(cmd, ds, existing)
-	if err != nil && !specified {
-		success := false
-		// Walk down the rest of the options
-		for _, alt := range alts {
-			out.WarningT("Startup with {{.old_driver}} driver failed, trying with {{.new_driver}}: {{.error}}", out.V{"old_driver": ds.Name, "new_driver": alt.Name, "error": err})
-			ds = alt
-			// Delete the existing cluster and try again with the next driver on the list
-			profile, err := config.LoadProfile(ClusterFlagValue())
-			if err != nil {
-				glog.Warningf("%s profile does not exist, trying anyways.", ClusterFlagValue())
-			}
-
-			err = deleteProfile(profile)
-			if err != nil {
-				out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
-			}
-			starter, err = provisionWithDriver(cmd, ds, existing)
-			if err != nil {
-				continue
-			} else {
-				// Success!
-				success = true
-				break
-			}
-		}
-		if !success {
+	if err != nil {
+		if specified {
+			// If the user specified a driver, don't fallback to anything else
 			exit.WithError("error provisioning host", err)
+		} else {
+			success := false
+			// Walk down the rest of the options
+			for _, alt := range alts {
+				out.WarningT("Startup with {{.old_driver}} driver failed, trying with {{.new_driver}}: {{.error}}", out.V{"old_driver": ds.Name, "new_driver": alt.Name, "error": err})
+				ds = alt
+				// Delete the existing cluster and try again with the next driver on the list
+				profile, err := config.LoadProfile(ClusterFlagValue())
+				if err != nil {
+					glog.Warningf("%s profile does not exist, trying anyways.", ClusterFlagValue())
+				}
+
+				err = deleteProfile(profile)
+				if err != nil {
+					out.WarningT("Failed to delete cluster {{.name}}, proceeding with retry anyway.", out.V{"name": ClusterFlagValue()})
+				}
+				starter, err = provisionWithDriver(cmd, ds, existing)
+				if err != nil {
+					continue
+				} else {
+					// Success!
+					success = true
+					break
+				}
+			}
+			if !success {
+				exit.WithError("error provisioning host", err)
+			}
 		}
 	}
 
@@ -374,7 +379,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	// This is about as far as we can go without overwriting config files
 	if viper.GetBool(dryRun) {
 		out.T(out.DryRun, `dry-run validation complete!`)
-		return node.Starter{}, nil
+		os.Exit(0)
 	}
 
 	if driver.IsVM(driverName) {
@@ -416,7 +421,6 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 }
 
 func startWithDriver(starter node.Starter, existing *config.ClusterConfig) (*kubeconfig.Settings, error) {
-
 	kubeconfig, err := node.Start(starter, true)
 	if err != nil {
 		kubeconfig, err = maybeDeleteAndRetry(*starter.Cfg, *starter.Node, starter.ExistingAddons, err)
