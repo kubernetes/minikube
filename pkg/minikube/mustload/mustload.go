@@ -43,6 +43,7 @@ type ClusterController struct {
 	CP     ControlPlane
 }
 
+// ControlPlane holds all the needed information for the k8s control plane
 type ControlPlane struct {
 	// Host is the libmachine host object
 	Host *host.Host
