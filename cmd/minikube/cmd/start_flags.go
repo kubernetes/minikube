@@ -179,11 +179,6 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
 		}
 
-		// Feed Docker our host proxy environment by default, so that it can pull images
-		if _, ok := r.(*cruntime.Docker); ok && !cmd.Flags().Changed("docker-env") {
-			setDockerProxy()
-		}
-
 		if cmd.Flags().Changed(imageRepository) {
 			cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
 		}
@@ -280,7 +275,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 	}
 
 	// Feed Docker our host proxy environment by default, so that it can pull images
-	// redoing setDockerProxy in case proxy changed since last start.
+	// doing this for both new config and existing, in case proxy changed since previous start
 	if _, ok := r.(*cruntime.Docker); ok && !cmd.Flags().Changed("docker-env") {
 		setDockerProxy()
 	}
