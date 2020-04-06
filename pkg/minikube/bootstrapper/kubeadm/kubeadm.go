@@ -416,7 +416,7 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 		return true
 	}
 
-	if err := kverify.ExpectedComponentsRunning(client); err != nil {
+	if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList); err != nil {
 		glog.Infof("needs reset: %v", err)
 		return true
 	}
