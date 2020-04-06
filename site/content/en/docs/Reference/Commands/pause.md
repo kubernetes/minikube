@@ -1,8 +1,5 @@
 ---
 title: "pause"
-linkTitle: "pause"
-weight: 1
-date: 2020-04-02
 description: >
   pause containers
 ---

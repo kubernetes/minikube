@@ -1,8 +1,5 @@
 ---
 title: "dashboard"
-linkTitle: "dashboard"
-weight: 1
-date: 2020-04-02
 description: >
   Access the kubernetes dashboard running within the minikube cluster
 ---

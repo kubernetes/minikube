@@ -1,8 +1,5 @@
 ---
 title: "stop"
-linkTitle: "stop"
-weight: 1
-date: 2020-04-02
 description: >
   Stops a running local kubernetes cluster
 ---

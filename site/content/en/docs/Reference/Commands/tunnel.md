@@ -1,8 +1,5 @@
 ---
 title: "tunnel"
-linkTitle: "tunnel"
-weight: 1
-date: 2020-04-02
 description: >
   tunnel makes services of type LoadBalancer accessible on localhost
 ---

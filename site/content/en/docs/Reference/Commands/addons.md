@@ -1,8 +1,5 @@
 ---
 title: "addons"
-linkTitle: "addons"
-weight: 1
-date: 2020-04-02
 description: >
   Modify minikube's kubernetes addons
 ---

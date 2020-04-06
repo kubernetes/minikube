@@ -1,8 +1,5 @@
 ---
 title: "ssh-key"
-linkTitle: "ssh-key"
-weight: 1
-date: 2020-04-02
 description: >
   Retrieve the ssh identity key path of the specified cluster
 ---

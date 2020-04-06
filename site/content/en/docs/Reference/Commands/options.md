@@ -1,8 +1,5 @@
 ---
 title: "options"
-linkTitle: "options"
-weight: 1
-date: 2020-04-02
 description: >
   Show a list of global command-line options (applies to all commands).
 ---

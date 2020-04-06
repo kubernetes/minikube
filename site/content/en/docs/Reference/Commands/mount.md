@@ -1,8 +1,5 @@
 ---
 title: "mount"
-linkTitle: "mount"
-weight: 1
-date: 2020-04-02
 description: >
   Mounts the specified directory into minikube
 ---

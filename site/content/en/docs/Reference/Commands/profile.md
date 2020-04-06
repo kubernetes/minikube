@@ -1,8 +1,5 @@
 ---
 title: "profile"
-linkTitle: "profile"
-weight: 1
-date: 2020-04-02
 description: >
   Profile gets or sets the current minikube profile
 ---

@@ -1,8 +1,5 @@
 ---
 title: "update-context"
-linkTitle: "update-context"
-weight: 1
-date: 2020-04-02
 description: >
   Verify the IP address of the running cluster in kubeconfig.
 ---

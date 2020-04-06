@@ -1,8 +1,5 @@
 ---
 title: "ip"
-linkTitle: "ip"
-weight: 1
-date: 2020-04-02
 description: >
   Retrieves the IP address of the running cluster
 ---

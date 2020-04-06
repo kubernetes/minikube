@@ -1,8 +1,5 @@
 ---
 title: "service"
-linkTitle: "service"
-weight: 1
-date: 2020-04-02
 description: >
   Gets the kubernetes URL(s) for the specified service in your local cluster
 ---

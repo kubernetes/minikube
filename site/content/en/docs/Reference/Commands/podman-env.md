@@ -1,8 +1,5 @@
 ---
 title: "podman-env"
-linkTitle: "podman-env"
-weight: 1
-date: 2020-04-02
 description: >
   Sets up podman env variables; similar to '$(podman-machine env)'
 ---
