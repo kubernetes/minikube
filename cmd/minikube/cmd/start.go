@@ -322,8 +322,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		updateDriver(driverName)
 	}
 
-	k8sVersion := getKubernetesVersion(existing)
-	cc, n, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
+	cc, n, err := generateCfgFromFlags(cmd,*existing)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
@@ -932,10 +931,15 @@ func validateRegistryMirror() {
 }
 
 // generateCfgFromFlags generates config.ClusterConfig based on flags and supplied arguments
-func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
-	r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
+func generateCfgFromFlags(cmd *cobra.Command, existing config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
+	
+	if cmd.Flags().Changed(containerRuntime) {
+		existing.KubernetesConfig.ContainerRuntime= viper.GetString(containerRuntime)
+	}
+	
+	r, err := cruntime.New(cruntime.Config{Type:existing.KubernetesConfig.ContainerRuntime})
 	if err != nil {
-		return config.ClusterConfig{}, config.Node{}, err
+		return existing, config.Node{}, errors.Wrap(err,"new runtime manager")
 	}
 
 	// Pick good default values for --network-plugin and --enable-default-cni based on runtime.
@@ -952,11 +956,16 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	if _, ok := r.(*cruntime.Docker); ok && !cmd.Flags().Changed("docker-env") {
 		setDockerProxy()
 	}
-
-	repository := viper.GetString(imageRepository)
+	
+	
+	if cmd.Flags().Changed(imageRepository) {
+		existing.KubernetesConfig.ImageRepository=viper.GetString(imageRepository)
+	}
+	
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
-	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
-		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix)))
+
+	if strings.ToLower(existing.KubernetesConfig.ImageRepository) == "auto" || mirrorCountry != "" {
+		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(getKubernetesVersion(&existing), version.VersionPrefix)))
 		if err != nil {
 			exit.WithError("Failed to check main repository and mirrors for images for images", err)
 		}
@@ -969,20 +978,20 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 			}
 		}
 
-		repository = autoSelectedRepository
+		existing.KubernetesConfig.ImageRepository = autoSelectedRepository
 	}
 
 	if cmd.Flags().Changed(imageRepository) {
-		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
+		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": existing.KubernetesConfig.ImageRepository})
 	}
 
 	var kubeNodeName string
-	if drvName != driver.None {
+	if driver.BareMetal(existing.Driver){
 		kubeNodeName = "m01"
 	}
 
-	return createNode(cmd, k8sVersion, kubeNodeName, drvName,
-		repository, selectedEnableDefaultCNI, selectedNetworkPlugin)
+	return createNode(cmd, getKubernetesVersion(&existing), kubeNodeName, existing.Driver,
+	existing.KubernetesConfig.ImageRepository, selectedEnableDefaultCNI, selectedNetworkPlugin)
 }
 
 func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repository string,
@@ -1017,6 +1026,7 @@ func createNode(cmd *cobra.Command, k8sVersion, kubeNodeName, drvName, repositor
 	if err != nil {
 		exit.WithCodeT(exit.Config, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 	}
+
 
 	cfg := config.ClusterConfig{
 		Name:                    ClusterFlagValue(),
