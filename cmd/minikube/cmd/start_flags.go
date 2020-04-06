@@ -142,14 +142,13 @@ func ClusterFlagValue() string {
 	return viper.GetString(config.ProfileName)
 }
 
-// generateCfgFromFlags generates config.ClusterConfig based on flags and supplied arguments
-func generateCfgFromFlags(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
+// generateClusterConfig generate a config.ClusterConfig based on flags or existing cluster config
+func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
 	cc := config.ClusterConfig{}
 	if existing != nil { // create profile config first time
 		cc = updateExistingConfigFromFlags(cmd, existing)
 	} else {
-		fmt.Println("Existing config is nil will use only from flags ")
-
+		glog.Info("no existing cluster config was found, will generate one from the flags ")
 		sysLimit, containerLimit, err := memoryLimits(drvName)
 		if err != nil {
 			glog.Warningf("Unable to query memory limits: %v", err)
@@ -290,12 +289,12 @@ func generateCfgFromFlags(cmd *cobra.Command, existing *config.ClusterConfig, k8
 	if driver.BareMetal(cc.Driver) {
 		kubeNodeName = "m01"
 	}
-	return createNode(cmd, cc, kubeNodeName)
+	return createNode(cc, kubeNodeName)
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
 // skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
-func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig {
+func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to supress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
 	if cmd.Flags().Changed(containerRuntime) {
 		existing.KubernetesConfig.ContainerRuntime = viper.GetString(containerRuntime)
 	}

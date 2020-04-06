@@ -58,11 +58,10 @@ import (
 )
 
 const (
-	waitTimeout      = "wait-timeout"
-	embedCerts       = "embed-certs"
-	keepContext      = "keep-context"
-	imageRepository  = "image-repository"
-	containerRuntime = "container-runtime"
+	waitTimeout     = "wait-timeout"
+	embedCerts      = "embed-certs"
+	keepContext     = "keep-context"
+	imageRepository = "image-repository"
 )
 
 // Start spins up a guest and starts the kubernetes node.

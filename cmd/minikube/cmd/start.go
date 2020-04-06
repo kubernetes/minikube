@@ -222,7 +222,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	}
 
 	k8sVersion := getKubernetesVersion(existing)
-	cc, n, err := generateCfgFromFlags(cmd, existing, k8sVersion, driverName)
+	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
@@ -830,7 +830,7 @@ func validateRegistryMirror() {
 	}
 }
 
-func createNode(cmd *cobra.Command, cc config.ClusterConfig, kubeNodeName string) (config.ClusterConfig, config.Node, error) {
+func createNode(cc config.ClusterConfig, kubeNodeName string) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
 	cp := config.Node{
 		Port:              viper.GetInt(apiServerPort),

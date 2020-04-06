@@ -114,7 +114,7 @@ func TestMirrorCountry(t *testing.T) {
 			cmd := &cobra.Command{}
 			viper.SetDefault(imageRepository, test.imageRepository)
 			viper.SetDefault(imageMirrorCountry, test.mirrorCountry)
-			config, _, err := generateCfgFromFlags(cmd, k8sVersion, "none")
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
@@ -166,7 +166,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 			if err := os.Setenv("HTTP_PROXY", test.proxy); err != nil {
 				t.Fatalf("Unexpected error setting HTTP_PROXY: %v", err)
 			}
-			config, _, err := generateCfgFromFlags(cmd, k8sVersion, "none")
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
