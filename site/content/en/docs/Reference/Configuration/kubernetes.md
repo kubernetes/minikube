@@ -56,6 +56,8 @@ For instance, to allow Kubernetes to launch on an unsupported Docker release:
 minikube start --extra-config=kubeadm.ignore-preflight-errors=SystemVerification
 ```
 
+## Enable feature gates
+
 Kubernetes alpha/experimental features can be enabled or disabled by the `--feature-gates` flag on the `minikube start` command. It takes a string of the form `key=value` where key is the `component` name and value is the `status` of it.
 
 ```shell
