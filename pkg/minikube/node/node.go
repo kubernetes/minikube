@@ -39,7 +39,7 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 		return errors.Wrap(err, "save node")
 	}
 
-	r, p, m, h, err := Provision(*cc, n, false)
+	r, p, m, h, err := Provision(cc, &n, false)
 	if err != nil {
 		return err
 	}
@@ -48,8 +48,8 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 		PreExists:      p,
 		MachineAPI:     m,
 		Host:           h,
-		Cfg:            *cc,
-		Node:           n,
+		Cfg:            cc,
+		Node:           &n,
 		ExistingAddons: nil,
 	}
 
