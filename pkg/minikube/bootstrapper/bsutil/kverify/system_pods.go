@@ -25,6 +25,7 @@ import (
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -35,6 +36,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/logs"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
@@ -74,8 +76,8 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 	return nil
 }
 
-// WaitForAppsRunning returns whether or not all expected k8s-apps are running
-func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string) error {
+// ExpectAppsRunning returns whether or not all expected k8s-apps are running. (without waiting for them)
+func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 	found := map[string]bool{}
 
 	pods, err := cs.CoreV1().Pods("kube-system").List(meta.ListOptions{})
@@ -104,6 +106,17 @@ func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 	if len(missing) > 0 {
 		return fmt.Errorf("missing components: %v", strings.Join(missing, ", "))
 	}
+	return nil
+}
+
+// WaitForAppsRunning waits for expected Apps To be running
+func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout time.Duration) error {
+	start := time.Now()
+	checkRunning := func() error { return ExpectAppsRunning(cs, expected) }
+	if err := retry.Expo(checkRunning, 500*time.Millisecond, timeout); err != nil {
+		return errors.Wrap(err, "waitings for k8s app running")
+	}
+	glog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
 	return nil
 }
 

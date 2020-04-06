@@ -394,6 +394,17 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			return errors.Wrap(err, "waiting for default service account")
 		}
 	}
+
+	if cfg.VerifyComponents[kverify.AppsRunning] {
+		client, err := k.client(hostname, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList); err != nil {
+			return errors.Wrap(err, "waiting for apps_running")
+		}
+	}
+
 	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
 	return nil
 }
@@ -416,7 +427,7 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 		return true
 	}
 
-	if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList); err != nil {
+	if err := kverify.ExpectAppsRunning(client, kverify.AppsRunningList); err != nil {
 		glog.Infof("needs reset: %v", err)
 		return true
 	}
