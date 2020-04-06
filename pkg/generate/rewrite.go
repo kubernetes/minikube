@@ -23,21 +23,22 @@ import (
 )
 
 type rewrite struct {
-	flag        string
-	description string
+	flag       string
+	usage      string
+	defaultVal string
 }
 
 // rewriteFlags rewrites flags that are dependent on operating system
-// for example, for `minikube start`, the description of --driver
+// for example, for `minikube start`, the usage of --driver
 // outputs possible drivers for the operating system
 func rewriteFlags(command *cobra.Command) error {
 	rewrites := map[string][]rewrite{
 		"start": []rewrite{{
-			flag:        "driver",
-			description: "Used to specify the driver to run kubernetes in. The list of available drivers depends on operating system.",
+			flag:  "driver",
+			usage: "Used to specify the driver to run kubernetes in. The list of available drivers depends on operating system.",
 		}, {
-			flag:        "mount-string",
-			description: "The argument to pass the minikube mount command on start.",
+			flag:  "mount-string",
+			usage: "The argument to pass the minikube mount command on start.",
 		}},
 	}
 	rws, ok := rewrites[command.Name()]
@@ -49,7 +50,8 @@ func rewriteFlags(command *cobra.Command) error {
 		if flag == nil {
 			return fmt.Errorf("--%s is not a valid flag for %s", r.flag, command.Name())
 		}
-		flag.Usage = r.description
+		flag.Usage = r.usage
+		flag.DefValue = r.defaultVal
 	}
 	return nil
 }
