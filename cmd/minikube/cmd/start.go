@@ -221,7 +221,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		updateDriver(driverName)
 	}
 
-	cc, n, err := generateCfgFromFlags(cmd, *existing)
+	cc, n, err := generateCfgFromFlags(cmd, existing)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
@@ -284,7 +284,7 @@ func runStart(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	if err := showKubectlInfo(kubeconfig, k8sVersion, cc.Name); err != nil {
+	if err := showKubectlInfo(kubeconfig, cc.KubernetesConfig.KubernetesVersion, cc.Name); err != nil {
 		glog.Errorf("kubectl info: %v", err)
 	}
 }
