@@ -7,7 +7,7 @@ aliases:
   - /docs/overview
 ---
 
-minikube implements a local Kubernetes cluster on macOS, Linux, and Windows.
+minikube quickly sets up a local Kubernetes cluster on macOS, Linux, and Windows. We proudly focus on helping application developers and new Kubernetes users.
 
 ![Screenshot](/images/screenshot.png)
 
@@ -23,4 +23,4 @@ minikube implements a local Kubernetes cluster on macOS, Linux, and Windows.
 
 ## Survey
 
-Please fill out our [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A) so that we can learn how & why you use minikube, and what improvements we should make. Thank you! 💃🏽🎉
+We have a [fast 5-question survey](https://forms.gle/Gg3hG5ZySw8c1C24A) to learn how & why you are using minikube, and what improvements we should make. We would love to hear from you! 🙏
