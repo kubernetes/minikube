@@ -111,6 +111,7 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 
 // WaitForAppsRunning waits for expected Apps To be running
 func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout time.Duration) error {
+	glog.Info("waiting for k8s-apps to be running ...")
 	start := time.Now()
 	checkRunning := func() error { return ExpectAppsRunning(cs, expected) }
 	if err := retry.Expo(checkRunning, 500*time.Millisecond, timeout); err != nil {
