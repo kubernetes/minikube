@@ -88,10 +88,14 @@
               {{ $activePage := eq . $p }}
           {{ end }}
 
-          <!-- show handbook unless we are in a very long section -->
+         <!-- show handbook unless we are in a very long section -->
           {{ if eq $s.Title "Handbook" }}
-            {{ if lt (len $p.CurrentSection.Pages) 8 }}
+            {{ if lt (len $p.CurrentSection.Pages) 7 }}
               {{ $showPage = true }}
+            {{ end }}
+            <!-- always show handbook if we are on the frontpage -->
+            {{ if eq $csid "welcome" }}
+               {{ $showPage = true }}
             {{ end }}
           {{ end }}
 
