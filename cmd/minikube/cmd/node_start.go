@@ -49,7 +49,7 @@ var nodeStartCmd = &cobra.Command{
 			exit.WithError("retrieving node", err)
 		}
 
-		r, p, m, h, err := node.Provision(*cc, *n, false)
+		r, p, m, h, err := node.Provision(cc, n, false)
 		if err != nil {
 			exit.WithError("provisioning host for node", err)
 		}
@@ -59,8 +59,8 @@ var nodeStartCmd = &cobra.Command{
 			PreExists:      p,
 			MachineAPI:     m,
 			Host:           h,
-			Cfg:            *cc,
-			Node:           *n,
+			Cfg:            cc,
+			Node:           n,
 			ExistingAddons: nil,
 		}
 

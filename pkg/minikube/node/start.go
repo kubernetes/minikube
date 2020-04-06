@@ -75,8 +75,8 @@ type Starter struct {
 	PreExists      bool
 	MachineAPI     libmachine.API
 	Host           *host.Host
-	Cfg            config.ClusterConfig
-	Node           config.Node
+	Cfg            *config.ClusterConfig
+	Node           *config.Node
 	ExistingAddons map[string]bool
 }
 
@@ -98,16 +98,16 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	var kcs *kubeconfig.Settings
 	if apiServer {
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-		kcs = setupKubeconfig(starter.Host, &starter.Cfg, &starter.Node, starter.Cfg.Name)
+		kcs = setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to setup kubeconfig")
 		}
 
 		// setup kubeadm (must come after setupKubeconfig)
-		bs = setupKubeAdm(starter.MachineAPI, starter.Cfg, starter.Node)
-		err = bs.StartCluster(starter.Cfg)
+		bs = setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node)
+		err = bs.StartCluster(*starter.Cfg)
 		if err != nil {
-			out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, starter.Cfg, starter.Runner))
+			out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
 			return nil, err
 		}
 
@@ -116,12 +116,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Failed to update kubeconfig file.")
 		}
 	} else {
-		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), starter.Cfg, starter.Node)
+		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, *starter.Node)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
-		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, starter.Node); err != nil {
+		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
 	}
@@ -146,30 +146,30 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 		// Skip pre-existing, because we already waited for health
 		if kverify.ShouldWait(starter.Cfg.VerifyComponents) && !starter.PreExists {
-			if err := bs.WaitForNode(starter.Cfg, starter.Node, viper.GetDuration(waitTimeout)); err != nil {
+			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
 			}
 		}
 	} else {
-		if err := bs.UpdateNode(starter.Cfg, starter.Node, cr); err != nil {
+		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
 			return nil, errors.Wrap(err, "Updating node")
 		}
 
-		cp, err := config.PrimaryControlPlane(&starter.Cfg)
+		cp, err := config.PrimaryControlPlane(starter.Cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "Getting primary control plane")
 		}
-		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), starter.Cfg, cp)
+		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, cp)
 		if err != nil {
 			return nil, errors.Wrap(err, "Getting bootstrapper")
 		}
 
-		joinCmd, err := cpBs.GenerateToken(starter.Cfg)
+		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating join token")
 		}
 
-		if err = bs.JoinCluster(starter.Cfg, starter.Node, joinCmd); err != nil {
+		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
 		}
 	}
@@ -178,7 +178,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 }
 
 // Provision provisions the machine/container for the node
-func Provision(cc config.ClusterConfig, n config.Node, apiServer bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
+func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
 	if apiServer {
 		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": n.Name, "cluster": cc.Name})
 	} else {
@@ -195,14 +195,14 @@ func Provision(cc config.ClusterConfig, n config.Node, apiServer bool) (command.
 
 	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
 	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := config.SaveProfile(viper.GetString(config.ProfileName), &cc); err != nil {
+	if err := config.SaveProfile(viper.GetString(config.ProfileName), cc); err != nil {
 		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")
 	}
 
 	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
 	waitDownloadKicArtifacts(&kicGroup)
 
-	return startMachine(&cc, &n)
+	return startMachine(cc, n)
 
 }
 
