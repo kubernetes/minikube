@@ -142,7 +142,7 @@ func validateNodeLabels(ctx context.Context, t *testing.T, profile string) {
 	expectedLabels := []string{"minikube.k8s.io/commit", "minikube.k8s.io/version", "minikube.k8s.io/updated_at", "minikube.k8s.io/name"}
 	for _, el := range expectedLabels {
 		if !strings.Contains(rr.Output(), el) {
-			t.Errorf("expected to have label %q in node labels: %q", expectedLabels, rr.Output())
+			t.Errorf("expected to have label %q in node labels but got : %s", el, rr.Output())
 		}
 	}
 }
@@ -158,7 +158,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 		t.Fatalf("failed to do minikube status after eval-ing docker-env %s", err)
 	}
 	if !strings.Contains(rr.Output(), "Running") {
-		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%q*", rr.Output())
+		t.Fatalf("expected status output to include 'Running' after eval docker-env but got: *%s*", rr.Output())
 	}
 
 	mctx, cancel = context.WithTimeout(ctx, Seconds(13))
@@ -172,7 +172,7 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 
 	expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
 	if !strings.Contains(rr.Output(), expectedImgInside) {
-		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%q*", expectedImgInside, rr.Output())
+		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
 	}
 
 }
@@ -281,7 +281,7 @@ func validateStatusCmd(ctx context.Context, t *testing.T, profile string) {
 	re := `host:([A-z]+),kublet:([A-z]+),apiserver:([A-z]+),kubeconfig:([A-z]+)`
 	match, _ := regexp.MatchString(re, rr.Stdout.String())
 	if !match {
-		t.Errorf("failed to match regex %q for minikube status with custom format. args %q. output %q", re, rr.Command(), rr.Output())
+		t.Errorf("failed to match regex %q for minikube status with custom format. args %q. output: %s", re, rr.Command(), rr.Output())
 	}
 
 	// Json output
@@ -335,8 +335,9 @@ func validateDashboardCmd(ctx context.Context, t *testing.T, profile string) {
 
 	resp, err := retryablehttp.Get(u.String())
 	if err != nil {
-		t.Fatalf("failed to http get %q : %v", u.String(), err)
+		t.Fatalf("failed to http get %q: %v\nresponse: %+v", u.String(), err, resp)
 	}
+
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
@@ -427,10 +428,10 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				t.Errorf("failed to do cache list. args %q: %v", rr.Command(), err)
 			}
 			if !strings.Contains(rr.Output(), "k8s.gcr.io/pause") {
-				t.Errorf("expected 'cache list' output to include 'k8s.gcr.io/pause' but got:\n ***%q***", rr.Output())
+				t.Errorf("expected 'cache list' output to include 'k8s.gcr.io/pause' but got:\n ***%s***", rr.Output())
 			}
 			if strings.Contains(rr.Output(), "busybox:1.28.4-glibc") {
-				t.Errorf("expected 'cache list' output not to include busybox:1.28.4-glibc but got:\n ***%q***", rr.Output())
+				t.Errorf("expected 'cache list' output not to include busybox:1.28.4-glibc but got:\n ***%s***", rr.Output())
 			}
 		})
 
@@ -440,7 +441,7 @@ func validateCacheCmd(ctx context.Context, t *testing.T, profile string) {
 				t.Errorf("failed to get images by %q ssh %v", rr.Command(), err)
 			}
 			if !strings.Contains(rr.Output(), "1.28.4-glibc") {
-				t.Errorf("expected '1.28.4-glibc' to be in the output but got %q", rr.Output())
+				t.Errorf("expected '1.28.4-glibc' to be in the output but got *%s*", rr.Output())
 			}
 
 		})
@@ -481,7 +482,7 @@ func validateConfigCmd(ctx context.Context, t *testing.T, profile string) {
 	}{
 		{[]string{"unset", "cpus"}, "", ""},
 		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
-		{[]string{"set", "cpus", "2"}, "! These changes will take effect upon a minikube delete and then a minikube start", ""},
+		{[]string{"set", "cpus", "2"}, "", "! These changes will take effect upon a minikube delete and then a minikube start"},
 		{[]string{"get", "cpus"}, "2", ""},
 		{[]string{"unset", "cpus"}, "", ""},
 		{[]string{"get", "cpus"}, "", "Error: specified key could not be found in config"},
@@ -513,7 +514,7 @@ func validateLogsCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	for _, word := range []string{"Docker", "apiserver", "Linux", "kubelet"} {
 		if !strings.Contains(rr.Stdout.String(), word) {
-			t.Errorf("excpeted minikube logs to include word: -%q- but got \n***%q***\n", word, rr.Output())
+			t.Errorf("excpeted minikube logs to include word: -%q- but got \n***%s***\n", word, rr.Output())
 		}
 	}
 }
@@ -617,6 +618,10 @@ func validateServiceCmd(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("expected 'service list' to contain *hello-node* but got -%q-", rr.Stdout.String())
 	}
 
+	if NeedsPortForward() {
+		t.Skipf("test is broken for port-forwarded drivers: https://github.com/kubernetes/minikube/issues/7383")
+	}
+
 	// Test --https --url mode
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "service", "--namespace=default", "--https", "--url", "hello-node"))
 	if err != nil {
@@ -678,7 +683,7 @@ func validateAddonsCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 	for _, a := range []string{"dashboard", "ingress", "ingress-dns"} {
 		if !strings.Contains(rr.Output(), a) {
-			t.Errorf("expected 'addon list' output to include -%q- but got *%q*", a, rr.Output())
+			t.Errorf("expected 'addon list' output to include -%q- but got *%s*", a, rr.Output())
 		}
 	}
 
@@ -726,7 +731,7 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "exec", names[0], "--", "mysql", "-ppassword", "-e", "show databases;"))
 		return err
 	}
-	if err = retry.Expo(mysql, 1*time.Second, Seconds(200)); err != nil {
+	if err = retry.Expo(mysql, 1*time.Second, Minutes(5)); err != nil {
 		t.Errorf("failed to exec 'mysql -ppassword -e show databases;': %v", err)
 	}
 }
@@ -774,7 +779,7 @@ func validateFileSync(ctx context.Context, t *testing.T, profile string) {
 
 	vp := vmSyncTestPath()
 	t.Logf("Checking for existence of %s within VM", vp)
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", vp)))
 	if err != nil {
 		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
@@ -811,7 +816,7 @@ func validateCertSync(ctx context.Context, t *testing.T, profile string) {
 	}
 	for _, vp := range paths {
 		t.Logf("Checking for existence of %s within VM", vp)
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("cat %s", vp)))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("sudo cat %s", vp)))
 		if err != nil {
 			t.Errorf("failed to check existence of %q inside minikube. args %q: %v", vp, rr.Command(), err)
 		}
@@ -831,7 +836,7 @@ func validateUpdateContextCmd(ctx context.Context, t *testing.T, profile string)
 		t.Errorf("failed to run minikube update-context: args %q: %v", rr.Command(), err)
 	}
 
-	want := []byte("IP was already correctly configured")
+	want := []byte("No changes")
 	if !bytes.Contains(rr.Stdout.Bytes(), want) {
 		t.Errorf("update-context: got=%q, want=*%q*", rr.Stdout.Bytes(), want)
 	}

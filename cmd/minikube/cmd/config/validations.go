@@ -40,7 +40,7 @@ func IsValidDriver(string, name string) error {
 
 // RequiresRestartMsg returns the "requires restart" message
 func RequiresRestartMsg(string, string) error {
-	out.T(out.Warning, "These changes will take effect upon a minikube delete and then a minikube start")
+	out.WarningT("These changes will take effect upon a minikube delete and then a minikube start")
 	return nil
 }
 

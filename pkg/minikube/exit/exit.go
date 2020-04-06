@@ -70,7 +70,7 @@ func WithError(msg string, err error) {
 // WithProblem outputs info related to a known problem and exits.
 func WithProblem(msg string, err error, p *problem.Problem) {
 	out.ErrT(out.Empty, "")
-	out.ErrT(out.FailureType, "[{{.id}}] {{.msg}} {{.error}}", out.V{"msg": msg, "id": p.ID, "error": p.Err})
+	out.FailureT("[{{.id}}] {{.msg}} {{.error}}", out.V{"msg": msg, "id": p.ID, "error": p.Err})
 	p.Display()
 	if p.ShowIssueLink {
 		out.ErrT(out.Empty, "")
@@ -85,7 +85,7 @@ func WithLogEntries(msg string, err error, entries map[string][]string) {
 	displayError(msg, err)
 
 	for name, lines := range entries {
-		out.T(out.FailureType, "Problems detected in {{.entry}}:", out.V{"entry": name})
+		out.FailureT("Problems detected in {{.entry}}:", out.V{"entry": name})
 		if len(lines) > MaxLogEntries {
 			lines = lines[:MaxLogEntries]
 		}

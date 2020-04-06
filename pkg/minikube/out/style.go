@@ -68,6 +68,7 @@ var styles = map[StyleEnum]style{
 	Launch:        {Prefix: "🚀  "},
 	Sad:           {Prefix: "😿  "},
 	ThumbsUp:      {Prefix: "👍  "},
+	ThumbsDown:    {Prefix: "👎  "},
 	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	Command:       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	LogEntry:      {Prefix: "    "},                         // Indent
