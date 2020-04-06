@@ -197,6 +197,7 @@
 	"Failed to stop node {{.name}}": "노드 {{.name}} 중지에 실패하였습니다",
 	"Failed to update cluster": "클러스터를 수정하는 데 실패하였습니다",
 	"Failed to update config": "컨피그를 수정하는 데 실패하였습니다",
+	"Failed to validate '{{.driver}}' driver": "",
 	"Failed unmount: {{.error}}": "마운트 해제에 실패하였습니다: {{.error}}",
 	"File permissions used for the mount": "",
 	"Filter to use only VM Drivers": "",
