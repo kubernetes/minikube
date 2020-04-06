@@ -146,7 +146,6 @@ func ClusterFlagValue() string {
 func generateCfgFromFlags(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
 	cc := config.ClusterConfig{}
 	if existing != nil { // create profile config first time
-		fmt.Println("(medya dbg) updating the existing cluster config with the provided flags")
 		cc = updateExistingConfigFromFlags(cmd, existing)
 	} else {
 		fmt.Println("Existing config is nil will use only from flags ")
@@ -326,6 +325,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	} else {
 		glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
 	}
+	existing.Memory = mem
 
 	if cmd.Flags().Changed(cpus) {
 		existing.CPUs = viper.GetInt(cpus)
@@ -476,7 +476,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	existing.VerifyComponents = interpretWaitFlag(*cmd)
-
 	return *existing
 }
 
