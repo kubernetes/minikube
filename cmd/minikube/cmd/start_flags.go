@@ -143,19 +143,27 @@ func ClusterFlagValue() string {
 }
 
 // generateCfgFromFlags generates config.ClusterConfig based on flags and supplied arguments
-func generateCfgFromFlags(cmd *cobra.Command, existing config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
+func generateCfgFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
+	cc := config.ClusterConfig{}
 
-	existing = updateExistingConfigFromFlags(cmd, existing)
-	r, err := cruntime.New(cruntime.Config{Type: existing.KubernetesConfig.ContainerRuntime})
+	if existing == nil { // create profile config first time
+		if err := config.CreateEmptyProfile(ClusterFlagValue()); err != nil {
+			return cc, config.Node{}, errors.Wrap(err, "create empty profile config")
+		}
+	} else {
+		cc = updateExistingConfigFromFlags(cmd, existing)
+	}
+
+	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
 	if err != nil {
-		return existing, config.Node{}, errors.Wrap(err, "new runtime manager")
+		return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
 	}
 
 	// Pick good default values for --network-plugin and --enable-default-cni based on runtime.
 	if r.DefaultCNI() && !cmd.Flags().Changed(networkPlugin) {
-		existing.KubernetesConfig.NetworkPlugin = "cni"
+		cc.KubernetesConfig.NetworkPlugin = "cni"
 		if !cmd.Flags().Changed(enableDefaultCNI) {
-			existing.KubernetesConfig.EnableDefaultCNI = true
+			cc.KubernetesConfig.EnableDefaultCNI = true
 		}
 	}
 
@@ -165,13 +173,13 @@ func generateCfgFromFlags(cmd *cobra.Command, existing config.ClusterConfig) (co
 	}
 
 	if cmd.Flags().Changed(imageRepository) {
-		existing.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
+		cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
 	}
 
 	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
 
-	if strings.ToLower(existing.KubernetesConfig.ImageRepository) == "auto" || mirrorCountry != "" {
-		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(getKubernetesVersion(&existing), version.VersionPrefix)))
+	if strings.ToLower(cc.KubernetesConfig.ImageRepository) == "auto" || mirrorCountry != "" {
+		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(getKubernetesVersion(&cc), version.VersionPrefix)))
 		if err != nil {
 			exit.WithError("Failed to check main repository and mirrors for images for images", err)
 		}
@@ -183,22 +191,23 @@ func generateCfgFromFlags(cmd *cobra.Command, existing config.ClusterConfig) (co
 				out.WarningT("None of the known repositories in your location are accessible. Using {{.image_repository_name}} as fallback.", out.V{"image_repository_name": autoSelectedRepository})
 			}
 		}
-		existing.KubernetesConfig.ImageRepository = autoSelectedRepository
+		cc.KubernetesConfig.ImageRepository = autoSelectedRepository
 	}
 
 	if cmd.Flags().Changed(imageRepository) {
-		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": existing.KubernetesConfig.ImageRepository})
+		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": cc.KubernetesConfig.ImageRepository})
 	}
 
 	var kubeNodeName string
-	if driver.BareMetal(existing.Driver) {
+	if driver.BareMetal(cc.Driver) {
 		kubeNodeName = "m01"
 	}
-	return createNode(cmd, existing, kubeNodeName)
+	return createNode(cmd, cc, kubeNodeName)
 }
 
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
-func updateExistingConfigFromFlags(cmd *cobra.Command, existing config.ClusterConfig) config.ClusterConfig {
+// skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
+func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig {
 	if cmd.Flags().Changed(containerRuntime) {
 		existing.KubernetesConfig.ContainerRuntime = viper.GetString(containerRuntime)
 	}
@@ -240,6 +249,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing config.ClusterCo
 		}
 		existing.DiskSize = d
 	}
+
 	if cmd.Flags().Changed("vm-driver") {
 		existing.Driver = viper.GetString("vm-driver")
 	}
@@ -253,7 +263,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing config.ClusterCo
 	}
 
 	if cmd.Flags().Changed(vsockPorts) {
-		existing.HyperkitVSockPorts = viper.GetString(vsockPorts)
+		existing.HyperkitVSockPorts = viper.GetStringSlice(vsockPorts)
 	}
 
 	if cmd.Flags().Changed(nfsShare) {
@@ -262,12 +272,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing config.ClusterCo
 
 	if cmd.Flags().Changed(nfsSharesRoot) {
 		existing.NFSSharesRoot = viper.GetString(nfsSharesRoot)
-	}
-
-	// skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror
-
-	if cmd.Flags().Changed(vpnkitSock) {
-		existing.NFSSharesRoot = viper.GetStringSlice(nfsSharesRoot)
 	}
 
 	if cmd.Flags().Changed(hostOnlyCIDR) {
@@ -279,7 +283,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing config.ClusterCo
 	}
 
 	if cmd.Flags().Changed(hypervUseExternalSwitch) {
-		existing.HypervUseExternalSwitch = viper.GetString(hypervUseExternalSwitch)
+		existing.HypervUseExternalSwitch = viper.GetBool(hypervUseExternalSwitch)
 	}
 
 	if cmd.Flags().Changed(hypervExternalAdapter) {
@@ -295,11 +299,11 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing config.ClusterCo
 	}
 
 	if cmd.Flags().Changed(kvmGPU) {
-		existing.KVMGPU = viper.GetString(kvmGPU)
+		existing.KVMGPU = viper.GetBool(kvmGPU)
 	}
 
 	if cmd.Flags().Changed(kvmHidden) {
-		existing.KVMHidden = viper.GetString(kvmHidden)
+		existing.KVMHidden = viper.GetBool(kvmHidden)
 	}
 
 	if cmd.Flags().Changed(disableDriverMounts) {
@@ -339,11 +343,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing config.ClusterCo
 	}
 
 	if cmd.Flags().Changed("apiserver-names") {
-		existing.KubernetesConfig.APIServerNames = viper.GetString("apiserver-names")
-	}
-
-	if cmd.Flags().Changed("apiserver-ips") {
-		existing.KubernetesConfig.APIServerIPs = viper.GetString("apiserver-ips")
+		existing.KubernetesConfig.APIServerNames = viper.GetStringSlice("apiserver-names")
 	}
 
 	if cmd.Flags().Changed(dnsDomain) {
@@ -378,10 +378,6 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing config.ClusterCo
 		existing.KubernetesConfig.ShouldLoadCachedImages = viper.GetBool(cacheImages)
 	}
 
-	if cmd.Flags().Changed("extra-config") {
-		existing.KubernetesConfig.ExtraOptions = viper.GetVar("extra-config")
-	}
-
 	if cmd.Flags().Changed(imageRepository) {
 		existing.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
 	}
@@ -389,10 +385,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing config.ClusterCo
 	if cmd.Flags().Changed(enableDefaultCNI) {
 		existing.KubernetesConfig.EnableDefaultCNI = viper.GetBool(enableDefaultCNI)
 	}
-	
+
 	existing.VerifyComponents = interpretWaitFlag(*cmd)
 
-	return existing
+	return *existing
 }
 
 // interpretWaitFlag interprets the wait flag and respects the legacy minikube users
@@ -439,4 +435,3 @@ func interpretWaitFlag(cmd cobra.Command) map[string]bool {
 	glog.Infof("Waiting for components: %+v", waitComponents)
 	return waitComponents
 }
-

@@ -194,6 +194,7 @@ func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...
 
 func (c *simpleConfigLoader) WriteConfigToFile(profileName string, cc *ClusterConfig, miniHome ...string) error {
 	// Move to profile package
+	fmt.Println("inside WriteConfigToFile")
 	path := profileFilePath(profileName, miniHome...)
 	contents, err := json.MarshalIndent(cc, "", "	")
 	if err != nil {
