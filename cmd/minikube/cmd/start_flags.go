@@ -143,15 +143,137 @@ func ClusterFlagValue() string {
 }
 
 // generateCfgFromFlags generates config.ClusterConfig based on flags and supplied arguments
-func generateCfgFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) (config.ClusterConfig, config.Node, error) {
+func generateCfgFromFlags(cmd *cobra.Command, existing *config.ClusterConfig, k8sVersion string, drvName string) (config.ClusterConfig, config.Node, error) {
 	cc := config.ClusterConfig{}
-
-	if existing == nil { // create profile config first time
-		if err := config.CreateEmptyProfile(ClusterFlagValue()); err != nil {
-			return cc, config.Node{}, errors.Wrap(err, "create empty profile config")
-		}
-	} else {
+	if existing != nil { // create profile config first time
+		fmt.Println("(medya dbg) updating the existing cluster config with the provided flags")
 		cc = updateExistingConfigFromFlags(cmd, existing)
+	} else {
+		fmt.Println("Existing config is nil will use only from flags ")
+
+		sysLimit, containerLimit, err := memoryLimits(drvName)
+		if err != nil {
+			glog.Warningf("Unable to query memory limits: %v", err)
+		}
+
+		mem := suggestMemoryAllocation(sysLimit, containerLimit)
+		if cmd.Flags().Changed(memory) {
+			mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
+			if err != nil {
+				exit.WithCodeT(exit.Config, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
+			}
+
+		} else {
+			glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
+		}
+
+		diskSize, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+		if err != nil {
+			exit.WithCodeT(exit.Config, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
+		}
+
+		r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
+		if err != nil {
+			return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
+		}
+
+		if cmd.Flags().Changed(imageRepository) {
+			cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
+		}
+
+		// Feed Docker our host proxy environment by default, so that it can pull images
+		if _, ok := r.(*cruntime.Docker); ok && !cmd.Flags().Changed("docker-env") {
+			setDockerProxy()
+		}
+
+		if cmd.Flags().Changed(imageRepository) {
+			cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
+		}
+
+		// Pick good default values for --network-plugin and --enable-default-cni based on runtime.
+		selectedEnableDefaultCNI := viper.GetBool(enableDefaultCNI)
+		selectedNetworkPlugin := viper.GetString(networkPlugin)
+		if r.DefaultCNI() && !cmd.Flags().Changed(networkPlugin) {
+			selectedNetworkPlugin = "cni"
+			if !cmd.Flags().Changed(enableDefaultCNI) {
+				selectedEnableDefaultCNI = true
+			}
+		}
+
+		repository := viper.GetString(imageRepository)
+		mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
+		if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
+			found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix)))
+			if err != nil {
+				exit.WithError("Failed to check main repository and mirrors for images for images", err)
+			}
+
+			if !found {
+				if autoSelectedRepository == "" {
+					exit.WithCodeT(exit.Failure, "None of the known repositories is accessible. Consider specifying an alternative image repository with --image-repository flag")
+				} else {
+					out.WarningT("None of the known repositories in your location are accessible. Using {{.image_repository_name}} as fallback.", out.V{"image_repository_name": autoSelectedRepository})
+				}
+			}
+
+			repository = autoSelectedRepository
+		}
+
+		if cmd.Flags().Changed(imageRepository) {
+			out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": repository})
+		}
+
+		cc = config.ClusterConfig{
+			Name:                    ClusterFlagValue(),
+			KeepContext:             viper.GetBool(keepContext),
+			EmbedCerts:              viper.GetBool(embedCerts),
+			MinikubeISO:             viper.GetString(isoURL),
+			Memory:                  mem,
+			CPUs:                    viper.GetInt(cpus),
+			DiskSize:                diskSize,
+			Driver:                  drvName,
+			HyperkitVpnKitSock:      viper.GetString(vpnkitSock),
+			HyperkitVSockPorts:      viper.GetStringSlice(vsockPorts),
+			NFSShare:                viper.GetStringSlice(nfsShare),
+			NFSSharesRoot:           viper.GetString(nfsSharesRoot),
+			DockerEnv:               config.DockerEnv,
+			DockerOpt:               config.DockerOpt,
+			InsecureRegistry:        insecureRegistry,
+			RegistryMirror:          registryMirror,
+			HostOnlyCIDR:            viper.GetString(hostOnlyCIDR),
+			HypervVirtualSwitch:     viper.GetString(hypervVirtualSwitch),
+			HypervUseExternalSwitch: viper.GetBool(hypervUseExternalSwitch),
+			HypervExternalAdapter:   viper.GetString(hypervExternalAdapter),
+			KVMNetwork:              viper.GetString(kvmNetwork),
+			KVMQemuURI:              viper.GetString(kvmQemuURI),
+			KVMGPU:                  viper.GetBool(kvmGPU),
+			KVMHidden:               viper.GetBool(kvmHidden),
+			DisableDriverMounts:     viper.GetBool(disableDriverMounts),
+			UUID:                    viper.GetString(uuid),
+			NoVTXCheck:              viper.GetBool(noVTXCheck),
+			DNSProxy:                viper.GetBool(dnsProxy),
+			HostDNSResolver:         viper.GetBool(hostDNSResolver),
+			HostOnlyNicType:         viper.GetString(hostOnlyNicType),
+			NatNicType:              viper.GetString(natNicType),
+			KubernetesConfig: config.KubernetesConfig{
+				KubernetesVersion:      k8sVersion,
+				ClusterName:            ClusterFlagValue(),
+				APIServerName:          viper.GetString(apiServerName),
+				APIServerNames:         apiServerNames,
+				APIServerIPs:           apiServerIPs,
+				DNSDomain:              viper.GetString(dnsDomain),
+				FeatureGates:           viper.GetString(featureGates),
+				ContainerRuntime:       viper.GetString(containerRuntime),
+				CRISocket:              viper.GetString(criSocket),
+				NetworkPlugin:          selectedNetworkPlugin,
+				ServiceCIDR:            viper.GetString(serviceCIDR),
+				ImageRepository:        repository,
+				ExtraOptions:           config.ExtraOptions,
+				ShouldLoadCachedImages: viper.GetBool(cacheImages),
+				EnableDefaultCNI:       selectedEnableDefaultCNI,
+			},
+		}
+		cc.VerifyComponents = interpretWaitFlag(*cmd)
 	}
 
 	r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
@@ -159,43 +281,10 @@ func generateCfgFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) (c
 		return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
 	}
 
-	// Pick good default values for --network-plugin and --enable-default-cni based on runtime.
-	if r.DefaultCNI() && !cmd.Flags().Changed(networkPlugin) {
-		cc.KubernetesConfig.NetworkPlugin = "cni"
-		if !cmd.Flags().Changed(enableDefaultCNI) {
-			cc.KubernetesConfig.EnableDefaultCNI = true
-		}
-	}
-
 	// Feed Docker our host proxy environment by default, so that it can pull images
+	// redoing setDockerProxy in case proxy changed since last start.
 	if _, ok := r.(*cruntime.Docker); ok && !cmd.Flags().Changed("docker-env") {
 		setDockerProxy()
-	}
-
-	if cmd.Flags().Changed(imageRepository) {
-		cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
-	}
-
-	mirrorCountry := strings.ToLower(viper.GetString(imageMirrorCountry))
-
-	if strings.ToLower(cc.KubernetesConfig.ImageRepository) == "auto" || mirrorCountry != "" {
-		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(getKubernetesVersion(&cc), version.VersionPrefix)))
-		if err != nil {
-			exit.WithError("Failed to check main repository and mirrors for images for images", err)
-		}
-
-		if !found {
-			if autoSelectedRepository == "" {
-				exit.WithCodeT(exit.Failure, "None of the known repositories is accessible. Consider specifying an alternative image repository with --image-repository flag")
-			} else {
-				out.WarningT("None of the known repositories in your location are accessible. Using {{.image_repository_name}} as fallback.", out.V{"image_repository_name": autoSelectedRepository})
-			}
-		}
-		cc.KubernetesConfig.ImageRepository = autoSelectedRepository
-	}
-
-	if cmd.Flags().Changed(imageRepository) {
-		out.T(out.SuccessType, "Using image repository {{.name}}", out.V{"name": cc.KubernetesConfig.ImageRepository})
 	}
 
 	var kubeNodeName string

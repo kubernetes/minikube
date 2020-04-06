@@ -221,7 +221,8 @@ func runStart(cmd *cobra.Command, args []string) {
 		updateDriver(driverName)
 	}
 
-	cc, n, err := generateCfgFromFlags(cmd, existing)
+	k8sVersion := getKubernetesVersion(existing)
+	cc, n, err := generateCfgFromFlags(cmd, existing, k8sVersion, driverName)
 	if err != nil {
 		exit.WithError("Failed to generate config", err)
 	}
