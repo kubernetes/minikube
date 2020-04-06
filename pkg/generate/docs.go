@@ -59,11 +59,13 @@ func DocForCommand(command *cobra.Command) (string, error) {
 	if err := generateTitle(command, buf); err != nil {
 		return "", errors.Wrap(err, "generating title")
 	}
+	if err := rewriteFlags(command); err != nil {
+		return "", errors.Wrap(err, "rewriting flags")
+	}
 	if err := writeSubcommands(command, buf); err != nil {
 		return "", errors.Wrap(err, "writing subcommands")
 	}
-	edited := removeHelpText(buf)
-	return rewriteFlags(command, edited), nil
+	return removeHelpText(buf), nil
 }
 
 // after every command, cobra automatically appends

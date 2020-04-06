@@ -1,8 +1,5 @@
 ---
 title: "logs"
-linkTitle: "logs"
-weight: 1
-date: 2020-04-02
 description: >
   Gets the logs of the running instance, used for debugging minikube, not user code.
 ---

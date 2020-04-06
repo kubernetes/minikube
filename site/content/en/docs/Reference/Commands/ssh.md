@@ -1,8 +1,5 @@
 ---
 title: "ssh"
-linkTitle: "ssh"
-weight: 1
-date: 2020-04-02
 description: >
   Log into or run a command on a machine with SSH; similar to 'docker-machine ssh'
 ---

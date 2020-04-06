@@ -17,7 +17,7 @@ limitations under the License.
 package generate
 
 import (
-	"strings"
+	"fmt"
 
 	"github.com/spf13/cobra"
 )
@@ -30,42 +30,26 @@ type rewrite struct {
 // rewriteFlags rewrites flags that are dependent on operating system
 // for example, for `minikube start`, the description of --driver
 // outputs possible drivers for the operating system
-func rewriteFlags(command *cobra.Command, contents string) string {
+func rewriteFlags(command *cobra.Command) error {
 	rewrites := map[string][]rewrite{
 		"start": []rewrite{{
-			flag:        "--driver",
+			flag:        "driver",
 			description: "Used to specify the driver to run kubernetes in. The list of available drivers depends on operating system.",
 		}, {
-			flag:        "--mount-string",
+			flag:        "mount-string",
 			description: "The argument to pass the minikube mount command on start.",
 		}},
 	}
 	rws, ok := rewrites[command.Name()]
 	if !ok {
-		return contents
+		return nil
 	}
 	for _, r := range rws {
-		contents = rewriteFlag(contents, r.flag, r.description)
-	}
-	return contents
-}
-
-func rewriteFlag(contents, flag, description string) string {
-	lines := strings.Split(contents, "\n")
-	for i, l := range lines {
-		if strings.Contains(l, flag) {
-			// docs start with a prefix of 6 spaces
-			replacement := "      "
-			replacement += flag
-			// there are 36 spaces between the start of the flag name
-			// and the description
-			spacesBetween := 36 - len(flag)
-			for i := 0; i < spacesBetween; i++ {
-				replacement += " "
-			}
-			replacement += description
-			lines[i] = replacement
+		flag := command.Flag(r.flag)
+		if flag == nil {
+			return fmt.Errorf("--%s is not a valid flag for %s", r.flag, command.Name())
 		}
+		flag.Usage = r.description
 	}
-	return strings.Join(lines, "\n")
+	return nil
 }

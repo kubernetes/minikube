@@ -1,8 +1,5 @@
 ---
 title: "update-check"
-linkTitle: "update-check"
-weight: 1
-date: 2020-04-02
 description: >
   Print current and latest version number
 ---

@@ -1,8 +1,5 @@
 ---
 title: "help"
-linkTitle: "help"
-weight: 1
-date: 2020-04-02
 description: >
   Help about any command
 ---

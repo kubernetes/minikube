@@ -1,8 +1,5 @@
 ---
 title: "completion"
-linkTitle: "completion"
-weight: 1
-date: 2020-04-02
 description: >
   Outputs minikube shell completion for the given shell (bash or zsh)
 ---

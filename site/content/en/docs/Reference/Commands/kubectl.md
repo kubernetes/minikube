@@ -1,8 +1,5 @@
 ---
 title: "kubectl"
-linkTitle: "kubectl"
-weight: 1
-date: 2020-04-02
 description: >
   Run kubectl
 ---

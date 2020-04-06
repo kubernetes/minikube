@@ -18,9 +18,6 @@ package generate
 
 var title = `---
 title: "{{.Command}}"
-linkTitle: "{{.Command}}"
-weight: 1
-date: {{.Date}}
 description: >
   {{.Description}}
 ---

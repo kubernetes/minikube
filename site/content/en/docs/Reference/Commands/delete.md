@@ -1,8 +1,5 @@
 ---
 title: "delete"
-linkTitle: "delete"
-weight: 1
-date: 2020-04-02
 description: >
   Deletes a local kubernetes cluster
 ---

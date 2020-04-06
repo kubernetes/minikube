@@ -1,8 +1,5 @@
 ---
 title: "start"
-linkTitle: "start"
-weight: 1
-date: 2020-04-02
 description: >
   Starts a local kubernetes cluster
 ---
@@ -30,7 +27,7 @@ minikube start [flags]
       --apiserver-names stringArray       A set of apiserver names which are used in the generated certificate for kubernetes.  This can be used if you want to make the apiserver available from outside the machine
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
-      --driver                            Used to specify the driver to run kubernetes in. The list of available drivers depends on operating system.
+      --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
       --container-runtime string          The container runtime to be used (docker, crio, containerd). (default "docker")
       --cpus int                          Number of CPUs allocated to Kubernetes. (default 2)
       --cri-socket string                 The cri socket path to be used.
@@ -42,7 +39,7 @@ minikube start [flags]
       --docker-env stringArray            Environment variables to pass to the Docker daemon. (format: key=value)
       --docker-opt stringArray            Specify arbitrary flags to pass to the Docker daemon. (format: key=value)
       --download-only                     If true, only download and cache files for later use - don't install or start anything.
-      --driver                            Used to specify the driver to run kubernetes in. The list of available drivers depends on operating system.
+      --driver string                     Used to specify the driver to run kubernetes in. The list of available drivers depends on operating system.
       --dry-run                           dry-run mode. Validates configuration, but does not mutate system state
       --embed-certs                       if true, will embed the certs in kubeconfig.
       --enable-default-cni                Enable the default CNI plugin (/etc/cni/net.d/k8s.conf). Used in conjunction with "--network-plugin=cni".
@@ -75,7 +72,7 @@ minikube start [flags]
       --kvm-qemu-uri string               The KVM QEMU connection URI. (kvm2 driver only) (default "qemu:///system")
       --memory string                     Amount of RAM to allocate to Kubernetes (format: <number>[<unit>], where unit = b, k, m or g).
       --mount                             This will start the mount daemon and automatically mount files into minikube.
-      --mount-string                      The argument to pass the minikube mount command on start.
+      --mount-string string               The argument to pass the minikube mount command on start. (default "/Users:/minikube-host")
       --nat-nic-type string               NIC Type used for host only network. One of Am79C970A, Am79C973, 82540EM, 82543GC, 82545EM, or virtio (virtualbox driver only) (default "virtio")
       --native-ssh                        Use native Golang SSH client (default true). Set to 'false' to use the command line 'ssh' command when accessing the docker machine. Useful for the machine drivers when they will not start with 'Waiting for SSH'. (default true)
       --network-plugin string             The name of the network plugin.

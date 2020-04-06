@@ -1,8 +1,5 @@
 ---
 title: "docker-env"
-linkTitle: "docker-env"
-weight: 1
-date: 2020-04-02
 description: >
   Sets up docker env variables; similar to '$(docker-machine env)'
 ---

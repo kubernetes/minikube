@@ -1,8 +1,5 @@
 ---
 title: "status"
-linkTitle: "status"
-weight: 1
-date: 2020-04-02
 description: >
   Gets the status of a local kubernetes cluster
 ---
