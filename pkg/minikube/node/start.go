@@ -57,12 +57,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-const (
-	waitTimeout     = "wait-timeout"
-	embedCerts      = "embed-certs"
-	keepContext     = "keep-context"
-	imageRepository = "image-repository"
-)
+const waitTimeout = "wait-timeout"
 
 // Start spins up a guest and starts the kubernetes node.
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) (*kubeconfig.Settings, error) {
@@ -277,8 +272,8 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 		ClientCertificate:    localpath.ClientCert(cc.Name),
 		ClientKey:            localpath.ClientKey(cc.Name),
 		CertificateAuthority: localpath.CACert(),
-		KeepContext:          viper.GetBool(keepContext),
-		EmbedCerts:           viper.GetBool(embedCerts),
+		KeepContext:          cc.KeepContext,
+		EmbedCerts:           cc.EmbedCerts,
 	}
 
 	kcs.SetPath(kubeconfig.PathFromEnv())
@@ -305,7 +300,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	ip := validateNetwork(host, runner)
+	ip := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository)
 
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
@@ -354,7 +349,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner) string {
+func validateNetwork(h *host.Host, r command.Runner, imageRepository string) string {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
@@ -383,7 +378,7 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 	}
 
 	// Non-blocking
-	go tryRegistry(r, h.Driver.DriverName())
+	go tryRegistry(r, h.Driver.DriverName(), imageRepository)
 	return ip
 }
 
@@ -425,7 +420,7 @@ func trySSH(h *host.Host, ip string) {
 }
 
 // tryRegistry tries to connect to the image repository
-func tryRegistry(r command.Runner, driverName string) {
+func tryRegistry(r command.Runner, driverName string, imageRepository string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
@@ -434,15 +429,14 @@ func tryRegistry(r command.Runner, driverName string) {
 		opts = append([]string{"-x", proxy}, opts...)
 	}
 
-	repo := viper.GetString(imageRepository)
-	if repo == "" {
-		repo = images.DefaultKubernetesRepo
+	if imageRepository == "" {
+		imageRepository = images.DefaultKubernetesRepo
 	}
 
-	opts = append(opts, fmt.Sprintf("https://%s/", repo))
+	opts = append(opts, fmt.Sprintf("https://%s/", imageRepository))
 	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
 		glog.Warningf("%s failed: %v", rr.Args, err)
-		out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}}", out.V{"repository": repo, "type": driver.MachineType(driverName)})
+		out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}}", out.V{"repository": imageRepository, "type": driver.MachineType(driverName)})
 		out.ErrT(out.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
 	}
 }
