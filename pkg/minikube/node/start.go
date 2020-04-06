@@ -36,6 +36,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -57,7 +58,6 @@ import (
 
 const (
 	waitTimeout      = "wait-timeout"
-	waitUntilHealthy = "wait"
 	embedCerts       = "embed-certs"
 	keepContext      = "keep-context"
 	imageRepository  = "image-repository"
@@ -145,7 +145,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 
 		// Skip pre-existing, because we already waited for health
-		if viper.GetBool(waitUntilHealthy) && !starter.PreExists {
+		if kverify.ShouldWait(starter.Cfg.VerifyComponents) && !starter.PreExists {
 			if err := bs.WaitForNode(starter.Cfg, starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
 			}
@@ -179,12 +179,11 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 // Provision provisions the machine/container for the node
 func Provision(cc config.ClusterConfig, n config.Node, apiServer bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
-	cp := ""
 	if apiServer {
-		cp = "control plane "
+		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": n.Name, "cluster": cc.Name})
+	} else {
+		out.T(out.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": n.Name, "cluster": cc.Name})
 	}
-
-	out.T(out.ThumbsUp, "Starting {{.controlPlane}}node {{.name}} in cluster {{.cluster}}", out.V{"controlPlane": cp, "name": n.Name, "cluster": cc.Name})
 
 	if driver.IsKIC(cc.Driver) {
 		beginDownloadKicArtifacts(&kicGroup)
