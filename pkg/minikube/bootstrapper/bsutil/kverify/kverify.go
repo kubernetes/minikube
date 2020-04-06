@@ -31,7 +31,7 @@ const (
 	SystemPodsWaitKey = "system_pods"
 	// DefaultSAWaitKey is the name used in the flags for default service account
 	DefaultSAWaitKey = "default_sa"
-	// K8SApps is the name used in the flags for waiting for k8s-apps to be running
+	// AppsRunning is the name used in the flags for waiting for k8s-apps to be running
 	AppsRunning = "apps_running"
 )
 
