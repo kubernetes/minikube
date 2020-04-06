@@ -469,7 +469,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		existing.KubernetesConfig.EnableDefaultCNI = viper.GetBool(enableDefaultCNI)
 	}
 
-	existing.VerifyComponents = interpretWaitFlag(*cmd)
+	if cmd.Flags().Changed(waitComponents) {
+		existing.VerifyComponents = interpretWaitFlag(*cmd)
+	}
+
 	return *existing
 }
 
