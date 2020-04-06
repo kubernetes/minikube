@@ -830,18 +830,17 @@ func validateRegistryMirror() {
 	}
 }
 
-func createNode(cmd *cobra.Command, existing config.ClusterConfig, kubeNodeName string) (config.ClusterConfig, config.Node, error) {
+func createNode(cmd *cobra.Command, cc config.ClusterConfig, kubeNodeName string) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
 	cp := config.Node{
 		Port:              viper.GetInt(apiServerPort),
-		KubernetesVersion: getKubernetesVersion(&existing),
+		KubernetesVersion: getKubernetesVersion(&cc),
 		Name:              kubeNodeName,
 		ControlPlane:      true,
 		Worker:            true,
 	}
-	cfg := existing
-	cfg.Nodes = []config.Node{cp}
-	return cfg, cp, nil
+	cc.Nodes = []config.Node{cp}
+	return cc, cp, nil
 }
 
 // setDockerProxy sets the proxy environment variables in the docker environment.
