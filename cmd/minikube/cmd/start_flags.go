@@ -303,31 +303,16 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		existing.MinikubeISO = viper.GetString(isoURL)
 	}
 
-	sysLimit, containerLimit, err := memoryLimits(existing.Driver)
-	if err != nil {
-		glog.Warningf("Unable to query memory limits: %v", err)
-	}
-	mem := suggestMemoryAllocation(sysLimit, containerLimit)
 	if cmd.Flags().Changed(memory) {
-		mem, err = pkgutil.CalculateSizeInMB(viper.GetString(memory))
-		if err != nil {
-			exit.WithCodeT(exit.Config, "Generate unable to parse memory '{{.memory}}': {{.error}}", out.V{"memory": viper.GetString(memory), "error": err})
-		}
-	} else {
-		glog.Infof("Using suggested %dMB memory alloc based on sys=%dMB, container=%dMB", mem, sysLimit, containerLimit)
+		glog.Warning("can not change memory for an exiting minikube cluster. you can delete and re-create instead.")
 	}
-	existing.Memory = mem
 
 	if cmd.Flags().Changed(cpus) {
-		existing.CPUs = viper.GetInt(cpus)
+		glog.Warning("can not change cpu for an exiting minikube cluster. you can delete and re-create instead.")
 	}
 
 	if cmd.Flags().Changed(humanReadableDiskSize) {
-		d, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
-		if err != nil {
-			exit.WithCodeT(exit.Config, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
-		}
-		existing.DiskSize = d
+		glog.Warning("can not change cpu for an exiting minikube cluster. you can delete and re-create instead.")
 	}
 
 	if cmd.Flags().Changed("vm-driver") {
