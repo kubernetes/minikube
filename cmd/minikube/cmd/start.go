@@ -833,7 +833,7 @@ func validateRegistryMirror() {
 func createNode(cc config.ClusterConfig, kubeNodeName string) (config.ClusterConfig, config.Node, error) {
 	// Create the initial node, which will necessarily be a control plane
 	cp := config.Node{
-		Port:              viper.GetInt(apiServerPort),
+		Port:              cc.KubernetesConfig.NodePort,
 		KubernetesVersion: getKubernetesVersion(&cc),
 		Name:              kubeNodeName,
 		ControlPlane:      true,
