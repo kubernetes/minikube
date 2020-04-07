@@ -32,7 +32,6 @@ import (
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
@@ -239,13 +238,7 @@ func showHostInfo(cfg config.ClusterConfig) {
 		return
 	}
 	if driver.IsKIC(cfg.Driver) { // TODO:medyagh add free disk space on docker machine
-		s, err := oci.DaemonInfo(cfg.Driver)
-		if err == nil {
-			var info hostInfo
-			info.CPUs = s.CPUs
-			info.Memory = megs(uint64(s.TotalMemory))
-			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} {{.machine_type}} with (CPUs={{.number_of_cpus}}) ({{.number_of_host_cpus}} available), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": cfg.Memory, "host_memory_size": info.Memory, "machine_type": machineType})
-		}
+		out.T(out.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
 		return
 	}
 	out.T(out.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize, "machine_type": machineType})
