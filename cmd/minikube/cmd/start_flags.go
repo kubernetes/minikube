@@ -179,10 +179,6 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
 		}
 
-		if cmd.Flags().Changed(imageRepository) {
-			cc.KubernetesConfig.ImageRepository = viper.GetString(imageRepository)
-		}
-
 		// Pick good default values for --network-plugin and --enable-default-cni based on runtime.
 		selectedEnableDefaultCNI := viper.GetBool(enableDefaultCNI)
 		selectedNetworkPlugin := viper.GetString(networkPlugin)
@@ -264,6 +260,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 				ExtraOptions:           config.ExtraOptions,
 				ShouldLoadCachedImages: viper.GetBool(cacheImages),
 				EnableDefaultCNI:       selectedEnableDefaultCNI,
+				NodePort:               viper.GetInt(apiServerPort),
 			},
 		}
 		cc.VerifyComponents = interpretWaitFlag(*cmd)
@@ -427,6 +424,10 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 
 	if cmd.Flags().Changed("apiserver-names") {
 		existing.KubernetesConfig.APIServerNames = viper.GetStringSlice("apiserver-names")
+	}
+
+	if cmd.Flags().Changed(apiServerPort) {
+		existing.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
 	}
 
 	if cmd.Flags().Changed(dnsDomain) {
