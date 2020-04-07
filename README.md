@@ -49,9 +49,9 @@ See the [Getting Started Guide](https://minikube.sigs.k8s.io/docs/start/)
 
 See https://minikube.sigs.k8s.io/docs/
 
-## More Examples
+## Minikube in action
 
-See our [examples page](https://minikube.sigs.k8s.io/docs/examples/)
+See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/)
 
 ## Community
 
