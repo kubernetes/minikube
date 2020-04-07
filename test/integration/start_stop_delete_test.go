@@ -90,7 +90,7 @@ func TestStartStop(t *testing.T) {
 				defer CleanupWithLogs(t, profile, cancel)
 
 				waitFlag := "--wait=true"
-				if !strings.Contains(tc.name, "cni") { // wait=app_running is broken for CNI https://github.com/kubernetes/minikube/issues/7354
+				if strings.Contains(tc.name, "cni") { // wait=app_running is broken for CNI https://github.com/kubernetes/minikube/issues/7354
 					waitFlag = "--wait=apiserver,system_pods,default_sa"
 				}
 
