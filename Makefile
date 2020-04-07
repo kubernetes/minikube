@@ -272,7 +272,7 @@ test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Tr
 
 .PHONY: generate-docs
 generate-docs: out/minikube ## Automatically generate commands documentation.
-	out/minikube generate-docs --path ./site/content/en/docs/Reference/Commands/
+	out/minikube generate-docs --path ./site/content/en/docs/commands/
 
 .PHONY: extract
 extract: ## Compile extract tool
