@@ -86,7 +86,7 @@ minikube start [flags]
       --uuid string                       Provide VM UUID to restore MAC address (hyperkit driver only)
       --vm                                Filter to use only VM Drivers
       --vm-driver driver                  DEPRECATED, use driver instead.
-      --wait strings                      comma separated list of kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
+      --wait strings                      comma separated list of kubernetes components to verify and wait for after starting a cluster. defaults to "apiserver,system_pods", available options: "apiserver,system_pods,default_sa,apps_running" . other acceptable values are 'all' or 'none', 'true' and 'false' (default [apiserver,system_pods])
       --wait-timeout duration             max time to wait per Kubernetes core services to be healthy. (default 6m0s)
 ```
 

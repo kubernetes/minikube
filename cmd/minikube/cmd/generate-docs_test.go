@@ -27,7 +27,7 @@ import (
 )
 
 func TestGenerateDocs(t *testing.T) {
-	dir := "../../../site/content/en/docs/Reference/Commands/"
+	dir := "../../../site/content/en/docs/commands/"
 
 	for _, sc := range RootCmd.Commands() {
 		t.Run(sc.Name(), func(t *testing.T) {
