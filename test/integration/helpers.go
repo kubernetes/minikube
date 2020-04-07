@@ -201,9 +201,9 @@ func clusterLogs(t *testing.T, profile string) {
 		return
 	}
 
-	t.Logf("--------------------------post-mortem--------------------------------")
+	t.Logf("-----------------------post-mortem--------------------------------")
 	t.Logf("<<< %s FAILED: start of post-mortem logs <<<", t.Name())
-	t.Logf("----------------------post-mortem minikube logs----------------------")
+	t.Logf("-------------------post-mortem minikube logs----------------------")
 	rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
 	if err != nil {
 		t.Logf("failed logs error: %v", err)
@@ -211,20 +211,20 @@ func clusterLogs(t *testing.T, profile string) {
 	}
 	t.Logf("%s logs: %s", t.Name(), rr.Output())
 
-	t.Logf("----------------------post-mortem api server status-------------------")
+	t.Logf("------------------post-mortem api server status-------------------")
 	st = Status(context.Background(), t, Target(), profile, "APIServer")
 	if st != state.Running.String() {
 		t.Logf("%q apiserver is not running, skipping kubectl commands (state=%q)", profile, st)
 		return
 	}
-	t.Logf("---------------------post-mortem get pods------------------------------")
+	t.Logf("--------------------post-mortem get pods--------------------------")
 	rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
 	if rerr != nil {
 		t.Logf("%s: %v", rr.Command(), rerr)
 		return
 	}
 	t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
-	t.Logf("---------------------post-mortem describe node-------------------------")
+	t.Logf("-------------------post-mortem describe node----------------------")
 	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "node"))
 	if err != nil {
 		t.Logf("%s: %v", rr.Command(), err)
@@ -233,7 +233,7 @@ func clusterLogs(t *testing.T, profile string) {
 	}
 	t.Logf("------------------------------------------------------------------")
 	t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
-	t.Logf("----------------   /post-mortem   ---------------------------")
+	t.Logf("---------------------/post-mortem---------------------------------")
 }
 
 // podStatusMsg returns a human-readable pod status, for generating debug status
