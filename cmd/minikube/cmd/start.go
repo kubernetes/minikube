@@ -64,67 +64,6 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
-const (
-	isoURL                  = "iso-url"
-	memory                  = "memory"
-	cpus                    = "cpus"
-	humanReadableDiskSize   = "disk-size"
-	nfsSharesRoot           = "nfs-shares-root"
-	nfsShare                = "nfs-share"
-	kubernetesVersion       = "kubernetes-version"
-	hostOnlyCIDR            = "host-only-cidr"
-	containerRuntime        = "container-runtime"
-	criSocket               = "cri-socket"
-	networkPlugin           = "network-plugin"
-	enableDefaultCNI        = "enable-default-cni"
-	hypervVirtualSwitch     = "hyperv-virtual-switch"
-	hypervUseExternalSwitch = "hyperv-use-external-switch"
-	hypervExternalAdapter   = "hyperv-external-adapter"
-	kvmNetwork              = "kvm-network"
-	kvmQemuURI              = "kvm-qemu-uri"
-	kvmGPU                  = "kvm-gpu"
-	kvmHidden               = "kvm-hidden"
-	minikubeEnvPrefix       = "MINIKUBE"
-	installAddons           = "install-addons"
-	defaultDiskSize         = "20000mb"
-	keepContext             = "keep-context"
-	createMount             = "mount"
-	featureGates            = "feature-gates"
-	apiServerName           = "apiserver-name"
-	apiServerPort           = "apiserver-port"
-	dnsDomain               = "dns-domain"
-	serviceCIDR             = "service-cluster-ip-range"
-	imageRepository         = "image-repository"
-	imageMirrorCountry      = "image-mirror-country"
-	mountString             = "mount-string"
-	disableDriverMounts     = "disable-driver-mounts"
-	cacheImages             = "cache-images"
-	uuid                    = "uuid"
-	vpnkitSock              = "hyperkit-vpnkit-sock"
-	vsockPorts              = "hyperkit-vsock-ports"
-	embedCerts              = "embed-certs"
-	noVTXCheck              = "no-vtx-check"
-	downloadOnly            = "download-only"
-	dnsProxy                = "dns-proxy"
-	hostDNSResolver         = "host-dns-resolver"
-	waitComponents          = "wait"
-	force                   = "force"
-	dryRun                  = "dry-run"
-	interactive             = "interactive"
-	waitTimeout             = "wait-timeout"
-	nativeSSH               = "native-ssh"
-	minUsableMem            = 1024 // Kubernetes will not start with less than 1GB
-	minRecommendedMem       = 2000 // Warn at no lower than existing configurations
-	minimumCPUS             = 2
-	minimumDiskSize         = 2000
-	autoUpdate              = "auto-update-drivers"
-	hostOnlyNicType         = "host-only-nic-type"
-	natNicType              = "nat-nic-type"
-	nodes                   = "nodes"
-	preload                 = "preload"
-	deleteOnFailure         = "delete-on-failure"
-)
-
 var (
 	registryMirror   []string
 	insecureRegistry []string
