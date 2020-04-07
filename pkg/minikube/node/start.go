@@ -313,15 +313,21 @@ func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, 
 func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host, err error) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
-		return nil, false, nil, nil, errors.Wrap(err, "Failed to get machine client")
+		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
 	}
-	host, preExists = startHost(m, *cfg, *node)
+	host, preExists, err = startHost(m, *cfg, *node)
+	if err != nil {
+		return runner, preExists, m, host, errors.Wrap(err, "Failed to start host")
+	}
 	runner, err = machine.CommandRunner(host)
 	if err != nil {
 		return runner, preExists, m, host, errors.Wrap(err, "Failed to get command runner")
 	}
 
-	ip := validateNetwork(host, runner)
+	ip, err := validateNetwork(host, runner)
+	if err != nil {
+		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
+	}
 
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
@@ -333,17 +339,17 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 	node.IP = ip
 	err = config.SaveNode(cfg, node)
 	if err != nil {
-		return nil, false, nil, nil, errors.Wrap(err, "saving node")
+		return runner, preExists, m, host, errors.Wrap(err, "saving node")
 	}
 
 	return runner, preExists, m, host, err
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, bool) {
+func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
-		return host, exists
+		return host, exists, nil
 	}
 	out.ErrT(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
 
@@ -360,20 +366,20 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 
 	host, exists, err = machine.StartHost(api, cc, n)
 	if err == nil {
-		return host, exists
+		return host, exists, nil
 	}
 
 	// Don't use host.Driver to avoid nil pointer deref
 	drv := cc.Driver
-	exit.WithError(fmt.Sprintf(`Failed to start %s %s. "%s" may fix it.`, drv, driver.MachineType(drv), mustload.ExampleCmd(cc.Name, "start")), err)
-	return host, exists
+	out.ErrT(out.Sad, `Failed to start {{.driver}} {{.driver_type}}. "{{.cmd}}" may fix it: {{.error}}`, out.V{"driver": drv, "driver_type": driver.MachineType(drv), "cmd": mustload.ExampleCmd(cc.Name, "start"), "error": err})
+	return host, exists, err
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner) string {
+func validateNetwork(h *host.Host, r command.Runner) (string, error) {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
-		exit.WithError("Unable to get VM IP address", err)
+		return ip, err
 	}
 
 	optSeen := false
@@ -395,17 +401,19 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 	}
 
 	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
-		trySSH(h, ip)
+		if err := trySSH(h, ip); err != nil {
+			return ip, err
+		}
 	}
 
 	// Non-blocking
 	go tryRegistry(r, h.Driver.DriverName())
-	return ip
+	return ip, nil
 }
 
-func trySSH(h *host.Host, ip string) {
+func trySSH(h *host.Host, ip string) error {
 	if viper.GetBool("force") {
-		return
+		return nil
 	}
 
 	sshAddr := net.JoinHostPort(ip, "22")
@@ -421,8 +429,9 @@ func trySSH(h *host.Host, ip string) {
 		return nil
 	}
 
-	if err := retry.Expo(dial, time.Second, 13*time.Second); err != nil {
-		exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
+	err := retry.Expo(dial, time.Second, 13*time.Second)
+	if err != nil {
+		out.ErrT(out.FailureType, `minikube is unable to connect to the VM: {{.error}}
 
 	This is likely due to one of two reasons:
 
@@ -438,6 +447,8 @@ func trySSH(h *host.Host, ip string) {
 	- Use --force to override this connectivity check
 	`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
 	}
+
+	return err
 }
 
 // tryRegistry tries to connect to the image repository

@@ -1038,7 +1038,7 @@ func generateCfgFromFlags(cmd *cobra.Command, k8sVersion string, drvName string)
 	if strings.ToLower(repository) == "auto" || mirrorCountry != "" {
 		found, autoSelectedRepository, err := selectImageRepository(mirrorCountry, semver.MustParse(strings.TrimPrefix(k8sVersion, version.VersionPrefix)))
 		if err != nil {
-			exit.WithError("Failed to check main repository and mirrors for images for images", err)
+			exit.WithError("Failed to check main repository and mirrors for images", err)
 		}
 
 		if !found {
