@@ -415,6 +415,14 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		existing.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
 	}
 
+	// pre minikube 1.9.2 cc.KubernetesConfig.NodePort was not populated.
+	// in minikube config there were two fields for api server port.
+	// one in cc.KubernetesConfig.NodePort and one in cc.Nodes.Port
+	// this makes sure api server port not be set as 0!
+	if existing.KubernetesConfig.NodePort == 0 {
+		existing.KubernetesConfig.NodePort = viper.GetInt(apiServerPort)
+	}
+
 	if cmd.Flags().Changed(dnsDomain) {
 		existing.KubernetesConfig.DNSDomain = viper.GetString(dnsDomain)
 	}
