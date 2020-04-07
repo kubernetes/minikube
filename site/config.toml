@@ -143,3 +143,22 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	url = "https://groups.google.com/forum/#!forum/minikube-dev"
 	icon = "fa fa-envelope"
 	desc = "Contact the minikube Dev's here"
+
+
+# Related pages - does not appear to work yet
+[related]
+    threshold = 80
+    includeNewer = true
+    toLower = true
+
+  [[related.indices]]
+    name  = "crosslink"
+    weight = 100
+    includeNewer = true
+
+  [[related.indices]]
+    name  = "keywords"
+    weight = 50
+    includeNewer = true
+
+    

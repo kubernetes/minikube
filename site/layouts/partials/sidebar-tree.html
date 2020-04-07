@@ -1,3 +1,5 @@
+<!-- note, this is only used in /docs -->
+
 {{/* minikube hack: temporarily forked from docsy/layouts/partials/sidebar-tree.html for hugo v0.69 compatibility */}}
 
 {{/* We cache this partial for bigger sites and set the active class client side. */}}
@@ -19,41 +21,95 @@
     {{ template "section-tree-nav-section" (dict "page" . "section" .FirstSection "delayActive" $shouldDelayActive)  }}
   </nav>
 </div>
+
+
+<!-- this gets called for every section -->
 {{ define "section-tree-nav-section" }}
 {{ $s := .section }}
 {{ $p := .page }}
 {{ $shouldDelayActive := .delayActive }}
-{{ $active := eq $p.CurrentSection $s }}
-{{ $show := or (and (not $p.Site.Params.ui.sidebar_menu_compact) ($p.IsAncestor $s)) ($p.IsDescendant $s) }}
+{{ $activeSection := eq $p.CurrentSection $s }}
 
-{{/* minikube hack: Override $show due to a Hugo upgrade bug */}}
-{{ $show = true }}
+{{/* minikube hack: Override $showSection due to a Hugo upgrade bug */}}
+{{ $showSection := false }}
+{{ $expandSection := false }}
+{{ $sid := $s.RelPermalink | anchorize }}
+{{ $sectionParent := $s.Parent.Title | anchorize }}
+{{ $csid := $p.CurrentSection.Title | anchorize }}
+
+{{ if $p.IsDescendant $s }}
+  <!-- page is within current section -->
+  {{ $showSection = true }}
+{{ else if eq $sectionParent "minikube" }}
+  <!-- top-level section -->
+  {{ $showSection = true }}
+{{ else if eq $sectionParent "welcome" }}
+  <!-- top-level documentation -->
+  {{ $showSection = true }}
+{{ else if eq $sectionParent "handbook" }}
+  <!-- handbook link -->
+  {{ $showSection = true }}
+{{ else if eq $p.CurrentSection $s.Parent }}
+  <!-- page is in current sections parent -->
+  {{ $showSection = true }}
+{{ else if $p.Parent.IsAncestor $s }}
+  <!-- page is in current section -->
+  {{ if eq $s $p.CurrentSection }}
+    {{ $showSection = true }}
+  {{ end }}
+
+{{ end }}
+
+<!-- only show top-level sections, or sections within the current section -->
 {{/* end minikube hack */}}
 
 {{ $sid := $s.RelPermalink | anchorize }}
-<ul class="td-sidebar-nav__section pr-md-3">
-  <li class="td-sidebar-nav__section-title">
-    <a href="{{ $s.RelPermalink }}" class="align-left pl-0 pr-2{{ if not $show }} collapsed{{ end }}{{ if $active}} active{{ end }} td-sidebar-link td-sidebar-link__section">{{ $s.LinkTitle }}</a>
-  </li>
-  <ul>
-    <li class="collapse {{ if $show }}show{{ end }}" id="{{ $sid }}">
-      {{ $pages := where (union $s.Pages $s.Sections).ByWeight ".Params.toc_hide" "!=" true }}
-      {{ $pages := $pages | first 50 }}
-      {{ range $pages }}
-      {{ if .IsPage }}
-        {{ $mid := printf "m-%s" (.RelPermalink | anchorize) }}
-
-        {{/* minikube hack: Override $active due to a Hugo upgrade bug */}}
-        {{ if $active }}
-            {{ $activePage := eq . $p }}
-            <a class="td-sidebar-link td-sidebar-link__page {{ if $activePage }} active{{ end }}" id="{{ $mid }}" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
-        {{ end }}
-        {{/* end minikube hack */}}
-      {{ else }}
-          {{ template "section-tree-nav-section" (dict "page" $p "section" .) }}
-      {{ end }}
-      {{ end }}
+{{ if $showSection }}
+  <ul class="td-sidebar-nav__section pr-md-3">
+    <li class="td-sidebar-nav__section-title">
+      <!-- Link for subections -->
+      <a href="{{ $s.RelPermalink }}" class="align-left pl-0 pr-2{{ if not $expandSection }} collapsed{{ end }}{{ if $activeSection}} active{{ end }} td-sidebar-link td-sidebar-link__section">{{ $s.LinkTitle }}</a>
     </li>
+    <ul>
+      <li class="collapse {{ if $showSection }}show{{ end }}" id="{{ $sid }}">
+        {{ $pages := where (union $s.Pages $s.Sections).ByWeight ".Params.toc_hide" "!=" true }}
+        {{ $pages := $pages | first 50 }}
+        {{ range $pages }}
+        {{ if .IsPage }}
+          {{ $mid := printf "m-%s" (.RelPermalink | anchorize) }}
+
+          {{/* minikube hack: Override $activeSection due to a Hugo upgrade bug */}}
+          {{ $showPage := false }}
+          {{ $activePage := false }}
+
+          <!-- always show pages in the current section -->
+          {{ if $activeSection }}
+              {{ $showPage = true }}
+              {{ $activePage := eq . $p }}
+          {{ end }}
+
+         <!-- show handbook unless we are in a very long section -->
+          {{ if eq $s.Title "Handbook" }}
+            {{ if lt (len $p.CurrentSection.Pages) 7 }}
+              {{ $showPage = true }}
+            {{ end }}
+            <!-- always show handbook if we are on the frontpage -->
+            {{ if eq $csid "welcome" }}
+               {{ $showPage = true }}
+            {{ end }}
+          {{ end }}
+
+          {{ if $showPage }}
+            <a class="td-sidebar-link td-sidebar-link__page {{ if $activePage }} active{{ end }}" id="{{ $mid }}" href="{{ .RelPermalink }}">{{ .LinkTitle }}</a>
+          {{ end }}
+
+          {{/* end minikube hack */}}
+        {{ else }}
+            {{ template "section-tree-nav-section" (dict "page" $p "section" .) }}
+        {{ end }}
+        {{ end }}
+      </li>
+    </ul>
   </ul>
-</ul>
+  {{ end }}
 {{ end }}
