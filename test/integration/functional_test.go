@@ -82,7 +82,7 @@ func TestFunctional(t *testing.T) {
 		}{
 			{"CopySyncFile", setupFileSync},                 // Set file for the file sync test case
 			{"StartWithProxy", validateStartWithProxy},      // Set everything else up for success
-			{"SoftStart", validateSoftStart},                // Set everything else up for success
+			{"SoftStart", validateSoftStart},                // do a soft start. ensure config didnt change.
 			{"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
@@ -217,6 +217,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string, a
 
 // validateSoftStart validates that after minikube already started, a "minikube start" should not change the configs.
 func validateSoftStart(ctx context.Context, t *testing.T, profile string, apiPortBefore int) {
+	start := time.Now()
 	// the test before this had been start with api-server
 	// before soft start the cluster was started with --apiserver-port=8441
 	beforeCfg := config.LoadProfile(profile)
@@ -229,11 +230,13 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string, apiPor
 	if err != nil {
 		t.Errorf("failed to soft start minikube. args %q: %v", rr.Command(), err)
 	}
+	t.Logf("soft start took %s for %q cluster.", time.Since(start), profile)
 
 	afterCfg := config.LoadProfile(profile)
 	if afterCfg.Config.NodePort != apiPortBefore {
 		t.Errorf("expected node port in the config not change after soft start. exepceted node port to be %d but got %d.", apiPortBefore, afterCfg.Config.NodePort)
 	}
+
 }
 
 // validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
