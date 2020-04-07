@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -18,14 +18,6 @@ limitations under the License.
 package kverify
 
 import (
-	"crypto/tls"
-	"fmt"
-	"net"
-	"net/http"
-	"os/exec"
-	"path"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine/state"
@@ -48,45 +40,31 @@ import (
 // minLogCheckTime how long to wait before spamming error logs to console
 const minLogCheckTime = 60 * time.Second
 
-// WaitForAPIServerProcess waits for api server to be healthy returns error if it doesn't
-func WaitForAPIServerProcess(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, start time.Time, timeout time.Duration) error {
-	glog.Infof("waiting for apiserver process to appear ...")
-	err := wait.PollImmediate(time.Millisecond*500, timeout, func() (bool, error) {
-		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during process check")
-		}
+const (
+	// APIServerWaitKey is the name used in the flags for k8s api server
+	APIServerWaitKey = "apiserver"
+	// SystemPodsWaitKey is the name used in the flags for pods in the kube system
+	SystemPodsWaitKey = "system_pods"
+	// DefaultSAWaitKey is the name used in the flags for default service account
+	DefaultSAWaitKey = "default_sa"
+	// AppsRunning is the name used in the flags for waiting for k8s-apps to be running
+	AppsRunning = "apps_running"
+)
 
-		if time.Since(start) > minLogCheckTime {
-			announceProblems(r, bs, cfg, cr)
-			time.Sleep(kconst.APICallRetryInterval * 5)
-		}
-
-		if _, ierr := apiServerPID(cr); ierr != nil {
-			return false, nil
-		}
-
-		return true, nil
-	})
-	if err != nil {
-		return fmt.Errorf("apiserver process never appeared")
-	}
-	glog.Infof("duration metric: took %s to wait for apiserver process to appear ...", time.Since(start))
-	return nil
-}
-
-// apiServerPID returns our best guess to the apiserver pid
-func apiServerPID(cr command.Runner) (int, error) {
-	rr, err := cr.RunCmd(exec.Command("sudo", "pgrep", "-xnf", "kube-apiserver.*minikube.*"))
-	if err != nil {
-		return 0, err
-	}
-	s := strings.TrimSpace(rr.Stdout.String())
-	return strconv.Atoi(s)
-}
-
-// ExpectedComponentsRunning returns whether or not all expected components are running
-func ExpectedComponentsRunning(cs *kubernetes.Clientset) error {
-	expected := []string{
+//  vars related to the --wait flag
+var (
+	// DefaultComponents is map of the the default components to wait for
+	DefaultComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true}
+	// NoWaitComponents is map of componets to wait for if specified 'none' or 'false'
+	NoComponents = map[string]bool{APIServerWaitKey: false, SystemPodsWaitKey: false, DefaultSAWaitKey: false, AppsRunning: false}
+	// AllComponents is map for waiting for all components.
+	AllComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, DefaultSAWaitKey: true, AppsRunning: true}
+	// DefaultWaitList is list of all default components to wait for. only names to be used for start flags.
+	DefaultWaitList = []string{APIServerWaitKey, SystemPodsWaitKey}
+	// AllComponentsList list of all valid components keys to wait for. only names to be used used for start flags.
+	AllComponentsList = []string{APIServerWaitKey, SystemPodsWaitKey, DefaultSAWaitKey, AppsRunning}
+	// AppsRunningList running list are valid k8s-app components to wait for them to be running
+	AppsRunningList = []string{
 		"kube-dns", // coredns
 		"etcd",
 		"kube-apiserver",
@@ -94,132 +72,13 @@ func ExpectedComponentsRunning(cs *kubernetes.Clientset) error {
 		"kube-proxy",
 		"kube-scheduler",
 	}
+)
 
-	found := map[string]bool{}
-
-	pods, err := cs.CoreV1().Pods("kube-system").List(meta.ListOptions{})
-	if err != nil {
-		return err
-	}
-
-	for _, pod := range pods.Items {
-		glog.Infof("found pod: %s", podStatusMsg(pod))
-		if pod.Status.Phase != core.PodRunning {
-			continue
-		}
-		for k, v := range pod.ObjectMeta.Labels {
-			if k == "component" || k == "k8s-app" {
-				found[v] = true
-			}
-		}
-	}
-
-	missing := []string{}
-	for _, e := range expected {
-		if !found[e] {
-			missing = append(missing, e)
-		}
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("missing components: %v", strings.Join(missing, ", "))
-	}
-	return nil
-}
-
-// podStatusMsg returns a human-readable pod status, for generating debug status
-func podStatusMsg(pod core.Pod) string {
-	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("%q [%s] %s", pod.ObjectMeta.GetName(), pod.ObjectMeta.GetUID(), pod.Status.Phase))
-	for i, c := range pod.Status.Conditions {
-		if c.Reason != "" {
-			if i == 0 {
-				sb.WriteString(": ")
-			} else {
-				sb.WriteString(" / ")
-			}
-			sb.WriteString(fmt.Sprintf("%s:%s", c.Type, c.Reason))
-		}
-		if c.Message != "" {
-			sb.WriteString(fmt.Sprintf(" (%s)", c.Message))
-		}
-	}
-	return sb.String()
-}
-
-// WaitForSystemPods verifies essential pods for running kurnetes is running
-func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, timeout time.Duration) error {
-	glog.Info("waiting for kube-system pods to appear ...")
-	pStart := time.Now()
-
-	podList := func() (bool, error) {
-		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during pod check")
-		}
-		if time.Since(start) > minLogCheckTime {
-			announceProblems(r, bs, cfg, cr)
-			time.Sleep(kconst.APICallRetryInterval * 5)
-		}
-
-		// Wait for any system pod, as waiting for apiserver may block until etcd
-		pods, err := client.CoreV1().Pods("kube-system").List(meta.ListOptions{})
-		if err != nil {
-			glog.Warningf("pod list returned error: %v", err)
-			return false, nil
-		}
-		glog.Infof("%d kube-system pods found", len(pods.Items))
-		for _, pod := range pods.Items {
-			glog.Infof(podStatusMsg(pod))
-		}
-
-		if len(pods.Items) < 2 {
-			return false, nil
-		}
-		return true, nil
-	}
-	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
-		return fmt.Errorf("apiserver never returned a pod list")
-	}
-	glog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
-	return nil
-}
-
-// WaitForHealthyAPIServer waits for api server status to be running
-func WaitForHealthyAPIServer(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg config.ClusterConfig, cr command.Runner, client *kubernetes.Clientset, start time.Time, hostname string, port int, timeout time.Duration) error {
-	glog.Infof("waiting for apiserver healthz status ...")
-	hStart := time.Now()
-
-	healthz := func() (bool, error) {
-		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during healthz check")
-		}
-
-		if time.Since(start) > minLogCheckTime {
-			announceProblems(r, bs, cfg, cr)
-			time.Sleep(kconst.APICallRetryInterval * 5)
-		}
-
-		status, err := apiServerHealthz(hostname, port)
-		if err != nil {
-			glog.Warningf("status: %v", err)
-			return false, nil
-		}
-		if status != state.Running {
-			return false, nil
-		}
-		return true, nil
-	}
-
-	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, healthz); err != nil {
-		return fmt.Errorf("apiserver healthz never reported healthy")
-	}
-
-	vcheck := func() (bool, error) {
-		if time.Since(start) > timeout {
-			return false, fmt.Errorf("cluster wait timed out during version check")
-		}
-		if err := APIServerVersionMatch(client, cfg.KubernetesConfig.KubernetesVersion); err != nil {
-			glog.Warningf("api server version match failed: %v", err)
-			return false, nil
+// ShouldWait will return true if the config says need to wait
+func ShouldWait(wcs map[string]bool) bool {
+	for _, c := range AllComponentsList {
+		if wcs[c] {
+			return true
 		}
 		return true, nil
 	}
@@ -329,4 +188,6 @@ func KubeletStatus(cr command.Runner) (state.State, error) {
 		return state.Running, nil
 	}
 	return state.Stopped, nil
+	}
+	return false
 }

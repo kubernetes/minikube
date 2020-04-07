@@ -1,5 +1,23 @@
 # Release Notes
 
+## Version 1.9.2 - 2020-04-04
+
+Minor improvements:
+
+* UX: Remove noisy debug statement [#7407](https://github.com/kubernetes/minikube/pull/7407)
+* Feature: Make --wait more flexible [#7375](https://github.com/kubernetes/minikube/pull/7375)
+* Docker: adjust warn if slow for ps and volume [#7410](https://github.com/kubernetes/minikube/pull/7410)
+* Localization: Update Japanese translations [#7403](https://github.com/kubernetes/minikube/pull/7403)
+* Performance: Parallelize updating cluster and setting up certs [#7394](https://github.com/kubernetes/minikube/pull/7394)
+* Addons: allow ingress addon for docker/podman drivers only on linux for now [#7393](https://github.com/kubernetes/minikube/pull/7393)
+
+- Anders F Björklund
+- Medya Ghazizadeh
+- Prasad Katti
+- Priya Wadhwa
+- Thomas Strömberg
+- tomocy
+
 ## Version 1.9.1 - 2020-04-02
 
 Improvements:

@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/blang/semver"
@@ -35,6 +36,7 @@ import (
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
 	"k8s.io/minikube/pkg/addons"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -56,7 +58,6 @@ import (
 
 const (
 	waitTimeout      = "wait-timeout"
-	waitUntilHealthy = "wait"
 	embedCerts       = "embed-certs"
 	keepContext      = "keep-context"
 	imageRepository  = "image-repository"
@@ -65,12 +66,11 @@ const (
 
 // Start spins up a guest and starts the kubernetes node.
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) (*kubeconfig.Settings, error) {
-	cp := ""
 	if apiServer {
-		cp = "control plane "
+		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": n.Name, "cluster": cc.Name})
+	} else {
+		out.T(out.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": n.Name, "cluster": cc.Name})
 	}
-
-	out.T(out.ThumbsUp, "Starting {{.controlPlane}}node {{.name}} in cluster {{.cluster}}", out.V{"controlPlane": cp, "name": n.Name, "cluster": cc.Name})
 
 	var kicGroup errgroup.Group
 	if driver.IsKIC(cc.Driver) {
@@ -157,7 +157,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		}
 
 		// Skip pre-existing, because we already waited for health
-		if viper.GetBool(waitUntilHealthy) && !preExists {
+		if kverify.ShouldWait(cc.VerifyComponents) && !preExists {
 			if err := bs.WaitForNode(cc, n, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
 			}
@@ -241,12 +241,24 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node) 
 		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
-	if err := bs.UpdateCluster(cfg); err != nil {
-		exit.WithError("Failed to update cluster", err)
-	}
-	if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
-		exit.WithError("Failed to setup certs", err)
-	}
+	// update cluster and set up certs in parallel
+	var parallel sync.WaitGroup
+	parallel.Add(2)
+	go func() {
+		if err := bs.UpdateCluster(cfg); err != nil {
+			exit.WithError("Failed to update cluster", err)
+		}
+		parallel.Done()
+	}()
+
+	go func() {
+		if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
+			exit.WithError("Failed to setup certs", err)
+		}
+		parallel.Done()
+	}()
+
+	parallel.Wait()
 	return bs
 }
 
