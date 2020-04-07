@@ -53,6 +53,9 @@ import (
 // validateFunc are for subtests that share a single setup
 type validateFunc func(context.Context, *testing.T, string)
 
+// used in validateStartWithProxy and validateSoftStart
+var apiPortTest = 8441
+
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
 
@@ -180,7 +183,6 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
-	apiServerPort := 8441
 	srv, err := startHTTPProxy(t)
 	if err != nil {
 		t.Fatalf("failed to set up the test proxy: %s", err)
@@ -188,7 +190,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 	// Use more memory so that we may reliably fit MySQL and nginx
 	// changing api server so later in soft start we verify it didn't change
-	startArgs := append([]string{"start", "-p", profile, fmt.Sprintf("--apiserver-port=%d", apiServerPort), "--wait=true"}, StartArgs()...)
+	startArgs := append([]string{"start", "-p", profile, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -212,15 +214,14 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 
 // validateSoftStart validates that after minikube already started, a "minikube start" should not change the configs.
 func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
-	apiPortBefore := 8441
 	start := time.Now()
 	// the test before this had been start with --apiserver-port=8441
 	beforeCfg, err := config.LoadProfile(profile)
 	if err != nil {
 		t.Errorf("error reading cluster config before soft start: %v", err)
 	}
-	if beforeCfg.Config.KubernetesConfig.NodePort != apiPortBefore {
-		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortBefore, beforeCfg.Config.KubernetesConfig.NodePort)
+	if beforeCfg.Config.KubernetesConfig.NodePort != apiPortTest {
+		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.KubernetesConfig.NodePort)
 	}
 
 	softStartArgs := []string{"start", "-p", profile}
@@ -236,8 +237,8 @@ func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
 		t.Errorf("error reading cluster config after soft start: %v", err)
 	}
 
-	if afterCfg.Config.KubernetesConfig.NodePort != apiPortBefore {
-		t.Errorf("expected node port in the config not change after soft start. exepceted node port to be %d but got %d.", apiPortBefore, afterCfg.Config.KubernetesConfig.NodePort)
+	if afterCfg.Config.KubernetesConfig.NodePort != apiPortTest {
+		t.Errorf("expected node port in the config not change after soft start. exepceted node port to be %d but got %d.", apiPortTest, afterCfg.Config.KubernetesConfig.NodePort)
 	}
 
 }
