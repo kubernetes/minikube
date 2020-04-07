@@ -98,7 +98,6 @@ func TestStartStop(t *testing.T) {
 					t.Fatalf("failed starting minikube -first start-. args %q: %v", rr.Command(), err)
 				}
 
-
 				// Soft Start this should not take longer than 10 seconds
 				softStartArgs := []string{"start", "-p", profile, "--alsologtostderr", "-v=3"}
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), softStartArgs...))
@@ -106,8 +105,6 @@ func TestStartStop(t *testing.T) {
 					t.Fatalf("failed to soft start minikube. args %q: %v", rr.Command(), err)
 				}
 
-				
-				
 				if !strings.Contains(tc.name, "cni") {
 					testPodScheduling(ctx, t, profile)
 				}
