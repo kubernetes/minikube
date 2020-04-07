@@ -106,6 +106,17 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	cr := configureRuntimes(mRunner, cc.Driver, cc.KubernetesConfig, sv)
 	showVersionInfo(n.KubernetesVersion, cr)
 
+	// ssh should be set up by now
+	// switch to using ssh runner since it is faster
+	if driver.IsKIC(cc.Driver) {
+		sshRunner, err := machine.SSHRunner(host)
+		if err != nil {
+			glog.Infof("error getting ssh runner, will use slower command runner: %v", err)
+		} else {
+			mRunner = sshRunner
+		}
+	}
+
 	var bs bootstrapper.Bootstrapper
 	var kcs *kubeconfig.Settings
 	if apiServer {
