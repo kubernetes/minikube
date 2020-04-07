@@ -170,7 +170,7 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 			exit.WithCodeT(exit.Config, "Generate unable to parse disk size '{{.diskSize}}': {{.error}}", out.V{"diskSize": viper.GetString(humanReadableDiskSize), "error": err})
 		}
 
-		r, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime})
+		r, err := cruntime.New(cruntime.Config{Type: viper.GetString(containerRuntime)})
 		if err != nil {
 			return cc, config.Node{}, errors.Wrap(err, "new runtime manager")
 		}
