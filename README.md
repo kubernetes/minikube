@@ -49,7 +49,7 @@ See the [Getting Started Guide](https://minikube.sigs.k8s.io/docs/start/)
 
 See https://minikube.sigs.k8s.io/docs/
 
-## Minikube in action
+## More Examples
 
 See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/)
 
