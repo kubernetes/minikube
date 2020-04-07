@@ -39,6 +39,67 @@ import (
 	"k8s.io/minikube/pkg/version"
 )
 
+const (
+	isoURL                  = "iso-url"
+	memory                  = "memory"
+	cpus                    = "cpus"
+	humanReadableDiskSize   = "disk-size"
+	nfsSharesRoot           = "nfs-shares-root"
+	nfsShare                = "nfs-share"
+	kubernetesVersion       = "kubernetes-version"
+	hostOnlyCIDR            = "host-only-cidr"
+	containerRuntime        = "container-runtime"
+	criSocket               = "cri-socket"
+	networkPlugin           = "network-plugin"
+	enableDefaultCNI        = "enable-default-cni"
+	hypervVirtualSwitch     = "hyperv-virtual-switch"
+	hypervUseExternalSwitch = "hyperv-use-external-switch"
+	hypervExternalAdapter   = "hyperv-external-adapter"
+	kvmNetwork              = "kvm-network"
+	kvmQemuURI              = "kvm-qemu-uri"
+	kvmGPU                  = "kvm-gpu"
+	kvmHidden               = "kvm-hidden"
+	minikubeEnvPrefix       = "MINIKUBE"
+	installAddons           = "install-addons"
+	defaultDiskSize         = "20000mb"
+	keepContext             = "keep-context"
+	createMount             = "mount"
+	featureGates            = "feature-gates"
+	apiServerName           = "apiserver-name"
+	apiServerPort           = "apiserver-port"
+	dnsDomain               = "dns-domain"
+	serviceCIDR             = "service-cluster-ip-range"
+	imageRepository         = "image-repository"
+	imageMirrorCountry      = "image-mirror-country"
+	mountString             = "mount-string"
+	disableDriverMounts     = "disable-driver-mounts"
+	cacheImages             = "cache-images"
+	uuid                    = "uuid"
+	vpnkitSock              = "hyperkit-vpnkit-sock"
+	vsockPorts              = "hyperkit-vsock-ports"
+	embedCerts              = "embed-certs"
+	noVTXCheck              = "no-vtx-check"
+	downloadOnly            = "download-only"
+	dnsProxy                = "dns-proxy"
+	hostDNSResolver         = "host-dns-resolver"
+	waitComponents          = "wait"
+	force                   = "force"
+	dryRun                  = "dry-run"
+	interactive             = "interactive"
+	waitTimeout             = "wait-timeout"
+	nativeSSH               = "native-ssh"
+	minUsableMem            = 1024 // Kubernetes will not start with less than 1GB
+	minRecommendedMem       = 2000 // Warn at no lower than existing configurations
+	minimumCPUS             = 2
+	minimumDiskSize         = 2000
+	autoUpdate              = "auto-update-drivers"
+	hostOnlyNicType         = "host-only-nic-type"
+	natNicType              = "nat-nic-type"
+	nodes                   = "nodes"
+	preload                 = "preload"
+	deleteOnFailure         = "delete-on-failure"
+)
+
 // initMinikubeFlags includes commandline flags for minikube.
 func initMinikubeFlags() {
 	viper.SetEnvPrefix(minikubeEnvPrefix)
@@ -287,6 +348,8 @@ func generateClusterConfig(cmd *cobra.Command, existing *config.ClusterConfig, k
 // updateExistingConfigFromFlags will update the existing config from the flags - used on a second start
 // skipping updating existing docker env , docker opt, InsecureRegistry, registryMirror, extra-config, apiserver-ips
 func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterConfig) config.ClusterConfig { //nolint to supress cyclomatic complexity 45 of func `updateExistingConfigFromFlags` is high (> 30)
+	validateFlags(cmd, existing.Driver)
+
 	if cmd.Flags().Changed(containerRuntime) {
 		existing.KubernetesConfig.ContainerRuntime = viper.GetString(containerRuntime)
 	}
@@ -304,23 +367,31 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 	}
 
 	if cmd.Flags().Changed(memory) {
-		glog.Warning("can not change memory for an exiting minikube cluster. you can delete and re-create instead.")
+		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(memory))
+		if err != nil {
+			glog.Warningf("error calculate memory size in mb : %v", err)
+		}
+		if memInMB != existing.Memory {
+			out.WarningT("You not the change the memory size for an exiting minikube cluster. Pease first delete the cluster.")
+		}
+
 	}
 
 	if cmd.Flags().Changed(cpus) {
-		glog.Warning("can not change cpu for an exiting minikube cluster. you can delete and re-create instead.")
+		if viper.GetInt(cpus) != existing.CPUs {
+			out.WarningT("You not the change the CPUs for an exiting minikube cluster. Pease first delete the cluster.")
+		}
 	}
 
 	if cmd.Flags().Changed(humanReadableDiskSize) {
-		glog.Warning("can not change cpu for an exiting minikube cluster. you can delete and re-create instead.")
-	}
+		memInMB, err := pkgutil.CalculateSizeInMB(viper.GetString(humanReadableDiskSize))
+		if err != nil {
+			glog.Warningf("error calculate disk size in mb : %v", err)
+		}
 
-	if cmd.Flags().Changed("vm-driver") {
-		existing.Driver = viper.GetString("vm-driver")
-	}
-
-	if cmd.Flags().Changed("driver") {
-		existing.Driver = viper.GetString("driver")
+		if memInMB != existing.DiskSize {
+			out.WarningT("You not the change the Disk size for an exiting minikube cluster. Pease first delete the cluster.")
+		}
 	}
 
 	if cmd.Flags().Changed(vpnkitSock) {
