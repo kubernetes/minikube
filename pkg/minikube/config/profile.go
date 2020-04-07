@@ -257,32 +257,19 @@ func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 	return p, err
 }
 
-/*
+func tryTranslate(vcontran []VersionConfigTranslator) (interface{}, error) {
 
-tryTranslate() {
-	loadFromFile
-	if no error {
-		TryTranslateToNext
-		if no error {
-			TryTranslate
-		}
+	var thisVersionConfig interface{}
+	version := vcontran[0]
+	thisVersionConfig, error := version.TryLoadFromFile()
+	if (error != nil || !version.IsValid(thisVersionConfig)) && len(vcontran) > 1 {
+		thisVersionConfig, _ = tryTranslate(vcontran[1:])
 	}
-}
-
-*/
-
-func tryTranslate([]VersionConfigTranslator) (interface{}, error) {
-	var translatedConfigLesser interface{}
-	version := arr[0]
-	result, error := version.TryLoadFromFile()
-	if error != nil && !version.IsValid(result) {
-		translatedConfigLesser, _ = tryTranslate(arr[1:])
-	}
-	translatedConfig, err := version.TranslateToNextVersion(translatedConfigLesser)
+	translatedConfig, err := version.TranslateToNextVersion(thisVersionConfig)
 	return translatedConfig, err
 }
 
-var arr = []VersionConfigTranslator{
+var versionConfigTranslators = []VersionConfigTranslator{
 	{
 		TryLoadFromFile: func() (interface{}, error) {
 			return nil, nil
