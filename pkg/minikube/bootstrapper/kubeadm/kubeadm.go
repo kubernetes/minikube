@@ -83,11 +83,6 @@ func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, n config.Node)
 	return &Bootstrapper{c: runner, contextName: cc.Name, k8sClient: nil}, nil
 }
 
-// GetKubeletStatus returns the kubelet status
-func (k *Bootstrapper) GetKubeletStatus() (string, error) {
-	st, err := kverify.KubeletStatus(k.c)
-	return st.String(), err
-}
 
 // GetAPIServerStatus returns the api-server status
 func (k *Bootstrapper) GetAPIServerStatus(hostname string, port int) (string, error) {
