@@ -286,6 +286,13 @@ func platform() string {
 // runStart handles the executes the flow of "minikube start"
 func runStart(cmd *cobra.Command, args []string) {
 	displayVersion(version.GetVersion())
+
+	// No need to do the update check if no one is going to see it
+	if !viper.GetBool(interactive) || !viper.GetBool(dryRun) {
+		// Avoid blocking execution on optional HTTP fetches
+		go notify.MaybePrintUpdateTextFromGithub()
+	}
+
 	displayEnviron(os.Environ())
 
 	// if --registry-mirror specified when run minikube start,
@@ -406,12 +413,7 @@ func displayVersion(version string) {
 		prefix = fmt.Sprintf("[%s] ", ClusterFlagValue())
 	}
 
-	versionState := out.Happy
-	if notify.MaybePrintUpdateTextFromGithub() {
-		versionState = out.Meh
-	}
-
-	out.T(versionState, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version, "platform": platform()})
+	out.T(out.Happy, "{{.prefix}}minikube {{.version}} on {{.platform}}", out.V{"prefix": prefix, "version": version, "platform": platform()})
 }
 
 // displayEnviron makes the user aware of environment variables that will affect how minikube operates
