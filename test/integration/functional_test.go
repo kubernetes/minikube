@@ -218,8 +218,7 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string, a
 // validateSoftStart validates that after minikube already started, a "minikube start" should not change the configs.
 func validateSoftStart(ctx context.Context, t *testing.T, profile string, apiPortBefore int) {
 	start := time.Now()
-	// the test before this had been start with api-server
-	// before soft start the cluster was started with --apiserver-port=8441
+	// the test before this had been start with --apiserver-port=8441
 	beforeCfg := config.LoadProfile(profile)
 	if beforeCfg.Config.NodePort != apiPortBefore {
 		t.Errorf("expected cluster config node port before soft start to be %d but got %s", apiPortBefore, beforeCfg.Config.NodePort)
