@@ -35,12 +35,11 @@ const SysVName = "OpenRC"
 
 var restartWrapper = `#!/bin/bash
 # Wrapper script to emulate systemd restart on non-systemd systems
-unit=$1
-args=""
+readonly UNIT_PATH=$1
 
 while true; do
-  if [[ -f "${conf}" ]]; then
-    eval $(egrep "^ExecStart=" "${conf}" | cut -d"=" -f2-)
+  if [[ -f "${UNIT_PATH}" ]]; then
+    eval $(egrep "^ExecStart=" "${UNIT_PATH}" | cut -d"=" -f2-)
   fi
   sleep 1
 done
@@ -54,11 +53,11 @@ readonly UNIT_PATH="{{.Unit}}"
 readonly PID_PATH="/var/run/${NAME}.pid"
 
 function start() {
-    start-stop-daemon --oknodo --PID_PATH "${PID_PATH}" --background --start --make-PID_PATH --exec "${WRAPPER}" "${BINARY}" "${UNIT_PATH}"
+    start-stop-daemon --oknodo --pidfile "${PID_PATH}" --background --start --make-pid --exec "${RESTART_WRAPPER}" "${UNIT_PATH}"
 }
 
 function stop() {
-    start-stop-daemon --oknodo --PID_PATH "${PID_PATH}" --stop
+    start-stop-daemon --oknodo --pidfile "${PID_PATH}" --stop
 }
 
 case "$1" in
@@ -73,10 +72,10 @@ case "$1" in
         start
 		;;
     status)
-        start-stop-daemon --pid "${PID_PATH}" --status
+        start-stop-daemon --pidfile "${PID_PATH}" --status
 		;;
 	*)
-	    echo "Usage: service BINARY {start|stop|restart|status}"
+	    echo "Usage: {{.Name}} {start|stop|restart|status}"
 		exit 1
 		;;
 esac
