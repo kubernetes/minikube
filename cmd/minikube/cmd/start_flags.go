@@ -372,14 +372,14 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 			glog.Warningf("error calculate memory size in mb : %v", err)
 		}
 		if memInMB != existing.Memory {
-			out.WarningT("You not the change the memory size for an exiting minikube cluster. Pease first delete the cluster.")
+			out.WarningT("You cannot change the memory size for an exiting minikube cluster. Please first delete the cluster.")
 		}
 
 	}
 
 	if cmd.Flags().Changed(cpus) {
 		if viper.GetInt(cpus) != existing.CPUs {
-			out.WarningT("You not the change the CPUs for an exiting minikube cluster. Pease first delete the cluster.")
+			out.WarningT("You cannot change the CPUs for an exiting minikube cluster. Please first delete the cluster.")
 		}
 	}
 
@@ -390,7 +390,7 @@ func updateExistingConfigFromFlags(cmd *cobra.Command, existing *config.ClusterC
 		}
 
 		if memInMB != existing.DiskSize {
-			out.WarningT("You not the change the Disk size for an exiting minikube cluster. Pease first delete the cluster.")
+			out.WarningT("You cannot change the Disk size for an exiting minikube cluster. Please first delete the cluster.")
 		}
 	}
 
