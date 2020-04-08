@@ -1,28 +1,27 @@
 ---
-title: "stop"
+title: "options"
 description: >
-  Stops a running local kubernetes cluster
+  Show a list of global command-line options (applies to all commands).
 ---
 
 
 
-## minikube stop
+## minikube options
 
-Stops a running local kubernetes cluster
+Show a list of global command-line options (applies to all commands).
 
 ### Synopsis
 
-Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
-itself, leaving all files intact. The cluster can be started again with the "start" command.
+Show a list of global command-line options (applies to all commands).
 
 ```
-minikube stop [flags]
+minikube options [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for stop
+  -h, --help   help for options
 ```
 
 ### Options inherited from parent commands

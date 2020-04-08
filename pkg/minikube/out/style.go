@@ -162,7 +162,8 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 	return applyPrefix(s.Prefix, format)
 }
 
-func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...V) string {
+// ApplyTemplateFormatting applies formatting to the provided template
+func ApplyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...V) string {
 	if a == nil {
 		a = []V{{}}
 	}
