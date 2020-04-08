@@ -166,5 +166,6 @@ div.td-content {
 
 // make search bar wider https://www.docsy.dev/docs/adding-content/navigation/#configure-local-search-with-lunr
 .popover.offline-search-result {
+    background-color: $mk-dark !important;
     max-width: 460px;
 }
