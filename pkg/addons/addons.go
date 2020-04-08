@@ -328,13 +328,13 @@ func Start(wg sync.WaitGroup, profile string, toEnable map[string]bool, addition
 	out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
 	for _, a := range toEnableList {
 		wg.Add(1)
-		go func(name) {
+		go func(name string) {
 			err := Set(name, "true", profile)
 			if err != nil {
 				// Intentionally non-fatal
 				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": name, "error": err})
 			}
 			wg.Done()
-		}()
+		}(a)
 	}
 }
