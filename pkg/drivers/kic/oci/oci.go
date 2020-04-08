@@ -84,8 +84,9 @@ func DeleteContainer(ociBin string, name string) error {
 	return nil
 }
 
-// SetupContainerNode sets up the container node
-func SetupContainerNode(p CreateParams) error {
+// PrepareContainerNode sets up the container node befpre CreateContainerNode is caleld
+// for the docker runtime, it creates a docker volume which will be mounted into kic
+func PrepareContainerNode(p CreateParams) error {
 	if p.OCIBinary != Docker {
 		return nil
 	}

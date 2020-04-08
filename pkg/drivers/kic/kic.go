@@ -113,7 +113,7 @@ func (d *Driver) Create() error {
 		}
 	}
 
-	if err := oci.SetupContainerNode(params); err != nil {
+	if err := oci.PrepareContainerNode(params); err != nil {
 		return errors.Wrap(err, "setting up container node")
 	}
 
