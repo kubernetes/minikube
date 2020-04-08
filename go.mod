@@ -22,10 +22,12 @@ require (
 	github.com/elazarl/goproxy/ext v0.0.0-20190421051319-9d40249d3c2f // indirect
 	github.com/evanphx/json-patch v4.5.0+incompatible // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
+	github.com/gohugoio/hugo v0.68.3 // indirect
 	github.com/golang-collections/collections v0.0.0-20130729185459-604e922904d3
 	github.com/golang/glog v0.0.0-20160126235308-23def4e6c14b
-	github.com/google/go-cmp v0.3.1
+	github.com/google/go-cmp v0.3.2-0.20191028172631-481baca67f93
 	github.com/google/go-containerregistry v0.0.0-20200131185320-aec8da010de2
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/googleapis/gnostic v0.3.0 // indirect
@@ -47,10 +49,10 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51
 	github.com/libvirt/libvirt-go v3.4.0+incompatible
 	github.com/machine-drivers/docker-machine-driver-vmware v0.1.1
-	github.com/mattn/go-isatty v0.0.9
+	github.com/mattn/go-isatty v0.0.11
 	github.com/mitchellh/go-ps v0.0.0-20170309133038-4fdf99ab2936
 	github.com/moby/hyperkit v0.0.0-20171020124204-a12cd7250bcd
-	github.com/olekukonko/tablewriter v0.0.0-20170122224234-a0225b3f23b5
+	github.com/olekukonko/tablewriter v0.0.4
 	github.com/onsi/ginkgo v1.10.3 // indirect
 	github.com/onsi/gomega v1.7.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0-rc1
@@ -67,7 +69,7 @@ require (
 	github.com/shirou/gopsutil v2.18.12+incompatible
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.3.2
+	github.com/spf13/viper v1.6.1
 	github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f // indirect
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	github.com/xeipuuv/gojsonschema v0.0.0-20180618132009-1d523034197f

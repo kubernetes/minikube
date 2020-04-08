@@ -25,6 +25,7 @@ import (
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -113,15 +114,13 @@ func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout tim
 
 	checkRunning := func() (bool, error) {
 		if err := ExpectAppsRunning(cs, expected); err != nil {
-			glog.Infof("error waiting for apps to be running: %v", err)
-			time.Sleep(kconst.APICallRetryInterval * 5)
 			return false, nil
 		}
 		return true, nil
 	}
 
 	if err := wait.PollImmediate(kconst.APICallRetryInterval, timeout, checkRunning); err != nil {
-		return fmt.Errorf("apiserver never returned a pod list")
+		return errors.Wrapf(err, "checking k8s-apps to be running")
 	}
 	glog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
 	return nil
