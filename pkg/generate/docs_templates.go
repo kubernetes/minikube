@@ -14,14 +14,13 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package cmd
+package generate
 
-import (
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
-)
+var title = `---
+title: "{{.Command}}"
+description: >
+  {{.Description}}
+---
 
-// ClusterFlagValue returns the current cluster name based on flags
-func ClusterFlagValue() string {
-	return viper.GetString(config.ProfileName)
-}
+
+`

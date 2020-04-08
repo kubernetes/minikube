@@ -1,31 +1,32 @@
 ---
 title: "kubectl"
-linkTitle: "kubectl"
-weight: 1
-date: 2019-08-01
 description: >
   Run kubectl
 ---
 
 
-### Overview
 
-Run the Kubernetes client, download it if necessary.
-Remember `--` after kubectl!
+## minikube kubectl
 
-### Usage
+Run kubectl
+
+### Synopsis
+
+Run the kubernetes client, download it if necessary. Remember -- after kubectl!
+
+Examples:
+minikube kubectl -- --help
+minikube kubectl -- get pods --namespace kube-system
 
 ```
 minikube kubectl [flags]
 ```
 
-### Examples:
+### Options
 
 ```
-minikube kubectl -- --help
-minikube kubectl -- get pods --namespace kube-system
+  -h, --help   help for kubectl
 ```
-
 
 ### Options inherited from parent commands
 
@@ -40,3 +41,4 @@ minikube kubectl -- get pods --namespace kube-system
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+
