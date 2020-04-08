@@ -82,10 +82,9 @@ func status() registry.State {
 	if ctx.Err() == context.DeadlineExceeded {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is responding too slow. Try: restarting docker."}
 	}
-	if err != nil{
+	if err != nil {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker service is not running. Try: starting docker service."}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
 }
-

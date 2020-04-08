@@ -19,6 +19,7 @@ package node
 import (
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/golang/glog"
 	"github.com/spf13/viper"
@@ -111,8 +112,13 @@ func beginDownloadKicArtifacts(g *errgroup.Group) {
 // WaitDownloadKicArtifacts blocks until the required artifacts for KIC are downloaded.
 func waitDownloadKicArtifacts(g *errgroup.Group) {
 	if err := g.Wait(); err != nil {
-		glog.Errorln("Error downloading kic artifacts: ", err)
-		return
+		if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") {
+			out.WarningT("Failed to connect to docker daemon: {{.error}}", out.V{"error": err.Error()})
+			exit.UsageT("Please make sure Docker service is running.")
+		} else {
+			exit.WithError("Failed to download kic base image", err)
+		}
+
 	}
 	glog.Info("Successfully downloaded all kic artifacts")
 }
