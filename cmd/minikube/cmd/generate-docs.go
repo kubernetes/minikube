@@ -20,7 +20,7 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/cobra/doc"
+	"k8s.io/minikube/pkg/generate"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -43,7 +43,7 @@ var generateDocs = &cobra.Command{
 		}
 
 		// generate docs
-		if err := doc.GenMarkdownTree(RootCmd, path); err != nil {
+		if err := generate.Docs(RootCmd, path); err != nil {
 			exit.WithError("Unable to generate docs", err)
 		}
 		out.T(out.Documentation, "Docs have been saved at - {{.path}}", out.V{"path": path})

@@ -1,20 +1,27 @@
 ---
 title: "ip"
-linkTitle: "ip"
-weight: 1
-date: 2019-08-01
 description: >
   Retrieves the IP address of the running cluster
 ---
 
-### Overview
+
+
+## minikube ip
+
+Retrieves the IP address of the running cluster
+
+### Synopsis
 
 Retrieves the IP address of the running cluster, and writes it to STDOUT.
 
-### Usage
-
 ```
 minikube ip [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for ip
 ```
 
 ### Options inherited from parent commands
@@ -30,3 +37,4 @@ minikube ip [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+

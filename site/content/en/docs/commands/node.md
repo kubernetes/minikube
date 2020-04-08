@@ -1,57 +1,27 @@
 ---
-title: "config"
+title: "node"
 description: >
-  Modify minikube config
+  Node operations
 ---
 
 
 
-## minikube config
+## minikube node
 
-Modify minikube config
+Node operations
 
 ### Synopsis
 
-config modifies minikube config files using subcommands like "minikube config set driver kvm"
-Configurable fields: 
-
- * driver
- * vm-driver
- * container-runtime
- * feature-gates
- * v
- * cpus
- * disk-size
- * host-only-cidr
- * memory
- * log_dir
- * kubernetes-version
- * iso-url
- * WantUpdateNotification
- * ReminderWaitPeriodInHours
- * WantReportError
- * WantReportErrorPrompt
- * WantKubectlDownloadMsg
- * WantNoneDriverWarning
- * profile
- * bootstrapper
- * ShowDriverDeprecationNotification
- * ShowBootstrapperDeprecationNotification
- * insecure-registry
- * hyperv-virtual-switch
- * disable-driver-mounts
- * cache
- * embed-certs
- * native-ssh
+Operations on nodes
 
 ```
-minikube config SUBCOMMAND [flags]
+minikube node [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for config
+  -h, --help   help for node
 ```
 
 ### Options inherited from parent commands
@@ -68,22 +38,25 @@ minikube config SUBCOMMAND [flags]
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube config get
+## minikube node add
 
-Gets the value of PROPERTY_NAME from the minikube config file
+Adds a node to the given cluster.
 
 ### Synopsis
 
-Returns the value of PROPERTY_NAME from the minikube config file.  Can be overwritten at runtime by flags or environmental variables.
+Adds a node to the given cluster config, and starts it.
 
 ```
-minikube config get PROPERTY_NAME [flags]
+minikube node add [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for get
+      --control-plane       If true, the node added will also be a control plane in addition to a worker.
+      --delete-on-failure   If set, delete the current cluster if start fails and try again. Defaults to false.
+  -h, --help                help for add
+      --worker              If true, the added node will be marked for work. Defaults to true. (default true)
 ```
 
 ### Options inherited from parent commands
@@ -100,17 +73,49 @@ minikube config get PROPERTY_NAME [flags]
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube config help
+## minikube node delete
+
+Deletes a node from a cluster.
+
+### Synopsis
+
+Deletes a node from a cluster.
+
+```
+minikube node delete [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for delete
+```
+
+### Options inherited from parent commands
+
+```
+      --alsologtostderr                  log to standard error as well as files
+  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
+      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
+      --log_dir string                   If non-empty, write log files in this directory
+      --logtostderr                      log to standard error instead of files
+  -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
+      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
+  -v, --v Level                          log level for V logs
+      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
+```
+
+## minikube node help
 
 Help about any command
 
 ### Synopsis
 
 Help provides help for any command in the application.
-Simply type config help [path to command] for full details.
+Simply type node help [path to command] for full details.
 
 ```
-minikube config help [command] [flags]
+minikube node help [command] [flags]
 ```
 
 ### Options
@@ -133,23 +138,24 @@ minikube config help [command] [flags]
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube config set
+## minikube node start
 
-Sets an individual value in a minikube config file
+Starts a node.
 
 ### Synopsis
 
-Sets the PROPERTY_NAME config value to PROPERTY_VALUE
-	These values can be overwritten by flags or environment variables at runtime.
+Starts an existing stopped node in a cluster.
 
 ```
-minikube config set PROPERTY_NAME PROPERTY_VALUE [flags]
+minikube node start [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for set
+      --delete-on-failure   If set, delete the current cluster if start fails and try again. Defaults to false.
+  -h, --help                help for start
+      --name string         The name of the node to start
 ```
 
 ### Options inherited from parent commands
@@ -166,56 +172,23 @@ minikube config set PROPERTY_NAME PROPERTY_VALUE [flags]
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
 
-## minikube config unset
+## minikube node stop
 
-unsets an individual value in a minikube config file
+Stops a node in a cluster.
 
 ### Synopsis
 
-unsets PROPERTY_NAME from the minikube config file.  Can be overwritten by flags or environmental variables
+Stops a node in a cluster.
 
 ```
-minikube config unset PROPERTY_NAME [flags]
+minikube node stop [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for unset
-```
-
-### Options inherited from parent commands
-
-```
-      --alsologtostderr                  log to standard error as well as files
-  -b, --bootstrapper string              The name of the cluster bootstrapper that will set up the kubernetes cluster. (default "kubeadm")
-      --log_backtrace_at traceLocation   when logging hits line file:N, emit a stack trace (default :0)
-      --log_dir string                   If non-empty, write log files in this directory
-      --logtostderr                      log to standard error instead of files
-  -p, --profile string                   The name of the minikube VM being used. This can be set to allow having multiple instances of minikube independently. (default "minikube")
-      --stderrthreshold severity         logs at or above this threshold go to stderr (default 2)
-  -v, --v Level                          log level for V logs
-      --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
-```
-
-## minikube config view
-
-Display values currently set in the minikube config file
-
-### Synopsis
-
-Display values currently set in the minikube config file.
-
-```
-minikube config view [flags]
-```
-
-### Options
-
-```
-      --format string   Go template format string for the config view output.  The format for Go templates can be found here: https://golang.org/pkg/text/template/
-                        For the list of accessible variables for the template, see the struct values here: https://godoc.org/k8s.io/minikube/cmd/minikube/cmd/config#ConfigViewTemplate (default "- {{.ConfigKey}}: {{.ConfigValue}}\n")
-  -h, --help            help for view
+  -h, --help          help for stop
+      --name string   The name of the node to delete
 ```
 
 ### Options inherited from parent commands
