@@ -38,7 +38,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/util/retry"
 
 	"github.com/elazarl/goproxy"
 	"github.com/hashicorp/go-retryablehttp"
@@ -46,11 +48,13 @@ import (
 	"github.com/phayes/freeport"
 	"github.com/pkg/errors"
 	"golang.org/x/build/kubernetes/api"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 // validateFunc are for subtests that share a single setup
 type validateFunc func(context.Context, *testing.T, string)
+
+// used in validateStartWithProxy and validateSoftStart
+var apiPortTest = 8441
 
 // TestFunctional are functionality tests which can safely share a profile in parallel
 func TestFunctional(t *testing.T) {
@@ -80,6 +84,7 @@ func TestFunctional(t *testing.T) {
 		}{
 			{"CopySyncFile", setupFileSync},                 // Set file for the file sync test case
 			{"StartWithProxy", validateStartWithProxy},      // Set everything else up for success
+			{"SoftStart", validateSoftStart},                // do a soft start. ensure config didnt change.
 			{"KubeContext", validateKubeContext},            // Racy: must come immediately after "minikube start"
 			{"KubectlGetPods", validateKubectlGetPods},      // Make sure apiserver is up
 			{"CacheCmd", validateCacheCmd},                  // Caches images needed for subsequent tests because of proxy
@@ -184,7 +189,8 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Use more memory so that we may reliably fit MySQL and nginx
-	startArgs := append([]string{"start", "-p", profile, "--wait=true"}, StartArgs()...)
+	// changing api server so later in soft start we verify it didn't change
+	startArgs := append([]string{"start", "-p", profile, fmt.Sprintf("--apiserver-port=%d", apiPortTest), "--wait=true"}, StartArgs()...)
 	c := exec.CommandContext(ctx, Target(), startArgs...)
 	env := os.Environ()
 	env = append(env, fmt.Sprintf("HTTP_PROXY=%s", srv.Addr))
@@ -204,6 +210,37 @@ func validateStartWithProxy(ctx context.Context, t *testing.T, profile string) {
 	if !strings.Contains(rr.Stderr.String(), want) {
 		t.Errorf("start stderr=%s, want: *%s*", rr.Stderr.String(), want)
 	}
+}
+
+// validateSoftStart validates that after minikube already started, a "minikube start" should not change the configs.
+func validateSoftStart(ctx context.Context, t *testing.T, profile string) {
+	start := time.Now()
+	// the test before this had been start with --apiserver-port=8441
+	beforeCfg, err := config.LoadProfile(profile)
+	if err != nil {
+		t.Errorf("error reading cluster config before soft start: %v", err)
+	}
+	if beforeCfg.Config.KubernetesConfig.NodePort != apiPortTest {
+		t.Errorf("expected cluster config node port before soft start to be %d but got %d", apiPortTest, beforeCfg.Config.KubernetesConfig.NodePort)
+	}
+
+	softStartArgs := []string{"start", "-p", profile}
+	c := exec.CommandContext(ctx, Target(), softStartArgs...)
+	rr, err := Run(t, c)
+	if err != nil {
+		t.Errorf("failed to soft start minikube. args %q: %v", rr.Command(), err)
+	}
+	t.Logf("soft start took %s for %q cluster.", time.Since(start), profile)
+
+	afterCfg, err := config.LoadProfile(profile)
+	if err != nil {
+		t.Errorf("error reading cluster config after soft start: %v", err)
+	}
+
+	if afterCfg.Config.KubernetesConfig.NodePort != apiPortTest {
+		t.Errorf("expected node port in the config not change after soft start. exepceted node port to be %d but got %d.", apiPortTest, afterCfg.Config.KubernetesConfig.NodePort)
+	}
+
 }
 
 // validateKubeContext asserts that kubectl is properly configured (race-condition prone!)
