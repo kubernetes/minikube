@@ -42,7 +42,6 @@ kubectl get nodes
 NAME                 STATUS   ROLES    AGE     VERSION
 multinode-demo       Ready    master   9m58s   v1.18.0
 multinode-demo-m02   Ready    <none>   9m5s    v1.18.0
-multinode-demo-m03   Ready    <none>   7m9s    v1.18.0
 ```
 
 - Install a CNI (e.g. flannel):
