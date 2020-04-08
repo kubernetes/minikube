@@ -137,15 +137,21 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		}
 	}
 
-	configureMounts()
+	var wg sync.WaitGroup
 
-	if err := CacheAndLoadImagesInConfig(); err != nil {
-		out.FailureT("Unable to load cached images from config file.")
-	}
+	go configureMounts(wg)
+
+	go func() {
+		wg.Add(1)
+		if err := CacheAndLoadImagesInConfig(); err != nil {
+			out.FailureT("Unable to load cached images from config file: {{error}}", out.V{"error": err})
+		}
+		wg.Done()
+	}()
 
 	// enable addons, both old and new!
 	if existingAddons != nil {
-		addons.Start(viper.GetString(config.ProfileName), existingAddons, config.AddonList)
+		go addons.Start(wg, viper.GetString(config.ProfileName), existingAddons, config.AddonList)
 	}
 
 	if apiServer {
@@ -184,6 +190,8 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 			return nil, errors.Wrap(err, "joining cluster")
 		}
 	}
+
+	wg.Wait()
 
 	return kcs, nil
 }

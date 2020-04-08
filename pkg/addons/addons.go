@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -287,7 +288,12 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 }
 
 // Start enables the default addons for a profile, plus any additional
-func Start(profile string, toEnable map[string]bool, additional []string) {
+func Start(wg sync.WaitGroup, profile string, toEnable map[string]bool, additional []string) {
+	wg.Add(1)
+	defer func() {
+		wg.Done()
+	}()
+
 	start := time.Now()
 	glog.Infof("enableAddons start: toEnable=%v, additional=%s", toEnable, additional)
 	defer func() {
@@ -323,10 +329,14 @@ func Start(profile string, toEnable map[string]bool, additional []string) {
 
 	out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
 	for _, a := range toEnableList {
-		err := Set(a, "true", profile)
-		if err != nil {
-			// Intentionally non-fatal
-			out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": a, "error": err})
-		}
+		go func() {
+			wg.Add(1)
+			err := Set(a, "true", profile)
+			if err != nil {
+				// Intentionally non-fatal
+				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": a, "error": err})
+			}
+			wg.Done()
+		}()
 	}
 }
