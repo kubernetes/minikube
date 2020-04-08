@@ -240,6 +240,7 @@
 	"Failed to stop node {{.name}}": "",
 	"Failed to update cluster": "更新 cluster 失败",
 	"Failed to update config": "更新 config 失败",
+	"Failed to validate '{{.driver}}' driver": "",
 	"Failed unmount: {{.error}}": "unmount 失败：{{.error}}",
 	"File permissions used for the mount": "用于 mount 的文件权限",
 	"Filter to use only VM Drivers": "",
