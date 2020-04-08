@@ -41,18 +41,9 @@ By default, minikube installs the latest stable version of Kubernetes that was a
 
 `minikube start --kubernetes-version=v1.11.10`
   
-minikube follows the [Kubernetes Version and Version Skew Support Policy](https://kubernetes.io/docs/setup/version-skew-policy/), so we guarantee support for the latest build for the last 3 minor Kubernetes releases. When practical, minikube aims for the last 6 minor releases so that users can emulate legacy environments.
+minikube follows the [Kubernetes Version and Version Skew Support Policy](https://kubernetes.io/docs/setup/version-skew-policy/), so we guarantee support for the latest build for the last 3 minor Kubernetes releases. When practical, minikube aims to support older releases as well so that users can emulate legacy environments.
 
-As of September 2019, this means that minikube supports and actively tests against the latest builds of:
-
-* v1.16 (default)
-* v1.15
-* v1.14
-* v1.13
-* v1.12
-* v1.11 (best effort)
-
-For more up to date information, see `OldestKubernetesVersion` and `NewestKubernetesVersion` in [constants.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/constants/constants.go)
+For up to date information on supported versions, see `OldestKubernetesVersion` and `NewestKubernetesVersion` in [constants.go](https://github.com/kubernetes/minikube/blob/master/pkg/minikube/constants/constants.go)
 
 ### Enabling feature gates
 
