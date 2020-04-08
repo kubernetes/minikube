@@ -114,7 +114,7 @@ func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout tim
 	checkRunning := func() (bool, error) {
 		if err := ExpectAppsRunning(cs, expected); err != nil {
 			if time.Since(start) > minLogCheckTime {
-				glog.Info("error waiting for apps to be running: %v", err)
+				glog.Infof("error waiting for apps to be running: %v", err)
 				time.Sleep(kconst.APICallRetryInterval * 5)
 			}
 			return false, nil
