@@ -78,7 +78,7 @@ func status() registry.State {
 	defer cancel()
 
 	// Quickly returns an error code if server is not running
-	args := []string{"version", "--format '{{.Server.Version}}"}
+	args := []string{"version", "--format", "{{.Server.Version}}"}
 	err = exec.CommandContext(ctx, oci.Docker, args...).Run()
 	if err != nil {
 		return registry.State{Error: fmt.Errorf(`"%s %s" returned error: %v`, oci.Docker, strings.Join(args, " "), err), Installed: true, Healthy: false, Fix: "Docker is not running or is responding too slow. Try: restarting docker desktop."}
