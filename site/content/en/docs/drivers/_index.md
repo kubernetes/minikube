@@ -25,7 +25,7 @@ To do so, we use the [Docker Machine](https://github.com/docker/machine) library
 * [Hyperkit]({{<ref "hyperkit.md">}}) - VM (preferred)
 * [Docker]({{<ref "docker.md">}}) - VM + Container
 * [VirtualBox]({{<ref "virtualbox.md">}}) - FVM
-* [VMware]({{<ref "parallels.md">}}) - VM
+* [Parallels]({{<ref "parallels.md">}}) - VM
 * [VMware]({{<ref "vmware.md">}}) - VM
 
 ## Windows
