@@ -142,7 +142,7 @@ func (d *Driver) GetState() (state.State, error) {
 		return state.Running, nil
 	}
 
-	return kverify.KubeletStatus(d.exec)
+	return kverify.KubeletStatus(d.exec), nil
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
