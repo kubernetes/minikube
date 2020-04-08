@@ -209,6 +209,13 @@ func clusterLogs(t *testing.T, profile string) {
 	}
 	t.Logf("%s logs: %s", t.Name(), rr.Stdout)
 
+	rr, err := Run(t, exec.Command(Target(), "-p", profile, "ssh", "df -h /var/lib/docker/overlay2 /var /; du -hs /var/lib/docker/overlay2"))
+	if err != nil {
+		t.Logf("failed logs error: %v", err)
+		return
+	}
+	t.Logf("%s logs: %s", t.Name(), rr.Stdout)
+
 	st = Status(context.Background(), t, Target(), profile, "APIServer")
 	if st != state.Running.String() {
 		t.Logf("%q apiserver is not running, skipping kubectl commands (state=%q)", profile, st)
@@ -228,6 +235,14 @@ func clusterLogs(t *testing.T, profile string) {
 	} else {
 		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 	}
+
+	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "po", "-A"))
+	if err != nil {
+		t.Logf("%s: %v", rr.Command(), err)
+	} else {
+		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
+	}
+
 	t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
 }
 
