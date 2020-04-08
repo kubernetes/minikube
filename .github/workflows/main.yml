@@ -110,7 +110,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -199,7 +199,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -280,7 +280,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -361,7 +361,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -442,7 +442,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download binaries
         uses: actions/download-artifact@v1
