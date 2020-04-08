@@ -110,7 +110,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -199,7 +199,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -280,7 +280,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -361,7 +361,7 @@ jobs:
     - name: Install gopogh
       shell: bash
       run: |
-        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
         sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
     - name: Download Binaries
       uses: actions/download-artifact@v1
@@ -413,7 +413,7 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  podman_ubuntu_18_04:
+  podman_ubuntu_18_04_experimental:
       needs: [build_minikube]
       env:
         TIME_ELAPSED: time
@@ -442,7 +442,7 @@ jobs:
       - name: Install gopogh
         shell: bash
         run: |
-          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh-linux-amd64
+          curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.18/gopogh-linux-amd64
           sudo install gopogh-linux-amd64 /usr/local/bin/gopogh
       - name: Download binaries
         uses: actions/download-artifact@v1
@@ -498,7 +498,7 @@ jobs:
   # collect all the reports and upload
   upload_all_reports:
     if: always()
-    needs: [docker_ubuntu_16_04,docker_ubuntu_18_04,none_ubuntu16_04,none_ubuntu18_04,podman_ubuntu_18_04]
+    needs: [docker_ubuntu_16_04,docker_ubuntu_18_04,none_ubuntu16_04,none_ubuntu18_04,podman_ubuntu_18_04_experimental]
     runs-on: ubuntu-18.04
     steps:
     - name: Download Results docker_ubuntu_16_04

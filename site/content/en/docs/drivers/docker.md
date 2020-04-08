@@ -7,18 +7,27 @@ aliases:
 
 ## Overview
 
-The Docker driver is the newest minikube driver. which runs kubernetes in container VM-free ! with full feature parity with minikube in VM.
+The Docker driver allows you to install Kubernetes into an existing Docker install. On Linux, this does not require virtualization to be enabled.
 
 {{% readfile file="/docs/drivers/includes/docker_usage.inc" %}}
 
 ## Special features
 
-- Cross platform (linux, macos, windows)
-- No hypervisor required when run on Linux.
+- Cross platform (linux, macOS, Windows)
+- No hypervisor required when run on Linux
+- Experimental support for [WSL2](https://docs.microsoft.com/en-us/windows/wsl/wsl2-install) on Windows 10
 
-## Known Issues.
+## Known Issues
 
-- The 'ingress' and 'ingress-dns' addons are only supported on Linux.
-these addons are not supported for Docker Driver on MacOS and Windows yet. to get updates on the work in progress please check [issue page](https://github.com/kubernetes/minikube/issues/7332)
+- On macOS, containers might get hung and require a restart of Docker for Desktop. See [docker/for-mac#1835](https://github.com/docker/for-mac/issues/1835)
 
-- a known [docker issue for macOS](https://github.com/docker/for-mac/issues/1835), a containers on Docker on MacOS might hang and get stuck while other containers can get created. The current workaround is restarting docker.
+- The `ingress` and `ingress-dns` addons are currently only supported on Linux. See [#7332](https://github.com/kubernetes/minikube/issues/7332)
+
+- On WSL2 (experimental - see [#5392](https://github.com/kubernetes/minikube/issues/5392)), you may need to run:
+
+   `sudo mkdir /sys/fs/cgroup/systemd && sudo mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd`.
+
+## Troubleshooting
+
+- On macOS or Windows, you may need to restart Docker for Desktop if a command gets hung
+- Run `--alsologtostderr -v=1` for extra debugging information

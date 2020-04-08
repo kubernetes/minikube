@@ -4,6 +4,8 @@ title: "Basic controls"
 weight: 2
 description: >
   See minikube in action!
+aliases:
+  - /docs/examples/
 ---
 
 Start a cluster by running:
