@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -73,13 +74,14 @@ func status() registry.State {
 		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
 	}
 
-	// Allow no more than 3 seconds for docker info
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
-	err = exec.CommandContext(ctx, oci.Docker, "info").Run()
+	// Quickly returns an error code if server is not running
+	args := []string{"version", "--format '{{.Server.Version}}"}
+	err = exec.CommandContext(ctx, oci.Docker, args...).Run()
 	if err != nil {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is not running or is responding too slow. Try: restarting docker desktop."}
+		return registry.State{Error: fmt.Errorf(`"%s %s" returned error: %v`, oci.Docker, strings.Join(args, " "), err), Installed: true, Healthy: false, Fix: "Docker is not running or is responding too slow. Try: restarting docker desktop."}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
