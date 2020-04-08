@@ -2,9 +2,7 @@ package sysinit
 
 import (
 	"os/exec"
-	"runtime"
 
-	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/command"
 )
 
@@ -38,18 +36,18 @@ type Manager interface {
 
 // New returns an appropriately configured service manager
 func New(r Runner) Manager {
-	_, file, no, _ := runtime.Caller(1)
-
+	// If we are not provided a runner, we can't do anything anyways
 	if r == nil {
-		glog.Warningf("manager from %s:%d: nil runner! (systemd)", file, no)
 		return nil
 	}
 
 	var systemd bool
+
+	// Caching the result is important, as this manager may be created in many places,
+	// and ssh calls are expensive on some drivers, such as Docker.
 	if cachedSystemdCheck != nil {
 		systemd = *cachedSystemdCheck
 	} else {
-		glog.Errorf("uncached systemd check from %s:%d", file, no)
 		systemd = usesSystemd(r)
 		cachedSystemdCheck = &systemd
 	}
@@ -57,5 +55,5 @@ func New(r Runner) Manager {
 	if systemd {
 		return &Systemd{r: r}
 	}
-	return &SysV{r: r}
+	return &OpenRC{r: r}
 }

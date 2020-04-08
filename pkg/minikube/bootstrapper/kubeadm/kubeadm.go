@@ -83,7 +83,6 @@ func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, n config.Node)
 	return &Bootstrapper{c: runner, contextName: cc.Name, k8sClient: nil}, nil
 }
 
-
 // GetAPIServerStatus returns the api-server status
 func (k *Bootstrapper) GetAPIServerStatus(hostname string, port int) (string, error) {
 	s, err := kverify.APIServerStatus(k.c, hostname, port)
@@ -688,7 +687,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 
 	glog.Infof("sysinit says: %v", sm.Name())
-	// Install SysV-like init scripts if necessary
+	// Install OpenRC-like init scripts if necessary
 	if sm.Name() == sysinit.SysVName {
 		initScript, err := bsutil.NewInitScript(cfg.KubernetesConfig.KubernetesVersion, bsutil.InitRestartWrapper)
 		if err != nil {
