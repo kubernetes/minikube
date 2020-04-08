@@ -201,7 +201,7 @@ func clusterLogs(t *testing.T, profile string) {
 		return
 	}
 
-	t.Logf("------------------------------------------------------------------")
+	t.Logf("-----------------------post-mortem--------------------------------")
 	t.Logf("<<< %s FAILED: start of post-mortem logs <<<", t.Name())
 	t.Logf("------++> post-mortem[%s]: minikube logs", t.Name())
 
