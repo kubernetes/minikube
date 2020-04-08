@@ -1,17 +1,18 @@
 ---
 title: "tunnel"
-linkTitle: "tunnel"
-weight: 1
-date: 2019-08-01
 description: >
   tunnel makes services of type LoadBalancer accessible on localhost
 ---
 
-### Overview
 
-tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP
 
-### Usage
+## minikube tunnel
+
+tunnel makes services of type LoadBalancer accessible on localhost
+
+### Synopsis
+
+tunnel creates a route to services deployed with type LoadBalancer and sets their Ingress to their ClusterIP. for a detailed example see https://minikube.sigs.k8s.io/docs/tasks/loadbalancer
 
 ```
 minikube tunnel [flags]

@@ -51,7 +51,7 @@ See https://minikube.sigs.k8s.io/docs/
 
 ## More Examples
 
-See our [examples page](https://minikube.sigs.k8s.io/docs/examples/)
+See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/)
 
 ## Community
 

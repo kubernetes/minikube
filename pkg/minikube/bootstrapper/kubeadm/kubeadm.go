@@ -21,6 +21,7 @@ import (
 	"context"
 	"os/exec"
 	"path"
+	"sync"
 
 	"fmt"
 	"net"
@@ -231,23 +232,37 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "run")
 	}
 
-	if cfg.Driver == driver.Docker {
+	// this is required for containerd and cri-o runtime. till we close https://github.com/kubernetes/minikube/issues/7428
+	if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
 		if err := k.applyKicOverlay(cfg); err != nil {
 			return errors.Wrap(err, "apply kic overlay")
 		}
 	}
 
-	if err := k.applyNodeLabels(cfg); err != nil {
-		glog.Warningf("unable to apply node labels: %v", err)
-	}
+	var wg sync.WaitGroup
+	wg.Add(3)
 
-	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
-		glog.Warningf("unable to adjust resource limits: %v", err)
-	}
+	go func() {
+		if err := k.applyNodeLabels(cfg); err != nil {
+			glog.Warningf("unable to apply node labels: %v", err)
+		}
+		wg.Done()
+	}()
 
-	if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
-		glog.Warningf("unable to create cluster role binding, some addons might not work: %v", err)
-	}
+	go func() {
+		if err := bsutil.AdjustResourceLimits(k.c); err != nil {
+			glog.Warningf("unable to adjust resource limits: %v", err)
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
+			glog.Warningf("unable to create cluster role binding, some addons might not work: %v", err)
+		}
+		wg.Done()
+	}()
+	wg.Wait()
 	return nil
 }
 
