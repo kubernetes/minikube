@@ -83,7 +83,7 @@ func status() registry.State {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker was too slow to respond. Try: restarting docker."}
 	}
 	if err != nil {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker service is not running. Try: starting docker service."}
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is not running. Please start the docker service."}
 	}
 
 	return registry.State{Installed: true, Healthy: true}
