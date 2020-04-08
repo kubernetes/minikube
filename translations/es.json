@@ -185,6 +185,7 @@
 	"Failed to stop node {{.name}}": "",
 	"Failed to update cluster": "",
 	"Failed to update config": "",
+	"Failed to validate '{{.driver}}' driver": "",
 	"Failed unmount: {{.error}}": "",
 	"File permissions used for the mount": "",
 	"Filter to use only VM Drivers": "",

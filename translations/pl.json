@@ -190,6 +190,7 @@
 	"Failed to setup kubeconfig": "Konfiguracja kubeconfig nie powiodła się",
 	"Failed to stop node {{.name}}": "",
 	"Failed to update cluster": "Aktualizacja klastra nie powiodła się",
+	"Failed to validate '{{.driver}}' driver": "",
 	"Failed to update config": "Aktualizacja konfiguracji nie powiodła się",
 	"Failed unmount: {{.error}}": "",
 	"File permissions used for the mount": "",
