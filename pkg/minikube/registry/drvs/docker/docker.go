@@ -70,7 +70,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 func status() registry.State {
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
-		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
+		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/drivers/docker/#install-docker"}
 	}
 
 	// Allow no more than 3 seconds for docker info
@@ -80,7 +80,7 @@ func status() registry.State {
 	err = exec.CommandContext(ctx, oci.Docker, "info").Run()
 
 	if ctx.Err() == context.DeadlineExceeded {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is responding too slow. Try: restarting docker."}
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker was too slow to respond. Try: restarting docker."}
 	}
 	if err != nil {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker service is not running. Try: starting docker service."}
