@@ -91,8 +91,8 @@ minikube service list
 |  NAMESPACE  |    NAME    | TARGET PORT  |             URL             |
 |-------------|------------|--------------|-----------------------------|
 | default     | hello      |           80 | http://192.168.64.226:31000 |
-| default     | kubernetes | No node port |				|
-| kube-system | kube-dns   | No node port |				|
+| default     | kubernetes | No node port |                             |
+| kube-system | kube-dns   | No node port |                             |
 |-------------|------------|--------------|-----------------------------|
 ```
 
