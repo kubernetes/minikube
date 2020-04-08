@@ -17,16 +17,22 @@ minikube start --help
 
 minikube allows users to persistently store new default values to be used across all profiles, using the `minikube config` command. This is done providing a property name, and a property value.
 
-### Listing config properties
-
-```shell
-minikube config
-```
-
 For example, to persistently configure minikube to use hyperkit:
 
 ```shell
 minikube config set driver hyperkit
+```
+
+You can get a complete list of configurable fields using:
+
+```shell
+minikube config --help
+```
+
+To get a list of the currently set config properties:
+
+```shell
+minikube config view
 ```
 
 ## Kubernetes configuration
