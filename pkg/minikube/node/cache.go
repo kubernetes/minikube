@@ -113,7 +113,7 @@ func beginDownloadKicArtifacts(g *errgroup.Group) {
 func waitDownloadKicArtifacts(g *errgroup.Group) {
 	if err := g.Wait(); err != nil {
 		if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") {
-			out.WarningT("Failed to connect to docker daemon: {{.error}}", out.V{"error": err.Error()})
+			out.WarningT("Failed to connect to docker daemon : {{.error}}", out.V{"error": err.Error()})
 			exit.UsageT("Please make sure Docker service is running.")
 		} else {
 			exit.WithError("Failed to download kic base image", err)
