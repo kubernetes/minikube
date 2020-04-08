@@ -25,7 +25,6 @@ import (
 
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
@@ -36,7 +35,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/logs"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
@@ -113,9 +111,16 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout time.Duration) error {
 	glog.Info("waiting for k8s-apps to be running ...")
 	start := time.Now()
-	checkRunning := func() error { return ExpectAppsRunning(cs, expected) }
-	if err := retry.Expo(checkRunning, 500*time.Millisecond, timeout); err != nil {
-		return errors.Wrap(err, "waitings for k8s app running")
+
+	checkRunning := func() (bool, error) {
+		if err := ExpectAppsRunning(cs, expected); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, timeout, checkRunning); err != nil {
+		return fmt.Errorf("apiserver never returned a pod list")
 	}
 	glog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
 	return nil
