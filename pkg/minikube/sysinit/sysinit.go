@@ -3,6 +3,7 @@ package sysinit
 import (
 	"os/exec"
 
+	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 )
 
@@ -32,6 +33,9 @@ type Manager interface {
 
 	// ForceStop stops a service with prejudice
 	ForceStop(string) error
+
+	// GenerateInitShim generates any additional init files required for this service
+	GenerateInitShim(svc string, binary string, unit string) ([]assets.CopyableFile, error)
 }
 
 // New returns an appropriately configured service manager

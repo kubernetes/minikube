@@ -43,7 +43,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/ktmpl"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/command"
@@ -686,24 +685,20 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 		files = append(files, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), bsutil.DefaultCNIConfigPath, "0644"))
 	}
 
-	glog.Infof("sysinit says: %v", sm.Name())
-	// Install OpenRC-like init scripts if necessary
-	if sm.Name() == sysinit.SysVName {
-		initScript, err := bsutil.NewInitScript(cfg.KubernetesConfig.KubernetesVersion, bsutil.InitRestartWrapper)
-		if err != nil {
-			return errors.Wrap(err, "init script")
-		}
-
-		files = append(files, assets.NewMemoryAssetTarget([]byte(ktmpl.RestartWrapper), bsutil.InitRestartWrapper, "0755"))
-		files = append(files, assets.NewMemoryAssetTarget(initScript, bsutil.KubeletInitPath, "0755"))
+	// Installs compatibility shims for non-systemd environments
+	kubeletPath := path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl")
+	shims, err := sm.GenerateInitShim("kubelet", kubeletPath, bsutil.KubeletSystemdConfFile)
+	if err != nil {
+		return errors.Wrap(err, "shim")
 	}
+	files = append(files, shims...)
 
 	if err := copyFiles(k.c, files); err != nil {
-		return err
+		return errors.Wrap(err, "copy")
 	}
 
-	if err := reloadKubelet(k.c, sm); err != nil {
-		return err
+	if err := startKubeletIfRequired(k.c, sm); err != nil {
+		return errors.Wrap(err, "reload")
 	}
 
 	return nil
@@ -728,7 +723,7 @@ func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
 	return nil
 }
 
-func reloadKubelet(runner command.Runner, sm sysinit.Manager) error {
+func startKubeletIfRequired(runner command.Runner, sm sysinit.Manager) error {
 	now := time.Now()
 	defer func() {
 		glog.Infof("reloadKubelet took %s", time.Since(now))

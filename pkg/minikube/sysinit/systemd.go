@@ -19,6 +19,8 @@ package sysinit
 
 import (
 	"os/exec"
+
+	"k8s.io/minikube/pkg/minikube/assets"
 )
 
 // Systemd is a service manager for systemd distributions
@@ -71,6 +73,11 @@ func (s *Systemd) Stop(svc string) error {
 func (s *Systemd) ForceStop(svc string) error {
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "stop", "-f", svc))
 	return err
+}
+
+// GenerateInitShim does nothing for systemd
+func (s *Systemd) GenerateInitShim(svc string, binary string, unit string) ([]assets.CopyableFile, error) {
+	return nil, nil
 }
 
 func usesSystemd(r Runner) bool {

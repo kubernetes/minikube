@@ -18,67 +18,40 @@ limitations under the License.
 package sysinit
 
 import (
+	"bytes"
 	"context"
+	"html/template"
 	"os/exec"
+	"path"
 	"time"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 const SysVName = "OpenRC"
 
-
-/*
-Copyright 2020 The Kubernetes Authors All rights reserved.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
-
-package ktmpl
-
-import "text/template"
-
-var RestartWrapper = `#!/bin/bash
+var restartWrapper = `#!/bin/bash
 # Wrapper script to emulate systemd restart on non-systemd systems
-binary=$1
-conf=$2
+unit=$1
 args=""
 
-while [[ -x "${binary}" ]]; do
+while true; do
   if [[ -f "${conf}" ]]; then
-          args=$(egrep "^ExecStart=${binary}" "${conf}" | cut -d" " -f2-)
+    eval $(egrep "^ExecStart=" "${conf}" | cut -d"=" -f2-)
   fi
-  echo "$(date) binary=${binary} args=${args}"
-  ${binary} ${args}
-  echo ""
   sleep 1
 done
 `
 
-var InitScript = template.Must(template.New("initScript").Parse(`#!/bin/bash
-# OpenRC init script for systemd units
-
-readonly BINARY="{{.BinaryPath}}"
-readonly NAME="$(basename ${BINARY})"
-
-readonly RESTART_WRAPPER="{{.WrapperPath}}"
-readonly UNIT_PATH="{{.UnitPath}}"
+var initScriptTmpl = template.Must(template.New("initScript").Parse(`#!/bin/bash
+# OpenRC init script shim for systemd units
+readonly NAME="{{.Name}}"
+readonly RESTART_WRAPPER="{{.Wrapper}}"
+readonly UNIT_PATH="{{.Unit}}"
 readonly PID_PATH="/var/run/${NAME}.pid"
-
-if [[ ! -x "${BINARY}" ]]; then
-	echo "$BINARY not present or not executable"
-	exit 1
-fi
 
 function start() {
     start-stop-daemon --oknodo --PID_PATH "${PID_PATH}" --background --start --make-PID_PATH --exec "${WRAPPER}" "${BINARY}" "${UNIT_PATH}"
@@ -87,7 +60,6 @@ function start() {
 function stop() {
     start-stop-daemon --oknodo --PID_PATH "${PID_PATH}" --stop
 }
-
 
 case "$1" in
     start)
@@ -155,4 +127,33 @@ func (s *OpenRC) Stop(svc string) error {
 func (s *OpenRC) ForceStop(svc string) error {
 	_, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "stop", "-f"))
 	return err
+}
+
+// GenerateInitShim generates any additional init files required for this service
+func (s *OpenRC) GenerateInitShim(svc string, binary string, unit string) ([]assets.CopyableFile, error) {
+	restartWrapperPath := path.Join(vmpath.GuestPersistentDir, "openrc-restart-wrapper.sh")
+
+	opts := struct {
+		Binary  string
+		Wrapper string
+		Name    string
+		Unit    string
+	}{
+		Name:    svc,
+		Binary:  binary,
+		Wrapper: restartWrapperPath,
+		Unit:    unit,
+	}
+
+	var b bytes.Buffer
+	if err := initScriptTmpl.Execute(&b, opts); err != nil {
+		return nil, errors.Wrap(err, "template execute")
+	}
+
+	files := []assets.CopyableFile{
+		assets.NewMemoryAssetTarget([]byte(restartWrapper), restartWrapperPath, "0755"),
+		assets.NewMemoryAssetTarget(b.Bytes(), path.Join("/etc/init.d/", svc), "0755"),
+	}
+
+	return files, nil
 }

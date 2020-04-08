@@ -119,24 +119,6 @@ func NewKubeletService(cfg config.KubernetesConfig) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// NewInitScript returns a generated systemd unit file for the kubelet
-func NewInitScript(v string, wrapperPath string) ([]byte, error) {
-	var b bytes.Buffer
-	opts := struct {
-		KubeletPath string
-		WrapperPath string
-		ConfPath    string
-	}{
-		KubeletPath: path.Join(binRoot(v), "kubelet"),
-		WrapperPath: wrapperPath,
-		ConfPath:    KubeletSystemdConfFile,
-	}
-	if err := ktmpl.KubeletInitTemplate.Execute(&b, opts); err != nil {
-		return nil, errors.Wrap(err, "template execute")
-	}
-	return b.Bytes(), nil
-}
-
 // KubeNodeName returns the node name registered in Kubernetes
 func KubeNodeName(cc config.ClusterConfig, n config.Node) string {
 	if cc.Driver == driver.None {
