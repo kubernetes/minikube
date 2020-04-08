@@ -41,10 +41,6 @@ By default, minikube installs the latest stable version of Kubernetes that was a
 
 `minikube start --kubernetes-version=v1.11.10`
   
-If you omit this flag, minikube will upgrade your cluster to the default version. If you would like to pin to a specific Kubernetes version across clusters, restarts, and upgrades to minikube, use:
-
-`minikube config set kubernetes-version v1.11.0`
-
 minikube follows the [Kubernetes Version and Version Skew Support Policy](https://kubernetes.io/docs/setup/version-skew-policy/), so we guarantee support for the latest build for the last 3 minor Kubernetes releases. When practical, minikube aims for the last 6 minor releases so that users can emulate legacy environments.
 
 As of September 2019, this means that minikube supports and actively tests against the latest builds of:
