@@ -21,6 +21,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
@@ -56,13 +57,7 @@ import (
 	"k8s.io/minikube/pkg/util/retry"
 )
 
-const (
-	waitTimeout      = "wait-timeout"
-	embedCerts       = "embed-certs"
-	keepContext      = "keep-context"
-	imageRepository  = "image-repository"
-	containerRuntime = "container-runtime"
-)
+const waitTimeout = "wait-timeout"
 
 // Start spins up a guest and starts the kubernetes node.
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) (*kubeconfig.Settings, error) {
@@ -103,8 +98,20 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	}
 
 	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, cc.Driver, cc.KubernetesConfig, sv)
+	cr := configureRuntimes(mRunner, cc, sv)
 	showVersionInfo(n.KubernetesVersion, cr)
+
+	// ssh should be set up by now
+	// switch to using ssh runner since it is faster
+	if driver.IsKIC(cc.Driver) {
+		sshRunner, err := machine.SSHRunner(host)
+		if err != nil {
+			glog.Infof("error getting ssh runner: %v", err)
+		} else {
+			glog.Infof("Using ssh runner for kic...")
+			mRunner = sshRunner
+		}
+	}
 
 	var bs bootstrapper.Bootstrapper
 	var kcs *kubeconfig.Settings
@@ -189,10 +196,11 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig, kv semver.Version) cruntime.Manager {
+func configureRuntimes(runner cruntime.CommandRunner, cc config.ClusterConfig, kv semver.Version) cruntime.Manager {
 	co := cruntime.Config{
-		Type:   viper.GetString(containerRuntime),
-		Runner: runner, ImageRepository: k8s.ImageRepository,
+		Type:              cc.KubernetesConfig.ContainerRuntime,
+		Runner:            runner,
+		ImageRepository:   cc.KubernetesConfig.ImageRepository,
 		KubernetesVersion: kv,
 	}
 	cr, err := cruntime.New(co)
@@ -201,13 +209,13 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 	}
 
 	disableOthers := true
-	if driver.BareMetal(drvName) {
+	if driver.BareMetal(cc.Driver) {
 		disableOthers = false
 	}
 
 	// Preload is overly invasive for bare metal, and caching is not meaningful. KIC handled elsewhere.
-	if driver.IsVM(drvName) {
-		if err := cr.Preload(k8s); err != nil {
+	if driver.IsVM(cc.Driver) {
+		if err := cr.Preload(cc.KubernetesConfig); err != nil {
 			switch err.(type) {
 			case *cruntime.ErrISOFeature:
 				out.ErrT(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
@@ -215,7 +223,7 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 				glog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
 			}
 
-			if err := machine.CacheImagesForBootstrapper(k8s.ImageRepository, k8s.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
+			if err := machine.CacheImagesForBootstrapper(cc.KubernetesConfig.ImageRepository, cc.KubernetesConfig.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 				exit.WithError("Failed to cache images", err)
 			}
 		}
@@ -223,6 +231,7 @@ func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config
 
 	err = cr.Enable(disableOthers)
 	if err != nil {
+		debug.PrintStack()
 		exit.WithError("Failed to enable container runtime", err)
 	}
 
@@ -275,8 +284,8 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 		ClientCertificate:    localpath.ClientCert(cc.Name),
 		ClientKey:            localpath.ClientKey(cc.Name),
 		CertificateAuthority: localpath.CACert(),
-		KeepContext:          viper.GetBool(keepContext),
-		EmbedCerts:           viper.GetBool(embedCerts),
+		KeepContext:          cc.KeepContext,
+		EmbedCerts:           cc.EmbedCerts,
 	}
 
 	kcs.SetPath(kubeconfig.PathFromEnv())
@@ -303,7 +312,7 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 		exit.WithError("Failed to get command runner", err)
 	}
 
-	ip := validateNetwork(host, runner)
+	ip := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository)
 
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
@@ -352,7 +361,7 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner) string {
+func validateNetwork(h *host.Host, r command.Runner, imageRepository string) string {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
 		exit.WithError("Unable to get VM IP address", err)
@@ -381,7 +390,7 @@ func validateNetwork(h *host.Host, r command.Runner) string {
 	}
 
 	// Non-blocking
-	go tryRegistry(r, h.Driver.DriverName())
+	go tryRegistry(r, h.Driver.DriverName(), imageRepository)
 	return ip
 }
 
@@ -423,7 +432,7 @@ func trySSH(h *host.Host, ip string) {
 }
 
 // tryRegistry tries to connect to the image repository
-func tryRegistry(r command.Runner, driverName string) {
+func tryRegistry(r command.Runner, driverName string, imageRepository string) {
 	// 2 second timeout. For best results, call tryRegistry in a non-blocking manner.
 	opts := []string{"-sS", "-m", "2"}
 
@@ -432,15 +441,14 @@ func tryRegistry(r command.Runner, driverName string) {
 		opts = append([]string{"-x", proxy}, opts...)
 	}
 
-	repo := viper.GetString(imageRepository)
-	if repo == "" {
-		repo = images.DefaultKubernetesRepo
+	if imageRepository == "" {
+		imageRepository = images.DefaultKubernetesRepo
 	}
 
-	opts = append(opts, fmt.Sprintf("https://%s/", repo))
+	opts = append(opts, fmt.Sprintf("https://%s/", imageRepository))
 	if rr, err := r.RunCmd(exec.Command("curl", opts...)); err != nil {
 		glog.Warningf("%s failed: %v", rr.Args, err)
-		out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}}", out.V{"repository": repo, "type": driver.MachineType(driverName)})
+		out.WarningT("This {{.type}} is having trouble accessing https://{{.repository}}", out.V{"repository": imageRepository, "type": driver.MachineType(driverName)})
 		out.ErrT(out.Tip, "To pull new external images, you may need to configure a proxy: https://minikube.sigs.k8s.io/docs/reference/networking/proxy/")
 	}
 }
