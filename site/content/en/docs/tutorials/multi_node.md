@@ -131,3 +131,4 @@ Hello from hello-c7b8df44f-xv4v6 (10.244.0.2)
 {{% readfile file="/docs/tutorials/includes/hello-svc.yaml" %}}
 ```
 {{% /tab %}}
+{{% /tabs %}}
