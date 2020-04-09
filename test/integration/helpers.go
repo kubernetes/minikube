@@ -241,8 +241,8 @@ func clusterLogs(t *testing.T, profile string) {
 		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
 	}
 
-	t.Logf("------++> post-mortem[%s]: describe pods", t.Name())
-	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "po", "-A"))
+	t.Logf("------++> post-mortem[%s]: !running pods", t.Name())
+	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "po", "-A", "--field-selector=status.phase!=Running"))
 	if err != nil {
 		t.Logf("%s: %v", rr.Command(), err)
 	} else {
