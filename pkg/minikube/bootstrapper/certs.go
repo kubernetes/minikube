@@ -323,20 +323,33 @@ func collectCACerts() (map[string]string, error) {
 		if err != nil {
 			return err
 		}
+		if info == nil {
+			return nil
+		}
+		if info.IsDir() {
+			return nil
+		}
 
-		if info != nil && !info.IsDir() {
-			ext := strings.ToLower(filepath.Ext(hostpath))
-			if ext == ".crt" || ext == ".pem" {
-				glog.Infof("found cert: %s (%d bytes)", info.Name(), info.Size())
-				validPem, err := isValidPEMCertificate(hostpath)
-				if err != nil {
-					return err
-				}
-				if validPem {
-					filename := filepath.Base(hostpath)
-					dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
-					certFiles[hostpath] = path.Join(vmpath.GuestCertAuthDir, dst)
-				}
+		fullPath := filepath.Join(certsDir, hostpath)
+		ext := strings.ToLower(filepath.Ext(hostpath))
+
+		if ext == ".crt" || ext == ".pem" {
+			if info.Size() < 32 {
+				glog.Warningf("ignoring %s, impossibly tiny %d bytes", fullPath, info.Size())
+				return nil
+			}
+
+			glog.Infof("found cert: %s (%d bytes)", fullPath, info.Size())
+
+			validPem, err := isValidPEMCertificate(hostpath)
+			if err != nil {
+				return err
+			}
+
+			if validPem {
+				filename := filepath.Base(hostpath)
+				dst := fmt.Sprintf("%s.%s", strings.TrimSuffix(filename, ext), "pem")
+				certFiles[hostpath] = path.Join(vmpath.GuestCertAuthDir, dst)
 			}
 		}
 		return nil
@@ -394,23 +407,26 @@ func installCertSymlinks(cr command.Runner, caCerts map[string]string) error {
 	for _, caCertFile := range caCerts {
 		dstFilename := path.Base(caCertFile)
 		certStorePath := path.Join(vmpath.GuestCertStoreDir, dstFilename)
-		// If the cert really exists, add a named symlink
-		cmd := fmt.Sprintf("test -f %s && ln -fs %s %s", caCertFile, caCertFile, certStorePath)
+
+		cmd := fmt.Sprintf("test -s %s && ln -fs %s %s", caCertFile, caCertFile, certStorePath)
 		if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
 			return errors.Wrapf(err, "create symlink for %s", caCertFile)
 		}
-		if hasSSLBinary {
-			subjectHash, err := getSubjectHash(cr, caCertFile)
-			if err != nil {
-				return errors.Wrapf(err, "calculate hash for cacert %s", caCertFile)
-			}
-			subjectHashLink := path.Join(vmpath.GuestCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
 
-			// NOTE: This symlink may exist, but point to a missing file
-			cmd := fmt.Sprintf("test -L %s || ln -fs %s %s", subjectHashLink, certStorePath, subjectHashLink)
-			if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
-				return errors.Wrapf(err, "create symlink for %s", caCertFile)
-			}
+		if !hasSSLBinary {
+			continue
+		}
+
+		subjectHash, err := getSubjectHash(cr, caCertFile)
+		if err != nil {
+			return errors.Wrapf(err, "calculate hash for cacert %s", caCertFile)
+		}
+		subjectHashLink := path.Join(vmpath.GuestCertStoreDir, fmt.Sprintf("%s.0", subjectHash))
+
+		// NOTE: This symlink may exist, but point to a missing file
+		cmd = fmt.Sprintf("test -L %s || ln -fs %s %s", subjectHashLink, certStorePath, subjectHashLink)
+		if _, err := cr.RunCmd(exec.Command("sudo", "/bin/bash", "-c", cmd)); err != nil {
+			return errors.Wrapf(err, "create symlink for %s", caCertFile)
 		}
 	}
 	return nil

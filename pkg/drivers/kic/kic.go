@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -37,7 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/kubelet"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -112,6 +113,28 @@ func (d *Driver) Create() error {
 		}
 	}
 
+	if err := oci.PrepareContainerNode(params); err != nil {
+		return errors.Wrap(err, "setting up container node")
+	}
+
+	var waitForPreload sync.WaitGroup
+	waitForPreload.Add(1)
+	go func() {
+		defer waitForPreload.Done()
+		// If preload doesn't exist, don't bother extracting tarball to volume
+		if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
+			return
+		}
+		t := time.Now()
+		glog.Infof("Starting extracting preloaded images to volume")
+		// Extract preloaded images to container
+		if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, BaseImage); err != nil {
+			glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
+		} else {
+			glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
+		}
+	}()
+
 	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
 	}
@@ -120,19 +143,7 @@ func (d *Driver) Create() error {
 		return errors.Wrap(err, "prepare kic ssh")
 	}
 
-	// If preload doesn't exist, don't bother extracting tarball to volume
-	if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
-		return nil
-	}
-	t := time.Now()
-	glog.Infof("Starting extracting preloaded images to volume")
-	// Extract preloaded images to container
-	if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, BaseImage); err != nil {
-		glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
-	} else {
-		glog.Infof("Took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
-	}
-
+	waitForPreload.Wait()
 	return nil
 }
 
@@ -245,7 +256,7 @@ func (d *Driver) GetState() (state.State, error) {
 func (d *Driver) Kill() error {
 	// on init this doesn't get filled when called from cmd
 	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
-	if err := kubelet.ForceStop(d.exec); err != nil {
+	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
@@ -318,9 +329,9 @@ func (d *Driver) Stop() error {
 	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
 	// docker does not send right SIG for systemd to know to stop the systemd.
 	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
-	if err := kubelet.Stop(d.exec); err != nil {
+	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
 		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
-		if err := kubelet.ForceStop(d.exec); err != nil {
+		if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}

@@ -32,11 +32,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
 // TransferBinaries transfers all required Kubernetes binaries
-func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
+func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.Manager) error {
 	ok, err := binariesExist(cfg, c)
 	if err == nil && ok {
 		glog.Info("Found k8s binaries, skipping transfer")
@@ -50,11 +51,6 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 		return err
 	}
 
-	// stop kubelet to avoid "Text File Busy" error
-	if _, err := c.RunCmd(exec.Command("/bin/bash", "-c", "pgrep kubelet && sudo systemctl stop kubelet")); err != nil {
-		glog.Warningf("unable to stop kubelet: %s", err)
-	}
-
 	var g errgroup.Group
 	for _, name := range constants.KubernetesReleaseBinaries {
 		name := name
@@ -62,6 +58,12 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner) error {
 			src, err := download.Binary(name, cfg.KubernetesVersion, "linux", runtime.GOARCH)
 			if err != nil {
 				return errors.Wrapf(err, "downloading %s", name)
+			}
+
+			if name == "kubelet" {
+				if err := sm.ForceStop("kubelet"); err != nil {
+					glog.Errorf("unable to stop kubelet: %v", err)
+				}
 			}
 
 			dst := path.Join(dir, name)
