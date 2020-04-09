@@ -81,8 +81,8 @@ type KubernetesConfig struct {
 	FeatureGates        string // https://kubernetes.io/docs/reference/command-line-tools-reference/feature-gates/
 	ServiceCIDR         string // the subnet which kubernetes services will be deployed to
 	ImageRepository     string
-	LoadBalancerStartIP string
-	LoadBalancerEndIP   string
+	LoadBalancerStartIP string // currently only used by MetalLB addon
+	LoadBalancerEndIP   string // currently only used by MetalLB addon
 	ExtraOptions        ExtraOptionSlice
 
 	ShouldLoadCachedImages bool
