@@ -80,7 +80,6 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string)
 	}
 	out.T(out.Check, "Download complete!")
 	os.Exit(0)
-
 }
 
 // CacheKubectlBinary caches the kubectl binary

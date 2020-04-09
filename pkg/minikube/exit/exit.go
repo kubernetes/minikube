@@ -18,7 +18,6 @@ limitations under the License.
 package exit
 
 import (
-	"fmt"
 	"os"
 	"runtime"
 	"runtime/debug"
@@ -26,7 +25,6 @@ import (
 	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/problem"
-	"k8s.io/minikube/pkg/minikube/translate"
 )
 
 // Exit codes based on sysexits(3)
@@ -41,9 +39,6 @@ const (
 	IO          = 74 // IO represents an I/O error
 	Config      = 78 // Config represents an unconfigured or misconfigured state
 	Permissions = 77 // Permissions represents a permissions error
-
-	// MaxLogEntries controls the number of log entries to show for each source
-	MaxLogEntries = 3
 )
 
 // UsageT outputs a templated usage error and exits with error code 64
@@ -65,7 +60,7 @@ func WithError(msg string, err error) {
 	if p != nil {
 		WithProblem(msg, err, p)
 	}
-	displayError(msg, err)
+	out.DisplayError(msg, err)
 	os.Exit(Software)
 }
 
@@ -80,30 +75,4 @@ func WithProblem(msg string, err error, p *problem.Problem) {
 		out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 	}
 	os.Exit(Config)
-}
-
-// WithLogEntries outputs an error along with any important log entries, and exits.
-func WithLogEntries(msg string, err error, entries map[string][]string) {
-	displayError(msg, err)
-
-	for name, lines := range entries {
-		out.FailureT("Problems detected in {{.entry}}:", out.V{"entry": name})
-		if len(lines) > MaxLogEntries {
-			lines = lines[:MaxLogEntries]
-		}
-		for _, l := range lines {
-			out.T(out.LogEntry, l)
-		}
-	}
-	os.Exit(Software)
-}
-
-func displayError(msg string, err error) {
-	// use Warning because Error will display a duplicate message to stderr
-	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
-	out.ErrT(out.Empty, "")
-	out.FatalT("{{.msg}}: {{.err}}", out.V{"msg": translate.T(msg), "err": err})
-	out.ErrT(out.Empty, "")
-	out.ErrT(out.Sad, "minikube is exiting due to an error. If the above message is not useful, open an issue:")
-	out.ErrT(out.URL, "https://github.com/kubernetes/minikube/issues/new/choose")
 }

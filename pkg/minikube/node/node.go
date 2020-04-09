@@ -39,7 +39,21 @@ func Add(cc *config.ClusterConfig, n config.Node) error {
 		return errors.Wrap(err, "save node")
 	}
 
-	_, err := Start(*cc, n, nil, false)
+	r, p, m, h, err := Provision(cc, &n, false)
+	if err != nil {
+		return err
+	}
+	s := Starter{
+		Runner:         r,
+		PreExists:      p,
+		MachineAPI:     m,
+		Host:           h,
+		Cfg:            cc,
+		Node:           &n,
+		ExistingAddons: nil,
+	}
+
+	_, err = Start(s, false)
 	return err
 }
 
