@@ -33,7 +33,7 @@ var addonsDisableCmd = &cobra.Command{
 		}
 
 		addon := args[0]
-		err := addons.Set(addon, "false", ClusterFlagValue())
+		err := addons.SetAndSave(ClusterFlagValue(), addon, "false")
 		if err != nil {
 			exit.WithError("disable failed", err)
 		}
