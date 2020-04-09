@@ -521,9 +521,7 @@ func validateDriver(ds registry.DriverState, existing *config.ClusterConfig) {
 		}
 
 		if !viper.GetBool(force) {
-			docURL := fmt.Sprintf("https://minikube.sigs.k8s.io/docs/drivers/%s/", strings.ToLower(name))
-			out.ErrT(out.URL, "Read more : {{.URL}}", out.V{"URL": docURL})
-			exit.WithCodeT(exit.Unavailable, "Failed to validate '{{.driver}}' driver.", out.V{"driver": name})
+			exit.WithCodeT(exit.Unavailable, "Failed to validate '{{.driver}}' driver", out.V{"driver": name})
 		}
 	}
 }
