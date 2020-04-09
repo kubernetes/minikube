@@ -57,12 +57,6 @@ daemonset.apps/kube-flannel-ds-arm created
 daemonset.apps/kube-flannel-ds-ppc64le created
 daemonset.apps/kube-flannel-ds-s390x created
 ```
-{{% tabs %}}
-{{% tab kube-flannel.yaml %}}
-```
-{{% readfile file="/docs/tutorials/includes/kube-flannel.yaml" %}}
-```
-{{% /tab %}}
 
 - Deploy our hello world deployment:
 ```
@@ -72,12 +66,7 @@ deployment.apps/hello created
 kubectl rollout status deployment/hello
 deployment "hello" successfully rolled out
 ```
-{{% tabs %}}
-{{% tab hello-deployment.yaml %}}
-```
-{{% readfile file="/docs/tutorials/includes/hello-deployment.yaml" %}}
-```
-{{% /tab %}}
+
 
 - Deploy our hello world service, which just spits back the IP address the request was served from:
 {{% readfile file="/docs/tutorials/includes/hello-svc.yaml" %}}
@@ -86,12 +75,6 @@ kubectl apply -f hello-svc.yml
 service/hello created
 ```
 
-{{% tabs %}}
-{{% tab hello-svc.yaml %}}
-```
-{{% readfile file="/docs/tutorials/includes/hello-svc.yaml" %}}
-```
-{{% /tab %}}
 
 - Check out the IP addresses of our pods, to note for future reference
 ```
@@ -129,3 +112,22 @@ Hello from hello-c7b8df44f-xv4v6 (10.244.0.2)
 ```
 
 - Multiple nodes!
+
+
+- Referenced YAML files
+{{% tabs %}}
+{{% tab kube-flannel.yaml %}}
+```
+{{% readfile file="/docs/tutorials/includes/kube-flannel.yaml" %}}
+```
+{{% /tab %}
+{{% tab hello-deployment.yaml %}}
+```
+{{% readfile file="/docs/tutorials/includes/hello-deployment.yaml" %}}
+```
+{{% /tab %}}
+{{% tab hello-svc.yaml %}}
+```
+{{% readfile file="/docs/tutorials/includes/hello-svc.yaml" %}}
+```
+{{% /tab %}}
