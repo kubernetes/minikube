@@ -20,8 +20,6 @@ package bsutil
 import (
 	"path"
 
-	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
@@ -35,20 +33,8 @@ const (
 	KubeletServiceFile = "/lib/systemd/system/kubelet.service"
 	// KubeletSystemdConfFile is config for the systemd kubelet.service
 	KubeletSystemdConfFile = "/etc/systemd/system/kubelet.service.d/10-kubeadm.conf"
+	// InitRestartWrapper is ...
+	InitRestartWrapper = "/etc/init.d/.restart_wrapper.sh"
+	// KubeletInitPath is where Sys-V style init script is installed
+	KubeletInitPath = "/etc/init.d/kubelet"
 )
-
-// ConfigFileAssets returns configuration file assets
-func ConfigFileAssets(cfg config.KubernetesConfig, kubeadm []byte, kubelet []byte, kubeletSvc []byte, defaultCNIConfig []byte) []assets.CopyableFile {
-	fs := []assets.CopyableFile{
-		assets.NewMemoryAssetTarget(kubeadm, KubeadmYamlPath+".new", "0640"),
-		assets.NewMemoryAssetTarget(kubelet, KubeletSystemdConfFile+".new", "0644"),
-		assets.NewMemoryAssetTarget(kubeletSvc, KubeletServiceFile+".new", "0644"),
-	}
-	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
-	// start a Pod in the case a user hasn't manually installed any CNI plugin
-	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
-	if defaultCNIConfig != nil {
-		fs = append(fs, assets.NewMemoryAssetTarget(defaultCNIConfig, DefaultCNIConfigPath, "0644"))
-	}
-	return fs
-}
