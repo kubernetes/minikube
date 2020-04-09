@@ -112,7 +112,7 @@ func TestStartStop(t *testing.T) {
 
 				// none driver does not invoke needs reset
 				// CNI ones will invoke a reset because the expected component coredns would not be running.
-				if !NoneDriver() & !strings.Contains(tc.name, "cni") {
+				if !NoneDriver() && !strings.Contains(tc.name, "cni") {
 					// if this fails means, our soft start was a hard start.
 					softLog := "cluster does not need a reset"
 					if !strings.Contains(rr.Output(), softLog) {
