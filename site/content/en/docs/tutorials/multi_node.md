@@ -120,7 +120,7 @@ Hello from hello-c7b8df44f-xv4v6 (10.244.0.2)
 ```
 {{% readfile file="/docs/tutorials/includes/kube-flannel.yaml" %}}
 ```
-{{% /tab %}
+{{% /tab %}}
 {{% tab hello-deployment.yaml %}}
 ```
 {{% readfile file="/docs/tutorials/includes/hello-deployment.yaml" %}}
