@@ -22,6 +22,7 @@ import (
 	"runtime"
 	"runtime/debug"
 
+	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/problem"
 )
