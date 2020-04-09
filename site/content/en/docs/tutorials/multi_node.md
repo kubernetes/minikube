@@ -44,12 +44,6 @@ multinode-demo-m02   Ready    <none>   9m5s    v1.18.0
 
 - Install a CNI (e.g. flannel):
 NOTE: This currently needs to be done manually after the apiserver is running, the multi-node feature is still experimental as of 1.9.2.
-{{% tabs %}}
-{{% tab kube-flannel.yaml %}}
-```
-{{% readfile file="/docs/tutorials/includes/kube-flannel.yaml" %}}
-```
-{{% /tab %}}
 ```
 kubectl apply -f kube-flannel.yaml
 podsecuritypolicy.policy/psp.flannel.unprivileged created
@@ -63,9 +57,14 @@ daemonset.apps/kube-flannel-ds-arm created
 daemonset.apps/kube-flannel-ds-ppc64le created
 daemonset.apps/kube-flannel-ds-s390x created
 ```
+{{% tabs %}}
+{{% tab kube-flannel.yaml %}}
+```
+{{% readfile file="/docs/tutorials/includes/kube-flannel.yaml" %}}
+```
+{{% /tab %}}
 
 - Deploy our hello world deployment:
-{{% readfile file="/docs/tutorials/includes/hello-deployment.yaml" %}}
 ```
 kubectl apply -f hello-deployment.yaml
 deployment.apps/hello created
@@ -73,6 +72,12 @@ deployment.apps/hello created
 kubectl rollout status deployment/hello
 deployment "hello" successfully rolled out
 ```
+{{% tabs %}}
+{{% tab hello-deployment.yaml %}}
+```
+{{% readfile file="/docs/tutorials/includes/hello-deployment.yaml" %}}
+```
+{{% /tab %}}
 
 - Deploy our hello world service, which just spits back the IP address the request was served from:
 {{% readfile file="/docs/tutorials/includes/hello-svc.yaml" %}}
@@ -80,6 +85,13 @@ deployment "hello" successfully rolled out
 kubectl apply -f hello-svc.yml
 service/hello created
 ```
+
+{{% tabs %}}
+{{% tab hello-svc.yaml %}}
+```
+{{% readfile file="/docs/tutorials/includes/hello-svc.yaml" %}}
+```
+{{% /tab %}}
 
 - Check out the IP addresses of our pods, to note for future reference
 ```
