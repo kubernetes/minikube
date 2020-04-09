@@ -110,7 +110,9 @@ func TestStartStop(t *testing.T) {
 					t.Fatalf("failed to soft start minikube. args %q: %v", rr.Command(), err)
 				}
 
-				if !NoneDriver() { // none driver does not invoke needs reset
+				// none driver does not invoke needs reset
+				// CNI ones will invoke a reset because the expected component coredns would not be running.
+				if !NoneDriver() & !strings.Contains(tc.name, "cni") {
 					// if this fails means, our soft start was a hard start.
 					softLog := "cluster does not need a reset"
 					if !strings.Contains(rr.Output(), softLog) {
