@@ -61,10 +61,11 @@ const waitTimeout = "wait-timeout"
 
 // Start spins up a guest and starts the kubernetes node.
 func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) (*kubeconfig.Settings, error) {
+	name := driver.MachineName(cc, n)
 	if apiServer {
-		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": n.Name, "cluster": cc.Name})
+		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	} else {
-		out.T(out.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": n.Name, "cluster": cc.Name})
+		out.T(out.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	}
 
 	var kicGroup errgroup.Group
@@ -124,6 +125,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 
 		// setup kubeadm (must come after setupKubeconfig)
 		bs = setupKubeAdm(machineAPI, cc, n)
+
 		err = bs.StartCluster(cc)
 		if err != nil {
 			exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, cc, mRunner))
@@ -144,15 +146,20 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		}
 	}
 
-	configureMounts()
+	var wg sync.WaitGroup
+	go configureMounts(&wg)
 
-	if err := CacheAndLoadImagesInConfig(); err != nil {
-		out.FailureT("Unable to load cached images from config file.")
-	}
+	wg.Add(1)
+	go func() {
+		if err := CacheAndLoadImagesInConfig(); err != nil {
+			out.FailureT("Unable to load cached images from config file: {{error}}", out.V{"error": err})
+		}
+		wg.Done()
+	}()
 
 	// enable addons, both old and new!
 	if existingAddons != nil {
-		addons.Start(viper.GetString(config.ProfileName), existingAddons, config.AddonList)
+		go addons.Start(&wg, &cc, existingAddons, config.AddonList)
 	}
 
 	if apiServer {
@@ -192,7 +199,10 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 		}
 	}
 
-	return kcs, nil
+	wg.Wait()
+
+	// Write enabled addons to the config before completion
+	return kcs, config.Write(viper.GetString(config.ProfileName), &cc)
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
