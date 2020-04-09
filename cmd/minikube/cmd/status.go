@@ -153,9 +153,10 @@ func exitCode(st *Status) int {
 func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
 
 	controlPlane := n.ControlPlane
+	name := driver.MachineName(cc, n)
 
 	st := &Status{
-		Name:       n.Name,
+		Name:       name,
 		Host:       Nonexistent,
 		APIServer:  Nonexistent,
 		Kubelet:    Nonexistent,
@@ -163,7 +164,6 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 		Worker:     !controlPlane,
 	}
 
-	name := driver.MachineName(cc, n)
 	hs, err := machine.Status(api, name)
 	glog.Infof("%s host status = %q (err=%v)", name, hs, err)
 	if err != nil {

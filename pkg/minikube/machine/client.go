@@ -157,6 +157,11 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 	if driver.IsKIC(h.Driver.DriverName()) {
 		return command.NewKICRunner(h.Name, h.Driver.DriverName()), nil
 	}
+	return SSHRunner(h)
+}
+
+// SSHRunner returns an SSH runner for the host
+func SSHRunner(h *host.Host) (command.Runner, error) {
 	client, err := sshutil.NewSSHClient(h.Driver)
 	if err != nil {
 		return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
