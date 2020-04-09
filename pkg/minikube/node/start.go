@@ -59,58 +59,45 @@ import (
 
 const waitTimeout = "wait-timeout"
 
+var (
+	kicGroup   errgroup.Group
+	cacheGroup errgroup.Group
+)
+
+// Starter is a struct with all the necessary information to start a node
+type Starter struct {
+	Runner         command.Runner
+	PreExists      bool
+	MachineAPI     libmachine.API
+	Host           *host.Host
+	Cfg            *config.ClusterConfig
+	Node           *config.Node
+	ExistingAddons map[string]bool
+}
+
 // Start spins up a guest and starts the kubernetes node.
-func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]bool, apiServer bool) (*kubeconfig.Settings, error) {
-	name := driver.MachineName(cc, n)
-	if apiServer {
-		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
-	} else {
-		out.T(out.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
-	}
-
-	var kicGroup errgroup.Group
-	if driver.IsKIC(cc.Driver) {
-		beginDownloadKicArtifacts(&kicGroup)
-	}
-
-	var cacheGroup errgroup.Group
-	if !driver.BareMetal(cc.Driver) {
-		beginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
-	}
-
-	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
-	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
-	if err := config.SaveProfile(viper.GetString(config.ProfileName), &cc); err != nil {
-		exit.WithError("Failed to save config", err)
-	}
-
-	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
-	waitDownloadKicArtifacts(&kicGroup)
-
-	mRunner, preExists, machineAPI, host := startMachine(&cc, &n)
-	defer machineAPI.Close()
-
+func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	// wait for preloaded tarball to finish downloading before configuring runtimes
 	waitCacheRequiredImages(&cacheGroup)
 
-	sv, err := util.ParseKubernetesVersion(n.KubernetesVersion)
+	sv, err := util.ParseKubernetesVersion(starter.Node.KubernetesVersion)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to parse kubernetes version")
 	}
 
 	// configure the runtime (docker, containerd, crio)
-	cr := configureRuntimes(mRunner, cc, sv)
-	showVersionInfo(n.KubernetesVersion, cr)
+	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
+	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
 	// ssh should be set up by now
 	// switch to using ssh runner since it is faster
-	if driver.IsKIC(cc.Driver) {
-		sshRunner, err := machine.SSHRunner(host)
+	if driver.IsKIC(starter.Cfg.Driver) {
+		sshRunner, err := machine.SSHRunner(starter.Host)
 		if err != nil {
 			glog.Infof("error getting ssh runner: %v", err)
 		} else {
 			glog.Infof("Using ssh runner for kic...")
-			mRunner = sshRunner
+			starter.Runner = sshRunner
 		}
 	}
 
@@ -118,17 +105,18 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	var kcs *kubeconfig.Settings
 	if apiServer {
 		// Must be written before bootstrap, otherwise health checks may flake due to stale IP
-		kcs = setupKubeconfig(host, &cc, &n, cc.Name)
+		kcs = setupKubeconfig(starter.Host, starter.Cfg, starter.Node, starter.Cfg.Name)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to setup kubeconfig")
 		}
 
 		// setup kubeadm (must come after setupKubeconfig)
-		bs = setupKubeAdm(machineAPI, cc, n)
+		bs = setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node)
+		err = bs.StartCluster(*starter.Cfg)
 
-		err = bs.StartCluster(cc)
 		if err != nil {
-			exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, cc, mRunner))
+			out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
+			return nil, err
 		}
 
 		// write the kubeconfig to the file system after everything required (like certs) are created by the bootstrapper
@@ -136,12 +124,12 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 			return nil, errors.Wrap(err, "Failed to update kubeconfig file.")
 		}
 	} else {
-		bs, err = cluster.Bootstrapper(machineAPI, viper.GetString(cmdcfg.Bootstrapper), cc, n)
+		bs, err = cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, *starter.Node)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get bootstrapper")
 		}
 
-		if err = bs.SetupCerts(cc.KubernetesConfig, n); err != nil {
+		if err = bs.SetupCerts(starter.Cfg.KubernetesConfig, *starter.Node); err != nil {
 			return nil, errors.Wrap(err, "setting up certs")
 		}
 	}
@@ -158,43 +146,43 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	}()
 
 	// enable addons, both old and new!
-	if existingAddons != nil {
-		go addons.Start(&wg, &cc, existingAddons, config.AddonList)
+	if starter.ExistingAddons != nil {
+		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 	}
 
 	if apiServer {
 		// special ops for none , like change minikube directory.
 		// multinode super doesn't work on the none driver
-		if cc.Driver == driver.None && len(cc.Nodes) == 1 {
+		if starter.Cfg.Driver == driver.None && len(starter.Cfg.Nodes) == 1 {
 			prepareNone()
 		}
 
 		// Skip pre-existing, because we already waited for health
-		if kverify.ShouldWait(cc.VerifyComponents) && !preExists {
-			if err := bs.WaitForNode(cc, n, viper.GetDuration(waitTimeout)); err != nil {
+		if kverify.ShouldWait(starter.Cfg.VerifyComponents) && !starter.PreExists {
+			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
 			}
 		}
 	} else {
-		if err := bs.UpdateNode(cc, n, cr); err != nil {
+		if err := bs.UpdateNode(*starter.Cfg, *starter.Node, cr); err != nil {
 			return nil, errors.Wrap(err, "Updating node")
 		}
 
-		cp, err := config.PrimaryControlPlane(&cc)
+		cp, err := config.PrimaryControlPlane(starter.Cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "Getting primary control plane")
 		}
-		cpBs, err := cluster.Bootstrapper(machineAPI, viper.GetString(cmdcfg.Bootstrapper), cc, cp)
+		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, cp)
 		if err != nil {
 			return nil, errors.Wrap(err, "Getting bootstrapper")
 		}
 
-		joinCmd, err := cpBs.GenerateToken(cc)
+		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating join token")
 		}
 
-		if err = bs.JoinCluster(cc, n, joinCmd); err != nil {
+		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
 		}
 	}
@@ -202,7 +190,38 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	wg.Wait()
 
 	// Write enabled addons to the config before completion
-	return kcs, config.Write(viper.GetString(config.ProfileName), &cc)
+	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
+}
+
+// Provision provisions the machine/container for the node
+func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
+
+	name := driver.MachineName(*cc, *n)
+	if apiServer {
+		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+	} else {
+		out.T(out.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
+	}
+
+	if driver.IsKIC(cc.Driver) {
+		beginDownloadKicArtifacts(&kicGroup)
+	}
+
+	if !driver.BareMetal(cc.Driver) {
+		beginCacheKubernetesImages(&cacheGroup, cc.KubernetesConfig.ImageRepository, n.KubernetesVersion, cc.KubernetesConfig.ContainerRuntime)
+	}
+
+	// Abstraction leakage alert: startHost requires the config to be saved, to satistfy pkg/provision/buildroot.
+	// Hence, saveConfig must be called before startHost, and again afterwards when we know the IP.
+	if err := config.SaveProfile(viper.GetString(config.ProfileName), cc); err != nil {
+		return nil, false, nil, nil, errors.Wrap(err, "Failed to save config")
+	}
+
+	handleDownloadOnly(&cacheGroup, &kicGroup, n.KubernetesVersion)
+	waitDownloadKicArtifacts(&kicGroup)
+
+	return startMachine(cc, n)
+
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.
@@ -311,18 +330,24 @@ func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, 
 }
 
 // StartMachine starts a VM
-func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host) {
+func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.Runner, preExists bool, machineAPI libmachine.API, host *host.Host, err error) {
 	m, err := machine.NewAPIClient()
 	if err != nil {
-		exit.WithError("Failed to get machine client", err)
+		return runner, preExists, m, host, errors.Wrap(err, "Failed to get machine client")
 	}
-	host, preExists = startHost(m, *cfg, *node)
+	host, preExists, err = startHost(m, *cfg, *node)
+	if err != nil {
+		return runner, preExists, m, host, errors.Wrap(err, "Failed to start host")
+	}
 	runner, err = machine.CommandRunner(host)
 	if err != nil {
-		exit.WithError("Failed to get command runner", err)
+		return runner, preExists, m, host, errors.Wrap(err, "Failed to get command runner")
 	}
 
-	ip := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository)
+	ip, err := validateNetwork(host, runner, cfg.KubernetesConfig.ImageRepository)
+	if err != nil {
+		return runner, preExists, m, host, errors.Wrap(err, "Failed to validate network")
+	}
 
 	// Bypass proxy for minikube's vm host ip
 	err = proxy.ExcludeIP(ip)
@@ -334,17 +359,17 @@ func startMachine(cfg *config.ClusterConfig, node *config.Node) (runner command.
 	node.IP = ip
 	err = config.SaveNode(cfg, node)
 	if err != nil {
-		exit.WithError("saving node", err)
+		return runner, preExists, m, host, errors.Wrap(err, "saving node")
 	}
 
-	return runner, preExists, m, host
+	return runner, preExists, m, host, err
 }
 
 // startHost starts a new minikube host using a VM or None
-func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, bool) {
+func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.Host, bool, error) {
 	host, exists, err := machine.StartHost(api, cc, n)
 	if err == nil {
-		return host, exists
+		return host, exists, nil
 	}
 	out.ErrT(out.Embarrassed, "StartHost failed, but will try again: {{.error}}", out.V{"error": err})
 
@@ -361,20 +386,20 @@ func startHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*hos
 
 	host, exists, err = machine.StartHost(api, cc, n)
 	if err == nil {
-		return host, exists
+		return host, exists, nil
 	}
 
 	// Don't use host.Driver to avoid nil pointer deref
 	drv := cc.Driver
-	exit.WithError(fmt.Sprintf(`Failed to start %s %s. "%s" may fix it.`, drv, driver.MachineType(drv), mustload.ExampleCmd(cc.Name, "start")), err)
-	return host, exists
+	out.ErrT(out.Sad, `Failed to start {{.driver}} {{.driver_type}}. "{{.cmd}}" may fix it: {{.error}}`, out.V{"driver": drv, "driver_type": driver.MachineType(drv), "cmd": mustload.ExampleCmd(cc.Name, "start"), "error": err})
+	return host, exists, err
 }
 
 // validateNetwork tries to catch network problems as soon as possible
-func validateNetwork(h *host.Host, r command.Runner, imageRepository string) string {
+func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (string, error) {
 	ip, err := h.Driver.GetIP()
 	if err != nil {
-		exit.WithError("Unable to get VM IP address", err)
+		return ip, err
 	}
 
 	optSeen := false
@@ -396,17 +421,19 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) str
 	}
 
 	if !driver.BareMetal(h.Driver.DriverName()) && !driver.IsKIC(h.Driver.DriverName()) {
-		trySSH(h, ip)
+		if err := trySSH(h, ip); err != nil {
+			return ip, err
+		}
 	}
 
 	// Non-blocking
 	go tryRegistry(r, h.Driver.DriverName(), imageRepository)
-	return ip
+	return ip, nil
 }
 
-func trySSH(h *host.Host, ip string) {
+func trySSH(h *host.Host, ip string) error {
 	if viper.GetBool("force") {
-		return
+		return nil
 	}
 
 	sshAddr := net.JoinHostPort(ip, "22")
@@ -422,8 +449,9 @@ func trySSH(h *host.Host, ip string) {
 		return nil
 	}
 
-	if err := retry.Expo(dial, time.Second, 13*time.Second); err != nil {
-		exit.WithCodeT(exit.IO, `minikube is unable to connect to the VM: {{.error}}
+	err := retry.Expo(dial, time.Second, 13*time.Second)
+	if err != nil {
+		out.ErrT(out.FailureType, `minikube is unable to connect to the VM: {{.error}}
 
 	This is likely due to one of two reasons:
 
@@ -439,6 +467,8 @@ func trySSH(h *host.Host, ip string) {
 	- Use --force to override this connectivity check
 	`, out.V{"error": err, "hypervisor": h.Driver.DriverName(), "ip": ip})
 	}
+
+	return err
 }
 
 // tryRegistry tries to connect to the image repository
