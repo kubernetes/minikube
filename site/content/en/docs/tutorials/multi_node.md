@@ -44,7 +44,12 @@ multinode-demo-m02   Ready    <none>   9m5s    v1.18.0
 
 - Install a CNI (e.g. flannel):
 NOTE: This currently needs to be done manually after the apiserver is running, the multi-node feature is still experimental as of 1.9.2.
+{{% tabs %}}
+{{% tab kube-flannel.yaml %}}
+```
 {{% readfile file="/docs/tutorials/includes/kube-flannel.yaml" %}}
+```
+{{% /tab %}}
 ```
 kubectl apply -f kube-flannel.yaml
 podsecuritypolicy.policy/psp.flannel.unprivileged created
