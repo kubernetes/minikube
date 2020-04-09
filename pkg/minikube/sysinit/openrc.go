@@ -37,7 +37,9 @@ readonly UNIT_PATH=$1
 
 while true; do
   if [[ -f "${UNIT_PATH}" ]]; then
-    eval $(egrep "^ExecStart=" "${UNIT_PATH}" | cut -d"=" -f2-)
+	args=$(egrep "^ExecStart=" "${UNIT_PATH}" | cut -d"=" -f2-)
+	echo $args
+	exec $args
   fi
   sleep 1
 done
@@ -104,7 +106,7 @@ func (s *OpenRC) Start(svc string) error {
 	defer cb()
 
 	rr, err := s.r.RunCmd(exec.CommandContext(ctx, "sudo", "service", svc, "start"))
-	glog.Infof("rr: %v", rr.Output())
+	glog.Infof("start output: %s", rr.Output())
 	return err
 }
 
@@ -120,13 +122,15 @@ func (s *OpenRC) Enable(svc string) error {
 
 // Restart restarts a service
 func (s *OpenRC) Restart(svc string) error {
-	_, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "restart"))
+	rr, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "restart"))
+	glog.Infof("restart output: %s", rr.Output())
 	return err
 }
 
 // Stop stops a service
 func (s *OpenRC) Stop(svc string) error {
-	_, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "stop"))
+	rr, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "stop"))
+	glog.Infof("stop output: %s", rr.Output())
 	return err
 }
 
