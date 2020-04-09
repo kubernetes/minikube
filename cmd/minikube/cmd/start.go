@@ -160,7 +160,7 @@ func runStart(cmd *cobra.Command, args []string) {
 			success := false
 			// Walk down the rest of the options
 			for _, alt := range alts {
-				out.WarningT("Startup with {{.old_driver}} driver failed, trying with {{.new_driver}}: {{.error}}", out.V{"old_driver": ds.Name, "new_driver": alt.Name, "error": err})
+				out.WarningT("Startup with {{.old_driver}} driver failed, trying with alternate driver {{.new_driver}}: {{.error}}", out.V{"old_driver": ds.Name, "new_driver": alt.Name, "error": err})
 				ds = alt
 				// Delete the existing cluster and try again with the next driver on the list
 				profile, err := config.LoadProfile(ClusterFlagValue())
