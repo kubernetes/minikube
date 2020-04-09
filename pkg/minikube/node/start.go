@@ -125,6 +125,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 
 		// setup kubeadm (must come after setupKubeconfig)
 		bs = setupKubeAdm(machineAPI, cc, n)
+
 		err = bs.StartCluster(cc)
 		if err != nil {
 			exit.WithLogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, cc, mRunner))
