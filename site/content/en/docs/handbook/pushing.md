@@ -72,10 +72,19 @@ more information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/dock
 From the host, you can push a Docker image directly to minikube. It will also be cached for all minikube clusters .
 
 ```shell
-minikube cache add ubuntu:16.04
+minikube cache add alpine:latest
 ```
 
-The add command will store the requested image to `$MINIKUBE_HOME/cache/images`, and load it into the VM's container runtime environment next time `minikube start` is called.
+The add command will store the requested image to `$MINIKUBE_HOME/cache/images`, and load it into the minikube cluster's container runtime environment automatically.
+
+{{% pageinfo %}}
+if your image changes after your cached it, you could do `cache reload` to ensure minikube gets the last updates.
+
+```
+shell
+minikube cache reload
+```
+{{% /pageinfo %}}
 
 To display images you have added to the cache:
 
@@ -85,11 +94,6 @@ minikube cache list
 
 This listing will not include the images minikube's built-in system images.
 
-to ensure your running cluster has cached the updated images use reload:
-
-```shell
-minikube cache reload
-```
 
 
 ```shell
