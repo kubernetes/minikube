@@ -330,9 +330,9 @@ func (d *Driver) Stop() error {
 	if len(containers) > 0 {
 		if err := runtime.StopContainers(containers); err != nil {
 			glog.Infof("unable to stop containers will try killing  : %v", err)
-			if err := runtime.KillContainers(containers); err != nil {
-				glog.Infof("unable to kill containers : %v", err)
-			}
+		}
+		if err := runtime.KillContainers(containers); err != nil {
+			glog.Infof("unable to kill containers : %v", err)
 		}
 	}
 
@@ -343,6 +343,10 @@ func (d *Driver) Stop() error {
 		if err := kubelet.ForceStop(d.exec); err != nil {
 			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
+	}
+	// to avoid https://github.com/kubernetes/minikube/issues/7521
+	if _, err := d.exec.RunCmd(exec.Command("sudo", "/bin/bash", "-c", "kill -9 $(pgrep kube-apiserver)")); err != nil {
+		glog.Infof("failed to kill kube-apiserver! : %v", err)
 	}
 
 	glog.Infof("successfully stopped kubernetes!")
