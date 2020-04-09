@@ -21,7 +21,7 @@ Here is a comparison table to help you choose:
 |  [docker-env command](http://localhost:1313/docs/handbook/pushing/#pushing-directly-to-the-in-cluster-docker-daemon)	|   only docker	|  	|  good 	|
 |  [podman-env command](http://localhost:1313/docs/handbook/pushing/#pushing-directly-to-in-cluster-crio)	|   only cri-o	|     |  good 	|
 |  [cache add command](http://localhost:1313/docs/handbook/pushing/#push-images-using-cache-command) 	|  all 	|    	|  ok 	|
-|  [registry addon](http://localhost:1313/docs/handbook/pushing/#pushing-to-an-in-cluster-using-a-registry-addon)   |   all	|   [docker on mac](https://github.com/kubernetes/minikube/issues/7535) |  ok 	|
+|  [registry addon](http://localhost:1313/docs/handbook/pushing/#pushing-to-an-in-cluster-using-a-registry-addon)   |   all	|   work in progress for [docker on mac](https://github.com/kubernetes/minikube/issues/7535) |  ok 	|
 |  [minikube ssh](http://localhost:1313/docs/handbook/pushing/#building-images-inside-of-minikube-using-ssh)   |   all	|    |  best 	|
 
 
