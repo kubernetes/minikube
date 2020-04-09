@@ -51,8 +51,8 @@ func TestSetupCerts(t *testing.T) {
 	}
 
 	expected := map[string]string{
-		`sudo /bin/bash -c "test -f /usr/share/ca-certificates/mycert.pem && ln -fs /usr/share/ca-certificates/mycert.pem /etc/ssl/certs/mycert.pem"`:             "-",
-		`sudo /bin/bash -c "test -f /usr/share/ca-certificates/minikubeCA.pem && ln -fs /usr/share/ca-certificates/minikubeCA.pem /etc/ssl/certs/minikubeCA.pem"`: "-",
+		`sudo /bin/bash -c "test -s /usr/share/ca-certificates/mycert.pem && ln -fs /usr/share/ca-certificates/mycert.pem /etc/ssl/certs/mycert.pem"`:             "-",
+		`sudo /bin/bash -c "test -s /usr/share/ca-certificates/minikubeCA.pem && ln -fs /usr/share/ca-certificates/minikubeCA.pem /etc/ssl/certs/minikubeCA.pem"`: "-",
 	}
 	f := command.NewFakeCommandRunner()
 	f.SetCommandToOutput(expected)
