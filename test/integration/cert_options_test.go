@@ -21,6 +21,7 @@ package integration
 import (
 	"context"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -35,7 +36,7 @@ func TestCertOptions(t *testing.T) {
 	defer CleanupWithLogs(t, profile, cancel)
 
 	// Use the most verbose logging for the simplest test. If it fails, something is very wrong.
-	args := append([]string{"start", "-p", profile, "--memory=1900", "--apiserver-ips=127.0.0.1,192.168.15.15", "--apiserver-names=localhost,www.google.com", "--apiserver-port=8555"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=1900", "--apiserver-ips=127.0.0.1", "--apiserver-ips=192.168.15.15", "--apiserver-names=localhost", "--apiserver-names=www.google.com", "--apiserver-port=8555"}, StartArgs()...)
 
 	// We can safely override --apiserver-name with
 	if NeedsPortForward() {
@@ -47,10 +48,33 @@ func TestCertOptions(t *testing.T) {
 		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
 
-	// test that file written from host was read in by the pod via cat /mount-9p/written-by-host;
-	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "version"))
+	// verify that the alternate names/ips are included in the apiserver cert
+	// in minikube vm, run - openssl x509 -text -noout -in /var/lib/minikube/certs/apiserver.crt
+	// to inspect the apiserver cert
+
+	// can filter further with '-certopt no_subject,no_header,no_version,no_serial,no_signame,no_validity,no_issuer,no_pubkey,no_sigdump,no_aux'
+	apiserverCertCmd := "openssl x509 -text -noout -in /var/lib/minikube/certs/apiserver.crt"
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", apiserverCertCmd))
 	if err != nil {
-		t.Errorf("failed to get kubectl version. args %q : %v", rr.Command(), err)
+		t.Errorf("failed to read apiserver cert inside minikube. args %q: %v", rr.Command(), err)
+	}
+
+	extraNamesIps := [4]string{"127.0.0.1", "192.168.15.15", "localhost", "www.google.com"}
+
+	for _, eni := range extraNamesIps {
+		if !strings.Contains(rr.Stdout.String(), eni) {
+			t.Errorf("apiserver cert does not include %s in SAN.", eni)
+		}
+	}
+
+	// verify that the apiserver is serving on port 8555
+
+	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "config", "view"))
+	if err != nil {
+		t.Errorf("failed to get kubectl config. args %q : %v", rr.Command(), err)
+	}
+	if !strings.Contains(rr.Stdout.String(), "8555") {
+		t.Errorf("apiserver server port incorrect. Output of 'kubectl config view' = %q", rr.Output())
 	}
 
 }
