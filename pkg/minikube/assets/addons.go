@@ -19,8 +19,6 @@ package assets
 import (
 	"runtime"
 
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -49,21 +47,14 @@ func (a *Addon) Name() string {
 }
 
 // IsEnabled checks if an Addon is enabled for the given profile
-func (a *Addon) IsEnabled(profile string) (bool, error) {
-	c, err := config.Load(profile)
-	if err != nil {
-		return false, errors.Wrap(err, "load")
-	}
-
-	// Is this addon explicitly listed in their configuration?
-	status, ok := c.Addons[a.Name()]
-	glog.V(1).Infof("IsEnabled %q = %v (listed in config=%v)", a.Name(), status, ok)
+func (a *Addon) IsEnabled(cc *config.ClusterConfig) bool {
+	status, ok := cc.Addons[a.Name()]
 	if ok {
-		return status, nil
+		return status
 	}
 
 	// Return the default unconfigured state of the addon
-	return a.enabled, nil
+	return a.enabled
 }
 
 // Addons is the list of addons

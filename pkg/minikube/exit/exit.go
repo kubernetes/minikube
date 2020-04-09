@@ -20,6 +20,7 @@ package exit
 import (
 	"os"
 	"runtime"
+	"runtime/debug"
 
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/problem"
@@ -53,6 +54,7 @@ func WithCodeT(code int, format string, a ...out.V) {
 
 // WithError outputs an error and exits.
 func WithError(msg string, err error) {
+	glog.Infof("WithError(%s)=%v called from:\n%s", msg, err, debug.Stack())
 	p := problem.FromError(err, runtime.GOOS)
 	if p != nil {
 		WithProblem(msg, err, p)

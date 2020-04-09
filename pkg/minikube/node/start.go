@@ -134,15 +134,20 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	configureMounts()
+	var wg sync.WaitGroup
+	go configureMounts(&wg)
 
-	if err := CacheAndLoadImagesInConfig(); err != nil {
-		out.FailureT("Unable to load cached images from config file.")
-	}
+	wg.Add(1)
+	go func() {
+		if err := CacheAndLoadImagesInConfig(); err != nil {
+			out.FailureT("Unable to load cached images from config file: {{error}}", out.V{"error": err})
+		}
+		wg.Done()
+	}()
 
 	// enable addons, both old and new!
 	if starter.ExistingAddons != nil {
-		addons.Start(viper.GetString(config.ProfileName), starter.ExistingAddons, config.AddonList)
+		go addons.Start(&wg, &cc, starter.ExistingAddons, config.AddonList)
 	}
 
 	if apiServer {
@@ -182,7 +187,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 	}
 
-	return kcs, nil
+	wg.Wait()
+
+	// Write enabled addons to the config before completion
+	return kcs, config.Write(viper.GetString(config.ProfileName), &cc)
 }
 
 // Provision provisions the machine/container for the node
