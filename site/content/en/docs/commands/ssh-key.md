@@ -1,16 +1,27 @@
 ---
 title: "ssh-key"
-linkTitle: "sshs-key"
-weight: 1
-date: 2019-08-01
 description: >
   Retrieve the ssh identity key path of the specified cluster
 ---
 
-### Usage
+
+
+## minikube ssh-key
+
+Retrieve the ssh identity key path of the specified cluster
+
+### Synopsis
+
+Retrieve the ssh identity key path of the specified cluster.
 
 ```
 minikube ssh-key [flags]
+```
+
+### Options
+
+```
+  -h, --help   help for ssh-key
 ```
 
 ### Options inherited from parent commands
@@ -26,3 +37,4 @@ minikube ssh-key [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+

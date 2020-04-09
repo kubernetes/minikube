@@ -1,19 +1,31 @@
 ---
 title: "update-context"
-linkTitle: "update-context"
-weight: 1
-date: 2019-08-01
 description: >
   Verify the IP address of the running cluster in kubeconfig.
 ---
 
-The `update-context` command retrieves the IP address of the running cluster, checks it with IP in kubeconfig, and corrects kubeconfig if incorrect:
+
+
+## minikube update-context
+
+Verify the IP address of the running cluster in kubeconfig.
+
+### Synopsis
+
+Retrieves the IP address of the running cluster, checks it
+			with IP in kubeconfig, and corrects kubeconfig if incorrect.
 
 ```
 minikube update-context [flags]
 ```
 
-## Options inherited from parent commands
+### Options
+
+```
+  -h, --help   help for update-context
+```
+
+### Options inherited from parent commands
 
 ```
       --alsologtostderr                  log to standard error as well as files
@@ -26,3 +38,4 @@ minikube update-context [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+

@@ -268,11 +268,11 @@ integration-versioned: out/minikube ## Trigger minikube integration testing
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
-	./test.sh
+	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" ./test.sh
 
-.PHONY: gotest
-gotest: $(SOURCE_GENERATED) ## Trigger minikube test
-	go test -tags "$(MINIKUBE_BUILD_TAGS)" $(MINIKUBE_TEST_FILES)
+.PHONY: generate-docs
+generate-docs: out/minikube ## Automatically generate commands documentation.
+	out/minikube generate-docs --path ./site/content/en/docs/commands/
 
 .PHONY: extract
 extract: ## Compile extract tool

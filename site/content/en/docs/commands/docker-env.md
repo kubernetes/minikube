@@ -1,13 +1,18 @@
 ---
 title: "docker-env"
-linkTitle: "docker-env"
-weight: 1
-date: 2019-08-01
 description: >
   Sets up docker env variables; similar to '$(docker-machine env)'
 ---
 
-### Usage
+
+
+## minikube docker-env
+
+Sets up docker env variables; similar to '$(docker-machine env)'
+
+### Synopsis
+
+Sets up docker env variables; similar to '$(docker-machine env)'.
 
 ```
 minikube docker-env [flags]
@@ -35,3 +40,4 @@ minikube docker-env [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+
