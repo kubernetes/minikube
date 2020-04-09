@@ -32,6 +32,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/docker"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // KubernetesContainerPrefix is the prefix of each kubernetes container
@@ -56,6 +57,7 @@ func (e *ErrISOFeature) Error() string {
 type Docker struct {
 	Socket string
 	Runner CommandRunner
+	Init   sysinit.Manager
 }
 
 // Name is a human readable name for Docker
@@ -97,9 +99,7 @@ func (r *Docker) Available() error {
 
 // Active returns if docker is active on the host
 func (r *Docker) Active() bool {
-	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "docker")
-	_, err := r.Runner.RunCmd(c)
-	return err == nil
+	return r.Init.Active("docker")
 }
 
 // Enable idempotently enables Docker on a host
@@ -109,29 +109,18 @@ func (r *Docker) Enable(disOthers bool) error {
 			glog.Warningf("disableOthers: %v", err)
 		}
 	}
-	c := exec.Command("sudo", "systemctl", "start", "docker")
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "enable docker.")
-	}
-	return nil
+
+	return r.Init.Start("docker")
 }
 
 // Restart restarts Docker on a host
 func (r *Docker) Restart() error {
-	c := exec.Command("sudo", "systemctl", "restart", "docker")
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "restarting docker.")
-	}
-	return nil
+	return r.Init.Restart("docker")
 }
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
-	c := exec.Command("sudo", "systemctl", "stop", "-f", "docker", "docker.socket")
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "disable docker")
-	}
-	return nil
+	return r.Init.ForceStop("docker")
 }
 
 // ImageExists checks if an image exists

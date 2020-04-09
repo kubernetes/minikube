@@ -21,9 +21,11 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -70,7 +72,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 func status() registry.State {
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
-		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
+		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker.", Doc: "https://minikube.sigs.k8s.io/docs/drivers/docker/#install-docker"}
 	}
 
 	// Allow no more than 3 seconds for docker info
@@ -78,8 +80,19 @@ func status() registry.State {
 	defer cancel()
 
 	err = exec.CommandContext(ctx, oci.Docker, "info").Run()
+
+	if ctx.Err() == context.DeadlineExceeded {
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker responds too slow. Restart the Docker Service.", Doc: "https://minikube.sigs.k8s.io/docs/drivers/docker"}
+	}
 	if err != nil {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is not running or is responding too slow. Try: restarting docker desktop."}
+		glog.Infof("docker info returned error: %v", err)
+		if strings.Contains(err.Error(), "Cannot connect to the Docker daemon") {
+			return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Start the Docker Service.", Doc: "https://minikube.sigs.k8s.io/docs/drivers/docker"}
+		}
+		// if we get here, something is really wrong on their docker.
+		// our best suggestion would be re-install latest docker.
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Re-install the latest version of Docker.", Doc: "https://minikube.sigs.k8s.io/docs/drivers/docker"}
+
 	}
 
 	return registry.State{Installed: true, Healthy: true}

@@ -73,6 +73,11 @@ func TestFunctional(t *testing.T) {
 		if err := os.Remove(p); err != nil {
 			t.Logf("unable to remove %q: %v", p, err)
 		}
+		p = localEmptyCertPath()
+		if err := os.Remove(p); err != nil {
+			t.Logf("unable to remove %q: %v", p, err)
+		}
+
 		CleanupWithLogs(t, profile, cancel)
 	}()
 
@@ -793,18 +798,44 @@ func localTestCertPath() string {
 	return filepath.Join(localpath.MiniPath(), "/certs", testCert())
 }
 
+// localEmptyCertPath is where the test file will be synced into the VM
+func localEmptyCertPath() string {
+	return filepath.Join(localpath.MiniPath(), "/certs", fmt.Sprintf("%d_empty.pem", os.Getpid()))
+}
+
 // Copy extra file into minikube home folder for file sync test
 func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 	p := localSyncTestPath()
 	t.Logf("local sync path: %s", p)
 	err := copy.Copy("./testdata/sync.test", p)
 	if err != nil {
-		t.Fatalf("failed to copy ./testdata/sync.test : %v", err)
+		t.Fatalf("failed to copy ./testdata/sync.test: %v", err)
 	}
 
-	err = copy.Copy("./testdata/minikube_test.pem", localTestCertPath())
+	testPem := "./testdata/minikube_test.pem"
+
+	err = copy.Copy(testPem, localTestCertPath())
 	if err != nil {
-		t.Fatalf("failed to copy ./testdata/minikube_test.pem : %v", err)
+		t.Fatalf("failed to copy %s: %v", testPem, err)
+	}
+
+	want, err := os.Stat(testPem)
+	if err != nil {
+		t.Fatalf("stat failed: %v", err)
+	}
+
+	got, err := os.Stat(localTestCertPath())
+	if err != nil {
+		t.Fatalf("stat failed: %v", err)
+	}
+
+	if want.Size() != got.Size() {
+		t.Errorf("%s size=%d, want %d", localTestCertPath(), got.Size(), want.Size())
+	}
+
+	// Create an empty file just to mess with people
+	if _, err := os.Create(localEmptyCertPath()); err != nil {
+		t.Fatalf("create failed: %v", err)
 	}
 }
 
