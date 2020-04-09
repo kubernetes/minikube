@@ -114,7 +114,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		bs = setupKubeAdm(starter.MachineAPI, *starter.Cfg, *starter.Node)
 		err = bs.StartCluster(*starter.Cfg)
 
-    if err != nil {
+		if err != nil {
 			out.LogEntries("Error starting cluster", err, logs.FindProblems(cr, bs, *starter.Cfg, starter.Runner))
 			return nil, err
 		}
@@ -187,10 +187,12 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 // Provision provisions the machine/container for the node
 func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (command.Runner, bool, libmachine.API, *host.Host, error) {
+
+	name := driver.MachineName(*cc, *n)
 	if apiServer {
-		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": n.Name, "cluster": cc.Name})
+		out.T(out.ThumbsUp, "Starting control plane node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	} else {
-		out.T(out.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": n.Name, "cluster": cc.Name})
+		out.T(out.ThumbsUp, "Starting node {{.name}} in cluster {{.cluster}}", out.V{"name": name, "cluster": cc.Name})
 	}
 
 	if driver.IsKIC(cc.Driver) {

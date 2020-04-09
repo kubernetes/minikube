@@ -195,7 +195,7 @@ func LogEntries(msg string, err error, entries map[string][]string) {
 	}
 }
 
-// DisplayError
+// DisplayError prints the error and displays the standard minikube error messaging
 func DisplayError(msg string, err error) {
 	// use Warning because Error will display a duplicate message to stderr
 	glog.Warningf(fmt.Sprintf("%s: %v", msg, err))
