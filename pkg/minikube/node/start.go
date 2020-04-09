@@ -147,7 +147,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 	// enable addons, both old and new!
 	if starter.ExistingAddons != nil {
-		go addons.Start(&wg, &cc, starter.ExistingAddons, config.AddonList)
+		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 	}
 
 	if apiServer {
@@ -190,7 +190,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	wg.Wait()
 
 	// Write enabled addons to the config before completion
-	return kcs, config.Write(viper.GetString(config.ProfileName), &cc)
+	return kcs, config.Write(viper.GetString(config.ProfileName), starter.Cfg)
 }
 
 // Provision provisions the machine/container for the node
