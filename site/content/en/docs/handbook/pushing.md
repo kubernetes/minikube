@@ -11,17 +11,17 @@ aliases:
 ---
 
 ## Comparison table for different methods 
-the answer depends on the container-runtime driver you choose. 
+The best method to push your image to minikube depends on the container-runtime you built your cluster with (default docker).
 Here is a comparison table to help you choose:
 
 
 | Method   	| Supported Runtimes   	|  Issues 	|  Performance 	|
 |---	|---	|---	|---	|---	|
-|  [docker-env command](http://localhost:1313/docs/handbook/pushing/#pushing-directly-to-the-in-cluster-docker-daemon)	|   only docker	|  	|  good 	|
-|  [podman-env command](http://localhost:1313/docs/handbook/pushing/#pushing-directly-to-in-cluster-crio)	|   only cri-o	|     |  good 	|
-|  [cache add command](http://localhost:1313/docs/handbook/pushing/#push-images-using-cache-command) 	|  all 	|    	|  ok 	|
-|  [registry addon](http://localhost:1313/docs/handbook/pushing/#pushing-to-an-in-cluster-using-a-registry-addon)   |   all	|   work in progress for [docker on mac](https://github.com/kubernetes/minikube/issues/7535) |  ok 	|
-|  [minikube ssh](http://localhost:1313/docs/handbook/pushing/#building-images-inside-of-minikube-using-ssh)   |   all	|    |  best 	|
+|  [docker-env command](/docs/handbook/pushing/#1pushing-directly-to-the-in-cluster-docker-daemon-docker-env)	|   only docker	|  	|  good 	|
+|  [podman-env command](/docs/handbook/pushing/#3-pushing-directly-to-in-cluster-crio-podman-env)	|   only cri-o	|     |  good 	|
+|  [cache add command](/pushing/#push-images-using-cache-command) 	|  all 	|    	|  ok 	|
+|  [registry addon](/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon)   |   all	|   work in progress for [docker on mac](https://github.com/kubernetes/minikube/issues/7535) |  ok 	|
+|  [minikube ssh](/docs/handbook/pushing/#5-building-images-inside-of-minikube-using-ssh)   |   all	|    |  best 	|
 
 
 * note1 : the default container-runtime on minikube is 'docker'.
@@ -54,10 +54,14 @@ docker build -t myimage .
 
 Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`), as otherwise Kubernetes won't use images you built locally.
 
-
-Please remember evalulating the docker-env is only valid for the current terminal.
+{{% pageinfo %}}
+Evaluating the docker-env is only valid for the current terminal.
 and by closing the terminal, you will go back to using your own system's docker daemon.
-to verify your terminal is using minikuber's docker-env you can check the value of the environment MINIKUBE_ACTIVE_DOCKERD
+
+in some drivers such as Docker or Podman, you will need to re-do docker-env each time you restart your minikube.
+{{% /pageinfo %}}
+
+To verify your terminal is using minikuber's docker-env you can check the value of the environment variable MINIKUBE_ACTIVE_DOCKERD to reflect the profile name.
 
 more information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/docker-env/)
 
@@ -146,8 +150,8 @@ docker push $(minikube ip):5000/test-img
 
 ## 5. Building images inside of minikube using SSH
 
-Use `minikube ssh` to go inside a minikube node, and run the `docker build` directly there.
-any command you run there will run against the same daemon that kubernetes is using.
+Use `minikube ssh` to run commands inside the minikube node, and run the `docker build` directly there.
+Any command you run there will run against the same daemon that kubernetes cluster is using.
 
 ```shell
 docker build
