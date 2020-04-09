@@ -79,11 +79,12 @@ All translations are stored in the top-level `translations` directory.
 
 * You now have a fresh minikube binary in the `out` directory. If your system locale is that of the language you added translations for, a simple `out/minikube start` will work as a test, assuming you translated phrases from `minikube start`. You can use whatever command you'd like in that way. 
 
-* If you have a different system locale, you can override the printed language using the LANG environment variable:
+* If you have a different system locale, you can override the printed language using the LC_ALL environment variable:
 	```
-	~/minikube$ LANG=fr out/minikube start
-	😄  minikube v1.9.0-beta.2 sur Darwin 10.14.6
-	✨  Choix automatique du driver hyperkit
+	~/minikube$ LC_ALL=fr out/minikube start
+	😄  minikube v1.9.2 sur Darwin 10.14.5
+	✨  Choix automatique du driver hyperkit. Autres choix: <no value>
+	👍  Starting control plane node minikube in cluster minikube
 	🔥  Création de VM hyperkit (CPUs=2, Mémoire=4000MB, Disque=20000MB)...
 	🐳  Préparation de Kubernetes v1.18.0 sur Docker 19.03.8...
 	🌟  Installation des addons: default-storageclass, storage-provisioner

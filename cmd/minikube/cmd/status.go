@@ -208,15 +208,9 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 		return st, err
 	}
 
-	stk, err := kverify.KubeletStatus(cr)
-	glog.Infof("%s kubelet status = %s (err=%v)", name, stk, err)
-
-	if err != nil {
-		glog.Warningf("kubelet err: %v", err)
-		st.Kubelet = state.Error.String()
-	} else {
-		st.Kubelet = stk.String()
-	}
+	stk := kverify.KubeletStatus(cr)
+	glog.Infof("%s kubelet status = %s", name, stk)
+	st.Kubelet = stk.String()
 
 	// Early exit for regular nodes
 	if !controlPlane {

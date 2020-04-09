@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -69,20 +70,40 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
+	docURL := "https://minikube.sigs.k8s.io/docs/drivers/docker/"
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
-		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
+		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
 	// Quickly returns an error code if server is not running
-	args := []string{"version", "--format", "{{.Server.Version}}"}
-	err = exec.CommandContext(ctx, oci.Docker, args...).Run()
-	if err != nil {
-		return registry.State{Error: fmt.Errorf(`"%s %s" returned error: %v`, oci.Docker, strings.Join(args, " "), err), Installed: true, Healthy: false, Fix: "Docker is not running or is responding too slow. Try: restarting docker desktop."}
+	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Version}}")
+	_, err = cmd.Output()
+	if err == nil {
+		return registry.State{Installed: true, Healthy: true}
 	}
 
-	return registry.State{Installed: true, Healthy: true}
+	glog.Warningf("docker returned error: %v", err)
+
+	// Basic timeout
+	if ctx.Err() == context.DeadlineExceeded {
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
+	}
+
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		stderr := strings.TrimSpace(string(exitErr.Stderr))
+		newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
+
+		if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") {
+			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
+		}
+
+		// We don't have good advice, but at least we can provide a good error message
+		return registry.State{Error: newErr, Installed: true, Healthy: false, Doc: docURL}
+	}
+
+	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
 }

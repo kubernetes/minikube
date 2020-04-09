@@ -19,7 +19,6 @@ package kverify
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -36,7 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/logs"
-	"k8s.io/minikube/pkg/util/retry"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
@@ -69,7 +68,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 		}
 		return true, nil
 	}
-	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, timeout, podList); err != nil {
 		return fmt.Errorf("apiserver never returned a pod list")
 	}
 	glog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
@@ -86,7 +85,6 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 	}
 
 	for _, pod := range pods.Items {
-		glog.Infof("found pod: %s", podStatusMsg(pod))
 		if pod.Status.Phase != core.PodRunning {
 			continue
 		}
@@ -113,9 +111,16 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout time.Duration) error {
 	glog.Info("waiting for k8s-apps to be running ...")
 	start := time.Now()
-	checkRunning := func() error { return ExpectAppsRunning(cs, expected) }
-	if err := retry.Expo(checkRunning, 500*time.Millisecond, timeout); err != nil {
-		return errors.Wrap(err, "waitings for k8s app running")
+
+	checkRunning := func() (bool, error) {
+		if err := ExpectAppsRunning(cs, expected); err != nil {
+			return false, nil
+		}
+		return true, nil
+	}
+
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, timeout, checkRunning); err != nil {
+		return errors.Wrapf(err, "checking k8s-apps to be running")
 	}
 	glog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
 	return nil
@@ -151,22 +156,11 @@ func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg conf
 }
 
 // KubeletStatus checks the kubelet status
-func KubeletStatus(cr command.Runner) (state.State, error) {
+func KubeletStatus(cr command.Runner) state.State {
 	glog.Infof("Checking kubelet status ...")
-	rr, err := cr.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
-	if err != nil {
-		// Do not return now, as we still have parsing to do!
-		glog.Warningf("%s returned error: %v", rr.Command(), err)
+	active := sysinit.New(cr).Active("kubelet")
+	if active {
+		return state.Running
 	}
-	s := strings.TrimSpace(rr.Stdout.String())
-	glog.Infof("kubelet is-active: %s", s)
-	switch s {
-	case "active":
-		return state.Running, nil
-	case "inactive":
-		return state.Stopped, nil
-	case "activating":
-		return state.Starting, nil
-	}
-	return state.Error, nil
+	return state.Stopped
 }

@@ -31,6 +31,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string) error {
@@ -86,7 +87,9 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 		KubernetesVersion: kubernetesVersion,
 	}
 	runner := command.NewKICRunner(profile, driver.OCIBinary)
-	if err := bsutil.TransferBinaries(kcfg, runner); err != nil {
+	sm := sysinit.New(runner)
+
+	if err := bsutil.TransferBinaries(kcfg, runner, sm); err != nil {
 		return errors.Wrap(err, "transferring k8s binaries")
 	}
 	// Create image tarball
