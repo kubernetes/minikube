@@ -246,6 +246,9 @@ func (f *FakeRunner) dockerStop(args []string) (string, error) {
 	ids := strings.Split(args[1], " ")
 	for _, id := range ids {
 		f.t.Logf("fake docker: Stopping id %q", id)
+		if id == "--timeout=2" { // don't interpret this as an id
+			continue
+		}
 		if f.containers[id] == "" {
 			return "", fmt.Errorf("no such container")
 		}
@@ -257,6 +260,10 @@ func (f *FakeRunner) dockerStop(args []string) (string, error) {
 func (f *FakeRunner) dockerRm(args []string) (string, error) {
 	// Skip "-f" argument
 	for _, id := range args[2:] {
+		if id == "--timeout=2" { // don't interpret this as an id
+			continue
+		}
+
 		f.t.Logf("fake docker: Removing id %q", id)
 		if f.containers[id] == "" {
 			return "", fmt.Errorf("no such container")
@@ -384,6 +391,9 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 		}
 	case "stop":
 		for _, id := range args[1:] {
+			if id == "--timeout=2" {
+				continue
+			}
 			f.t.Logf("fake crictl: Stopping id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
@@ -392,6 +402,9 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 		}
 	case "rm":
 		for _, id := range args[1:] {
+			if id == "--timeout=2" {
+				continue
+			}
 			f.t.Logf("fake crictl: Removing id %q", id)
 			if f.containers[id] == "" {
 				return "", fmt.Errorf("no such container")
