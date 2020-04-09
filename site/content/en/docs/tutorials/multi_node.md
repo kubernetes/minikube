@@ -1,5 +1,5 @@
 ---
-title: "Using Multi-Node Clusters"
+title: "Using Multi-Node Clusters (Experimental)"
 linkTitle: "Using multi-node clusters"
 weight: 1
 date: 2019-11-24
@@ -11,7 +11,7 @@ date: 2019-11-24
 
 ## Prerequisites
 
-- Minikube 1.9.0 (experimental) or higher
+- minikube 1.9.0 or higher
 - kubectl
 
 ## Tutorial
