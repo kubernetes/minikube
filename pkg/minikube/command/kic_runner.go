@@ -128,44 +128,73 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 // Copy copies a file and its permissions
 func (k *kicRunner) Copy(f assets.CopyableFile) error {
-	src := f.GetAssetName()
-	if _, err := os.Stat(f.GetAssetName()); os.IsNotExist(err) {
-		fc := make([]byte, f.GetLength()) // Read  asset file into a []byte
-		if _, err := f.Read(fc); err != nil {
-			return errors.Wrap(err, "can't copy non-existing file")
-		} // we have a MemoryAsset, will write to disk before copying
+	dst := path.Join(path.Join(f.GetTargetDir(), f.GetTargetName()))
 
-		tmpFile, err := ioutil.TempFile(os.TempDir(), "tmpf-memory-asset")
+	// For tiny files, it's cheaper to overwrite than check
+	if f.GetLength() > 4096 {
+		exists, err := fileExists(k, f, dst)
 		if err != nil {
-			return errors.Wrap(err, "creating temporary file")
+			glog.Infof("existence error for %s: %v", dst, err)
 		}
-		//  clean up the temp file
-		defer os.Remove(tmpFile.Name())
-		if _, err = tmpFile.Write(fc); err != nil {
-			return errors.Wrap(err, "write to temporary file")
+		if exists {
+			glog.Infof("copy: skipping %s (exists)", dst)
+			return nil
 		}
+	}
 
-		// Close the file
-		if err := tmpFile.Close(); err != nil {
-			return errors.Wrap(err, "close temporary file")
-		}
-		src = tmpFile.Name()
+	src := f.GetSourcePath()
+	if f.GetLength() == 0 {
+		glog.Warningf("0 byte asset: %+v", f)
 	}
 
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
 	if err != nil {
-		return errors.Wrapf(err, "converting permissions %s to integer", f.GetPermissions())
+		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
 	}
 
-	// Rely on cp -a to propagate permissions
-	if err := os.Chmod(src, os.FileMode(perms)); err != nil {
-		return errors.Wrapf(err, "chmod")
+	if src != assets.MemorySource {
+		// Take the fast path
+		fi, err := os.Stat(src)
+		if err == nil {
+			if fi.Mode() == os.FileMode(perms) {
+				glog.Infof("%s (direct): %s --> %s (%d bytes)", k.ociBin, src, dst, f.GetLength())
+				return k.copy(src, dst)
+			}
+
+			// If >1MB, avoid local copy
+			if fi.Size() > (1024 * 1024) {
+				glog.Infof("%s (chmod): %s --> %s (%d bytes)", k.ociBin, src, dst, f.GetLength())
+				if err := k.copy(src, dst); err != nil {
+					return err
+				}
+				return k.chmod(dst, f.GetPermissions())
+			}
+		}
 	}
-	dest := fmt.Sprintf("%s:%s", k.nameOrID, path.Join(f.GetTargetDir(), f.GetTargetName()))
+	glog.Infof("%s (temp): %s --> %s (%d bytes)", k.ociBin, src, dst, f.GetLength())
+	tf, err := ioutil.TempFile("", "tmpf-memory-asset")
+	if err != nil {
+		return errors.Wrap(err, "creating temporary file")
+	}
+	defer os.Remove(tf.Name())
+
+	if err := writeFile(tf.Name(), f, os.FileMode(perms)); err != nil {
+		return errors.Wrap(err, "write")
+	}
+	return k.copy(tf.Name(), dst)
+}
+
+func (k *kicRunner) copy(src string, dst string) error {
+	fullDest := fmt.Sprintf("%s:%s", k.nameOrID, dst)
 	if k.ociBin == oci.Podman {
-		return copyToPodman(src, dest)
+		return copyToPodman(src, fullDest)
 	}
-	return copyToDocker(src, dest)
+	return copyToDocker(src, fullDest)
+}
+
+func (k *kicRunner) chmod(dst string, perm string) error {
+	_, err := k.RunCmd(exec.Command("sudo", "chmod", perm, dst))
+	return err
 }
 
 // Podman cp command doesn't match docker and doesn't have -a
@@ -185,11 +214,11 @@ func copyToDocker(src string, dest string) error {
 
 // Remove removes a file
 func (k *kicRunner) Remove(f assets.CopyableFile) error {
-	fp := path.Join(f.GetTargetDir(), f.GetTargetName())
-	if rr, err := k.RunCmd(exec.Command("sudo", "rm", fp)); err != nil {
-		return errors.Wrapf(err, "removing file %q output: %s", fp, rr.Output())
-	}
-	return nil
+	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
+	glog.Infof("rm: %s", dst)
+
+	_, err := k.RunCmd(exec.Command("sudo", "rm", dst))
+	return err
 }
 
 // isTerminal returns true if the writer w is a terminal
