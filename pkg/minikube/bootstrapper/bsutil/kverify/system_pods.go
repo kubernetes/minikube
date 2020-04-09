@@ -19,7 +19,6 @@ package kverify
 
 import (
 	"fmt"
-	"os/exec"
 	"strings"
 	"time"
 
@@ -36,6 +35,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/logs"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
@@ -156,22 +156,11 @@ func announceProblems(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg conf
 }
 
 // KubeletStatus checks the kubelet status
-func KubeletStatus(cr command.Runner) (state.State, error) {
+func KubeletStatus(cr command.Runner) state.State {
 	glog.Infof("Checking kubelet status ...")
-	rr, err := cr.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
-	if err != nil {
-		// Do not return now, as we still have parsing to do!
-		glog.Warningf("%s returned error: %v", rr.Command(), err)
+	active := sysinit.New(cr).Active("kubelet")
+	if active {
+		return state.Running
 	}
-	s := strings.TrimSpace(rr.Stdout.String())
-	glog.Infof("kubelet is-active: %s", s)
-	switch s {
-	case "active":
-		return state.Running, nil
-	case "inactive":
-		return state.Stopped, nil
-	case "activating":
-		return state.Starting, nil
-	}
-	return state.Error, nil
+	return state.Stopped
 }

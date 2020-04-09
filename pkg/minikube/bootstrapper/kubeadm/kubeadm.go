@@ -51,9 +51,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/kubelet"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
@@ -80,26 +80,6 @@ func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, n config.Node)
 		return nil, errors.Wrap(err, "command runner")
 	}
 	return &Bootstrapper{c: runner, contextName: cc.Name, k8sClient: nil}, nil
-}
-
-// GetKubeletStatus returns the kubelet status
-func (k *Bootstrapper) GetKubeletStatus() (string, error) {
-	rr, err := k.c.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
-	if err != nil {
-		// Do not return now, as we still have parsing to do!
-		glog.Warningf("%s returned error: %v", rr.Command(), err)
-	}
-	s := strings.TrimSpace(rr.Stdout.String())
-	glog.Infof("kubelet is-active: %s", s)
-	switch s {
-	case "active":
-		return state.Running.String(), nil
-	case "inactive":
-		return state.Stopped.String(), nil
-	case "activating":
-		return state.Starting.String(), nil
-	}
-	return state.Error.String(), nil
 }
 
 // GetAPIServerStatus returns the api-server status
@@ -190,7 +170,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	extraFlags := bsutil.CreateFlagsFromExtraArgs(cfg.KubernetesConfig.ExtraOptions)
-	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime})
+	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return err
 	}
@@ -615,7 +595,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 		glog.Warningf("%s: %v", rr.Command(), err)
 	}
 
-	if err := kubelet.ForceStop(k.c); err != nil {
+	if err := sysinit.New(k.c).ForceStop("kubelet"); err != nil {
 		glog.Warningf("stop kubelet: %v", err)
 	}
 
@@ -679,6 +659,11 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 
 // UpdateNode updates a node.
 func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.Manager) error {
+	now := time.Now()
+	defer func() {
+		glog.Infof("reloadKubelet took %s", time.Since(now))
+	}()
+
 	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, n, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
@@ -696,24 +681,40 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 
 	glog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
 
-	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
+	sm := sysinit.New(k.c)
+
+	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c, sm); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
 
-	var cniFile []byte
+	files := []assets.CopyableFile{
+		assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"),
+		assets.NewMemoryAssetTarget(kubeletCfg, bsutil.KubeletSystemdConfFile+".new", "0644"),
+		assets.NewMemoryAssetTarget(kubeletService, bsutil.KubeletServiceFile+".new", "0644"),
+	}
+	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
+	// start a Pod in the case a user hasn't manually installed any CNI plugin
+	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
 	if cfg.KubernetesConfig.EnableDefaultCNI {
-		cniFile = []byte(defaultCNIConfig)
+		files = append(files, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), bsutil.DefaultCNIConfigPath, "0644"))
 	}
 
-	// Install assets into temporary files
-	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
+	// Installs compatibility shims for non-systemd environments
+	kubeletPath := path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl")
+	shims, err := sm.GenerateInitShim("kubelet", kubeletPath, bsutil.KubeletSystemdConfFile)
+	if err != nil {
+		return errors.Wrap(err, "shim")
+	}
+	files = append(files, shims...)
+
 	if err := copyFiles(k.c, files); err != nil {
-		return err
+		return errors.Wrap(err, "copy")
 	}
 
-	if err := reloadKubelet(k.c); err != nil {
-		return err
+	if err := startKubeletIfRequired(k.c, sm); err != nil {
+		return errors.Wrap(err, "reload")
 	}
+
 	return nil
 }
 
@@ -736,7 +737,12 @@ func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
 	return nil
 }
 
-func reloadKubelet(runner command.Runner) error {
+func startKubeletIfRequired(runner command.Runner, sm sysinit.Manager) error {
+	now := time.Now()
+	defer func() {
+		glog.Infof("reloadKubelet took %s", time.Since(now))
+	}()
+
 	svc := bsutil.KubeletServiceFile
 	conf := bsutil.KubeletSystemdConfFile
 
@@ -746,11 +752,12 @@ func reloadKubelet(runner command.Runner) error {
 		return nil
 	}
 
-	startCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cp %s.new %s && sudo cp %s.new %s && sudo systemctl daemon-reload && sudo systemctl restart kubelet", svc, svc, conf, conf))
+	startCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cp %s.new %s && sudo cp %s.new %s", svc, svc, conf, conf))
 	if _, err := runner.RunCmd(startCmd); err != nil {
 		return errors.Wrap(err, "starting kubelet")
 	}
-	return nil
+
+	return sm.Start("kubelet")
 }
 
 // applyKicOverlay applies the CNI plugin needed to make kic work
