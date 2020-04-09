@@ -67,13 +67,14 @@ var dashboardCmd = &cobra.Command{
 		var err error
 
 		// Check dashboard status before enabling it
-		dashboardAddon := assets.Addons["dashboard"]
-		dashboardStatus, _ := dashboardAddon.IsEnabled(cname)
-		if !dashboardStatus {
+		addon := assets.Addons["dashboard"]
+		enabled := addon.IsEnabled(co.Config)
+
+		if !enabled {
 			// Send status messages to stderr for folks re-using this output.
 			out.ErrT(out.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = addons.Set("dashboard", "true", cname)
+			err = addons.SetAndSave(cname, "dashboard", "true")
 			if err != nil {
 				exit.WithError("Unable to enable dashboard", err)
 			}
