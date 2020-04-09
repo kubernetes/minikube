@@ -69,7 +69,7 @@ more information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/dock
 
 ## 2.Push images using 'cache' command.
 
-From the host, you can push a Docker image directly to minikube. It will also be cached for all minikube clusters .
+From your host, you can push a Docker image directly to minikube. This image will be cached and automatically pulled into all future minikube clusters created on the machine
 
 ```shell
 minikube cache add alpine:latest
