@@ -23,6 +23,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/golang/glog"
@@ -41,17 +42,12 @@ import (
 // defaultStorageClassProvisioner is the name of the default storage class provisioner
 const defaultStorageClassProvisioner = "standard"
 
-// Set sets a value
-func Set(name, value, profile string) error {
-	glog.Infof("Setting %s=%s in profile %q", name, value, profile)
+// RunCallbacks runs all actions associated to an addon, but does not set it (thread-safe)
+func RunCallbacks(cc *config.ClusterConfig, name string, value string) error {
+	glog.Infof("Setting %s=%s in profile %q", name, value, cc.Name)
 	a, valid := isAddonValid(name)
 	if !valid {
 		return errors.Errorf("%s is not a valid addon", name)
-	}
-
-	cc, err := config.Load(profile)
-	if err != nil {
-		return errors.Wrap(err, "loading profile")
 	}
 
 	// Run any additional validations for this property
@@ -59,13 +55,35 @@ func Set(name, value, profile string) error {
 		return errors.Wrap(err, "running validations")
 	}
 
-	if err := a.set(cc, name, value); err != nil {
-		return errors.Wrap(err, "setting new value of addon")
-	}
-
 	// Run any callbacks for this property
 	if err := run(cc, name, value, a.callbacks); err != nil {
 		return errors.Wrap(err, "running callbacks")
+	}
+	return nil
+}
+
+// Set sets a value in the config (not threadsafe)
+func Set(cc *config.ClusterConfig, name string, value string) error {
+	a, valid := isAddonValid(name)
+	if !valid {
+		return errors.Errorf("%s is not a valid addon", name)
+	}
+	return a.set(cc, name, value)
+}
+
+// SetAndSave sets a value and saves the config
+func SetAndSave(profile string, name string, value string) error {
+	cc, err := config.Load(profile)
+	if err != nil {
+		return errors.Wrap(err, "loading profile")
+	}
+
+	if err := RunCallbacks(cc, name, value); err != nil {
+		return errors.Wrap(err, "run callbacks")
+	}
+
+	if err := Set(cc, name, value); err != nil {
+		return errors.Wrap(err, "set")
 	}
 
 	glog.Infof("Writing out %q config to set %s=%v...", profile, name, value)
@@ -87,7 +105,7 @@ func run(cc *config.ClusterConfig, name string, value string, fns []setFn) error
 	return nil
 }
 
-// SetBool sets a bool value
+// SetBool sets a bool value in the config (not threadsafe)
 func SetBool(cc *config.ClusterConfig, name string, val string) error {
 	b, err := strconv.ParseBool(val)
 	if err != nil {
@@ -110,13 +128,7 @@ func enableOrDisableAddon(cc *config.ClusterConfig, name string, val string) err
 	addon := assets.Addons[name]
 
 	// check addon status before enabling/disabling it
-	alreadySet, err := isAddonAlreadySet(addon, enable, cc.Name)
-	if err != nil {
-		out.ErrT(out.Conflict, "{{.error}}", out.V{"error": err})
-		return err
-	}
-
-	if alreadySet {
+	if isAddonAlreadySet(cc, addon, enable) {
 		glog.Warningf("addon %s should already be in state %v", name, val)
 		if !enable {
 			return nil
@@ -160,7 +172,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	mName := driver.MachineName(*cc, cp)
 	host, err := machine.LoadHost(api, mName)
 	if err != nil || !machine.IsRunning(api, mName) {
-		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement (err=%v)", mName, addon.Name(), enable, err)
+		glog.Warningf("%q is not running, setting %s=%v and skipping enablement (err=%v)", mName, addon.Name(), enable, err)
 		return nil
 	}
 
@@ -173,19 +185,17 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	return enableOrDisableAddonInternal(cc, addon, cmd, data, enable)
 }
 
-func isAddonAlreadySet(addon *assets.Addon, enable bool, profile string) (bool, error) {
-	addonStatus, err := addon.IsEnabled(profile)
-	if err != nil {
-		return false, errors.Wrap(err, "is enabled")
+func isAddonAlreadySet(cc *config.ClusterConfig, addon *assets.Addon, enable bool) bool {
+	enabled := addon.IsEnabled(cc)
+	if enabled && enable {
+		return true
 	}
 
-	if addonStatus && enable {
-		return true, nil
-	} else if !addonStatus && !enable {
-		return true, nil
+	if !enabled && !enable {
+		return true
 	}
 
-	return false, nil
+	return false
 }
 
 func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon, cmd command.Runner, data interface{}, enable bool) error {
@@ -287,7 +297,10 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 }
 
 // Start enables the default addons for a profile, plus any additional
-func Start(profile string, toEnable map[string]bool, additional []string) {
+func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]bool, additional []string) {
+	wg.Add(1)
+	defer wg.Done()
+
 	start := time.Now()
 	glog.Infof("enableAddons start: toEnable=%v, additional=%s", toEnable, additional)
 	defer func() {
@@ -296,11 +309,7 @@ func Start(profile string, toEnable map[string]bool, additional []string) {
 
 	// Get the default values of any addons not saved to our config
 	for name, a := range assets.Addons {
-		defaultVal, err := a.IsEnabled(profile)
-		if err != nil {
-			glog.Errorf("is-enabled failed for %q: %v", a.Name(), err)
-			continue
-		}
+		defaultVal := a.IsEnabled(cc)
 
 		_, exists := toEnable[name]
 		if !exists {
@@ -321,12 +330,25 @@ func Start(profile string, toEnable map[string]bool, additional []string) {
 	}
 	sort.Strings(toEnableList)
 
+	var awg sync.WaitGroup
+
 	out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
 	for _, a := range toEnableList {
-		err := Set(a, "true", profile)
-		if err != nil {
-			// Intentionally non-fatal
-			out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": a, "error": err})
+		awg.Add(1)
+		go func(name string) {
+			err := RunCallbacks(cc, name, "true")
+			if err != nil {
+				out.WarningT("Enabling '{{.name}}' returned an error: {{.error}}", out.V{"name": name, "error": err})
+			}
+			awg.Done()
+		}(a)
+	}
+
+	// Wait until all of the addons are enabled before updating the config (not thread safe)
+	awg.Wait()
+	for _, a := range toEnableList {
+		if err := Set(cc, a, "true"); err != nil {
+			glog.Errorf("store failed: %v", err)
 		}
 	}
 }
