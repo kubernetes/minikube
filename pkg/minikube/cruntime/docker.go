@@ -120,7 +120,7 @@ func (r *Docker) Restart() error {
 
 // Disable idempotently disables Docker on a host
 func (r *Docker) Disable() error {
-	return r.Init.ForceStop("docker.socket")
+	return r.Init.ForceStop("docker")
 }
 
 // ImageExists checks if an image exists

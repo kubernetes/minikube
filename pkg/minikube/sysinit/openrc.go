@@ -111,6 +111,16 @@ func (s *OpenRC) Start(svc string) error {
 	return err
 }
 
+// Disable does nothing
+func (s *OpenRC) Disable(svc string) error {
+	return nil
+}
+
+// Enable does nothing
+func (s *OpenRC) Enable(svc string) error {
+	return nil
+}
+
 // Restart restarts a service
 func (s *OpenRC) Restart(svc string) error {
 	_, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "restart"))

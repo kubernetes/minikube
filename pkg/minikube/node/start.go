@@ -192,9 +192,9 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 // ConfigureRuntimes does what needs to happen to get a runtime going.
 func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig, kv semver.Version) cruntime.Manager {
 	co := cruntime.Config{
-		Type:   viper.GetString(containerRuntime),
-		Runner: runner,
-		ImageRepository: k8s.ImageRepository,
+		Type:              viper.GetString(containerRuntime),
+		Runner:            runner,
+		ImageRepository:   k8s.ImageRepository,
 		KubernetesVersion: kv,
 	}
 	cr, err := cruntime.New(co)

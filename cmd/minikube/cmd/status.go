@@ -209,7 +209,7 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 	}
 
 	stk := kverify.KubeletStatus(cr)
-	glog.Infof("%s kubelet status = %s (err=%v)", name, stk)
+	glog.Infof("%s kubelet status = %s", name, stk)
 	st.Kubelet = stk.String()
 
 	// Early exit for regular nodes

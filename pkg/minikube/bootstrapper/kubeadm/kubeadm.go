@@ -50,7 +50,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/kubelet"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/sysinit"
@@ -581,7 +580,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 		glog.Warningf("%s: %v", rr.Command(), err)
 	}
 
-	if err := kubelet.ForceStop(k.c); err != nil {
+	if err := sysinit.New(k.c).ForceStop("kubelet"); err != nil {
 		glog.Warningf("stop kubelet: %v", err)
 	}
 

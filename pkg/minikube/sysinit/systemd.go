@@ -45,6 +45,18 @@ func (s *Systemd) Active(svc string) bool {
 	return err == nil
 }
 
+// Disable disables a service
+func (s *Systemd) Disable(svc string) error {
+	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "disable", svc))
+	return err
+}
+
+// Enable enables a service
+func (s *Systemd) Enable(svc string) error {
+	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "enable", svc))
+	return err
+}
+
 // Start starts a service
 func (s *Systemd) Start(svc string) error {
 	if err := s.reload(); err != nil {
