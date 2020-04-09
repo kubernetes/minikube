@@ -86,14 +86,21 @@ minikube cache add alpine:latest
 
 The add command will store the requested image to `$MINIKUBE_HOME/cache/images`, and load it into the minikube cluster's container runtime environment automatically.
 
-{{% pageinfo %}}
-if your image changes after your cached it, you could do `cache reload` to ensure minikube gets the last updates.
-
-```
-shell
+minikube refreshes the cache images on each start. however to reload all the cached images on demand run this command :
+```shell
 minikube cache reload
 ```
+
+{{% pageinfo %}}
+Tip1 :
+If your image changes after your cached it, you need to do 'cache reload' for minikube to pick up the image.
 {{% /pageinfo %}}
+
+{{% pageinfo %}}
+Tip2 :
+if you have multiple cluster, cache command will load the image for all of them.
+{{% /pageinfo %}}
+
 
 To display images you have added to the cache:
 
@@ -117,6 +124,7 @@ For more information, see:
 
 ## 3. Pushing directly to in-cluster CRIO. (podman-env)
 
+This is simmilar to docker-env but only for cri-o runtime.
 To push directly to CRIO, configure podman client on your mac/linux host using the podman-env command in your shell:
 
 ```shell
