@@ -149,7 +149,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	configureMounts()
 
 	if err := CacheAndLoadImagesInConfig(); err != nil {
-		out.FailureT("Unable to load cached images from config file.")
+		out.FailureT("Unable to push cached images from config: {{.error}}", out.V{"error": err})
 	}
 
 	// enable addons, both old and new!
