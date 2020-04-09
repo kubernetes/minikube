@@ -138,11 +138,10 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 	}
 
 	var wg sync.WaitGroup
+	go configureMounts(&wg)
 
-	go configureMounts(wg)
-
+	wg.Add(1)
 	go func() {
-		wg.Add(1)
 		if err := CacheAndLoadImagesInConfig(); err != nil {
 			out.FailureT("Unable to load cached images from config file: {{error}}", out.V{"error": err})
 		}
@@ -151,7 +150,7 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 
 	// enable addons, both old and new!
 	if existingAddons != nil {
-		go addons.Start(wg, viper.GetString(config.ProfileName), existingAddons, config.AddonList)
+		go addons.Start(&wg, &cc, existingAddons, config.AddonList)
 	}
 
 	if apiServer {
@@ -193,7 +192,8 @@ func Start(cc config.ClusterConfig, n config.Node, existingAddons map[string]boo
 
 	wg.Wait()
 
-	return kcs, nil
+	// Write enabled addons to the config before completion
+	return kcs, config.Write(viper.GetString(config.ProfileName), &cc)
 }
 
 // ConfigureRuntimes does what needs to happen to get a runtime going.

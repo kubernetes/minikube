@@ -47,7 +47,7 @@ func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 }
 
 // configureMounts configures any requested filesystem mounts
-func configureMounts(wg sync.WaitGroup) {
+func configureMounts(wg *sync.WaitGroup) {
 	wg.Add(1)
 	defer wg.Done()
 
