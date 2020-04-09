@@ -320,7 +320,7 @@ func (d *Driver) Stop() error {
 	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec})
 	if err != nil { // won't return error because:
 		// even though we can't stop the cotainers inside, we still wanna stop the minikube container itself
-		glog.Errorf("unable to get container runtime: %v", err)
+		glog.Infof("unable to get container runtime: %v", err)
 	}
 
 	containers, err := runtime.ListContainers(cruntime.ListOptions{Namespaces: constants.DefaultNamespaces})
@@ -329,9 +329,9 @@ func (d *Driver) Stop() error {
 	}
 	if len(containers) > 0 {
 		if err := runtime.StopContainers(containers); err != nil {
-			glog.Errorf("unable to stop containers will try killing  : %v", err)
+			glog.Infof("unable to stop containers will try killing  : %v", err)
 			if err := runtime.KillContainers(containers); err != nil {
-				glog.Errorf("unable to kill containers : %v", err)
+				glog.Infof("unable to kill containers : %v", err)
 			}
 		}
 	}
@@ -339,7 +339,7 @@ func (d *Driver) Stop() error {
 	// docker does not send right SIG for systemd to know to stop the systemd.
 	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
 	if err := kubelet.Stop(d.exec); err != nil {
-		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
+		glog.Infof("couldn't stop kubelet. will continue with stop anyways: %v", err)
 		if err := kubelet.ForceStop(d.exec); err != nil {
 			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
