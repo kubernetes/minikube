@@ -39,29 +39,38 @@ To point your terminal to use the docker daemon inside minikube run this:
 eval $(minikube docker-env)
 ```
 
-now any 'docker' command you run in this current terminal will run against the docker inside minikube VM or Container.
-Try it:
+now any 'docker' command you run in this current terminal will run against the docker inside minikube cluster.
+
+so if you do the following commands, it will show you the containers inside the minikube inside minikube's VM or Container.
 
 ```shell
 docker ps
 ```
 
-now you 'build' against the docker inside minikube. which is instantly accessible to kubernetes cluster.
+now you can 'build' against the docker inside minikube. which is instantly accessible to kubernetes cluster.
 
-'''
-docker build -t myimage .
-'''
+```shell
+docker build -t my_image .
+```
 
-Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`), as otherwise Kubernetes won't use images you built locally.
+To verify your terminal is using minikuber's docker-env you can check the value of the environment variable MINIKUBE_ACTIVE_DOCKERD to reflect the cluster name.
 
 {{% pageinfo %}}
-Evaluating the docker-env is only valid for the current terminal.
-and by closing the terminal, you will go back to using your own system's docker daemon.
-
-in some drivers such as Docker or Podman, you will need to re-do docker-env each time you restart your minikube.
+Tip 1: 
+Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`) in your yaml file.otherwise Kubernetes won't use your locally build image and it will pull from the network.
 {{% /pageinfo %}}
 
-To verify your terminal is using minikuber's docker-env you can check the value of the environment variable MINIKUBE_ACTIVE_DOCKERD to reflect the profile name.
+{{% pageinfo %}}
+Tip 2: 
+Evaluating the docker-env is only valid for the current terminal.
+and by closing the terminal, you will go back to using your own system's docker daemon.
+{{% /pageinfo %}}
+
+{{% pageinfo %}}
+Tip 3:
+In container-based drivers such as Docker or Podman, you will need to re-do docker-env each time you restart your minikube cluster.
+{{% /pageinfo %}}
+
 
 more information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/docker-env/)
 
