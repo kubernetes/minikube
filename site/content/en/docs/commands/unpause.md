@@ -1,14 +1,18 @@
 ---
 title: "unpause"
-linkTitle: "unpause"
-weight: 1
-date: 2020-02-05
 description: >
-   unpause the Kubernetes control plane or other namespaces
-
+  unpause Kubernetes
 ---
 
-### Usage
+
+
+## minikube unpause
+
+unpause Kubernetes
+
+### Synopsis
+
+unpause Kubernetes
 
 ```
 minikube unpause [flags]
@@ -35,8 +39,4 @@ minikube unpause [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
-
-### SEE ALSO
-
-* [pause](pause.md)
 

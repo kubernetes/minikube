@@ -1,28 +1,28 @@
 ---
-title: "stop"
+title: "help"
 description: >
-  Stops a running local kubernetes cluster
+  Help about any command
 ---
 
 
 
-## minikube stop
+## minikube help
 
-Stops a running local kubernetes cluster
+Help about any command
 
 ### Synopsis
 
-Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
-itself, leaving all files intact. The cluster can be started again with the "start" command.
+Help provides help for any command in the application.
+Simply type minikube help [path to command] for full details.
 
 ```
-minikube stop [flags]
+minikube help [command] [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for stop
+  -h, --help   help for help
 ```
 
 ### Options inherited from parent commands

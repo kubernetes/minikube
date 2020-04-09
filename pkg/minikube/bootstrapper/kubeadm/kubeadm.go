@@ -21,6 +21,7 @@ import (
 	"context"
 	"os/exec"
 	"path"
+	"sync"
 
 	"fmt"
 	"net"
@@ -238,17 +239,30 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		}
 	}
 
-	if err := k.applyNodeLabels(cfg); err != nil {
-		glog.Warningf("unable to apply node labels: %v", err)
-	}
+	var wg sync.WaitGroup
+	wg.Add(3)
 
-	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
-		glog.Warningf("unable to adjust resource limits: %v", err)
-	}
+	go func() {
+		if err := k.applyNodeLabels(cfg); err != nil {
+			glog.Warningf("unable to apply node labels: %v", err)
+		}
+		wg.Done()
+	}()
 
-	if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
-		glog.Warningf("unable to create cluster role binding, some addons might not work: %v", err)
-	}
+	go func() {
+		if err := bsutil.AdjustResourceLimits(k.c); err != nil {
+			glog.Warningf("unable to adjust resource limits: %v", err)
+		}
+		wg.Done()
+	}()
+
+	go func() {
+		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
+			glog.Warningf("unable to create cluster role binding, some addons might not work: %v", err)
+		}
+		wg.Done()
+	}()
+	wg.Wait()
 	return nil
 }
 

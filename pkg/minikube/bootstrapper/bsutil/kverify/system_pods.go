@@ -36,7 +36,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/logs"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 // WaitForSystemPods verifies essential pods for running kurnetes is running
@@ -69,7 +68,7 @@ func WaitForSystemPods(r cruntime.Manager, bs bootstrapper.Bootstrapper, cfg con
 		}
 		return true, nil
 	}
-	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, podList); err != nil {
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, timeout, podList); err != nil {
 		return fmt.Errorf("apiserver never returned a pod list")
 	}
 	glog.Infof("duration metric: took %s to wait for pod list to return data ...", time.Since(pStart))
@@ -86,7 +85,6 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 	}
 
 	for _, pod := range pods.Items {
-		glog.Infof("found pod: %s", podStatusMsg(pod))
 		if pod.Status.Phase != core.PodRunning {
 			continue
 		}
@@ -113,9 +111,16 @@ func ExpectAppsRunning(cs *kubernetes.Clientset, expected []string) error {
 func WaitForAppsRunning(cs *kubernetes.Clientset, expected []string, timeout time.Duration) error {
 	glog.Info("waiting for k8s-apps to be running ...")
 	start := time.Now()
-	checkRunning := func() error { return ExpectAppsRunning(cs, expected) }
-	if err := retry.Expo(checkRunning, 500*time.Millisecond, timeout); err != nil {
-		return errors.Wrap(err, "waitings for k8s app running")
+
+	checkRunning := func() (bool, error) {
+		if err := ExpectAppsRunning(cs, expected); err != nil {
+			return false, nil
+		}
+		return true, nil
+	}
+
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, timeout, checkRunning); err != nil {
+		return errors.Wrapf(err, "checking k8s-apps to be running")
 	}
 	glog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
 	return nil
