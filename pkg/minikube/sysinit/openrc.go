@@ -37,9 +37,7 @@ readonly UNIT_PATH=$1
 
 while true; do
   if [[ -f "${UNIT_PATH}" ]]; then
-	args=$(egrep "^ExecStart=" "${UNIT_PATH}" | cut -d"=" -f2-)
-	echo $args
-	exec $args
+	eval $(egrep "^ExecStart=" "${UNIT_PATH}" | cut -d"=" -f2-)
   fi
   sleep 1
 done
@@ -57,7 +55,10 @@ function start() {
 }
 
 function stop() {
-    start-stop-daemon --oknodo --pidfile "${PID_PATH}" --stop
+	if [[ -f "${PID_PATH}" ]]; then
+		pkill -P "$(cat ${PID_PATH})"
+	fi
+	start-stop-daemon --oknodo --pidfile "${PID_PATH}" --stop
 }
 
 case "$1" in
