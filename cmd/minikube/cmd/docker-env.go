@@ -24,7 +24,6 @@ import (
 	"io"
 	"net"
 	"os"
-	"os/exec"
 	"strconv"
 	"strings"
 
@@ -38,6 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 var dockerEnvTmpl = fmt.Sprintf("{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerTLSVerify }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerHost }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .DockerCertPath }}{{ .Suffix }}{{ .Prefix }}%s{{ .Delimiter }}{{ .MinikubeDockerdProfile }}{{ .Suffix }}{{ if .NoProxyVar }}{{ .Prefix }}{{ .NoProxyVar }}{{ .Delimiter }}{{ .NoProxyValue }}{{ .Suffix }}{{end}}{{ .UsageHint }}", constants.DockerTLSVerifyEnv, constants.DockerHostEnv, constants.DockerCertPathEnv, constants.MinikubeActiveDockerdEnv)
@@ -116,9 +116,7 @@ func (EnvNoProxyGetter) GetNoProxyVar() (string, string) {
 
 // isDockerActive checks if Docker is active
 func isDockerActive(r command.Runner) bool {
-	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "docker")
-	_, err := r.RunCmd(c)
-	return err == nil
+	return sysinit.New(r).Active("docker")
 }
 
 // dockerEnvCmd represents the docker-env command

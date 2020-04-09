@@ -37,7 +37,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/kubelet"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -245,7 +245,7 @@ func (d *Driver) GetState() (state.State, error) {
 func (d *Driver) Kill() error {
 	// on init this doesn't get filled when called from cmd
 	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
-	if err := kubelet.ForceStop(d.exec); err != nil {
+	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
@@ -318,9 +318,9 @@ func (d *Driver) Stop() error {
 	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
 	// docker does not send right SIG for systemd to know to stop the systemd.
 	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
-	if err := kubelet.Stop(d.exec); err != nil {
+	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
 		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
-		if err := kubelet.ForceStop(d.exec); err != nil {
+		if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}
