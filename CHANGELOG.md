@@ -1,5 +1,45 @@
 # Release Notes
 
+## Version 1.10.0-beta.0 - 2020-04-09
+Changes:
+* fallback to alternate drivers on failure [#7389](https://github.com/kubernetes/minikube/pull/7389)
+* start: Parallelize mount, cache push, and addon enablement [#7525](https://github.com/kubernetes/minikube/pull/7525)
+* Extract preloaded tarball as soon as minikube volume is created (2.5s speedup) [#7490](https://github.com/kubernetes/minikube/pull/7490)
+* Update error message for the user UI in start.go [#7500](https://github.com/kubernetes/minikube/pull/7500)
+* none: Add support for OpenRC init (Google CloudShell) [#7539](https://github.com/kubernetes/minikube/pull/7539)
+* improve docker driver failure messages [#7498](https://github.com/kubernetes/minikube/pull/7498)
+* Respect driver.FlagDefaults even if --extra-config is set [#7509](https://github.com/kubernetes/minikube/pull/7509)
+* fix validateDriver() to exit() when it detects an error. [#7451](https://github.com/kubernetes/minikube/pull/7451)
+* Update supported k8s versions in docs [#7528](https://github.com/kubernetes/minikube/pull/7528)
+* do kubeadm post init in parallel [#7424](https://github.com/kubernetes/minikube/pull/7424)
+* Automatically generate commands docs and add unit test [#7385](https://github.com/kubernetes/minikube/pull/7385)
+* Use SSH runner once SSH is set up in kic [#7494](https://github.com/kubernetes/minikube/pull/7494)
+* Upgrade falco-probe module to version 0.21.0 [#7436](https://github.com/kubernetes/minikube/pull/7436)
+* Behavior change: start with no arguments uses existing cluster config [#7449](https://github.com/kubernetes/minikube/pull/7449)
+* remove kic overlay network for docker-runtime [#7425](https://github.com/kubernetes/minikube/pull/7425)
+* Disable update check for (--interactive|--dry-run), make non-blocking [#7482](https://github.com/kubernetes/minikube/pull/7482)
+* Update Japanese translations [#7477](https://github.com/kubernetes/minikube/pull/7477)
+* add new wait component apps_running [#7460](https://github.com/kubernetes/minikube/pull/7460)
+* Epic Docs Site Re-Organization! [#7329](https://github.com/kubernetes/minikube/pull/7329)
+
+Thank you for this release to our contributors!
+- Alonyb
+- Anders Björklund
+- Frank Schwichtenberg
+- Kenta Iso
+- Medya Ghazizadeh
+- Prasad Katti
+- Priya Wadhwa
+- Ruben Baez
+- Sharif Elgamal
+- Thomas Strömberg
+- Vikky Omkar
+- ZouYu
+- gorbondiga
+- loftkun
+- nestoralonso
+- tomocy
+
 ## Version 1.9.2 - 2020-04-04
 
 Minor improvements:
