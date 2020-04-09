@@ -1,10 +1,8 @@
 ---
 title: "Using Multi-Node Clusters"
-linkTitle: "Using Minikube with more than one cluster."
+linkTitle: "Using multi-node clusters"
 weight: 1
 date: 2019-11-24
-description: >
-  Using Multi-Node Clusters
 ---
 
 ## Overview
@@ -46,7 +44,7 @@ multinode-demo-m02   Ready    <none>   9m5s    v1.18.0
 
 - Install a CNI (e.g. flannel):
 NOTE: This currently needs to be done manually after the apiserver is running, the multi-node feature is still experimental as of 1.9.2.
-An example yaml for flannel is at [here](https://github.com/kubernetes/minikube/blob/master/hack/demo/kube_flannel.yaml).
+{{% readfile file="/docs/tutorials/includes/kube-flannel.yaml %}}
 ```
 kubectl apply -f kube-flannel.yaml
 podsecuritypolicy.policy/psp.flannel.unprivileged created
@@ -61,7 +59,8 @@ daemonset.apps/kube-flannel-ds-ppc64le created
 daemonset.apps/kube-flannel-ds-s390x created
 ```
 
-- Deploy our hello world deployment, available [here](https://github.com/kubernetes/minikube/blob/master/hack/demo/hello-deployment.yaml).
+- Deploy our hello world deployment:
+{{% readfile file="/docs/tutorials/includes/hello-deployment.yaml %}}
 ```
 kubectl apply -f hello-deployment.yaml
 deployment.apps/hello created
@@ -70,7 +69,8 @@ kubectl rollout status deployment/hello
 deployment "hello" successfully rolled out
 ```
 
-- Deploy our hello world service, which just spits back the IP address the request was served from, available [here](https://github.com/kubernetes/minikube/blob/master/hack/demo/hello-deployment.yaml)
+- Deploy our hello world service, which just spits back the IP address the request was served from:
+{{% readfile file="/docs/tutorials/includes/hello-svc.yaml %}}
 ```
 kubectl apply -f hello-svc.yml
 service/hello created

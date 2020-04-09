@@ -40,7 +40,7 @@ For more information, see:
 You must be using minikube with the container runtime set to Docker. This is the default setting.
 
 # Pushing directly to the in-cluster Docker daemon
-When user a container or VM driver, it's really handy to reuse the Docker daemon inside minikube; as this means you don't have to build on your host machine and push the image into a docker registry - you can just build inside the same docker daemon as minikube which speeds up local experiments.
+When using a container or VM driver, it's really handy to reuse the Docker daemon inside minikube as this means you don't have to build on your host machine and push the image into a docker registry - you can just build inside the same docker daemon as minikube which speeds up local development.
 
 To point your terminal to use the docker daemon inside minikube run this:
 
@@ -48,23 +48,23 @@ To point your terminal to use the docker daemon inside minikube run this:
 eval $(minikube docker-env)
 ```
 
-now any command you run in this current terminal will run against the docker inside minikube VM or Container.
+Now any command you run in this current terminal will run against the docker inside minikube.
 Try it:
 
 ```shell
 docker ps
 ```
 
-now you can use same docker build command against the docker inside minikube. which is instantly accessible to kubernetes cluster.
+Now you can use the same docker build command against the docker inside minikube, which is instantly accessible to the Kubernetes cluster.
 
-'''
+```shell
 docker build -t myimage .
-'''
+```
 
 
 Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`), as otherwise Kubernetes won't use images you built locally.
 
-more information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/docker-env/)
+More information on [docker-env](https://minikube.sigs.k8s.io/docs/commands/docker-env/)
 
 # Pushing directly to in-cluster CRIO
 
