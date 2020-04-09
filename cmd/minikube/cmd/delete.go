@@ -208,7 +208,13 @@ func deleteProfileContainersAndVolumes(name string) {
 
 func deleteProfile(profile *config.Profile) error {
 	viper.Set(config.ProfileName, profile.Name)
-	deleteProfileContainersAndVolumes(profile.Name)
+	if profile.Config != nil {
+		// if driver is oci driver, delete containers and volumes
+		if driver.IsKIC(profile.Config.Driver) {
+			out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
+			deleteProfileContainersAndVolumes(profile.Name)
+		}
+	}
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
