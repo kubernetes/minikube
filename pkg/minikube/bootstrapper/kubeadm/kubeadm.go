@@ -451,7 +451,7 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 		glog.Infof("needs reset because API server version match : %v", err)
 		return true
 	}
-	glog.Infof("the %q cluster does not need a reset.", hostname)
+	glog.Infof("the cluster does not need a reset. hostname: %s", hostname)
 	return false
 }
 
