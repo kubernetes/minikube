@@ -25,8 +25,8 @@ import (
 	"testing"
 )
 
-// TestMultiNodeNoErrorShown asserts that there are no errors displayed
-func TestNoErrorShown(t *testing.T) {
+// TestErrorSpam asserts that there are no errors displayed
+func TestErrorSpam(t *testing.T) {
 	if NoneDriver() {
 		t.Skip("none driver always shows a warning")
 	}
@@ -36,7 +36,7 @@ func TestNoErrorShown(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(25))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	// TODO: make this multi-node once it's stable
+	// This should likely use multi-node once it's ready
 	args := append([]string{"start", "-p", profile, "-n=1", "--memory=2250", "--wait=false"}, StartArgs()...)
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
