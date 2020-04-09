@@ -95,7 +95,7 @@ func TestSetAndSave(t *testing.T) {
 	profile := createTestProfile(t)
 
 	// enable
-	if err := SetAndSave("dashboard", "true", profile); err != nil {
+	if err := SetAndSave(profile, "dashboard", "true"); err != nil {
 		t.Errorf("Disable returned unexpected error: " + err.Error())
 	}
 
@@ -108,7 +108,7 @@ func TestSetAndSave(t *testing.T) {
 	}
 
 	// disable
-	if err := SetAndSave("dashboard", "false", profile); err != nil {
+	if err := SetAndSave(profile, "dashboard", "false"); err != nil {
 		t.Errorf("Disable returned unexpected error: " + err.Error())
 	}
 
