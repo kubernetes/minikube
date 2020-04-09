@@ -57,10 +57,6 @@ func status() registry.State {
 		return registry.State{Error: err, Fix: "iptables must be installed", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
 
-	/* if _, err := exec.LookPath("systemctl"); err != nil {
-		return registry.State{Error: err, Fix: "Use a systemd based Linux distribution", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
-	}*/
-
 	if _, err := exec.LookPath("docker"); err != nil {
 		return registry.State{Error: err, Installed: false, Fix: "Install docker", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/none/"}
 	}
