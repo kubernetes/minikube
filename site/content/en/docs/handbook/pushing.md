@@ -16,13 +16,13 @@ Here is a comparison table to help you choose:
 
 
 
-| Method   	| Supported Runtimes   	|  Supported Drivers* 	|  Performance 	|
+| Method   	| Supported Runtimes   	|  Issues 	|  Performance 	|
 |---	|---	|---	|---	|---	|
-|  [docker-env command](http://localhost:1313/docs/handbook/pushing/#pushing-directly-to-the-in-cluster-docker-daemon)	|   only docker	|  all	|  good 	|
-|  [podman-env command](http://localhost:1313/docs/handbook/pushing/#pushing-directly-to-in-cluster-crio)	|   only cri-o	|   all  |  good 	|
-|  [cache add command](http://localhost:1313/docs/handbook/pushing/#push-images-using-cache-command) 	|  all 	| all   	|  ok 	|
-|  [registry addon](http://localhost:1313/docs/handbook/pushing/#pushing-to-an-in-cluster-using-a-registry-addon)   |   all	|   all but [docker on mac](https://github.com/kubernetes/minikube/issues/7535) |  ok 	|
-|  [minikube ssh](http://localhost:1313/docs/handbook/pushing/#building-images-inside-of-minikube-using-ssh)   |   all	|   all |  best 	|
+|  [docker-env command](http://localhost:1313/docs/handbook/pushing/#pushing-directly-to-the-in-cluster-docker-daemon)	|   only docker	|  	|  good 	|
+|  [podman-env command](http://localhost:1313/docs/handbook/pushing/#pushing-directly-to-in-cluster-crio)	|   only cri-o	|     |  good 	|
+|  [cache add command](http://localhost:1313/docs/handbook/pushing/#push-images-using-cache-command) 	|  all 	|    	|  ok 	|
+|  [registry addon](http://localhost:1313/docs/handbook/pushing/#pushing-to-an-in-cluster-using-a-registry-addon)   |   all	|   [docker on mac](https://github.com/kubernetes/minikube/issues/7535) |  ok 	|
+|  [minikube ssh](http://localhost:1313/docs/handbook/pushing/#building-images-inside-of-minikube-using-ssh)   |   all	|    |  best 	|
 
 
 * note1 : the default container-runtime on minikube is 'docker'.
