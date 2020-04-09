@@ -35,7 +35,12 @@ var rootCmd = &cobra.Command{
 		return validateArgs(args)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return perf.CompareMinikubeStart(context.Background(), os.Stdout, args)
+		binaries, err := retrieveBinaries(args)
+		if err != nil {
+			return err
+		}
+		perf.CompareMinikubeStart(context.Background(), os.Stdout, binaries)
+		return nil
 	},
 }
 
@@ -44,6 +49,18 @@ func validateArgs(args []string) error {
 		return errors.New("mkcmp requires two minikube binaries to compare: mkcmp [path to first binary] [path to second binary]")
 	}
 	return nil
+}
+
+func retrieveBinaries(args []string) ([]*perf.Binary, error) {
+	binaries := []*perf.Binary{}
+	for _, a := range args {
+		binary, err := perf.NewBinary(a)
+		if err != nil {
+			return nil, err
+		}
+		binaries = append(binaries, binary)
+	}
+	return binaries, nil
 }
 
 // Execute runs the mkcmp command
