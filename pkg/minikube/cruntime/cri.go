@@ -195,7 +195,7 @@ func stopCRIContainers(cr CommandRunner, ids []string) error {
 	glog.Infof("Stopping containers: %s", ids)
 
 	crictl := getCrictlPath(cr)
-	args := append([]string{crictl, "rm"}, ids...)
+	args := append([]string{crictl, "stop", "--timeout=2"}, ids...)
 	c := exec.Command("sudo", args...)
 	if _, err := cr.RunCmd(c); err != nil {
 		return errors.Wrap(err, "crictl")

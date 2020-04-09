@@ -316,6 +316,26 @@ func (d *Driver) Start() error {
 func (d *Driver) Stop() error {
 	// on init this doesn't get filled when called from cmd
 	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
+
+	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec})
+	if err != nil { // won't return error because:
+		// even though we can't stop the cotainers inside, we still wanna stop the minikube container itself
+		glog.Errorf("unable to get container runtime: %v", err)
+	}
+
+	containers, err := runtime.ListContainers(cruntime.ListOptions{Namespaces: constants.DefaultNamespaces})
+	if err != nil {
+		glog.Infof("unable list containers before stopping: %v", err)
+	}
+	if len(containers) > 0 {
+		if err := runtime.StopContainers(containers); err != nil {
+			glog.Errorf("unable to stop containers will try killing  : %v", err)
+			if err := runtime.KillContainers(containers); err != nil {
+				glog.Errorf("unable to kill containers : %v", err)
+			}
+		}
+	}
+
 	// docker does not send right SIG for systemd to know to stop the systemd.
 	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
 	if err := kubelet.Stop(d.exec); err != nil {
@@ -325,24 +345,7 @@ func (d *Driver) Stop() error {
 		}
 	}
 
-	runtime, err := cruntime.New(cruntime.Config{Type: d.NodeConfig.ContainerRuntime, Runner: d.exec})
-	if err != nil { // won't return error because:
-		// even though we can't stop the cotainers inside, we still wanna stop the minikube container itself
-		glog.Errorf("unable to get container runtime: %v", err)
-	} else {
-		containers, err := runtime.ListContainers(cruntime.ListOptions{Namespaces: constants.DefaultNamespaces})
-		if err != nil {
-			glog.Infof("unable list containers : %v", err)
-		}
-		if len(containers) > 0 {
-			if err := runtime.StopContainers(containers); err != nil {
-				glog.Errorf("unable to stop containers : %v", err)
-			}
-		}
-		glog.Infof("successfully stopped kubernetes!")
-
-	}
-
+	glog.Infof("successfully stopped kubernetes!")
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)
