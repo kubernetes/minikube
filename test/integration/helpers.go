@@ -203,7 +203,8 @@ func clusterLogs(t *testing.T, profile string) {
 
 	t.Logf("-----------------------post-mortem--------------------------------")
 	t.Logf("<<< %s FAILED: start of post-mortem logs <<<", t.Name())
-	t.Logf("-------------------post-mortem minikube logs----------------------")
+	t.Logf("======>  post-mortem[%s]: minikube logs <======", t.Name())
+
 	rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
 	if err != nil {
 		t.Logf("failed logs error: %v", err)
@@ -211,27 +212,43 @@ func clusterLogs(t *testing.T, profile string) {
 	}
 	t.Logf("%s logs: %s", t.Name(), rr.Output())
 
-	t.Logf("------------------post-mortem api server status-------------------")
+	t.Logf("======> post-mortem[%s]: disk usage <======", t.Name())
+	rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "df -h /var/lib/docker/overlay2 /var /; du -hs /var/lib/docker/overlay2"))
+	if err != nil {
+		t.Logf("failed df error: %v", err)
+	}
+	t.Logf("%s df: %s", t.Name(), rr.Stdout)
+
 	st = Status(context.Background(), t, Target(), profile, "APIServer")
 	if st != state.Running.String() {
 		t.Logf("%q apiserver is not running, skipping kubectl commands (state=%q)", profile, st)
 		return
 	}
-	t.Logf("--------------------post-mortem get pods--------------------------")
+
+	t.Logf("======> post-mortem[%s]: get pods <======", t.Name())
 	rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
 	if rerr != nil {
 		t.Logf("%s: %v", rr.Command(), rerr)
 		return
 	}
 	t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
-	t.Logf("-------------------post-mortem describe node----------------------")
+
+	t.Logf("======> post-mortem[%s]: describe node <======", t.Name())
 	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "node"))
 	if err != nil {
 		t.Logf("%s: %v", rr.Command(), err)
 	} else {
 		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
 	}
-	t.Logf("------------------------------------------------------------------")
+
+	t.Logf("======> post-mortem[%s]: describe pods <======", t.Name())
+	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "po", "-A"))
+	if err != nil {
+		t.Logf("%s: %v", rr.Command(), err)
+	} else {
+		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
+	}
+
 	t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
 	t.Logf("---------------------/post-mortem---------------------------------")
 }

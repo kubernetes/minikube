@@ -19,6 +19,8 @@ jobs:
       run : |
         make minikube-linux-amd64
         make e2e-linux-amd64
+        make minikube-windows-amd64.exe
+        make e2e-windows-amd64.exe
         cp -r test/integration/testdata ./out
         whoami
         echo github ref $GITHUB_REF
@@ -117,7 +119,7 @@ jobs:
       with:
         name: minikube_binaries
     - name: Run Integration Test
-      continue-on-error: true
+      continue-on-error: false
       # bash {0} to allow test to continue to next step. in case of
       shell: bash {0}
       run: |
@@ -251,6 +253,70 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+  docker_on_windows:
+    needs: [build_minikube]
+    env:
+      TIME_ELAPSED: time
+      JOB_NAME: "Docker_on_windows"
+      COMMIT_STATUS: ""
+    runs-on: windows-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Docker Info
+      shell: bash
+      run: |
+        docker info || true
+        docker version || true
+        docker ps || true
+    - name: Download gopogh
+      run: |
+        curl -LO https://github.com/medyagh/gopogh/releases/download/v0.1.16/gopogh.exe
+      shell: bash
+    - name: Download binaries
+      uses: actions/download-artifact@v1
+      with:
+        name: minikube_binaries
+    - name: run integration test
+      continue-on-error: true
+      run: |
+        set +euo pipefail
+        mkdir -p report
+        mkdir -p testhome
+        START_TIME=$(date -u +%s)
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome minikube_binaries/e2e-windows-amd64.exe -minikube-start-args=--vm-driver=docker -binary=minikube_binaries/minikube-windows-amd64.exe -test.v -test.timeout=65m 2>&1 | tee ./report/testout.txt
+        END_TIME=$(date -u +%s)
+        TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
+        min=$((${TIME_ELAPSED}/60))
+        sec=$((${TIME_ELAPSED}%60))
+        TIME_ELAPSED="${min} min $sec seconds"
+        echo ::set-env name=TIME_ELAPSED::${TIME_ELAPSED}
+      shell: bash
+    - name: Generate html report
+      run: |
+        go tool test2json -t < ./report/testout.txt > ./report/testout.json || true
+        STAT=$(${GITHUB_WORKSPACE}/gopogh.exe -in ./report/testout.json -out ./report/testout.html -name " $GITHUB_REF" -repo "${JOB_NAME} ${GITHUB_REF} ${GITHUB_REPOSITORY}"  -details "${GITHUB_SHA}")  || true
+        echo status: ${STAT}
+        FailNum=$(echo $STAT | jq '.NumberOfFail')
+        TestsNum=$(echo $STAT | jq '.NumberOfTests')       
+        GOPOGH_RESULT="${JOB_NAME} : completed with ${FailNum} / ${TestsNum} failures in ${TIME_ELAPSED}"
+        echo ::set-env name=GOPOGH_RESULT::${GOPOGH_RESULT}
+        echo ::set-env name=STAT::${STAT}
+      shell: bash
+    - uses: actions/upload-artifact@v1
+      with:
+        name: docker_on_windows
+        path: report
+    - name: The End Result
+      run: |
+        echo ${GOPOGH_RESULT}
+        numFail=$(echo $STAT | jq '.NumberOfFail')
+        echo "----------------${numFail} Failures----------------------------"
+        echo $STAT | jq '.FailedTests' || true
+        echo "--------------------------------------------"
+        numPass=$(echo $STAT | jq '.NumberOfPass')
+        echo "*** $numPass Passed ***"
+        if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
+      shell: bash
   none_ubuntu16_04:
     needs: [build_minikube]
     env:
@@ -521,6 +587,15 @@ jobs:
       run: |
         mkdir -p all_reports
         cp -r docker_ubuntu_18_04 ./all_reports/
+    - name: download results docker_on_windows
+      uses: actions/download-artifact@v1
+      with:
+        name: docker_on_windows
+    - name: cp to all_report
+      shell: bash
+      run: |
+        mkdir -p all_reports
+        cp -r docker_on_windows ./all_reports/
     - name: Download Results none_ubuntu16_04
       uses: actions/download-artifact@v1
       with:
