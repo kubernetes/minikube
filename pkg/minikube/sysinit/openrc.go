@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// sysinit provides an abstraction over init systems like systemctl
+// Package sysinit provides an abstraction over init systems like systemctl
 package sysinit
 
 import (
@@ -30,8 +30,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
-
-const SysVName = "OpenRC"
 
 var restartWrapper = `#!/bin/bash
 # Wrapper script to emulate systemd restart on non-systemd systems
@@ -88,7 +86,7 @@ type OpenRC struct {
 
 // Name returns the name of the init system
 func (s *OpenRC) Name() string {
-	return SysVName
+	return "OpenRC"
 }
 
 // Active checks if a service is running
@@ -134,8 +132,7 @@ func (s *OpenRC) Stop(svc string) error {
 
 // ForceStop stops a service with prejuidice
 func (s *OpenRC) ForceStop(svc string) error {
-	_, err := s.r.RunCmd(exec.Command("sudo", "service", svc, "stop", "-f"))
-	return err
+	return s.Stop(svc)
 }
 
 // GenerateInitShim generates any additional init files required for this service

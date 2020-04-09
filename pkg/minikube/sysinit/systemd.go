@@ -14,7 +14,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-// sysinit provides an abstraction over init systems like systemctl
+// Package sysinit provides an abstraction over init systems like systemctl
 package sysinit
 
 import (
@@ -81,7 +81,7 @@ func (s *Systemd) Stop(svc string) error {
 	return err
 }
 
-// Stop stops a service
+// ForceStop terminates a service with prejudice
 func (s *Systemd) ForceStop(svc string) error {
 	_, err := s.r.RunCmd(exec.Command("sudo", "systemctl", "stop", "-f", svc))
 	return err
