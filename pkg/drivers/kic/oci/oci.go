@@ -84,6 +84,19 @@ func DeleteContainer(ociBin string, name string) error {
 	return nil
 }
 
+// PrepareContainerNode sets up the container node befpre CreateContainerNode is caleld
+// for the docker runtime, it creates a docker volume which will be mounted into kic
+func PrepareContainerNode(p CreateParams) error {
+	if p.OCIBinary != Docker {
+		return nil
+	}
+	if err := createDockerVolume(p.Name, p.Name); err != nil {
+		return errors.Wrapf(err, "creating volume for %s container", p.Name)
+	}
+	glog.Infof("Successfully created a docker volume %s", p.Name)
+	return nil
+}
+
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	runArgs := []string{
@@ -122,10 +135,6 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
 	}
 	if p.OCIBinary == Docker {
-		if err := createDockerVolume(p.Name, p.Name); err != nil {
-			return errors.Wrapf(err, "creating volume for %s container", p.Name)
-		}
-		glog.Infof("Successfully created a docker volume %s", p.Name)
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// setting resource limit in privileged mode is only supported by docker
 		// podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
