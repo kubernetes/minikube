@@ -1,28 +1,29 @@
 ---
-title: "stop"
+title: "podman-env"
 description: >
-  Stops a running local kubernetes cluster
+  Sets up podman env variables; similar to '$(podman-machine env)'
 ---
 
 
 
-## minikube stop
+## minikube podman-env
 
-Stops a running local kubernetes cluster
+Sets up podman env variables; similar to '$(podman-machine env)'
 
 ### Synopsis
 
-Stops a local kubernetes cluster running in Virtualbox. This command stops the VM
-itself, leaving all files intact. The cluster can be started again with the "start" command.
+Sets up podman env variables; similar to '$(podman-machine env)'.
 
 ```
-minikube stop [flags]
+minikube podman-env [flags]
 ```
 
 ### Options
 
 ```
-  -h, --help   help for stop
+  -h, --help           help for podman-env
+      --shell string   Force environment to be configured for a specified shell: [fish, cmd, powershell, tcsh, bash, zsh], default is auto-detect
+  -u, --unset          Unset variables instead of setting them
 ```
 
 ### Options inherited from parent commands

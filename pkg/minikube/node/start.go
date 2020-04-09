@@ -89,6 +89,18 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	cr := configureRuntimes(starter.Runner, *starter.Cfg, sv)
 	showVersionInfo(starter.Node.KubernetesVersion, cr)
 
+	// ssh should be set up by now
+	// switch to using ssh runner since it is faster
+	if driver.IsKIC(starter.Cfg.Driver) {
+		sshRunner, err := machine.SSHRunner(starter.Host)
+		if err != nil {
+			glog.Infof("error getting ssh runner: %v", err)
+		} else {
+			glog.Infof("Using ssh runner for kic...")
+			starter.Runner = sshRunner
+		}
+	}
+
 	var bs bootstrapper.Bootstrapper
 	var kcs *kubeconfig.Settings
 	if apiServer {

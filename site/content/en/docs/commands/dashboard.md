@@ -1,26 +1,31 @@
 ---
 title: "dashboard"
-linkTitle: "dashboard"
-weight: 1
-date: 2019-08-01
 description: >
-  Access the Kubernetes dashboard running within the minikube cluster
+  Access the kubernetes dashboard running within the minikube cluster
 ---
 
-## Usage
+
+
+## minikube dashboard
+
+Access the kubernetes dashboard running within the minikube cluster
+
+### Synopsis
+
+Access the kubernetes dashboard running within the minikube cluster
 
 ```
 minikube dashboard [flags]
 ```
 
-## Options
+### Options
 
 ```
   -h, --help   help for dashboard
       --url    Display dashboard URL instead of opening a browser
 ```
 
-## Options inherited from parent commands
+### Options inherited from parent commands
 
 ```
       --alsologtostderr                  log to standard error as well as files
@@ -33,3 +38,4 @@ minikube dashboard [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+

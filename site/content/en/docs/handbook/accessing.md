@@ -41,6 +41,7 @@ By default, minikube only exposes ports 30000-32767. If this does not work for y
 
 This flag also accepts a comma separated list of ports and port ranges.
 
+----
 ## LoadBalancer access
 
 A LoadBalancer service is the standard way to expose a service to the internet. With this method, each service gets its own IP address.

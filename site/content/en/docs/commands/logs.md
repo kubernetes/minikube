@@ -1,13 +1,18 @@
 ---
 title: "logs"
-linkTitle: "logs"
-weight: 1
-date: 2019-08-01
 description: >
-  Gets the logs of the running instance, used for debugging minikube, not user code
+  Gets the logs of the running instance, used for debugging minikube, not user code.
 ---
 
-## Usage
+
+
+## minikube logs
+
+Gets the logs of the running instance, used for debugging minikube, not user code.
+
+### Synopsis
+
+Gets the logs of the running instance, used for debugging minikube, not user code.
 
 ```
 minikube logs [flags]
@@ -16,10 +21,11 @@ minikube logs [flags]
 ### Options
 
 ```
-  -f, --follow       Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
-  -h, --help         help for logs
-  -n, --length int   Number of lines back to go within the log (default 60)
-      --problems     Show only log entries which point to known problems
+  -f, --follow        Show only the most recent journal entries, and continuously print new entries as they are appended to the journal.
+  -h, --help          help for logs
+  -n, --length int    Number of lines back to go within the log (default 60)
+      --node string   The node to get logs from. Defaults to the primary control plane.
+      --problems      Show only log entries which point to known problems
 ```
 
 ### Options inherited from parent commands
@@ -35,3 +41,4 @@ minikube logs [flags]
   -v, --v Level                          log level for V logs
       --vmodule moduleSpec               comma-separated list of pattern=N settings for file-filtered logging
 ```
+
