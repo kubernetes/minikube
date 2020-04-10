@@ -814,9 +814,14 @@ func setupFileSync(ctx context.Context, t *testing.T, profile string) {
 
 	testPem := "./testdata/minikube_test.pem"
 
-	err = copy.Copy(testPem, localTestCertPath())
-	if err != nil {
+	// Write to a temp file for an atomic write
+	tmpPem := localTestCertPath() + ".pem"
+	if err := copy.Copy(testPem, tmpPem); err != nil {
 		t.Fatalf("failed to copy %s: %v", testPem, err)
+	}
+
+	if err := os.Rename(tmpPem, localTestCertPath()); err != nil {
+		t.Fatalf("failed to rename %s: %v", tmpPem, err)
 	}
 
 	want, err := os.Stat(testPem)
