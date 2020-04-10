@@ -331,11 +331,12 @@ func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.N
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
 	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
 	if err != nil {
-		exit.WithError("Error getting host", err)
+		return DeletionError{Err: fmt.Errorf("unable to load host: %v", err), Errtype: MissingCluster}
 	}
+
 	r, err := machine.CommandRunner(host)
 	if err != nil {
-		exit.WithError("Failed to get command runner", err)
+		return DeletionError{Err: fmt.Errorf("unable to get command runner %v", err), Errtype: MissingCluster}
 	}
 
 	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, r)
@@ -345,7 +346,7 @@ func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.N
 
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
 	if err != nil {
-		exit.WithError("Failed runtime", err)
+		return DeletionError{Err: fmt.Errorf("unable to get runtime: %v", err), Errtype: Fatal}
 	}
 
 	// Unpause the cluster if necessary to avoid hung kubeadm
