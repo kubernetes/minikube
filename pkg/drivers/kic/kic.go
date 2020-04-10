@@ -209,14 +209,18 @@ func (d *Driver) GetSSHPort() (int, error) {
 	return p, nil
 }
 
-//// GetRegisteryAddonPort returns port for use with ssh
-//func (d *Driver) GetRegisteryAddonPort() (int, error) {
-//	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.RegisteryAddonPort)
-//	if err != nil {
-//		return p, errors.Wrap(err, "get ssh host-port")
-//	}
-//	return p, nil
-//}
+func (d *Driver) GetRegisteryHostname() (string, error) {
+	return oci.DefaultBindIPV4, nil
+}
+
+// GetRegisteryAddonPort returns port for use with ssh
+func (d *Driver) GetRegisteryAddonPort() (int, error) {
+	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.RegisteryAddonPort)
+	if err != nil {
+		return p, errors.Wrap(err, "get registery host-port")
+	}
+	return p, nil
+}
 
 // GetSSHUsername returns the ssh username
 func (d *Driver) GetSSHUsername() string {
