@@ -125,8 +125,8 @@ func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) e
 	return nil
 }
 
-// KillApiServerProc will kill an api server proc if it exists
-func KillApiServerProc(runner command.Runner) error {
+// KillAPIServerProc will kill an api server proc if it exists
+func KillAPIServerProc(runner command.Runner) error {
 	// first check if it exists
 	rr, err := runner.RunCmd(exec.Command("pgrep", "kube-apiserver"))
 	if err == nil { // this means we might have a running kube-apiserver

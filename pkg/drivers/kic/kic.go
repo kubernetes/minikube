@@ -357,7 +357,7 @@ func (d *Driver) Stop() error {
 
 	}
 
-	if err := pkgdrivers.KillApiServerProc(d.exec); err != nil {
+	if err := pkgdrivers.KillAPIServerProc(d.exec); err != nil {
 		glog.Warningf("couldn't stop kube-apiserver proc: %v", err)
 	}
 
