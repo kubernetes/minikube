@@ -18,6 +18,8 @@ package registry
 
 import (
 	"fmt"
+	"github.com/docker/machine/libmachine/drivers"
+	"github.com/pkg/errors"
 	"os"
 	"sort"
 
@@ -72,11 +74,32 @@ type DriverState struct {
 	Rejection string
 }
 
+type registeryClient struct {
+	IP 		string
+	Port 	int
+}
+
 func (d DriverState) String() string {
 	if d.Priority == Experimental {
 		return fmt.Sprintf("%s (experimental)", d.Name)
 	}
 	return d.Name
+}
+
+func GetRegisteryAddonPort(d drivers.Driver) (*registeryClient, error) {
+
+	ip, err := d.GetRegisteryHostname()
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting ssh host name for driver")
+	}
+	port, err := d.GetRegisteryAddonPort()
+	if err != nil {
+		return nil, errors.Wrap(err, "Error getting ssh port for driver")
+	}
+	return &registeryClient{
+		IP:         ip,
+		Port:       port,
+	}, nil
 }
 
 // List lists drivers in global registry

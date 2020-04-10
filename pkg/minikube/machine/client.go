@@ -169,6 +169,17 @@ func SSHRunner(h *host.Host) (command.Runner, error) {
 	return command.NewSSHRunner(client), nil
 }
 
+
+// Registery return port
+func RegisteryPort(h *host.Host) (string, error) {
+	values, err := registry.GetRegisteryAddonPort(h.Driver)
+	if err != nil {
+		errors.Wrap(err, "failed to get Registery hostname and port")
+	}
+	return string(values.Port), nil
+}
+
+
 // Create creates the host
 func (api *LocalClient) Create(h *host.Host) error {
 	glog.Infof("LocalClient.Create starting")
