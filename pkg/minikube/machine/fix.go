@@ -60,21 +60,24 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 		return h, errors.Wrap(err, "Error loading existing host. Please try running [minikube delete], then run [minikube start] again.")
 	}
 
+	driverName := h.Driver.DriverName()
+
 	// check if need to re-run docker-env
-	maybeWarnAboutEvalEnv(cc.Driver, cc.Name)
+	maybeWarnAboutEvalEnv(driverName, cc.Name)
 
 	h, err = recreateIfNeeded(api, cc, n, h)
 	if err != nil {
 		return h, err
 	}
 
-	// Technically, we should only have to call provision if Docker has changed,
-	// but who can predict what shape the existing VM is in.
-	e := engineOptions(cc)
-	h.HostOptions.EngineOptions.Env = e.Env
-	err = provisionDockerMachine(h)
-	if err != nil {
-		return h, errors.Wrap(err, "provision")
+	// Avoid reprovisioning "none" driver because provision.Detect requires SSH
+	if !driver.BareMetal(h.Driver.DriverName()) {
+		e := engineOptions(cc)
+		h.HostOptions.EngineOptions.Env = e.Env
+		err = provisionDockerMachine(h)
+		if err != nil {
+			return h, errors.Wrap(err, "provision")
+		}
 	}
 
 	if driver.IsMock(h.DriverName) {
@@ -86,11 +89,11 @@ func fixHost(api libmachine.API, cc config.ClusterConfig, n config.Node) (*host.
 	}
 
 	if driver.BareMetal(h.Driver.DriverName()) {
-		glog.Infof("%s is local, skipping auth/time setup (requires ssh)", h.Driver.DriverName())
+		glog.Infof("%s is local, skipping auth/time setup (requires ssh)", driverName)
 		return h, nil
 	}
 
-	return h, ensureSyncedGuestClock(h, cc.Driver)
+	return h, ensureSyncedGuestClock(h, driverName)
 }
 
 func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) (*host.Host, error) {
@@ -135,7 +138,7 @@ func recreateIfNeeded(api libmachine.API, cc config.ClusterConfig, n config.Node
 	}
 
 	if !recreated {
-		out.T(out.Restarting, `Retarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
+		out.T(out.Restarting, `Restarting existing {{.driver_name}} {{.machine_type}} for "{{.cluster}}" ...`, out.V{"driver_name": cc.Driver, "cluster": cc.Name, "machine_type": machineType})
 	}
 	if err := h.Driver.Start(); err != nil {
 		return h, errors.Wrap(err, "driver start")
@@ -158,7 +161,7 @@ func maybeWarnAboutEvalEnv(drver string, name string) {
 	}
 	out.T(out.Notice, "Noticed you have an activated docker-env on {{.driver_name}} driver in this terminal:", out.V{"driver_name": drver})
 	// TODO: refactor docker-env package to generate only eval command per shell. https://github.com/kubernetes/minikube/issues/6887
-	out.T(out.Warning, `Please re-eval your docker-env, To ensure your environment variables have updated ports: 
+	out.WarningT(`Please re-eval your docker-env, To ensure your environment variables have updated ports: 
 
 	'minikube -p {{.profile_name}} docker-env'
 

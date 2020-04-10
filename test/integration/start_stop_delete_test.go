@@ -71,6 +71,9 @@ func TestStartStop(t *testing.T) {
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
+			{"embed-certs", constants.DefaultKubernetesVersion, []string{
+				"--embed-certs",
+			}},
 		}
 
 		for _, tc := range tests {
@@ -86,13 +89,18 @@ func TestStartStop(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
+				waitFlag := "--wait=true"
+				if strings.Contains(tc.name, "cni") { // wait=app_running is broken for CNI https://github.com/kubernetes/minikube/issues/7354
+					waitFlag = "--wait=apiserver,system_pods,default_sa"
+				}
+
+				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", waitFlag}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
 
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
-					t.Fatalf("%s failed: %v", rr.Args, err)
+					t.Fatalf("failed starting minikube -first start-. args %q: %v", rr.Command(), err)
 				}
 
 				if !strings.Contains(tc.name, "cni") {
@@ -101,43 +109,43 @@ func TestStartStop(t *testing.T) {
 
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), "stop", "-p", profile, "--alsologtostderr", "-v=3"))
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
+					t.Errorf("failed stopping minikube - first stop-. args %q : %v", rr.Command(), err)
 				}
 
 				// The none driver never really stops
 				if !NoneDriver() {
 					got := Status(ctx, t, Target(), profile, "Host")
 					if got != state.Stopped.String() {
-						t.Errorf("post-stop host status = %q; want = %q", got, state.Stopped)
+						t.Errorf("expected post-stop host status to be -%q- but got *%q*", state.Stopped, got)
 					}
 				}
 
 				// Enable an addon to assert it comes up afterwards
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), "addons", "enable", "dashboard", "-p", profile))
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
+					t.Errorf("failed to enable an addon post-stop. args %q: %v", rr.Command(), err)
 				}
 
 				rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 				if err != nil {
 					// Explicit fatal so that failures don't move directly to deletion
-					t.Fatalf("%s failed: %v", rr.Args, err)
+					t.Fatalf("failed to start minikube post-stop. args %q: %v", rr.Command(), err)
 				}
 
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
 				} else {
 					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4)); err != nil {
-						t.Fatalf("post-stop-start pod wait: %v", err)
+						t.Fatalf("failed waiting for pod 'busybox' post-stop-start: %v", err)
 					}
 					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(4)); err != nil {
-						t.Fatalf("post-stop-start addon wait: %v", err)
+						t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 					}
 				}
 
 				got := Status(ctx, t, Target(), profile, "Host")
 				if got != state.Running.String() {
-					t.Errorf("post-start host status = %q; want = %q", got, state.Running)
+					t.Errorf("expected host status after start-stop-start to be -%q- but got *%q*", state.Running, got)
 				}
 
 				if !NoneDriver() {
@@ -150,7 +158,7 @@ func TestStartStop(t *testing.T) {
 					// Normally handled by cleanuprofile, but not fatal there
 					rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete", "-p", profile))
 					if err != nil {
-						t.Errorf("%s failed: %v", rr.Args, err)
+						t.Errorf("failed to clean up: args %q: %v", rr.Command(), err)
 					}
 
 					rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "config", "get-contexts", profile))
@@ -158,7 +166,7 @@ func TestStartStop(t *testing.T) {
 						t.Logf("config context error: %v (may be ok)", err)
 					}
 					if rr.ExitCode != 1 {
-						t.Errorf("wanted exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
+						t.Errorf("expected exit code 1, got %d. output: %s", rr.ExitCode, rr.Output())
 					}
 				}
 			})
@@ -182,14 +190,14 @@ func TestStartStopWithPreload(t *testing.T) {
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
 	// Now, pull the busybox image into the VMs docker daemon
 	image := "busybox"
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "pull", image))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
 	// Restart minikube with v1.17.3, which has a preloaded tarball
@@ -199,11 +207,11 @@ func TestStartStopWithPreload(t *testing.T) {
 	startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", k8sVersion))
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), startArgs...))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "--", "docker", "images"))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 	if !strings.Contains(rr.Output(), image) {
 		t.Fatalf("Expected to find %s in output of `docker images`, instead got %s", image, rr.Output())
@@ -217,7 +225,7 @@ func testPodScheduling(ctx context.Context, t *testing.T, profile string) {
 	// schedule a pod to assert persistence
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "create", "-f", filepath.Join(*testdataDir, "busybox.yaml")))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
 	// 8 minutes, because 4 is not enough for images to pull in all cases.
@@ -250,14 +258,14 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "ssh", "-p", profile, "sudo crictl images -o json"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("failed tp get images inside minikube. args %q: %v", rr.Command(), err)
 	}
 	jv := map[string][]struct {
 		Tags []string `json:"repoTags"`
 	}{}
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
 	if err != nil {
-		t.Errorf("images unmarshal: %v", err)
+		t.Errorf("failed to decode images json %v. output: %s", err, rr.Output())
 	}
 	found := map[string]bool{}
 	for _, img := range jv["images"] {
@@ -274,7 +282,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	}
 	want, err := images.Kubeadm("", version)
 	if err != nil {
-		t.Errorf("kubeadm images: %v", version)
+		t.Errorf("failed to get kubeadm images for %s : %v", version, err)
 	}
 	gotImages := []string{}
 	for k := range found {
@@ -293,7 +301,7 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "pause", "-p", profile, "--alsologtostderr", "-v=1"))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
 	got := Status(ctx, t, Target(), profile, "APIServer")
@@ -308,7 +316,7 @@ func testPause(ctx context.Context, t *testing.T, profile string) {
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "unpause", "-p", profile, "--alsologtostderr", "-v=1"))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 
 	got = Status(ctx, t, Target(), profile, "APIServer")

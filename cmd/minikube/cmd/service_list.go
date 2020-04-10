@@ -52,6 +52,7 @@ var serviceListCmd = &cobra.Command{
 			if len(serviceURL.URLs) == 0 {
 				data = append(data, []string{serviceURL.Namespace, serviceURL.Name, "No node port"})
 			} else {
+				servicePortNames := strings.Join(serviceURL.PortNames, "\n")
 				serviceURLs := strings.Join(serviceURL.URLs, "\n")
 
 				// if we are running Docker on OSX we empty the internal service URLs
@@ -59,7 +60,7 @@ var serviceListCmd = &cobra.Command{
 					serviceURLs = ""
 				}
 
-				data = append(data, []string{serviceURL.Namespace, serviceURL.Name, "", serviceURLs})
+				data = append(data, []string{serviceURL.Namespace, serviceURL.Name, servicePortNames, serviceURLs})
 			}
 		}
 

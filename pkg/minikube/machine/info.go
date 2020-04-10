@@ -18,13 +18,14 @@ package machine
 
 import (
 	"io/ioutil"
+	"os/exec"
 
-	"github.com/docker/machine/libmachine/drivers"
 	"github.com/docker/machine/libmachine/provision"
 	"github.com/golang/glog"
 	"github.com/shirou/gopsutil/cpu"
 	"github.com/shirou/gopsutil/disk"
 	"github.com/shirou/gopsutil/mem"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -80,18 +81,17 @@ func showLocalOsRelease() {
 }
 
 // logRemoteOsRelease shows systemd information about the current linux distribution, on the remote VM
-func logRemoteOsRelease(drv drivers.Driver) {
-	provisioner, err := provision.DetectProvisioner(drv)
+func logRemoteOsRelease(r command.Runner) {
+	rr, err := r.RunCmd(exec.Command("cat", "/etc/os-release"))
 	if err != nil {
-		glog.Errorf("DetectProvisioner: %v", err)
+		glog.Infof("remote release failed: %v", err)
+	}
+
+	osReleaseInfo, err := provision.NewOsRelease(rr.Stdout.Bytes())
+	if err != nil {
+		glog.Errorf("NewOsRelease: %v", err)
 		return
 	}
 
-	osReleaseInfo, err := provisioner.GetOsReleaseInfo()
-	if err != nil {
-		glog.Errorf("GetOsReleaseInfo: %v", err)
-		return
-	}
-
-	glog.Infof("Provisioned with %s", osReleaseInfo.PrettyName)
+	glog.Infof("Remote host: %s", osReleaseInfo.PrettyName)
 }
