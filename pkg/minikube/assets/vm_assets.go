@@ -93,15 +93,21 @@ func NewMemoryAssetTarget(d []byte, targetPath, permissions string) *MemoryAsset
 // NewFileAsset creates a new FileAsset
 func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, error) {
 	glog.V(4).Infof("NewFileAsset: %s -> %s", src, path.Join(targetDir, targetName))
+
 	f, err := os.Open(src)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error opening file asset: %s", src)
+		return nil, errors.Wrap(err, "open")
 	}
+
 	info, err := os.Stat(src)
 	if err != nil {
-		return nil, errors.Wrapf(err, "Error getting info for %s", src)
+		return nil, errors.Wrapf(err, "stat")
 	}
-	r := io.NewSectionReader(f, 0, info.Size())
+
+	if info.Size() == 0 {
+		glog.Warningf("NewFileAsset: %s is an empty file!", src)
+	}
+
 	return &FileAsset{
 		BaseAsset: BaseAsset{
 			SourcePath:  src,
@@ -109,7 +115,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 			TargetName:  targetName,
 			Permissions: permissions,
 		},
-		reader: r,
+		reader: io.NewSectionReader(f, 0, info.Size()),
 	}, nil
 }
 
@@ -117,6 +123,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 func (f *FileAsset) GetLength() (flen int) {
 	fi, err := os.Stat(f.SourcePath)
 	if err != nil {
+		glog.Errorf("stat(%q) failed: %v", f.SourcePath, err)
 		return 0
 	}
 	return int(fi.Size())
@@ -126,6 +133,7 @@ func (f *FileAsset) GetLength() (flen int) {
 func (f *FileAsset) GetModTime() (time.Time, error) {
 	fi, err := os.Stat(f.SourcePath)
 	if err != nil {
+		glog.Errorf("stat(%q) failed: %v", f.SourcePath, err)
 		return time.Time{}, err
 	}
 	return fi.ModTime(), nil
