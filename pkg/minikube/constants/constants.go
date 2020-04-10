@@ -40,8 +40,8 @@ const (
 	APIServerPort = 8443
 	// SSHPort is the SSH serviceport on the node vm and container
 	SSHPort = 22
-	// RegisteryAddonPort os the default registery addon port
-	RegisteryAddonPort = 5000
+	// RegistryAddonPort os the default registry addon port
+	RegistryAddonPort = 5000
 
 	// APIServerName is the default API server name
 	APIServerName = "minikubeCA"
