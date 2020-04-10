@@ -207,7 +207,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		if addon.IsTemplate() {
 			f, err = addon.Evaluate(data)
 			if err != nil {
-				return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetAssetName())
+				return errors.Wrapf(err, "evaluate bundled addon %s asset", addon.GetSourcePath())
 			}
 
 		} else {
