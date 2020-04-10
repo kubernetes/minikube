@@ -153,19 +153,6 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 		return command.NewExecRunner(), nil
 	}
 
-	cr, err := SSHRunner(h)
-
-	// We have a slower backup runner, so we may as well use it.
-	if err != nil && driver.IsKIC(h.Driver.DriverName()) {
-		glog.Errorf("SSH runner failed, using KIC runner as backup: %v", err)
-		return command.NewKICRunner(h.Name, h.Driver.DriverName()), nil
-	}
-
-	return cr, err
-}
-
-// SSHRunner returns an SSH runner for the host
-func SSHRunner(h *host.Host) (command.Runner, error) {
 	return command.NewSSHRunner(h.Driver), nil
 }
 
