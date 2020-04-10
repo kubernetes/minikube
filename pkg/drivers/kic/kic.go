@@ -93,7 +93,13 @@ func (d *Driver) Create() error {
 			ListenAddress: oci.DefaultBindIPV4,
 			ContainerPort: constants.DockerDaemonPort,
 		},
+		oci.PortMapping{
+			ListenAddress: oci.DefaultBindIPV4,
+			ContainerPort: constants.RegisteryAddonPort,
+		},
 	)
+
+	fmt.Println("ruben")
 
 	exists, err := oci.ContainerExists(d.OCIBinary, params.Name)
 	if err != nil {
@@ -202,6 +208,15 @@ func (d *Driver) GetSSHPort() (int, error) {
 	}
 	return p, nil
 }
+
+//// GetRegisteryAddonPort returns port for use with ssh
+//func (d *Driver) GetRegisteryAddonPort() (int, error) {
+//	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.RegisteryAddonPort)
+//	if err != nil {
+//		return p, errors.Wrap(err, "get ssh host-port")
+//	}
+//	return p, nil
+//}
 
 // GetSSHUsername returns the ssh username
 func (d *Driver) GetSSHUsername() string {
