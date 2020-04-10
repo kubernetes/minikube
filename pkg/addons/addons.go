@@ -176,6 +176,16 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 		return nil
 	}
 
+	if name == "registry" {
+		port, err := machine.RegisteryPort(host)
+		if err != nil {
+			errors.Wrap(err, "cant get Registry port")
+		}
+		if runtime.GOOS != "linux" {
+			fmt.Printf("Your OS should use this port: %s", port)
+		}
+	}
+
 	cmd, err := machine.CommandRunner(host)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
