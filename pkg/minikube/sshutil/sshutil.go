@@ -19,11 +19,14 @@ package sshutil
 import (
 	"net"
 	"strconv"
+	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
 	machinessh "github.com/docker/machine/libmachine/ssh"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // NewSSHClient returns an SSH client object for running commands.
@@ -42,10 +45,19 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 		return nil, errors.Wrapf(err, "Error creating new native config from ssh using: %s, %s", h.Username, auth)
 	}
 
-	client, err := ssh.Dial("tcp", net.JoinHostPort(h.IP, strconv.Itoa(h.Port)), &config)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error dialing tcp via ssh client")
+	var client *ssh.Client
+	getSSH := func() (err error) {
+		client, err = ssh.Dial("tcp", net.JoinHostPort(h.IP, strconv.Itoa(h.Port)), &config)
+		if err != nil {
+			glog.Warningf("dial failure (will retry): %v", err)
+		}
+		return err
 	}
+
+	if err := retry.Expo(getSSH, 250*time.Millisecond, 2*time.Second); err != nil {
+		return nil, err
+	}
+
 	return client, nil
 }
 
