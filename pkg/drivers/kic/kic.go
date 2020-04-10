@@ -347,7 +347,10 @@ func (d *Driver) Stop() error {
 		}
 		if len(containers) > 0 {
 			if err := runtime.StopContainers(containers); err != nil {
-				glog.Errorf("unable to stop containers : %v", err)
+				glog.Infof("unable to stop containers : %v", err)
+			}
+			if err := runtime.KillContainers(containers); err != nil {
+				glog.Errorf("unable to kill containers : %v", err)
 			}
 		}
 		glog.Infof("successfully stopped kubernetes!")
