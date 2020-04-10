@@ -177,12 +177,12 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	}
 
 	if name == "registry" {
-		port, err := machine.RegisteryPort(host)
+		port, err := machine.RegistryPort(cc)
 		if err != nil {
-			errors.Wrap(err, "cant get Registry port")
+			errors.Wrap(err, "Can't get Registry port")
 		}
 		if runtime.GOOS != "linux" {
-			fmt.Printf("Your OS should use this port: %s", port)
+			out.T(out.Notice, `This is the port you should use for the registry addon "{{.port}}"`, out.V{"port": port})
 		}
 	}
 
