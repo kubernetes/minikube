@@ -138,7 +138,7 @@ func TestStartStop(t *testing.T) {
 					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(7)); err != nil {
 						t.Fatalf("failed waiting for pod 'busybox' post-stop-start: %v", err)
 					}
-					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(7)); err != nil {
+					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
 						t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 					}
 				}
