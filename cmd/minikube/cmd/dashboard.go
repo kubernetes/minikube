@@ -63,19 +63,18 @@ var dashboardCmd = &cobra.Command{
 			}
 		}
 
-		kubectl, err := exec.LookPath("kubectl")
-		if err != nil {
-			exit.WithCodeT(exit.NoInput, "kubectl not found in PATH, but is required for the dashboard. Installation guide: https://kubernetes.io/docs/tasks/tools/install-kubectl/")
-		}
+		kubectlVersion := co.Config.KubernetesConfig.KubernetesVersion
+		var err error
 
 		// Check dashboard status before enabling it
-		dashboardAddon := assets.Addons["dashboard"]
-		dashboardStatus, _ := dashboardAddon.IsEnabled(cname)
-		if !dashboardStatus {
+		addon := assets.Addons["dashboard"]
+		enabled := addon.IsEnabled(co.Config)
+
+		if !enabled {
 			// Send status messages to stderr for folks re-using this output.
 			out.ErrT(out.Enabling, "Enabling dashboard ...")
 			// Enable the dashboard add-on
-			err = addons.Set("dashboard", "true", cname)
+			err = addons.SetAndSave(cname, "dashboard", "true")
 			if err != nil {
 				exit.WithError("Unable to enable dashboard", err)
 			}
@@ -90,7 +89,7 @@ var dashboardCmd = &cobra.Command{
 		}
 
 		out.ErrT(out.Launch, "Launching proxy ...")
-		p, hostPort, err := kubectlProxy(kubectl, cname)
+		p, hostPort, err := kubectlProxy(kubectlVersion, cname)
 		if err != nil {
 			exit.WithError("kubectl proxy", err)
 		}
@@ -124,10 +123,17 @@ var dashboardCmd = &cobra.Command{
 }
 
 // kubectlProxy runs "kubectl proxy", returning host:port
-func kubectlProxy(path string, contextName string) (*exec.Cmd, string, error) {
+func kubectlProxy(kubectlVersion string, contextName string) (*exec.Cmd, string, error) {
 	// port=0 picks a random system port
 
-	cmd := exec.Command(path, "--context", contextName, "proxy", "--port=0")
+	kubectlArgs := []string{"--context", contextName, "proxy", "--port=0"}
+
+	var cmd *exec.Cmd
+	if kubectl, err := exec.LookPath("kubectl"); err == nil {
+		cmd = exec.Command(kubectl, kubectlArgs...)
+	} else if cmd, err = KubectlCommand(kubectlVersion, kubectlArgs...); err != nil {
+		return nil, "", err
+	}
 
 	stdoutPipe, err := cmd.StdoutPipe()
 	if err != nil {

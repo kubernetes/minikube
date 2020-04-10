@@ -27,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/vmpath"
 )
 
+// TestGuestEnvironment verifies files and packges installed inside minikube ISO/Base image
 func TestGuestEnvironment(t *testing.T) {
 	MaybeParallel(t)
 
@@ -37,18 +38,18 @@ func TestGuestEnvironment(t *testing.T) {
 	args := append([]string{"start", "-p", profile, "--install-addons=false", "--memory=1800", "--wait=false"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("failed to start minikube: args %q: %v", rr.Command(), err)
 	}
 
 	// Run as a group so that our defer doesn't happen as tests are runnings
 	t.Run("Binaries", func(t *testing.T) {
-		for _, pkg := range []string{"git", "rsync", "curl", "wget", "socat", "iptables", "VBoxControl", "VBoxService"} {
+		for _, pkg := range []string{"git", "rsync", "curl", "wget", "socat", "iptables", "VBoxControl", "VBoxService", "crictl", "podman", "docker"} {
 			pkg := pkg
 			t.Run(pkg, func(t *testing.T) {
 				t.Parallel()
 				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("which %s", pkg)))
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
+					t.Errorf("failed to verify existence of %q binary : args %q: %v", pkg, rr.Command(), err)
 				}
 			})
 		}
@@ -67,9 +68,9 @@ func TestGuestEnvironment(t *testing.T) {
 			mount := mount
 			t.Run(mount, func(t *testing.T) {
 				t.Parallel()
-				rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount)))
+				rr, err := Run(t, exec.CommandContext(ctx, Targt(), "-p", profile, "ssh", fmt.Sprintf("df -t ext4 %s | grep %s", mount, mount)))
 				if err != nil {
-					t.Errorf("%s failed: %v", rr.Args, err)
+					t.Errorf("failed to verify existence of %q mount. args %q: %v", mount, rr.Command(), err)
 				}
 			})
 		}

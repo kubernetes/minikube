@@ -181,7 +181,7 @@ func copyAssetToDest(targetName, dest string) error {
 	log.Printf("%s asset path: %s", targetName, src)
 	contents, err := ioutil.ReadFile(src)
 	if err != nil {
-		return errors.Wrapf(err, "getting contents of %s", asset.GetAssetName())
+		return errors.Wrapf(err, "getting contents of %s", asset.GetSourcePath())
 	}
 	if _, err := os.Stat(dest); err == nil {
 		if err := os.Remove(dest); err != nil {

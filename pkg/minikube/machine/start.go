@@ -213,7 +213,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 		showLocalOsRelease()
 	}
 	if driver.IsVM(mc.Driver) {
-		logRemoteOsRelease(h.Driver)
+		logRemoteOsRelease(r)
 	}
 	return syncLocalAssets(r)
 }
@@ -298,7 +298,7 @@ func AddHostAlias(c command.Runner, name string, ip net.IP) error {
 		return nil
 	}
 
-	script := fmt.Sprintf(`{ grep -v '\t%s$' /etc/hosts; echo "%s"; } > /tmp/h.$$; sudo mv /tmp/h.$$ /etc/hosts`, name, record)
+	script := fmt.Sprintf(`{ grep -v '\t%s$' /etc/hosts; echo "%s"; } > /tmp/h.$$; sudo cp /tmp/h.$$ /etc/hosts`, name, record)
 	if _, err := c.RunCmd(exec.Command("/bin/bash", "-c", script)); err != nil {
 		return errors.Wrap(err, "hosts update")
 	}

@@ -37,10 +37,9 @@ var optionsCmd = &cobra.Command{
 // runOptions handles the executes the flow of "minikube options"
 func runOptions(cmd *cobra.Command, args []string) {
 	out.String("The following options can be passed to any command:\n\n")
-	for _, flagName := range viperWhiteList {
-		f := pflag.Lookup(flagName)
-		out.String(flagUsage(f))
-	}
+	cmd.Root().PersistentFlags().VisitAll(func(flag *pflag.Flag) {
+		out.String(flagUsage(flag))
+	})
 }
 
 func flagUsage(flag *pflag.Flag) string {

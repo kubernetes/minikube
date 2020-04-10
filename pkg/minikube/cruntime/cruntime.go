@@ -28,6 +28,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // ContainerState is the run state of a container
@@ -131,13 +132,27 @@ type ListOptions struct {
 
 // New returns an appropriately configured runtime
 func New(c Config) (Manager, error) {
+	sm := sysinit.New(c.Runner)
+
 	switch c.Type {
 	case "", "docker":
-		return &Docker{Socket: c.Socket, Runner: c.Runner}, nil
+		return &Docker{Socket: c.Socket, Runner: c.Runner, Init: sm}, nil
 	case "crio", "cri-o":
-		return &CRIO{Socket: c.Socket, Runner: c.Runner, ImageRepository: c.ImageRepository, KubernetesVersion: c.KubernetesVersion}, nil
+		return &CRIO{
+			Socket:            c.Socket,
+			Runner:            c.Runner,
+			ImageRepository:   c.ImageRepository,
+			KubernetesVersion: c.KubernetesVersion,
+			Init:              sm,
+		}, nil
 	case "containerd":
-		return &Containerd{Socket: c.Socket, Runner: c.Runner, ImageRepository: c.ImageRepository, KubernetesVersion: c.KubernetesVersion}, nil
+		return &Containerd{
+			Socket:            c.Socket,
+			Runner:            c.Runner,
+			ImageRepository:   c.ImageRepository,
+			KubernetesVersion: c.KubernetesVersion,
+			Init:              sm,
+		}, nil
 	default:
 		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
 	}

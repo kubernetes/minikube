@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -196,6 +197,13 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 	urls := []string{}
 	portNames := []string{}
 	for _, port := range svc.Spec.Ports {
+
+		if port.Name != "" {
+			m[port.TargetPort.IntVal] = fmt.Sprintf("%s/%d", port.Name, port.Port)
+		} else {
+			m[port.TargetPort.IntVal] = strconv.Itoa(int(port.Port))
+		}
+
 		if port.NodePort > 0 {
 			var doc bytes.Buffer
 			err = t.Execute(&doc, struct {

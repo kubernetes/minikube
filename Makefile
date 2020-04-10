@@ -15,7 +15,7 @@
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
 VERSION_MINOR ?= 9
-VERSION_BUILD ?= 0-beta.2
+VERSION_BUILD ?= 2
 RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
@@ -23,7 +23,7 @@ KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/co
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
-ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
+ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
 # Dashes are valid in semver, but not Linux packaging. Use ~ to delimit alpha/beta
 DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
@@ -111,7 +111,7 @@ MINIKUBE_TEST_FILES := ./cmd/... ./pkg/...
 MARKDOWNLINT ?= markdownlint
 
 
-MINIKUBE_MARKDOWN_FILES := README.md docs CONTRIBUTING.md CHANGELOG.md
+MINIKUBE_MARKDOWN_FILES := README.md CONTRIBUTING.md CHANGELOG.md
 
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_BUILD_TAGS += go_getter_nos3 go_getter_nogcs
@@ -268,11 +268,11 @@ integration-versioned: out/minikube ## Trigger minikube integration testing
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
-	./test.sh
+	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" ./test.sh
 
-.PHONY: gotest
-gotest: $(SOURCE_GENERATED) ## Trigger minikube test
-	go test -tags "$(MINIKUBE_BUILD_TAGS)" $(MINIKUBE_TEST_FILES)
+.PHONY: generate-docs
+generate-docs: out/minikube ## Automatically generate commands documentation.
+	out/minikube generate-docs --path ./site/content/en/docs/commands/
 
 .PHONY: extract
 extract: ## Compile extract tool
@@ -625,7 +625,7 @@ release-kvm-driver: install-kvm-driver checksum  ## Release KVM Driver
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
 
-site/themes/docsy/assets/vendor/bootstrap/package.js:
+site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
 	git submodule update -f --init --recursive
 
 out/hugo/hugo:

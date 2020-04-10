@@ -38,13 +38,14 @@ func ConfigFile() string {
 
 // MiniPath returns the path to the user's minikube dir
 func MiniPath() string {
-	if os.Getenv(MinikubeHome) == "" {
+	minikubeHomeEnv := os.Getenv(MinikubeHome)
+	if minikubeHomeEnv == "" {
 		return filepath.Join(homedir.HomeDir(), ".minikube")
 	}
-	if filepath.Base(os.Getenv(MinikubeHome)) == ".minikube" {
-		return os.Getenv(MinikubeHome)
+	if filepath.Base(minikubeHomeEnv) == ".minikube" {
+		return minikubeHomeEnv
 	}
-	return filepath.Join(os.Getenv(MinikubeHome), ".minikube")
+	return filepath.Join(minikubeHomeEnv, ".minikube")
 }
 
 // MakeMiniPath is a utility to calculate a relative path to our directory.
