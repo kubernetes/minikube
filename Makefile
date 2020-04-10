@@ -111,7 +111,7 @@ MINIKUBE_TEST_FILES := ./cmd/... ./pkg/...
 MARKDOWNLINT ?= markdownlint
 
 
-MINIKUBE_MARKDOWN_FILES := README.md docs CONTRIBUTING.md CHANGELOG.md
+MINIKUBE_MARKDOWN_FILES := README.md CONTRIBUTING.md CHANGELOG.md
 
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_BUILD_TAGS += go_getter_nos3 go_getter_nogcs
