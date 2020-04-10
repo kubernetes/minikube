@@ -40,6 +40,9 @@ func NewSSHClient(d drivers.Driver) (*ssh.Client, error) {
 	if h.SSHKeyPath != "" {
 		auth.Keys = []string{h.SSHKeyPath}
 	}
+
+	glog.Infof("new ssh client: %+v", h)
+
 	config, err := machinessh.NewNativeConfig(h.Username, auth)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Error creating new native config from ssh using: %s, %s", h.Username, auth)

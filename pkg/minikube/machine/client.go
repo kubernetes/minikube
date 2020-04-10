@@ -48,7 +48,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 // NewRPCClient gets a new client.
@@ -167,11 +166,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 
 // SSHRunner returns an SSH runner for the host
 func SSHRunner(h *host.Host) (command.Runner, error) {
-	sc, err := sshutil.NewSSHClient(h.Driver)
-	if err != nil {
-		return nil, err
-	}
-	return command.NewSSHRunner(sc), nil
+	return command.NewSSHRunner(h.Driver), nil
 }
 
 // Create creates the host
