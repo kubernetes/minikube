@@ -117,9 +117,8 @@ func SetupCerts(cmd command.Runner, k8s config.KubernetesConfig, n config.Node) 
 	}
 
 	for _, f := range copyableFiles {
-		glog.Infof("copying: %s/%s", f.GetTargetDir(), f.GetTargetName())
 		if err := cmd.Copy(f); err != nil {
-			return nil, errors.Wrapf(err, "Copy %s", f.GetAssetName())
+			return nil, errors.Wrapf(err, "Copy %s", f.GetSourcePath())
 		}
 	}
 
