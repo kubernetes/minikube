@@ -364,3 +364,18 @@ func DockerImagesPreloaded(runner command.Runner, images []string) bool {
 	}
 	return true
 }
+
+func dockerBoundToContainerd(runner command.Runner) bool {
+	// NOTE: assumes systemd
+	rr, err := runner.RunCmd(exec.Command("sudo", "systemctl", "cat", "docker.service"))
+	if err != nil {
+		glog.Warningf("unable to check if docker is bound to containerd")
+		return false
+	}
+
+	if strings.Contains(rr.Stdout.String(), "\nBindsTo=containerd") {
+		return true
+	}
+
+	return false
+}
