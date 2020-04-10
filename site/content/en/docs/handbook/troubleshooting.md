@@ -1,8 +1,6 @@
 ---
 title: "Troubleshooting"
-linkTitle: "Troubleshoot"
 weight: 20
-date: 2019-08-01
 description: >
   How to troubleshoot minikube issues
 ---
