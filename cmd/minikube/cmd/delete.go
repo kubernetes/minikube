@@ -329,11 +329,6 @@ func profileDeletionErr(cname string, additionalInfo string) error {
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, n)
-	if err != nil {
-		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
-	}
-
 	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
 	if err != nil {
 		exit.WithError("Error getting host", err)
@@ -341,6 +336,11 @@ func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.N
 	r, err := machine.CommandRunner(host)
 	if err != nil {
 		exit.WithError("Failed to get command runner", err)
+	}
+
+	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, r)
+	if err != nil {
+		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}
 
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
