@@ -172,9 +172,6 @@ func (d *Driver) Kill() error {
 		return nil
 	}
 	if err := d.runtime.KillContainers(containers); err != nil {
-		if err := pkgdrivers.KillAPIServerProc(d.exec); err != nil {
-			glog.Warningf("couldn't stop kube-apiserver proc: %v", err)
-		}
 		return errors.Wrap(err, "kill")
 	}
 	return nil

@@ -20,9 +20,7 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strconv"
 	"syscall"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -31,7 +29,6 @@ import (
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/minikube/command"
 )
 
 // This file is for common code shared among internal machine drivers
@@ -120,21 +117,6 @@ func MakeDiskImage(d *drivers.BaseDriver, boot2dockerURL string, diskSize int) e
 		machPath := d.ResolveStorePath(".")
 		if err := fixMachinePermissions(machPath); err != nil {
 			return errors.Wrapf(err, "fixing permissions on %s", machPath)
-		}
-	}
-	return nil
-}
-
-// KillAPIServerProc will kill an api server proc if it exists
-func KillAPIServerProc(runner command.Runner) error {
-	// first check if it exists
-	rr, err := runner.RunCmd(exec.Command("pgrep", "kube-apiserver"))
-	if err == nil { // this means we might have a running kube-apiserver
-		pid, err := strconv.Atoi(rr.Stdout.String())
-		if err == nil { // this means we have a valid pid
-			if _, err = runner.RunCmd(exec.Command("kill", "-9", string(pid))); err != nil {
-				return errors.Wrap(err, "kill")
-			}
 		}
 	}
 	return nil
