@@ -202,15 +202,18 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "run")
 	}
 
-	// this is required for containerd and cri-o runtime. till we close https://github.com/kubernetes/minikube/issues/7428
-	if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
-		if err := k.applyKicOverlay(cfg); err != nil {
-			return errors.Wrap(err, "apply kic overlay")
-		}
-	}
-
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(4)
+
+	go func() {
+		// the overlay is required for containerd and cri-o runtime: see #7428
+		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
+			if err := k.applyKicOverlay(cfg); err != nil {
+				glog.Errorf("failed to apply kic overlay: %v", err)
+			}
+		}
+		wg.Done()
+	}()
 
 	go func() {
 		if err := k.applyNodeLabels(cfg); err != nil {
@@ -232,6 +235,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		}
 		wg.Done()
 	}()
+
 	wg.Wait()
 	return nil
 }
@@ -752,20 +756,30 @@ func startKubeletIfRequired(runner command.Runner, sm sysinit.Manager) error {
 
 // applyKicOverlay applies the CNI plugin needed to make kic work
 func (k *Bootstrapper) applyKicOverlay(cfg config.ClusterConfig) error {
-	// Allow no more than 5 seconds for apply kic overlay
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+
 	cmd := exec.CommandContext(ctx, "sudo",
 		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
 		"-f", "-")
+
 	b := bytes.Buffer{}
 	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
 		return err
 	}
+
 	cmd.Stdin = bytes.NewReader(b.Bytes())
 	if rr, err := k.c.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
 	}
+
+	// Inform cri-o that the CNI has changed
+	if cfg.KubernetesConfig.ContainerRuntime == "crio" {
+		if err := sysinit.New(k.c).Restart("crio"); err != nil {
+			return errors.Wrap(err, "restart crio")
+		}
+	}
+
 	return nil
 }
 
