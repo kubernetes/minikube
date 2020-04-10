@@ -21,6 +21,7 @@ import (
 	"runtime"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -144,7 +145,7 @@ func saveImagesToTarFromConfig() error {
 func CacheAndLoadImagesInConfig() error {
 	images, err := imagesInConfigFile()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "images")
 	}
 	if len(images) == 0 {
 		return nil
@@ -155,7 +156,7 @@ func CacheAndLoadImagesInConfig() error {
 func imagesInConfigFile() ([]string, error) {
 	configFile, err := config.ReadConfig(localpath.ConfigFile())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read")
 	}
 	if values, ok := configFile[cacheImageConfigKey]; ok {
 		var images []string

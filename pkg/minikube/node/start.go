@@ -140,7 +140,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 	wg.Add(1)
 	go func() {
 		if err := CacheAndLoadImagesInConfig(); err != nil {
-			out.FailureT("Unable to load cached images from config file: {{error}}", out.V{"error": err})
+			out.FailureT("Unable to push cached images: {{error}}", out.V{"error": err})
 		}
 		wg.Done()
 	}()
