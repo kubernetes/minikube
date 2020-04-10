@@ -20,6 +20,9 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"net"
 	"os"
 	"path/filepath"
@@ -170,13 +173,16 @@ func SSHRunner(h *host.Host) (command.Runner, error) {
 }
 
 
-// Registery return port
-func RegisteryPort(h *host.Host) (string, error) {
-	values, err := registry.GetRegisteryAddonPort(h.Driver)
-	if err != nil {
-		errors.Wrap(err, "failed to get Registery hostname and port")
+// RegistryPort return registry addon port
+func RegistryPort(cc *config.ClusterConfig) (int, error) {
+	if driver.IsKIC(cc.Driver) {
+		registryPort, err := kic.GetRegistryAddonPort(cc)
+		if err != nil {
+			errors.Wrap(err, "failed to get Registry port")
+		}
+		return registryPort, nil
 	}
-	return string(values.Port), nil
+	return constants.RegistryAddonPort, nil
 }
 
 
