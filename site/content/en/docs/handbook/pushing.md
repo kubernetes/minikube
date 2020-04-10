@@ -55,18 +55,18 @@ docker build -t my_image .
 
 To verify your terminal is using minikuber's docker-env you can check the value of the environment variable MINIKUBE_ACTIVE_DOCKERD to reflect the cluster name.
 
-{{% pageinfo %}}
+{{% pageinfo color="info" %}}
 Tip 1: 
 Remember to turn off the `imagePullPolicy:Always` (use `imagePullPolicy:IfNotPresent` or `imagePullPolicy:Never`) in your yaml file.otherwise Kubernetes won't use your locally build image and it will pull from the network.
 {{% /pageinfo %}}
 
-{{% pageinfo %}}
+{{% pageinfo color="info" %}}
 Tip 2: 
 Evaluating the docker-env is only valid for the current terminal.
 and by closing the terminal, you will go back to using your own system's docker daemon.
 {{% /pageinfo %}}
 
-{{% pageinfo %}}
+{{% pageinfo color="info" %}}
 Tip 3:
 In container-based drivers such as Docker or Podman, you will need to re-do docker-env each time you restart your minikube cluster.
 {{% /pageinfo %}}
@@ -86,18 +86,19 @@ minikube cache add alpine:latest
 
 The add command will store the requested image to `$MINIKUBE_HOME/cache/images`, and load it into the minikube cluster's container runtime environment automatically.
 
+{{% pageinfo color="info" %}}
+Tip 1 :
+If your image changes after your cached it, you need to do 'cache reload'.
+{{% /pageinfo %}}
+
+
 minikube refreshes the cache images on each start. however to reload all the cached images on demand run this command :
 ```shell
 minikube cache reload
 ```
 
-{{% pageinfo %}}
-Tip1 :
-If your image changes after your cached it, you need to do 'cache reload' for minikube to pick up the image.
-{{% /pageinfo %}}
-
-{{% pageinfo %}}
-Tip2 :
+{{% pageinfo color="info" %}}
+Tip 2 :
 if you have multiple cluster, cache command will load the image for all of them.
 {{% /pageinfo %}}
 
