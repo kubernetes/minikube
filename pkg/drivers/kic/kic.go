@@ -381,7 +381,7 @@ func killAPIServerProc(runner command.Runner) error {
 	if err == nil { // this means we might have a running kube-apiserver
 		pid, err := strconv.Atoi(rr.Stdout.String())
 		if err == nil { // this means we have a valid pid
-			glog.Warrningf("Found a kube-apiserver running with pid %d, will try killing the proc", pid)
+			glog.Warningf("Found a kube-apiserver running with pid %d, will try to kill the proc", pid)
 			if _, err = runner.RunCmd(exec.Command("pkill", "-9", string(pid))); err != nil {
 				return errors.Wrap(err, "kill")
 			}
