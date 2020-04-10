@@ -5,6 +5,7 @@ $mk-dark: #306EE5;
 $mk-medium: #1FC3CF;
 $mk-midlight: #e8f3f3;
 $mk-light:#C7EAEC;
+$mk-verylight:#f3f9fa;
 $mk-verydark: darken($mk-dark, 15%);
 
 // bootstrap colors
@@ -180,7 +181,7 @@ section.td-box--height-auto {
 pre {
     max-width: 99% !important;
     font-family: 'Inconsolata', monospace !important;
-    font-size: 12px !important;
+    font-size: 13px !important;
 }
 
 div.td-content {
