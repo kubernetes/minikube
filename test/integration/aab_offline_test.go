@@ -53,7 +53,7 @@ func TestOffline(t *testing.T) {
 				rr, err := Run(t, c)
 				if err != nil {
 					// Fatal so that we may collect logs before stop/delete steps
-					t.Fatalf("%s failed: %v", rr.Args, err)
+					t.Fatalf("%s failed: %v", rr.Command(), err)
 				}
 			})
 		}

@@ -18,6 +18,8 @@ package translate
 
 import (
 	"encoding/json"
+	"fmt"
+	"path"
 	"strings"
 
 	"github.com/cloudfoundry-attic/jibber_jabber"
@@ -73,11 +75,23 @@ func DetermineLocale() {
 	}
 
 	// Load translations for preferred language into memory.
-	translationFile := "translations/" + preferredLanguage.String() + ".json"
+	p := preferredLanguage.String()
+	translationFile := path.Join("translations", fmt.Sprintf("%s.json", p))
 	t, err := Asset(translationFile)
 	if err != nil {
-		glog.Infof("Failed to load translation file for %s: %v", preferredLanguage.String(), err)
-		return
+		// Attempt to find a more broad locale, e.g. fr instead of fr-FR.
+		if strings.Contains(p, "-") {
+			p = strings.Split(p, "-")[0]
+			translationFile := path.Join("translations", fmt.Sprintf("%s.json", p))
+			t, err = Asset(translationFile)
+			if err != nil {
+				glog.Infof("Failed to load translation file for %s: %v", p, err)
+				return
+			}
+		} else {
+			glog.Infof("Failed to load translation file for %s: %v", preferredLanguage.String(), err)
+			return
+		}
 	}
 
 	err = json.Unmarshal(t, &Translations)

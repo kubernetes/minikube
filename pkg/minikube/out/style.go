@@ -60,7 +60,6 @@ var styles = map[StyleEnum]style{
 	Running:       {Prefix: "🏃  "},
 	Provisioning:  {Prefix: "🌱  "},
 	Restarting:    {Prefix: "🔄  "},
-	Reconfiguring: {Prefix: "📯  "},
 	Stopping:      {Prefix: "✋  "},
 	Stopped:       {Prefix: "🛑  "},
 	Warning:       {Prefix: "❗  ", LowPrefix: lowWarning},
@@ -69,6 +68,7 @@ var styles = map[StyleEnum]style{
 	Launch:        {Prefix: "🚀  "},
 	Sad:           {Prefix: "😿  "},
 	ThumbsUp:      {Prefix: "👍  "},
+	ThumbsDown:    {Prefix: "👎  "},
 	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	Command:       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	LogEntry:      {Prefix: "    "},                         // Indent
@@ -92,7 +92,7 @@ var styles = map[StyleEnum]style{
 	Caching:          {Prefix: "🤹  "},
 	StartingVM:       {Prefix: "🔥  "},
 	StartingNone:     {Prefix: "🤹  "},
-	Provisioner:      {Prefix: "ℹ️   "},
+	Provisioner:      {Prefix: "ℹ️  "},
 	Resetting:        {Prefix: "🔄  "},
 	DeletingHost:     {Prefix: "🔥  "},
 	Copying:          {Prefix: "✨  "},
@@ -117,7 +117,7 @@ var styles = map[StyleEnum]style{
 	Unmount:          {Prefix: "🔥  "},
 	MountOptions:     {Prefix: "💾  "},
 	Fileserver:       {Prefix: "🚀  ", OmitNewline: true},
-	DryRun:           {Prefix: "🏜️   "},
+	DryRun:           {Prefix: "🌵  "},
 	AddonEnable:      {Prefix: "🌟  "},
 	AddonDisable:     {Prefix: "🌑  "},
 }
@@ -162,7 +162,8 @@ func applyStyle(style StyleEnum, useColor bool, format string) string {
 	return applyPrefix(s.Prefix, format)
 }
 
-func applyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...V) string {
+// ApplyTemplateFormatting applies formatting to the provided template
+func ApplyTemplateFormatting(style StyleEnum, useColor bool, format string, a ...V) string {
 	if a == nil {
 		a = []V{{}}
 	}

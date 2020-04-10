@@ -19,6 +19,7 @@ package driver
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -128,6 +129,12 @@ func NeedsRoot(name string) bool {
 	return name == None || name == Podman
 }
 
+// NeedsPortForward returns true if driver is unable provide direct IP connectivity
+func NeedsPortForward(name string) bool {
+	// Docker for Desktop
+	return IsKIC(name) && (runtime.GOOS == "darwin" || runtime.GOOS == "windows")
+}
+
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
 func HasResourceLimits(name string) bool {
 	return !(name == None || name == Podman)
@@ -164,8 +171,8 @@ func FlagDefaults(name string) FlagHints {
 }
 
 // Choices returns a list of drivers which are possible on this system
-func Choices() []registry.DriverState {
-	options := registry.Available()
+func Choices(vm bool) []registry.DriverState {
+	options := registry.Available(vm)
 
 	// Descending priority for predictability and appearance
 	sort.Slice(options, func(i, j int) bool {
@@ -174,8 +181,8 @@ func Choices() []registry.DriverState {
 	return options
 }
 
-// Suggest returns a suggested driver from a set of options
-func Suggest(options []registry.DriverState) (registry.DriverState, []registry.DriverState) {
+// Suggest returns a suggested driver, alternate drivers, and rejected drivers
+func Suggest(options []registry.DriverState) (registry.DriverState, []registry.DriverState, []registry.DriverState) {
 	pick := registry.DriverState{}
 	for _, ds := range options {
 		if !ds.State.Installed {
@@ -198,17 +205,29 @@ func Suggest(options []registry.DriverState) (registry.DriverState, []registry.D
 	}
 
 	alternates := []registry.DriverState{}
+	rejects := []registry.DriverState{}
 	for _, ds := range options {
 		if ds != pick {
-			if !ds.State.Healthy || !ds.State.Installed {
+			if !ds.State.Installed {
+				ds.Rejection = fmt.Sprintf("Not installed: %v", ds.State.Error)
+				rejects = append(rejects, ds)
 				continue
 			}
+
+			if !ds.State.Healthy {
+				ds.Rejection = fmt.Sprintf("Not healthy: %v", ds.State.Error)
+				rejects = append(rejects, ds)
+				continue
+			}
+
+			ds.Rejection = fmt.Sprintf("%s is preferred", pick.Name)
 			alternates = append(alternates, ds)
 		}
 	}
 	glog.Infof("Picked: %+v", pick)
 	glog.Infof("Alternatives: %+v", alternates)
-	return pick, alternates
+	glog.Infof("Rejects: %+v", rejects)
+	return pick, alternates, rejects
 }
 
 // Status returns the status of a driver
@@ -234,13 +253,5 @@ func MachineName(cc config.ClusterConfig, n config.Node) string {
 	if len(cc.Nodes) == 1 || n.ControlPlane {
 		return cc.Name
 	}
-	return fmt.Sprintf("%s---%s", cc.Name, n.Name)
-}
-
-// ClusterNameFromMachine retrieves the cluster name embedded in the machine name
-func ClusterNameFromMachine(name string) (string, string) {
-	if strings.Contains(name, "---") {
-		return strings.Split(name, "---")[0], strings.Split(name, "---")[1]
-	}
-	return name, name
+	return fmt.Sprintf("%s-%s", cc.Name, n.Name)
 }

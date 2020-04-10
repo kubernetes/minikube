@@ -53,11 +53,17 @@ sudo systemctl is-active --quiet kubelet \
 
  # conntrack is required for kubernetes 1.18 and higher for none driver
 if ! conntrack --version &>/dev/null; then
-  echo "WARNING: No contrack is not installed"
+  echo "WARNING: contrack is not installed. will try to install."
   sudo apt-get update -qq
   sudo apt-get -qq -y install conntrack
 fi
 
+ # socat is required for kubectl port forward which is used in some tests such as validateHelmTillerAddon
+if ! which socat &>/dev/null; then
+  echo "WARNING: socat is not installed. will try to install."
+  sudo apt-get update -qq
+  sudo apt-get -qq -y install socat
+fi
 
 mkdir -p cron && gsutil -m rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 sudo install cron/cleanup_and_reboot_Linux.sh /etc/cron.hourly/cleanup_and_reboot || echo "FAILED TO INSTALL CLEANUP"

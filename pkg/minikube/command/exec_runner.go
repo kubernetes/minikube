@@ -86,35 +86,31 @@ func (*execRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 
 // Copy copies a file and its permissions
 func (*execRunner) Copy(f assets.CopyableFile) error {
-	targetPath := path.Join(f.GetTargetDir(), f.GetTargetName())
-	if _, err := os.Stat(targetPath); err == nil {
-		if err := os.Remove(targetPath); err != nil {
-			return errors.Wrapf(err, "error removing file %s", targetPath)
+	dst := path.Join(f.GetTargetDir(), f.GetTargetName())
+	if _, err := os.Stat(dst); err == nil {
+		glog.Infof("found %s, removing ...", dst)
+		if err := os.Remove(dst); err != nil {
+			return errors.Wrapf(err, "error removing file %s", dst)
 		}
+	}
 
+	src := f.GetSourcePath()
+	glog.Infof("cp: %s --> %s (%d bytes)", src, dst, f.GetLength())
+	if f.GetLength() == 0 {
+		glog.Warningf("0 byte asset: %+v", f)
 	}
-	target, err := os.Create(targetPath)
-	if err != nil {
-		return errors.Wrapf(err, "error creating file at %s", targetPath)
-	}
+
 	perms, err := strconv.ParseInt(f.GetPermissions(), 8, 0)
 	if err != nil {
 		return errors.Wrapf(err, "error converting permissions %s to integer", f.GetPermissions())
 	}
-	if err := os.Chmod(targetPath, os.FileMode(perms)); err != nil {
-		return errors.Wrapf(err, "error changing file permissions for %s", targetPath)
-	}
 
-	if _, err = io.Copy(target, f); err != nil {
-		return errors.Wrapf(err, `error copying file %s to target location:
-do you have the correct permissions?`,
-			targetPath)
-	}
-	return target.Close()
+	return writeFile(dst, f, os.FileMode(perms))
 }
 
 // Remove removes a file
 func (*execRunner) Remove(f assets.CopyableFile) error {
-	targetPath := filepath.Join(f.GetTargetDir(), f.GetTargetName())
-	return os.Remove(targetPath)
+	dst := filepath.Join(f.GetTargetDir(), f.GetTargetName())
+	glog.Infof("rm: %s", dst)
+	return os.Remove(dst)
 }

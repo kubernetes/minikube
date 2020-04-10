@@ -208,7 +208,13 @@ func deleteProfileContainersAndVolumes(name string) {
 
 func deleteProfile(profile *config.Profile) error {
 	viper.Set(config.ProfileName, profile.Name)
-	deleteProfileContainersAndVolumes(profile.Name)
+	if profile.Config != nil {
+		// if driver is oci driver, delete containers and volumes
+		if driver.IsKIC(profile.Config.Driver) {
+			out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
+			deleteProfileContainersAndVolumes(profile.Name)
+		}
+	}
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -236,7 +242,7 @@ func deleteProfile(profile *config.Profile) error {
 	}
 
 	if err := killMountProcess(); err != nil {
-		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
+		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
 	deleteHosts(api, cc)
@@ -264,7 +270,7 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 				case mcnerror.ErrHostDoesNotExist:
 					glog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
 				default:
-					out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
+					out.FailureT("Failed to delete cluster: {{.error}}", out.V{"error": err})
 					out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
 				}
 			}

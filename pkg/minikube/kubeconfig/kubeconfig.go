@@ -19,7 +19,6 @@ package kubeconfig
 import (
 	"fmt"
 	"io/ioutil"
-	"net"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -35,51 +34,27 @@ import (
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-// IsClusterInConfig verifies the ip stored in kubeconfig.
-func IsClusterInConfig(ip net.IP, clusterName string, configPath ...string) (bool, error) {
+// VerifyEndpoint verifies the IP:port stored in kubeconfig.
+func VerifyEndpoint(contextName string, hostname string, port int, configPath ...string) error {
 	path := PathFromEnv()
 	if configPath != nil {
 		path = configPath[0]
 	}
-	if ip == nil {
-		return false, fmt.Errorf("error, empty ip passed")
-	}
-	kip, err := extractIP(clusterName, path)
-	if err != nil {
-		return false, err
-	}
-	if kip.Equal(ip) {
-		return true, nil
-	}
-	// Kubeconfig IP misconfigured
-	return false, nil
 
-}
+	if hostname == "" {
+		return fmt.Errorf("empty IP")
+	}
 
-// Port returns the Port number stored for minikube in the kubeconfig specified
-func Port(clusterName string, configPath ...string) (int, error) {
-	path := PathFromEnv()
-	if configPath != nil {
-		path = configPath[0]
-	}
-	cfg, err := readOrNew(path)
+	gotHostname, gotPort, err := Endpoint(contextName, path)
 	if err != nil {
-		return 0, errors.Wrap(err, "Error getting kubeconfig status")
+		return errors.Wrap(err, "extract IP")
 	}
-	cluster, ok := cfg.Clusters[clusterName]
-	if !ok {
-		return 0, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
+
+	if hostname != gotHostname || port != gotPort {
+		return fmt.Errorf("got: %s:%d, want: %s:%d", gotHostname, gotPort, hostname, port)
 	}
-	kurl, err := url.Parse(cluster.Server)
-	if err != nil {
-		return constants.APIServerPort, nil
-	}
-	_, kport, err := net.SplitHostPort(kurl.Host)
-	if err != nil {
-		return constants.APIServerPort, nil
-	}
-	port, err := strconv.Atoi(kport)
-	return port, err
+
+	return nil
 }
 
 // PathFromEnv gets the path to the first kubeconfig
@@ -98,65 +73,58 @@ func PathFromEnv() string {
 	return constants.KubeconfigPath
 }
 
-// extractIP returns the IP address stored for minikube in the kubeconfig specified
-func extractIP(machineName string, configPath ...string) (net.IP, error) {
+// Endpoint returns the IP:port address stored for minikube in the kubeconfig specified
+func Endpoint(contextName string, configPath ...string) (string, int, error) {
 	path := PathFromEnv()
 	if configPath != nil {
 		path = configPath[0]
 	}
 	apiCfg, err := readOrNew(path)
 	if err != nil {
-		return nil, errors.Wrap(err, "Error getting kubeconfig status")
+		return "", 0, errors.Wrap(err, "read")
 	}
-	cluster, ok := apiCfg.Clusters[machineName]
+	cluster, ok := apiCfg.Clusters[contextName]
 	if !ok {
-		return nil, errors.Errorf("Kubeconfig does not have a record of the machine cluster")
+		return "", 0, errors.Errorf("%q does not appear in %s", contextName, path)
 	}
-	kurl, err := url.Parse(cluster.Server)
+
+	glog.Infof("found %q server: %q", contextName, cluster.Server)
+	u, err := url.Parse(cluster.Server)
 	if err != nil {
-		return net.ParseIP(cluster.Server), nil
+		return "", 0, errors.Wrap(err, "url parse")
 	}
-	kip, _, err := net.SplitHostPort(kurl.Host)
+
+	port, err := strconv.Atoi(u.Port())
 	if err != nil {
-		return net.ParseIP(kurl.Host), nil
+		return "", 0, errors.Wrap(err, "atoi")
 	}
-	ip := net.ParseIP(kip)
-	return ip, nil
+
+	return u.Hostname(), port, nil
 }
 
-// UpdateIP overwrites the IP stored in kubeconfig with the provided IP.
-func UpdateIP(ip net.IP, machineName string, configPath ...string) (bool, error) {
-	path := PathFromEnv()
-	if configPath != nil {
-		path = configPath[0]
+// UpdateEndpoint overwrites the IP stored in kubeconfig with the provided IP.
+func UpdateEndpoint(contextName string, hostname string, port int, path string) (bool, error) {
+	if hostname == "" {
+		return false, fmt.Errorf("empty ip")
 	}
 
-	if ip == nil {
-		return false, fmt.Errorf("error, empty ip passed")
-	}
-
-	kip, err := extractIP(machineName, path)
-	if err != nil {
-		return false, err
-	}
-	if kip.Equal(ip) {
+	err := VerifyEndpoint(contextName, hostname, port, path)
+	if err == nil {
 		return false, nil
 	}
-	kport, err := Port(machineName, path)
-	if err != nil {
-		return false, err
-	}
+	glog.Infof("verify returned: %v", err)
+
 	cfg, err := readOrNew(path)
 	if err != nil {
-		return false, errors.Wrap(err, "Error getting kubeconfig status")
+		return false, errors.Wrap(err, "read")
 	}
-	// Safe to lookup server because if field non-existent getIPFromKubeconfig would have given an error
-	cfg.Clusters[machineName].Server = "https://" + ip.String() + ":" + strconv.Itoa(kport)
+
+	cfg.Clusters[contextName].Server = "https://" + hostname + ":" + strconv.Itoa(port)
 	err = writeToFile(cfg, path)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "write")
 	}
-	// Kubeconfig IP reconfigured
+
 	return true, nil
 }
 

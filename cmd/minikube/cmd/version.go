@@ -17,9 +17,18 @@ limitations under the License.
 package cmd
 
 import (
+	"encoding/json"
+
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v2"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/version"
+)
+
+var (
+	versionOutput string
+	shortVersion  bool
 )
 
 var versionCmd = &cobra.Command{
@@ -27,10 +36,37 @@ var versionCmd = &cobra.Command{
 	Short: "Print the version of minikube",
 	Long:  `Print the version of minikube.`,
 	Run: func(command *cobra.Command, args []string) {
-		out.Ln("minikube version: %v", version.GetVersion())
+		minikubeVersion := version.GetVersion()
 		gitCommitID := version.GetGitCommitID()
-		if gitCommitID != "" {
-			out.Ln("commit: %v", gitCommitID)
+		data := map[string]string{
+			"minikubeVersion": minikubeVersion,
+			"commit":          gitCommitID,
+		}
+		switch versionOutput {
+		case "":
+			out.Ln("minikube version: %v", minikubeVersion)
+			if !shortVersion && gitCommitID != "" {
+				out.Ln("commit: %v", gitCommitID)
+			}
+		case "json":
+			json, err := json.Marshal(data)
+			if err != nil {
+				exit.WithError("version json failure", err)
+			}
+			out.Ln(string(json))
+		case "yaml":
+			yaml, err := yaml.Marshal(data)
+			if err != nil {
+				exit.WithError("version yaml failure", err)
+			}
+			out.Ln(string(yaml))
+		default:
+			exit.WithCodeT(exit.BadUsage, "error: --output must be 'yaml' or 'json'")
 		}
 	},
+}
+
+func init() {
+	versionCmd.Flags().StringVarP(&versionOutput, "output", "o", "", "One of 'yaml' or 'json'.")
+	versionCmd.Flags().BoolVar(&shortVersion, "short", false, "Print just the version number.")
 }

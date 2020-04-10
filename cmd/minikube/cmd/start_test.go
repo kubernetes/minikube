@@ -26,7 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-func TestGetKuberneterVersion(t *testing.T) {
+func TestGetKubernetesVersion(t *testing.T) {
 	var tests = []struct {
 		description     string
 		expectedVersion string
@@ -54,6 +54,16 @@ func TestGetKuberneterVersion(t *testing.T) {
 			expectedVersion: "v1.16.0",
 			paramVersion:    "v1.16.0",
 			cfg:             &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
+		},
+		{
+			description:     "kubernetes-version given as 'stable', no config",
+			expectedVersion: constants.DefaultKubernetesVersion,
+			paramVersion:    "stable",
+		},
+		{
+			description:     "kubernetes-version given as 'latest', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "latest",
 		},
 	}
 
@@ -104,7 +114,7 @@ func TestMirrorCountry(t *testing.T) {
 			cmd := &cobra.Command{}
 			viper.SetDefault(imageRepository, test.imageRepository)
 			viper.SetDefault(imageMirrorCountry, test.mirrorCountry)
-			config, _, err := generateCfgFromFlags(cmd, k8sVersion, "none")
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}
@@ -156,7 +166,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 			if err := os.Setenv("HTTP_PROXY", test.proxy); err != nil {
 				t.Fatalf("Unexpected error setting HTTP_PROXY: %v", err)
 			}
-			config, _, err := generateCfgFromFlags(cmd, k8sVersion, "none")
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}

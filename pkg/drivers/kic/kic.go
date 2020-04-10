@@ -17,12 +17,12 @@ limitations under the License.
 package kic
 
 import (
-	"context"
 	"fmt"
 	"net"
 	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -38,7 +38,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
-	"k8s.io/minikube/pkg/minikube/kubelet"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -113,6 +113,28 @@ func (d *Driver) Create() error {
 		}
 	}
 
+	if err := oci.PrepareContainerNode(params); err != nil {
+		return errors.Wrap(err, "setting up container node")
+	}
+
+	var waitForPreload sync.WaitGroup
+	waitForPreload.Add(1)
+	go func() {
+		defer waitForPreload.Done()
+		// If preload doesn't exist, don't bother extracting tarball to volume
+		if !download.PreloadExists(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime) {
+			return
+		}
+		t := time.Now()
+		glog.Infof("Starting extracting preloaded images to volume")
+		// Extract preloaded images to container
+		if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion, d.NodeConfig.ContainerRuntime), params.Name, BaseImage); err != nil {
+			glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
+		} else {
+			glog.Infof("duration metric: took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
+		}
+	}()
+
 	if err := oci.CreateContainerNode(params); err != nil {
 		return errors.Wrap(err, "create kic node")
 	}
@@ -121,15 +143,7 @@ func (d *Driver) Create() error {
 		return errors.Wrap(err, "prepare kic ssh")
 	}
 
-	t := time.Now()
-	glog.Infof("Starting extracting preloaded images to volume")
-	// Extract preloaded images to container
-	if err := oci.ExtractTarballToVolume(download.TarballPath(d.NodeConfig.KubernetesVersion), params.Name, BaseImage); err != nil {
-		glog.Infof("Unable to extract preloaded tarball to volume: %v", err)
-	} else {
-		glog.Infof("Took %f seconds to extract preloaded images to volume", time.Since(t).Seconds())
-	}
-
+	waitForPreload.Wait()
 	return nil
 }
 
@@ -216,20 +230,12 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	// allow no more than 2 seconds for this. when this takes long this means deadline passed
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
-	out, err := cmd.CombinedOutput()
-	if ctx.Err() == context.DeadlineExceeded {
-		glog.Errorf("GetState for %s took longer than normal. Restarting your %s daemon might fix this issue.", d.MachineName, d.OCIBinary)
-		return state.Error, fmt.Errorf("inspect %s timeout", d.MachineName)
-	}
-	o := strings.TrimSpace(string(out))
+	out, err := oci.WarnIfSlow(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
 	if err != nil {
-		return state.Error, errors.Wrapf(err, "%s: %s", strings.Join(cmd.Args, " "), o)
+		return state.Error, err
 	}
+
+	o := strings.TrimSpace(string(out))
 	switch o {
 	case "running":
 		return state.Running, nil
@@ -250,7 +256,7 @@ func (d *Driver) GetState() (state.State, error) {
 func (d *Driver) Kill() error {
 	// on init this doesn't get filled when called from cmd
 	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
-	if err := kubelet.ForceStop(d.exec); err != nil {
+	if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 		glog.Warningf("couldn't force stop kubelet. will continue with kill anyways: %v", err)
 	}
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "kill", d.MachineName)
@@ -323,9 +329,9 @@ func (d *Driver) Stop() error {
 	d.exec = command.NewKICRunner(d.MachineName, d.OCIBinary)
 	// docker does not send right SIG for systemd to know to stop the systemd.
 	// to avoid bind address be taken on an upgrade. more info https://github.com/kubernetes/minikube/issues/7171
-	if err := kubelet.Stop(d.exec); err != nil {
+	if err := sysinit.New(d.exec).Stop("kubelet"); err != nil {
 		glog.Warningf("couldn't stop kubelet. will continue with stop anyways: %v", err)
-		if err := kubelet.ForceStop(d.exec); err != nil {
+		if err := sysinit.New(d.exec).ForceStop("kubelet"); err != nil {
 			glog.Warningf("couldn't force stop kubelet. will continue with stop anyways: %v", err)
 		}
 	}
@@ -341,11 +347,18 @@ func (d *Driver) Stop() error {
 		}
 		if len(containers) > 0 {
 			if err := runtime.StopContainers(containers); err != nil {
-				glog.Errorf("unable to stop containers : %v", err)
+				glog.Infof("unable to stop containers : %v", err)
+			}
+			if err := runtime.KillContainers(containers); err != nil {
+				glog.Errorf("unable to kill containers : %v", err)
 			}
 		}
 		glog.Infof("successfully stopped kubernetes!")
 
+	}
+
+	if err := killAPIServerProc(d.exec); err != nil {
+		glog.Warningf("couldn't stop kube-apiserver proc: %v", err)
 	}
 
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
@@ -358,4 +371,21 @@ func (d *Driver) Stop() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
+}
+
+// killAPIServerProc will kill an api server proc if it exists
+// to ensure this never happens https://github.com/kubernetes/minikube/issues/7521
+func killAPIServerProc(runner command.Runner) error {
+	// first check if it exists
+	rr, err := runner.RunCmd(exec.Command("pgrep", "kube-apiserver"))
+	if err == nil { // this means we might have a running kube-apiserver
+		pid, err := strconv.Atoi(rr.Stdout.String())
+		if err == nil { // this means we have a valid pid
+			glog.Warningf("Found a kube-apiserver running with pid %d, will try to kill the proc", pid)
+			if _, err = runner.RunCmd(exec.Command("pkill", "-9", string(pid))); err != nil {
+				return errors.Wrap(err, "kill")
+			}
+		}
+	}
+	return nil
 }

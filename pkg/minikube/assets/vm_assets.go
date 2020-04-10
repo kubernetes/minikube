@@ -29,11 +29,15 @@ import (
 	"github.com/pkg/errors"
 )
 
+// MemorySource is the source name used for in-memory copies
+const MemorySource = "memory"
+
 // CopyableFile is something that can be copied
 type CopyableFile interface {
 	io.Reader
 	GetLength() int
-	GetAssetName() string
+	GetSourcePath() string
+
 	GetTargetDir() string
 	GetTargetName() string
 	GetPermissions() string
@@ -43,15 +47,16 @@ type CopyableFile interface {
 
 // BaseAsset is the base asset class
 type BaseAsset struct {
-	AssetName   string
+	SourcePath  string
 	TargetDir   string
 	TargetName  string
 	Permissions string
+	Source      string
 }
 
-// GetAssetName returns asset name
-func (b *BaseAsset) GetAssetName() string {
-	return b.AssetName
+// GetSourcePath returns asset name
+func (b *BaseAsset) GetSourcePath() string {
+	return b.SourcePath
 }
 
 // GetTargetDir returns target dir
@@ -99,7 +104,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 	r := io.NewSectionReader(f, 0, info.Size())
 	return &FileAsset{
 		BaseAsset: BaseAsset{
-			AssetName:   src,
+			SourcePath:  src,
 			TargetDir:   targetDir,
 			TargetName:  targetName,
 			Permissions: permissions,
@@ -110,7 +115,7 @@ func NewFileAsset(src, targetDir, targetName, permissions string) (*FileAsset, e
 
 // GetLength returns the file length, or 0 (on error)
 func (f *FileAsset) GetLength() (flen int) {
-	fi, err := os.Stat(f.AssetName)
+	fi, err := os.Stat(f.SourcePath)
 	if err != nil {
 		return 0
 	}
@@ -119,7 +124,7 @@ func (f *FileAsset) GetLength() (flen int) {
 
 // GetModTime returns modification time of the file
 func (f *FileAsset) GetModTime() (time.Time, error) {
-	fi, err := os.Stat(f.AssetName)
+	fi, err := os.Stat(f.SourcePath)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -168,6 +173,7 @@ func NewMemoryAsset(d []byte, targetDir, targetName, permissions string) *Memory
 			TargetDir:   targetDir,
 			TargetName:  targetName,
 			Permissions: permissions,
+			SourcePath:  MemorySource,
 		},
 		reader: bytes.NewReader(d),
 		length: len(d),
@@ -195,7 +201,7 @@ func MustBinAsset(name, targetDir, targetName, permissions string, isTemplate bo
 func NewBinAsset(name, targetDir, targetName, permissions string, isTemplate bool) (*BinAsset, error) {
 	m := &BinAsset{
 		BaseAsset: BaseAsset{
-			AssetName:   name,
+			SourcePath:  name,
 			TargetDir:   targetDir,
 			TargetName:  targetName,
 			Permissions: permissions,
@@ -218,13 +224,13 @@ func defaultValue(defValue string, val interface{}) string {
 }
 
 func (m *BinAsset) loadData(isTemplate bool) error {
-	contents, err := Asset(m.AssetName)
+	contents, err := Asset(m.SourcePath)
 	if err != nil {
 		return err
 	}
 
 	if isTemplate {
-		tpl, err := template.New(m.AssetName).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
+		tpl, err := template.New(m.SourcePath).Funcs(template.FuncMap{"default": defaultValue}).Parse(string(contents))
 		if err != nil {
 			return err
 		}
@@ -234,9 +240,9 @@ func (m *BinAsset) loadData(isTemplate bool) error {
 
 	m.length = len(contents)
 	m.reader = bytes.NewReader(contents)
-	glog.V(1).Infof("Created asset %s with %d bytes", m.AssetName, m.length)
+	glog.V(1).Infof("Created asset %s with %d bytes", m.SourcePath, m.length)
 	if m.length == 0 {
-		return fmt.Errorf("%s is an empty asset", m.AssetName)
+		return fmt.Errorf("%s is an empty asset", m.SourcePath)
 	}
 	return nil
 }
@@ -249,7 +255,7 @@ func (m *BinAsset) IsTemplate() bool {
 // Evaluate evaluates the template to a new asset
 func (m *BinAsset) Evaluate(data interface{}) (*MemoryAsset, error) {
 	if !m.IsTemplate() {
-		return nil, errors.Errorf("the asset %s is not a template", m.AssetName)
+		return nil, errors.Errorf("the asset %s is not a template", m.SourcePath)
 
 	}
 

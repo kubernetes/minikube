@@ -43,14 +43,14 @@ var sshCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		cname := ClusterFlagValue()
 		co := mustload.Running(cname)
-		if co.CPHost.DriverName == driver.None {
+		if co.CP.Host.DriverName == driver.None {
 			exit.UsageT("'none' driver does not support 'minikube ssh' command")
 		}
 
 		var err error
 		var n *config.Node
 		if nodeName == "" {
-			n = co.CPNode
+			n = co.CP.Node
 		} else {
 			n, _, err = node.Retrieve(co.Config, nodeName)
 			if err != nil {

@@ -31,7 +31,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/kubeconfig"
@@ -107,7 +107,7 @@ var statusCmd = &cobra.Command{
 		for _, n := range cc.Nodes {
 			glog.Infof("checking status of %s ...", n.Name)
 			machineName := driver.MachineName(*cc, n)
-			st, err = status(api, machineName, n.ControlPlane)
+			st, err = status(api, *cc, n)
 			glog.Infof("%s status: %+v", machineName, st)
 
 			if err != nil {
@@ -150,12 +150,13 @@ func exitCode(st *Status) int {
 	return c
 }
 
-func status(api libmachine.API, name string, controlPlane bool) (*Status, error) {
+func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status, error) {
 
-	profile, node := driver.ClusterNameFromMachine(name)
+	controlPlane := n.ControlPlane
+	name := driver.MachineName(cc, n)
 
 	st := &Status{
-		Name:       node,
+		Name:       name,
 		Host:       Nonexistent,
 		APIServer:  Nonexistent,
 		Kubelet:    Nonexistent,
@@ -185,31 +186,16 @@ func status(api libmachine.API, name string, controlPlane bool) (*Status, error)
 	}
 
 	// We have a fully operational host, now we can check for details
-	ip, err := cluster.GetHostDriverIP(api, name)
-	if err != nil {
-		glog.Errorln("Error host driver ip status:", err)
-		st.APIServer = state.Error.String()
+	if _, err := cluster.GetHostDriverIP(api, name); err != nil {
+		glog.Errorf("failed to get driver ip: %v", err)
+		st.Host = state.Error.String()
 		return st, err
 	}
 
-	port, err := kubeconfig.Port(name)
-	if err != nil {
-		glog.Warningf("unable to get port: %v", err)
-		port = constants.APIServerPort
-	}
-
-	st.Kubeconfig = Misconfigured
+	st.Kubeconfig = Configured
 	if !controlPlane {
 		st.Kubeconfig = Irrelevant
 		st.APIServer = Irrelevant
-	}
-
-	if st.Kubeconfig != Irrelevant {
-		ok, err := kubeconfig.IsClusterInConfig(ip, profile)
-		glog.Infof("%s is in kubeconfig at ip %s: %v (err=%v)", name, ip, ok, err)
-		if ok {
-			st.Kubeconfig = Configured
-		}
 	}
 
 	host, err := machine.LoadHost(api, name)
@@ -222,26 +208,35 @@ func status(api libmachine.API, name string, controlPlane bool) (*Status, error)
 		return st, err
 	}
 
-	stk, err := kverify.KubeletStatus(cr)
-	glog.Infof("%s kubelet status = %s (err=%v)", name, stk, err)
+	stk := kverify.KubeletStatus(cr)
+	glog.Infof("%s kubelet status = %s", name, stk)
+	st.Kubelet = stk.String()
 
-	if err != nil {
-		glog.Warningf("kubelet err: %v", err)
-		st.Kubelet = state.Error.String()
-	} else {
-		st.Kubelet = stk.String()
+	// Early exit for regular nodes
+	if !controlPlane {
+		return st, nil
 	}
 
-	if st.APIServer != Irrelevant {
-		sta, err := kverify.APIServerStatus(cr, ip, port)
-		glog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
-
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cc, &n, host.DriverName)
+	if err != nil {
+		glog.Errorf("forwarded endpoint: %v", err)
+		st.Kubeconfig = Misconfigured
+	} else {
+		err := kubeconfig.VerifyEndpoint(cc.Name, hostname, port)
 		if err != nil {
-			glog.Errorln("Error apiserver status:", err)
-			st.APIServer = state.Error.String()
-		} else {
-			st.APIServer = sta.String()
+			glog.Errorf("kubeconfig endpoint: %v", err)
+			st.Kubeconfig = Misconfigured
 		}
+	}
+
+	sta, err := kverify.APIServerStatus(cr, hostname, port)
+	glog.Infof("%s apiserver status = %s (err=%v)", name, stk, err)
+
+	if err != nil {
+		glog.Errorln("Error apiserver status:", err)
+		st.APIServer = state.Error.String()
+	} else {
+		st.APIServer = sta.String()
 	}
 
 	return st, nil

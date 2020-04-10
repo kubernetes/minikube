@@ -60,10 +60,12 @@ then
     echo "mode: count" >"${COVERAGE_PATH}"
     pkgs=$(go list -f '{{ if .TestGoFiles }}{{.ImportPath}}{{end}}' ./cmd/... ./pkg/... | xargs)
     go test \
+        -v -ldflags="$MINIKUBE_LDFLAGS" \
         -tags "container_image_ostree_stub containers_image_openpgp" \
         -covermode=count \
         -coverprofile="${cov_tmp}" \
-        ${pkgs} && echo ok || ((exitcode += 32))
+        ${pkgs} \
+        && echo ok || ((exitcode += 32))
     tail -n +2 "${cov_tmp}" >>"${COVERAGE_PATH}"
 fi
 

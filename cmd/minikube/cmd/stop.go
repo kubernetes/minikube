@@ -59,7 +59,7 @@ func runStop(cmd *cobra.Command, args []string) {
 	}
 
 	if err := killMountProcess(); err != nil {
-		out.T(out.Warning, "Unable to kill mount process: {{.error}}", out.V{"error": err})
+		out.WarningT("Unable to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
 	if err := kubeconfig.UnsetCurrentContext(cname, kubeconfig.PathFromEnv()); err != nil {
@@ -69,8 +69,9 @@ func runStop(cmd *cobra.Command, args []string) {
 
 func stop(api libmachine.API, cluster config.ClusterConfig, n config.Node) bool {
 	nonexistent := false
-	stop := func() (err error) {
-		machineName := driver.MachineName(cluster, n)
+	machineName := driver.MachineName(cluster, n)
+
+	tryStop := func() (err error) {
 		err = machine.StopHost(api, machineName)
 		if err == nil {
 			return nil
@@ -87,7 +88,7 @@ func stop(api libmachine.API, cluster config.ClusterConfig, n config.Node) bool 
 		}
 	}
 
-	if err := retry.Expo(stop, 5*time.Second, 3*time.Minute, 5); err != nil {
+	if err := retry.Expo(tryStop, 1*time.Second, 120*time.Second, 5); err != nil {
 		exit.WithError("Unable to stop VM", err)
 	}
 
