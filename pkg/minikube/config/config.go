@@ -25,7 +25,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	v162 "k8s.io/minikube/pkg/minikube/config/v162"
 	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
@@ -163,33 +162,12 @@ func Write(profile string, cc *ClusterConfig) error {
 type Loader interface {
 	LoadConfigFromFile(profile string, miniHome ...string) (*ClusterConfig, error)
 	WriteConfigToFile(profileName string, cc *ClusterConfig, miniHome ...string) error
-	TryLoadConfigFromFileVersion162(profileName string, miniHome ...string) (*v162.MachineConfig, error)
 }
 
 type simpleConfigLoader struct{}
 
 // DefaultLoader is the default config loader
 var DefaultLoader Loader = &simpleConfigLoader{}
-
-func (c *simpleConfigLoader) TryLoadConfigFromFileVersion162(profileName string, miniHome ...string) (*v162.MachineConfig, error) {
-	var cc v162.MachineConfig
-	// Move to profile package
-	path := profileFilePath(profileName, miniHome...)
-
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		return nil, err
-	}
-
-	data, err := ioutil.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := json.Unmarshal(data, &cc); err != nil {
-		return nil, err
-	}
-	return &cc, nil
-}
 
 func (c *simpleConfigLoader) LoadConfigFromFile(profileName string, miniHome ...string) (*ClusterConfig, error) {
 	var cc ClusterConfig
