@@ -20,6 +20,7 @@ import (
 	"github.com/spf13/cobra"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -54,7 +55,10 @@ var nodeAddCmd = &cobra.Command{
 		}
 
 		if err := node.Add(cc, n); err != nil {
-			maybeDeleteAndRetry(*cc, n, nil, err)
+			_, err := maybeDeleteAndRetry(*cc, n, nil, err)
+			if err != nil {
+				exit.WithError("failed to add node", err)
+			}
 		}
 
 		out.T(out.Ready, "Successfully added {{.name}} to {{.cluster}}!", out.V{"name": name, "cluster": cc.Name})

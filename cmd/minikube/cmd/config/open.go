@@ -66,11 +66,9 @@ var addonsOpenCmd = &cobra.Command{
 To see the list of available addons run:
 minikube addons list`, out.V{"name": addonName})
 		}
-		ok, err := addon.IsEnabled(cname)
-		if err != nil {
-			exit.WithError("IsEnabled failed", err)
-		}
-		if !ok {
+
+		enabled := addon.IsEnabled(co.Config)
+		if !enabled {
 			exit.WithCodeT(exit.Unavailable, `addon '{{.name}}' is currently not enabled.
 To enable this addon run:
 minikube addons enable {{.name}}`, out.V{"name": addonName})
