@@ -83,8 +83,8 @@ All translations are stored in the top-level `translations` directory.
 	```
 	~/minikube$ LC_ALL=fr out/minikube start
 	😄  minikube v1.9.2 sur Darwin 10.14.5
-	✨  Choix automatique du driver hyperkit. Autres choix: <no value>
-	👍  Starting control plane node minikube in cluster minikube
+	✨  Choix automatique du driver hyperkit. Autres choix: docker
+	👍  Démarrage du noeud de plan de contrôle minikube dans le cluster minikube
 	🔥  Création de VM hyperkit (CPUs=2, Mémoire=4000MB, Disque=20000MB)...
 	🐳  Préparation de Kubernetes v1.18.0 sur Docker 19.03.8...
 	🌟  Installation des addons: default-storageclass, storage-provisioner
