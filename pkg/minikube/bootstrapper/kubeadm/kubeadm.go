@@ -216,7 +216,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	wg.Add(4)
 
 	go func() {
-		// this is required for containerd and cri-o runtime. till we close https://github.com/kubernetes/minikube/issues/7428
+		// the overlay is required for containerd and cri-o runtime: see #7428
 		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
 			if err := k.applyKicOverlay(cfg); err != nil {
 				glog.Errorf("failed to apply kic overlay: %v", err)
