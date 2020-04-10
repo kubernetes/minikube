@@ -3,6 +3,7 @@
 // minikube colors, taken from the logo
 $mk-dark: #306EE5;
 $mk-medium: #1FC3CF;
+$mk-midlight: #e8f3f3;
 $mk-light:#C7EAEC;
 $mk-verydark: darken($mk-dark, 15%);
 
@@ -10,9 +11,9 @@ $mk-verydark: darken($mk-dark, 15%);
 $dark: #403F4C !default;
 $blue: #72A1E5 !default;
 $orange: #BA5A31 !default;
-$gray-100: #f8f9fa !default;
+$gray-100: #f6f6f8 !default;
 $gray-200: #eee !default;
-$gray-300: #dee2e6 !default;
+$gray-300: #dedeef !default;
 $gray-400: #ccc !default;
 $gray-500: #adb5bd !default;
 $gray-600: #888 !default;
@@ -31,7 +32,30 @@ $danger: #ED6A5A !default;
 $white: #fff !default;
 $light: $mk-light;
 $medium: $mk-medium;
+$spacer: 0.5em;
 
+body, p {
+    font-family: 'Lora', serif !important;
+}
+
+
+h1,h2,h3,h4,h5 {
+    font-family: 'Open Sans', sans-serif !important;
+}
+
+.step {
+    margin-top: 2em;
+    font-family: 'Open Sans', sans-serif !important;
+
+    .text-primary {
+        color: $mk-dark !important;
+    }
+
+    .fa-stack {
+        color: $mk-midlight !important;
+        margin-right: 0.4em;
+    }
+}
 
 // Navigation bar
 $navbar-dark-color: $mk-dark;
@@ -151,21 +175,35 @@ section.td-box--height-auto {
 }
 
 
+
+// Allow code tags to span most of a window length (default is 80%)
+pre {
+    max-width: 99% !important;
+    font-family: 'Inconsolata', monospace !important;
+    font-size: 12px !important;
+}
+
 div.td-content {
-    // Allow code tags to span most of a window length (default is 80%)
-    pre {
-        max-width: 99% !important;
-    }
     h2 {
-        font-size: 1.4rem !important;
+        font-size: 1.6rem !important;
     }
+
     h3 {
         font-size: 1.3rem !important;
     }
+
+    .highlight {
+        padding: 0.5em !important;
+        margin-top: 1.25em;
+        margin-bottom: 1.25em;
+    }
 }
+
+
 
 // make search bar wider https://www.docsy.dev/docs/adding-content/navigation/#configure-local-search-with-lunr
 .popover.offline-search-result {
     background-color: $gray-200 !important;
     max-width: 460px;
 }
+
