@@ -97,13 +97,13 @@ func (f *FakeCommandRunner) Copy(file assets.CopyableFile) error {
 	if err != nil {
 		return errors.Wrapf(err, "error reading file: %+v", file)
 	}
-	f.fileMap.Store(file.GetAssetName(), b.String())
+	f.fileMap.Store(file.GetSourcePath(), b.String())
 	return nil
 }
 
 // Remove removes the filename, file contents key value pair from the stored map
 func (f *FakeCommandRunner) Remove(file assets.CopyableFile) error {
-	f.fileMap.Delete(file.GetAssetName())
+	f.fileMap.Delete(file.GetSourcePath())
 	return nil
 }
 
