@@ -783,11 +783,11 @@ func (k *Bootstrapper) applyKicOverlay(cfg config.ClusterConfig) error {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
 	}
 
-	// CRIO needs to eventually know about CNI changes (#7380)
+	// Inform cri-o that the CNI has changed
 	if cfg.KubernetesConfig.ContainerRuntime == "crio" {
-		sm := sysinit.New(k.c)
-		err := sm.Restart("crio")
-		return errors.Wrap(err, "restart crio")
+		if err := sysinit.New(k.c).Restart("crio"); err != nil {
+			return errors.Wrap(err, "restart crio")
+		}
 	}
 
 	return nil
