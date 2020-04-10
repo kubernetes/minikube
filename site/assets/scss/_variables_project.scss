@@ -4,8 +4,8 @@
 $mk-dark: #306EE5;
 $mk-medium: #1FC3CF;
 $mk-midlight: #e8f3f3;
-$mk-light:#C7EAEC;
-$mk-verylight:#f3f9fa;
+$mk-light:#CCEBEC;
+$mk-verylight: lighten($mk-light, 15%);
 $mk-verydark: darken($mk-dark, 15%);
 
 // bootstrap colors
@@ -200,7 +200,13 @@ div.td-content {
     }
 }
 
+.td-sidebar {
+    background-color: $mk-midlight !important;
+}
 
+.td-search-input {
+    background-color: #fff !important;
+}
 
 // make search bar wider https://www.docsy.dev/docs/adding-content/navigation/#configure-local-search-with-lunr
 .popover.offline-search-result {
