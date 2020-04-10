@@ -60,8 +60,8 @@ func TransferBinaries(cfg config.KubernetesConfig, c command.Runner, sm sysinit.
 				return errors.Wrapf(err, "downloading %s", name)
 			}
 
-			if name == "kubelet" {
-				if err := sm.ForceStop("kubelet"); err != nil {
+			if name == "kubelet" && sm.Active(name) {
+				if err := sm.ForceStop(name); err != nil {
 					glog.Errorf("unable to stop kubelet: %v", err)
 				}
 			}
