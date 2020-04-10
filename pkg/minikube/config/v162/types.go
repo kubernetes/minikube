@@ -20,7 +20,14 @@ import (
 	"net"
 )
 
-// MachineConfig from version v1.6.2 contains the parameters used to start a cluster.
+// Profile represents a minikube profile
+type Profile struct {
+	Name   string
+	Status string // running, stopped
+	Config []*MachineConfig
+}
+
+// MachineConfig contains the parameters used to start a cluster.
 type MachineConfig struct {
 	Name                string
 	KeepContext         bool // used by start and profile command to or not to switch kubectl's current context
@@ -38,10 +45,11 @@ type MachineConfig struct {
 	RegistryMirror      []string
 	HostOnlyCIDR        string // Only used by the virtualbox driver
 	HypervVirtualSwitch string
-	KVMNetwork          string   // Only used by the KVM driver
-	KVMQemuURI          string   // Only used by kvm2
-	KVMGPU              bool     // Only used by kvm2
-	KVMHidden           bool     // Only used by kvm2
+	KVMNetwork          string // Only used by the KVM driver
+	KVMQemuURI          string // Only used by kvm2
+	KVMGPU              bool   // Only used by kvm2
+	KVMHidden           bool   // Only used by kvm2
+	// Downloader          util.ISODownloader `json:"-"`
 	DockerOpt           []string // Each entry is formatted as KEY=VALUE.
 	DisableDriverMounts bool     // Only used by virtualbox
 	NFSShare            []string
@@ -55,7 +63,7 @@ type MachineConfig struct {
 	NatNicType          string // Only used by virtualbox
 }
 
-// KubernetesConfig from version v1.6.2 contains the parameters used to configure the VM Kubernetes.
+// KubernetesConfig contains the parameters used to configure the VM Kubernetes.
 type KubernetesConfig struct {
 	KubernetesVersion string
 	NodeIP            string
