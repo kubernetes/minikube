@@ -18,6 +18,7 @@ package kic
 
 import (
 	"fmt"
+	"k8s.io/minikube/pkg/minikube/config"
 	"net"
 	"os/exec"
 	"strconv"
@@ -95,11 +96,9 @@ func (d *Driver) Create() error {
 		},
 		oci.PortMapping{
 			ListenAddress: oci.DefaultBindIPV4,
-			ContainerPort: constants.RegisteryAddonPort,
+			ContainerPort: constants.RegistryAddonPort,
 		},
 	)
-
-	fmt.Println("ruben")
 
 	exists, err := oci.ContainerExists(d.OCIBinary, params.Name)
 	if err != nil {
@@ -209,15 +208,11 @@ func (d *Driver) GetSSHPort() (int, error) {
 	return p, nil
 }
 
-func (d *Driver) GetRegisteryHostname() (string, error) {
-	return oci.DefaultBindIPV4, nil
-}
-
-// GetRegisteryAddonPort returns port for use with ssh
-func (d *Driver) GetRegisteryAddonPort() (int, error) {
-	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.RegisteryAddonPort)
+// GetRegistryAddonPort returns port for use with registry
+func GetRegistryAddonPort(cc *config.ClusterConfig) (int, error) {
+	p, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
 	if err != nil {
-		return p, errors.Wrap(err, "get registery host-port")
+		return p, errors.Wrap(err, "get registry port")
 	}
 	return p, nil
 }
