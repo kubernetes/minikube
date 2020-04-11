@@ -5,6 +5,7 @@ description: >
   How to access applications running within minikube
 aliases:
  - /docs/tasks/loadbalancer
+ - /Handbook/loadbalancer/
  - /docs/tasks/nodeport
 ---
 
