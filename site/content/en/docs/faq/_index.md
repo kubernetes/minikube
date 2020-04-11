@@ -6,11 +6,11 @@ description: >
   Questions that come up regularly
 ---
 
-## Operating-systems
+## Does minikube support IPv6?
 
-## Linux
+minikube currently doesn't support IPv6. However, it is on the [roadmap]({{< ref "/docs/contrib/roadmap.en.md" >}}).
 
-### Preventing password prompts
+## How can I prevent password prompts on Linux?
 
 The easiest approach is to use the `docker` driver, as the backend service always runs as `root`.
 
