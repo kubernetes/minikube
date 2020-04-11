@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -196,6 +197,26 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
+	// to avoid https://github.com/kubernetes/minikube/issues/7606
+	// make sure container is running before we get SSH Port
+	waitRunning := func() error {
+		s, err := d.GetState()
+		if err != nil {
+			glog.Warningf("failed to get container %q state, will retry: %v", d.MachineName, err)
+			return errors.Wrap(err, "GetState")
+		}
+		if s != state.Running {
+			glog.Warningf("container is not running, will retry: %v", err)
+			return errors.Wrap(err, "not-running")
+		}
+		return err
+	}
+
+	if err := retry.Expo(waitRunning, 500*time.Microsecond, time.Second); err != nil {
+		// let it try anyways one last time. maybe by now it got there.
+		glog.Errorf("container is not running, might not be able to get SSH port: %v", err)
+	}
+
 	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
 	if err != nil {
 		return p, errors.Wrap(err, "get ssh host-port")
