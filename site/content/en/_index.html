@@ -1,122 +1,15 @@
 ---
 title: "minikube"
-resources:
-- src: "logo.png"
-  title: "logo"
-
-- src: "start.png"
-  title: "start"
 ---
-
-<style>
-	.imagesizing {
-		width:auto;
-		text-align:center;
-		padding:10px;
-	}
-	img {
-		max-width:100%;
-		height:auto;
-	}
-</style>
-
-<!-- Welcome to minikube -->
-<section class="row td-box td-box--white position-relative td-box--gradient td-box--height-auto">
-	<div class="container td-arrow-down">
-		<div class="row">
-			<div class="col-sm-8">
-				<h1>Welcome to minikube!</h1>
-				<p class="lead mt-5" style="text: nowrap">Local Kubernetes, focused on application development &amp; education</p>
-				<a class="btn btn-lg btn-primary mr-3 mb-4" href="/docs/start">
-					Get Started <i class="fas fa-arrow-alt-circle-right ml-2"></i>
- 				</a>
-  			    <a class="btn btn-lg btn-secondary mr-3 mb-4" href="https://github.com/kubernetes/minikube">
-				    View Repository <i class="fab fa-github ml-2 "></i>
-                </a>
-			</div>
-			<div class="col">
-				{{< imgproc "logo" Fit "220x220" >}}{{< /imgproc >}}
-			</div>
-		</div>
-	</div>
-</section>
 
 
 <!-- Sales pitch -->
 {{< blocks/lead >}}
-
-<div class="container">
-<h2>Instantly productive.</h2>
-
-A single command away from reproducing your production environment, from the comfort of localhost.
-	<div class = "imagesizing">
-		<img src="start.png"/>
-	</div>
-	<h3>Highlights</h3>
-<ul class="fa-ul">
-<li><i class="fas fa-check"></i> Always supports the latest Kubernetes release (as well as previous versions)</li>
-<li><i class="fas fa-check"></i> Cross-platform (Linux, macOS, Windows)</li>
-<li><i class="fas fa-check"></i> Infinitely configurable local development environment</li>
-<li><i class="fas fa-check"></i> Multiple container runtimes (crio, containerd, docker, gvisor)</li>
-<li><i class="fas fa-check"></i> Provides a Docker API endpoint</li>
-</ul>
-</div>
-
-
+This page has moved to <a href="/docs">/docs</a>
+<script language="javascript">
+  window.location.replace("/docs");
+</script>
 
 {{< /blocks/lead >}}
 
 
-{{< blocks/section color="white" >}}
-{{% blocks/feature icon="fa-star" title="Developer focused" %}}
-- [LoadBalancer emulation](https://minikube.sigs.k8s.io/docs/tasks/loadbalancer/)
-- [Addons Marketplace](https://minikube.sigs.k8s.io/docs/tasks/addons/)
-- [Integrated Dashboard](https://minikube.sigs.k8s.io/docs/tasks/dashboard/)
-- [GPU support](https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/)
-- Reusable Docker daemon
-{{% /blocks/feature %}}
-
-{{% blocks/feature icon="fa-cogs" title="Infinitely configurable" %}}
-- Any container runtime
-- Any Kubernetes version
-- Any apiserver, kubelet, controller, etcd, proxy, or scheduler option
-{{% /blocks/feature %}}
-
-{{% blocks/feature icon="fa-thumbs-up" title="Cross-platform" %}}
-- KVM
-- Docker
-- HyperKit
-- Bare-metal
-- VirtualBox
-- Hyper-V
-- VMware
-- Podman
-{{% /blocks/feature %}}
-{{< /blocks/section >}}
-
-{{< blocks/section color="light" >}}
-{{% blocks/feature icon="fab fa-slack" title="Chat with us on Slack" %}}
-  <a class="text-white" href="https://slack.kubernetes.io">
-    <button type="button" class="btn btn-secondary" style="width:150px; margin-top: 12px;">Chat</button>
-  </a>
-
-The #minikube channel is ready to answer your questions.
-{{% /blocks/feature %}}
-
-{{% blocks/feature icon="fab fa-github" title="Contributions welcome" %}}
-  <a class="text-white" href="/docs/contributing">
-    <button type="button" class="btn btn-secondary" style="width:150px; margin-top: 12px;">Contribute</button>
-  </a>
-
-Want to join the fun on Github? New users are always welcome!
-{{% /blocks/feature %}}
-
-{{% blocks/feature icon="fas fa-bullhorn" title="Make your voice heard" %}}
- <a class="text-white" href="https://forms.gle/Gg3hG5ZySw8c1C24A">
-    <button type="button" class="btn btn-secondary" style="width:150px; margin-top: 12px;">Survey</button>
- </a>
-
-Have time for 5 quick questions? We would love to hear from you.
-
-{{% /blocks/feature %}}
-{{< /blocks/section >}}

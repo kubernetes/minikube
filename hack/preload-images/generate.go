@@ -31,9 +31,10 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
-func generateTarball(kubernetesVersion, tarballFilename string) error {
+func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string) error {
 	defer func() {
 		if err := deleteMinikube(); err != nil {
 			fmt.Println(err)
@@ -68,7 +69,11 @@ func generateTarball(kubernetesVersion, tarballFilename string) error {
 		return errors.Wrap(err, "kubeadm images")
 	}
 
-	for _, img := range append(imgs, kic.OverlayImage) {
+	if containerRuntime != "docker" { // kic overlay image is only needed by containerd and cri-o https://github.com/kubernetes/minikube/issues/7428
+		imgs = append(imgs, kic.OverlayImage)
+	}
+
+	for _, img := range imgs {
 		cmd := exec.Command("docker", "exec", profile, "docker", "pull", img)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
@@ -82,7 +87,9 @@ func generateTarball(kubernetesVersion, tarballFilename string) error {
 		KubernetesVersion: kubernetesVersion,
 	}
 	runner := command.NewKICRunner(profile, driver.OCIBinary)
-	if err := bsutil.TransferBinaries(kcfg, runner); err != nil {
+	sm := sysinit.New(runner)
+
+	if err := bsutil.TransferBinaries(kcfg, runner, sm); err != nil {
 		return errors.Wrap(err, "transferring k8s binaries")
 	}
 	// Create image tarball
@@ -93,6 +100,7 @@ func generateTarball(kubernetesVersion, tarballFilename string) error {
 }
 
 func createImageTarball(tarballFilename string) error {
+	// directories to save into tarball
 	dirs := []string{
 		fmt.Sprintf("./lib/docker/%s", dockerStorageDriver),
 		"./lib/docker/image",

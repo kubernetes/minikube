@@ -84,6 +84,19 @@ func DeleteContainer(ociBin string, name string) error {
 	return nil
 }
 
+// PrepareContainerNode sets up the container node before CreateContainerNode is called.
+// For the docker runtime, it creates a docker volume which will be mounted into kic
+func PrepareContainerNode(p CreateParams) error {
+	if p.OCIBinary != Docker {
+		return nil
+	}
+	if err := createDockerVolume(p.Name, p.Name); err != nil {
+		return errors.Wrapf(err, "creating volume for %s container", p.Name)
+	}
+	glog.Infof("Successfully created a docker volume %s", p.Name)
+	return nil
+}
+
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	runArgs := []string{
@@ -122,10 +135,6 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
 	}
 	if p.OCIBinary == Docker {
-		if err := createDockerVolume(p.Name, p.Name); err != nil {
-			return errors.Wrapf(err, "creating volume for %s container", p.Name)
-		}
-		glog.Infof("Successfully created a docker volume %s", p.Name)
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// setting resource limit in privileged mode is only supported by docker
 		// podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
@@ -234,21 +243,26 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 }
 
 // WarnIfSlow runs an oci command, warning about performance issues
-func WarnIfSlow(arg ...string) ([]byte, error) {
-	killTime := 15 * time.Second
+func WarnIfSlow(args ...string) ([]byte, error) {
+	killTime := 19 * time.Second
 	warnTime := 2 * time.Second
+
+	if args[1] == "volume" || args[1] == "ps" { // volume and ps requires more time than inspect
+		killTime = 30 * time.Second
+		warnTime = 3 * time.Second
+	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), killTime)
 	defer cancel()
 
 	start := time.Now()
-	glog.Infof("executing with %s timeout: %v", arg, killTime)
-	cmd := exec.CommandContext(ctx, arg[0], arg[1:]...)
+	glog.Infof("executing with %s timeout: %v", args, killTime)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
 	stdout, err := cmd.Output()
 	d := time.Since(start)
 	if d > warnTime {
 		out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": strings.Join(cmd.Args, " "), "duration": d})
-		out.T(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": arg[0]})
+		out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": args[0]})
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {

@@ -26,7 +26,6 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -39,12 +38,25 @@ import (
 
 // ClusterController holds all the needed information for a minikube cluster
 type ClusterController struct {
-	Config   *config.ClusterConfig
-	API      libmachine.API
-	CPHost   *host.Host
-	CPNode   *config.Node
-	CPRunner command.Runner
-	DriverIP net.IP
+	Config *config.ClusterConfig
+	API    libmachine.API
+	CP     ControlPlane
+}
+
+// ControlPlane holds all the needed information for the k8s control plane
+type ControlPlane struct {
+	// Host is the libmachine host object
+	Host *host.Host
+	// Node is our internal control object
+	Node *config.Node
+	// Runner provides command execution
+	Runner command.Runner
+	// Hostname is the host-accesible target for the apiserver
+	Hostname string
+	// Port is the host-accessible port for the apiserver
+	Port int
+	// IP is the host-accessible IP for the control plane
+	IP net.IP
 }
 
 // Partial is a cmd-friendly way to load a cluster which may or may not be running
@@ -107,27 +119,22 @@ func Running(name string) ClusterController {
 		exit.WithError("Unable to get command runner", err)
 	}
 
-	ips, err := host.Driver.GetIP()
+	hostname, ip, port, err := driver.ControlPaneEndpoint(cc, &cp, host.DriverName)
 	if err != nil {
-		exit.WithError("Unable to get driver IP", err)
-	}
-
-	if driver.IsKIC(host.DriverName) {
-		ips = oci.DefaultBindIPV4
-	}
-
-	ip := net.ParseIP(ips)
-	if ip == nil {
-		exit.WithCodeT(exit.Software, fmt.Sprintf("Unable to parse driver IP: %q", ips))
+		exit.WithError("Unable to get forwarded endpoint", err)
 	}
 
 	return ClusterController{
-		API:      api,
-		Config:   cc,
-		CPRunner: cr,
-		CPHost:   host,
-		CPNode:   &cp,
-		DriverIP: ip,
+		API:    api,
+		Config: cc,
+		CP: ControlPlane{
+			Runner:   cr,
+			Host:     host,
+			Node:     &cp,
+			Hostname: hostname,
+			IP:       ip,
+			Port:     port,
+		},
 	}
 }
 
@@ -135,9 +142,9 @@ func Running(name string) ClusterController {
 func Healthy(name string) ClusterController {
 	co := Running(name)
 
-	as, err := kverify.APIServerStatus(co.CPRunner, net.ParseIP(co.CPNode.IP), co.CPNode.Port)
+	as, err := kverify.APIServerStatus(co.CP.Runner, co.CP.Hostname, co.CP.Port)
 	if err != nil {
-		out.T(out.FailureType, `Unable to get control plane status: {{.error}}`, out.V{"error": err})
+		out.FailureT(`Unable to get control plane status: {{.error}}`, out.V{"error": err})
 		exitTip("delete", name, exit.Unavailable)
 	}
 
@@ -148,7 +155,7 @@ func Healthy(name string) ClusterController {
 
 	if as != state.Running {
 		out.T(out.Shrug, `This control plane is not running! (state={{.state}})`, out.V{"state": as.String()})
-		out.T(out.Warning, `This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
+		out.WarningT(`This is unusual - you may want to investigate using "{{.command}}"`, out.V{"command": ExampleCmd(name, "logs")})
 		exitTip("start", name, exit.Unavailable)
 	}
 	return co
@@ -165,6 +172,6 @@ func ExampleCmd(cname string, action string) string {
 // exitTip returns an action tip and exits
 func exitTip(action string, profile string, code int) {
 	command := ExampleCmd(profile, action)
-	out.T(out.Workaround, "To fix this, run: {{.command}}", out.V{"command": command})
+	out.T(out.Workaround, `To fix this, run: "{{.command}}"`, out.V{"command": command})
 	os.Exit(code)
 }

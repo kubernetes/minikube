@@ -23,6 +23,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golang/glog"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/pkg/errors"
@@ -406,12 +407,27 @@ func (f *FakeRunner) crictl(args []string, _ bool) (string, error) {
 
 // systemctl is a fake implementation of systemctl
 func (f *FakeRunner) systemctl(args []string, root bool) (string, error) { // nolint result 0 (string) is always ""
+	glog.Infof("fake systemctl: %v", args)
 	action := args[0]
-	svcs := args[1:]
+
+	if action == "--version" {
+		return "systemd 123 (321.2-1)", nil
+	}
+
+	if action == "daemon-reload" {
+		return "ok", nil
+	}
+
+	var svcs []string
+	if len(args) > 0 {
+		svcs = args[1:]
+	}
+
 	// force
 	if svcs[0] == "-f" {
 		svcs = svcs[1:]
 	}
+
 	out := ""
 
 	for i, arg := range args {
@@ -496,7 +512,6 @@ func TestVersion(t *testing.T) {
 // defaultServices reflects the default boot state for the minikube VM
 var defaultServices = map[string]serviceState{
 	"docker":        SvcRunning,
-	"docker.socket": SvcRunning,
 	"crio":          SvcExited,
 	"crio-shutdown": SvcExited,
 	"containerd":    SvcExited,
@@ -507,7 +522,7 @@ func TestDisable(t *testing.T) {
 		runtime string
 		want    []string
 	}{
-		{"docker", []string{"sudo", "systemctl", "stop", "-f", "docker", "docker.socket"}},
+		{"docker", []string{"sudo", "systemctl", "stop", "-f", "docker"}},
 		{"crio", []string{"sudo", "systemctl", "stop", "-f", "crio"}},
 		{"containerd", []string{"sudo", "systemctl", "stop", "-f", "containerd"}},
 	}
@@ -539,23 +554,20 @@ func TestEnable(t *testing.T) {
 	}{
 		{"docker", map[string]serviceState{
 			"docker":        SvcRunning,
-			"docker.socket": SvcRunning,
 			"containerd":    SvcExited,
 			"crio":          SvcExited,
 			"crio-shutdown": SvcExited,
 		}},
 		{"containerd", map[string]serviceState{
 			"docker":        SvcExited,
-			"docker.socket": SvcExited,
 			"containerd":    SvcRestarted,
 			"crio":          SvcExited,
 			"crio-shutdown": SvcExited,
 		}},
 		{"crio", map[string]serviceState{
 			"docker":        SvcExited,
-			"docker.socket": SvcExited,
 			"containerd":    SvcExited,
-			"crio":          SvcRestarted,
+			"crio":          SvcRunning,
 			"crio-shutdown": SvcExited,
 		}},
 	}

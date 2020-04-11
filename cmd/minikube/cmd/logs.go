@@ -53,32 +53,32 @@ var logsCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		co := mustload.Running(ClusterFlagValue())
 
-		bs, err := cluster.Bootstrapper(co.API, viper.GetString(cmdcfg.Bootstrapper), *co.Config, *co.CPNode)
+		bs, err := cluster.Bootstrapper(co.API, viper.GetString(cmdcfg.Bootstrapper), *co.Config, co.CP.Runner)
 		if err != nil {
 			exit.WithError("Error getting cluster bootstrapper", err)
 		}
 
-		cr, err := cruntime.New(cruntime.Config{Type: co.Config.KubernetesConfig.ContainerRuntime, Runner: co.CPRunner})
+		cr, err := cruntime.New(cruntime.Config{Type: co.Config.KubernetesConfig.ContainerRuntime, Runner: co.CP.Runner})
 		if err != nil {
 			exit.WithError("Unable to get runtime", err)
 		}
 		if followLogs {
-			err := logs.Follow(cr, bs, *co.Config, co.CPRunner)
+			err := logs.Follow(cr, bs, *co.Config, co.CP.Runner)
 			if err != nil {
 				exit.WithError("Follow", err)
 			}
 			return
 		}
 		if showProblems {
-			problems := logs.FindProblems(cr, bs, *co.Config, co.CPRunner)
+			problems := logs.FindProblems(cr, bs, *co.Config, co.CP.Runner)
 			logs.OutputProblems(problems, numberOfProblems)
 			return
 		}
-		err = logs.Output(cr, bs, *co.Config, co.CPRunner, numberOfLines)
+		err = logs.Output(cr, bs, *co.Config, co.CP.Runner, numberOfLines)
 		if err != nil {
 			out.Ln("")
 			// Avoid exit.WithError, since it outputs the issue URL
-			out.T(out.Warning, "{{.error}}", out.V{"error": err})
+			out.WarningT("{{.error}}", out.V{"error": err})
 			os.Exit(exit.Unavailable)
 		}
 	},

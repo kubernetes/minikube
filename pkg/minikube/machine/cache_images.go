@@ -21,6 +21,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -158,36 +159,51 @@ func needsTransfer(imgClient *client.Client, imgName string, cr cruntime.Manager
 
 // CacheAndLoadImages caches and loads images to all profiles
 func CacheAndLoadImages(images []string) error {
+	// This is the most important thing
 	if err := image.SaveToDir(images, constants.ImageCacheDir); err != nil {
-		return err
+		return errors.Wrap(err, "save to dir")
 	}
+
 	api, err := NewAPIClient()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "api")
 	}
 	defer api.Close()
 	profiles, _, err := config.ListProfiles() // need to load image to all profiles
 	if err != nil {
 		return errors.Wrap(err, "list profiles")
 	}
+
+	succeeded := []string{}
+	failed := []string{}
+
 	for _, p := range profiles { // loading images to all running profiles
 		pName := p.Name // capture the loop variable
+
 		c, err := config.Load(pName)
 		if err != nil {
-			return err
+			// Non-fatal because it may race with profile deletion
+			glog.Errorf("Failed to load profile %q: %v", pName, err)
+			failed = append(failed, pName)
+			continue
 		}
+
 		for _, n := range c.Nodes {
 			m := driver.MachineName(*c, n)
+
 			status, err := Status(api, m)
 			if err != nil {
-				glog.Warningf("skipping loading cache for profile %s", pName)
 				glog.Errorf("error getting status for %s: %v", pName, err)
-				continue // try next machine
+				failed = append(failed, pName)
+				continue
 			}
+
 			if status == state.Running.String() { // the not running hosts will load on next start
 				h, err := api.Load(m)
 				if err != nil {
-					return err
+					glog.Errorf("Failed to load machine %q: %v", m, err)
+					failed = append(failed, pName)
+					continue
 				}
 				cr, err := CommandRunner(h)
 				if err != nil {
@@ -195,12 +211,18 @@ func CacheAndLoadImages(images []string) error {
 				}
 				err = LoadImages(c, cr, images, constants.ImageCacheDir)
 				if err != nil {
+					failed = append(failed, pName)
 					glog.Warningf("Failed to load cached images for profile %s. make sure the profile is running. %v", pName, err)
 				}
+				succeeded = append(succeeded, pName)
 			}
 		}
 	}
-	return err
+
+	glog.Infof("succeeded pushing to: %s", strings.Join(succeeded, " "))
+	glog.Infof("failed pushing to: %s", strings.Join(failed, " "))
+	// Live pushes are not considered a failure
+	return nil
 }
 
 // transferAndLoadImage transfers and loads a single image from the cache

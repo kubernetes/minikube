@@ -208,7 +208,13 @@ func deleteProfileContainersAndVolumes(name string) {
 
 func deleteProfile(profile *config.Profile) error {
 	viper.Set(config.ProfileName, profile.Name)
-	deleteProfileContainersAndVolumes(profile.Name)
+	if profile.Config != nil {
+		// if driver is oci driver, delete containers and volumes
+		if driver.IsKIC(profile.Config.Driver) {
+			out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
+			deleteProfileContainersAndVolumes(profile.Name)
+		}
+	}
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -236,7 +242,7 @@ func deleteProfile(profile *config.Profile) error {
 	}
 
 	if err := killMountProcess(); err != nil {
-		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
+		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
 	deleteHosts(api, cc)
@@ -264,7 +270,7 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 				case mcnerror.ErrHostDoesNotExist:
 					glog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
 				default:
-					out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
+					out.FailureT("Failed to delete cluster: {{.error}}", out.V{"error": err})
 					out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
 				}
 			}
@@ -323,23 +329,24 @@ func profileDeletionErr(cname string, additionalInfo string) error {
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
 	out.T(out.Resetting, "Uninstalling Kubernetes {{.kubernetes_version}} using {{.bootstrapper_name}} ...", out.V{"kubernetes_version": cc.KubernetesConfig.KubernetesVersion, "bootstrapper_name": bsName})
-	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, n)
+	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
+	if err != nil {
+		return DeletionError{Err: fmt.Errorf("unable to load host: %v", err), Errtype: MissingCluster}
+	}
+
+	r, err := machine.CommandRunner(host)
+	if err != nil {
+		return DeletionError{Err: fmt.Errorf("unable to get command runner %v", err), Errtype: MissingCluster}
+	}
+
+	clusterBootstrapper, err := cluster.Bootstrapper(api, bsName, cc, r)
 	if err != nil {
 		return DeletionError{Err: fmt.Errorf("unable to get bootstrapper: %v", err), Errtype: Fatal}
 	}
 
-	host, err := machine.LoadHost(api, driver.MachineName(cc, n))
-	if err != nil {
-		exit.WithError("Error getting host", err)
-	}
-	r, err := machine.CommandRunner(host)
-	if err != nil {
-		exit.WithError("Failed to get command runner", err)
-	}
-
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: r})
 	if err != nil {
-		exit.WithError("Failed runtime", err)
+		return DeletionError{Err: fmt.Errorf("unable to get runtime: %v", err), Errtype: Fatal}
 	}
 
 	// Unpause the cluster if necessary to avoid hung kubeadm

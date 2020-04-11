@@ -2,6 +2,9 @@
 
 [![BuildStatus Widget]][BuildStatus Result]
 [![GoReport Widget]][GoReport Status]
+[![Github All Releases](https://img.shields.io/github/downloads/kubernetes/minikube/total.svg)](https://github.com/kubernetes/minikube/releases/latest)
+[![Latest Release](https://img.shields.io/github/v/release/kubernetes/minikube?include_prereleases)](https://github.com/kubernetes/minikube/releases/latest)
+ 
 
 [BuildStatus Result]: https://travis-ci.org/kubernetes/minikube
 [BuildStatus Widget]: https://travis-ci.org/kubernetes/minikube.svg?branch=master
@@ -13,26 +16,27 @@
 
 minikube implements a local Kubernetes cluster on macOS, Linux, and Windows. minikube's [primary goals](https://minikube.sigs.k8s.io/docs/concepts/principles/) are to be the best tool for local Kubernetes application development and to support all Kubernetes features that fit. 
 
-<img src="https://github.com/kubernetes/minikube/raw/master/site/content/en/start.png" width="738" alt="screenshot">
+<img src="https://raw.githubusercontent.com/kubernetes/minikube/master/site/static/images/screenshot.png" width="738" alt="screenshot">
+
 
 ## Features
 
 minikube runs the latest stable release of Kubernetes, with support for standard Kubernetes features like:
 
-* [LoadBalancer](https://minikube.sigs.k8s.io/docs/tasks/loadbalancer/) - using `minikube tunnel`
+* [LoadBalancer](https://minikube.sigs.k8s.io/docs/handbook/accessing/#loadbalancer-access) - using `minikube tunnel`
 * Multi-cluster - using `minikube start -p <name>`
 * NodePorts - using `minikube service`
-* [Persistent Volumes](https://minikube.sigs.k8s.io/docs/reference/persistent_volumes/)
+* [Persistent Volumes](https://minikube.sigs.k8s.io/docs/handbook/persistent_volumes/)
 * [Ingress](https://kubernetes.io/docs/tasks/access-application-cluster/ingress-minikube/)
-* [Dashboard](https://minikube.sigs.k8s.io/docs/tasks/dashboard/) - `minikube dashboard`
-* [Container runtimes](https://minikube.sigs.k8s.io/docs/reference/runtimes/) - `start --container-runtime`
-* [Configure apiserver and kubelet options](https://minikube.sigs.k8s.io/docs/reference/configuration/kubernetes/) via command-line flags
+* [Dashboard](https://minikube.sigs.k8s.io/docs/handbook/dashboard/) - `minikube dashboard`
+* [Container runtimes](https://minikube.sigs.k8s.io/docs/handbook/config/#runtime-configuration) - `start --container-runtime`
+* [Configure apiserver and kubelet options](https://minikube.sigs.k8s.io/docs/handbook/config/#modifying-kubernetes-defaults) via command-line flags
 
 As well as developer-friendly features:
 
-* [Addons](https://minikube.sigs.k8s.io/docs/tasks/addons/) - a marketplace for developers to share configurations for running services on minikube
+* [Addons](https://minikube.sigs.k8s.io/docs/handbook/deploying/#addons) - a marketplace for developers to share configurations for running services on minikube
 * [NVIDIA GPU support](https://minikube.sigs.k8s.io/docs/tutorials/nvidia_gpu/) - for machine learning
-* [Filesystem mounts](https://minikube.sigs.k8s.io/docs/tasks/mount/)
+* [Filesystem mounts](https://minikube.sigs.k8s.io/docs/handbook/mount/)
 
 **For more information, see the official [minikube website](https://minikube.sigs.k8s.io)**
 
@@ -48,7 +52,7 @@ See https://minikube.sigs.k8s.io/docs/
 
 ## More Examples
 
-See our [examples page](https://minikube.sigs.k8s.io/docs/examples/)
+See minikube in action [here](https://minikube.sigs.k8s.io/docs/handbook/controls/)
 
 ## Community
 
@@ -59,6 +63,6 @@ minikube is a Kubernetes [#sig-cluster-lifecycle](https://github.com/kubernetes/
 * [minikube-dev mailing list](https://groups.google.com/forum/#!forum/minikube-dev)
 * [Bi-weekly office hours, Mondays @ 11am PST](https://tinyurl.com/minikube-oh)
 
-* [Contributing](https://minikube.sigs.k8s.io/docs/contributing/)
-* [Development Roadmap](https://minikube.sigs.k8s.io/docs/contributing/roadmap/)
+* [Contributing](https://minikube.sigs.k8s.io/docs/contrib/)
+* [Development Roadmap](https://minikube.sigs.k8s.io/docs/contrib/roadmap/)
 

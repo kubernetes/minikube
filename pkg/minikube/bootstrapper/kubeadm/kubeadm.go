@@ -1,5 +1,5 @@
 /*
-Copyright 2016 The Kubernetes Authors All rights reserved.
+Copyright 2020 The Kubernetes Authors All rights reserved.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import (
 	"context"
 	"os/exec"
 	"path"
+	"sync"
 
 	"fmt"
 	"net"
@@ -39,7 +40,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -51,9 +51,9 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/kubelet"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/retry"
@@ -68,43 +68,13 @@ type Bootstrapper struct {
 }
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
-// TODO(#6891): Remove node as an argument
-func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Bootstrapper, error) {
-	name := driver.MachineName(cc, n)
-	h, err := api.Load(name)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting api client")
-	}
-	runner, err := machine.CommandRunner(h)
-	if err != nil {
-		return nil, errors.Wrap(err, "command runner")
-	}
-	return &Bootstrapper{c: runner, contextName: cc.Name, k8sClient: nil}, nil
-}
-
-// GetKubeletStatus returns the kubelet status
-func (k *Bootstrapper) GetKubeletStatus() (string, error) {
-	rr, err := k.c.RunCmd(exec.Command("sudo", "systemctl", "is-active", "kubelet"))
-	if err != nil {
-		// Do not return now, as we still have parsing to do!
-		glog.Warningf("%s returned error: %v", rr.Command(), err)
-	}
-	s := strings.TrimSpace(rr.Stdout.String())
-	glog.Infof("kubelet is-active: %s", s)
-	switch s {
-	case "active":
-		return state.Running.String(), nil
-	case "inactive":
-		return state.Stopped.String(), nil
-	case "activating":
-		return state.Starting.String(), nil
-	}
-	return state.Error.String(), nil
+func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, r command.Runner) (*Bootstrapper, error) {
+	return &Bootstrapper{c: r, contextName: cc.Name, k8sClient: nil}, nil
 }
 
 // GetAPIServerStatus returns the api-server status
-func (k *Bootstrapper) GetAPIServerStatus(ip net.IP, port int) (string, error) {
-	s, err := kverify.APIServerStatus(k.c, ip, port)
+func (k *Bootstrapper) GetAPIServerStatus(hostname string, port int) (string, error) {
+	s, err := kverify.APIServerStatus(k.c, hostname, port)
 	if err != nil {
 		return state.Error.String(), err
 	}
@@ -131,8 +101,7 @@ func (k *Bootstrapper) LogCommands(cfg config.ClusterConfig, o bootstrapper.LogO
 		dmesg.WriteString(fmt.Sprintf(" | tail -n %d", o.Lines))
 	}
 
-	describeNodes := fmt.Sprintf("sudo %s describe nodes --kubeconfig=%s",
-		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+	describeNodes := fmt.Sprintf("sudo %s describe nodes --kubeconfig=%s", kubectlPath(cfg),
 		path.Join(vmpath.GuestPersistentDir, "kubeconfig"))
 
 	return map[string]string{
@@ -190,7 +159,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	extraFlags := bsutil.CreateFlagsFromExtraArgs(cfg.KubernetesConfig.ExtraOptions)
-	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime})
+	r, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return err
 	}
@@ -232,23 +201,41 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "run")
 	}
 
-	if cfg.Driver == driver.Docker {
-		if err := k.applyKicOverlay(cfg); err != nil {
-			return errors.Wrap(err, "apply kic overlay")
+	var wg sync.WaitGroup
+	wg.Add(4)
+
+	go func() {
+		// the overlay is required for containerd and cri-o runtime: see #7428
+		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
+			if err := k.applyKICOverlay(cfg); err != nil {
+				glog.Errorf("failed to apply kic overlay: %v", err)
+			}
 		}
-	}
+		wg.Done()
+	}()
 
-	if err := k.applyNodeLabels(cfg); err != nil {
-		glog.Warningf("unable to apply node labels: %v", err)
-	}
+	go func() {
+		if err := k.applyNodeLabels(cfg); err != nil {
+			glog.Warningf("unable to apply node labels: %v", err)
+		}
+		wg.Done()
+	}()
 
-	if err := bsutil.AdjustResourceLimits(k.c); err != nil {
-		glog.Warningf("unable to adjust resource limits: %v", err)
-	}
+	go func() {
+		if err := bsutil.AdjustResourceLimits(k.c); err != nil {
+			glog.Warningf("unable to adjust resource limits: %v", err)
+		}
+		wg.Done()
+	}()
 
-	if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
-		glog.Warningf("unable to create cluster role binding, some addons might not work: %v", err)
-	}
+	go func() {
+		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
+			glog.Warningf("unable to create cluster role binding, some addons might not work: %v", err)
+		}
+		wg.Done()
+	}()
+
+	wg.Wait()
 	return nil
 }
 
@@ -292,7 +279,7 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		if rerr == nil {
 			return nil
 		}
-		out.T(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
+		out.ErrT(out.Embarrassed, "Unable to restart cluster, will reset it: {{.error}}", out.V{"error": rerr})
 		if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 			glog.Warningf("delete failed: %v", err)
 		}
@@ -309,25 +296,11 @@ func (k *Bootstrapper) StartCluster(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	out.T(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
+	out.ErrT(out.Conflict, "initialization failed, will try again: {{.error}}", out.V{"error": err})
 	if err := k.DeleteCluster(cfg.KubernetesConfig); err != nil {
 		glog.Warningf("delete failed: %v", err)
 	}
 	return k.init(cfg)
-}
-
-func (k *Bootstrapper) controlPlaneEndpoint(cfg config.ClusterConfig) (string, int, error) {
-	cp, err := config.PrimaryControlPlane(&cfg)
-	if err != nil {
-		return "", 0, err
-	}
-
-	if driver.IsKIC(cfg.Driver) {
-		ip := oci.DefaultBindIPV4
-		port, err := oci.ForwardedPort(cfg.Driver, cfg.Name, cp.Port)
-		return ip, port, err
-	}
-	return cp.IP, cp.Port, nil
 }
 
 // client sets and returns a Kubernetes client to use to speak to a kubeadm launched apiserver
@@ -361,44 +334,77 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
 		return nil
 	}
+	if !kverify.ShouldWait(cfg.VerifyComponents) {
+		glog.Infof("skip waiting for components based on config.")
+		return nil
+	}
 
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
 	}
 
-	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
-		return err
-	}
-
-	ip, port, err := k.controlPlaneEndpoint(cfg)
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	client, err := k.client(ip, port)
-	if err != nil {
-		return errors.Wrap(err, "get k8s client")
+	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
+		client, err := k.client(hostname, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
+			return errors.Wrap(err, "wait for apiserver proc")
+		}
+
+		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
+			return errors.Wrap(err, "wait for healthy API server")
+		}
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, ip, port, timeout); err != nil {
-		return err
+	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
+		client, err := k.client(hostname, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
+			return errors.Wrap(err, "waiting for system pods")
+		}
 	}
 
-	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
-		return errors.Wrap(err, "waiting for system pods")
+	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
+		client, err := k.client(hostname, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.WaitForDefaultSA(client, timeout); err != nil {
+			return errors.Wrap(err, "waiting for default service account")
+		}
 	}
+
+	if cfg.VerifyComponents[kverify.AppsRunning] {
+		client, err := k.client(hostname, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
+			return errors.Wrap(err, "waiting for apps_running")
+		}
+	}
+
+	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
 	return nil
 }
 
 // needsReset returns whether or not the cluster needs to be reconfigured
-func (k *Bootstrapper) needsReset(conf string, ip string, port int, client *kubernetes.Clientset, version string) bool {
+func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client *kubernetes.Clientset, version string) bool {
 	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
 		glog.Infof("needs reset: configs differ:\n%s", rr.Output())
 		return true
 	}
 
-	st, err := kverify.APIServerStatus(k.c, net.ParseIP(ip), port)
+	st, err := kverify.APIServerStatus(k.c, hostname, port)
 	if err != nil {
 		glog.Infof("needs reset: apiserver error: %v", err)
 		return true
@@ -409,7 +415,7 @@ func (k *Bootstrapper) needsReset(conf string, ip string, port int, client *kube
 		return true
 	}
 
-	if err := kverify.ExpectedComponentsRunning(client); err != nil {
+	if err := kverify.ExpectAppsRunning(client, kverify.AppsRunningList); err != nil {
 		glog.Infof("needs reset: %v", err)
 		return true
 	}
@@ -447,19 +453,24 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		glog.Errorf("failed to create compat symlinks: %v", err)
 	}
 
-	ip, port, err := k.controlPlaneEndpoint(cfg)
+	cp, err := config.PrimaryControlPlane(&cfg)
+	if err != nil {
+		return errors.Wrap(err, "primary control plane")
+	}
+
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &cp, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "control plane")
 	}
 
-	client, err := k.client(ip, port)
+	client, err := k.client(hostname, port)
 	if err != nil {
 		return errors.Wrap(err, "getting k8s client")
 	}
 
 	// If the cluster is running, check if we have any work to do.
 	conf := bsutil.KubeadmYamlPath
-	if !k.needsReset(conf, ip, port, client, cfg.KubernetesConfig.KubernetesVersion) {
+	if !k.needsReset(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
 		glog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
 		return nil
 	}
@@ -499,7 +510,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), ip, port, kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), hostname, port, kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver health")
 	}
 
@@ -577,7 +588,7 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 		glog.Warningf("%s: %v", rr.Command(), err)
 	}
 
-	if err := kubelet.ForceStop(k.c); err != nil {
+	if err := sysinit.New(k.c).ForceStop("kubelet"); err != nil {
 		glog.Warningf("stop kubelet: %v", err)
 	}
 
@@ -641,6 +652,11 @@ func (k *Bootstrapper) UpdateCluster(cfg config.ClusterConfig) error {
 
 // UpdateNode updates a node.
 func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cruntime.Manager) error {
+	now := time.Now()
+	defer func() {
+		glog.Infof("reloadKubelet took %s", time.Since(now))
+	}()
+
 	kubeadmCfg, err := bsutil.GenerateKubeadmYAML(cfg, n, r)
 	if err != nil {
 		return errors.Wrap(err, "generating kubeadm cfg")
@@ -658,24 +674,40 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 
 	glog.Infof("kubelet %s config:\n%+v", kubeletCfg, cfg.KubernetesConfig)
 
-	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c); err != nil {
+	sm := sysinit.New(k.c)
+
+	if err := bsutil.TransferBinaries(cfg.KubernetesConfig, k.c, sm); err != nil {
 		return errors.Wrap(err, "downloading binaries")
 	}
 
-	var cniFile []byte
+	files := []assets.CopyableFile{
+		assets.NewMemoryAssetTarget(kubeadmCfg, bsutil.KubeadmYamlPath+".new", "0640"),
+		assets.NewMemoryAssetTarget(kubeletCfg, bsutil.KubeletSystemdConfFile+".new", "0644"),
+		assets.NewMemoryAssetTarget(kubeletService, bsutil.KubeletServiceFile+".new", "0644"),
+	}
+	// Copy the default CNI config (k8s.conf), so that kubelet can successfully
+	// start a Pod in the case a user hasn't manually installed any CNI plugin
+	// and minikube was started with "--extra-config=kubelet.network-plugin=cni".
 	if cfg.KubernetesConfig.EnableDefaultCNI {
-		cniFile = []byte(defaultCNIConfig)
+		files = append(files, assets.NewMemoryAssetTarget([]byte(defaultCNIConfig), bsutil.DefaultCNIConfigPath, "0644"))
 	}
 
-	// Install assets into temporary files
-	files := bsutil.ConfigFileAssets(cfg.KubernetesConfig, kubeadmCfg, kubeletCfg, kubeletService, cniFile)
+	// Installs compatibility shims for non-systemd environments
+	kubeletPath := path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubelet")
+	shims, err := sm.GenerateInitShim("kubelet", kubeletPath, bsutil.KubeletSystemdConfFile)
+	if err != nil {
+		return errors.Wrap(err, "shim")
+	}
+	files = append(files, shims...)
+
 	if err := copyFiles(k.c, files); err != nil {
-		return err
+		return errors.Wrap(err, "copy")
 	}
 
-	if err := reloadKubelet(k.c); err != nil {
-		return err
+	if err := startKubeletIfRequired(k.c, sm); err != nil {
+		return errors.Wrap(err, "reload")
 	}
+
 	return nil
 }
 
@@ -698,7 +730,12 @@ func copyFiles(runner command.Runner, files []assets.CopyableFile) error {
 	return nil
 }
 
-func reloadKubelet(runner command.Runner) error {
+func startKubeletIfRequired(runner command.Runner, sm sysinit.Manager) error {
+	now := time.Now()
+	defer func() {
+		glog.Infof("reloadKubelet took %s", time.Since(now))
+	}()
+
 	svc := bsutil.KubeletServiceFile
 	conf := bsutil.KubeletSystemdConfFile
 
@@ -708,29 +745,51 @@ func reloadKubelet(runner command.Runner) error {
 		return nil
 	}
 
-	startCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cp %s.new %s && sudo cp %s.new %s && sudo systemctl daemon-reload && sudo systemctl restart kubelet", svc, svc, conf, conf))
+	startCmd := exec.Command("/bin/bash", "-c", fmt.Sprintf("sudo cp %s.new %s && sudo cp %s.new %s", svc, svc, conf, conf))
 	if _, err := runner.RunCmd(startCmd); err != nil {
 		return errors.Wrap(err, "starting kubelet")
 	}
-	return nil
+
+	return sm.Start("kubelet")
 }
 
-// applyKicOverlay applies the CNI plugin needed to make kic work
-func (k *Bootstrapper) applyKicOverlay(cfg config.ClusterConfig) error {
-	// Allow no more than 5 seconds for apply kic overlay
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, "sudo",
-		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
-		"-f", "-")
+// kubectlPath returns the path to the kubelet
+func kubectlPath(cfg config.ClusterConfig) string {
+	return path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl")
+}
+
+// applyKICOverlay applies the CNI plugin needed to make kic work
+func (k *Bootstrapper) applyKICOverlay(cfg config.ClusterConfig) error {
 	b := bytes.Buffer{}
 	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
 		return err
 	}
-	cmd.Stdin = bytes.NewReader(b.Bytes())
+
+	ko := path.Join(vmpath.GuestEphemeralDir, fmt.Sprintf("kic_overlay.yaml"))
+	f := assets.NewMemoryAssetTarget(b.Bytes(), ko, "0644")
+
+	if err := k.c.Copy(f); err != nil {
+		return errors.Wrapf(err, "copy")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg), "apply",
+		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
+		"-f", ko)
+
 	if rr, err := k.c.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
 	}
+
+	// Inform cri-o that the CNI has changed
+	if cfg.KubernetesConfig.ContainerRuntime == "crio" {
+		if err := sysinit.New(k.c).Restart("crio"); err != nil {
+			return errors.Wrap(err, "restart crio")
+		}
+	}
+
 	return nil
 }
 
@@ -748,8 +807,7 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	defer cancel()
 	// example:
 	// sudo /var/lib/minikube/binaries/<version>/kubectl label nodes minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
-	cmd := exec.CommandContext(ctx, "sudo",
-		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg),
 		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, "--all", "--overwrite",
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 
@@ -767,8 +825,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	defer cancel()
 	rbacName := "minikube-rbac"
 	// kubectl create clusterrolebinding minikube-rbac --clusterrole=cluster-admin --serviceaccount=kube-system:default
-	cmd := exec.CommandContext(ctx, "sudo",
-		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg),
 		"create", "clusterrolebinding", rbacName, "--clusterrole=cluster-admin", "--serviceaccount=kube-system:default",
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 	rr, err := k.c.RunCmd(cmd)

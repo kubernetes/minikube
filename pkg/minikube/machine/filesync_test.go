@@ -149,7 +149,7 @@ func TestAssetsFromDir(t *testing.T) {
 
 			got := make(map[string]string)
 			for _, actualFile := range actualFiles {
-				got[actualFile.GetAssetName()] = actualFile.GetTargetDir()
+				got[actualFile.GetSourcePath()] = actualFile.GetTargetDir()
 			}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("files differ: (-want +got)\n%s", diff)

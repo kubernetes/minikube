@@ -71,6 +71,9 @@ func TestStartStop(t *testing.T) {
 				"--disable-driver-mounts",
 				"--extra-config=kubeadm.ignore-preflight-errors=SystemVerification",
 			}},
+			{"embed-certs", constants.DefaultKubernetesVersion, []string{
+				"--embed-certs",
+			}},
 		}
 
 		for _, tc := range tests {
@@ -86,7 +89,12 @@ func TestStartStop(t *testing.T) {
 				ctx, cancel := context.WithTimeout(context.Background(), Minutes(40))
 				defer CleanupWithLogs(t, profile, cancel)
 
-				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", "--wait=true"}, tc.args...)
+				waitFlag := "--wait=true"
+				if strings.Contains(tc.name, "cni") { // wait=app_running is broken for CNI https://github.com/kubernetes/minikube/issues/7354
+					waitFlag = "--wait=apiserver,system_pods,default_sa"
+				}
+
+				startArgs := append([]string{"start", "-p", profile, "--memory=2200", "--alsologtostderr", "-v=3", waitFlag}, tc.args...)
 				startArgs = append(startArgs, StartArgs()...)
 				startArgs = append(startArgs, fmt.Sprintf("--kubernetes-version=%s", tc.version))
 
@@ -127,10 +135,10 @@ func TestStartStop(t *testing.T) {
 				if strings.Contains(tc.name, "cni") {
 					t.Logf("WARNING: cni mode requires additional setup before pods can schedule :(")
 				} else {
-					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(4)); err != nil {
+					if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox", Minutes(7)); err != nil {
 						t.Fatalf("failed waiting for pod 'busybox' post-stop-start: %v", err)
 					}
-					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(4)); err != nil {
+					if _, err := PodWait(ctx, t, profile, "kubernetes-dashboard", "k8s-app=kubernetes-dashboard", Minutes(9)); err != nil {
 						t.Fatalf("failed waiting for 'addon dashboard' pod post-stop-start: %v", err)
 					}
 				}
@@ -257,7 +265,7 @@ func testPulledImages(ctx context.Context, t *testing.T, profile string, version
 	}{}
 	err = json.Unmarshal(rr.Stdout.Bytes(), &jv)
 	if err != nil {
-		t.Errorf("failed to decode images json %v. output: %q", err, rr.Output())
+		t.Errorf("failed to decode images json %v. output: %s", err, rr.Output())
 	}
 	found := map[string]bool{}
 	for _, img := range jv["images"] {
