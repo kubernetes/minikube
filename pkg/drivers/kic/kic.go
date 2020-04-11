@@ -361,11 +361,18 @@ func (d *Driver) Stop() error {
 		}
 		if len(containers) > 0 {
 			if err := runtime.StopContainers(containers); err != nil {
-				glog.Errorf("unable to stop containers : %v", err)
+				glog.Infof("unable to stop containers : %v", err)
+			}
+			if err := runtime.KillContainers(containers); err != nil {
+				glog.Errorf("unable to kill containers : %v", err)
 			}
 		}
 		glog.Infof("successfully stopped kubernetes!")
 
+	}
+
+	if err := killAPIServerProc(d.exec); err != nil {
+		glog.Warningf("couldn't stop kube-apiserver proc: %v", err)
 	}
 
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
@@ -378,4 +385,21 @@ func (d *Driver) Stop() error {
 // RunSSHCommandFromDriver implements direct ssh control to the driver
 func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
+}
+
+// killAPIServerProc will kill an api server proc if it exists
+// to ensure this never happens https://github.com/kubernetes/minikube/issues/7521
+func killAPIServerProc(runner command.Runner) error {
+	// first check if it exists
+	rr, err := runner.RunCmd(exec.Command("pgrep", "kube-apiserver"))
+	if err == nil { // this means we might have a running kube-apiserver
+		pid, err := strconv.Atoi(rr.Stdout.String())
+		if err == nil { // this means we have a valid pid
+			glog.Warningf("Found a kube-apiserver running with pid %d, will try to kill the proc", pid)
+			if _, err = runner.RunCmd(exec.Command("pkill", "-9", string(pid))); err != nil {
+				return errors.Wrap(err, "kill")
+			}
+		}
+	}
+	return nil
 }
