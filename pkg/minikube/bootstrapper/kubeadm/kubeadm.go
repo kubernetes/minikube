@@ -464,6 +464,7 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 	}
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 	if cfg.VerifyComponents[kverify.NodePressureKey] {
 		out.T(out.CheckOption, "verifying node pressure ...")
 ||||||| parent of 6c7bc7c81... brush up
@@ -471,12 +472,18 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		start := time.Now()
 =======
 	if cc.VerifyComponents[kverify.Node] {
+||||||| parent of a4cf87c02... refactor more
+	if cc.VerifyComponents[kverify.Node] {
+=======
+	if cc.VerifyComponents[kverify.NodeCondition] {
+>>>>>>> a4cf87c02... refactor more
 		start := time.Now()
 >>>>>>> 6c7bc7c81... brush up
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
+<<<<<<< HEAD
 <<<<<<< HEAD
 		if err := kverify.NodePressure(client); err != nil {
 			adviseNodePressure(err, cfg.Name, cfg.Driver)
@@ -498,8 +505,27 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		out.T(out.CheckOption, "node health {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 =======
 		kverify.NodePressure(client, cc.Driver)
+||||||| parent of a4cf87c02... refactor more
+		kverify.NodePressure(client, cc.Driver)
+=======
+		if err := kverify.NodeConditions(client, cc.Driver); err != nil {
+			return errors.Wrap(err, "verifying node conditions")
+		}
+>>>>>>> a4cf87c02... refactor more
 		out.T(out.CheckOption, "verifying node health {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 >>>>>>> 6c7bc7c81... brush up
+	}
+
+	if cc.VerifyComponents[kverify.NodeReady] {
+		start := time.Now()
+		client, err := k.client(hostname, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
+			return errors.Wrap(err, "waiting for node to be ready")
+		}
+		out.T(out.CheckOption, "verifying node ready {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
 	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cc.VerifyComponents)
@@ -561,9 +587,17 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, driver string, p
 		return true
 	}
 
+<<<<<<< HEAD
 	if err := kverify.NodePressure(client); err != nil {
 		adviseNodePressure(err, name, driver)
 		glog.Infof("needs reset: node pressure: %v", err)
+||||||| parent of a4cf87c02... refactor more
+	if err := kverify.NodePressure(client, driver); err != nil {
+		glog.Infof("needs reset: node pressure %v", err)
+=======
+	if err := kverify.NodeConditions(client, driver); err != nil {
+		glog.Infof("needs reset: node conditions %v", err)
+>>>>>>> a4cf87c02... refactor more
 		return true
 	}
 

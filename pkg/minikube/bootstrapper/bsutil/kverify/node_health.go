@@ -26,17 +26,19 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
+	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// NodePressure verfies that node is not under disk, memory, pid or network pressure.
-func NodePressure(cs *kubernetes.Clientset, drver string) error {
-	glog.Info("waiting to verify node health ...")
+// NodeConditions verfies that node is not under disk, memory, pid or network pressure.
+func NodeConditions(cs *kubernetes.Clientset, drver string) error {
+	glog.Info("verifying NodePressure condition ...")
 	start := time.Now()
 	defer func() {
-		glog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
+		glog.Infof("duration metric: took %s to wait for NodePressure...", time.Since(start))
 	}()
 
 	ns, err := cs.CoreV1().Nodes().List(meta.ListOptions{})
@@ -97,21 +99,47 @@ func NodePressure(cs *kubernetes.Clientset, drver string) error {
 			if c.Type == v1.NodeNetworkUnavailable && c.Status == v1.ConditionTrue {
 				out.Ln("")
 				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
-				out.WarningT("The node netowrking is not configured correctly.", out.V{"name": n.Name})
+				out.WarningT("The node networking is not configured correctly.", out.V{"name": n.Name})
 				out.Ln("")
-				return fmt.Errorf("node %q has unwanted condition %q : Reason %q Message: %q ", n.Name, c.Type, c.Reason, c.Message)
-			}
-
-			if c.Type == v1.NodeReady && c.Status == v1.ConditionFalse {
-				out.Ln("")
-				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
-				out.WarningT("The node is not ready.", out.V{"name": n.Name})
-				out.T(out.Tip, "get more information by running `kubectl describe nodes -A`")
-				out.Ln("") // if there is error message, lets make an empty space for better visilibtly
 				return fmt.Errorf("node %q has unwanted condition %q : Reason %q Message: %q ", n.Name, c.Type, c.Reason, c.Message)
 			}
 		}
 	}
-	glog.Infof("duration metric: took %s to wait for node-health ...", time.Since(start))
+
+	return nil
+}
+
+// WaitForNodeReady waits for a node to be ready
+func WaitForNodeReady(cs *kubernetes.Clientset, timeout time.Duration) error {
+	glog.Info("waiting for node to be ready ...")
+	start := time.Now()
+	defer func() {
+		glog.Infof("duration metric: took %s to wait for WaitForNodeReady...", time.Since(start))
+	}()
+	checkReady := func() (bool, error) {
+		if time.Since(start) > timeout {
+			return false, fmt.Errorf("wait for node to be ready timed out")
+		}
+		ns, err := cs.CoreV1().Nodes().List(meta.ListOptions{})
+		if err != nil {
+			glog.Infof("error listing nodes will retry: %v", err)
+			return false, nil
+		}
+
+		for _, n := range ns.Items {
+			for _, c := range n.Status.Conditions {
+				if c.Type == v1.NodeReady && c.Status != v1.ConditionTrue {
+					glog.Infof("node %q has unwanted condition %q : Reason %q Message: %q. will try. ", n.Name, c.Type, c.Reason, c.Message)
+					return false, nil
+				}
+			}
+		}
+		return true, nil
+	}
+
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, kconst.DefaultControlPlaneTimeout, checkReady); err != nil {
+		return errors.Wrapf(err, "wait node ready")
+	}
+
 	return nil
 }
