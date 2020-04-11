@@ -25,9 +25,6 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
    `sudo mkdir /sys/fs/cgroup/systemd && sudo mount -t cgroup -o none,name=systemd cgroup /sys/fs/cgroup/systemd`.
 
-- Addon 'registry' for mac and windows is not supported yet and it is [a work in progress](https://github.com/kubernetes/minikube/issues/7535).
-
-
 
 ## Troubleshooting
 
