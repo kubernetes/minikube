@@ -347,6 +347,7 @@ func (d *Driver) Restart() error {
 // not meant to be used for Create().
 func (d *Driver) Start() error {
 	s, err := d.GetState()
+	glog.Infof("(medya dbg) Inside Kic Start, GetState state: %s err: %v",s,err)
 	if err != nil {
 		return errors.Wrap(err, "get kic state")
 	}
