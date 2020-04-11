@@ -418,7 +418,7 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 
 func timeToSecond(d time.Duration) string {
 	s := float64((d / time.Millisecond) / 1000)
-	s = math.Round(s*100)/100 
+	s = math.Round(s*100) / 100
 	if s == 0 {
 		return ""
 	}

@@ -33,7 +33,7 @@ const (
 	DefaultSAWaitKey = "default_sa"
 	// AppsRunning is the name used in the flags for waiting for k8s-apps to be running
 	AppsRunning = "apps_running"
-	// Node is the name used in the flags for waiting for disk health
+	// Node is the name used in the flags for waiting for detecting node pressures such as (disk, memory, PID pressure or network and node not ready)
 	Node = "node"
 )
 
