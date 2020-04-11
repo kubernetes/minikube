@@ -262,7 +262,7 @@ func WarnIfSlow(args ...string) ([]byte, error) {
 	d := time.Since(start)
 	if d > warnTime {
 		out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": strings.Join(cmd.Args, " "), "duration": d})
-		out.WarningT(`Restarting the {{.name}} service may improve performance.`, out.V{"name": args[0]})
+		out.T(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": args[0]})
 	}
 
 	if ctx.Err() == context.DeadlineExceeded {
