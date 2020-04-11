@@ -48,4 +48,13 @@ evictionHard:
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
+enableProfiling: false
+ipvs:
+  excludeCIDRs: null
+  minSyncPeriod: 0s
+  scheduler: "rr"
+  strictARP: false
+  syncPeriod: 0s
+mode: ipvs
+portRange: ""
 metricsBindAddress: 1.1.1.1:10249
