@@ -48,7 +48,7 @@ func NodePressure(cs *kubernetes.Clientset, drver string) error {
 		glog.Infof("node storage ephemeral capacity is %s", n.Status.Capacity.StorageEphemeral())
 		glog.Infof("node cpu capacity is %s", n.Status.Capacity.Cpu().AsDec())
 		for _, c := range n.Status.Conditions {
-			if c.Type == v1.NodeDiskPressure && c.Status != v1.ConditionTrue {
+			if c.Type == v1.NodeDiskPressure && c.Status == v1.ConditionTrue {
 				out.Ln("")
 				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
 				out.WarningT("The node on {{.name}} has ran out of disk space. please consider allocating more disk using or pruning un-used images", out.V{"name": n.Name})
