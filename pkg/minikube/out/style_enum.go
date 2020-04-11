@@ -42,6 +42,7 @@ const (
 	Sad
 	ThumbsUp
 	ThumbsDown
+	CheckOption
 	Option
 	Command
 	LogEntry

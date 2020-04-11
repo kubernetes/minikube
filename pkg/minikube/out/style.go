@@ -69,6 +69,7 @@ var styles = map[StyleEnum]style{
 	Sad:           {Prefix: "😿  "},
 	ThumbsUp:      {Prefix: "👍  "},
 	ThumbsDown:    {Prefix: "👎  "},
+	CheckOption:   {Prefix: "    🔎 ", LowPrefix: lowIndent}, // Indented bullet
 	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	Command:       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	LogEntry:      {Prefix: "    "},                         // Indent
@@ -108,7 +109,7 @@ var styles = map[StyleEnum]style{
 	Enabling:         {Prefix: "🔌  "},
 	Shutdown:         {Prefix: "🛑  "},
 	Pulling:          {Prefix: "🚜  "},
-	HealthCheck:      {Prefix: "🏥  "},
+	HealthCheck:      {Prefix: "🕵️  "},
 	Verifying:        {Prefix: "🤔  "},
 	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},
 	Kubectl:          {Prefix: "💗  "},
