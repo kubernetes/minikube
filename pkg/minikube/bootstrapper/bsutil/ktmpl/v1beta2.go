@@ -69,16 +69,25 @@ networking:
   podSubnet: "{{.PodSubnet }}"
   serviceSubnet: {{.ServiceCIDR}}
 ---
-apiVersion: kubelet.config.k8s.io/v1beta1
-kind: KubeletConfiguration
-# disable disk resource management by default
-imageGCHighThresholdPercent: 100
-evictionHard:
-  nodefs.available: "0%"
-  nodefs.inodesFree: "0%"
-  imagefs.available: "0%"
----
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
 kind: KubeProxyConfiguration
+clusterCIDR: "{{.PodSubnet }}"
+enableProfiling: false
+{{if eq .KubeProxyMode "iptables" -}}
+iptables:
+  masqueradeAll: false
+  masqueradeBit: null
+  minSyncPeriod: 0s
+  syncPeriod: 0s
+{{else if eq .KubeProxyMode "ipvs" -}}
+ipvs:
+  excludeCIDRs: null
+  minSyncPeriod: 0s
+  scheduler: "rr"
+  strictARP: false
+  syncPeriod: 0s
+{{end -}}
 metricsBindAddress: {{.AdvertiseAddress}}:10249
+{{if .KubeProxyMode}}mode: {{.KubeProxyMode}}{{end}}
+portRange: ""
 `))
