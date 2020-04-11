@@ -113,6 +113,8 @@ func WriteImageToDaemon(img string) error {
 
 	//TODO: Make pkg/v1/daemon accept Ref too
 	//      Only added it to pkg/v1/tarball
+	//
+	// https://github.com/google/go-containerregistry/pull/702
 
 	glog.V(3).Infof("Pulling image %v", ref)
 
