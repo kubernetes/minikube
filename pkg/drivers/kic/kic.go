@@ -34,6 +34,7 @@ import (
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -213,8 +214,23 @@ func (d *Driver) GetSSHPort() (int, error) {
 		return nil
 	}
 
-	if err := retry.Expo(waitRunning, 500*time.Microsecond, 2*time.Minute); err != nil {
+	if err := retry.Expo(waitRunning, 500*time.Millisecond, 1*time.Minute); err != nil {
 		return 0, errors.Wrap(err, "not running")
+	}
+
+	// will have to use kic Runner because first time this is called, the SSHkeys are not copied yet
+	// and ssh runner wont work
+	kicRunner := command.NewKICRunner(d.MachineName, d.OCIBinary)
+	waitSSHDSvc := func() error {
+		if s := kverify.SSHDStatus(kicRunner); s != state.Running {
+			glog.Info("SSHD service is not running: %q will retry.", s)
+			return fmt.Errorf("SSHD service not up")
+		}
+		glog.Infof("(medya dbg) SSHD service is running")
+		return nil
+	}
+	if err := retry.Expo(waitSSHDSvc, 500*time.Millisecond, time.Second*13); err != nil {
+		return 0, errors.Wrap(err, "sshd service")
 	}
 
 	p := 0
@@ -347,7 +363,7 @@ func (d *Driver) Restart() error {
 // not meant to be used for Create().
 func (d *Driver) Start() error {
 	s, err := d.GetState()
-	glog.Infof("(medya dbg) Inside Kic Start, GetState state: %s err: %v",s,err)
+	glog.Infof("(medya dbg) Inside Kic Start, GetState state: %s err: %v", s, err)
 	if err != nil {
 		return errors.Wrap(err, "get kic state")
 	}
