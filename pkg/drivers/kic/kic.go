@@ -207,7 +207,7 @@ func (d *Driver) GetSSHPort() (int, error) {
 		}
 		if s != state.Running {
 			glog.Warningf("container %q is in %q state, will retry till it is running: %v", d.MachineName, s, err)
-			return errors.Wrap(err, "not-running")
+			return fmt.Errorf("expected running but got s", s)
 		}
 		return nil
 	}
