@@ -84,35 +84,20 @@ func NodePressure(cs *kubernetes.Clientset, cc config.ClusterConfig, timeout tim
 				out.WarningT("The node has ran out of available PIDs.", out.V{"name": n.Name})
 			}
 
+			if c.Type == v1.NodeNetworkUnavailable && c.Status == v1.ConditionTrue {
+				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
+				out.WarningT("The node netowrking is not configured correctly.", out.V{"name": n.Name})
+			}
+
+			if c.Type == v1.NodeReady && c.Status == v1.ConditionFalse {
+				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
+				out.WarningT("The node is not ready.", out.V{"name": n.Name})
+				out.T(out.Tip, "get more information by running `kubectl describe nodes -A`")
+			}
 		}
 	}
 
-	// // NodeReady means kubelet is healthy and ready to accept pods.
-	// NodeReady NodeConditionType = "Ready"
-	// // NodePIDPressure means the kubelet is under pressure due to insufficient available PID.
-	// NodePIDPressure NodeConditionType = "PIDPressure"
-	// // NodeNetworkUnavailable means that network for the node is not correctly configured.
-	// NodeNetworkUnavailable NodeConditionType = "NetworkUnavailable"
-
-	// start := time.Now()
-
-	// 	// equivalent to manual check of 'kubectl --context profile get serviceaccount default'
-	// 	sas, err := cs.CoreV1().ServiceAccounts("default").List(meta.ListOptions{})
-	// 	if err != nil {
-	// 		glog.Infof("temproary error waiting for default SA: %v", err)
-	// 		return err
-	// 	}
-	// 	for _, sa := range sas.Items {
-	// 		if sa.Name == "default" {
-	// 			glog.Infof("found service account: %q", sa.Name)
-	// 			return nil
-	// 		}
-	// 	}
-	// 	return fmt.Errorf("couldn't find default service account")
-	// if err := wait.PollImmediate(kconst.APICallRetryInterval, timeout, checkRunning); err != nil {
-	// 	return errors.Wrapf(err, "checking k8s-apps to be running")
-	// }
-	// glog.Infof("duration metric: took %s to wait for k8s-apps to be running ...", time.Since(start))
+	glog.Infof("duration metric: took %s to wait for node-health ...", time.Since(start))
 
 	return nil
 }
