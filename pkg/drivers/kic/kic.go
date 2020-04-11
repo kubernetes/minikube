@@ -209,7 +209,7 @@ func (d *Driver) GetSSHPort() (int, error) {
 			glog.Warningf("container %q is in %q state, will retry till it is running: %v", d.MachineName, s, err)
 			return fmt.Errorf("expected running but got %s", s)
 		}
-		glog.Info("container %s is running", d.MachineName)
+		glog.Infof("container %s is running", d.MachineName)
 		return nil
 	}
 
@@ -217,14 +217,26 @@ func (d *Driver) GetSSHPort() (int, error) {
 		return 0, errors.Wrap(err, "not running")
 	}
 
-	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
-	if err != nil { // for debugging
-		cmd := exec.Command(d.NodeConfig.OCIBinary, "ps", "-a")
-		b, err := cmd.CombinedOutput()
-		if err != nil {
-			glog.Errorf("error running debugging command ps -a: %v output %q", err, string(b))
+	p := 0
+	var perr error
+	findForward := func() error {
+		p, perr = oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
+		if perr != nil {
+			glog.Errorf("error getting foraded port: %v", perr)
+			// for debugging
+			cmd := exec.Command(d.NodeConfig.OCIBinary, "ps", "-a")
+			b, err := cmd.CombinedOutput()
+			if err != nil {
+				glog.Errorf("error running debugging command ps -a: %v output %q", err, string(b))
+				return err
+			}
+			return perr
 		}
-		return p, errors.Wrapf(err, "get ssh host-port. output of ps -a %q", b)
+		return nil
+	}
+
+	if err := retry.Expo(findForward, 500*time.Microsecond, 2*time.Minute); err != nil {
+		return p, errors.Wrap(err, "find forward")
 	}
 	return p, nil
 }
