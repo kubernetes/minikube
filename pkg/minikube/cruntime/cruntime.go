@@ -166,6 +166,7 @@ func ContainerStatusCommand() string {
 
 // disableOthers disables all other runtimes except for me.
 func disableOthers(me Manager, cr CommandRunner) error {
+
 	// valid values returned by manager.Name()
 	runtimes := []string{"containerd", "crio", "docker"}
 	for _, name := range runtimes {
@@ -178,13 +179,22 @@ func disableOthers(me Manager, cr CommandRunner) error {
 		if r.Name() == me.Name() {
 			continue
 		}
+
+		// Don't disable containerd if we are bound to it
+		if me.Name() == "Docker" && r.Name() == "containerd" && dockerBoundToContainerd(cr) {
+			glog.Infof("skipping containerd shutdown because we are bound to it")
+			continue
+		}
+
 		// runtime is already disabled, nothing to do.
 		if !r.Active() {
 			continue
 		}
+
 		if err = r.Disable(); err != nil {
 			glog.Warningf("disable failed: %v", err)
 		}
+
 		// Validate that the runtime really is offline - and that Active & Disable are properly written.
 		if r.Active() {
 			return fmt.Errorf("%s is still active", r.Name())

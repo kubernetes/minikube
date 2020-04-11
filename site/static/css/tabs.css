@@ -8,48 +8,62 @@ ul.nav.nav-tabs {
 
 div.code-tabs li.nav-tab {
     margin-top: 1.5rem;
-    padding: 10px 20px;
+    padding: 7px 18px;
     float: left;
     text-align: center;
     text-decoration: none;
-    color: #666;
-    font-size: 14px;
+    color: #444;
+    font-size: 18px;
+    font-family: 'Open Sans', sans-serif;
 
-    border-top: 1px solid #C7EAEC;
-    border-left: 1px solid #C7EAEC;
-    border-right: 1px solid #C7EAEC;
+    border-top: 1px solid #ccc;
+    border-left: 1px solid #ccc;
+    border-right: 1px solid #ccc;
     margin-right: 0.5em;
 
     border-top-left-radius: 4px;
     border-top-right-radius: 4px;
-    background-color: #c7eaec;
+    /* inactive tab (title) */
+    background-color: #C5E8EA; /* $mk-light - minus two shades*/
 }
 
+/* active tab (title) */
 div.code-tabs li.active {
     color: #f2771a;
-    border-top: 1px solid #C7EAEC;
-    border-left: 1px solid #C7EAEC;
-    border-right: 1px solid #C7EAEC;
-    background: rgb(244, 255, 255);
+    border-top: 1px solid #b0b6b6;
+    border-left: 1px solid #b0b6b6;
+    border-right: 1px solid #b0b6b6;
+    background: #f3f9fa; /* $mk-verylight */
     font-weight: bold;
 }
+
+/* active tab background */
+div.tab-pane.active {
+    display: block;
+    padding: 2em;
+    background: #f3f9fa; /* $mk-verylight */
+    border: 1px solid #b0b6b6;
+}
+
+
+/* active tab code sample */
+div.code-tabs div.highlight {
+    border: 1px solid #ccc;
+    background-color: #fff;
+}
+
 
 div.code-tabs a.nav-tab {
     all: unset;
     cursor: pointer;
 }
 
+
 div.tab-pane {
     display: none;
     margin-bottom: 3rem;
 }
 
-div.tab-pane.active {
-    display: block;
-    padding: 2em;
-    background: rgb(244, 255, 255);
-    border: 1px solid #C7EAEC;
-}
 
 div.code-tabs code {
     word-break: keep-all;
