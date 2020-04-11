@@ -79,20 +79,9 @@ func NodePressure(cs *kubernetes.Clientset, cc config.ClusterConfig, timeout tim
 				}
 			}
 
-			if c.Type == v1.NodeMemoryPressure && c.Status == v1.ConditionTrue {
+			if c.Type == v1.NodePIDPressure && c.Status == v1.ConditionTrue {
 				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
-				out.WarningT("The node on {{.name}} has ran of memory.", out.V{"name": n.Name})
-				if driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
-					out.T(out.Tip, "Please increase Docker Desktop's memory.")
-					if runtime.GOOS == "darwin" {
-						out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
-					}
-					if runtime.GOOS == "windows" {
-						out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
-					}
-				} else {
-					out.T(out.Tip, "You can specify more memory for your cluster using `minikube start --memory` ")
-				}
+				out.WarningT("The node has ran out of available PIDs.", out.V{"name": n.Name})
 			}
 
 		}
