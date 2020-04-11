@@ -5,6 +5,7 @@ description: >
   How to sync files into minikube
 aliases:
   - /docs/tasks/sync/
+  - /Handbook/sync/
 ---
 
 ## Built-in sync

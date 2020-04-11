@@ -5,6 +5,7 @@ description: >
   How to deploy an application to minikube
 aliases:
   - /docs/tasks/addons
+  - /Handbook/addons
 ---
 
 ## kubectl
