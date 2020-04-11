@@ -222,12 +222,12 @@ func (d *Driver) GetSSHPort() (int, error) {
 	findForward := func() error {
 		p, perr = oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
 		if perr != nil {
-			glog.Errorf("error getting foraded port: %v", perr)
+			glog.Errorf("(medya dbg) error getting forwaded port: %v", perr)
 			// for debugging
 			cmd := exec.Command(d.NodeConfig.OCIBinary, "ps", "-a")
 			b, err := cmd.CombinedOutput()
+			glog.Errorf("(medya dbg) docker ps -a debug: err: %v output : %q", err, string(b))
 			if err != nil {
-				glog.Errorf("error running debugging command ps -a: %v output %q", err, string(b))
 				return err
 			}
 			return perr
