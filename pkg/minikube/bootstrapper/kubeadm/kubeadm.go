@@ -19,6 +19,7 @@ package kubeadm
 import (
 	"bytes"
 	"context"
+	"math"
 	"os/exec"
 	"path"
 	"sync"
@@ -327,57 +328,57 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForNode blocks until the node appears to be healthy
-func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 
 	if !n.ControlPlane {
 		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
 		return nil
 	}
-	if !kverify.ShouldWait(cfg.VerifyComponents) {
+	if !kverify.ShouldWait(cc.VerifyComponents) {
 		glog.Infof("skip waiting for components based on config.")
 		return nil
 	}
 	out.T(out.HealthCheck, "Verifying Kubernetes Components")
-	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
-		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
+		return errors.Wrapf(err, "create runtme-manager %s", cc.KubernetesConfig.ContainerRuntime)
 	}
 
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cc, &n, cc.Driver)
 	if err != nil {
 		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
+	if cc.VerifyComponents[kverify.APIServerWaitKey] {
 		start := time.Now()
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
+		if err := kverify.WaitForAPIServerProcess(cr, k, cc, k.c, start, timeout); err != nil {
 			return errors.Wrap(err, "wait for apiserver proc")
 		}
 
-		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
+		if err := kverify.WaitForHealthyAPIServer(cr, k, cc, k.c, client, start, hostname, port, timeout); err != nil {
 			return errors.Wrap(err, "wait for healthy API server")
 		}
-		out.T(out.CheckOption, "api server {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+		out.T(out.CheckOption, "verifying api server {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
-	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
+	if cc.VerifyComponents[kverify.SystemPodsWaitKey] {
 		start := time.Now()
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
+		if err := kverify.WaitForSystemPods(cr, k, cc, k.c, client, start, timeout); err != nil {
 			return errors.Wrap(err, "waiting for system pods")
 		}
-		out.T(out.CheckOption, "system pods {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+		out.T(out.CheckOption, "verifying system pods {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
-	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
+	if cc.VerifyComponents[kverify.DefaultSAWaitKey] {
 		start := time.Now()
 		client, err := k.client(hostname, port)
 		if err != nil {
@@ -386,10 +387,10 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		if err := kverify.WaitForDefaultSA(client, timeout); err != nil {
 			return errors.Wrap(err, "waiting for default service account")
 		}
-		out.T(out.CheckOption, "default service account {{.seconds}}s", out.V{"seconds": timeToSecond(time.Since(start))})
+		out.T(out.CheckOption, "verifying default service account {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
-	if cfg.VerifyComponents[kverify.AppsRunning] {
+	if cc.VerifyComponents[kverify.AppsRunning] {
 		start := time.Now()
 		client, err := k.client(hostname, port)
 		if err != nil {
@@ -398,25 +399,26 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
 			return errors.Wrap(err, "waiting for apps_running")
 		}
-		out.T(out.CheckOption, "apps running {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+		out.T(out.CheckOption, "verifying apps running {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
-	if cfg.VerifyComponents[kverify.NodeHealthy] {
+	if cc.VerifyComponents[kverify.Node] {
 		start := time.Now()
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		kverify.NodeHealth(client, cfg, timeout)
-		out.T(out.CheckOption, "node health {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+		kverify.NodePressure(client, cc.Driver)
+		out.T(out.CheckOption, "verifying node health {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
-	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
+	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cc.VerifyComponents)
 	return nil
 }
 
 func timeToSecond(d time.Duration) string {
-	s := float64(d / time.Second)
+	s := float64((d / time.Millisecond) / 1000)
+	s = math.Round(s*100)/100 
 	if s == 0 {
 		return ""
 	}
@@ -424,7 +426,7 @@ func timeToSecond(d time.Duration) string {
 }
 
 // needsReset returns whether or not the cluster needs to be reconfigured
-func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client *kubernetes.Clientset, version string) bool {
+func (k *Bootstrapper) needsReset(conf string, hostname string, driver string, port int, client *kubernetes.Clientset, version string) bool {
 	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
 		glog.Infof("needs reset: configs differ:\n%s", rr.Output())
 		return true
@@ -442,12 +444,17 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 	}
 
 	if err := kverify.ExpectAppsRunning(client, kverify.AppsRunningList); err != nil {
-		glog.Infof("needs reset: %v", err)
+		glog.Infof("needs reset: expect apps running: %v", err)
 		return true
 	}
 
 	if err := kverify.APIServerVersionMatch(client, version); err != nil {
-		glog.Infof("needs reset: %v", err)
+		glog.Infof("needs reset: apiserver version match: %v", err)
+		return true
+	}
+
+	if err := kverify.NodePressure(client, driver); err != nil {
+		glog.Infof("needs reset: node pressure %v", err)
 		return true
 	}
 
@@ -455,7 +462,7 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 }
 
 // restartCluster restarts the Kubernetes cluster configured by kubeadm
-func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
+func (k *Bootstrapper) restartCluster(cc config.ClusterConfig) error {
 	glog.Infof("restartCluster start")
 
 	start := time.Now()
@@ -463,7 +470,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		glog.Infof("restartCluster took %s", time.Since(start))
 	}()
 
-	version, err := util.ParseKubernetesVersion(cfg.KubernetesConfig.KubernetesVersion)
+	version, err := util.ParseKubernetesVersion(cc.KubernetesConfig.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
@@ -479,12 +486,12 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		glog.Errorf("failed to create compat symlinks: %v", err)
 	}
 
-	cp, err := config.PrimaryControlPlane(&cfg)
+	cp, err := config.PrimaryControlPlane(&cc)
 	if err != nil {
 		return errors.Wrap(err, "primary control plane")
 	}
 
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &cp, cfg.Driver)
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cc, &cp, cc.Driver)
 	if err != nil {
 		return errors.Wrap(err, "control plane")
 	}
@@ -496,12 +503,12 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 
 	// If the cluster is running, check if we have any work to do.
 	conf := bsutil.KubeadmYamlPath
-	if !k.needsReset(conf, hostname, port, client, cfg.KubernetesConfig.KubernetesVersion) {
+	if !k.needsReset(conf, hostname, cc.Driver, port, client, cc.KubernetesConfig.KubernetesVersion) {
 		glog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
 		return nil
 	}
 
-	if err := k.clearStaleConfigs(cfg); err != nil {
+	if err := k.clearStaleConfigs(cc); err != nil {
 		return errors.Wrap(err, "clearing stale configs")
 	}
 
@@ -509,7 +516,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return errors.Wrap(err, "cp")
 	}
 
-	baseCmd := fmt.Sprintf("%s %s", bsutil.InvokeKubeadm(cfg.KubernetesConfig.KubernetesVersion), phase)
+	baseCmd := fmt.Sprintf("%s %s", bsutil.InvokeKubeadm(cc.KubernetesConfig.KubernetesVersion), phase)
 	cmds := []string{
 		fmt.Sprintf("%s phase certs all --config %s", baseCmd, conf),
 		fmt.Sprintf("%s phase kubeconfig all --config %s", baseCmd, conf),
@@ -526,21 +533,21 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		}
 	}
 
-	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrap(err, "runtime")
 	}
 
 	// We must ensure that the apiserver is healthy before proceeding
-	if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.WaitForAPIServerProcess(cr, k, cc, k.c, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver healthz")
 	}
 
-	if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, time.Now(), hostname, port, kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.WaitForHealthyAPIServer(cr, k, cc, k.c, client, time.Now(), hostname, port, kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "apiserver health")
 	}
 
-	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
+	if err := kverify.WaitForSystemPods(cr, k, cc, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
 	}
 
