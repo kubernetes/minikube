@@ -3,6 +3,10 @@ title: "Configuration"
 weight: 4
 description: >
   Configuring your cluster 
+aliases:
+  - /docs/reference/environment_variables/
+  - /docs/reference/configuration/kubernetes/
+  - /docs/reference/runtimes
 ---
 
 ## Basic Configuration
