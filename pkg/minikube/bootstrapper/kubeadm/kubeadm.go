@@ -68,18 +68,8 @@ type Bootstrapper struct {
 }
 
 // NewBootstrapper creates a new kubeadm.Bootstrapper
-// TODO(#6891): Remove node as an argument
-func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Bootstrapper, error) {
-	name := driver.MachineName(cc, n)
-	h, err := api.Load(name)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting api client")
-	}
-	runner, err := machine.CommandRunner(h)
-	if err != nil {
-		return nil, errors.Wrap(err, "command runner")
-	}
-	return &Bootstrapper{c: runner, contextName: cc.Name, k8sClient: nil}, nil
+func NewBootstrapper(api libmachine.API, cc config.ClusterConfig, r command.Runner) (*Bootstrapper, error) {
+	return &Bootstrapper{c: r, contextName: cc.Name, k8sClient: nil}, nil
 }
 
 // GetAPIServerStatus returns the api-server status
@@ -111,8 +101,7 @@ func (k *Bootstrapper) LogCommands(cfg config.ClusterConfig, o bootstrapper.LogO
 		dmesg.WriteString(fmt.Sprintf(" | tail -n %d", o.Lines))
 	}
 
-	describeNodes := fmt.Sprintf("sudo %s describe nodes --kubeconfig=%s",
-		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+	describeNodes := fmt.Sprintf("sudo %s describe nodes --kubeconfig=%s", kubectlPath(cfg),
 		path.Join(vmpath.GuestPersistentDir, "kubeconfig"))
 
 	return map[string]string{
@@ -218,7 +207,7 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	go func() {
 		// the overlay is required for containerd and cri-o runtime: see #7428
 		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
-			if err := k.applyKicOverlay(cfg); err != nil {
+			if err := k.applyKICOverlay(cfg); err != nil {
 				glog.Errorf("failed to apply kic overlay: %v", err)
 			}
 		}
@@ -704,7 +693,7 @@ func (k *Bootstrapper) UpdateNode(cfg config.ClusterConfig, n config.Node, r cru
 	}
 
 	// Installs compatibility shims for non-systemd environments
-	kubeletPath := path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl")
+	kubeletPath := path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubelet")
 	shims, err := sm.GenerateInitShim("kubelet", kubeletPath, bsutil.KubeletSystemdConfFile)
 	if err != nil {
 		return errors.Wrap(err, "shim")
@@ -764,21 +753,32 @@ func startKubeletIfRequired(runner command.Runner, sm sysinit.Manager) error {
 	return sm.Start("kubelet")
 }
 
-// applyKicOverlay applies the CNI plugin needed to make kic work
-func (k *Bootstrapper) applyKicOverlay(cfg config.ClusterConfig) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+// kubectlPath returns the path to the kubelet
+func kubectlPath(cfg config.ClusterConfig) string {
+	return path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl")
+}
 
-	cmd := exec.CommandContext(ctx, "sudo",
-		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"), "create", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
-		"-f", "-")
-
+// applyKICOverlay applies the CNI plugin needed to make kic work
+func (k *Bootstrapper) applyKICOverlay(cfg config.ClusterConfig) error {
 	b := bytes.Buffer{}
 	if err := kicCNIConfig.Execute(&b, struct{ ImageName string }{ImageName: kic.OverlayImage}); err != nil {
 		return err
 	}
 
-	cmd.Stdin = bytes.NewReader(b.Bytes())
+	ko := path.Join(vmpath.GuestEphemeralDir, fmt.Sprintf("kic_overlay.yaml"))
+	f := assets.NewMemoryAssetTarget(b.Bytes(), ko, "0644")
+
+	if err := k.c.Copy(f); err != nil {
+		return errors.Wrapf(err, "copy")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg), "apply",
+		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")),
+		"-f", ko)
+
 	if rr, err := k.c.RunCmd(cmd); err != nil {
 		return errors.Wrapf(err, "cmd: %s output: %s", rr.Command(), rr.Output())
 	}
@@ -807,8 +807,7 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 	defer cancel()
 	// example:
 	// sudo /var/lib/minikube/binaries/<version>/kubectl label nodes minikube.k8s.io/version=<version> minikube.k8s.io/commit=aa91f39ffbcf27dcbb93c4ff3f457c54e585cf4a-dirty minikube.k8s.io/name=p1 minikube.k8s.io/updated_at=2020_02_20T12_05_35_0700 --all --overwrite --kubeconfig=/var/lib/minikube/kubeconfig
-	cmd := exec.CommandContext(ctx, "sudo",
-		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg),
 		"label", "nodes", verLbl, commitLbl, nameLbl, createdAtLbl, "--all", "--overwrite",
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 
@@ -826,8 +825,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	defer cancel()
 	rbacName := "minikube-rbac"
 	// kubectl create clusterrolebinding minikube-rbac --clusterrole=cluster-admin --serviceaccount=kube-system:default
-	cmd := exec.CommandContext(ctx, "sudo",
-		path.Join(vmpath.GuestPersistentDir, "binaries", cfg.KubernetesConfig.KubernetesVersion, "kubectl"),
+	cmd := exec.CommandContext(ctx, "sudo", kubectlPath(cfg),
 		"create", "clusterrolebinding", rbacName, "--clusterrole=cluster-admin", "--serviceaccount=kube-system:default",
 		fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 	rr, err := k.c.RunCmd(cmd)
