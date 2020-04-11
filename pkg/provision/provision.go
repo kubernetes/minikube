@@ -39,7 +39,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 // generic interface for minikube provisioner
@@ -165,11 +164,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 		authOptions.ServerKeyPath:  authOptions.ServerKeyRemotePath,
 	}
 
-	sshClient, err := sshutil.NewSSHClient(driver)
-	if err != nil {
-		return errors.Wrap(err, "provisioning: error getting ssh client")
-	}
-	sshRunner := command.NewSSHRunner(sshClient)
+	sshRunner := command.NewSSHRunner(driver)
 
 	dirs := []string{}
 	for _, dst := range remoteCerts {
@@ -177,7 +172,7 @@ func copyRemoteCerts(authOptions auth.Options, driver drivers.Driver) error {
 	}
 
 	args := append([]string{"mkdir", "-p"}, dirs...)
-	if _, err = sshRunner.RunCmd(exec.Command("sudo", args...)); err != nil {
+	if _, err := sshRunner.RunCmd(exec.Command("sudo", args...)); err != nil {
 		return err
 	}
 
