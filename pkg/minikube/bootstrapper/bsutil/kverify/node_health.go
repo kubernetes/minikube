@@ -47,10 +47,10 @@ func NodePressure(cs *kubernetes.Clientset, cc config.ClusterConfig, timeout tim
 		glog.Infof("node storage ephemeral capacity is %s", n.Status.Capacity.StorageEphemeral())
 		glog.Infof("node cpu capacity is %s", n.Status.Capacity.Cpu().AsDec())
 		for _, c := range n.Status.Conditions {
-			if c.Type == v1.NodeDiskPressure && c.Status != v1.ConditionTrue { // TODO: medya flip later
-				out.ErrT(out.FailureType,"node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name":n.Name, "condition_type":c.Type,"reason":c.Reason,"message":c.Message})
+			if c.Type == v1.NodeDiskPressure && c.Status == v1.ConditionTrue {
+				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
+				out.WarningT("The node on {{.name}} has ran out of disk space. please consider allocating more disk using or pruning un-used images", out.V{"name": n.Name})
 				if driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
-					out.WarningT("The node on {{.name}} has ran out of disk space. please consider allocating more disk using or pruning un-used images", out.V{"name": n.Name})
 					out.T(out.Tip, "Please increase Docker Desktop's disk image size.")
 					if runtime.GOOS == "darwin" {
 						out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
@@ -58,21 +58,48 @@ func NodePressure(cs *kubernetes.Clientset, cc config.ClusterConfig, timeout tim
 					if runtime.GOOS == "windows" {
 						out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 					}
-
-				} else {
-					out.WarningT("The node on {{.name}} is running out of disk. please consider allocating more disk using or pruning un-used images", out.V{"name": n.Name})
+				} else { // VM-drivers
 					out.T(out.Tip, "You can specify a larger disk for your cluster using `minikube start --disk` ")
 				}
 			}
+
+			if c.Type == v1.NodeMemoryPressure && c.Status == v1.ConditionTrue {
+				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
+				out.WarningT("The node on {{.name}} has ran of memory.", out.V{"name": n.Name})
+				if driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
+					out.T(out.Tip, "Please increase Docker Desktop's memory.")
+					if runtime.GOOS == "darwin" {
+						out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+					}
+					if runtime.GOOS == "windows" {
+						out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+					}
+				} else {
+					out.T(out.Tip, "You can specify a larger memory size for your cluster using `minikube start --memory` ")
+				}
+			}
+
+			if c.Type == v1.NodeMemoryPressure && c.Status == v1.ConditionTrue {
+				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
+				out.WarningT("The node on {{.name}} has ran of memory.", out.V{"name": n.Name})
+				if driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
+					out.T(out.Tip, "Please increase Docker Desktop's memory.")
+					if runtime.GOOS == "darwin" {
+						out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+					}
+					if runtime.GOOS == "windows" {
+						out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+					}
+				} else {
+					out.T(out.Tip, "You can specify more memory for your cluster using `minikube start --memory` ")
+				}
+			}
+
 		}
 	}
 
 	// // NodeReady means kubelet is healthy and ready to accept pods.
 	// NodeReady NodeConditionType = "Ready"
-	// // NodeMemoryPressure means the kubelet is under pressure due to insufficient available memory.
-	// NodeMemoryPressure NodeConditionType = "MemoryPressure"
-	// // NodeDiskPressure means the kubelet is under pressure due to insufficient available disk.
-	// NodeDiskPressure NodeConditionType = "DiskPressure"
 	// // NodePIDPressure means the kubelet is under pressure due to insufficient available PID.
 	// NodePIDPressure NodeConditionType = "PIDPressure"
 	// // NodeNetworkUnavailable means that network for the node is not correctly configured.
