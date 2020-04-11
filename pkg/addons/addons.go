@@ -18,6 +18,7 @@ package addons
 
 import (
 	"fmt"
+	"k8s.io/minikube/pkg/drivers/kic"
 	"path"
 	"runtime"
 	"sort"
@@ -177,12 +178,13 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	}
 
 	if name == "registry" {
-		port, err := machine.RegistryPort(cc)
-		if err != nil {
-			errors.Wrap(err, "Can't get Registry port")
-		}
-		if runtime.GOOS != "linux" {
-			out.T(out.Notice, `This is the port you should use for the registry addon "{{.port}}"`, out.V{"port": port})
+		if driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
+			port, err := kic.GetRegistryAddonPort(cc)
+			if err != nil {
+				errors.Wrap(err, "registry port")
+			}
+			out.T(out.Notice, `Registry addon on with {{.driver}} uses {{.port}} please use that.
+For more information see: https://minikube.sigs.k8s.io/docs/drivers/docker/#install-docker to documentation`, out.V{"driver":cc.Driver, "port": port})
 		}
 	}
 
