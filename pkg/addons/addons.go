@@ -183,7 +183,7 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 			if err != nil {
 				errors.Wrap(err, "registry port")
 			}
-			out.T(out.Notice, `Registry addon on with {{.driver}} uses {{.port}} please use that.
+			out.T(out.Documentation, `Registry addon on with {{.driver}} uses {{.port}} please use that.
 For more information see: https://minikube.sigs.k8s.io/docs/drivers/docker/#install-docker to documentation`, out.V{"driver":cc.Driver, "port": port})
 		}
 	}
