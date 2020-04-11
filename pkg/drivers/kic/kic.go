@@ -206,15 +206,15 @@ func (d *Driver) GetSSHPort() (int, error) {
 			return errors.Wrap(err, "GetState")
 		}
 		if s != state.Running {
-			glog.Warningf("container is not running, will retry: %v", err)
+			glog.Warningf("container %q is in %q state, will retry till it is running: %v", d.MachineName, s, err)
 			return errors.Wrap(err, "not-running")
 		}
-		return err
+		return nil
 	}
 
-	if err := retry.Expo(waitRunning, 500*time.Microsecond, time.Minute); err != nil {
+	if err := retry.Expo(waitRunning, 500*time.Microsecond, 2*time.Minute); err != nil {
 		// let it try anyways one last time. maybe by now it got there.
-		glog.Errorf("container is not running, might not be able to get SSH port: %v", err)
+		return 0, errors.Wrap(err, "not running")
 	}
 
 	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
