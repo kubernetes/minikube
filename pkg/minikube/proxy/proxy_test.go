@@ -57,7 +57,7 @@ func TestIsInBlock(t *testing.T) {
 		{"192.168.0.2", "192.168.0.1/32", false, false},
 		{"192.168.0.1", "192.168.0.1/18", true, false},
 		{"abcd", "192.168.0.1/18", false, true},
-		{"192.168.0.1", "foo", false, true},
+		{"192.168.0.1", "foo", false, false},
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%s in %s Want: %t WantAErr: %t", tc.ip, tc.block, tc.want, tc.wanntAErr), func(t *testing.T) {

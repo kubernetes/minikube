@@ -44,6 +44,9 @@ func isInBlock(ip string, block string) (bool, error) {
 	if i == nil {
 		return false, fmt.Errorf("parsed IP is nil")
 	}
+	if !strings.Contains(block, "/") {
+		return false, nil
+	}
 	_, b, err := net.ParseCIDR(block)
 	if err != nil {
 		return false, errors.Wrapf(err, "Error Parsing block %s", b)
@@ -101,7 +104,11 @@ func checkEnv(ip string, env string) bool {
 	// Checks if included in IP ranges, i.e., 192.168.39.13/24
 	noProxyBlocks := strings.Split(v, ",")
 	for _, b := range noProxyBlocks {
-		if yes, _ := isInBlock(ip, b); yes {
+		yes, err := isInBlock(ip, b)
+		if err != nil {
+			glog.Errorf("fail to check proxy env: %v", err)
+		}
+		if yes {
 			return true
 		}
 	}
