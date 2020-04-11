@@ -85,6 +85,10 @@ For instance, to allow Kubernetes to launch on an unsupported Docker release:
 minikube start --extra-config=kubeadm.ignore-preflight-errors=SystemVerification
 ```
 
+### IPv6 support
+
+minikube currently doesn't support IPv6. However, it is on the [roadmap]({{< ref "/docs/contrib/roadmap.en.md" >}}).
+
 ## Runtime configuration
 
 The default container runtime in minikube is Docker. You can select it explicitly by using:
