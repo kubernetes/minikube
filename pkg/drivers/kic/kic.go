@@ -212,7 +212,7 @@ func (d *Driver) GetSSHPort() (int, error) {
 		return err
 	}
 
-	if err := retry.Expo(waitRunning, 500*time.Microsecond, time.Second); err != nil {
+	if err := retry.Expo(waitRunning, 500*time.Microsecond, time.Minute); err != nil {
 		// let it try anyways one last time. maybe by now it got there.
 		glog.Errorf("container is not running, might not be able to get SSH port: %v", err)
 	}
