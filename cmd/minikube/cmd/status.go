@@ -72,14 +72,16 @@ const (
 	minikubeNotRunningStatusFlag = 1 << 0
 	clusterNotRunningStatusFlag  = 1 << 1
 	k8sNotRunningStatusFlag      = 1 << 2
-	defaultStatusFormat          = `master node: {{.Name}}
+	defaultStatusFormat          = `{{.Name}}
+type: Control Plane
 host: {{.Host}}
 kubelet: {{.Kubelet}}
 apiserver: {{.APIServer}}
 kubeconfig: {{.Kubeconfig}}
 
 `
-	workerStatusFormat = `worker node: {{.Name}}
+	workerStatusFormat = `{{.Name}}
+type: Worker
 host: {{.Host}}
 kubelet: {{.Kubelet}}
 
