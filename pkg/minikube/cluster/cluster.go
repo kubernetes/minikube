@@ -26,6 +26,7 @@ import (
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/kubeadm"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 )
@@ -44,12 +45,12 @@ func init() {
 
 // Bootstrapper returns a new bootstrapper for the cluster
 // TODO(#6891): Remove node as an argument
-func Bootstrapper(api libmachine.API, bootstrapperName string, cc config.ClusterConfig, n config.Node) (bootstrapper.Bootstrapper, error) {
+func Bootstrapper(api libmachine.API, bootstrapperName string, cc config.ClusterConfig, r command.Runner) (bootstrapper.Bootstrapper, error) {
 	var b bootstrapper.Bootstrapper
 	var err error
 	switch bootstrapperName {
 	case bootstrapper.Kubeadm:
-		b, err = kubeadm.NewBootstrapper(api, cc, n)
+		b, err = kubeadm.NewBootstrapper(api, cc, r)
 		if err != nil {
 			return nil, errors.Wrap(err, "getting a new kubeadm bootstrapper")
 		}

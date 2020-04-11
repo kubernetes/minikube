@@ -36,7 +36,7 @@ import (
 	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnutils"
 	"github.com/docker/machine/libmachine/persist"
-	"github.com/docker/machine/libmachine/ssh"
+	lmssh "github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/docker/machine/libmachine/swarm"
 	"github.com/docker/machine/libmachine/version"
@@ -48,13 +48,12 @@ import (
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 )
 
 // NewRPCClient gets a new client.
 func NewRPCClient(storePath, certsDir string) libmachine.API {
 	c := libmachine.NewClient(storePath, certsDir)
-	c.SSHClientType = ssh.Native
+	c.SSHClientType = lmssh.Native
 	return c
 }
 
@@ -154,19 +153,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 		return command.NewExecRunner(), nil
 	}
 
-	if driver.IsKIC(h.Driver.DriverName()) {
-		return command.NewKICRunner(h.Name, h.Driver.DriverName()), nil
-	}
-	return SSHRunner(h)
-}
-
-// SSHRunner returns an SSH runner for the host
-func SSHRunner(h *host.Host) (command.Runner, error) {
-	client, err := sshutil.NewSSHClient(h.Driver)
-	if err != nil {
-		return nil, errors.Wrap(err, "getting ssh client for bootstrapper")
-	}
-	return command.NewSSHRunner(client), nil
+	return command.NewSSHRunner(h.Driver), nil
 }
 
 // Create creates the host
