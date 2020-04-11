@@ -140,6 +140,10 @@ func teeSSH(s *ssh.Session, cmd string, outB io.Writer, errB io.Writer) error {
 
 // RunCmd implements the Command Runner interface to run a exec.Cmd object
 func (s *SSHRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
+	if cmd.Stdin != nil {
+		return nil, fmt.Errorf("SSHRunner does not support stdin - you could be the first to add it")
+	}
+
 	rr := &RunResult{Args: cmd.Args}
 	glog.Infof("Run: %v", rr.Command())
 
