@@ -407,7 +407,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		kverify.NodePressure(client, cfg, timeout)
+		kverify.NodeHealth(client, cfg, timeout)
 		out.T(out.CheckOption, "node health {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
