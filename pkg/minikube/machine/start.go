@@ -32,6 +32,7 @@ import (
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
+	"golang.org/x/crypto/ssh"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -43,6 +44,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/lock"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 var (
@@ -62,28 +64,32 @@ var (
 )
 
 // StartHost starts a host VM.
-func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, error) {
+func StartHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, bool, error) {
+	machineName := driver.MachineName(cfg, n)
+
 	// Prevent machine-driver boot races, as well as our own certificate race
-	releaser, err := acquireMachinesLock(cfg.Name)
+	releaser, err := acquireMachinesLock(machineName)
 	if err != nil {
-		return nil, errors.Wrap(err, "boot lock")
+		return nil, false, errors.Wrap(err, "boot lock")
 	}
 	start := time.Now()
 	defer func() {
-		glog.Infof("releasing machines lock for %q, held for %s", cfg.Name, time.Since(start))
+		glog.Infof("releasing machines lock for %q, held for %s", machineName, time.Since(start))
 		releaser.Release()
 	}()
 
-	exists, err := api.Exists(cfg.Name)
+	exists, err := api.Exists(machineName)
 	if err != nil {
-		return nil, errors.Wrapf(err, "exists: %s", cfg.Name)
+		return nil, false, errors.Wrapf(err, "exists: %s", machineName)
 	}
 	if !exists {
-		glog.Infof("Provisioning new machine with config: %+v", cfg)
-		return createHost(api, cfg, n)
+		glog.Infof("Provisioning new machine with config: %+v %+v", cfg, n)
+		h, err := createHost(api, cfg, n)
+		return h, exists, err
 	}
 	glog.Infoln("Skipping create...Using existing machine configuration")
-	return fixHost(api, cfg, n)
+	h, err := fixHost(api, cfg, n)
+	return h, exists, err
 }
 
 func engineOptions(cfg config.ClusterConfig) *engine.Options {
@@ -98,7 +104,7 @@ func engineOptions(cfg config.ClusterConfig) *engine.Options {
 }
 
 func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*host.Host, error) {
-	glog.Infof("createHost starting for %q (driver=%q)", cfg.Name, cfg.Driver)
+	glog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
 		glog.Infof("createHost completed in %s", time.Since(start))
@@ -191,6 +197,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 	}
 
 	glog.Infof("creating required directories: %v", requiredDirectories)
+
 	r, err := commandRunner(h)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
@@ -205,7 +212,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 		showLocalOsRelease()
 	}
 	if driver.IsVM(mc.Driver) {
-		logRemoteOsRelease(h.Driver)
+		logRemoteOsRelease(r)
 	}
 	return syncLocalAssets(r)
 }
@@ -229,11 +236,19 @@ func commandRunner(h *host.Host) (command.Runner, error) {
 	}
 
 	glog.Infof("Creating SSH client and returning SSHRunner for %q driver", d)
-	client, err := sshutil.NewSSHClient(h.Driver)
-	if err != nil {
-		return nil, errors.Wrap(err, "ssh client")
+
+	// Retry in order to survive an ssh restart, which sometimes happens due to provisioning
+	var sc *ssh.Client
+	getSSH := func() (err error) {
+		sc, err = sshutil.NewSSHClient(h.Driver)
+		return err
 	}
-	return command.NewSSHRunner(client), nil
+
+	if err := retry.Expo(getSSH, 250*time.Millisecond, 2*time.Second); err != nil {
+		return nil, err
+	}
+
+	return command.NewSSHRunner(sc), nil
 }
 
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)

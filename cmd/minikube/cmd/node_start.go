@@ -20,10 +20,9 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -37,22 +36,12 @@ var nodeStartCmd = &cobra.Command{
 			exit.UsageT("Usage: minikube node start [name]")
 		}
 
+		api, cc := mustload.Partial(ClusterFlagValue())
 		name := args[0]
-
-		// Make sure it's not running
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("creating api client", err)
-		}
 
 		if machine.IsRunning(api, name) {
 			out.T(out.Check, "{{.name}} is already running", out.V{"name": name})
 			os.Exit(0)
-		}
-
-		cc, err := config.Load(viper.GetString(config.ProfileName))
-		if err != nil {
-			exit.WithError("loading config", err)
 		}
 
 		n, _, err := node.Retrieve(cc, name)
@@ -60,15 +49,33 @@ var nodeStartCmd = &cobra.Command{
 			exit.WithError("retrieving node", err)
 		}
 
-		// Start it up baby
-		_, err = node.Start(*cc, *n, false, nil)
+		r, p, m, h, err := node.Provision(cc, n, false)
 		if err != nil {
-			out.FatalT("Failed to start node {{.name}}", out.V{"name": name})
+			exit.WithError("provisioning host for node", err)
+		}
+
+		s := node.Starter{
+			Runner:         r,
+			PreExists:      p,
+			MachineAPI:     m,
+			Host:           h,
+			Cfg:            cc,
+			Node:           n,
+			ExistingAddons: nil,
+		}
+
+		_, err = node.Start(s, false)
+		if err != nil {
+			_, err := maybeDeleteAndRetry(*cc, *n, nil, err)
+			if err != nil {
+				exit.WithError("failed to start node", err)
+			}
 		}
 	},
 }
 
 func init() {
 	nodeStartCmd.Flags().String("name", "", "The name of the node to start")
+	nodeStartCmd.Flags().Bool(deleteOnFailure, false, "If set, delete the current cluster if start fails and try again. Defaults to false.")
 	nodeCmd.AddCommand(nodeStartCmd)
 }

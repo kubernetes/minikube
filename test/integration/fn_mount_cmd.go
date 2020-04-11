@@ -66,10 +66,10 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 
 	defer func() {
 		if t.Failed() {
-			t.Logf("%s failed, getting debug info...", t.Name())
+			t.Logf("%q failed, getting debug info...", t.Name())
 			rr, err := Run(t, exec.Command(Target(), "-p", profile, "ssh", "mount | grep 9p; ls -la /mount-9p; cat /mount-9p/pod-dates"))
 			if err != nil {
-				t.Logf("%s: %v", rr.Command(), err)
+				t.Logf("debugging command %q failed : %v", rr.Command(), err)
 			} else {
 				t.Logf("(debug) %s:\n%s", rr.Command(), rr.Stdout)
 			}
@@ -78,7 +78,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		// Cleanup in advance of future tests
 		rr, err := Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo umount -f /mount-9p"))
 		if err != nil {
-			t.Logf("%s: %v", rr.Command(), err)
+			t.Logf("%q: %v", rr.Command(), err)
 		}
 		ss.Stop(t)
 		cancel()
@@ -106,7 +106,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	start := time.Now()
-	if err := retry.Expo(checkMount, time.Second, 15*time.Second); err != nil {
+	if err := retry.Expo(checkMount, time.Millisecond*500, Seconds(15)); err != nil {
 		// For local testing, allow macOS users to click prompt. If they don't, skip the test.
 		if runtime.GOOS == "darwin" {
 			t.Skip("skipping: mount did not appear, likely because macOS requires prompt to allow non-codesigned binaries to listen on non-localhost port")
@@ -117,7 +117,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	// Assert that we can access the mount without an error. Display for debugging.
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "--", "ls", "-la", guestMount))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("failed verifying accessing to the mount. args %q : %v", rr.Command(), err)
 	}
 	t.Logf("guest mount directory contents\n%s", rr.Stdout)
 
@@ -125,7 +125,7 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	tp := filepath.Join("/mount-9p", testMarker)
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "cat", tp))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("failed to verify the mount contains unique test marked: args %q: %v", rr.Command(), err)
 	}
 
 	if !bytes.Equal(rr.Stdout.Bytes(), wantFromTest) {
@@ -136,28 +136,28 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 	// Start the "busybox-mount" pod.
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "replace", "--force", "-f", filepath.Join(*testdataDir, "busybox-mount-test.yaml")))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("failed to 'kubectl replace' for busybox-mount-test. args %q : %v", rr.Command(), err)
 	}
 
 	if _, err := PodWait(ctx, t, profile, "default", "integration-test=busybox-mount", Minutes(4)); err != nil {
-		t.Fatalf("wait: %v", err)
+		t.Fatalf("failed waiting for busybox-mount pod: %v", err)
 	}
 
 	// Read the file written by pod startup
 	p := filepath.Join(tempDir, createdByPod)
 	got, err := ioutil.ReadFile(p)
 	if err != nil {
-		t.Errorf("readfile %s: %v", p, err)
+		t.Errorf("failed to read file created by pod %q: %v", p, err)
 	}
 	wantFromPod := []byte("test\n")
 	if !bytes.Equal(got, wantFromPod) {
-		t.Errorf("%s = %q, want %q", p, got, wantFromPod)
+		t.Errorf("the content of the file %q is %q, but want it to be: *%q*", p, got, wantFromPod)
 	}
 
 	// test that file written from host was read in by the pod via cat /mount-9p/written-by-host;
 	rr, err = Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "logs", "busybox-mount"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("failed to get kubectl logs for busybox-mount. args %q : %v", rr.Command(), err)
 	}
 	if !bytes.Equal(rr.Stdout.Bytes(), wantFromTest) {
 		t.Errorf("busybox-mount logs = %q, want %q", rr.Stdout.Bytes(), wantFromTest)
@@ -169,27 +169,27 @@ func validateMountCmd(ctx context.Context, t *testing.T, profile string) {
 		// test that file written from host was read in by the pod via cat /mount-9p/fromhost;
 		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "stat", gp))
 		if err != nil {
-			t.Errorf("%s failed: %v", rr.Args, err)
+			t.Errorf("failed to stat the file %q iniside minikube : args %q: %v", gp, rr.Command(), err)
 		}
 
 		if runtime.GOOS == "windows" {
 			if strings.Contains(rr.Stdout.String(), "Access: 1970-01-01") {
-				t.Errorf("invalid access time: %v", rr.Stdout)
+				t.Errorf("expected to get valid access time but got: %q", rr.Stdout)
 			}
 		}
 
 		if strings.Contains(rr.Stdout.String(), "Modify: 1970-01-01") {
-			t.Errorf("invalid modify time: %v", rr.Stdout)
+			t.Errorf("expected to get valid modify time but got: %q", rr.Stdout)
 		}
 	}
 
 	p = filepath.Join(tempDir, createdByTestRemovedByPod)
 	if _, err := os.Stat(p); err == nil {
-		t.Errorf("expected file %s to be removed", p)
+		t.Errorf("expected file %q to be removed but exists !", p)
 	}
 
 	p = filepath.Join(tempDir, createdByPodRemovedByTest)
 	if err := os.Remove(p); err != nil {
-		t.Errorf("unexpected error removing file %s: %v", p, err)
+		t.Errorf("failed to remove file %q: %v", p, err)
 	}
 }

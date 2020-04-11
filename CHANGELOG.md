@@ -1,5 +1,170 @@
 # Release Notes
 
+## Version 1.9.2 - 2020-04-04
+
+Minor improvements:
+
+* UX: Remove noisy debug statement [#7407](https://github.com/kubernetes/minikube/pull/7407)
+* Feature: Make --wait more flexible [#7375](https://github.com/kubernetes/minikube/pull/7375)
+* Docker: adjust warn if slow for ps and volume [#7410](https://github.com/kubernetes/minikube/pull/7410)
+* Localization: Update Japanese translations [#7403](https://github.com/kubernetes/minikube/pull/7403)
+* Performance: Parallelize updating cluster and setting up certs [#7394](https://github.com/kubernetes/minikube/pull/7394)
+* Addons: allow ingress addon for docker/podman drivers only on linux for now [#7393](https://github.com/kubernetes/minikube/pull/7393)
+
+- Anders F Björklund
+- Medya Ghazizadeh
+- Prasad Katti
+- Priya Wadhwa
+- Thomas Strömberg
+- tomocy
+
+## Version 1.9.1 - 2020-04-02
+
+Improvements:
+
+* add delete-on-failure flag [#7345](https://github.com/kubernetes/minikube/pull/7345)
+* Run dashboard with internal kubectl if not in path [#7299](https://github.com/kubernetes/minikube/pull/7299)
+* Implement options for the minikube version command [#7325](https://github.com/kubernetes/minikube/pull/7325)
+* service list cmd: display target port and name  [#6879](https://github.com/kubernetes/minikube/pull/6879)
+* Add rejection reason to 'unable to find driver' error [#7379](https://github.com/kubernetes/minikube/pull/7379)
+* Update Japanese translations [#7359](https://github.com/kubernetes/minikube/pull/7359)
+
+Bug fixes:
+
+* Make eviction and image GC settings consistent across kubeadm API versions [#7364](https://github.com/kubernetes/minikube/pull/7364)
+* Move errors and warnings to output to stderr [#7382](https://github.com/kubernetes/minikube/pull/7382)
+* Correct assumptions for forwarded hostname & IP handling [#7360](https://github.com/kubernetes/minikube/pull/7360)
+* Extend maximum stop retry from 30s to 120s [#7363](https://github.com/kubernetes/minikube/pull/7363)
+* Use kubectl version --short if --output=json fails [#7356](https://github.com/kubernetes/minikube/pull/7356)
+* Fix embed certs by updating kubeconfig after certs are populated [#7309](https://github.com/kubernetes/minikube/pull/7309)
+* none: Use LookPath to verify conntrack install [#7305](https://github.com/kubernetes/minikube/pull/7305)
+* Show all global flags in options command [#7292](https://github.com/kubernetes/minikube/pull/7292)
+* Fix null deref in start host err [#7278](https://github.com/kubernetes/minikube/pull/7278)
+* Increase Docker "slow" timeouts to 15s [#7268](https://github.com/kubernetes/minikube/pull/7268)
+* none: check for docker and root uid [#7388](https://github.com/kubernetes/minikube/pull/7388)
+
+Thank you to our contributors for this release!
+
+- Anders F Björklund
+- Dan Lorenc
+- Eberhard Wolff
+- John Laswell
+- Marcin Niemira
+- Medya Ghazizadeh
+- Prasad Katti
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- Vincent Link
+- anencore94
+- priyawadhwa
+- re;i
+- tomocy
+
+## Version 1.9.0 - 2020-03-26
+
+New features & improvements
+
+* Update DefaultKubernetesVersion to v1.18.0 [#7235](https://github.com/kubernetes/minikube/pull/7235)
+* Add --vm flag for users who want to autoselect only VM's [#7068](https://github.com/kubernetes/minikube/pull/7068)
+* Add 'stable' and 'latest' as valid kubernetes-version values [#7212](https://github.com/kubernetes/minikube/pull/7212)
+
+* gpu addon: privileged mode no longer required [#7149](https://github.com/kubernetes/minikube/pull/7149)
+* Add sch_tbf and extend filter ipset kernel module for bandwidth shaping [#7255](https://github.com/kubernetes/minikube/pull/7255)
+* Parse --disk-size and --memory sizes with binary suffixes [#7206](https://github.com/kubernetes/minikube/pull/7206)
+
+
+Bug Fixes
+
+* Re-initalize failed Kubernetes clusters [#7234](https://github.com/kubernetes/minikube/pull/7234)
+* do not override hostname if extraConfig is specified [#7238](https://github.com/kubernetes/minikube/pull/7238)
+* Enable HW_RANDOM_VIRTIO to fix sshd startup delays [#7208](https://github.com/kubernetes/minikube/pull/7208)
+* hyperv Delete: call StopHost before removing VM [#7160](https://github.com/kubernetes/minikube/pull/7160)
+
+Huge thank you for this release towards our contributors: 
+
+- Anders F Björklund
+- Medya Ghazizadeh
+- Priya Wadhwa
+- Sharif Elgamal
+- Thomas Strömberg
+- Tom
+- Vincent Link
+- Yang Keao
+- Zhongcheng Lao
+- vikkyomkar
+
+
+## Version 1.9.0-beta.2 - 2020-03-21
+
+New features & improvements
+
+* 🎉 Experimental multi-node support 🎊 [#6787](https://github.com/kubernetes/minikube/pull/6787)
+* Add kubectl desc nodes to minikube logs [#7105](https://github.com/kubernetes/minikube/pull/7105)
+* bumpup helm-tiller v2.16.1 → v2.16.3 [#7130](https://github.com/kubernetes/minikube/pull/7130)
+* Update Nvidia GPU plugin [#7132](https://github.com/kubernetes/minikube/pull/7132)
+* bumpup istio & istio-provisoner addon 1.4.0 → 1.5.0 [#7120](https://github.com/kubernetes/minikube/pull/7120)
+* New addon: registry-aliases [#6657](https://github.com/kubernetes/minikube/pull/6657)
+* Upgrade buildroot minor version [#7101](https://github.com/kubernetes/minikube/pull/7101)
+* Skip kubeadm if cluster is running & properly configured [#7124](https://github.com/kubernetes/minikube/pull/7124)
+* Make certificates per-profile and consistent until IP or names change [#7125](https://github.com/kubernetes/minikube/pull/7125)
+
+Bugfixes
+
+* Prevent minikube from crashing if namespace or service doesn't exist [#5844](https://github.com/kubernetes/minikube/pull/5844)
+* Add warning if both vm-driver and driver are specified [#7109](https://github.com/kubernetes/minikube/pull/7109)
+* Improve error when docker-env is used with non-docker runtime [#7112](https://github.com/kubernetes/minikube/pull/7112)
+* provisioner: only reload docker if necessary, don't install curl [#7115](https://github.com/kubernetes/minikube/pull/7115)
+
+Thank you to our contributors:
+
+- Anders F Björklund
+- Iso Kenta
+- Kamesh Sampath
+- Kenta Iso
+- Prasad Katti
+- Priya Wadhwa
+- Sharif Elgamal
+- Tacio Costa
+- Thomas Strömberg
+- Zhongcheng Lao
+- rajula96reddy
+- sayboras
+
+## Version 1.9.0-beta.1 - 2020-03-18
+
+New features
+
+* Use Kubernetes v1.18.0-rc.1 by default [#7076](https://github.com/kubernetes/minikube/pull/7076)
+* Upgrade Docker driver to preferred (Linux), default on other platforms [#7090](https://github.com/kubernetes/minikube/pull/7090)
+* Upgrade Docker, from 19.03.7 to 19.03.8 [#7040](https://github.com/kubernetes/minikube/pull/7040)
+* Upgrade Docker, from 19.03.6 to 19.03.7 [#6939](https://github.com/kubernetes/minikube/pull/6939)
+* Upgrade dashboard to v2.0.0-rc6 [#7098](https://github.com/kubernetes/minikube/pull/7098)
+* Upgrade crio to 1.17.1 [#7099](https://github.com/kubernetes/minikube/pull/7099)
+* Updated French translation [#7055](https://github.com/kubernetes/minikube/pull/7055)
+
+Bugfixes
+
+* If user doesn't specify driver, don't validate against existing cluster [#7096](https://github.com/kubernetes/minikube/pull/7096)
+* Strip the version prefix before calling semver [#7054](https://github.com/kubernetes/minikube/pull/7054)
+* Move some of the driver validation before driver selection [#7080](https://github.com/kubernetes/minikube/pull/7080)
+* Fix bug where global config memory was ignored [#7082](https://github.com/kubernetes/minikube/pull/7082)
+* Remove controllerManager from the kubeadm v1beta2 template [#7030](https://github.com/kubernetes/minikube/pull/7030)
+* Delete: output underlying status failure [#7043](https://github.com/kubernetes/minikube/pull/7043)
+* status: error properly if cluster does not exist [#7041](https://github.com/kubernetes/minikube/pull/7041)
+
+Huge thank you for this release towards our contributors:
+
+- Anders F Björklund
+- Medya Ghazizadeh
+- Priya Wadhwa
+- RA489
+- Richard Wall
+- Sharif Elgamal
+- Thomas Strömberg
+- Vikky Omkar
+- jumahmohammad
+
 ## Version 1.8.2 - 2020-03-13
 
 Shiny new improvements:

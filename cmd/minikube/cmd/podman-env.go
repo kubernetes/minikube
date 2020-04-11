@@ -27,16 +27,13 @@ import (
 	"strings"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/ssh"
-	"github.com/docker/machine/libmachine/state"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/shell"
 )
@@ -67,15 +64,16 @@ func podmanShellCfgSet(ec PodmanEnvConfig, envMap map[string]string) *PodmanShel
 }
 
 // isPodmanAvailable checks if Podman is available
-func isPodmanAvailable(host *host.Host) (bool, error) {
-	// we need both "varlink bridge" and "podman varlink"
-	if _, err := host.RunSSHCommand("which varlink"); err != nil {
-		return false, err
+func isPodmanAvailable(r command.Runner) bool {
+	if _, err := r.RunCmd(exec.Command("which", "varlink")); err != nil {
+		return false
 	}
-	if _, err := host.RunSSHCommand("which podman"); err != nil {
-		return false, err
+
+	if _, err := r.RunCmd(exec.Command("which", "podman")); err != nil {
+		return false
 	}
-	return true, nil
+
+	return true
 }
 
 func createExternalSSHClient(d drivers.Driver) (*ssh.ExternalClient, error) {
@@ -108,75 +106,49 @@ var podmanEnvCmd = &cobra.Command{
 	Short: "Sets up podman env variables; similar to '$(podman-machine env)'",
 	Long:  `Sets up podman env variables; similar to '$(podman-machine env)'.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
+		cname := ClusterFlagValue()
+		co := mustload.Running(cname)
+		driverName := co.CP.Host.DriverName
+
+		if driverName == driver.None {
+			exit.UsageT(`'none' driver does not support 'minikube podman-env' command`)
 		}
-		defer api.Close()
 
-		profile := viper.GetString(config.ProfileName)
-		cc, err := config.Load(profile)
-		if err != nil {
-			exit.WithError("Error getting config", err)
+		if ok := isPodmanAvailable(co.CP.Runner); !ok {
+			exit.WithCodeT(exit.Unavailable, `The podman service within '{{.cluster}}' is not active`, out.V{"cluster": cname})
 		}
-		for _, n := range cc.Nodes {
-			machineName := driver.MachineName(*cc, n)
-			host, err := machine.LoadHost(api, machineName)
+
+		client, err := createExternalSSHClient(co.CP.Host.Driver)
+		if err != nil {
+			exit.WithError("Error getting ssh client", err)
+		}
+
+		sh := shell.EnvConfig{
+			Shell: shell.ForceShell,
+		}
+		ec := PodmanEnvConfig{
+			EnvConfig: sh,
+			profile:   cname,
+			driver:    driverName,
+			client:    client,
+		}
+
+		if ec.Shell == "" {
+			ec.Shell, err = shell.Detect()
 			if err != nil {
-				exit.WithError("Error getting host", err)
+				exit.WithError("Error detecting shell", err)
 			}
-			if host.Driver.DriverName() == driver.None {
-				exit.UsageT(`'none' driver does not support 'minikube podman-env' command`)
-			}
+		}
 
-			hostSt, err := machine.Status(api, machineName)
-			if err != nil {
-				exit.WithError("Error getting host status", err)
+		if podmanUnset {
+			if err := podmanUnsetScript(ec, os.Stdout); err != nil {
+				exit.WithError("Error generating unset output", err)
 			}
-			if hostSt != state.Running.String() {
-				exit.WithCodeT(exit.Unavailable, `'{{.profile}}' is not running`, out.V{"profile": profile})
-			}
-			ok, err := isPodmanAvailable(host)
-			if err != nil {
-				exit.WithError("Error getting service status", err)
-			}
+			return
+		}
 
-			if !ok {
-				exit.WithCodeT(exit.Unavailable, `The podman service within '{{.profile}}' is not active`, out.V{"profile": profile})
-			}
-
-			client, err := createExternalSSHClient(host.Driver)
-			if err != nil {
-				exit.WithError("Error getting ssh client", err)
-			}
-
-			sh := shell.EnvConfig{
-				Shell: shell.ForceShell,
-			}
-			ec := PodmanEnvConfig{
-				EnvConfig: sh,
-				profile:   profile,
-				driver:    host.DriverName,
-				client:    client,
-			}
-
-			if ec.Shell == "" {
-				ec.Shell, err = shell.Detect()
-				if err != nil {
-					exit.WithError("Error detecting shell", err)
-				}
-			}
-
-			if podmanUnset {
-				if err := podmanUnsetScript(ec, os.Stdout); err != nil {
-					exit.WithError("Error generating unset output", err)
-				}
-				return
-			}
-
-			if err := podmanSetScript(ec, os.Stdout); err != nil {
-				exit.WithError("Error generating set output", err)
-			}
+		if err := podmanSetScript(ec, os.Stdout); err != nil {
+			exit.WithError("Error generating set output", err)
 		}
 	},
 }

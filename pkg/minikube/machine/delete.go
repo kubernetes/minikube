@@ -22,11 +22,13 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine"
+	"github.com/docker/machine/libmachine/host"
 	"github.com/docker/machine/libmachine/mcnerror"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -66,28 +68,63 @@ func DeleteHost(api libmachine.API, machineName string) error {
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
 	status, err := Status(api, machineName)
 	if err != nil {
-		// Warn, but proceed
-		out.WarningT(`Unable to get host status for "{{.name}}": {{.error}}`, out.V{"name": machineName, "error": err})
+		// Assume that the host has already been deleted, log and return
+		glog.Infof("Unable to get host status for %s, assuming it has already been deleted: %v", machineName, err)
+		return nil
 	}
 
 	if status == state.None.String() {
 		return mcnerror.ErrHostDoesNotExist{Name: machineName}
 	}
 
-	// This is slow if SSH is not responding, but HyperV hangs otherwise, See issue #2914
+	// Hyper-V requires special care to avoid ACPI and file locking issues
 	if host.Driver.DriverName() == driver.HyperV {
-		if err := trySSHPowerOff(host); err != nil {
-			glog.Infof("Unable to power off minikube because the host was not found.")
+		if err := StopHost(api, machineName); err != nil {
+			glog.Warningf("stop host: %v", err)
 		}
-		out.T(out.DeletingHost, "Successfully powered off Hyper-V. minikube driver -- {{.driver}}", out.V{"driver": host.Driver.DriverName()})
+		// Hack: give the Hyper-V VM more time to stop before deletion
+		time.Sleep(1 * time.Second)
 	}
 
 	out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": machineName, "driver_name": host.DriverName})
-	if err := host.Driver.Remove(); err != nil {
-		return errors.Wrap(err, "host remove")
+	return delete(api, host, machineName)
+}
+
+// delete removes a host and it's local data files
+func delete(api libmachine.API, h *host.Host, machineName string) error {
+	if err := h.Driver.Remove(); err != nil {
+		glog.Warningf("remove failed, will retry: %v", err)
+		time.Sleep(1 * time.Second)
+
+		nerr := h.Driver.Remove()
+		if nerr != nil {
+			return errors.Wrap(nerr, "host remove retry")
+		}
 	}
+
 	if err := api.Remove(machineName); err != nil {
 		return errors.Wrap(err, "api remove")
 	}
 	return nil
+}
+
+// demolish destroys a host by any means necessary - use only if state is inconsistent
+func demolish(api libmachine.API, cc config.ClusterConfig, n config.Node, h *host.Host) {
+	machineName := driver.MachineName(cc, n)
+	glog.Infof("DEMOLISHING %s ...", machineName)
+
+	// This will probably fail
+	err := stop(h)
+	if err != nil {
+		glog.Infof("stophost failed (probably ok): %v", err)
+	}
+
+	// For 95% of cases, this should be enough
+	err = DeleteHost(api, machineName)
+	if err != nil {
+		glog.Warningf("deletehost failed: %v", err)
+	}
+
+	err = delete(api, h, machineName)
+	glog.Warningf("delete failed (probably ok) %v", err)
 }

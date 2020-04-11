@@ -29,6 +29,7 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/localpath"
+	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 
 	"fmt"
@@ -83,6 +84,19 @@ func DeleteContainer(ociBin string, name string) error {
 	return nil
 }
 
+// PrepareContainerNode sets up the container node before CreateContainerNode is called.
+// For the docker runtime, it creates a docker volume which will be mounted into kic
+func PrepareContainerNode(p CreateParams) error {
+	if p.OCIBinary != Docker {
+		return nil
+	}
+	if err := createDockerVolume(p.Name, p.Name); err != nil {
+		return errors.Wrapf(err, "creating volume for %s container", p.Name)
+	}
+	glog.Infof("Successfully created a docker volume %s", p.Name)
+	return nil
+}
+
 // CreateContainerNode creates a new container node
 func CreateContainerNode(p CreateParams) error {
 	runArgs := []string{
@@ -121,10 +135,6 @@ func CreateContainerNode(p CreateParams) error {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
 	}
 	if p.OCIBinary == Docker {
-		if err := createDockerVolume(p.Name, p.Name); err != nil {
-			return errors.Wrapf(err, "creating volume for %s container", p.Name)
-		}
-		glog.Infof("Successfully created a docker volume %s", p.Name)
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
 		// setting resource limit in privileged mode is only supported by docker
 		// podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
@@ -156,12 +166,13 @@ func CreateContainerNode(p CreateParams) error {
 		if s != "running" {
 			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
 		}
+		glog.Infof("the created container %q has a running status.", p.Name)
 		return nil
 	}
 
-	// retry up to up 5 seconds to make sure the created container status is running.
-	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*5); err != nil {
-		glog.Warningf("The created container %q failed to report to be running in 5 seconds.", p.Name)
+	// retry up to up 13 seconds to make sure the created container status is running.
+	if err := retry.Expo(checkRunning, 13*time.Millisecond, time.Second*13); err != nil {
+		return errors.Wrapf(err, "check container %q running", p.Name)
 	}
 
 	return nil
@@ -231,19 +242,44 @@ func ContainerID(ociBinary string, nameOrID string) (string, error) {
 	return string(out), err
 }
 
-// ContainerExists checks if container name exists (either running or exited)
-func ContainerExists(ociBin string, name string) (bool, error) {
-	// allow no more than 3 seconds for this.
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+// WarnIfSlow runs an oci command, warning about performance issues
+func WarnIfSlow(args ...string) ([]byte, error) {
+	killTime := 19 * time.Second
+	warnTime := 2 * time.Second
 
-	cmd := exec.CommandContext(ctx, ociBin, "ps", "-a", "--format", "{{.Names}}")
-	out, err := cmd.CombinedOutput()
-
-	if ctx.Err() == context.DeadlineExceeded {
-		return false, fmt.Errorf("time out running %s ps -a", ociBin)
+	if args[1] == "volume" || args[1] == "ps" { // volume and ps requires more time than inspect
+		killTime = 30 * time.Second
+		warnTime = 3 * time.Second
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), killTime)
+	defer cancel()
+
+	start := time.Now()
+	glog.Infof("executing with %s timeout: %v", args, killTime)
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	stdout, err := cmd.Output()
+	d := time.Since(start)
+	if d > warnTime {
+		out.WarningT(`Executing "{{.command}}" took an unusually long time: {{.duration}}`, out.V{"command": strings.Join(cmd.Args, " "), "duration": d})
+		out.ErrT(out.Tip, `Restarting the {{.name}} service may improve performance.`, out.V{"name": args[0]})
+	}
+
+	if ctx.Err() == context.DeadlineExceeded {
+		return stdout, fmt.Errorf("%q timed out after %s", strings.Join(cmd.Args, " "), killTime)
+	}
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return stdout, fmt.Errorf("%q failed: %v: %s", strings.Join(cmd.Args, " "), exitErr, exitErr.Stderr)
+		}
+		return stdout, fmt.Errorf("%q failed: %v", strings.Join(cmd.Args, " "), err)
+	}
+	return stdout, nil
+}
+
+// ContainerExists checks if container name exists (either running or exited)
+func ContainerExists(ociBin string, name string) (bool, error) {
+	out, err := WarnIfSlow(ociBin, "ps", "-a", "--format", "{{.Names}}")
 	if err != nil {
 		return false, errors.Wrapf(err, string(out))
 	}
@@ -409,12 +445,10 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 
 // listContainersByLabel returns all the container names with a specified label
 func listContainersByLabel(ociBinary string, label string) ([]string, error) {
-
-	// allow no more than 5 seconds for docker ps
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	cmd := exec.CommandContext(ctx, ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
-	stdout, err := cmd.Output()
+	stdout, err := WarnIfSlow(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
+	if err != nil {
+		return nil, err
+	}
 	s := bufio.NewScanner(bytes.NewReader(stdout))
 	var names []string
 	for s.Scan() {
@@ -447,21 +481,6 @@ func PointToHostDockerDaemon() error {
 
 // ContainerStatus returns status of a container running,exited,...
 func ContainerStatus(ociBin string, name string) (string, error) {
-	// allow no more than 2 seconds for this. when this takes long this means deadline passed
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, ociBin, "inspect", name, "--format={{.State.Status}}")
-	out, err := cmd.CombinedOutput()
-
-	if ctx.Err() == context.DeadlineExceeded {
-		glog.Warningf("%s inspect %s took longer than normal. Restarting your %s daemon might fix this issue.", ociBin, name, ociBin)
-		return strings.TrimSpace(string(out)), fmt.Errorf("inspect %s timeout", name)
-	}
-
-	if err != nil {
-		return string(out), errors.Wrapf(err, "inspecting container: output %s", out)
-	}
-
-	return strings.TrimSpace(string(out)), nil
+	out, err := WarnIfSlow(ociBin, "inspect", name, "--format={{.State.Status}}")
+	return strings.TrimSpace(string(out)), err
 }

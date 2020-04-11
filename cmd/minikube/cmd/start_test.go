@@ -26,7 +26,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/constants"
 )
 
-func TestGetKuberneterVersion(t *testing.T) {
+func TestGetKubernetesVersion(t *testing.T) {
 	var tests = []struct {
 		description     string
 		expectedVersion string
@@ -55,6 +55,16 @@ func TestGetKuberneterVersion(t *testing.T) {
 			paramVersion:    "v1.16.0",
 			cfg:             &cfg.ClusterConfig{KubernetesConfig: cfg.KubernetesConfig{KubernetesVersion: "v1.15.0"}},
 		},
+		{
+			description:     "kubernetes-version given as 'stable', no config",
+			expectedVersion: constants.DefaultKubernetesVersion,
+			paramVersion:    "stable",
+		},
+		{
+			description:     "kubernetes-version given as 'latest', no config",
+			expectedVersion: constants.NewestKubernetesVersion,
+			paramVersion:    "latest",
+		},
 	}
 
 	for _, test := range tests {
@@ -66,6 +76,50 @@ func TestGetKuberneterVersion(t *testing.T) {
 			if version != test.expectedVersion {
 				t.Fatalf("test failed because the expected version %s is not returned", test.expectedVersion)
 			}
+		})
+	}
+}
+
+func TestMirrorCountry(t *testing.T) {
+	// Set default disk size value in lieu of flag init
+	viper.SetDefault(humanReadableDiskSize, defaultDiskSize)
+
+	k8sVersion := constants.DefaultKubernetesVersion
+	var tests = []struct {
+		description     string
+		k8sVersion      string
+		imageRepository string
+		mirrorCountry   string
+		cfg             *cfg.ClusterConfig
+	}{
+		{
+			description:     "image-repository none, image-mirror-country none",
+			imageRepository: "",
+			mirrorCountry:   "",
+		},
+		{
+			description:     "image-repository auto, image-mirror-country none",
+			imageRepository: "auto",
+			mirrorCountry:   "",
+		},
+		{
+			description:     "image-repository auto, image-mirror-country china",
+			imageRepository: "auto",
+			mirrorCountry:   "cn",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.description, func(t *testing.T) {
+			cmd := &cobra.Command{}
+			viper.SetDefault(imageRepository, test.imageRepository)
+			viper.SetDefault(imageMirrorCountry, test.mirrorCountry)
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
+			if err != nil {
+				t.Fatalf("Got unexpected error %v during config generation", err)
+			}
+			// the result can still be "", but anyway
+			_ = config.KubernetesConfig.ImageRepository
 		})
 	}
 }
@@ -112,7 +166,7 @@ func TestGenerateCfgFromFlagsHTTPProxyHandling(t *testing.T) {
 			if err := os.Setenv("HTTP_PROXY", test.proxy); err != nil {
 				t.Fatalf("Unexpected error setting HTTP_PROXY: %v", err)
 			}
-			config, _, err := generateCfgFromFlags(cmd, k8sVersion, "none")
+			config, _, err := generateClusterConfig(cmd, nil, k8sVersion, "none")
 			if err != nil {
 				t.Fatalf("Got unexpected error %v during config generation", err)
 			}

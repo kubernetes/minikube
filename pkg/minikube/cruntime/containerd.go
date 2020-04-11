@@ -30,7 +30,9 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/out"
+	"k8s.io/minikube/pkg/minikube/sysinit"
 )
 
 const (
@@ -115,6 +117,7 @@ type Containerd struct {
 	Runner            CommandRunner
 	ImageRepository   string
 	KubernetesVersion semver.Version
+	Init              sysinit.Manager
 }
 
 // Name is a human readable name for containerd
@@ -157,9 +160,7 @@ func (r *Containerd) DefaultCNI() bool {
 
 // Active returns if containerd is active on the host
 func (r *Containerd) Active() bool {
-	c := exec.Command("sudo", "systemctl", "is-active", "--quiet", "service", "containerd")
-	_, err := r.Runner.RunCmd(c)
-	return err == nil
+	return r.Init.Active("containerd")
 }
 
 // Available returns an error if it is not possible to use this runtime on a host
@@ -207,21 +208,14 @@ func (r *Containerd) Enable(disOthers bool) error {
 	if err := enableIPForwarding(r.Runner); err != nil {
 		return err
 	}
+
 	// Otherwise, containerd will fail API requests with 'Unimplemented'
-	c := exec.Command("sudo", "systemctl", "restart", "containerd")
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrap(err, "restart containerd")
-	}
-	return nil
+	return r.Init.Restart("containerd")
 }
 
 // Disable idempotently disables containerd on a host
 func (r *Containerd) Disable() error {
-	c := exec.Command("sudo", "systemctl", "stop", "containerd")
-	if _, err := r.Runner.RunCmd(c); err != nil {
-		return errors.Wrapf(err, "stop containerd")
-	}
-	return nil
+	return r.Init.ForceStop("containerd")
 }
 
 // ImageExists checks if an image exists, expected input format
@@ -313,5 +307,8 @@ func (r *Containerd) SystemLogCmd(len int) string {
 
 // Preload preloads the container runtime with k8s images
 func (r *Containerd) Preload(cfg config.KubernetesConfig) error {
+	if !download.PreloadExists(cfg.KubernetesVersion, cfg.ContainerRuntime) {
+		return nil
+	}
 	return fmt.Errorf("not yet implemented for %s", r.Name())
 }

@@ -30,13 +30,12 @@ const (
 	DefaultPodCIDR = "10.244.0.0/16"
 
 	// Version is the current version of kic
-	Version = "v0.0.7"
+	Version = "v0.0.9"
 	// SHA of the kic base image
-	baseImageSHA = "a6f288de0e5863cdeab711fa6bafa38ee7d8d285ca14216ecf84fcfb07c7d176"
-
+	baseImageSHA = "82a826cc03c3e59ead5969b8020ca138de98f366c1907293df91fc57205dbb53"
 	// OverlayImage is the cni plugin used for overlay image, created by kind.
 	// CNI plugin image used for kic drivers created by kind.
-	OverlayImage = "kindest/kindnetd:0.5.3"
+	OverlayImage = "kindest/kindnetd:0.5.4"
 )
 
 var (

@@ -38,12 +38,13 @@ func CalculateSizeInMB(humanReadableSize string) (int, error) {
 	if err == nil {
 		humanReadableSize += "mb"
 	}
-	size, err := units.FromHumanSize(humanReadableSize)
+	// parse the size suffix binary instead of decimal so that 1G -> 1024MB instead of 1000MB
+	size, err := units.RAMInBytes(humanReadableSize)
 	if err != nil {
 		return 0, fmt.Errorf("FromHumanSize: %v", err)
 	}
 
-	return int(size / units.MB), nil
+	return int(size / units.MiB), nil
 }
 
 // GetBinaryDownloadURL returns a suitable URL for the platform

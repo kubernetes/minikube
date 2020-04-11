@@ -17,6 +17,7 @@ limitations under the License.
 package tests
 
 import (
+	"runtime"
 	"testing"
 
 	"github.com/docker/machine/libmachine/drivers"
@@ -24,6 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/constants"
 )
 
 // MockDriver is a struct used to mock out libmachine.Driver
@@ -96,11 +98,14 @@ func (d *MockDriver) GetSSHKeyPath() string {
 
 // GetState returns the state of the driver
 func (d *MockDriver) GetState() (state.State, error) {
-	d.Logf("MockDriver.GetState: %v", d.CurrentState)
-	if d.NotExistError {
+	_, file, no, _ := runtime.Caller(2)
+	d.Logf("MockDriver.GetState called from %s#%d: returning %q", file, no, d.CurrentState)
+
+	// NOTE: this logic is questionable
+	if d.NotExistError && d.CurrentState != state.Stopped && d.CurrentState != state.None {
 		d.CurrentState = state.Error
-		// don't use cluster.ErrorMachineNotExist to avoid import cycle
-		return d.CurrentState, errors.New("machine does not exist")
+		d.Logf("mock NotExistError set, setting state=%s err=%v", d.CurrentState, constants.ErrMachineMissing)
+		return d.CurrentState, constants.ErrMachineMissing
 	}
 	return d.CurrentState, nil
 }
@@ -123,12 +128,13 @@ func (d *MockDriver) Remove() error {
 	if d.RemoveError {
 		return errors.New("error deleting machine")
 	}
+	d.NotExistError = false
 	return nil
 }
 
 // Restart restarts the machine
 func (d *MockDriver) Restart() error {
-	d.Logf("MockDriver.Restart")
+	d.Logf("MockDriver.Restart, setting CurrentState=%s", state.Running)
 	d.CurrentState = state.Running
 	return nil
 }

@@ -18,11 +18,10 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -37,16 +36,7 @@ var nodeStopCmd = &cobra.Command{
 		}
 
 		name := args[0]
-
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("creating api client", err)
-		}
-
-		cc, err := config.Load(viper.GetString(config.ProfileName))
-		if err != nil {
-			exit.WithError("getting config", err)
-		}
+		api, cc := mustload.Partial(ClusterFlagValue())
 
 		n, _, err := node.Retrieve(cc, name)
 		if err != nil {

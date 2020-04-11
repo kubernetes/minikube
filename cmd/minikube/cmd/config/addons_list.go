@@ -26,10 +26,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/olekukonko/tablewriter"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -50,11 +50,12 @@ var addonsListCmd = &cobra.Command{
 			exit.UsageT("usage: minikube addons list")
 		}
 
+		_, cc := mustload.Partial(ClusterFlagValue())
 		switch strings.ToLower(addonListOutput) {
 		case "list":
-			printAddonsList()
+			printAddonsList(cc)
 		case "json":
-			printAddonsJSON()
+			printAddonsJSON(cc)
 		default:
 			exit.WithCodeT(exit.BadUsage, fmt.Sprintf("invalid output format: %s. Valid values: 'list', 'json'", addonListOutput))
 		}
@@ -86,27 +87,24 @@ var stringFromStatus = func(addonStatus bool) string {
 	return "disabled"
 }
 
-var printAddonsList = func() {
+var printAddonsList = func(cc *config.ClusterConfig) {
 	addonNames := make([]string, 0, len(assets.Addons))
 	for addonName := range assets.Addons {
 		addonNames = append(addonNames, addonName)
 	}
 	sort.Strings(addonNames)
+
 	var tData [][]string
 	table := tablewriter.NewWriter(os.Stdout)
 	table.SetHeader([]string{"Addon Name", "Profile", "Status"})
 	table.SetAutoFormatHeaders(true)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
-	pName := viper.GetString(config.ProfileName)
 
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
-		addonStatus, err := addonBundle.IsEnabled(pName)
-		if err != nil {
-			out.WarningT("Unable to get addon status for {{.name}}: {{.error}}", out.V{"name": addonName, "error": err})
-		}
-		tData = append(tData, []string{addonName, pName, fmt.Sprintf("%s %s", stringFromStatus(addonStatus), iconFromStatus(addonStatus))})
+		enabled := addonBundle.IsEnabled(cc)
+		tData = append(tData, []string{addonName, cc.Name, fmt.Sprintf("%s %s", stringFromStatus(enabled), iconFromStatus(enabled))})
 	}
 
 	table.AppendBulk(tData)
@@ -121,9 +119,8 @@ var printAddonsList = func() {
 	}
 }
 
-var printAddonsJSON = func() {
+var printAddonsJSON = func(cc *config.ClusterConfig) {
 	addonNames := make([]string, 0, len(assets.Addons))
-	pName := viper.GetString(config.ProfileName)
 	for addonName := range assets.Addons {
 		addonNames = append(addonNames, addonName)
 	}
@@ -133,16 +130,11 @@ var printAddonsJSON = func() {
 
 	for _, addonName := range addonNames {
 		addonBundle := assets.Addons[addonName]
-
-		addonStatus, err := addonBundle.IsEnabled(pName)
-		if err != nil {
-			glog.Errorf("Unable to get addon status for %s: %v", addonName, err)
-			continue
-		}
+		enabled := addonBundle.IsEnabled(cc)
 
 		addonsMap[addonName] = map[string]interface{}{
-			"Status":  stringFromStatus(addonStatus),
-			"Profile": pName,
+			"Status":  stringFromStatus(enabled),
+			"Profile": cc.Name,
 		}
 	}
 	jsonString, _ := json.Marshal(addonsMap)

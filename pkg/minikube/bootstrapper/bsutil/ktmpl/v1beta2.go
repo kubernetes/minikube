@@ -56,7 +56,7 @@ kind: ClusterConfiguration
 {{range $i, $val := .FeatureArgs}}{{$i}}: {{$val}}
 {{end -}}{{end -}}
 certificatesDir: {{.CertDir}}
-clusterName: kubernetes
+clusterName: mk
 controlPlaneEndpoint: {{.ControlPlaneAddress}}:{{.APIServerPort}}
 dns:
   type: CoreDNS
@@ -71,6 +71,7 @@ networking:
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
+# disable disk resource management by default
 imageGCHighThresholdPercent: 100
 evictionHard:
   nodefs.available: "0%"

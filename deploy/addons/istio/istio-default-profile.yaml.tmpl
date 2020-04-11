@@ -1,10 +1,19 @@
-apiVersion: install.istio.io/v1alpha2
-kind: IstioControlPlane
+apiVersion: v1
+kind: Namespace
 metadata:
-  namespace: istio-operator
+  name: istio-system
+  labels:
+    kubernetes.io/minikube-addons: istio
+    addonmanager.kubernetes.io/mode: EnsureExists
+
+---
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  namespace: istio-system
   name: example-istiocontrolplane
   labels:
     kubernetes.io/minikube-addons: istio
-    addonmanager.kubernetes.io/mode: Reconcile 
+    addonmanager.kubernetes.io/mode: Reconcile
 spec:
   profile: default

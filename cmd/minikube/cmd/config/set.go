@@ -19,7 +19,7 @@ package config
 import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
@@ -61,11 +61,11 @@ func Set(name string, value string) error {
 	}
 
 	// Set the value
-	config, err := pkgConfig.ReadConfig(localpath.ConfigFile())
+	cc, err := config.ReadConfig(localpath.ConfigFile())
 	if err != nil {
 		return errors.Wrapf(err, "read config file %q", localpath.ConfigFile())
 	}
-	err = s.set(config, name, value)
+	err = s.set(cc, name, value)
 	if err != nil {
 		return errors.Wrapf(err, "set")
 	}
@@ -77,5 +77,5 @@ func Set(name string, value string) error {
 	}
 
 	// Write the value
-	return pkgConfig.WriteConfig(localpath.ConfigFile(), config)
+	return config.WriteConfig(localpath.ConfigFile(), cc)
 }

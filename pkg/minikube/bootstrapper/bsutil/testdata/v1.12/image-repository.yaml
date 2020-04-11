@@ -23,9 +23,9 @@ imageRepository: test/repo
 apiServerExtraArgs:
   enable-admission-plugins: "Initializers,NamespaceLifecycle,LimitRanger,ServiceAccount,DefaultStorageClass,DefaultTolerationSeconds,NodeRestriction,MutatingAdmissionWebhook,ValidatingAdmissionWebhook,ResourceQuota"
 certificatesDir: /var/lib/minikube/certs
-clusterName: kubernetes
+clusterName: mk
 apiServerCertSANs: ["127.0.0.1", "localhost", "1.1.1.1"]
-controlPlaneEndpoint: localhost:8443
+controlPlaneEndpoint: 1.1.1.1:8443
 etcd:
   local:
     dataDir: /var/lib/minikube/etcd
@@ -37,6 +37,8 @@ networking:
 ---
 apiVersion: kubelet.config.k8s.io/v1beta1
 kind: KubeletConfiguration
+# disable disk resource management by default
+imageGCHighThresholdPercent: 100
 evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"

@@ -24,10 +24,8 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/node"
 	"k8s.io/minikube/pkg/minikube/out"
 )
@@ -42,30 +40,15 @@ Examples:
 minikube kubectl -- --help
 minikube kubectl -- get pods --namespace kube-system`,
 	Run: func(cmd *cobra.Command, args []string) {
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error getting client: %v\n", err)
-			os.Exit(1)
-		}
-		defer api.Close()
+		co := mustload.Healthy(ClusterFlagValue())
 
-		cc, err := config.Load(viper.GetString(config.ProfileName))
-		if err != nil && !config.IsNotExist(err) {
-			out.ErrLn("Error loading profile config: %v", err)
-		}
-
-		version := constants.DefaultKubernetesVersion
-		if cc != nil {
-			version = cc.KubernetesConfig.KubernetesVersion
-		}
-
-		path, err := node.CacheKubectlBinary(version)
+		version := co.Config.KubernetesConfig.KubernetesVersion
+		c, err := KubectlCommand(version, args...)
 		if err != nil {
 			out.ErrLn("Error caching kubectl: %v", err)
 		}
 
 		glog.Infof("Running %s %v", path, args)
-		c := exec.Command(path, args...)
 		c.Stdin = os.Stdin
 		c.Stdout = os.Stdout
 		c.Stderr = os.Stderr
@@ -81,4 +64,18 @@ minikube kubectl -- get pods --namespace kube-system`,
 			os.Exit(rc)
 		}
 	},
+}
+
+// KubectlCommand will return kubectl command with a version matching the cluster
+func KubectlCommand(version string, args ...string) (*exec.Cmd, error) {
+	if version == "" {
+		version = constants.DefaultKubernetesVersion
+	}
+
+	path, err := node.CacheKubectlBinary(version)
+	if err != nil {
+		return nil, err
+	}
+
+	return exec.Command(path, args...), nil
 }

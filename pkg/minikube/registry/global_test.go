@@ -102,7 +102,7 @@ func TestGlobalAvailable(t *testing.T) {
 		},
 	}
 
-	if diff := cmp.Diff(Available(), expected); diff != "" {
+	if diff := cmp.Diff(Available(false), expected); diff != "" {
 		t.Errorf("available mismatch (-want +got):\n%s", diff)
 	}
 }

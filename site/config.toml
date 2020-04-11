@@ -33,39 +33,20 @@ pygmentsStyle = "tango"
 [permalinks]
 blog = "/:section/:year/:month/:day/:slug/"
 
-[module]
-  [[module.mounts]]
-    source = "../deploy/addons/gvisor/"
-    target = "content/gvisor/"
-  [[module.mounts]]
-    source = "../deploy/addons/helm-tiller/"
-    target = "content/helm-tiller/"
-  [[module.mounts]]
-    source = "../deploy/addons/istio/"
-    target = "content/istio/"
-  [[module.mounts]]
-    source = "../deploy/addons/ingress-dns/"
-    target = "content/ingress-dns/"
-  [[module.mounts]]
-    source = "../deploy/addons/storage-provisioner-gluster/"
-    target = "content/storage-provisioner-gluster/"
-  [[module.mounts]]
-    source = "../deploy/addons/layouts/"
-    target = "layouts"
+[markup]
+  [markup.highlight]
+    codeFences = true
+    hl_Lines = ""
+    lineNoStart = 1
+    lineNos = false
+    lineNumbersInTable = true
+    noClasses = true
+    style = "vs"
+    tabWidth = 4
 
-  [[module.mounts]]
-    source = "content/en"
-    target = "content"
-  [[module.mounts]]
-    source = "layouts"
-    target = "layouts"
-
-## Configuration for BlackFriday markdown parser: https://github.com/russross/blackfriday
-[blackfriday]
-plainIDAnchors = true
-hrefTargetBlank = true
-angledQuotes = false
-latexDashes = true
+# allow html in markdown
+[markup.goldmark.renderer]
+  unsafe=true
 
 # Image processing configuration.
 [imaging]
@@ -95,7 +76,7 @@ weight = 1
 [params]
 copyright = "The Kubernetes Authors -- "
 # The latest release of minikube
-latest_release = "1.8.1"
+latest_release = "1.9.1"
 
 privacy_policy = ""
 
@@ -112,7 +93,10 @@ github_project_repo = ""
 github_subdir = "site"
 
 # Google Custom Search Engine ID. Remove or comment out to disable search.
-gcs_engine_id = "005331096405080631692:s7c4yfpw9sy"
+# gcs_engine_id = "005331096405080631692:s7c4yfpw9sy"
+
+# enabling local search https://www.docsy.dev/docs/adding-content/navigation/#configure-local-search-with-lunr
+offlineSearch = true
 
 # User interface configuration
 [params.ui]
@@ -159,3 +143,22 @@ no = 'Sorry to hear that. Please <a href="https://github.com/kubernetes/minikube
 	url = "https://groups.google.com/forum/#!forum/minikube-dev"
 	icon = "fa fa-envelope"
 	desc = "Contact the minikube Dev's here"
+
+
+# Related pages - does not appear to work yet
+[related]
+    threshold = 80
+    includeNewer = true
+    toLower = true
+
+  [[related.indices]]
+    name  = "crosslink"
+    weight = 100
+    includeNewer = true
+
+  [[related.indices]]
+    name  = "keywords"
+    weight = 50
+    includeNewer = true
+
+    

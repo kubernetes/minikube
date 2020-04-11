@@ -63,14 +63,24 @@ func (rr RunResult) Command() string {
 	return sb.String()
 }
 
+// indentLines indents every line in a bytes.Buffer and returns it as string
+func indentLines(b []byte) string {
+	scanner := bufio.NewScanner(bytes.NewReader(b))
+	var lines string
+	for scanner.Scan() {
+		lines = lines + "\t" + scanner.Text() + "\n"
+	}
+	return lines
+}
+
 // Output returns human-readable output for an execution result
 func (rr RunResult) Output() string {
 	var sb strings.Builder
 	if rr.Stdout.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("-- stdout --\n%s\n-- /stdout --", rr.Stdout.Bytes()))
+		sb.WriteString(fmt.Sprintf("\n-- stdout --\n%s\n-- /stdout --", indentLines(rr.Stdout.Bytes())))
 	}
 	if rr.Stderr.Len() > 0 {
-		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n** /stderr **", rr.Stderr.Bytes()))
+		sb.WriteString(fmt.Sprintf("\n** stderr ** \n%s\n** /stderr **", indentLines(rr.Stderr.Bytes())))
 	}
 	return sb.String()
 }
@@ -191,13 +201,23 @@ func clusterLogs(t *testing.T, profile string) {
 		return
 	}
 
+	t.Logf("-----------------------post-mortem--------------------------------")
 	t.Logf("<<< %s FAILED: start of post-mortem logs <<<", t.Name())
+	t.Logf("======>  post-mortem[%s]: minikube logs <======", t.Name())
+
 	rr, err := Run(t, exec.Command(Target(), "-p", profile, "logs", "--problems"))
 	if err != nil {
 		t.Logf("failed logs error: %v", err)
 		return
 	}
-	t.Logf("%s logs: %s", t.Name(), rr.Stdout)
+	t.Logf("%s logs: %s", t.Name(), rr.Output())
+
+	t.Logf("======> post-mortem[%s]: disk usage <======", t.Name())
+	rr, err = Run(t, exec.Command(Target(), "-p", profile, "ssh", "sudo df -h /var/lib/docker/overlay2 /var /;sudo du -hs /var/lib/docker/overlay2"))
+	if err != nil {
+		t.Logf("failed df error: %v", err)
+	}
+	t.Logf("%s df: %s", t.Name(), rr.Stdout)
 
 	st = Status(context.Background(), t, Target(), profile, "APIServer")
 	if st != state.Running.String() {
@@ -205,20 +225,32 @@ func clusterLogs(t *testing.T, profile string) {
 		return
 	}
 
+	t.Logf("======> post-mortem[%s]: get pods <======", t.Name())
 	rr, rerr := Run(t, exec.Command("kubectl", "--context", profile, "get", "po", "-A", "--show-labels"))
 	if rerr != nil {
 		t.Logf("%s: %v", rr.Command(), rerr)
 		return
 	}
-	t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
+	t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
 
+	t.Logf("======> post-mortem[%s]: describe node <======", t.Name())
 	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "node"))
+	if err != nil {
+		t.Logf("%s: %v", rr.Command(), err)
+	} else {
+		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Output())
+	}
+
+	t.Logf("======> post-mortem[%s]: describe pods <======", t.Name())
+	rr, err = Run(t, exec.Command("kubectl", "--context", profile, "describe", "po", "-A"))
 	if err != nil {
 		t.Logf("%s: %v", rr.Command(), err)
 	} else {
 		t.Logf("(dbg) %s:\n%s", rr.Command(), rr.Stdout)
 	}
+
 	t.Logf("<<< %s FAILED: end of post-mortem logs <<<", t.Name())
+	t.Logf("---------------------/post-mortem---------------------------------")
 }
 
 // podStatusMsg returns a human-readable pod status, for generating debug status

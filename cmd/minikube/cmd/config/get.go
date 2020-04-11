@@ -21,7 +21,7 @@ import (
 	"fmt"
 
 	"github.com/spf13/cobra"
-	pkgConfig "k8s.io/minikube/pkg/minikube/config"
+	config "k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
@@ -59,5 +59,5 @@ func init() {
 
 // Get gets a property
 func Get(name string) (string, error) {
-	return pkgConfig.Get(name)
+	return config.Get(name)
 }

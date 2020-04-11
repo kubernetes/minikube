@@ -19,8 +19,6 @@ package assets
 import (
 	"runtime"
 
-	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/vmpath"
@@ -49,21 +47,14 @@ func (a *Addon) Name() string {
 }
 
 // IsEnabled checks if an Addon is enabled for the given profile
-func (a *Addon) IsEnabled(profile string) (bool, error) {
-	c, err := config.Load(profile)
-	if err != nil {
-		return false, errors.Wrap(err, "load")
-	}
-
-	// Is this addon explicitly listed in their configuration?
-	status, ok := c.Addons[a.Name()]
-	glog.V(1).Infof("IsEnabled %q = %v (listed in config=%v)", a.Name(), status, ok)
+func (a *Addon) IsEnabled(cc *config.ClusterConfig) bool {
+	status, ok := cc.Addons[a.Name()]
 	if ok {
-		return status, nil
+		return status
 	}
 
 	// Return the default unconfigured state of the addon
-	return a.enabled, nil
+	return a.enabled
 }
 
 // Addons is the list of addons
@@ -246,6 +237,38 @@ var Addons = map[string]*Addon{
 			"0640",
 			false),
 	}, false, "registry-creds"),
+	"registry-aliases": NewAddon([]*BinAsset{
+		MustBinAsset(
+			"deploy/addons/registry-aliases/registry-aliases-sa.tmpl",
+			vmpath.GuestAddonsDir,
+			"registry-aliases-sa.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry-aliases/registry-aliases-sa-crb.tmpl",
+			vmpath.GuestAddonsDir,
+			"registry-aliases-sa-crb.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry-aliases/registry-aliases-config.tmpl",
+			vmpath.GuestAddonsDir,
+			"registry-aliases-config.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry-aliases/node-etc-hosts-update.tmpl",
+			vmpath.GuestAddonsDir,
+			"node-etc-hosts-update.yaml",
+			"0640",
+			false),
+		MustBinAsset(
+			"deploy/addons/registry-aliases/patch-coredns-job.tmpl",
+			vmpath.GuestAddonsDir,
+			"patch-coredns-job.yaml",
+			"0640",
+			false),
+	}, false, "registry-aliases"),
 	"freshpod": NewAddon([]*BinAsset{
 		MustBinAsset(
 			"deploy/addons/freshpod/freshpod-rc.yaml.tmpl",
@@ -264,11 +287,11 @@ var Addons = map[string]*Addon{
 	}, false, "nvidia-driver-installer"),
 	"nvidia-gpu-device-plugin": NewAddon([]*BinAsset{
 		MustBinAsset(
-			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml.tmpl",
+			"deploy/addons/gpu/nvidia-gpu-device-plugin.yaml",
 			vmpath.GuestAddonsDir,
 			"nvidia-gpu-device-plugin.yaml",
 			"0640",
-			true),
+			false),
 	}, false, "nvidia-gpu-device-plugin"),
 	"logviewer": NewAddon([]*BinAsset{
 		MustBinAsset(

@@ -17,12 +17,12 @@ limitations under the License.
 package bootstrapper
 
 import (
-	"net"
 	"time"
 
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 )
 
 // LogOptions are options to be passed to LogCommands
@@ -38,12 +38,14 @@ type Bootstrapper interface {
 	StartCluster(config.ClusterConfig) error
 	UpdateCluster(config.ClusterConfig) error
 	DeleteCluster(config.KubernetesConfig) error
-	WaitForCluster(config.ClusterConfig, time.Duration) error
+	WaitForNode(config.ClusterConfig, config.Node, time.Duration) error
+	JoinCluster(config.ClusterConfig, config.Node, string) error
+	UpdateNode(config.ClusterConfig, config.Node, cruntime.Manager) error
+	GenerateToken(config.ClusterConfig) (string, error)
 	// LogCommands returns a map of log type to a command which will display that log.
-	LogCommands(LogOptions) map[string]string
+	LogCommands(config.ClusterConfig, LogOptions) map[string]string
 	SetupCerts(config.KubernetesConfig, config.Node) error
-	GetKubeletStatus() (string, error)
-	GetAPIServerStatus(net.IP, int) (string, error)
+	GetAPIServerStatus(string, int) (string, error)
 }
 
 const (
