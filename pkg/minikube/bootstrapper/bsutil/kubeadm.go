@@ -83,6 +83,8 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		NoTaintMaster       bool
 		NodeIP              string
 		ControlPlaneAddress string
+		KubeProxyMode       string
+		// KubeProxyOptions    []componentOptions
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
@@ -102,6 +104,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		DNSDomain:           k8s.DNSDomain,
 		NodeIP:              n.IP,
 		ControlPlaneAddress: cp.IP,
+		KubeProxyMode:       k8s.ExtraOptions.Get("mode", Kubeproxy),
 	}
 
 	if k8s.ServiceCIDR != "" {
