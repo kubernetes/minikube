@@ -11,6 +11,9 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 {{% readfile file="/docs/drivers/includes/docker_usage.inc" %}}
 
+{{% readfile file="/docs/drivers/includes/regisrtry_addon_mac_windows_usage.inc" %}}
+
+
 ## Special features
 
 - Cross platform (linux, macOS, Windows)
@@ -18,6 +21,8 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 - Experimental support for [WSL2](https://docs.microsoft.com/en-us/windows/wsl/wsl2-install) on Windows 10
 
 ## Known Issues
+
+- On macOS, containers might get hung and require a restart of Docker for Desktop. See [docker/for-mac#1835](https://github.com/docker/for-mac/issues/1835)
 
 - The `ingress`, `ingress-dns` and `registry` addons are currently only supported on Linux. See [#7332](https://github.com/kubernetes/minikube/issues/7332) and [#7535](https://github.com/kubernetes/minikube/issues/7535)
 
@@ -27,5 +32,7 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 
 ## Troubleshooting
+
+- On macOS or Windows, you may need to restart Docker for Desktop if a command gets hung
 
 - Run `--alsologtostderr -v=1` for extra debugging information
