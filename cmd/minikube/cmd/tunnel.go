@@ -27,13 +27,12 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/tunnel"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
@@ -51,6 +50,8 @@ var tunnelCmd = &cobra.Command{
 	},
 	Run: func(cmd *cobra.Command, args []string) {
 		manager := tunnel.NewManager()
+		cname := ClusterFlagValue()
+		co := mustload.Healthy(cname)
 
 		if cleanup {
 			glog.Info("Checking for tunnels to cleanup...")
@@ -59,13 +60,6 @@ var tunnelCmd = &cobra.Command{
 			}
 			return
 		}
-
-		glog.Infof("Creating docker machine client...")
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("error creating machine client", err)
-		}
-		glog.Infof("Creating k8s client...")
 
 		// Tunnel uses the k8s clientset to query the API server for services in the LoadBalancerEmulator.
 		// We define the tunnel and minikube error free if the API server responds within a second.
@@ -76,11 +70,6 @@ var tunnelCmd = &cobra.Command{
 			exit.WithError("error creating clientset", err)
 		}
 
-		cfg, err := config.Load(viper.GetString(config.ProfileName))
-		if err != nil {
-			exit.WithError("Error getting config", err)
-		}
-
 		ctrlC := make(chan os.Signal, 1)
 		signal.Notify(ctrlC, os.Interrupt)
 		ctx, cancel := context.WithCancel(context.Background())
@@ -89,13 +78,13 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
-			port, err := oci.ForwardedPort(oci.Docker, cfg.Name, 22)
+		if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
+			port, err := oci.ForwardedPort(oci.Docker, cname, 22)
 			if err != nil {
 				exit.WithError("error getting ssh port", err)
 			}
 			sshPort := strconv.Itoa(port)
-			sshKey := filepath.Join(localpath.MiniPath(), "machines", cfg.Name, "id_rsa")
+			sshKey := filepath.Join(localpath.MiniPath(), "machines", cname, "id_rsa")
 
 			kicSSHTunnel := kic.NewSSHTunnel(ctx, sshPort, sshKey, clientset.CoreV1())
 			err = kicSSHTunnel.Start()
@@ -106,7 +95,7 @@ var tunnelCmd = &cobra.Command{
 			return
 		}
 
-		done, err := manager.StartTunnel(ctx, cfg.Name, api, config.DefaultLoader, clientset.CoreV1())
+		done, err := manager.StartTunnel(ctx, cname, co.API, config.DefaultLoader, clientset.CoreV1())
 		if err != nil {
 			exit.WithError("error starting tunnel", err)
 		}

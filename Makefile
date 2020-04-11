@@ -14,15 +14,13 @@
 
 # Bump these on release - and please check ISO_VERSION for correctness.
 VERSION_MAJOR ?= 1
-VERSION_MINOR ?= 8
+VERSION_MINOR ?= 9
 VERSION_BUILD ?= 2
-RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).${VERSION_BUILD}
+RAW_VERSION=$(VERSION_MAJOR).$(VERSION_MINOR).$(VERSION_BUILD)
 VERSION ?= v$(RAW_VERSION)
 
 KUBERNETES_VERSION ?= $(shell egrep "DefaultKubernetesVersion =" pkg/minikube/constants/constants.go | cut -d \" -f2)
 KIC_VERSION ?= $(shell egrep "Version =" pkg/drivers/kic/types.go | cut -d \" -f2)
-PRELOADED_TARBALL_VERSION ?= $(shell egrep "PreloadVersion =" pkg/minikube/download/preload.go | cut -d \" -f2)
-PRELOADED_VOLUMES_GCS_BUCKET ?= $(shell egrep "PreloadBucket =" pkg/minikube/download/preload.go | cut -d \" -f2)
 
 # Default to .0 for higher cache hit rates, as build increments typically don't require new ISO versions
 ISO_VERSION ?= v$(VERSION_MAJOR).$(VERSION_MINOR).0
@@ -34,7 +32,7 @@ RPM_VERSION ?= $(DEB_VERSION)
 GO_VERSION ?= 1.13.8
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
-BUILDROOT_BRANCH ?= 2019.02.9
+BUILDROOT_BRANCH ?= 2019.02.10
 REGISTRY?=gcr.io/k8s-minikube
 
 # Get git commit id
@@ -54,7 +52,7 @@ MINIKUBE_BUCKET ?= minikube/releases
 MINIKUBE_UPLOAD_LOCATION := gs://${MINIKUBE_BUCKET}
 MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
-KERNEL_VERSION ?= 4.19.94
+KERNEL_VERSION ?= 4.19.107
 # latest from https://github.com/golangci/golangci-lint/releases
 GOLINT_VERSION ?= v1.23.6
 # Limit number of default jobs, to avoid the CI builds running out of memory
@@ -113,7 +111,7 @@ MINIKUBE_TEST_FILES := ./cmd/... ./pkg/...
 MARKDOWNLINT ?= markdownlint
 
 
-MINIKUBE_MARKDOWN_FILES := README.md docs CONTRIBUTING.md CHANGELOG.md
+MINIKUBE_MARKDOWN_FILES := README.md CONTRIBUTING.md CHANGELOG.md
 
 MINIKUBE_BUILD_TAGS := container_image_ostree_stub containers_image_openpgp
 MINIKUBE_BUILD_TAGS += go_getter_nos3 go_getter_nogcs
@@ -270,11 +268,11 @@ integration-versioned: out/minikube ## Trigger minikube integration testing
 
 .PHONY: test
 test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Trigger minikube test
-	./test.sh
+	MINIKUBE_LDFLAGS="${MINIKUBE_LDFLAGS}" ./test.sh
 
-.PHONY: gotest
-gotest: $(SOURCE_GENERATED) ## Trigger minikube test
-	go test -tags "$(MINIKUBE_BUILD_TAGS)" $(MINIKUBE_TEST_FILES)
+.PHONY: generate-docs
+generate-docs: out/minikube ## Automatically generate commands documentation.
+	out/minikube generate-docs --path ./site/content/en/docs/commands/
 
 .PHONY: extract
 extract: ## Compile extract tool
@@ -526,14 +524,8 @@ kic-base-image: ## builds the base image used for kic.
 	docker build -f ./hack/images/kicbase.Dockerfile -t $(REGISTRY)/kicbase:$(KIC_VERSION)-snapshot  --build-arg COMMIT_SHA=${VERSION}-$(COMMIT) --target base .
 
 .PHONY: upload-preloaded-images-tar
-upload-preloaded-images-tar: generate-preloaded-images-tar # Upload the preloaded images tar to the GCS bucket. Specify a specific kubernetes version to build via `KUBERNETES_VERSION=vx.y.z make upload-preloaded-images-tar`.
-	gsutil cp out/preloaded-images-k8s-${PRELOADED_TARBALL_VERSION}-${KUBERNETES_VERSION}-docker-overlay2.tar.lz4 gs://${PRELOADED_VOLUMES_GCS_BUCKET}
-	gsutil acl ch -u AllUsers:R gs://${PRELOADED_VOLUMES_GCS_BUCKET}/preloaded-images-k8s-${PRELOADED_TARBALL_VERSION}-${KUBERNETES_VERSION}-docker-overlay2.tar.lz4 
-
-.PHONY: generate-preloaded-images-tar
-generate-preloaded-images-tar:
-	go run ./hack/preload-images/preload_images.go -kubernetes-version ${KUBERNETES_VERSION} -preloaded-tarball-version ${PRELOADED_TARBALL_VERSION}
-
+upload-preloaded-images-tar: out/minikube # Upload the preloaded images for oldest supported, newest supported, and default kubernetes versions to GCS.
+	go run ./hack/preload-images/*.go 
 
 .PHONY: push-storage-provisioner-image
 push-storage-provisioner-image: storage-provisioner-image ## Push storage-provisioner docker image using gcloud
@@ -633,7 +625,7 @@ release-kvm-driver: install-kvm-driver checksum  ## Release KVM Driver
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2 gs://minikube/drivers/kvm/$(VERSION)/
 	gsutil cp $(GOBIN)/docker-machine-driver-kvm2.sha256 gs://minikube/drivers/kvm/$(VERSION)/
 
-site/themes/docsy/assets/vendor/bootstrap/package.js:
+site/themes/docsy/assets/vendor/bootstrap/package.js: ## update the website docsy theme git submodule 
 	git submodule update -f --init --recursive
 
 out/hugo/hugo:

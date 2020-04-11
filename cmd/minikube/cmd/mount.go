@@ -30,12 +30,10 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 	"k8s.io/minikube/pkg/minikube/cluster"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/third_party/go9p/ufs"
 )
@@ -99,30 +97,16 @@ var mountCmd = &cobra.Command{
 		if glog.V(1) {
 			debugVal = 1 // ufs.StartServer takes int debug param
 		}
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
-		cc, err := config.Load(viper.GetString(config.ProfileName))
-		if err != nil {
-			exit.WithError("Error getting config", err)
-		}
 
-		cp, err := config.PrimaryControlPlane(cc)
-		if err != nil {
-			exit.WithError("Error getting primary cp", err)
-		}
-		host, err := api.Load(driver.MachineName(*cc, cp))
-		if err != nil {
-			exit.WithError("Error loading api", err)
-		}
-		if host.Driver.DriverName() == driver.None {
+		co := mustload.Running(ClusterFlagValue())
+		if co.CP.Host.Driver.DriverName() == driver.None {
 			exit.UsageT(`'none' driver does not support 'minikube mount' command`)
 		}
+
 		var ip net.IP
+		var err error
 		if mountIP == "" {
-			ip, err = cluster.GetVMHostIP(host)
+			ip, err = cluster.GetVMHostIP(co.CP.Host)
 			if err != nil {
 				exit.WithError("Error getting the host IP address to use from within the VM", err)
 			}
@@ -159,11 +143,11 @@ var mountCmd = &cobra.Command{
 
 		// An escape valve to allow future hackers to try NFS, VirtFS, or other FS types.
 		if !supportedFilesystems[cfg.Type] {
-			out.T(out.Warning, "{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
+			out.WarningT("{{.type}} is not yet a supported filesystem. We will try anyways!", out.V{"type": cfg.Type})
 		}
 
 		bindIP := ip.String() // the ip to listen on the user's host machine
-		if driver.IsKIC(host.Driver.DriverName()) && runtime.GOOS != "linux" {
+		if driver.IsKIC(co.CP.Host.Driver.DriverName()) && runtime.GOOS != "linux" {
 			bindIP = "127.0.0.1"
 		}
 		out.T(out.Mounting, "Mounting host path {{.sourcePath}} into VM as {{.destinationPath}} ...", out.V{"sourcePath": hostPath, "destinationPath": vmPath})
@@ -187,27 +171,21 @@ var mountCmd = &cobra.Command{
 			}()
 		}
 
-		// Use CommandRunner, as the native docker ssh service dies when Ctrl-C is received.
-		runner, err := machine.CommandRunner(host)
-		if err != nil {
-			exit.WithError("Failed to get command runner", err)
-		}
-
 		// Unmount if Ctrl-C or kill request is received.
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 		go func() {
 			for sig := range c {
 				out.T(out.Unmount, "Unmounting {{.path}} ...", out.V{"path": vmPath})
-				err := cluster.Unmount(runner, vmPath)
+				err := cluster.Unmount(co.CP.Runner, vmPath)
 				if err != nil {
-					out.ErrT(out.FailureType, "Failed unmount: {{.error}}", out.V{"error": err})
+					out.FailureT("Failed unmount: {{.error}}", out.V{"error": err})
 				}
 				exit.WithCodeT(exit.Interrupted, "Received {{.name}} signal", out.V{"name": sig})
 			}
 		}()
 
-		err = cluster.Mount(runner, ip.String(), vmPath, cfg)
+		err = cluster.Mount(co.CP.Runner, ip.String(), vmPath, cfg)
 		if err != nil {
 			exit.WithError("mount failed", err)
 		}

@@ -47,7 +47,7 @@ func AdjustResourceLimits(c command.Runner) error {
 	return nil
 }
 
-// ExistingConfig checks if there are config files from possible previous kubernets cluster
+// ExistingConfig checks if there are config files from possible previous kubernetes cluster
 func ExistingConfig(c command.Runner) error {
 	args := append([]string{"ls"}, expectedRemoteArtifacts...)
 	_, err := c.RunCmd(exec.Command("sudo", args...))

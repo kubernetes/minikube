@@ -141,10 +141,10 @@ func runDelete(cmd *cobra.Command, args []string) {
 			exit.UsageT("usage: minikube delete")
 		}
 
-		profileName := viper.GetString(config.ProfileName)
-		profile, err := config.LoadProfile(profileName)
+		cname := ClusterFlagValue()
+		profile, err := config.LoadProfile(cname)
 		if err != nil {
-			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": profileName})
+			out.ErrT(out.Meh, `"{{.name}}" profile does not exist, trying anyways.`, out.V{"name": cname})
 		}
 
 		errs := DeleteProfiles([]*config.Profile{profile})
@@ -208,7 +208,13 @@ func deleteProfileContainersAndVolumes(name string) {
 
 func deleteProfile(profile *config.Profile) error {
 	viper.Set(config.ProfileName, profile.Name)
-	deleteProfileContainersAndVolumes(profile.Name)
+	if profile.Config != nil {
+		// if driver is oci driver, delete containers and volumes
+		if driver.IsKIC(profile.Config.Driver) {
+			out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
+			deleteProfileContainersAndVolumes(profile.Name)
+		}
+	}
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -236,7 +242,7 @@ func deleteProfile(profile *config.Profile) error {
 	}
 
 	if err := killMountProcess(); err != nil {
-		out.T(out.FailureType, "Failed to kill mount process: {{.error}}", out.V{"error": err})
+		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
 	deleteHosts(api, cc)
@@ -264,7 +270,7 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 				case mcnerror.ErrHostDoesNotExist:
 					glog.Infof("Host %s does not exist. Proceeding ahead with cleanup.", machineName)
 				default:
-					out.T(out.FailureType, "Failed to delete cluster: {{.error}}", out.V{"error": err})
+					out.FailureT("Failed to delete cluster: {{.error}}", out.V{"error": err})
 					out.T(out.Notice, `You may need to manually remove the "{{.name}}" VM from your hypervisor`, out.V{"name": machineName})
 				}
 			}
@@ -272,13 +278,13 @@ func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 	}
 }
 
-func deleteConfig(profileName string) error {
-	if err := config.DeleteProfile(profileName); err != nil {
+func deleteConfig(cname string) error {
+	if err := config.DeleteProfile(cname); err != nil {
 		if config.IsNotExist(err) {
-			delErr := profileDeletionErr(profileName, fmt.Sprintf("\"%s\" profile does not exist", profileName))
+			delErr := profileDeletionErr(cname, fmt.Sprintf("\"%s\" profile does not exist", cname))
 			return DeletionError{Err: delErr, Errtype: MissingProfile}
 		}
-		delErr := profileDeletionErr(profileName, fmt.Sprintf("failed to remove profile %v", err))
+		delErr := profileDeletionErr(cname, fmt.Sprintf("failed to remove profile %v", err))
 		return DeletionError{Err: delErr, Errtype: Fatal}
 	}
 	return nil
@@ -317,8 +323,8 @@ func deleteInvalidProfile(profile *config.Profile) []error {
 	return errs
 }
 
-func profileDeletionErr(profileName string, additionalInfo string) error {
-	return fmt.Errorf("error deleting profile \"%s\": %s", profileName, additionalInfo)
+func profileDeletionErr(cname string, additionalInfo string) error {
+	return fmt.Errorf("error deleting profile \"%s\": %s", cname, additionalInfo)
 }
 
 func uninstallKubernetes(api libmachine.API, cc config.ClusterConfig, n config.Node, bsName string) error {
@@ -402,7 +408,7 @@ func deleteProfileDirectory(profile string) {
 		out.T(out.DeletingHost, `Removing {{.directory}} ...`, out.V{"directory": machineDir})
 		err := os.RemoveAll(machineDir)
 		if err != nil {
-			exit.WithError("Unable to remove machine directory: %v", err)
+			exit.WithError("Unable to remove machine directory", err)
 		}
 	}
 }

@@ -21,6 +21,7 @@ import (
 	"runtime"
 
 	"github.com/golang/glog"
+	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	"golang.org/x/sync/errgroup"
 	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
@@ -35,8 +36,13 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// beginCacheKubernetesImages caches images required for kubernetes version in the background
-func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion, cRuntime string) {
+const (
+	cacheImages         = "cache-images"
+	cacheImageConfigKey = "cache"
+)
+
+// BeginCacheKubernetesImages caches images required for kubernetes version in the background
+func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVersion string, cRuntime string) {
 	if download.PreloadExists(k8sVersion, cRuntime) {
 		glog.Info("Caching tarball of preloaded images")
 		err := download.Preload(k8sVersion, cRuntime)
@@ -47,7 +53,7 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 		glog.Warningf("Error downloading preloaded artifacts will continue without preload: %v", err)
 	}
 
-	if !viper.GetBool("cache-images") {
+	if !viper.GetBool(cacheImages) {
 		return
 	}
 
@@ -56,6 +62,7 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 	})
 }
 
+// HandleDownloadOnly caches appropariate binaries and images
 func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string) {
 	// If --download-only, complete the remaining downloads and exit.
 	if !viper.GetBool("download-only") {
@@ -74,7 +81,6 @@ func handleDownloadOnly(cacheGroup, kicGroup *errgroup.Group, k8sVersion string)
 	}
 	out.T(out.Check, "Download complete!")
 	os.Exit(0)
-
 }
 
 // CacheKubectlBinary caches the kubectl binary
@@ -92,8 +98,9 @@ func doCacheBinaries(k8sVersion string) error {
 	return machine.CacheBinariesForBootstrapper(k8sVersion, viper.GetString(cmdcfg.Bootstrapper))
 }
 
-// beginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
+// BeginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
 func beginDownloadKicArtifacts(g *errgroup.Group) {
+	out.T(out.Pulling, "Pulling base image ...")
 	glog.Info("Beginning downloading kic artifacts")
 	g.Go(func() error {
 		glog.Infof("Downloading %s to local daemon", kic.BaseImage)
@@ -101,6 +108,7 @@ func beginDownloadKicArtifacts(g *errgroup.Group) {
 	})
 }
 
+// WaitDownloadKicArtifacts blocks until the required artifacts for KIC are downloaded.
 func waitDownloadKicArtifacts(g *errgroup.Group) {
 	if err := g.Wait(); err != nil {
 		glog.Errorln("Error downloading kic artifacts: ", err)
@@ -109,7 +117,7 @@ func waitDownloadKicArtifacts(g *errgroup.Group) {
 	glog.Info("Successfully downloaded all kic artifacts")
 }
 
-// waitCacheRequiredImages blocks until the required images are all cached.
+// WaitCacheRequiredImages blocks until the required images are all cached.
 func waitCacheRequiredImages(g *errgroup.Group) {
 	if !viper.GetBool(cacheImages) {
 		return
@@ -132,10 +140,23 @@ func saveImagesToTarFromConfig() error {
 	return image.SaveToDir(images, constants.ImageCacheDir)
 }
 
+// CacheAndLoadImagesInConfig loads the images currently in the config file
+// called by 'start' and 'cache reload' commands.
+func CacheAndLoadImagesInConfig() error {
+	images, err := imagesInConfigFile()
+	if err != nil {
+		return errors.Wrap(err, "images")
+	}
+	if len(images) == 0 {
+		return nil
+	}
+	return machine.CacheAndLoadImages(images)
+}
+
 func imagesInConfigFile() ([]string, error) {
 	configFile, err := config.ReadConfig(localpath.ConfigFile())
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "read")
 	}
 	if values, ok := configFile[cacheImageConfigKey]; ok {
 		var images []string
@@ -145,17 +166,4 @@ func imagesInConfigFile() ([]string, error) {
 		return images, nil
 	}
 	return []string{}, nil
-}
-
-// CacheAndLoadImagesInConfig loads the images currently in the config file
-// called by 'start' and 'cache reload' commands.
-func CacheAndLoadImagesInConfig() error {
-	images, err := imagesInConfigFile()
-	if err != nil {
-		return err
-	}
-	if len(images) == 0 {
-		return nil
-	}
-	return machine.CacheAndLoadImages(images)
 }

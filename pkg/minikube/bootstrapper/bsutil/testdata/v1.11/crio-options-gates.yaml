@@ -4,7 +4,7 @@ noTaintMaster: true
 api:
   advertiseAddress: 1.1.1.1
   bindPort: 8443
-  controlPlaneEndpoint: localhost
+  controlPlaneEndpoint: 1.1.1.1
 kubernetesVersion: v1.11.0
 certificatesDir: /var/lib/minikube/certs
 networking:

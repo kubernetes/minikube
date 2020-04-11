@@ -17,6 +17,7 @@ limitations under the License.
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -29,17 +30,13 @@ import (
 	"time"
 
 	"github.com/golang/glog"
-	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/config"
-	pkg_config "k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/machine"
+	"k8s.io/minikube/pkg/minikube/mustload"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/service"
 	"k8s.io/minikube/pkg/minikube/tunnel/kic"
@@ -77,33 +74,22 @@ var serviceCmd = &cobra.Command{
 		}
 
 		svc := args[0]
-		api, err := machine.NewAPIClient()
-		if err != nil {
-			exit.WithError("Error getting client", err)
-		}
-		defer api.Close()
 
-		profileName := viper.GetString(pkg_config.ProfileName)
-		cfg, err := config.Load(profileName)
-		if err != nil {
-			exit.WithError("Error getting config", err)
-		}
-		cp, err := config.PrimaryControlPlane(cfg)
-		if err != nil {
-			exit.WithError("Error getting control plane", err)
-		}
-		machineName := driver.MachineName(*cfg, cp)
-		if !machine.IsRunning(api, machineName) {
-			os.Exit(1)
-		}
+		cname := ClusterFlagValue()
+		co := mustload.Healthy(cname)
 
-		if runtime.GOOS == "darwin" && cfg.Driver == oci.Docker {
-			startKicServiceTunnel(svc, cfg.Name)
+		if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
+			startKicServiceTunnel(svc, cname)
 			return
 		}
 
-		urls, err := service.WaitForService(api, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
+		urls, err := service.WaitForService(co.API, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
+			var s *service.SVCNotFoundError
+			if errors.As(err, &s) {
+				exit.WithCodeT(exit.Data, `Service '{{.service}}' was not found in '{{.namespace}}' namespace.
+You may select another namespace by using 'minikube service {{.service}} -n <namespace>'. Or list out all the services using 'minikube service list'`, out.V{"service": svc, "namespace": namespace})
+			}
 			exit.WithError("Error opening service", err)
 		}
 
@@ -151,7 +137,7 @@ func startKicServiceTunnel(svc, configName string) {
 	service.PrintServiceList(os.Stdout, data)
 
 	openURLs(svc, urls)
-	out.T(out.Warning, "Because you are using docker driver on Mac, the terminal needs to be open to run it.")
+	out.WarningT("Because you are using docker driver on Mac, the terminal needs to be open to run it.")
 
 	<-ctrlC
 

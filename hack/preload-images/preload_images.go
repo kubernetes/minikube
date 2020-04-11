@@ -20,20 +20,12 @@ import (
 	"bytes"
 	"flag"
 	"fmt"
-	"os"
 	"os/exec"
-	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/drivers/kic"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
-	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/config"
-	"k8s.io/minikube/pkg/minikube/driver"
-	"k8s.io/minikube/pkg/minikube/localpath"
+	"github.com/spf13/viper"
+	"k8s.io/minikube/pkg/minikube/download"
+	"k8s.io/minikube/pkg/minikube/exit"
 )
 
 const (
@@ -42,123 +34,49 @@ const (
 )
 
 var (
-	kubernetesVersion       = ""
-	tarballFilename         = ""
-	dockerStorageDriver     = ""
-	preloadedTarballVersion = ""
-	containerRuntime        = ""
+	dockerStorageDriver = "overlay2"
+	containerRuntimes   = []string{"docker"}
+	k8sVersion          string
+	k8sVersions         []string
 )
 
 func init() {
-	flag.StringVar(&kubernetesVersion, "kubernetes-version", "", "desired kubernetes version, for example `v1.17.2`")
-	flag.StringVar(&dockerStorageDriver, "docker-storage-driver", "overlay2", "docker storage driver backend")
-	flag.StringVar(&preloadedTarballVersion, "preloaded-tarball-version", "", "preloaded tarball version")
-	flag.StringVar(&containerRuntime, "container-runtime", "docker", "container runtime")
-
+	flag.StringVar(&k8sVersion, "kubernetes-version", "", "desired kubernetes version, for example `v1.17.2`")
 	flag.Parse()
-	tarballFilename = fmt.Sprintf("preloaded-images-k8s-%s-%s-%s-%s.tar.lz4", preloadedTarballVersion, kubernetesVersion, containerRuntime, dockerStorageDriver)
+	if k8sVersion != "" {
+		k8sVersions = append(k8sVersions, k8sVersion)
+	}
+	viper.Set("preload", "true")
 }
 
 func main() {
 	if err := verifyDockerStorage(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		exit.WithError("Docker storage type is incompatible: %v\n", err)
 	}
-	if err := executePreloadImages(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-}
-
-func executePreloadImages() error {
-	defer func() {
-		if err := deleteMinikube(); err != nil {
-			fmt.Println(err)
-		}
-	}()
-
-	driver := kic.NewDriver(kic.Config{
-		KubernetesVersion: kubernetesVersion,
-		ContainerRuntime:  driver.Docker,
-		OCIBinary:         oci.Docker,
-		MachineName:       profile,
-		ImageDigest:       kic.BaseImage,
-		StorePath:         localpath.MiniPath(),
-		CPU:               2,
-		Memory:            4000,
-		APIServerPort:     8080,
-	})
-
-	baseDir := filepath.Dir(driver.GetSSHKeyPath())
-	defer os.Remove(baseDir)
-
-	if err := os.MkdirAll(baseDir, 0755); err != nil {
-		return errors.Wrap(err, "mkdir")
-	}
-	if err := driver.Create(); err != nil {
-		return errors.Wrap(err, "creating kic driver")
-	}
-
-	// Now, get images to pull
-	imgs, err := images.Kubeadm("", kubernetesVersion)
-	if err != nil {
-		return errors.Wrap(err, "kubeadm images")
-	}
-
-	for _, img := range append(imgs, kic.OverlayImage) {
-		cmd := exec.Command("docker", "exec", profile, "docker", "pull", img)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "downloading %s", img)
+	if k8sVersions == nil {
+		var err error
+		k8sVersions, err = RecentK8sVersions()
+		if err != nil {
+			exit.WithError("Unable to get recent k8s versions: %v\n", err)
 		}
 	}
 
-	// Transfer in k8s binaries
-	kcfg := config.KubernetesConfig{
-		KubernetesVersion: kubernetesVersion,
+	for _, kv := range k8sVersions {
+		for _, cr := range containerRuntimes {
+			tf := download.TarballName(kv, cr)
+			if download.PreloadExists(kv, cr) {
+				fmt.Printf("A preloaded tarball for k8s version %s already exists, skipping generation.\n", kv)
+				continue
+			}
+			fmt.Printf("A preloaded tarball for k8s version %s doesn't exist, generating now...\n", kv)
+			if err := generateTarball(kv, cr, tf); err != nil {
+				exit.WithError(fmt.Sprintf("generating tarball for k8s version %s with %s", kv, cr), err)
+			}
+			if err := uploadTarball(tf); err != nil {
+				exit.WithError(fmt.Sprintf("uploading tarball for k8s version %s with %s", kv, cr), err)
+			}
+		}
 	}
-	runner := command.NewKICRunner(profile, driver.OCIBinary)
-	if err := bsutil.TransferBinaries(kcfg, runner); err != nil {
-		return errors.Wrap(err, "transferring k8s binaries")
-	}
-	// Create image tarball
-	if err := createImageTarball(); err != nil {
-		return errors.Wrap(err, "create tarball")
-	}
-	return copyTarballToHost()
-}
-
-func createImageTarball() error {
-	dirs := []string{
-		fmt.Sprintf("./lib/docker/%s", dockerStorageDriver),
-		"./lib/docker/image",
-		"./lib/minikube/binaries",
-	}
-	args := []string{"exec", profile, "sudo", "tar", "-I", "lz4", "-C", "/var", "-cvf", tarballFilename}
-	args = append(args, dirs...)
-	cmd := exec.Command("docker", args...)
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "tarball cmd: %s", cmd.Args)
-	}
-	return nil
-}
-
-func copyTarballToHost() error {
-	dest := filepath.Join("out/", tarballFilename)
-	cmd := exec.Command("docker", "cp", fmt.Sprintf("%s:/%s", profile, tarballFilename), dest)
-	cmd.Stdout = os.Stdout
-	if err := cmd.Run(); err != nil {
-		return errors.Wrapf(err, "cp cmd: %s", cmd.Args)
-	}
-	return nil
-}
-
-func deleteMinikube() error {
-	cmd := exec.Command(minikubePath, "delete", "-p", profile)
-	cmd.Stdout = os.Stdout
-	return cmd.Run()
 }
 
 func verifyDockerStorage() error {

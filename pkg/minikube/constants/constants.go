@@ -17,6 +17,7 @@ limitations under the License.
 package constants
 
 import (
+	"errors"
 	"path/filepath"
 
 	"k8s.io/client-go/tools/clientcmd"
@@ -26,9 +27,9 @@ import (
 
 const (
 	// DefaultKubernetesVersion is the default kubernetes version
-	DefaultKubernetesVersion = "v1.17.3"
+	DefaultKubernetesVersion = "v1.18.0"
 	// NewestKubernetesVersion is the newest Kubernetes version to test against
-	NewestKubernetesVersion = "v1.18.0-beta.2"
+	NewestKubernetesVersion = "v1.18.0"
 	// OldestKubernetesVersion is the oldest Kubernetes version to test against
 	OldestKubernetesVersion = "v1.11.10"
 	// DefaultClusterName is the default nane for the k8s cluster
@@ -92,4 +93,15 @@ var (
 	KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
 	// ImageCacheDir is the path to the image cache directory
 	ImageCacheDir = localpath.MakeMiniPath("cache", "images")
+
+	// DefaultNamespaces are kubernetes namespaces used by minikube, including addons
+	DefaultNamespaces = []string{
+		"kube-system",
+		"kubernetes-dashboard",
+		"storage-gluster",
+		"istio-operator",
+	}
+
+	// ErrMachineMissing is returned when virtual machine does not exist due to user interrupt cancel(i.e. Ctrl + C)
+	ErrMachineMissing = errors.New("machine does not exist")
 )

@@ -17,8 +17,14 @@ limitations under the License.
 package machine
 
 import (
+	"time"
+
 	"github.com/docker/machine/libmachine/host"
+	libprovision "github.com/docker/machine/libmachine/provision"
+	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/driver"
+	"k8s.io/minikube/pkg/provision"
 )
 
 // Machine contains information about a machine
@@ -73,4 +79,32 @@ func LoadMachine(name string) (*Machine, error) {
 		return nil, errors.New("host is nil")
 	}
 	return &mm, nil
+}
+
+// provisionDockerMachine provides fast provisioning of a docker machine
+func provisionDockerMachine(h *host.Host) error {
+	glog.Infof("provisioning docker machine ...")
+	start := time.Now()
+	defer func() {
+		glog.Infof("provisioned docker machine in %s", time.Since(start))
+	}()
+
+	p, err := fastDetectProvisioner(h)
+	if err != nil {
+		return errors.Wrap(err, "fast detect")
+	}
+	return p.Provision(*h.HostOptions.SwarmOptions, *h.HostOptions.AuthOptions, *h.HostOptions.EngineOptions)
+}
+
+// fastDetectProvisioner provides a shortcut for provisioner detection
+func fastDetectProvisioner(h *host.Host) (libprovision.Provisioner, error) {
+	d := h.Driver.DriverName()
+	switch {
+	case driver.IsKIC(d):
+		return provision.NewUbuntuProvisioner(h.Driver), nil
+	case driver.BareMetal(d):
+		return libprovision.DetectProvisioner(h.Driver)
+	default:
+		return provision.NewBuildrootProvisioner(h.Driver), nil
+	}
 }

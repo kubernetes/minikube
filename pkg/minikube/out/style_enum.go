@@ -32,7 +32,6 @@ const (
 	Running
 	Provisioning
 	Restarting
-	Reconfiguring
 	Stopping
 	Stopped
 	Warning
@@ -42,6 +41,7 @@ const (
 	Launch
 	Sad
 	ThumbsUp
+	ThumbsDown
 	Option
 	Command
 	LogEntry
@@ -61,6 +61,7 @@ const (
 	DeletingHost
 	Copying
 	Connectivity
+	Confused
 	Internet
 	Mounting
 	Celebrate
@@ -89,4 +90,5 @@ const (
 	DryRun
 	AddonEnable
 	AddonDisable
+	Shrug
 )

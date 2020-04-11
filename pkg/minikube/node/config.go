@@ -18,167 +18,39 @@ package node
 
 import (
 	"fmt"
-	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"sync"
 
-	"github.com/blang/semver"
-	"github.com/docker/machine/libmachine"
-	"github.com/docker/machine/libmachine/host"
 	"github.com/golang/glog"
-	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	cmdcfg "k8s.io/minikube/cmd/minikube/cmd/config"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/bootstrapper"
-	"k8s.io/minikube/pkg/minikube/cluster"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
-	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
-	"k8s.io/minikube/pkg/minikube/kubeconfig"
 	"k8s.io/minikube/pkg/minikube/localpath"
-	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/lock"
 )
 
-var (
-	// DockerEnv contains the environment variables
-	DockerEnv []string
-	// DockerOpt contains the option parameters
-	DockerOpt []string
-	// ExtraOptions contains extra options (if any)
-	ExtraOptions config.ExtraOptionSlice
-	// AddonList contains the list of addons
-	AddonList []string
-)
-
-// configureRuntimes does what needs to happen to get a runtime going.
-func configureRuntimes(runner cruntime.CommandRunner, drvName string, k8s config.KubernetesConfig, kv semver.Version) cruntime.Manager {
-	co := cruntime.Config{
-		Type:   viper.GetString(containerRuntime),
-		Runner: runner, ImageRepository: k8s.ImageRepository,
-		KubernetesVersion: kv,
-	}
-	cr, err := cruntime.New(co)
-	if err != nil {
-		exit.WithError("Failed runtime", err)
-	}
-
-	disableOthers := true
-	if driver.BareMetal(drvName) {
-		disableOthers = false
-	}
-
-	// Preload is overly invasive for bare metal, and caching is not meaningful. KIC handled elsewhere.
-	if driver.IsVM(drvName) {
-		if err := cr.Preload(k8s); err != nil {
-			switch err.(type) {
-			case *cruntime.ErrISOFeature:
-				out.T(out.Tip, "Existing disk is missing new features ({{.error}}). To upgrade, run 'minikube delete'", out.V{"error": err})
-			default:
-				glog.Warningf("%s preload failed: %v, falling back to caching images", cr.Name(), err)
-			}
-
-			if err := machine.CacheImagesForBootstrapper(k8s.ImageRepository, k8s.KubernetesVersion, viper.GetString(cmdcfg.Bootstrapper)); err != nil {
-				exit.WithError("Failed to cache images", err)
-			}
-		}
-	}
-
-	err = cr.Enable(disableOthers)
-	if err != nil {
-		exit.WithError("Failed to enable container runtime", err)
-	}
-
-	return cr
-}
-
 func showVersionInfo(k8sVersion string, cr cruntime.Manager) {
 	version, _ := cr.Version()
 	out.T(cr.Style(), "Preparing Kubernetes {{.k8sVersion}} on {{.runtime}} {{.runtimeVersion}} ...", out.V{"k8sVersion": k8sVersion, "runtime": cr.Name(), "runtimeVersion": version})
-	for _, v := range DockerOpt {
+	for _, v := range config.DockerOpt {
 		out.T(out.Option, "opt {{.docker_option}}", out.V{"docker_option": v})
 	}
-	for _, v := range DockerEnv {
+	for _, v := range config.DockerEnv {
 		out.T(out.Option, "env {{.docker_env}}", out.V{"docker_env": v})
 	}
 }
 
-// setupKubeAdm adds any requested files into the VM before Kubernetes is started
-func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, node config.Node) bootstrapper.Bootstrapper {
-	bs, err := cluster.Bootstrapper(mAPI, viper.GetString(cmdcfg.Bootstrapper), cfg, node)
-	if err != nil {
-		exit.WithError("Failed to get bootstrapper", err)
-	}
-	for _, eo := range ExtraOptions {
-		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
-	}
-	// Loads cached images, generates config files, download binaries
-	if err := bs.UpdateCluster(cfg); err != nil {
-		exit.WithError("Failed to update cluster", err)
-	}
-	if err := bs.SetupCerts(cfg.KubernetesConfig, node); err != nil {
-		exit.WithError("Failed to setup certs", err)
-	}
-	return bs
-}
-
-func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clusterName string) (*kubeconfig.Settings, error) {
-	addr, err := apiServerURL(*h, *cc, *n)
-	if err != nil {
-		exit.WithError("Failed to get api server URL", err)
-	}
-
-	kcs := &kubeconfig.Settings{
-		ClusterName:          clusterName,
-		ClusterServerAddress: addr,
-		ClientCertificate:    localpath.MakeMiniPath("client.crt"),
-		ClientKey:            localpath.MakeMiniPath("client.key"),
-		CertificateAuthority: localpath.MakeMiniPath("ca.crt"),
-		KeepContext:          viper.GetBool(keepContext),
-		EmbedCerts:           viper.GetBool(embedCerts),
-	}
-
-	kcs.SetPath(kubeconfig.PathFromEnv())
-	if err := kubeconfig.Update(kcs); err != nil {
-		return kcs, err
-	}
-	return kcs, nil
-}
-
-// apiServerURL returns a URL to end user can reach to the api server
-func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
-	hostname := ""
-	port := n.Port
-	var err error
-	if driver.IsKIC(h.DriverName) {
-		// for kic drivers we use 127.0.0.1 instead of node IP,
-		// because of Docker on MacOs limitations for reaching to container's IP.
-		hostname = oci.DefaultBindIPV4
-		port, err = oci.ForwardedPort(h.DriverName, h.Name, port)
-		if err != nil {
-			return "", errors.Wrap(err, "host port binding")
-		}
-	} else {
-		hostname, err = h.Driver.GetIP()
-		if err != nil {
-			return "", errors.Wrap(err, "get ip")
-		}
-	}
-
-	if cc.KubernetesConfig.APIServerName != constants.APIServerName {
-		hostname = cc.KubernetesConfig.APIServerName
-	}
-	return fmt.Sprintf("https://" + net.JoinHostPort(hostname, strconv.Itoa(port))), nil
-}
-
 // configureMounts configures any requested filesystem mounts
-func configureMounts() {
+func configureMounts(wg *sync.WaitGroup) {
+	wg.Add(1)
+	defer wg.Done()
+
 	if !viper.GetBool(createMount) {
 		return
 	}

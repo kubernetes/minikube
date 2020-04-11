@@ -111,6 +111,23 @@ func CreateEmptyProfile(name string, miniHome ...string) error {
 	return SaveProfile(name, cfg, miniHome...)
 }
 
+// SaveNode saves a node to a cluster
+func SaveNode(cfg *ClusterConfig, node *Node) error {
+	update := false
+	for i, n := range cfg.Nodes {
+		if n.Name == node.Name {
+			cfg.Nodes[i] = *node
+			update = true
+			break
+		}
+	}
+
+	if !update {
+		cfg.Nodes = append(cfg.Nodes, *node)
+	}
+	return SaveProfile(viper.GetString(ProfileName), cfg)
+}
+
 // SaveProfile creates an profile out of the cfg and stores in $MINIKUBE_HOME/profiles/<profilename>/config.json
 func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 	data, err := json.MarshalIndent(cfg, "", "    ")

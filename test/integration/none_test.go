@@ -46,22 +46,22 @@ func TestChangeNoneUser(t *testing.T) {
 	startArgs := append([]string{"CHANGE_MINIKUBE_NONE_USER=true", Target(), "start", "--wait=false"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, "/usr/bin/env", startArgs...))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "delete"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, "/usr/bin/env", startArgs...))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "status"))
 	if err != nil {
-		t.Errorf("%s failed: %v", rr.Args, err)
+		t.Errorf("%s failed: %v", rr.Command(), err)
 	}
 
 	username := os.Getenv("SUDO_USER")
@@ -77,7 +77,13 @@ func TestChangeNoneUser(t *testing.T) {
 		t.Errorf("Failed to convert uid to int: %v", err)
 	}
 
-	for _, p := range []string{localpath.MiniPath(), filepath.Join(u.HomeDir, ".kube/config")} {
+	// Retrieve the kube config from env
+	kubeConfig := os.Getenv("KUBECONFIG")
+	if kubeConfig == "" {
+		kubeConfig = filepath.Join(u.HomeDir, ".kube/config")
+	}
+
+	for _, p := range []string{localpath.MiniPath(), kubeConfig} {
 		info, err := os.Stat(p)
 		if err != nil {
 			t.Errorf("stat(%s): %v", p, err)

@@ -20,9 +20,12 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"runtime"
+	"strings"
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
+	"github.com/golang/glog"
 	"k8s.io/minikube/pkg/drivers/kic"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
@@ -32,12 +35,21 @@ import (
 )
 
 func init() {
+	priority := registry.Default
+	// Staged rollout for preferred:
+	// - Linux
+	// - Windows (once "service" command works)
+	// - macOS
+	if runtime.GOOS == "linux" {
+		priority = registry.Preferred
+	}
+
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Docker,
 		Config:   configure,
 		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Docker}) },
 		Status:   status,
-		Priority: registry.Fallback,
+		Priority: priority,
 	}); err != nil {
 		panic(fmt.Sprintf("register failed: %v", err))
 	}
@@ -58,19 +70,40 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 }
 
 func status() registry.State {
+	docURL := "https://minikube.sigs.k8s.io/docs/drivers/docker/"
 	_, err := exec.LookPath(oci.Docker)
 	if err != nil {
-		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Docker is required.", Doc: "https://minikube.sigs.k8s.io/docs/reference/drivers/docker/"}
+		return registry.State{Error: err, Installed: false, Healthy: false, Fix: "Install Docker", Doc: docURL}
 	}
 
-	// Allow no more than 3 seconds for docker info
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 6*time.Second)
 	defer cancel()
 
-	err = exec.CommandContext(ctx, oci.Docker, "info").Run()
-	if err != nil {
-		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Docker is not running or is responding too slow. Try: restarting docker desktop."}
+	// Quickly returns an error code if server is not running
+	cmd := exec.CommandContext(ctx, oci.Docker, "version", "--format", "{{.Server.Version}}")
+	_, err = cmd.Output()
+	if err == nil {
+		return registry.State{Installed: true, Healthy: true}
 	}
 
-	return registry.State{Installed: true, Healthy: true}
+	glog.Warningf("docker returned error: %v", err)
+
+	// Basic timeout
+	if ctx.Err() == context.DeadlineExceeded {
+		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Restart the Docker service", Doc: docURL}
+	}
+
+	if exitErr, ok := err.(*exec.ExitError); ok {
+		stderr := strings.TrimSpace(string(exitErr.Stderr))
+		newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
+
+		if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") {
+			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Start the Docker service", Doc: docURL}
+		}
+
+		// We don't have good advice, but at least we can provide a good error message
+		return registry.State{Error: newErr, Installed: true, Healthy: false, Doc: docURL}
+	}
+
+	return registry.State{Error: err, Installed: true, Healthy: false, Doc: docURL}
 }

@@ -50,7 +50,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 
 	client, err := kapi.Client(profile)
 	if err != nil {
-		t.Fatalf("client: %v", err)
+		t.Fatalf("failed to get kubernetes client for %q: %v", profile, err)
 	}
 
 	// Pre-Cleanup
@@ -62,14 +62,14 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	args := []string{"-p", profile, "tunnel", "--alsologtostderr", "-v=1"}
 	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("%s failed: %v", args, err)
+		t.Errorf("failed to start a tunnel: args %q: %v", args, err)
 	}
 	defer ss.Stop(t)
 
 	// Start the "nginx" pod.
 	rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "apply", "-f", filepath.Join(*testdataDir, "testsvc.yaml")))
 	if err != nil {
-		t.Fatalf("%s failed: %v", rr.Args, err)
+		t.Fatalf("%s failed: %v", rr.Command(), err)
 	}
 	if _, err := PodWait(ctx, t, profile, "default", "run=nginx-svc", Minutes(4)); err != nil {
 		t.Fatalf("wait: %v", err)
@@ -97,9 +97,9 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 
 		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc"))
 		if err != nil {
-			t.Errorf("%s failed: %v", rr.Args, err)
+			t.Errorf("%s failed: %v", rr.Command(), err)
 		}
-		t.Logf("kubectl get svc nginx-svc:\n%s", rr.Stdout)
+		t.Logf("failed to kubectl get svc nginx-svc:\n%s", rr.Stdout)
 	}
 
 	got := []byte{}
@@ -119,12 +119,12 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 		return nil
 	}
-	if err = retry.Expo(fetch, time.Millisecond*500, Minutes(2), 6); err != nil {
-		t.Errorf("failed to contact nginx at %s: %v", nginxIP, err)
+	if err = retry.Expo(fetch, time.Millisecond*500, Minutes(2), 13); err != nil {
+		t.Errorf("failed to hit nginx at %q: %v", nginxIP, err)
 	}
 
 	want := "Welcome to nginx!"
 	if !strings.Contains(string(got), want) {
-		t.Errorf("body = %q, want *%s*", got, want)
+		t.Errorf("expected body to contain %q, but got *%q*", want, got)
 	}
 }
