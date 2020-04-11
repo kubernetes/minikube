@@ -147,6 +147,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 		// Skip pre-existing, because we already waited for health
 		if kverify.ShouldWait(starter.Cfg.VerifyComponents) && !starter.PreExists {
+			out.T(out.HealthCheck, "Health Checking Kubernetes Components")
 			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
 			}

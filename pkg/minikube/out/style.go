@@ -108,6 +108,7 @@ var styles = map[StyleEnum]style{
 	Enabling:         {Prefix: "🔌  "},
 	Shutdown:         {Prefix: "🛑  "},
 	Pulling:          {Prefix: "🚜  "},
+	HealthCheck:      {Prefix: "🏥  "},
 	Verifying:        {Prefix: "🤔  "},
 	VerifyingNoLine:  {Prefix: "🤔  ", OmitNewline: true},
 	Kubectl:          {Prefix: "💗  "},

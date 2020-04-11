@@ -73,6 +73,7 @@ const (
 	Enabling
 	Shutdown
 	Pulling
+	HealthCheck
 	Verifying
 	VerifyingNoLine
 	Kubectl
