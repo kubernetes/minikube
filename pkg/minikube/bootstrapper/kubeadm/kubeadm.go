@@ -19,6 +19,7 @@ package kubeadm
 import (
 	"bytes"
 	"context"
+	"math"
 	"os/exec"
 	"path"
 	"runtime"
@@ -327,56 +328,100 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForNode blocks until the node appears to be healthy
-func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 
 	if !n.ControlPlane {
 		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
 		return nil
 	}
-	if !kverify.ShouldWait(cfg.VerifyComponents) {
+	if !kverify.ShouldWait(cc.VerifyComponents) {
 		glog.Infof("skip waiting for components based on config.")
 		return nil
 	}
+<<<<<<< HEAD
 	out.T(out.HealthCheck, "Verifying Kubernetes Components:")
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+||||||| parent of 6c7bc7c81... brush up
+	out.T(out.HealthCheck, "Verifying Kubernetes Components")
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
+=======
+	out.T(out.HealthCheck, "Verifying Kubernetes Components")
+	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c})
+>>>>>>> 6c7bc7c81... brush up
 	if err != nil {
-		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
+		return errors.Wrapf(err, "create runtme-manager %s", cc.KubernetesConfig.ContainerRuntime)
 	}
 
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cc, &n, cc.Driver)
 	if err != nil {
 		return errors.Wrap(err, "get control plane endpoint")
 	}
 
+<<<<<<< HEAD
 	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
 		out.T(out.CheckOption, "verifying api server ...")
+||||||| parent of 6c7bc7c81... brush up
+	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
+		start := time.Now()
+=======
+	if cc.VerifyComponents[kverify.APIServerWaitKey] {
+		start := time.Now()
+>>>>>>> 6c7bc7c81... brush up
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
+		if err := kverify.WaitForAPIServerProcess(cr, k, cc, k.c, start, timeout); err != nil {
 			return errors.Wrap(err, "wait for apiserver proc")
 		}
 
-		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
+		if err := kverify.WaitForHealthyAPIServer(cr, k, cc, k.c, client, start, hostname, port, timeout); err != nil {
 			return errors.Wrap(err, "wait for healthy API server")
 		}
+<<<<<<< HEAD
+||||||| parent of 6c7bc7c81... brush up
+		out.T(out.CheckOption, "api server {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+=======
+		out.T(out.CheckOption, "verifying api server {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+>>>>>>> 6c7bc7c81... brush up
 	}
 
+<<<<<<< HEAD
 	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
 		out.T(out.CheckOption, "verifying system pods ...")
+||||||| parent of 6c7bc7c81... brush up
+	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
+		start := time.Now()
+=======
+	if cc.VerifyComponents[kverify.SystemPodsWaitKey] {
+		start := time.Now()
+>>>>>>> 6c7bc7c81... brush up
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
+		if err := kverify.WaitForSystemPods(cr, k, cc, k.c, client, start, timeout); err != nil {
 			return errors.Wrap(err, "waiting for system pods")
 		}
+<<<<<<< HEAD
+||||||| parent of 6c7bc7c81... brush up
+		out.T(out.CheckOption, "system pods {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+=======
+		out.T(out.CheckOption, "verifying system pods {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+>>>>>>> 6c7bc7c81... brush up
 	}
 
+<<<<<<< HEAD
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
 		out.T(out.CheckOption, "verifying default service account ...")
+||||||| parent of 6c7bc7c81... brush up
+	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
+		start := time.Now()
+=======
+	if cc.VerifyComponents[kverify.DefaultSAWaitKey] {
+		start := time.Now()
+>>>>>>> 6c7bc7c81... brush up
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -385,10 +430,24 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			// TODO: medya handle different err type
 			return errors.Wrap(err, "waiting for default service account")
 		}
+<<<<<<< HEAD
+||||||| parent of 6c7bc7c81... brush up
+		out.T(out.CheckOption, "default service account {{.seconds}}s", out.V{"seconds": timeToSecond(time.Since(start))})
+=======
+		out.T(out.CheckOption, "verifying default service account {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+>>>>>>> 6c7bc7c81... brush up
 	}
 
+<<<<<<< HEAD
 	if cfg.VerifyComponents[kverify.AppsRunningKey] {
 		out.T(out.CheckOption, "verifying apps running ...")
+||||||| parent of 6c7bc7c81... brush up
+	if cfg.VerifyComponents[kverify.AppsRunning] {
+		start := time.Now()
+=======
+	if cc.VerifyComponents[kverify.AppsRunning] {
+		start := time.Now()
+>>>>>>> 6c7bc7c81... brush up
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -396,14 +455,29 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
 			return errors.Wrap(err, "waiting for apps_running")
 		}
+<<<<<<< HEAD
+||||||| parent of 6c7bc7c81... brush up
+		out.T(out.CheckOption, "apps running {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+=======
+		out.T(out.CheckOption, "verifying apps running {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+>>>>>>> 6c7bc7c81... brush up
 	}
 
+<<<<<<< HEAD
 	if cfg.VerifyComponents[kverify.NodePressureKey] {
 		out.T(out.CheckOption, "verifying node pressure ...")
+||||||| parent of 6c7bc7c81... brush up
+	if cfg.VerifyComponents[kverify.NodeHealthy] {
+		start := time.Now()
+=======
+	if cc.VerifyComponents[kverify.Node] {
+		start := time.Now()
+>>>>>>> 6c7bc7c81... brush up
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
+<<<<<<< HEAD
 		if err := kverify.NodePressure(client); err != nil {
 			adviseNodePressure(err, cfg.Name, cfg.Driver)
 			return errors.Wrapf(err, "verifying %s", kverify.NodePressureKey)
@@ -419,14 +493,48 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
 			return errors.Wrap(err, "waiting for node to be ready")
 		}
+||||||| parent of 6c7bc7c81... brush up
+		kverify.NodeHealth(client, cfg, timeout)
+		out.T(out.CheckOption, "node health {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+=======
+		kverify.NodePressure(client, cc.Driver)
+		out.T(out.CheckOption, "verifying node health {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+>>>>>>> 6c7bc7c81... brush up
 	}
 
-	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
+	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cc.VerifyComponents)
 	return nil
 }
 
+<<<<<<< HEAD
+||||||| parent of 6c7bc7c81... brush up
+func timeToSecond(d time.Duration) string {
+	s := float64(d / time.Second)
+	if s == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%fs", s)
+}
+
+=======
+func timeToSecond(d time.Duration) string {
+	s := float64((d / time.Millisecond) / 1000)
+	s = math.Round(s*100)/100 
+	if s == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%fs", s)
+}
+
+>>>>>>> 6c7bc7c81... brush up
 // needsReset returns whether or not the cluster needs to be reconfigured
+<<<<<<< HEAD
 func (k *Bootstrapper) needsReset(conf string, name string, hostname string, driver string, port int, client *kubernetes.Clientset, version string) bool {
+||||||| parent of 6c7bc7c81... brush up
+func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client *kubernetes.Clientset, version string) bool {
+=======
+func (k *Bootstrapper) needsReset(conf string, hostname string, driver string, port int, client *kubernetes.Clientset, version string) bool {
+>>>>>>> 6c7bc7c81... brush up
 	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
 		glog.Infof("needs reset: configs differ:\n%s", rr.Output())
 		return true
@@ -456,6 +564,7 @@ func (k *Bootstrapper) needsReset(conf string, name string, hostname string, dri
 	if err := kverify.NodePressure(client); err != nil {
 		adviseNodePressure(err, name, driver)
 		glog.Infof("needs reset: node pressure: %v", err)
+		return true
 	}
 
 	// to be used in the ingeration test to verify it wont reset.
