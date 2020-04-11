@@ -401,14 +401,14 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		out.T(out.CheckOption, "apps running {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
-	if cfg.VerifyComponents[kverify.DiskHealth] {
+	if cfg.VerifyComponents[kverify.NodeHealthy] {
 		start := time.Now()
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		kverify.HealtyDisk(client,timeout)
-		out.T(out.CheckOption, "disk health {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+		kverify.NodePressure(client, cfg, timeout)
+		out.T(out.CheckOption, "node health {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
 	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
