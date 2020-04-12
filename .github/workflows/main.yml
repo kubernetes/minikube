@@ -6,10 +6,6 @@ jobs:
   # Runs before all other jobs
   # builds the minikube binaries
   build_minikube:
-    env:
-      TIME_ELAPSED: time
-      JOB_NAME: "Docker_Ubuntu_16_04"
-      GOPOGH_RESULT: ""
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
@@ -35,10 +31,6 @@ jobs:
         name: minikube_binaries
         path: out
   lint:
-    env:
-      TIME_ELAPSED: time
-      JOB_NAME: "lint"
-      GOPOGH_RESULT: ""
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
@@ -54,10 +46,6 @@ jobs:
       run : make test
       continue-on-error: false
   unit_test:
-    env:
-      TIME_ELAPSED: time
-      JOB_NAME: "unit_test"
-      GOPOGH_RESULT: ""
     runs-on: ubuntu-18.04
     steps:
     - uses: actions/checkout@v2
@@ -75,7 +63,7 @@ jobs:
       continue-on-error: false
   # Run the following integration tests after the build_minikube
   # They will run in parallel and use the binaries in previous step
-  docker_ubuntu_16_04:
+  functional_test_docker_ubuntu_16_04:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
@@ -129,7 +117,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -test.parallel=2 -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--vm-driver=docker -test.parallel=1 -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME))
         min=$((${TIME_ELAPSED}/60))
@@ -164,7 +152,7 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  docker_ubuntu_18_04:
+  functional_test_docker_ubuntu_18_04:
     runs-on: ubuntu-18.04
     env:
       TIME_ELAPSED: time
@@ -218,7 +206,7 @@ jobs:
         chmod a+x e2e-*
         chmod a+x minikube-*
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker -test.parallel=2 -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome ./e2e-linux-amd64 -minikube-start-args=--driver=docker -test.parallel=1 -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1.5 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME))
         min=$((${TIME_ELAPSED}/60))
@@ -253,7 +241,7 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  docker_on_windows:
+  functional_test_docker_windows:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
@@ -283,7 +271,7 @@ jobs:
         mkdir -p report
         mkdir -p testhome
         START_TIME=$(date -u +%s)
-        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome minikube_binaries/e2e-windows-amd64.exe -minikube-start-args=--vm-driver=docker -test.parallel=2 -test.run TestFunctional -test.timeout=30m -binary=minikube_binaries/minikube-windows-amd64.exe -test.v -test.timeout=65m 2>&1 | tee ./report/testout.txt
+        KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome minikube_binaries/e2e-windows-amd64.exe -minikube-start-args=--vm-driver=docker -test.parallel=1 -test.run TestFunctional -test.timeout=30m -binary=minikube_binaries/minikube-windows-amd64.exe -test.v -test.timeout=65m 2>&1 | tee ./report/testout.txt
         END_TIME=$(date -u +%s)
         TIME_ELAPSED=$(($END_TIME-$START_TIME)) 
         min=$((${TIME_ELAPSED}/60))
@@ -317,7 +305,7 @@ jobs:
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
       shell: bash
-  none_ubuntu16_04:
+  baremetal_ubuntu16_04:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
@@ -398,7 +386,7 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  none_ubuntu18_04:
+  baremetal_ubuntu18_04:
     needs: [build_minikube]
     env:
       TIME_ELAPSED: time
@@ -479,7 +467,7 @@ jobs:
         numPass=$(echo $STAT | jq '.NumberOfPass')
         echo "*** $numPass Passed ***"
         if [ "$numFail" -gt 0 ];then echo "*** $numFail Failed ***";exit 2;fi
-  podman_ubuntu_18_04_experimental:
+  functional_test_podman_experimental:
       needs: [build_minikube]
       env:
         TIME_ELAPSED: time
@@ -525,7 +513,7 @@ jobs:
           chmod a+x e2e-*
           chmod a+x minikube-*
           START_TIME=$(date -u +%s)
-          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--driver=podman -test.timeout=30m -test.v -timeout-multiplier=1 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
+          KUBECONFIG=$(pwd)/testhome/kubeconfig MINIKUBE_HOME=$(pwd)/testhome sudo -E ./e2e-linux-amd64 -minikube-start-args=--driver=podman -test.parallel=1 -test.run TestFunctional -test.timeout=30m -test.v -timeout-multiplier=1 -binary=./minikube-linux-amd64 2>&1 | tee ./report/testout.txt
           END_TIME=$(date -u +%s)
           TIME_ELAPSED=$(($END_TIME-$START_TIME))
           min=$((${TIME_ELAPSED}/60))
@@ -564,7 +552,7 @@ jobs:
   # collect all the reports and upload
   upload_all_reports:
     if: always()
-    needs: [docker_ubuntu_16_04,docker_ubuntu_18_04,none_ubuntu16_04,none_ubuntu18_04,podman_ubuntu_18_04_experimental]
+    needs: [functional_test_docker_ubuntu_16_04, functional_test_docker_ubuntu_18_04, functional_test_docker_windows, none_ubuntu16_04, baremetal_ubuntu16_04, baremetal_ubuntu18_04, functional_test_podman_experimental]
     runs-on: ubuntu-18.04
     steps:
     - name: Download Results docker_ubuntu_16_04
