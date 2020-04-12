@@ -47,4 +47,4 @@ minikube dashboard --url
 
 ## Reference
 
-For additional information, see [the official Dashboard documentation](https://kubernetes.io/docs/Handbook/access-application-cluster/web-ui-dashboard/).
+For additional information, see [the official Dashboard documentation](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/).
