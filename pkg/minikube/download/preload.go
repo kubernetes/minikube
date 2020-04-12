@@ -17,14 +17,17 @@ limitations under the License.
 package download
 
 import (
+	"bytes"
 	"context"
 	"crypto/md5"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"google.golang.org/api/option"
@@ -88,6 +91,22 @@ func PreloadExists(k8sVersion, containerRuntime string) bool {
 	// to track status of adding containerd & crio
 	if containerRuntime != "docker" {
 		glog.Info("Container runtime isn't docker, skipping preload")
+		return false
+	}
+
+	cmd := exec.Command("docker", "info", "-f", "{{.Info.Driver}}")
+	var stderr bytes.Buffer
+	cmd.Stderr = &stderr
+	output, err := cmd.Output()
+	if err != nil {
+		glog.Errorf("%v: %v:\n%s", cmd.Args, err, stderr.String())
+		return false
+	}
+	storageDriver := strings.Trim(string(output), " \n")
+
+	// See https://github.com/kubernetes/minikube/issues/7626
+	if storageDriver != "overlay2" {
+		glog.Info("Storage driver isn't overlay2, skipping preload")
 		return false
 	}
 
