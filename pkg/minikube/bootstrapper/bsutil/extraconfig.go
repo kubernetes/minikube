@@ -51,7 +51,7 @@ var componentToKubeadmConfigKey = map[string]string{
 	Scheduler:         "scheduler",
 	Kubeadm:           "kubeadm",
 	// The KubeProxy is handled in different config block
-	Kubeproxy: "kube-proxy",
+	Kubeproxy: "",
 	// The Kubelet is not configured in kubeadm, only in systemd.
 	Kubelet: "",
 }
@@ -180,6 +180,9 @@ func optionPairsForComponent(component string, version semver.Version, cp config
 	return nil
 }
 
+// kubeadm extra args should not be included in the kubeadm config in the extra args section (instead, they must
+// be inserted explicitly in the appropriate places or supplied from the command line); here we remove all of the
+// kubeadm extra args from the slice
 // createExtraComponentConfig generates a map of component to extra args for all of the components except kubeadm and kube-proxy
 func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version semver.Version, componentFeatureArgs string, cp config.Node) ([]componentOptions, error) {
 	extraArgsSlice, err := newComponentOptions(extraOptions, version, componentFeatureArgs, cp)
@@ -187,14 +190,8 @@ func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version se
 		return nil, err
 	}
 
-	// kubeadm extra args should not be included in the kubeadm config in the extra args section (instead, they must
-	// be inserted explicitly in the appropriate places or supplied from the command line); here we remove all of the
-	// kubeadm extra args from the slice
-	//
-	// kube-proxy is managed under a different configuration block so it must be remove from the slice
-	// and inserted explicitly in the appropriate place
 	for i, extraArgs := range extraArgsSlice {
-		if extraArgs.Component == Kubeadm || extraArgs.Component == Kubeproxy {
+		if extraArgs.Component == Kubeadm {
 			extraArgsSlice = append(extraArgsSlice[:i], extraArgsSlice[i+1:]...)
 			break
 		}
@@ -203,19 +200,9 @@ func createExtraComponentConfig(extraOptions config.ExtraOptionSlice, version se
 }
 
 // createKubeProxyOptions generates a map of extra config for kube-proxy
-func createKubeProxyOptions(extraOptions config.ExtraOptionSlice, version semver.Version, componentFeatureArgs string, cp config.Node) (map[string]string, error) {
-	var kubeProxyOptions map[string]string
-	extraArgsSlice, err := newComponentOptions(extraOptions, version, componentFeatureArgs, cp)
-	if err != nil {
-		return nil, err
-	}
-
-	for _, extraArgs := range extraArgsSlice {
-		if extraArgs.Component == Kubeproxy {
-			kubeProxyOptions = extraArgs.ExtraArgs
-		}
-	}
-	return kubeProxyOptions, nil
+func createKubeProxyOptions(extraOptions config.ExtraOptionSlice) map[string]string {
+	kubeProxyOptions := extraOptions.AsMap().Get(Kubeproxy)
+	return kubeProxyOptions
 }
 
 func convertToFlags(opts map[string]string) string {
