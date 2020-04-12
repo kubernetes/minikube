@@ -223,7 +223,15 @@ func (d *Driver) GetSSHPort() (int, error) {
 	kicRunner := command.NewKICRunner(d.MachineName, d.OCIBinary)
 	waitSSHDSvc := func() error {
 		if s := kverify.SSHDStatus(kicRunner); s != state.Running {
-			glog.Info("SSHD service is not running: %q will retry.", s)
+			glog.Info("(medya dbg) SSHD service is not running: %q will retry but will run a debug first ", s)
+
+			cmd := exec.Command(d.NodeConfig.OCIBinary, "logs", d.MachineName)
+			b, err := cmd.CombinedOutput()
+			glog.Errorf("(medya dbg) docker logs debug: err: %v output : %q", err, string(b))
+
+			cmd = exec.Command(d.NodeConfig.OCIBinary, "ps", "-a")
+			b, err = cmd.CombinedOutput()
+			glog.Errorf("(medya dbg) running docker ps -a debugiing command caused error: %v", err, string(b))
 			return fmt.Errorf("SSHD service not up")
 		}
 		glog.Infof("(medya dbg) SSHD service is running")
