@@ -112,7 +112,7 @@ func checkEnv(ip string, env string) bool {
 	for _, b := range noProxyBlocks {
 		yes, err := isInBlock(ip, b)
 		if err != nil {
-			glog.Errorf("fail to check proxy env: %v", err)
+			glog.Warningf("fail to check proxy env: %v", err)
 		}
 		if yes {
 			return true
