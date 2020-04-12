@@ -364,13 +364,34 @@ func (d *Driver) Stop() error {
 	}
 
 	if err := killAPIServerProc(d.exec); err != nil {
-		glog.Warningf("couldn't stop kube-apiserver proc: %v", err)
+		glog.Infof("kill kube-apiserver proc: %v", err)
+	}
+
+	if err := killETCDProc(d.exec); err != nil {
+		glog.Infof("kill etcd proc: %v", err)
 	}
 
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)
 	}
+
+	checkStopped := func() error {
+		s, err := oci.ContainerStatus(d.NodeConfig.OCIBinary, d.MachineName)
+		if err != nil {
+			return err
+		}
+		if s != state.Stopped {
+			return fmt.Errorf("expected container state be stopped but got %s", s)
+		}
+		glog.Infof("container %q state is stopped.", d.MachineName)
+		return nil
+	}
+
+	if err := retry.Expo(checkStopped, 500*time.Microsecond, time.Second*30); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -382,16 +403,16 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 // killAPIServerProc will kill an api server proc if it exists
 // to ensure this never happens https://github.com/kubernetes/minikube/issues/7521
 func killAPIServerProc(runner command.Runner) error {
-	// first check if it exists
-	rr, err := runner.RunCmd(exec.Command("pgrep", "kube-apiserver"))
-	if err == nil { // this means we might have a running kube-apiserver
-		pid, err := strconv.Atoi(rr.Stdout.String())
-		if err == nil { // this means we have a valid pid
-			glog.Warningf("Found a kube-apiserver running with pid %d, will try to kill the proc", pid)
-			if _, err = runner.RunCmd(exec.Command("pkill", "-9", string(pid))); err != nil {
-				return errors.Wrap(err, "kill")
-			}
-		}
+	if _, err := runner.RunCmd(exec.Command("pkill", "-xnf", "kube-apiserver.*minikube.*")); err != nil {
+		return errors.Wrap(err, "kill apiserver")
+	}
+	return nil
+}
+
+// killETCDProc will kill an etc proc if it exists
+func killETCDProc(runner command.Runner) error {
+	if _, err := runner.RunCmd(exec.Command("pkill", "-xnf", "etcd.*minikube.*")); err != nil {
+		return errors.Wrap(err, "kill etcd")
 	}
 	return nil
 }
