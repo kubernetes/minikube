@@ -53,11 +53,13 @@ func TestIsInBlock(t *testing.T) {
 		wanntAErr bool
 	}{
 		{"", "192.168.0.1/32", false, true},
+		{"192.168.0.1", "", false, true},
+		{"192.168.0.1", "192.168.0.1", true, false},
 		{"192.168.0.1", "192.168.0.1/32", true, false},
-		{"192.168.0.2", "192.168.0.1/32", false, false},
+		{"192.168.0.2", "192.168.0.1/32", false, true},
 		{"192.168.0.1", "192.168.0.1/18", true, false},
 		{"abcd", "192.168.0.1/18", false, true},
-		{"192.168.0.1", "foo", false, false},
+		{"192.168.0.1", "foo", false, true},
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%s in %s Want: %t WantAErr: %t", tc.ip, tc.block, tc.want, tc.wanntAErr), func(t *testing.T) {
@@ -122,6 +124,7 @@ func TestCheckEnv(t *testing.T) {
 		{"192.168.0.13", "NO_PROXY", false, ""},
 		{"192.168.0.13", "NO_PROXY", false, ","},
 		{"192.168.0.13", "NO_PROXY", true, "192.168.0.13"},
+		{"192.168.0.13", "NO_PROXY", false, "192.168.0.14"},
 		{"192.168.0.13", "NO_PROXY", true, ",192.168.0.13"},
 		{"192.168.0.13", "NO_PROXY", true, "10.10.0.13,192.168.0.13"},
 		{"192.168.0.13", "NO_PROXY", true, "192.168.0.13/22"},
