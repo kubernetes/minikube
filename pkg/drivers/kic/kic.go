@@ -34,7 +34,6 @@ import (
 	pkgdrivers "k8s.io/minikube/pkg/drivers"
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
-	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
@@ -198,51 +197,8 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
-	// to avoid https://github.com/kubernetes/minikube/issues/7606
-	// make sure container is running before we get SSH Port
-	waitRunning := func() error {
-		s, err := d.GetState()
-		if err != nil {
-			glog.Warningf("failed to get container %q state, will retry: %v", d.MachineName, err)
-			return errors.Wrap(err, "GetState")
-		}
-		if s != state.Running {
-			glog.Warningf("container %q is in %q state, will retry till it is running: %v", d.MachineName, s, err)
-			return fmt.Errorf("expected running but got %s", s)
-		}
-		glog.Infof("container %s is running", d.MachineName)
-		return nil
-	}
-
-	if err := retry.Expo(waitRunning, 500*time.Millisecond, 1*time.Minute); err != nil {
-		return 0, errors.Wrap(err, "not running")
-	}
-
-	// will have to use kic Runner because first time this is called, the SSHkeys are not copied yet
-	// and ssh runner wont work
-	kicRunner := command.NewKICRunner(d.MachineName, d.OCIBinary)
-	waitSSHDSvc := func() error {
-		if s := kverify.SSHDStatus(kicRunner); s != state.Running {
-			glog.Info("(medya dbg) SSHD service is not running: %q will retry but will run a debug first ", s)
-
-			cmd := exec.Command(d.NodeConfig.OCIBinary, "logs", d.MachineName)
-			b, err := cmd.CombinedOutput()
-			glog.Errorf("(medya dbg) docker logs debug: err: %v output : %q", err, string(b))
-
-			cmd = exec.Command(d.NodeConfig.OCIBinary, "ps", "-a")
-			b, err = cmd.CombinedOutput()
-			glog.Errorf("(medya dbg) running docker ps -a debugiing command caused error: %v", err, string(b))
-			return fmt.Errorf("SSHD service not up")
-		}
-		glog.Infof("(medya dbg) SSHD service is running")
-		return nil
-	}
-	if err := retry.Expo(waitSSHDSvc, 500*time.Millisecond, time.Second*13); err != nil {
-		return 0, errors.Wrap(err, "sshd service")
-	}
-
-	p := 0
 	var perr error
+	var p int
 	findForward := func() error {
 		p, perr = oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
 		if perr != nil {
@@ -259,7 +215,7 @@ func (d *Driver) GetSSHPort() (int, error) {
 		return nil
 	}
 
-	if err := retry.Expo(findForward, 500*time.Microsecond, 2*time.Minute); err != nil {
+	if err := retry.Expo(findForward, 500*time.Microsecond, 1*time.Minute); err != nil {
 		return p, errors.Wrap(err, "find forward")
 	}
 	return p, nil
@@ -334,22 +290,19 @@ func (d *Driver) Remove() error {
 func (d *Driver) Restart() error {
 	s, err := d.GetState()
 	if err != nil {
-		return errors.Wrap(err, "get kic state")
+		glog.Warningf("get state : %v", err)
 	}
-	switch s {
-	case state.Stopped:
+	if s == state.Stopped { // don't stop if already stopped
 		return d.Start()
-	case state.Running, state.Error:
-		if err = d.Stop(); err != nil {
-			return fmt.Errorf("restarting a kic stop phase %v", err)
-		}
-		if err = d.Start(); err != nil {
-			return fmt.Errorf("restarting a kic start phase %v", err)
-		}
-		return nil
 	}
 
-	return fmt.Errorf("restarted not implemented for kic state %s yet", s)
+	if err = d.Stop(); err != nil {
+		return fmt.Errorf("stop during restart %v", err)
+	}
+	if err = d.Start(); err != nil {
+		return fmt.Errorf("start during restart %v", err)
+	}
+	return nil
 }
 
 // Start an already created kic container
