@@ -47,6 +47,7 @@ type CreateParams struct {
 	Memory        string            // memory (mbs) to assign to the container
 	Envs          map[string]string // environment variables to pass to the container
 	ExtraArgs     []string          // a list of any extra option to pass to oci binary during creation time, for example --expose 8080...
+	OCIPrefix     string            // env or sudo
 	OCIBinary     string            // docker or podman
 }
 
