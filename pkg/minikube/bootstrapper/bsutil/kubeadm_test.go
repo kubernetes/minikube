@@ -57,7 +57,7 @@ func getExtraOpts() []config.ExtraOption {
 		},
 		config.ExtraOption{
 			Component: Kubeproxy,
-			Key:       "proxy-mode",
+			Key:       "mode",
 			Value:     "iptables",
 		},
 	}
