@@ -40,10 +40,10 @@ import (
 
 // DeleteContainersByLabel deletes all containers that have a specific label
 // if there no containers found with the given 	label, it will return nil
-func DeleteContainersByLabel(ociBin string, label string) []error {
+func DeleteContainersByLabel(prefix string, ociBin string, label string) []error {
 	var deleteErrs []error
 
-	cs, err := listContainersByLabel(ociBin, label)
+	cs, err := listContainersByLabel(prefix, ociBin, label)
 	if err != nil {
 		return []error{fmt.Errorf("listing containers by label %q", label)}
 	}
@@ -53,7 +53,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 	}
 
 	for _, c := range cs {
-		_, err := ContainerStatus(ociBin, c)
+		_, err := ContainerStatus(prefix, ociBin, c)
 		// only try to delete if docker/podman inspect returns
 		// if it doesn't it means docker daemon is stuck and needs restart
 		if err != nil {
@@ -61,10 +61,10 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. :%v", ociBin, ociBin, err)
 			continue
 		}
-		if err := ShutDown(ociBin, c); err != nil {
+		if err := ShutDown(prefix, ociBin, c); err != nil {
 			glog.Infof("couldn't shut down %s (might be okay): %v ", c, err)
 		}
-		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
+		cmd := exec.Command(prefix, ociBin, "rm", "-f", "-v", c)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
 		}
@@ -74,17 +74,17 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 }
 
 // DeleteContainer deletes a container by ID or Name
-func DeleteContainer(ociBin string, name string) error {
+func DeleteContainer(prefix string, ociBin string, name string) error {
 
-	_, err := ContainerStatus(ociBin, name)
+	_, err := ContainerStatus(prefix, ociBin, name)
 	if err != nil {
 		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways: %v", ociBin, ociBin, err)
 	}
 	// try to delete anyways
-	if err := ShutDown(ociBin, name); err != nil {
+	if err := ShutDown(prefix, ociBin, name); err != nil {
 		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
-	cmd := exec.Command(ociBin, "rm", "-f", "-v", name)
+	cmd := exec.Command(prefix, ociBin, "rm", "-f", "-v", name)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "delete container %s: output %s", name, out)
 	}
@@ -157,18 +157,18 @@ func CreateContainerNode(p CreateParams) error {
 	// adds node specific args
 	runArgs = append(runArgs, p.ExtraArgs...)
 
-	if enabled := isUsernsRemapEnabled(p.OCIBinary); enabled {
+	if enabled := isUsernsRemapEnabled(p.OCIPrefix, p.OCIBinary); enabled {
 		// We need this argument in order to make this command work
 		// in systems that have userns-remap enabled on the docker daemon
 		runArgs = append(runArgs, "--userns=host")
 	}
 
-	if err := createContainer(p.OCIBinary, p.Image, withRunArgs(runArgs...), withMounts(p.Mounts), withPortMappings(p.PortMappings)); err != nil {
+	if err := createContainer(p.OCIPrefix, p.OCIBinary, p.Image, withRunArgs(runArgs...), withMounts(p.Mounts), withPortMappings(p.PortMappings)); err != nil {
 		return errors.Wrap(err, "create container")
 	}
 
 	checkRunning := func() error {
-		s, err := ContainerStatus(p.OCIBinary, p.Name)
+		s, err := ContainerStatus(p.OCIPrefix, p.OCIBinary, p.Name)
 		if err != nil {
 			return fmt.Errorf("temporary error checking status for %q : %v", p.Name, err)
 		}
@@ -188,7 +188,7 @@ func CreateContainerNode(p CreateParams) error {
 }
 
 // CreateContainer creates a container with "docker/podman run"
-func createContainer(ociBinary string, image string, opts ...createOpt) error {
+func createContainer(prefix string, ociBin string, image string, opts ...createOpt) error {
 	o := &createOpts{}
 	for _, opt := range opts {
 		o = opt(o)
@@ -202,10 +202,10 @@ func createContainer(ociBinary string, image string, opts ...createOpt) error {
 		runArgs = append(runArgs, generatePortMappings(portMapping)...)
 	}
 	// construct the actual docker run argv
-	args := []string{"run"}
+	args := []string{ociBin, "run"}
 
 	// to run nested container from privileged container in podman https://bugzilla.redhat.com/show_bug.cgi?id=1687713
-	if ociBinary == Podman {
+	if ociBin == Podman {
 		args = append(args, "--cgroup-manager", "cgroupfs")
 	}
 
@@ -213,7 +213,7 @@ func createContainer(ociBinary string, image string, opts ...createOpt) error {
 	args = append(args, image)
 	args = append(args, o.ContainerArgs...)
 
-	out, err := exec.Command(ociBinary, args...).CombinedOutput()
+	out, err := exec.Command(prefix, args...).CombinedOutput()
 	if err != nil {
 		return errors.Wrapf(err, "failed args: %v output: %s", args, out)
 	}
@@ -222,13 +222,13 @@ func createContainer(ociBinary string, image string, opts ...createOpt) error {
 }
 
 // Copy copies a local asset into the container
-func Copy(ociBinary string, ociID string, targetDir string, fName string) error {
+func Copy(prefix string, ociBin string, ociID string, targetDir string, fName string) error {
 	if _, err := os.Stat(fName); os.IsNotExist(err) {
 		return errors.Wrapf(err, "error source %s does not exist", fName)
 	}
 
 	destination := fmt.Sprintf("%s:%s", ociID, targetDir)
-	cmd := exec.Command(ociBinary, "cp", fName, destination)
+	cmd := exec.Command(prefix, ociBin, "cp", fName, destination)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "error copying %s into node", fName)
 	}
@@ -237,8 +237,8 @@ func Copy(ociBinary string, ociID string, targetDir string, fName string) error 
 }
 
 // ContainerID returns id of a container name
-func ContainerID(ociBinary string, nameOrID string) (string, error) {
-	cmd := exec.Command(ociBinary, "inspect", "-f", "{{.Id}}", nameOrID)
+func ContainerID(prefix string, ociBin string, nameOrID string) (string, error) {
+	cmd := exec.Command(prefix, ociBin, "inspect", "-f", "{{.Id}}", nameOrID)
 	out, err := cmd.CombinedOutput()
 
 	if err != nil { // don't return error if not found, only return empty string
@@ -287,8 +287,8 @@ func WarnIfSlow(args ...string) ([]byte, error) {
 }
 
 // ContainerExists checks if container name exists (either running or exited)
-func ContainerExists(ociBin string, name string) (bool, error) {
-	out, err := WarnIfSlow(ociBin, "ps", "-a", "--format", "{{.Names}}")
+func ContainerExists(prefix string, ociBin string, name string) (bool, error) {
+	out, err := WarnIfSlow(prefix, ociBin, "ps", "-a", "--format", "{{.Names}}")
 	if err != nil {
 		return false, errors.Wrapf(err, string(out))
 	}
@@ -305,8 +305,8 @@ func ContainerExists(ociBin string, name string) (bool, error) {
 
 // IsCreatedByMinikube returns true if the container was created by minikube
 // with default assumption that it is not created by minikube when we don't know for sure
-func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
-	cmd := exec.Command(ociBinary, "inspect", nameOrID, "--format", "{{.Config.Labels}}")
+func IsCreatedByMinikube(prefix string, ociBin string, nameOrID string) bool {
+	cmd := exec.Command(prefix, ociBin, "inspect", nameOrID, "--format", "{{.Config.Labels}}")
 	out, err := cmd.CombinedOutput()
 
 	if err != nil {
@@ -321,14 +321,14 @@ func IsCreatedByMinikube(ociBinary string, nameOrID string) bool {
 }
 
 // ListOwnedContainers lists all the containres that kic driver created on user's machine using a label
-func ListOwnedContainers(ociBinary string) ([]string, error) {
-	return listContainersByLabel(ociBinary, ProfileLabelKey)
+func ListOwnedContainers(prefix string, ociBin string) ([]string, error) {
+	return listContainersByLabel(prefix, ociBin, ProfileLabelKey)
 }
 
 // inspect return low-level information on containers
-func inspect(ociBinary string, containerNameOrID, format string) ([]string, error) {
+func inspect(prefix string, ociBin string, containerNameOrID, format string) ([]string, error) {
 
-	cmd := exec.Command(ociBinary, "inspect",
+	cmd := exec.Command(prefix, ociBin, "inspect",
 		"-f", format,
 		containerNameOrID) // ... against the "node" container
 	var buff bytes.Buffer
@@ -390,8 +390,8 @@ func generateMountBindings(mounts ...Mount) []string {
 }
 
 // isUsernsRemapEnabled checks if userns-remap is enabled in docker
-func isUsernsRemapEnabled(ociBinary string) bool {
-	cmd := exec.Command(ociBinary, "info", "--format", "'{{json .SecurityOptions}}'")
+func isUsernsRemapEnabled(prefix string, ociBin string) bool {
+	cmd := exec.Command(prefix, ociBin, "info", "--format", "'{{json .SecurityOptions}}'")
 	var buff bytes.Buffer
 	cmd.Stdout = &buff
 	cmd.Stderr = &buff
@@ -453,8 +453,8 @@ func withPortMappings(portMappings []PortMapping) createOpt {
 }
 
 // listContainersByLabel returns all the container names with a specified label
-func listContainersByLabel(ociBinary string, label string) ([]string, error) {
-	stdout, err := WarnIfSlow(ociBinary, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
+func listContainersByLabel(prefix string, ociBin string, label string) ([]string, error) {
+	stdout, err := WarnIfSlow(prefix, ociBin, "ps", "-a", "--filter", fmt.Sprintf("label=%s", label), "--format", "{{.Names}}")
 	if err != nil {
 		return nil, err
 	}
@@ -489,8 +489,8 @@ func PointToHostDockerDaemon() error {
 }
 
 // ContainerStatus returns status of a container running,exited,...
-func ContainerStatus(ociBin string, name string) (state.State, error) {
-	out, err := WarnIfSlow(ociBin, "inspect", name, "--format={{.State.Status}}")
+func ContainerStatus(prefix string, ociBin string, name string) (state.State, error) {
+	out, err := WarnIfSlow(prefix, ociBin, "inspect", name, "--format={{.State.Status}}")
 	o := strings.TrimSpace(string(out))
 	switch o {
 	case "running":
@@ -511,8 +511,8 @@ func ContainerStatus(ociBin string, name string) (state.State, error) {
 // Shutdown will run command to shut down the container
 // to ensure the containers process and networking bindings are all closed
 // to avoid containers getting stuck before delete https://github.com/kubernetes/minikube/issues/7657
-func ShutDown(ociBin string, name string) error {
-	cmd := exec.Command(ociBin, "exec", "--privileged", "-t", name, "/bin/bash", "-c", "sudo init 0")
+func ShutDown(prefix string, ociBin string, name string) error {
+	cmd := exec.Command(prefix, ociBin, "exec", "--privileged", "-t", name, "/bin/bash", "-c", "sudo init 0")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		glog.Infof("error shutdown %s output %q : %v", name, out, err)
 	}
@@ -520,7 +520,7 @@ func ShutDown(ociBin string, name string) error {
 	time.Sleep(time.Second * 1)
 	// wait till it is stoped
 	stopped := func() error {
-		st, err := ContainerStatus(ociBin, name)
+		st, err := ContainerStatus(prefix, ociBin, name)
 		if st == state.Stopped {
 			glog.Infof("container %s status is %s", name, st)
 			return nil

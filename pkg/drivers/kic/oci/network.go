@@ -66,7 +66,7 @@ func dockerGatewayIP() (net.IP, error) {
 	}
 
 	bridgeID := strings.TrimSpace(string(out))
-	cmd = exec.Command(Docker, "inspect",
+	cmd = exec.Command("env", Docker, "inspect",
 		"--format", "{{(index .IPAM.Config 0).Gateway}}", bridgeID)
 	out, err = cmd.CombinedOutput()
 
@@ -90,13 +90,13 @@ func ForwardedPort(ociBinary string, ociID string, contPort int) (int, error) {
 
 	if ociBinary == Podman {
 		//podman inspect -f "{{range .NetworkSettings.Ports}}{{if eq .ContainerPort "80"}}{{.HostPort}}{{end}}{{end}}"
-		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID)
+		cmd := exec.Command("sudo", ociBinary, "inspect", "-f", fmt.Sprintf("{{range .NetworkSettings.Ports}}{{if eq .ContainerPort %s}}{{.HostPort}}{{end}}{{end}}", fmt.Sprint(contPort)), ociID)
 		out, err = cmd.CombinedOutput()
 		if err != nil {
 			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
 		}
 	} else {
-		cmd := exec.Command(ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
+		cmd := exec.Command("env", ociBinary, "inspect", "-f", fmt.Sprintf("'{{(index (index .NetworkSettings.Ports \"%d/tcp\") 0).HostPort}}'", contPort), ociID)
 		out, err = cmd.CombinedOutput()
 		if err != nil {
 			return 0, errors.Wrapf(err, "get host-bind port %d for %q, output %s", contPort, ociID, out)
@@ -141,7 +141,7 @@ func podmanConttainerIP(name string) (string, string, error) {
 // dockerContainerIP returns ipv4, ipv6 of container or error
 func dockerContainerIP(name string) (string, string, error) {
 	// retrieve the IP address of the node using docker inspect
-	lines, err := inspect(Docker, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
+	lines, err := inspect("env", Docker, name, "{{range .NetworkSettings.Networks}}{{.IPAddress}},{{.GlobalIPv6Address}}{{end}}")
 	if err != nil {
 		return "", "", errors.Wrap(err, "inspecting NetworkSettings.Networks")
 	}

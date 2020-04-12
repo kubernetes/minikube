@@ -90,17 +90,17 @@ func init() {
 
 func deleteContainersAndVolumes() {
 	delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
-	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
+	errs := oci.DeleteContainersByLabel("env", oci.Docker, delLabel)
 	if len(errs) > 0 { // it will error if there is no container to delete
 		glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
+	errs = oci.DeleteAllVolumesByLabel("env", oci.Docker, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
 
-	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+	errs = oci.PruneAllVolumesByLabel("env", oci.Docker, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
 	}
@@ -191,16 +191,16 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 
 func deleteProfileContainersAndVolumes(name string) {
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, name)
-	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
+	errs := oci.DeleteContainersByLabel("env", oci.Docker, delLabel)
 	if errs != nil { // it will error if there is no container to delete
 		glog.Infof("error deleting containers for %s (might be okay):\n%v", name, errs)
 	}
-	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
+	errs = oci.DeleteAllVolumesByLabel("env", oci.Docker, delLabel)
 	if errs != nil { // it will not error if there is nothing to delete
 		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
 	}
 
-	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
+	errs = oci.PruneAllVolumesByLabel("env", oci.Docker, delLabel)
 	if len(errs) > 0 { // it will not error if there is nothing to delete
 		glog.Warningf("error pruning volume (might be okay):\n%v", errs)
 	}

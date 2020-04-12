@@ -38,19 +38,22 @@ import (
 // It implements the CommandRunner interface.
 type kicRunner struct {
 	nameOrID string
+	prefix   string
 	ociBin   string
 }
 
 // NewKICRunner returns a kicRunner implementor of runner which runs cmds inside a container
-func NewKICRunner(containerNameOrID string, oci string) Runner {
+func NewKICRunner(containerNameOrID string, prefix string, oci string) Runner {
 	return &kicRunner{
 		nameOrID: containerNameOrID,
-		ociBin:   oci, // docker or podman
+		prefix:   prefix, // env or sudo
+		ociBin:   oci,    // docker or podman
 	}
 }
 
 func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 	args := []string{
+		k.ociBin,
 		"exec",
 		// run with privileges so we can remount etc..
 		"--privileged",
@@ -81,7 +84,7 @@ func (k *kicRunner) RunCmd(cmd *exec.Cmd) (*RunResult, error) {
 		args,
 		cmd.Args...,
 	)
-	oc := exec.Command(k.ociBin, args...)
+	oc := exec.Command(k.prefix, args...)
 	oc.Stdin = cmd.Stdin
 	oc.Stdout = cmd.Stdout
 	oc.Stderr = cmd.Stderr
@@ -199,7 +202,7 @@ func (k *kicRunner) chmod(dst string, perm string) error {
 
 // Podman cp command doesn't match docker and doesn't have -a
 func copyToPodman(src string, dest string) error {
-	if out, err := exec.Command(oci.Podman, "cp", src, dest).CombinedOutput(); err != nil {
+	if out, err := exec.Command("sudo", oci.Podman, "cp", src, dest).CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "podman copy %s into %s, output: %s", src, dest, string(out))
 	}
 	return nil

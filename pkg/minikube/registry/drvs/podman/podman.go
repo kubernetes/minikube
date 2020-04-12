@@ -41,7 +41,7 @@ func init() {
 	if err := registry.Register(registry.DriverDef{
 		Name:     driver.Podman,
 		Config:   configure,
-		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIBinary: oci.Podman}) },
+		Init:     func() drivers.Driver { return kic.NewDriver(kic.Config{OCIPrefix: "sudo", OCIBinary: oci.Podman}) },
 		Status:   status,
 		Priority: registry.Experimental,
 	}); err != nil {
@@ -56,6 +56,7 @@ func configure(cc config.ClusterConfig, n config.Node) (interface{}, error) {
 		ImageDigest:   strings.Split(kic.BaseImage, "@")[0], // for podman does not support docker images references with both a tag and digest.
 		CPU:           cc.CPUs,
 		Memory:        cc.Memory,
+		OCIPrefix:     "sudo",
 		OCIBinary:     oci.Podman,
 		APIServerPort: cc.Nodes[0].Port,
 	}), nil
@@ -71,7 +72,7 @@ func status() registry.State {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 
-	cmd := exec.CommandContext(ctx, oci.Podman, "version", "-f", "{{.Version}}")
+	cmd := exec.CommandContext(ctx, "sudo", oci.Podman, "version", "-f", "{{.Version}}")
 	o, err := cmd.CombinedOutput()
 	output := string(o)
 	if err != nil {
@@ -89,7 +90,7 @@ func status() registry.State {
 	// Allow no more than 3 seconds for querying state
 	ctx, cancel = context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
-	err = exec.CommandContext(ctx, oci.Podman, "info").Run()
+	err = exec.CommandContext(ctx, "sudo", oci.Podman, "info").Run()
 	if err != nil {
 		return registry.State{Error: err, Installed: true, Healthy: false, Fix: "Podman is not running or taking too long to respond. Try: restarting podman."}
 	}
