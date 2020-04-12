@@ -47,7 +47,7 @@ func beginCacheKubernetesImages(g *errgroup.Group, imageRepository string, k8sVe
 		glog.Info("Caching tarball of preloaded images")
 		err := download.Preload(k8sVersion, cRuntime)
 		if err == nil {
-			glog.Infof("Finished verifying existance of preloaded tar for %s on %s", k8sVersion, cRuntime)
+			glog.Infof("Finished verifying existence of preloaded tar for %s on %s", k8sVersion, cRuntime)
 			return // don't cache individual images if preload is successful.
 		}
 		glog.Warningf("Error downloading preloaded artifacts will continue without preload: %v", err)
