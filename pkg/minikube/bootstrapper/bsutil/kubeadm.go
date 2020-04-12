@@ -65,6 +65,11 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		return nil, errors.Wrap(err, "generating extra component config for kubeadm")
 	}
 
+	kubeProxyOpts, err := createKubeProxyOptions(k8s.ExtraOptions, version, componentFeatureArgs, cp)
+	if err != nil {
+		return nil, errors.Wrap(err, "generating extra component config for kube-proxy")
+	}
+
 	opts := struct {
 		CertDir             string
 		ServiceCIDR         string
@@ -83,8 +88,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		NoTaintMaster       bool
 		NodeIP              string
 		ControlPlaneAddress string
-		KubeProxyMode       string
-		// KubeProxyOptions    []componentOptions
+		KubeProxyOptions    map[string]string
 	}{
 		CertDir:           vmpath.GuestKubernetesCertsDir,
 		ServiceCIDR:       constants.DefaultServiceCIDR,
@@ -104,7 +108,7 @@ func GenerateKubeadmYAML(cc config.ClusterConfig, n config.Node, r cruntime.Mana
 		DNSDomain:           k8s.DNSDomain,
 		NodeIP:              n.IP,
 		ControlPlaneAddress: cp.IP,
-		KubeProxyMode:       k8s.ExtraOptions.Get("mode", Kubeproxy),
+		KubeProxyOptions:    kubeProxyOpts,
 	}
 
 	if k8s.ServiceCIDR != "" {
