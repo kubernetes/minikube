@@ -109,7 +109,9 @@ func CreateContainerNode(p CreateParams) error {
 		// including some ones docker would otherwise do by default.
 		// for now this is what we want. in the future we may revisit this.
 		"--privileged",
-		"--security-opt", "seccomp=unconfined", // also ignore seccomp
+		"--security-opt", "seccomp=unconfined", //  ignore seccomp
+		// for github actions: https://github.com/kubernetes/minikube/issues/7624
+		"--security-opt", "apparmor=unconfined", // ignore apparmor
 		"--tmpfs", "/tmp", // various things depend on working /tmp
 		"--tmpfs", "/run", // systemd wants a writable /run
 		// logs,pods be stroed on  filesystem vs inside container,
