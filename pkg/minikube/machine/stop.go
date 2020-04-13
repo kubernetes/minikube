@@ -61,7 +61,7 @@ func stop(h *host.Host) error {
 		}
 		return &retry.RetriableError{Err: errors.Wrap(err, "stop")}
 	}
-	glog.Infof("stop complete within %s", time.Since(start))
+	glog.Infof("duration metric: stop complete within %s", time.Since(start))
 	return nil
 }
 
