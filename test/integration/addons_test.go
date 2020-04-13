@@ -116,7 +116,7 @@ func validateIngressAddon(ctx context.Context, t *testing.T, profile string) {
 
 	want := "Welcome to nginx!"
 	checkIngress := func() error {
-		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", fmt.Sprintf("curl http://127.0.0.1:80 -H 'Host: nginx.example.com'")))
+		rr, err := Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "ssh", "curl http://127.0.0.1:80 -H 'Host: nginx.example.com'"))
 		if err != nil {
 			return err
 		}

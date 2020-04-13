@@ -29,7 +29,8 @@ DEB_VERSION ?= $(subst -,~,$(RAW_VERSION))
 RPM_VERSION ?= $(DEB_VERSION)
 
 # used by hack/jenkins/release_build_and_upload.sh and KVM_BUILD_IMAGE, see also BUILD_IMAGE below
-GO_VERSION ?= 1.13.8
+# latest available image from kuberentes https://github.com/kubernetes/kubernetes/blob/master/build/build-image/cross/VERSION
+GO_VERSION ?= v1.13.9
 
 INSTALL_SIZE ?= $(shell du out/minikube-windows-amd64.exe | cut -f1)
 BUILDROOT_BRANCH ?= 2019.02.10
@@ -54,7 +55,7 @@ MINIKUBE_RELEASES_URL=https://github.com/kubernetes/minikube/releases/download
 
 KERNEL_VERSION ?= 4.19.107
 # latest from https://github.com/golangci/golangci-lint/releases
-GOLINT_VERSION ?= v1.23.6
+GOLINT_VERSION ?= v1.24.0
 # Limit number of default jobs, to avoid the CI builds running out of memory
 GOLINT_JOBS ?= 4
 # see https://github.com/golangci/golangci-lint#memory-usage-of-golangci-lint

@@ -765,7 +765,7 @@ func (k *Bootstrapper) applyKICOverlay(cfg config.ClusterConfig) error {
 		return err
 	}
 
-	ko := path.Join(vmpath.GuestEphemeralDir, fmt.Sprintf("kic_overlay.yaml"))
+	ko := path.Join(vmpath.GuestEphemeralDir, "kic_overlay.yaml")
 	f := assets.NewMemoryAssetTarget(b.Bytes(), ko, "0644")
 
 	if err := k.c.Copy(f); err != nil {
@@ -831,7 +831,7 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	rr, err := k.c.RunCmd(cmd)
 	if err != nil {
 		// Error from server (AlreadyExists): clusterrolebindings.rbac.authorization.k8s.io "minikube-rbac" already exists
-		if strings.Contains(rr.Output(), fmt.Sprintf("Error from server (AlreadyExists)")) {
+		if strings.Contains(rr.Output(), "Error from server (AlreadyExists)") {
 			glog.Infof("rbac %q already exists not need to re-create.", rbacName)
 			return nil
 		}
