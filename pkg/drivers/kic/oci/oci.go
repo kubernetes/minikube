@@ -137,12 +137,12 @@ func CreateContainerNode(p CreateParams) error {
 
 	if p.OCIBinary == Podman { // enable execing in /var
 		// volume path in minikube home folder to mount to /var
-		hostVarVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name, "var")
+		hostVarVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name, "var", "lib", "minikube")
 		if err := os.MkdirAll(hostVarVolPath, 0711); err != nil {
 			return errors.Wrapf(err, "create var dir %s", hostVarVolPath)
 		}
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
-		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", hostVarVolPath))
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var/lib/minikube:exec", hostVarVolPath))
 	}
 	if p.OCIBinary == Docker {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
