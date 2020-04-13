@@ -124,7 +124,7 @@ func ContainerIPs(ociBinary string, name string) (string, string, error) {
 
 // podmanConttainerIP returns ipv4, ipv6 of container or error
 func podmanConttainerIP(name string) (string, string, error) {
-	cmd := exec.Command(Podman, "inspect",
+	cmd := exec.Command("sudo", Podman, "inspect",
 		"-f", "{{.NetworkSettings.IPAddress}}",
 		name)
 	out, err := cmd.CombinedOutput()
