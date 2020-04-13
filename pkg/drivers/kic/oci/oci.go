@@ -144,7 +144,7 @@ func CreateContainerNode(p CreateParams) error {
 		if err := os.Mkdir(fmt.Sprintf("%s/%s", hostVarVolPath, "minikube"), 0711); err != nil {
 			return errors.Wrapf(err, "create var dir %s/%s", hostVarVolPath, "minikube")
 		}
-		hostVarLibSubdirs := []string{"docker", "containerd", "containers"}
+		hostVarLibSubdirs := []string{"docker", "containerd", "containers", "kubelet", "cni"}
 		for _, subdir := range hostVarLibSubdirs {
 			if err := os.Mkdir(fmt.Sprintf("%s/%s", hostVarVolPath, subdir), 0711); err != nil {
 				return errors.Wrapf(err, "create var dir %s/%s", hostVarVolPath, subdir)
