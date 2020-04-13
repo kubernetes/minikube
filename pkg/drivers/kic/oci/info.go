@@ -234,7 +234,7 @@ func dockerSystemInfo() (dockerSysInfo, error) {
 // podmanSysInfo returns podman system info --format '{{json .}}'
 func podmanSystemInfo() (podmanSysInfo, error) {
 	var ps podmanSysInfo
-	cmd := exec.Command("sudo", Podman, "system", "info", "--format", "'{{json .}}'")
+	cmd := exec.Command("sudo", Podman, "system", "info", "--format", "{{json .}}")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		return ps, errors.Wrap(err, "get podman system info")
