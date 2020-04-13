@@ -35,8 +35,8 @@ import (
 
 	"fmt"
 	"os/exec"
-	"strings"
 	"strconv"
+	"strings"
 )
 
 // DeleteContainersByLabel deletes all containers that have a specific label
@@ -137,12 +137,24 @@ func CreateContainerNode(p CreateParams) error {
 
 	if p.OCIBinary == Podman { // enable execing in /var
 		// volume path in minikube home folder to mount to /var
-		hostVarVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name, "var", "lib", "minikube")
-		if err := os.MkdirAll(hostVarVolPath, 0711); err != nil {
+		hostVarVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name, "var", "lib")
+		if err := os.MkdirAll(hostVarVolPath, 0755); err != nil {
 			return errors.Wrapf(err, "create var dir %s", hostVarVolPath)
 		}
+		if err := os.Mkdir(fmt.Sprintf("%s/%s", hostVarVolPath, "minikube"), 0711); err != nil {
+			return errors.Wrapf(err, "create var dir %s/%s", hostVarVolPath, "minikube")
+		}
+		hostVarLibSubdirs := []string{"docker", "containerd", "containers"}
+		for _, subdir := range hostVarLibSubdirs {
+			if err := os.Mkdir(fmt.Sprintf("%s/%s", hostVarVolPath, subdir), 0711); err != nil {
+				return errors.Wrapf(err, "create var dir %s/%s", hostVarVolPath, subdir)
+			}
+		}
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
-		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var/lib/minikube:exec", hostVarVolPath))
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s/minikube:/var/lib/minikube:exec", hostVarVolPath))
+		for _, subdir := range hostVarLibSubdirs {
+			runArgs = append(runArgs, "--volume", fmt.Sprintf("%s/%s:/var/lib/%s", hostVarVolPath, subdir, subdir))
+		}
 	}
 	if p.OCIBinary == Docker {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
