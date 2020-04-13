@@ -158,6 +158,7 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 	if driver.IsKIC(h.Driver.DriverName()) {
 		start := time.Now()
 		// using a temproary kic runner to ensure the SSHD service is up
+		// and then in the end return ssh runner which is faster.
 		kr := command.NewKICRunner(h.Name, h.Driver.DriverName())
 		sshReady := func() error {
 			if s := kverify.SSHDStatus(kr); s != state.Running {

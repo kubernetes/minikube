@@ -197,21 +197,7 @@ func (d *Driver) GetSSHHostname() (string, error) {
 
 // GetSSHPort returns port for use with ssh
 func (d *Driver) GetSSHPort() (int, error) {
-	var perr error
-	var p int
-	findForward := func() error {
-		p, perr = oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
-		if perr != nil {
-			return perr
-		}
-		return nil
-	}
-
-	// try up to 3 times
-	if err := retry.Expo(findForward, 500*time.Microsecond, 13*time.Second, 3); err != nil {
-		return p, errors.Wrap(err, "forwarded ssh port")
-	}
-	return p, nil
+	return oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
 }
 
 // GetSSHUsername returns the ssh username
