@@ -157,20 +157,9 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		}
 
 		// Load the control plane host
-		cp, err := config.PrimaryControlPlane(starter.Cfg)
-		if err != nil {
-			return nil, errors.Wrap(err, "Getting primary control plane")
-		}
-		cpHost, err := machine.LoadHost(starter.MachineAPI, driver.MachineName(*starter.Cfg, cp))
-		if err != nil {
-			return nil, errors.Wrap(err, "Loading control plane host")
-		}
-		r, err := machine.CommandRunner(cpHost)
-		if err != nil {
-			return nil, errors.Wrap(err, "Getting cp command runner")
-		}
+		c := mustload.Running(starter.Cfg.Name)
 
-		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, r)
+		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, c.CP.Runner)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to get control plane bootstrapper")
 		}
