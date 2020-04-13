@@ -72,6 +72,27 @@ func TestListProfiles(t *testing.T) {
 	}
 }
 
+func TestProfileNameValid(t *testing.T) {
+	var testCases = []struct {
+		name     string
+		expected bool
+	}{
+		{"meaningful_name", true},
+		{"meaningful_name@", false},
+		{"n_a_m_e_2", true},
+		{"n", false},
+		{"_name", false},
+		{"N__a.M--E12567", true},
+	}
+	for _, tt := range testCases {
+		got := ProfileNameValid(tt.name)
+		if got != tt.expected {
+			t.Errorf("expected ProfileNameValid(%s)=%t but got %t ", tt.name, tt.expected, got)
+		}
+	}
+
+}
+
 func TestProfileNameInReservedKeywords(t *testing.T) {
 	var testCases = []struct {
 		name     string
