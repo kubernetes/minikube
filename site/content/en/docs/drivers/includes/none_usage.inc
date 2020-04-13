@@ -2,6 +2,8 @@
 
 VM running a systemd-based Linux distribution ([see #2704](https://github.com/kubernetes/minikube/issues/2704))
 
+kubeadm requirements listed here - https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/
+
 ## Usage
 
 The none driver requires minikube to be run as root, until [#3760](https://github.com/kubernetes/minikube/issues/3760) can be addressed.
