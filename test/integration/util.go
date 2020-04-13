@@ -56,5 +56,6 @@ func UniqueProfileName(prefix string) string {
 	if NoneDriver() {
 		return "minikube"
 	}
-	return fmt.Sprintf("%s-%s-%d", prefix, time.Now().Format("20060102T150405.999999999"), os.Getpid())
+	
+	return fmt.Sprintf("%s-%s-%d", prefix, time.Now().Format("20060102T150405.9999"), os.Getpid())
 }
