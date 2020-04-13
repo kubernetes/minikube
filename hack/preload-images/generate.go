@@ -87,7 +87,7 @@ func generateTarball(kubernetesVersion, containerRuntime, tarballFilename string
 	kcfg := config.KubernetesConfig{
 		KubernetesVersion: kubernetesVersion,
 	}
-	runner := command.NewKICRunner(profile, driver.OCIBinary)
+	runner := command.NewKICRunner(profile, driver.OCIPrefix, driver.OCIBinary)
 	sm := sysinit.New(runner)
 
 	if err := bsutil.TransferBinaries(kcfg, runner, sm); err != nil {
