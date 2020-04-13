@@ -161,7 +161,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, c.CP.Runner)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to get control plane bootstrapper")
+			return nil, errors.Wrap(err, "getting bootstrapper for control plane")
 		}
 		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
 		if err != nil {
