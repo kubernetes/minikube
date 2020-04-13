@@ -273,7 +273,7 @@ func (d *Driver) Remove() error {
 func (d *Driver) Restart() error {
 	s, err := d.GetState()
 	if err != nil {
-		glog.Warningf("get state : %v", err)
+		glog.Warningf("get state during restart: %v", err)
 	}
 	if s == state.Stopped { // don't stop if already stopped
 		return d.Start()
