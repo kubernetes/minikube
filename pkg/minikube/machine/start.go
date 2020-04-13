@@ -32,19 +32,14 @@ import (
 	"github.com/juju/mutex"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	"golang.org/x/crypto/ssh"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
-	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
-	"k8s.io/minikube/pkg/minikube/sshutil"
 	"k8s.io/minikube/pkg/minikube/vmpath"
 	"k8s.io/minikube/pkg/util/lock"
-	"k8s.io/minikube/pkg/util/retry"
 )
 
 var (
@@ -198,7 +193,7 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 
 	glog.Infof("creating required directories: %v", requiredDirectories)
 
-	r, err := commandRunner(h)
+	r, err := CommandRunner(h)
 	if err != nil {
 		return errors.Wrap(err, "command runner")
 	}
@@ -215,40 +210,6 @@ func postStartSetup(h *host.Host, mc config.ClusterConfig) error {
 		logRemoteOsRelease(r)
 	}
 	return syncLocalAssets(r)
-}
-
-// commandRunner returns best available command runner for this host
-func commandRunner(h *host.Host) (command.Runner, error) {
-	d := h.Driver.DriverName()
-	glog.V(1).Infof("determining appropriate runner for %q", d)
-	if driver.IsMock(d) {
-		glog.Infof("returning FakeCommandRunner for %q driver", d)
-		return &command.FakeCommandRunner{}, nil
-	}
-
-	if driver.BareMetal(h.Driver.DriverName()) {
-		glog.Infof("returning ExecRunner for %q driver", d)
-		return command.NewExecRunner(), nil
-	}
-	if driver.IsKIC(d) {
-		glog.Infof("Returning KICRunner for %q driver", d)
-		return command.NewKICRunner(h.Name, d), nil
-	}
-
-	glog.Infof("Creating SSH client and returning SSHRunner for %q driver", d)
-
-	// Retry in order to survive an ssh restart, which sometimes happens due to provisioning
-	var sc *ssh.Client
-	getSSH := func() (err error) {
-		sc, err = sshutil.NewSSHClient(h.Driver)
-		return err
-	}
-
-	if err := retry.Expo(getSSH, 250*time.Millisecond, 2*time.Second); err != nil {
-		return nil, err
-	}
-
-	return command.NewSSHRunner(sc), nil
 }
 
 // acquireMachinesLock protects against code that is not parallel-safe (libmachine, cert setup)
@@ -277,13 +238,7 @@ func showHostInfo(cfg config.ClusterConfig) {
 		return
 	}
 	if driver.IsKIC(cfg.Driver) { // TODO:medyagh add free disk space on docker machine
-		s, err := oci.DaemonInfo(cfg.Driver)
-		if err == nil {
-			var info hostInfo
-			info.CPUs = s.CPUs
-			info.Memory = megs(uint64(s.TotalMemory))
-			out.T(out.StartingVM, "Creating Kubernetes in {{.driver_name}} {{.machine_type}} with (CPUs={{.number_of_cpus}}) ({{.number_of_host_cpus}} available), Memory={{.memory_size}}MB ({{.host_memory_size}}MB available) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "number_of_host_cpus": info.CPUs, "memory_size": cfg.Memory, "host_memory_size": info.Memory, "machine_type": machineType})
-		}
+		out.T(out.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "machine_type": machineType})
 		return
 	}
 	out.T(out.StartingVM, "Creating {{.driver_name}} {{.machine_type}} (CPUs={{.number_of_cpus}}, Memory={{.memory_size}}MB, Disk={{.disk_size}}MB) ...", out.V{"driver_name": cfg.Driver, "number_of_cpus": cfg.CPUs, "memory_size": cfg.Memory, "disk_size": cfg.DiskSize, "machine_type": machineType})
