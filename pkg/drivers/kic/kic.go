@@ -39,6 +39,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // Driver represents a kic driver https://minikube.sigs.k8s.io/docs/reference/drivers/docker
@@ -230,26 +231,11 @@ func (d *Driver) GetURL() (string, error) {
 
 // GetState returns the state that the host is in (running, stopped, etc)
 func (d *Driver) GetState() (state.State, error) {
-	out, err := oci.WarnIfSlow(d.NodeConfig.OCIBinary, "inspect", "-f", "{{.State.Status}}", d.MachineName)
+	s, err := oci.ContainerStatus(d.NodeConfig.OCIBinary, d.MachineName)
 	if err != nil {
-		return state.Error, err
+		return s, errors.Wrap(err, "GetState")
 	}
-
-	o := strings.TrimSpace(string(out))
-	switch o {
-	case "running":
-		return state.Running, nil
-	case "exited":
-		return state.Stopped, nil
-	case "paused":
-		return state.Paused, nil
-	case "restarting":
-		return state.Starting, nil
-	case "dead":
-		return state.Error, nil
-	default:
-		return state.None, fmt.Errorf("unknown state")
-	}
+	return s, err
 }
 
 // Kill stops a host forcefully, including any containers that we are managing.
@@ -287,40 +273,43 @@ func (d *Driver) Remove() error {
 func (d *Driver) Restart() error {
 	s, err := d.GetState()
 	if err != nil {
-		return errors.Wrap(err, "get kic state")
+		glog.Warningf("get state : %v", err)
 	}
-	switch s {
-	case state.Stopped:
+	if s == state.Stopped { // don't stop if already stopped
 		return d.Start()
-	case state.Running, state.Error:
-		if err = d.Stop(); err != nil {
-			return fmt.Errorf("restarting a kic stop phase %v", err)
-		}
-		if err = d.Start(); err != nil {
-			return fmt.Errorf("restarting a kic start phase %v", err)
-		}
-		return nil
 	}
+	if err = d.Stop(); err != nil {
+		return fmt.Errorf("stop during restart %v", err)
+	}
+	if err = d.Start(); err != nil {
+		return fmt.Errorf("start during restart %v", err)
+	}
+	return nil
 
-	return fmt.Errorf("restarted not implemented for kic state %s yet", s)
 }
 
-// Start a _stopped_ kic container
-// not meant to be used for Create().
+// Start an already created kic container
 func (d *Driver) Start() error {
-	s, err := d.GetState()
-	if err != nil {
-		return errors.Wrap(err, "get kic state")
+	cr := command.NewExecRunner() // using exec runner for interacting with
+	if _, err := cr.RunCmd(exec.Command(d.NodeConfig.OCIBinary, "start", d.MachineName)); err != nil {
+		return err
 	}
-	if s == state.Stopped {
-		cmd := exec.Command(d.NodeConfig.OCIBinary, "start", d.MachineName)
-		if err := cmd.Run(); err != nil {
-			return errors.Wrapf(err, "starting a stopped kic node %s", d.MachineName)
+	checkRunning := func() error {
+		s, err := oci.ContainerStatus(d.NodeConfig.OCIBinary, d.MachineName)
+		if err != nil {
+			return err
 		}
+		if s != state.Running {
+			return fmt.Errorf("expected container state be running but got %q", s)
+		}
+		glog.Infof("container %q state is running.", d.MachineName)
 		return nil
 	}
-	// TODO:medyagh maybe make it idempotent
-	return fmt.Errorf("cant start a not-stopped (%s) kic node", s)
+
+	if err := retry.Expo(checkRunning, 500*time.Microsecond, time.Second*30); err != nil {
+		return err
+	}
+	return nil
 }
 
 // Stop a host gracefully, including any containers that we are managing.

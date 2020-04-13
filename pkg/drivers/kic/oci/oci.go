@@ -25,6 +25,7 @@ import (
 	"bufio"
 	"bytes"
 
+	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
@@ -163,7 +164,7 @@ func CreateContainerNode(p CreateParams) error {
 		if err != nil {
 			return fmt.Errorf("temporary error checking status for %q : %v", p.Name, err)
 		}
-		if s != "running" {
+		if s != state.Running {
 			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
 		}
 		glog.Infof("the created container %q has a running status.", p.Name)
@@ -480,7 +481,21 @@ func PointToHostDockerDaemon() error {
 }
 
 // ContainerStatus returns status of a container running,exited,...
-func ContainerStatus(ociBin string, name string) (string, error) {
+func ContainerStatus(ociBin string, name string) (state.State, error) {
 	out, err := WarnIfSlow(ociBin, "inspect", name, "--format={{.State.Status}}")
-	return strings.TrimSpace(string(out)), err
+	o := strings.TrimSpace(string(out))
+	switch o {
+	case "running":
+		return state.Running, nil
+	case "exited":
+		return state.Stopped, nil
+	case "paused":
+		return state.Paused, nil
+	case "restarting":
+		return state.Starting, nil
+	case "dead":
+		return state.Error, nil
+	default:
+		return state.None, errors.Wrapf(err, "unknown state %q", name)
+	}
 }
