@@ -42,12 +42,14 @@ import (
 	"github.com/docker/machine/libmachine/version"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/minikube/bootstrapper/bsutil/kverify"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/registry"
+	"k8s.io/minikube/pkg/util/retry"
 )
 
 // NewRPCClient gets a new client.
@@ -152,8 +154,27 @@ func CommandRunner(h *host.Host) (command.Runner, error) {
 	if driver.BareMetal(h.Driver.DriverName()) {
 		return command.NewExecRunner(), nil
 	}
+	sshRunner := command.NewSSHRunner(h.Driver)
+	if driver.IsKIC(h.Driver.DriverName()) {
+		start := time.Now()
+		// using a temproary kic runner to ensure the SSHD service is up
+		// and then in the end return ssh runner which is faster.
+		kr := command.NewKICRunner(h.Name, h.Driver.DriverName())
+		sshReady := func() error {
+			if s := kverify.SSHDStatus(kr); s != state.Running {
+				return fmt.Errorf("sshd service not ready")
+			}
+			glog.Infof("durationg metric: took %s for SSHD service to be up", time.Since(start))
+			return nil
 
-	return command.NewSSHRunner(h.Driver), nil
+		}
+		if err := retry.Expo(sshReady, 250*time.Millisecond, 13*time.Second); err != nil {
+			glog.Infof("SSHD service was not up by 13 seconds, will fall back to KicRunner: %v", err)
+			return kr, nil // if SSHD service is not up by then fall back to kic runner
+		}
+	}
+
+	return sshRunner, nil
 }
 
 // Create creates the host

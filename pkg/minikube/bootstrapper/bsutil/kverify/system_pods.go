@@ -164,3 +164,14 @@ func KubeletStatus(cr command.Runner) state.State {
 	}
 	return state.Stopped
 }
+
+// SSHDStatus checks the sshd service status
+func SSHDStatus(cr command.Runner) state.State {
+	active := sysinit.New(cr).Active("sshd")
+	if active {
+		glog.Infof("sshd service is active.")
+		return state.Running
+	}
+	glog.Infof("sshd service is not active.")
+	return state.Stopped
+}
