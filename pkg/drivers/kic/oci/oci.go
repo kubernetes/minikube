@@ -36,6 +36,7 @@ import (
 	"fmt"
 	"os/exec"
 	"strings"
+	"strconv"
 )
 
 // DeleteContainersByLabel deletes all containers that have a specific label
@@ -168,6 +169,13 @@ func CreateContainerNode(p CreateParams) error {
 	}
 
 	checkRunning := func() error {
+		r, err := ContainerRunning(p.OCIPrefix, p.OCIBinary, p.Name)
+		if err != nil {
+			return fmt.Errorf("temporary error checking running for %q : %v", p.Name, err)
+		}
+		if !r {
+			return fmt.Errorf("temporary error created container %q is not running yet", p.Name)
+		}
 		s, err := ContainerStatus(p.OCIPrefix, p.OCIBinary, p.Name)
 		if err != nil {
 			return fmt.Errorf("temporary error checking status for %q : %v", p.Name, err)
@@ -486,6 +494,15 @@ func PointToHostDockerDaemon() error {
 
 	}
 	return nil
+}
+
+// ContainerRunning returns running state of a container
+func ContainerRunning(prefix string, ociBin string, name string) (bool, error) {
+	out, err := WarnIfSlow(prefix, ociBin, "inspect", name, "--format={{.State.Running}}")
+	if err != nil {
+		return false, err
+	}
+	return strconv.ParseBool(strings.TrimSpace(string(out)))
 }
 
 // ContainerStatus returns status of a container running,exited,...

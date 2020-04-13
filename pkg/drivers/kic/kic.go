@@ -244,6 +244,8 @@ func (d *Driver) GetState() (state.State, error) {
 
 	o := strings.TrimSpace(string(out))
 	switch o {
+	case "configured":
+		return state.Stopped, nil
 	case "running":
 		return state.Running, nil
 	case "exited":
