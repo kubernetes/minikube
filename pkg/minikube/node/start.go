@@ -156,11 +156,24 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Updating node")
 		}
 
-		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
+		// Load the control plane host
+		cp, err := config.PrimaryControlPlane(starter.Cfg)
 		if err != nil {
-			return nil, errors.Wrap(err, "Getting bootstrapper")
+			return nil, errors.Wrap(err, "Getting primary control plane")
+		}
+		cpHost, err := machine.LoadHost(starter.MachineAPI, driver.MachineName(*starter.Cfg, cp))
+		if err != nil {
+			return nil, errors.Wrap(err, "Loading control plane host")
+		}
+		r, err := machine.CommandRunner(cpHost)
+		if err != nil {
+			return nil, errors.Wrap(err, "Getting cp command runner")
 		}
 
+		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, r)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to get control plane bootstrapper")
+		}
 		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
 		if err != nil {
 			return nil, errors.Wrap(err, "generating join token")
