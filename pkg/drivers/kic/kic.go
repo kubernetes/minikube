@@ -389,6 +389,8 @@ func killAPIServerProc(runner command.Runner) error {
 }
 
 // killETCDProc will kill an etc proc if it exists
+// this only needs to be done for kic drivers, since the base image has an entrypoint that modfies the SIGs
+// other drivers respect STOP and KILL signals. https://github.com/kubernetes/minikube/issues/7521
 func killETCDProc(runner command.Runner) error {
 	if _, err := runner.RunCmd(exec.Command("pkill", "-xnf", "etcd.*minikube.*")); err != nil {
 		return errors.Wrap(err, "kill etcd")
