@@ -346,7 +346,7 @@ func (d *Driver) Stop() error {
 
 	}
 
-	// this is needed only by kic drivers becasue of the entry-point of the base image overrides the STOP and KILL SIGs
+	// this is needed only by kic drivers because of the entry-point of the base image overrides the STOP and KILL SIGs
 	// other drivers dont need this
 	if err := killAPIServerProc(d.exec); err != nil {
 		glog.Warningf("kill kube-apiserver proc: %v", err)
