@@ -99,13 +99,17 @@ func doCacheBinaries(k8sVersion string) error {
 }
 
 // BeginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
-func beginDownloadKicArtifacts(g *errgroup.Group) {
+func beginDownloadKicArtifacts(g *errgroup.Group, driver string, cRuntime string) {
 	out.T(out.Pulling, "Pulling base image ...")
-	glog.Info("Beginning downloading kic artifacts")
-	g.Go(func() error {
-		glog.Infof("Downloading %s to local daemon", kic.BaseImage)
-		return image.WriteImageToDaemon(kic.BaseImage)
-	})
+	glog.Infof("Beginning downloading kic artifacts for %s with %s", driver, cRuntime)
+	if driver == "docker" {
+		g.Go(func() error {
+			glog.Infof("Downloading %s to local daemon", kic.BaseImage)
+			return image.WriteImageToDaemon(kic.BaseImage)
+		})
+	}
+	// TODO: driver == "podman"
+	glog.Info("Container runtime isn't docker, skipping download")
 }
 
 // WaitDownloadKicArtifacts blocks until the required artifacts for KIC are downloaded.

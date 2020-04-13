@@ -188,7 +188,7 @@ func Provision(cc *config.ClusterConfig, n *config.Node, apiServer bool) (comman
 	}
 
 	if driver.IsKIC(cc.Driver) {
-		beginDownloadKicArtifacts(&kicGroup)
+		beginDownloadKicArtifacts(&kicGroup, cc.Driver, cc.KubernetesConfig.ContainerRuntime)
 	}
 
 	if !driver.BareMetal(cc.Driver) {
