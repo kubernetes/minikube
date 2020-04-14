@@ -150,6 +150,7 @@ func (d *Driver) Create() error {
 // prepareSSH will generate keys and copy to the container so minikube ssh works
 func (d *Driver) prepareSSH() error {
 	keyPath := d.GetSSHKeyPath()
+
 	glog.Infof("Creating ssh key for kic: %s...", keyPath)
 	if err := ssh.GenerateSSHKey(keyPath); err != nil {
 		return errors.Wrap(err, "generate ssh key")
@@ -160,9 +161,11 @@ func (d *Driver) prepareSSH() error {
 	if err != nil {
 		return errors.Wrap(err, "create pubkey assetfile ")
 	}
+
 	if err := cmder.Copy(f); err != nil {
 		return errors.Wrap(err, "copying pub key")
 	}
+
 	if rr, err := cmder.RunCmd(exec.Command("chown", "docker:docker", "/home/docker/.ssh/authorized_keys")); err != nil {
 		return errors.Wrapf(err, "apply authorized_keys file ownership, output %s", rr.Output())
 	}

@@ -308,7 +308,7 @@ func setupKubeconfig(h *host.Host, cc *config.ClusterConfig, n *config.Node, clu
 }
 
 func apiServerURL(h host.Host, cc config.ClusterConfig, n config.Node) (string, error) {
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cc, &n, h.DriverName)
+	hostname, _, port, err := driver.ControlPlaneEndpoint(&cc, &n, h.DriverName)
 	if err != nil {
 		return "", err
 	}

@@ -217,7 +217,7 @@ func status(api libmachine.API, cc config.ClusterConfig, n config.Node) (*Status
 		return st, nil
 	}
 
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cc, &n, host.DriverName)
+	hostname, _, port, err := driver.ControlPlaneEndpoint(&cc, &n, host.DriverName)
 	if err != nil {
 		glog.Errorf("forwarded endpoint: %v", err)
 		st.Kubeconfig = Misconfigured

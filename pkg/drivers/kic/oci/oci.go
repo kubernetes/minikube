@@ -148,7 +148,7 @@ func CreateContainerNode(p CreateParams) error {
 	// adds node specific args
 	runArgs = append(runArgs, p.ExtraArgs...)
 
-	if enabled := isUsernsRemapEnabled(p.OCIBinary); enabled {
+	if isUsernsRemapEnabled(p.OCIBinary) {
 		// We need this argument in order to make this command work
 		// in systems that have userns-remap enabled on the docker daemon
 		runArgs = append(runArgs, "--userns=host")
