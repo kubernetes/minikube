@@ -266,24 +266,13 @@ func (d *Driver) Kill() error {
 }
 
 // Remove will delete the Kic Node Container
+// The caller must make sure the container is shutdown before remove
+// otherwise risk get stuck https://github.com/kubernetes/minikube/issues/7657
 func (d *Driver) Remove() error {
-	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
-		glog.Infof("could not find the container %s to remove it, will try anyways.", d.MachineName)
-	}
-
-	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, name)
-	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
-	if errs != nil { // it will error if there is no container to delete
-		glog.Infof("error deleting containers for %s (might be okay):\n%v", name, errs)
-	}
-	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
-	if errs != nil { // it will not error if there is nothing to delete
-		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
-	}
-
-	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
-	if len(errs) > 0 { // it will not error if there is nothing to delete
-		glog.Warningf("error pruning volume (might be okay):\n%v", errs)
+	oci.DemolishCluster(d.OCIBinary, d.MachineName)
+	// if still got an id after deleting the container.
+	if id, err := oci.ContainerID(d.OCIBinary, d.MachineName); err == nil && id != "" {
+		return fmt.Errorf("error ! expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
 	}
 	return nil
 }

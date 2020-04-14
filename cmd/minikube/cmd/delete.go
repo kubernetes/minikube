@@ -129,6 +129,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	if deleteAll {
 		errs := DeleteProfiles(profilesToDelete)
+
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		} else {
@@ -198,10 +199,13 @@ func deleteProfile(profile *config.Profile) error {
 
 	cc, err := config.Load(profile.Name)
 	if err != nil && !config.IsNotExist(err) {
-		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
-		return DeletionError{Err: delErr, Errtype: MissingProfile}
+		if profile.Config != nil { // if we have profile based on evidence lets use that to delete
+			cc = profile.Config
+		} else {
+			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
+			return DeletionError{Err: delErr, Errtype: MissingProfile}
+		}
 	}
-
 	if err == nil && driver.BareMetal(cc.Driver) {
 		if err := uninstallKubernetes(api, *cc, cc.Nodes[0], viper.GetString(cmdcfg.Bootstrapper)); err != nil {
 			deletionError, ok := err.(DeletionError)
@@ -236,6 +240,9 @@ func deleteProfile(profile *config.Profile) error {
 
 func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 	if cc != nil {
+		if driver.IsKIC(cc.Driver) {
+			defer oci.DemolishCluster(cc.Driver,cc.Name)
+		}
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)
 			if err := machine.DeleteHost(api, machineName); err != nil {
@@ -276,8 +283,8 @@ func deleteContext(machineName string) error {
 
 func deleteInvalidProfile(profile *config.Profile) []error {
 	out.T(out.DeletingHost, "Trying to delete invalid profile {{.profile}}", out.V{"profile": profile.Name})
-
 	var errs []error
+	oci.DemolishCluster(oci.Docker, profile.Name)
 	pathToProfile := config.ProfileFolderPath(profile.Name, localpath.MiniPath())
 	if _, err := os.Stat(pathToProfile); !os.IsNotExist(err) {
 		err := os.RemoveAll(pathToProfile)

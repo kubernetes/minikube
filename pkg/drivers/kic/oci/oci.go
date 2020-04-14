@@ -484,3 +484,23 @@ func ContainerStatus(ociBin string, name string) (string, error) {
 	out, err := WarnIfSlow(ociBin, "inspect", name, "--format={{.State.Status}}")
 	return strings.TrimSpace(string(out)), err
 }
+
+// DemolishCluster is to clean up any container/volumes created for a kic profile
+func DemolishCluster(ociBin string, pname string) {
+	delLabel := fmt.Sprintf("%s=%s", ProfileLabelKey, pname)
+	errs := DeleteContainersByLabel(ociBin, delLabel)
+	if errs != nil { // it will error if there is no container to delete
+		glog.Infof("error deleting containers for %s (might be okay):\n%v", pname, errs)
+	}
+
+	errs = DeleteAllVolumesByLabel(ociBin, delLabel)
+	if errs != nil { // it will not error if there is nothing to delete
+		glog.Warningf("error deleting volumes (might be okay).\nTo see the list of volumes run: 'docker volume ls'\n:%v", errs)
+	}
+
+	errs = PruneAllVolumesByLabel(ociBin, delLabel)
+	if len(errs) > 0 { // it will not error if there is nothing to delete
+		glog.Warningf("error pruning volume (might be okay):\n%v", errs)
+	}
+
+}

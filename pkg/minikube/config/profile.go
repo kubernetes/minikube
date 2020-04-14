@@ -203,19 +203,6 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		return nil, nil, err
 	}
 
-	// all docker contrainer existig on the system that have label created by minikube
-	// TODO: handle multi-node (filter by control plane) https://github.com/kubernetes/minikube/issues/7661
-	cs, err := oci.ListOwnedContainers(oci.Docker)
-	if err == nil {
-		pDirs = append(pDirs, cs...)
-	}
-
-	// all podman contrainer existig on the system that have label created by minikube
-	cs, err = oci.ListOwnedContainers(oci.Podman)
-	if err == nil {
-		pDirs = append(pDirs, cs...)
-	}
-
 	pDirs = removeDupes(pDirs)
 	for _, n := range pDirs {
 		p, err := LoadProfile(n, miniHome...)
@@ -229,7 +216,47 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		}
 		validPs = append(validPs, p)
 	}
+
+	// collecting docker/podman profiles based on evidence (containrs created)
+	for _, driver := range []string{oci.Docker, oci.Podman} {
+		vs, inv := kicProfilesByEvidence(driver)
+		if vs != nil && len(vs) > 0 {
+			validPs = append(validPs, vs...)
+		}
+		if inv != nil && len(inv) > 0 {
+			inValidPs = append(inValidPs, inv...)
+		}
+	}
 	return validPs, inValidPs, nil
+}
+
+// kicProfilesByEvidence returns list of profiles based on evidence (containers)
+// not based on config
+func kicProfilesByEvidence(ociBin string) (validPs []*Profile, inValidPs []*Profile) {
+	containers, err := oci.ListOwnedContainers(ociBin)
+	if err == nil {
+		for _, c := range containers {
+			p, err := LoadProfile(c)
+			if p.Config == nil {
+				p.Config = &ClusterConfig{
+					Name: c,
+					Driver: ociBin,
+				}
+			}
+
+			if err != nil {
+				inValidPs = append(inValidPs, p)
+				continue
+			}
+			if !p.IsValid() {
+				p.Config.Driver = ociBin
+				inValidPs = append(inValidPs, p)
+				continue
+			}
+			validPs = append(validPs, p)
+		}
+	}
+	return validPs, inValidPs
 }
 
 // removeDupes removes duplicates
