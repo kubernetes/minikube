@@ -368,11 +368,6 @@ func (d *Driver) Stop() error {
 	return nil
 }
 
-// RunSSHCommandFromDriver implements direct ssh control to the driver
-func (d *Driver) RunSSHCommandFromDriver() error {
-	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
-}
-
 // killAPIServerProc will kill an api server proc if it exists
 // to ensure this never happens https://github.com/kubernetes/minikube/issues/7521
 func killAPIServerProc(runner command.Runner) error {

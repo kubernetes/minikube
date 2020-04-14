@@ -128,7 +128,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 	}
 
 	if deleteAll {
-		deleteContainersAndVolumes()
+		defer deleteContainersAndVolumes()
 
 		errs := DeleteProfiles(profilesToDelete)
 		if len(errs) > 0 {
@@ -190,6 +190,7 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 }
 
 func deleteProfileContainersAndVolumes(name string) {
+
 	delLabel := fmt.Sprintf("%s=%s", oci.ProfileLabelKey, name)
 	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
 	if errs != nil { // it will error if there is no container to delete
@@ -208,13 +209,16 @@ func deleteProfileContainersAndVolumes(name string) {
 
 func deleteProfile(profile *config.Profile) error {
 	viper.Set(config.ProfileName, profile.Name)
-	if profile.Config != nil {
-		// if driver is oci driver, delete containers and volumes
-		if driver.IsKIC(profile.Config.Driver) {
-			out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
-			deleteProfileContainersAndVolumes(profile.Name)
-		}
-	}
+	// TODO: MEDYA COME BACK HERE BEFORE PUSHING
+	// if profile.Config != nil {
+	// 	defer func() {
+	// 		// if driver is oci driver, delete containers and volumes
+	// 		if driver.IsKIC(profile.Config.Driver) {
+	// 			out.T(out.DeletingHost, `Deleting "{{.profile_name}}" in {{.driver_name}} ...`, out.V{"profile_name": profile.Name, "driver_name": profile.Config.Driver})
+	// 			deleteProfileContainersAndVolumes(profile.Name)
+	// 		}
+	// 	}()
+	// }
 
 	api, err := machine.NewAPIClient()
 	if err != nil {

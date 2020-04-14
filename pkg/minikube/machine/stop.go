@@ -45,8 +45,8 @@ func StopHost(api libmachine.API, machineName string) error {
 // stop forcibly stops a host without needing to load
 func stop(h *host.Host) error {
 	start := time.Now()
-	if h.DriverName == driver.HyperV {
-		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
+	if driver.NeedsShutdown(h.DriverName) {
+		glog.Infof("As there are issues with stopping %q driver using API, trying to shut down using SSH", h.DriverName)
 		if err := trySSHPowerOff(h); err != nil {
 			return errors.Wrap(err, "ssh power off")
 		}
@@ -78,8 +78,16 @@ func trySSHPowerOff(h *host.Host) error {
 	}
 
 	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
-	out, err := h.RunSSHCommand("sudo poweroff")
-	// poweroff always results in an error, since the host disconnects.
-	glog.Infof("poweroff result: out=%s, err=%v", out, err)
+	if driver.IsKIC(h.DriverName) {
+		out, err := h.RunSSHCommand("sudo init 0")
+		// poweroff always results in an error, since the host disconnects.
+		glog.Infof("shuting down ubuntu: 'init 0' result: out=%s, err=%v", out, err)
+
+	} else {
+		out, err := h.RunSSHCommand("sudo poweroff")
+		// poweroff always results in an error, since the host disconnects.
+		glog.Infof("poweroff result: out=%s, err=%v", out, err)
+
+	}
 	return nil
 }

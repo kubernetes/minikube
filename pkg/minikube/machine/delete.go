@@ -36,6 +36,7 @@ import (
 // deleteOrphanedKIC attempts to delete an orphaned docker instance for machines without a config file
 // used as last effort clean up not returning errors, wont warn user.
 func deleteOrphanedKIC(ociBin string, name string) {
+	glog.Info("deleting possible orphaned kic containers for %q", name)
 	if !(ociBin == oci.Podman || ociBin == oci.Docker) {
 		return
 	}
@@ -59,26 +60,20 @@ func deleteOrphanedKIC(ociBin string, name string) {
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
-	if err != nil && host == nil {
-		deleteOrphanedKIC(oci.Docker, machineName)
-		deleteOrphanedKIC(oci.Podman, machineName)
-		// Keep going even if minikube does not know about the host
-	}
-
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
 	status, err := Status(api, machineName)
 	if err != nil {
-		// Assume that the host has already been deleted, log and return
-		glog.Infof("Unable to get host status for %s, assuming it has already been deleted: %v", machineName, err)
-		return nil
+		glog.Infof("Unable to get host status for %s %v, will try to delete anways.", machineName, err)
 	}
 
 	if status == state.None.String() {
+		glog.Infof("machine %q doesn't exist", machineName)
 		return mcnerror.ErrHostDoesNotExist{Name: machineName}
 	}
 
 	// Hyper-V requires special care to avoid ACPI and file locking issues
-	if host.Driver.DriverName() == driver.HyperV {
+	// KIC also needs host shut down to avoid https://github.com/kubernetes/minikube/issues/7657
+	if host.Driver.DriverName() == driver.HyperV || driver.IsKIC(host.Driver.DriverName()) {
 		if err := StopHost(api, machineName); err != nil {
 			glog.Warningf("stop host: %v", err)
 		}

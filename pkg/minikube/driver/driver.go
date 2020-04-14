@@ -135,6 +135,15 @@ func NeedsPortForward(name string) bool {
 	return IsKIC(name) && (runtime.GOOS == "darwin" || runtime.GOOS == "windows")
 }
 
+// NeedsShutdown returns true if driver needs manual shutdown command before stopping.
+// to avoid https://github.com/kubernetes/minikube/issues/7657
+func NeedsShutdown(name string) bool {
+	if name == HyperV || IsKIC(name) {
+		return true
+	}
+	return false
+}
+
 // HasResourceLimits returns true if driver can set resource limits such as memory size or CPU count.
 func HasResourceLimits(name string) bool {
 	return !(name == None || name == Podman)
