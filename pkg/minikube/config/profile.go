@@ -219,11 +219,9 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		}
 	}
 
-	for _, x := range validPs {
-		fmt.Println(x.Config.Name, x.Config.Driver)
-	}
-
 	// collecting docker/podman profiles based on evidence (containrs created)
+	// good for cleaning up leftovers
+	// for when a container is created but the profile/machine config was deleted by use
 	for _, driver := range []string{oci.Docker, oci.Podman} {
 		vs, inv := kicProfilesByEvidence(driver)
 		if len(vs) > 0 {
@@ -255,8 +253,8 @@ func inSlice(profiles []*Profile, profile *Profile) bool {
 	return false
 }
 
-// kicProfilesByEvidence returns list of profiles based on evidence (containers)
-// not based on config
+// kicProfilesByEvidence returns profiles based on evidence (containers)
+// on the user's system NOT based on config
 func kicProfilesByEvidence(ociBin string) (validPs []*Profile, inValidPs []*Profile) {
 	containers, err := oci.ListOwnedContainers(ociBin)
 	if err == nil {
