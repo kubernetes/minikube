@@ -139,10 +139,9 @@ func CreateContainerNode(p CreateParams) error {
 	}
 	if p.OCIBinary == Docker {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
-		// setting resource limit in privileged mode is only supported by docker
-		// podman error: "Error: invalid configuration, cannot set resources with rootless containers not using cgroups v2 unified mode"
-		runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs), fmt.Sprintf("--memory=%s", p.Memory))
 	}
+
+	runArgs = append(runArgs, fmt.Sprintf("--cpus=%s", p.CPUs), fmt.Sprintf("--memory=%s", p.Memory))
 
 	for key, val := range p.Envs {
 		runArgs = append(runArgs, "-e", fmt.Sprintf("%s=%s", key, val))
