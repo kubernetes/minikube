@@ -151,7 +151,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 	// since this test is invasive, we will copy test data to a temp location
 	tempMiniHome, err := ioutil.TempDir("", "all")
 	if err != nil {
-		t.Fatalf("tempdir: %v", err)
+		t.Fatalf("tempdir: %v", err) // TODO: medya delete temp folder
 	}
 	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-all/", tempMiniHome)
 	if err != nil {
@@ -174,6 +174,11 @@ func TestDeleteAllProfiles(t *testing.T) {
 	if expectedProfileDirsNum != len(pFiles) {
 		t.Errorf("got %d test profiles dirs, expected %d: %s", len(pFiles), expectedProfileDirsNum, pFiles)
 	}
+	t.Logf("------------------------------------------------------------------------")
+	t.Logf("pfiles: %s",pFiles)
+	t.Logf("mfiles: %s",mFiles)
+	t.Logf("------------------------------------------------------------------------")
+
 	const expectedMachineDirsNum = 7
 	if expectedMachineDirsNum != len(mFiles) {
 		t.Errorf("got %d test machines dirs, expected %d: %s", len(mFiles), expectedMachineDirsNum, mFiles)
