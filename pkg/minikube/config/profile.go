@@ -18,6 +18,7 @@ package config
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -196,7 +197,6 @@ func DeleteProfile(profile string, miniHome ...string) error {
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggested to be deleted
 func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
-
 	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
 	if err != nil {
@@ -206,15 +206,21 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	pDirs = removeDupes(pDirs)
 	for _, n := range pDirs {
 		p, err := LoadProfile(n, miniHome...)
-		if err != nil {
+		if err != nil && !inSlice(inValidPs, p) {
 			inValidPs = append(inValidPs, p)
 			continue
 		}
-		if !p.IsValid() {
+		if !p.IsValid() && !inSlice(inValidPs, p) {
 			inValidPs = append(inValidPs, p)
 			continue
 		}
-		validPs = append(validPs, p)
+		if !inSlice(validPs, p) {
+			validPs = append(validPs, p)
+		}
+	}
+
+	for _,x:=range validPs{
+		fmt.Println(x.Config.Name,x.Config.Driver)
 	}
 
 	// collecting docker/podman profiles based on evidence (containrs created)
@@ -223,25 +229,28 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		if vs != nil && len(vs) > 0 {
 			for _, v := range vs { // dont append duplicate ones
 				if !inSlice(validPs, v) {
-					validPs = append(validPs, vs...)
+					fmt.Println("appending",v.Config.Name,v.Config.Driver)
+					validPs = append(validPs, v)
 				}
 			}
 		}
 		if inv != nil && len(inv) > 0 {
-			for _, v := range vs { // dont append duplicate ones
-				if !inSlice(validPs, v) {
-					inValidPs = append(inValidPs, inv...)
+			for _, v := range inv { // dont append duplicate ones
+				if !inSlice(inValidPs, v) {
+					inValidPs = append(inValidPs, v)
 				}
 			}
-
 		}
 	}
+
 	return validPs, inValidPs, nil
 }
 
 func inSlice(profiles []*Profile, profile *Profile) bool {
 	for _, p := range profiles {
-		return p.Config.Name == profile.Config.Name
+		if p.Config.Name == profile.Config.Name {
+			return true
+		}
 	}
 	return false
 }
