@@ -82,12 +82,12 @@ func syncLocalAssets(cr command.Runner) error {
 
 // localAssets returns local files and addons from the minikube home directory
 func localAssets() ([]assets.CopyableFile, error) {
-	fs, err := assetsFromDir(localpath.MakeMiniPath("addons"), vmpath.GuestAddonsDir, true)
+	fs, err := assetsFromDir(localpath.MakeMiniPath(localpath.MiniPath(), "addons"), vmpath.GuestAddonsDir, true)
 	if err != nil {
 		return fs, errors.Wrap(err, "addons dir")
 	}
 
-	localFiles, err := assetsFromDir(localpath.MakeMiniPath("files"), "/", false)
+	localFiles, err := assetsFromDir(localpath.MakeMiniPath(localpath.MiniPath(), "files"), "/", false)
 	if err != nil {
 		return fs, errors.Wrap(err, "files dir")
 	}

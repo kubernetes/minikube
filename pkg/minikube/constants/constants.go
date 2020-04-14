@@ -92,7 +92,7 @@ var (
 	// kubeadm (kubelet, kubeadm) and the addon manager (kubectl)
 	KubernetesReleaseBinaries = []string{"kubelet", "kubeadm", "kubectl"}
 	// ImageCacheDir is the path to the image cache directory
-	ImageCacheDir = localpath.MakeMiniPath("cache", "images")
+	ImageCacheDir = localpath.MakeMiniPath(localpath.MiniPath(), "cache", "images")
 
 	// DefaultNamespaces are kubernetes namespaces used by minikube, including addons
 	DefaultNamespaces = []string{

@@ -147,49 +147,55 @@ func TestDeleteProfile(t *testing.T) {
 }
 
 func TestDeleteAllProfiles(t *testing.T) {
-	td, err := ioutil.TempDir("", "all")
+	// since this test is invasive, we will copy test data to a temp location
+	tempMiniHome, err := ioutil.TempDir("", "all")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
-	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-all", td)
+	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-all", tempMiniHome)
 	if err != nil {
 		t.Fatalf("copy: %v", err)
 	}
 
-	err = os.Setenv(localpath.MinikubeHome, td)
-	if err != nil {
-		t.Errorf("error setting up test environment. could not set %s", localpath.MinikubeHome)
-	}
-
-	pFiles, err := fileNames(filepath.Join(localpath.MiniPath(), "profiles"))
+	// profileFiles
+	pFiles, err := fileNames(filepath.Join(tempMiniHome, "profiles"))
 	if err != nil {
 		t.Errorf("filenames: %v", err)
 	}
-	mFiles, err := fileNames(filepath.Join(localpath.MiniPath(), "machines"))
+	// machineFiles
+	mFiles, err := fileNames(filepath.Join(tempMiniHome, "machines"))
 	if err != nil {
 		t.Errorf("filenames: %v", err)
 	}
 
-	const numberOfTotalProfileDirs = 8
-	if numberOfTotalProfileDirs != len(pFiles) {
-		t.Errorf("got %d test profiles, expected %d: %s", len(pFiles), numberOfTotalProfileDirs, pFiles)
+	const expectedProfileDirsNum = 8
+	if expectedProfileDirsNum != len(pFiles) {
+		t.Errorf("got %d test profiles dirs, expected %d: %s", len(pFiles), expectedProfileDirsNum, pFiles)
 	}
-	const numberOfTotalMachineDirs = 7
-	if numberOfTotalMachineDirs != len(mFiles) {
-		t.Errorf("got %d test machines, expected %d: %s", len(mFiles), numberOfTotalMachineDirs, mFiles)
+	const expectedNumberOfMachineDirs = 7
+	if expectedNumberOfMachineDirs != len(mFiles) {
+		t.Errorf("got %d test machines dirs, expected %d: %s", len(mFiles), expectedNumberOfMachineDirs, mFiles)
 	}
 
-	validProfiles, inValidProfiles, err := config.ListProfiles()
+	validProfiles, inValidProfiles, err := config.ListProfiles(tempMiniHome)
 	if err != nil {
 		t.Error(err)
 	}
 
-	if numberOfTotalProfileDirs != len(validProfiles)+len(inValidProfiles) {
-		t.Errorf("ListProfiles length = %d, expected %d\nvalid: %v\ninvalid: %v\n", len(validProfiles)+len(inValidProfiles), numberOfTotalProfileDirs, validProfiles, inValidProfiles)
+	if expectedProfileDirsNum != len(validProfiles)+len(inValidProfiles) {
+		t.Errorf("ListProfiles length = %d, expected %d", len(validProfiles)+len(inValidProfiles), expectedProfileDirsNum)
+		t.Logf("------------------------------------------------------------------------")
+		for _, v := range validProfiles {
+			t.Logf("valid profile %s %s", v.Name, v.Config.Driver)
+		}
+		for _, v := range inValidProfiles {
+			t.Logf("invalid profile %s", v.Name)
+		}
+		t.Logf("------------------------------------------------------------------------")
 	}
 
 	profiles := append(validProfiles, inValidProfiles...)
-	errs := DeleteProfiles(profiles)
+	errs := DeleteProfiles(profiles, tempMiniHome)
 
 	if errs != nil {
 		t.Errorf("errors while deleting all profiles: %v", errs)

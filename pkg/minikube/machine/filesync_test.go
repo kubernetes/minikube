@@ -175,7 +175,7 @@ func TestSyncDest(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			// Generate paths using filepath to mimic OS-specific issues
-			localRoot := localpath.MakeMiniPath("sync")
+			localRoot := localpath.MakeMiniPath(localpath.MiniPath(), "sync")
 			localParts := append([]string{localRoot}, test.localParts...)
 			localPath := filepath.Join(localParts...)
 			got, err := syncDest(localRoot, localPath, test.destRoot, test.flatten)

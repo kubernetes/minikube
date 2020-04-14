@@ -310,7 +310,7 @@ func updateDriver(driverName string) {
 	v, err := version.GetSemverVersion()
 	if err != nil {
 		out.WarningT("Error parsing minikube version: {{.error}}", out.V{"error": err})
-	} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath("bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
+	} else if err := driver.InstallOrUpdate(driverName, localpath.MakeMiniPath(localpath.MiniPath(), "bin"), v, viper.GetBool(interactive), viper.GetBool(autoUpdate)); err != nil {
 		out.WarningT("Unable to update {{.driver}} driver: {{.error}}", out.V{"driver": driverName, "error": err})
 	}
 }

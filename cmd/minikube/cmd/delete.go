@@ -167,7 +167,7 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	return errs
 }
 
-func deleteProfile(profile *config.Profile) error {
+func deleteProfile(profile *config.Profile, miniHome ...string) error {
 	viper.Set(config.ProfileName, profile.Name)
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -176,7 +176,7 @@ func deleteProfile(profile *config.Profile) error {
 	}
 	defer api.Close()
 
-	cc, err := config.Load(profile.Name)
+	cc, err := config.Load(profile.Name, miniHome...)
 	if err != nil && !config.IsNotExist(err) {
 		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
 		return DeletionError{Err: delErr, Errtype: MissingProfile}

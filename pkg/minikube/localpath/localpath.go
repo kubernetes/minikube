@@ -32,12 +32,18 @@ import (
 const MinikubeHome = "MINIKUBE_HOME"
 
 // ConfigFile is the path of the config file
-func ConfigFile() string {
-	return MakeMiniPath("config", "config.json")
+func ConfigFile(miniHome ...string) string {
+	if len(miniHome) > 0 {
+		MakeMiniPath(miniHome[0], "config", "config.json")
+	}
+	return MakeMiniPath(MiniPath(), "config", "config.json")
 }
 
 // MiniPath returns the path to the user's minikube dir
-func MiniPath() string {
+func MiniPath(miniHome ...string) string {
+	if len(miniHome) > 0 {
+		return filepath.Join(miniHome[0], ".minikube")
+	}
 	minikubeHomeEnv := os.Getenv(MinikubeHome)
 	if minikubeHomeEnv == "" {
 		return filepath.Join(homedir.HomeDir(), ".minikube")
@@ -49,8 +55,8 @@ func MiniPath() string {
 }
 
 // MakeMiniPath is a utility to calculate a relative path to our directory.
-func MakeMiniPath(fileName ...string) string {
-	args := []string{MiniPath()}
+func MakeMiniPath(miniPath string, fileName ...string) string {
+	args := []string{miniPath}
 	args = append(args, fileName...)
 	return filepath.Join(args...)
 }

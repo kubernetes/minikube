@@ -39,14 +39,14 @@ import (
 
 var dirs = [...]string{
 	localpath.MiniPath(),
-	localpath.MakeMiniPath("certs"),
-	localpath.MakeMiniPath("machines"),
-	localpath.MakeMiniPath("cache"),
-	localpath.MakeMiniPath("cache", "iso"),
-	localpath.MakeMiniPath("config"),
-	localpath.MakeMiniPath("addons"),
-	localpath.MakeMiniPath("files"),
-	localpath.MakeMiniPath("logs"),
+	localpath.MakeMiniPath(localpath.MiniPath(), "certs"),
+	localpath.MakeMiniPath(localpath.MiniPath(), "machines"),
+	localpath.MakeMiniPath(localpath.MiniPath(), "cache"),
+	localpath.MakeMiniPath(localpath.MiniPath(), "cache", "iso"),
+	localpath.MakeMiniPath(localpath.MiniPath(), "config"),
+	localpath.MakeMiniPath(localpath.MiniPath(), "addons"),
+	localpath.MakeMiniPath(localpath.MiniPath(), "files"),
+	localpath.MakeMiniPath(localpath.MiniPath(), "logs"),
 }
 
 var viperWhiteList = []string{
@@ -69,7 +69,7 @@ var RootCmd = &cobra.Command{
 
 		logDir := pflag.Lookup("log_dir")
 		if !logDir.Changed {
-			if err := logDir.Value.Set(localpath.MakeMiniPath("logs")); err != nil {
+			if err := logDir.Value.Set(localpath.MakeMiniPath(localpath.MiniPath(), "logs")); err != nil {
 				exit.WithError("logdir set failed", err)
 			}
 		}
@@ -96,7 +96,7 @@ func Execute() {
 
 	if runtime.GOOS != "windows" {
 		// add minikube binaries to the path
-		targetDir := localpath.MakeMiniPath("bin")
+		targetDir := localpath.MakeMiniPath(localpath.MiniPath(), "bin")
 		addToPath(targetDir)
 	}
 

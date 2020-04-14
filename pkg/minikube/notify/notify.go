@@ -38,7 +38,7 @@ import (
 
 var (
 	timeLayout              = time.RFC1123
-	lastUpdateCheckFilePath = localpath.MakeMiniPath("last_update_check")
+	lastUpdateCheckFilePath = localpath.MakeMiniPath(localpath.MiniPath(), "last_update_check")
 )
 
 // MaybePrintUpdateTextFromGithub prints update text if needed, from github

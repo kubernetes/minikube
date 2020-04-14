@@ -58,7 +58,7 @@ func checksumName(k8sVersion, containerRuntime string) string {
 
 // returns target dir for all cached items related to preloading
 func targetDir() string {
-	return localpath.MakeMiniPath("cache", "preloaded-tarball")
+	return localpath.MakeMiniPath(localpath.MiniPath(), "cache", "preloaded-tarball")
 }
 
 // PreloadChecksumPath returns the local path to the cached checksum file

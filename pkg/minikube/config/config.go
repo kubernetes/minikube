@@ -99,15 +99,15 @@ func get(name string, config MinikubeConfig) (string, error) {
 }
 
 // WriteConfig writes a minikube config to the JSON file
-func WriteConfig(configFile string, m MinikubeConfig) error {
-	f, err := os.Create(configFile)
+func WriteConfig(filePath string, m MinikubeConfig) error {
+	f, err := os.Create(filePath)
 	if err != nil {
-		return fmt.Errorf("create %s: %s", configFile, err)
+		return fmt.Errorf("create %s: %s", filePath, err)
 	}
 	defer f.Close()
 	err = encode(f, m)
 	if err != nil {
-		return fmt.Errorf("encode %s: %s", configFile, err)
+		return fmt.Errorf("encode %s: %s", filePath, err)
 	}
 	return nil
 }
@@ -149,13 +149,13 @@ func encode(w io.Writer, m MinikubeConfig) error {
 }
 
 // Load loads the kubernetes and machine config for the current machine
-func Load(profile string) (*ClusterConfig, error) {
-	return DefaultLoader.LoadConfigFromFile(profile)
+func Load(profile string, miniHome ...string) (*ClusterConfig, error) {
+	return DefaultLoader.LoadConfigFromFile(profile, miniHome...)
 }
 
 // Write writes the kubernetes and machine config for the current machine
-func Write(profile string, cc *ClusterConfig) error {
-	return DefaultLoader.WriteConfigToFile(profile, cc)
+func Write(profile string, cc *ClusterConfig, miniHome ...string) error {
+	return DefaultLoader.WriteConfigToFile(profile, cc, miniHome...)
 }
 
 // Loader loads the kubernetes and machine config based on the machine profile name
