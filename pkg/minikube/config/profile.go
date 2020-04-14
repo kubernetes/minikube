@@ -245,7 +245,13 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 }
 
 func inSlice(profiles []*Profile, profile *Profile) bool {
+	if profile.Config == nil {
+		return false
+	}
 	for _, p := range profiles {
+		if p.Config == nil {
+			return false
+		}
 		if p.Config.Name == profile.Config.Name {
 			return true
 		}

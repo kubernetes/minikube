@@ -179,12 +179,8 @@ func deleteProfile(profile *config.Profile) error {
 
 	cc, err := config.Load(profile.Name)
 	if err != nil && !config.IsNotExist(err) {
-		if profile.Config != nil { // if we have profile based on evidence lets use that to delete
-			cc = profile.Config
-		} else {
-			delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
-			return DeletionError{Err: delErr, Errtype: MissingProfile}
-		}
+		delErr := profileDeletionErr(profile.Name, fmt.Sprintf("error loading profile config: %v", err))
+		return DeletionError{Err: delErr, Errtype: MissingProfile}
 	}
 	if err == nil && driver.BareMetal(cc.Driver) {
 		if err := uninstallKubernetes(api, *cc, cc.Nodes[0], viper.GetString(cmdcfg.Bootstrapper)); err != nil {
