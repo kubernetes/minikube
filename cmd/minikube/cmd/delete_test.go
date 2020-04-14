@@ -175,8 +175,8 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("got %d test profiles dirs, expected %d: %s", len(pFiles), expectedProfileDirsNum, pFiles)
 	}
 	t.Logf("------------------------------------------------------------------------")
-	t.Logf("pfiles: %s",pFiles)
-	t.Logf("mfiles: %s",mFiles)
+	t.Logf("pfiles: %s", pFiles)
+	t.Logf("mfiles: %s", mFiles)
 	t.Logf("------------------------------------------------------------------------")
 
 	const expectedMachineDirsNum = 7

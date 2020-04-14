@@ -19,6 +19,8 @@ package config
 import (
 	"path/filepath"
 	"testing"
+
+	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // TestListProfiles uses a different MINIKUBE_HOME with rest of tests since it relies on file list index
@@ -289,13 +291,40 @@ func TestProfileDirs(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
-	
-	dirs,err:= profileDirs(miniHome)
-	if err !=nil {
-		t.Errorf("error profileDirs: %v",err)
+
+	dirs, err := profileDirs(miniHome)
+	if err != nil {
+		t.Errorf("error profileDirs: %v", err)
 	}
 	if len(dirs) != 8 {
-		t.Errorf("expected length of dirs to be %d but got %d:",12,len(dirs))
+		t.Errorf("expected length of dirs to be %d but got %d:", 12, len(dirs))
 	}
+
+}
+
+func TestProfileFilePath(t *testing.T) {
+	var testsCases = []struct {
+		profile  string
+		miniHome string
+		expected string
+	}{
+		{"p1", "/var/T/all6479", "/var/T/all6479/.minikube/profiles/p1/config.json"},
+		{"p1_underscore", "/var/T/all6479", "/var/T/all6479/.minikube/profiles/p1_underscore/config.json"},
+	}
+
+	for _, tc := range testsCases {
+		p := profileFilePath(tc.profile, tc.miniHome)
+		if p != tc.expected {
+			t.Errorf("expected profile file path to be %q but got %q", tc.expected, p)
+		}
+	}
+
+	// trying one without specifying minihome
+	p := profileFilePath("p3")
+	expected := filepath.Join(localpath.MiniPath(),"profiles","p3","config.json")
+	if p != expected {
+		t.Errorf("expected profile file path to be %q but got %q", expected, p)
+	}
+
 
 }
