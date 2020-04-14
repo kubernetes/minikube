@@ -226,7 +226,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	// collecting docker/podman profiles based on evidence (containrs created)
 	for _, driver := range []string{oci.Docker, oci.Podman} {
 		vs, inv := kicProfilesByEvidence(driver)
-		if vs != nil && len(vs) > 0 {
+		if len(vs) > 0 {
 			for _, v := range vs { // dont append duplicate ones
 				if !inSlice(validPs, v) {
 					fmt.Println("appending", v.Config.Name, v.Config.Driver)
@@ -234,7 +234,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 				}
 			}
 		}
-		if inv != nil && len(inv) > 0 {
+		if len(inv) > 0 {
 			for _, v := range inv { // dont append duplicate ones
 				if !inSlice(inValidPs, v) {
 					inValidPs = append(inValidPs, v)

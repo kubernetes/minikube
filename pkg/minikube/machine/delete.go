@@ -33,6 +33,9 @@ import (
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API, machineName string) error {
 	host, err := api.Load(machineName)
+	if err != nil {
+		glog.Infof("Unable load the host for %q , will try to delete anways: %v", machineName, err)
+	}
 	// Get the status of the host. Ensure that it exists before proceeding ahead.
 	status, err := Status(api, machineName)
 	if err != nil {

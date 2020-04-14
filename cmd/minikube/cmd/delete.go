@@ -88,24 +88,6 @@ func init() {
 	RootCmd.AddCommand(deleteCmd)
 }
 
-func deleteContainersAndVolumes() {
-	delLabel := fmt.Sprintf("%s=%s", oci.CreatedByLabelKey, "true")
-	errs := oci.DeleteContainersByLabel(oci.Docker, delLabel)
-	if len(errs) > 0 { // it will error if there is no container to delete
-		glog.Infof("error delete containers by label %q (might be okay): %+v", delLabel, errs)
-	}
-
-	errs = oci.DeleteAllVolumesByLabel(oci.Docker, delLabel)
-	if len(errs) > 0 { // it will not error if there is nothing to delete
-		glog.Warningf("error delete volumes by label %q (might be okay): %+v", delLabel, errs)
-	}
-
-	errs = oci.PruneAllVolumesByLabel(oci.Docker, delLabel)
-	if len(errs) > 0 { // it will not error if there is nothing to delete
-		glog.Warningf("error pruning volumes by label %q (might be okay): %+v", delLabel, errs)
-	}
-}
-
 // runDelete handles the executes the flow of "minikube delete"
 func runDelete(cmd *cobra.Command, args []string) {
 	if len(args) > 0 {
