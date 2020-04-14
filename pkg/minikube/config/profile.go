@@ -221,13 +221,29 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	for _, driver := range []string{oci.Docker, oci.Podman} {
 		vs, inv := kicProfilesByEvidence(driver)
 		if vs != nil && len(vs) > 0 {
-			validPs = append(validPs, vs...)
+			for _, v := range vs { // dont append duplicate ones
+				if !inSlice(validPs, v) {
+					validPs = append(validPs, vs...)
+				}
+			}
 		}
 		if inv != nil && len(inv) > 0 {
-			inValidPs = append(inValidPs, inv...)
+			for _, v := range vs { // dont append duplicate ones
+				if !inSlice(validPs, v) {
+					inValidPs = append(inValidPs, inv...)
+				}
+			}
+
 		}
 	}
 	return validPs, inValidPs, nil
+}
+
+func inSlice(profiles []*Profile, profile *Profile) bool {
+	for _, p := range profiles {
+		return p.Config.Name == profile.Config.Name
+	}
+	return false
 }
 
 // kicProfilesByEvidence returns list of profiles based on evidence (containers)
@@ -239,7 +255,7 @@ func kicProfilesByEvidence(ociBin string) (validPs []*Profile, inValidPs []*Prof
 			p, err := LoadProfile(c)
 			if p.Config == nil {
 				p.Config = &ClusterConfig{
-					Name: c,
+					Name:   c,
 					Driver: ociBin,
 				}
 			}
