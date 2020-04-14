@@ -110,7 +110,7 @@ var printAddonsList = func(cc *config.ClusterConfig) {
 	table.AppendBulk(tData)
 	table.Render()
 
-	v, _, err := config.ListProfiles()
+	v, _, err := config.ListProfiles(false)
 	if err != nil {
 		glog.Errorf("list profiles returned error: %v", err)
 	}

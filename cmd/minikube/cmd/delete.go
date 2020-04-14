@@ -94,7 +94,7 @@ func runDelete(cmd *cobra.Command, args []string) {
 		exit.UsageT("Usage: minikube delete")
 	}
 
-	validProfiles, invalidProfiles, err := config.ListProfiles()
+	validProfiles, invalidProfiles, err := config.ListProfiles(false)
 	if err != nil {
 		glog.Warningf("'error loading profiles in minikube home %q: %v", localpath.MiniPath(), err)
 	}

@@ -64,7 +64,7 @@ var printProfilesTable = func() {
 	table.SetAutoFormatHeaders(false)
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
-	validProfiles, invalidProfiles, err := config.ListProfiles()
+	validProfiles, invalidProfiles, err := config.ListProfiles(false)
 	defer func() {
 		if len(validProfiles) == 0 || err != nil {
 			exit.UsageT("No minikube profile was found. You can create one using `minikube start`.")
@@ -118,7 +118,7 @@ var printProfilesJSON = func() {
 	}
 	defer api.Close()
 
-	validProfiles, invalidProfiles, err := config.ListProfiles()
+	validProfiles, invalidProfiles, err := config.ListProfiles(false)
 	for _, v := range validProfiles {
 		cp, err := config.PrimaryControlPlane(v.Config)
 		if err != nil {

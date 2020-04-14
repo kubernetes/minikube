@@ -179,7 +179,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("got %d test machines dirs, expected %d: %s", len(mFiles), expectedMachineDirsNum, mFiles)
 	}
 
-	validProfiles, inValidProfiles, err := config.ListProfiles(tempMiniHome)
+	validProfiles, inValidProfiles, err := config.ListProfiles(true,tempMiniHome)
 	if err != nil {
 		t.Error(err)
 	}
