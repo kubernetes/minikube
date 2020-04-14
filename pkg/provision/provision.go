@@ -82,7 +82,7 @@ func configureAuth(p miniProvisioner) error {
 	glog.Infof("configureAuth start")
 	start := time.Now()
 	defer func() {
-		glog.Infof("configureAuth took %s", time.Since(start))
+		glog.Infof("duration metric: configureAuth took %s", time.Since(start))
 	}()
 
 	driver := p.GetDriver()

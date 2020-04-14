@@ -102,7 +102,7 @@ func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*h
 	glog.Infof("createHost starting for %q (driver=%q)", n.Name, cfg.Driver)
 	start := time.Now()
 	defer func() {
-		glog.Infof("createHost completed in %s", time.Since(start))
+		glog.Infof("duration metric: createHost completed in %s", time.Since(start))
 	}()
 
 	if cfg.Driver == driver.VMwareFusion && viper.GetBool(config.ShowDriverDeprecationNotification) {
@@ -140,7 +140,7 @@ func createHost(api libmachine.API, cfg config.ClusterConfig, n config.Node) (*h
 	if err := timedCreateHost(h, api, 2*time.Minute); err != nil {
 		return nil, errors.Wrap(err, "creating host")
 	}
-	glog.Infof("libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
+	glog.Infof("duration metric: libmachine.API.Create for %q took %s", cfg.Name, time.Since(cstart))
 
 	if err := postStartSetup(h, cfg); err != nil {
 		return h, errors.Wrap(err, "post-start")
