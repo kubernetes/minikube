@@ -33,10 +33,7 @@ const MinikubeHome = "MINIKUBE_HOME"
 
 // ConfigFile is the path of the config file
 func ConfigFile(miniHome ...string) string {
-	if len(miniHome) > 0 {
-		MakeMiniPath(MiniPath(miniHome[0]), "config", "config.json")
-	}
-	return MakeMiniPath(MiniPath(), "config", "config.json")
+	return MakeMiniPath(MiniPath(miniHome...), "config", "config.json")
 }
 
 // MiniPath returns the path to the user's minikube dir
