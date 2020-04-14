@@ -111,7 +111,6 @@ func runDelete(cmd *cobra.Command, args []string) {
 
 	if deleteAll {
 		errs := DeleteProfiles(profilesToDelete)
-
 		if len(errs) > 0 {
 			HandleDeletionErrors(errs)
 		} else {
