@@ -43,6 +43,7 @@ multinode-demo       Ready    master   9m58s   v1.18.0
 multinode-demo-m02   Ready    <none>   9m5s    v1.18.0
 ```
 
+NOTE: You can also check the status of your nodes:
 ```
 $ minikube status
 multinode-demo
