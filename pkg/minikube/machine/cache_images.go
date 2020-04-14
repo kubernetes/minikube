@@ -169,7 +169,7 @@ func CacheAndLoadImages(images []string) error {
 		return errors.Wrap(err, "api")
 	}
 	defer api.Close()
-	profiles, _, err := config.ListProfiles() // need to load image to all profiles
+	profiles, _, err := config.ListProfiles(false) // need to load image to all profiles
 	if err != nil {
 		return errors.Wrap(err, "list profiles")
 	}

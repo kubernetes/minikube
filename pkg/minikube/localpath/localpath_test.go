@@ -95,6 +95,11 @@ func TestMiniPath(t *testing.T) {
 }
 
 func TestMachinePath(t *testing.T) {
+	tempMiniHome, err := ioutil.TempDir("", "machine-path-test")
+	if err != nil {
+		t.Fatalf("creating tempdir: %v", err)
+	}
+	defer os.RemoveAll(tempMiniHome)
 	var testCases = []struct {
 		miniHome []string
 		contains string
@@ -102,6 +107,7 @@ func TestMachinePath(t *testing.T) {
 		{[]string{"tmp", "foo", "bar", "baz"}, "tmp"},
 		{[]string{"tmp"}, "tmp"},
 		{[]string{}, MiniPath()},
+		{[]string{tempMiniHome}, "fo"},
 	}
 	for _, tc := range testCases {
 		t.Run(fmt.Sprintf("%s", tc.miniHome), func(t *testing.T) {
@@ -113,7 +119,7 @@ func TestMachinePath(t *testing.T) {
 	}
 }
 
-type propertyFnWithArg func(string) string
+type propertyFnWithArg func(string, ...string) string
 
 func TestPropertyWithNameArg(t *testing.T) {
 	var testCases = []struct {
@@ -139,7 +145,7 @@ func TestPropertyWithNameArg(t *testing.T) {
 	}
 }
 
-type propertyFnWithoutArg func() string
+type propertyFnWithoutArg func(miniHome ...string) string
 
 func TestPropertyWithoutNameArg(t *testing.T) {
 	var testCases = []struct {

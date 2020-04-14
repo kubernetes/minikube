@@ -34,7 +34,7 @@ const MinikubeHome = "MINIKUBE_HOME"
 // ConfigFile is the path of the config file
 func ConfigFile(miniHome ...string) string {
 	if len(miniHome) > 0 {
-		MakeMiniPath(miniHome[0], "config", "config.json")
+		MakeMiniPath(MiniPath(miniHome[0]), "config", "config.json")
 	}
 	return MakeMiniPath(MiniPath(), "config", "config.json")
 }
@@ -55,36 +55,35 @@ func MiniPath(miniHome ...string) string {
 }
 
 // MakeMiniPath is a utility to calculate a relative path to our directory.
-func MakeMiniPath(miniPath string, fileName ...string) string {
-	args := []string{miniPath}
+func MakeMiniPath(miniHome string, fileName ...string) string {
+	args := []string{MiniPath(miniHome)}
 	args = append(args, fileName...)
 	return filepath.Join(args...)
 }
 
 // Profile returns the path to a profile
-func Profile(name string) string {
-	return filepath.Join(MiniPath(), "profiles", name)
+func Profile(name string, miniHome ...string) string {
+	return filepath.Join(MiniPath(miniHome...), "profiles", name)
 }
 
 // ClientCert returns client certificate path, used by kubeconfig
-func ClientCert(name string) string {
-	return filepath.Join(Profile(name), "client.crt")
+func ClientCert(name string, miniHome ...string) string {
+	return filepath.Join(Profile(name, miniHome...), "client.crt")
 }
 
 // ClientKey returns client certificate path, used by kubeconfig
-func ClientKey(name string) string {
-	return filepath.Join(Profile(name), "client.key")
+func ClientKey(name string, miniHome ...string) string {
+	return filepath.Join(Profile(name, miniHome...), "client.key")
 }
 
 // CACert returns the minikube CA certificate shared between profiles
-func CACert() string {
-	return filepath.Join(MiniPath(), "ca.crt")
+func CACert(miniHome ...string) string {
+	return filepath.Join(MiniPath(miniHome...), "ca.crt")
 }
 
 // MachinePath returns the Minikube machine path of a machine
 func MachinePath(machine string, miniHome ...string) string {
-	miniPath := MiniPath(miniHome...)
-	return filepath.Join(miniPath, "machines", machine)
+	return filepath.Join(MiniPath(miniHome...), "machines", machine)
 }
 
 // SanitizeCacheDir returns a path without special characters

@@ -105,9 +105,9 @@ func (e ErrValidateProfile) Error() string {
 }
 
 // ValidateProfile checks if the profile user is trying to switch exists, else throws error
-func ValidateProfile(profile string,miniHome ...string) (*ErrValidateProfile, bool) {
+func ValidateProfile(profile string, miniHome ...string) (*ErrValidateProfile, bool) {
 
-	validProfiles, invalidProfiles, err := config.ListProfiles(false,miniHome...)
+	validProfiles, invalidProfiles, err := config.ListProfiles(false, miniHome...)
 	if err != nil {
 		out.FailureT(err.Error())
 	}

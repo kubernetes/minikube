@@ -48,7 +48,7 @@ func TestListProfiles(t *testing.T) {
 		{2, "p5_partial_config", ""},
 	}
 
-	val, inv, err := ListProfiles(miniDir)
+	val, inv, err := ListProfiles(true, miniDir)
 
 	for _, tt := range testCasesValidProfs {
 		if val[tt.index].Name != tt.expectName {

@@ -109,7 +109,7 @@ func ProfileNameInReservedKeywords(name string) bool {
 func ProfileExists(name string, miniHome ...string) bool {
 	miniPath := localpath.MiniPath(miniHome...)
 	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
+		miniPath = localpath.MiniPath(miniHome[0])
 	}
 
 	p := profileFilePath(name, miniPath)
@@ -188,7 +188,7 @@ func SaveProfile(name string, cfg *ClusterConfig, miniHome ...string) error {
 func DeleteProfile(profile string, miniHome ...string) error {
 	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
+		miniPath = localpath.MiniPath(miniHome[0])
 	}
 	return os.RemoveAll(ProfileFolderPath(profile, miniPath))
 }
@@ -196,25 +196,25 @@ func DeleteProfile(profile string, miniHome ...string) error {
 // ListProfiles returns all valid and invalid (if any) minikube profiles
 // invalidPs are the profiles that have a directory or config file but not usable
 // invalidPs would be suggested to be deleted
-func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
+func ListProfiles(mockDocker bool, miniHome ...string) (validPs []*Profile, inValidPs []*Profile, err error) {
 	// try to get profiles list based on left over evidences such as directory
 	pDirs, err := profileDirs(miniHome...)
-	if err != nil {
+	if err != nil { // TODO: medya should still list kic by evidence if this fails
 		return nil, nil, err
 	}
 
 	pDirs = removeDupes(pDirs)
 	for _, n := range pDirs {
 		p, err := LoadProfile(n, miniHome...)
-		if err != nil && !inSlice(inValidPs, p) {
+		if err != nil && shouldAppend(inValidPs, p) {
 			inValidPs = append(inValidPs, p)
 			continue
 		}
-		if !p.IsValid() && !inSlice(inValidPs, p) {
+		if !p.IsValid() && shouldAppend(inValidPs, p) {
 			inValidPs = append(inValidPs, p)
 			continue
 		}
-		if !inSlice(validPs, p) {
+		if shouldAppend(validPs, p) {
 			validPs = append(validPs, p)
 		}
 	}
@@ -222,46 +222,58 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	// collecting docker/podman profiles based on evidence (containrs created)
 	// good for cleaning up leftovers
 	// for when a container is created but the profile/machine config was deleted by use
-	for _, driver := range []string{oci.Docker, oci.Podman} {
+	var drivers []string
+	if mockDocker {
+		drivers = []string{"mock-docker", "mock-podman"}
+	} else {
+		drivers = []string{oci.Docker, oci.Podman}
+	}
+
+	for _, driver := range drivers {
 		vs, inv := kicProfilesByEvidence(driver)
 		if len(vs) > 0 {
 			for _, v := range vs { // dont append duplicate ones
-				if !inSlice(validPs, v) {
-					fmt.Println("appending", v.Config.Name, v.Config.Driver)
+				if shouldAppend(validPs, v) {
+					fmt.Println("(medya dbg) appending", v.Config.Name, v.Config.Driver)
 					validPs = append(validPs, v)
 				}
 			}
 		}
 		if len(inv) > 0 {
 			for _, v := range inv { // dont append duplicate ones
-				if !inSlice(inValidPs, v) {
+				if !shouldAppend(inValidPs, v) {
 					inValidPs = append(inValidPs, v)
 				}
 			}
 		}
 	}
-
 	return validPs, inValidPs, nil
 }
 
-func inSlice(profiles []*Profile, profile *Profile) bool {
+// shouldAppend will return true if the discovered profile based on evidence
+// has enough data to be used in the clean up process.
+func shouldAppend(profiles []*Profile, profile *Profile) bool {
 	if profile.Config == nil {
-		return false
-	}
-	for _, p := range profiles {
-		if p.Config == nil {
+		if profile.Name != "" {
+			profile.Config = &ClusterConfig{Name: profile.Name}
+		} else {
 			return false
 		}
+	}
+	for _, p := range profiles {
 		if p.Config.Name == profile.Config.Name {
-			return true
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 // kicProfilesByEvidence returns profiles based on evidence (containers)
 // on the user's system NOT based on config
 func kicProfilesByEvidence(ociBin string) (validPs []*Profile, inValidPs []*Profile) {
+	if ociBin == "mock-docker" || ociBin == "mock-podman" { // used for unit testing
+		return nil, nil
+	}
 	containers, err := oci.ListOwnedContainers(ociBin)
 	if err == nil {
 		for _, c := range containers {
@@ -322,7 +334,7 @@ func LoadProfile(name string, miniHome ...string) (*Profile, error) {
 func profileDirs(miniHome ...string) (dirs []string, err error) {
 	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
+		miniPath = localpath.MiniPath(miniHome[0])
 	}
 	pRootDir := filepath.Join(miniPath, "profiles")
 	items, err := ioutil.ReadDir(pRootDir)
@@ -338,7 +350,7 @@ func profileDirs(miniHome ...string) (dirs []string, err error) {
 func profileFilePath(profile string, miniHome ...string) string {
 	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
+		miniPath = localpath.MiniPath(miniHome[0])
 	}
 
 	return filepath.Join(miniPath, "profiles", profile, "config.json")
@@ -348,7 +360,7 @@ func profileFilePath(profile string, miniHome ...string) string {
 func ProfileFolderPath(profile string, miniHome ...string) string {
 	miniPath := localpath.MiniPath()
 	if len(miniHome) > 0 {
-		miniPath = miniHome[0]
+		miniPath = localpath.MiniPath(miniHome[0])
 	}
 	return filepath.Join(miniPath, "profiles", profile)
 }

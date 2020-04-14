@@ -153,19 +153,19 @@ func TestDeleteAllProfiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
-	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-all/.minikube", tempMiniHome)
+	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-all/", tempMiniHome)
 	if err != nil {
 		t.Fatalf("copy: %v", err)
 	}
 
 	t.Logf("temp minihome created %s", tempMiniHome)
 	// profileFiles
-	pFiles, err := fileNames(filepath.Join(tempMiniHome, "profiles"))
+	pFiles, err := fileNames(filepath.Join(localpath.MiniPath(tempMiniHome), "profiles"))
 	if err != nil {
 		t.Errorf("filenames: %v", err)
 	}
 	// machineFiles
-	mFiles, err := fileNames(filepath.Join(tempMiniHome, "machines"))
+	mFiles, err := fileNames(filepath.Join(localpath.MiniPath(tempMiniHome), "machines"))
 	if err != nil {
 		t.Errorf("filenames: %v", err)
 	}
@@ -179,7 +179,7 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("got %d test machines dirs, expected %d: %s", len(mFiles), expectedMachineDirsNum, mFiles)
 	}
 
-	validProfiles, inValidProfiles, err := config.ListProfiles(true,tempMiniHome)
+	validProfiles, inValidProfiles, err := config.ListProfiles(true, tempMiniHome)
 	if err != nil {
 		t.Error(err)
 	}
@@ -203,11 +203,11 @@ func TestDeleteAllProfiles(t *testing.T) {
 		t.Errorf("errors while deleting all profiles: %v", errs)
 	}
 
-	afterProfiles, err := fileNames(filepath.Join(localpath.MiniPath(), "profiles"))
+	afterProfiles, err := fileNames(filepath.Join(localpath.MiniPath(tempMiniHome), "profiles"))
 	if err != nil {
 		t.Errorf("profiles: %v", err)
 	}
-	afterMachines, err := ioutil.ReadDir(filepath.Join(localpath.MiniPath(), "machines"))
+	afterMachines, err := ioutil.ReadDir(filepath.Join(localpath.MiniPath(tempMiniHome), "machines"))
 	if err != nil {
 		t.Errorf("machines: %v", err)
 	}
