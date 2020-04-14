@@ -346,16 +346,6 @@ func (d *Driver) Stop() error {
 
 	}
 
-	// this is needed only by kic drivers because of the entry-point of the base image overrides the STOP and KILL SIGs
-	// other drivers dont need this
-	if err := killAPIServerProc(d.exec); err != nil {
-		glog.Warningf("kill kube-apiserver proc: %v", err)
-	}
-
-	if err := killETCDProc(d.exec); err != nil {
-		glog.Infof("kill etcd proc: %v", err)
-	}
-
 	cmd := exec.Command(d.NodeConfig.OCIBinary, "stop", d.MachineName)
 	if err := cmd.Run(); err != nil {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)
@@ -368,21 +358,3 @@ func (d *Driver) RunSSHCommandFromDriver() error {
 	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
 }
 
-// killAPIServerProc will kill an api server proc if it exists
-// to ensure this never happens https://github.com/kubernetes/minikube/issues/7521
-func killAPIServerProc(runner command.Runner) error {
-	if _, err := runner.RunCmd(exec.Command("pkill", "-xnf", "kube-apiserver.*minikube.*")); err != nil {
-		return errors.Wrap(err, "kill apiserver")
-	}
-	return nil
-}
-
-// killETCDProc will kill an etc proc if it exists
-// this only needs to be done for kic drivers, since the base image has an entrypoint that modfies the SIGs
-// other drivers respect STOP and KILL signals. https://github.com/kubernetes/minikube/issues/7521
-func killETCDProc(runner command.Runner) error {
-	if _, err := runner.RunCmd(exec.Command("pkill", "-xnf", "etcd.*minikube.*")); err != nil {
-		return errors.Wrap(err, "kill etcd")
-	}
-	return nil
-}
