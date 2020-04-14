@@ -283,3 +283,19 @@ func TestGetPrimaryControlPlane(t *testing.T) {
 	}
 
 }
+
+func TestProfileDirs(t *testing.T) {
+	miniHome, err := filepath.Abs("./testdata/delete-all")
+	if err != nil {
+		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+	}
+	
+	dirs,err:= profileDirs(miniHome)
+	if err !=nil {
+		t.Errorf("error profileDirs: %v",err)
+	}
+	if len(dirs) != 8 {
+		t.Errorf("expected length of dirs to be %d but got %d:",12,len(dirs))
+	}
+
+}
