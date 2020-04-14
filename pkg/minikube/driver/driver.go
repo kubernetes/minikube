@@ -136,7 +136,8 @@ func NeedsPortForward(name string) bool {
 }
 
 // NeedsShutdown returns true if driver needs manual shutdown command before stopping.
-// to avoid https://github.com/kubernetes/minikube/issues/7657
+// Hyper-V requires special care to avoid ACPI and file locking issues
+// KIC also needs shutdown to avoid container getting stuck, https://github.com/kubernetes/minikube/issues/7657
 func NeedsShutdown(name string) bool {
 	if name == HyperV || IsKIC(name) {
 		return true

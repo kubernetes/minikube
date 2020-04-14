@@ -17,8 +17,6 @@ limitations under the License.
 package machine
 
 import (
-	"context"
-	"os/exec"
 	"time"
 
 	"github.com/docker/machine/libmachine"
@@ -27,35 +25,10 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
-	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 )
-
-// deleteOrphanedKIC attempts to delete an orphaned docker instance for machines without a config file
-// used as last effort clean up not returning errors, wont warn user.
-func deleteOrphanedKIC(ociBin string, name string) {
-	glog.Info("deleting possible orphaned kic containers for %q", name)
-	if !(ociBin == oci.Podman || ociBin == oci.Docker) {
-		return
-	}
-
-	_, err := oci.ContainerStatus(ociBin, name)
-	if err != nil {
-		glog.Infof("couldn't inspect container %q before deleting, %s-daemon might needs a restart!: %v", name, ociBin, err)
-		return
-	}
-	// allow no more than 5 seconds for delting the container
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-
-	cmd := exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)
-	err = cmd.Run()
-	if err == nil {
-		glog.Infof("Found stale kic container and successfully cleaned it up!")
-	}
-}
 
 // DeleteHost deletes the host VM.
 func DeleteHost(api libmachine.API, machineName string) error {
@@ -71,9 +44,7 @@ func DeleteHost(api libmachine.API, machineName string) error {
 		return mcnerror.ErrHostDoesNotExist{Name: machineName}
 	}
 
-	// Hyper-V requires special care to avoid ACPI and file locking issues
-	// KIC also needs host shut down to avoid https://github.com/kubernetes/minikube/issues/7657
-	if host.Driver.DriverName() == driver.HyperV || driver.IsKIC(host.Driver.DriverName()) {
+	if driver.NeedsShutdown(host.Driver.DriverName()) {
 		if err := StopHost(api, machineName); err != nil {
 			glog.Warningf("stop host: %v", err)
 		}

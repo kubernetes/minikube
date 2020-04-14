@@ -202,11 +202,20 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 	if err != nil {
 		return nil, nil, err
 	}
-	// try to get profiles list based on all contrainers created by docker driver
+
+	// all docker contrainer existig on the system that have label created by minikube
+	// TODO: handle multi-node (filter by control plane) https://github.com/kubernetes/minikube/issues/7661
 	cs, err := oci.ListOwnedContainers(oci.Docker)
 	if err == nil {
 		pDirs = append(pDirs, cs...)
 	}
+
+	// all podman contrainer existig on the system that have label created by minikube
+	cs, err = oci.ListOwnedContainers(oci.Podman)
+	if err == nil {
+		pDirs = append(pDirs, cs...)
+	}
+
 	pDirs = removeDupes(pDirs)
 	for _, n := range pDirs {
 		p, err := LoadProfile(n, miniHome...)
