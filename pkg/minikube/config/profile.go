@@ -219,8 +219,8 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		}
 	}
 
-	for _,x:=range validPs{
-		fmt.Println(x.Config.Name,x.Config.Driver)
+	for _, x := range validPs {
+		fmt.Println(x.Config.Name, x.Config.Driver)
 	}
 
 	// collecting docker/podman profiles based on evidence (containrs created)
@@ -229,7 +229,7 @@ func ListProfiles(miniHome ...string) (validPs []*Profile, inValidPs []*Profile,
 		if vs != nil && len(vs) > 0 {
 			for _, v := range vs { // dont append duplicate ones
 				if !inSlice(validPs, v) {
-					fmt.Println("appending",v.Config.Name,v.Config.Driver)
+					fmt.Println("appending", v.Config.Name, v.Config.Driver)
 					validPs = append(validPs, v)
 				}
 			}

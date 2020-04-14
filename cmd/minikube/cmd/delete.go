@@ -171,10 +171,8 @@ func DeleteProfiles(profiles []*config.Profile) []error {
 	var errs []error
 	for _, profile := range profiles {
 		err := deleteProfile(profile)
-
 		if err != nil {
 			mm, loadErr := machine.LoadMachine(profile.Name)
-
 			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {
 				invalidProfileDeletionErrs := deleteInvalidProfile(profile)
 				if len(invalidProfileDeletionErrs) > 0 {
@@ -222,6 +220,9 @@ func deleteProfile(profile *config.Profile) error {
 		out.FailureT("Failed to kill mount process: {{.error}}", out.V{"error": err})
 	}
 
+	if cc == nil {
+		cc = profile.Config
+	}
 	deleteHosts(api, cc)
 
 	// In case DeleteHost didn't complete the job.
