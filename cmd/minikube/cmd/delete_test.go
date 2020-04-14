@@ -146,17 +146,19 @@ func TestDeleteProfile(t *testing.T) {
 	}
 }
 
+// testing deleting all profiles, we have 8 profile folders and 7 machine folder (a corrupted minikube home)
 func TestDeleteAllProfiles(t *testing.T) {
 	// since this test is invasive, we will copy test data to a temp location
 	tempMiniHome, err := ioutil.TempDir("", "all")
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
-	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-all", tempMiniHome)
+	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-all/.minikube", tempMiniHome)
 	if err != nil {
 		t.Fatalf("copy: %v", err)
 	}
 
+	t.Logf("temp minihome created %s", tempMiniHome)
 	// profileFiles
 	pFiles, err := fileNames(filepath.Join(tempMiniHome, "profiles"))
 	if err != nil {
@@ -172,18 +174,18 @@ func TestDeleteAllProfiles(t *testing.T) {
 	if expectedProfileDirsNum != len(pFiles) {
 		t.Errorf("got %d test profiles dirs, expected %d: %s", len(pFiles), expectedProfileDirsNum, pFiles)
 	}
-	const expectedNumberOfMachineDirs = 7
-	if expectedNumberOfMachineDirs != len(mFiles) {
-		t.Errorf("got %d test machines dirs, expected %d: %s", len(mFiles), expectedNumberOfMachineDirs, mFiles)
+	const expectedMachineDirsNum = 7
+	if expectedMachineDirsNum != len(mFiles) {
+		t.Errorf("got %d test machines dirs, expected %d: %s", len(mFiles), expectedMachineDirsNum, mFiles)
 	}
 
 	validProfiles, inValidProfiles, err := config.ListProfiles(tempMiniHome)
 	if err != nil {
 		t.Error(err)
 	}
-
-	if expectedProfileDirsNum != len(validProfiles)+len(inValidProfiles) {
-		t.Errorf("ListProfiles length = %d, expected %d", len(validProfiles)+len(inValidProfiles), expectedProfileDirsNum)
+	listedProfilesCount := len(validProfiles) + len(inValidProfiles)
+	if expectedProfileDirsNum != listedProfilesCount {
+		t.Errorf("ListProfiles length = %d, expected %d", listedProfilesCount, expectedProfileDirsNum)
 		t.Logf("------------------------------------------------------------------------")
 		for _, v := range validProfiles {
 			t.Logf("valid profile %s %s", v.Name, v.Config.Driver)

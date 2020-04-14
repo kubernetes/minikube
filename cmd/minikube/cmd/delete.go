@@ -148,10 +148,10 @@ func purgeMinikubeDirectory() {
 }
 
 // DeleteProfiles deletes one or more profiles
-func DeleteProfiles(profiles []*config.Profile) []error {
+func DeleteProfiles(profiles []*config.Profile, miniHome ...string) []error {
 	var errs []error
 	for _, profile := range profiles {
-		err := deleteProfile(profile)
+		err := deleteProfile(profile, miniHome...)
 		if err != nil {
 			mm, loadErr := machine.LoadMachine(profile.Name)
 			if !profile.IsValid() || (loadErr != nil || !mm.IsValid()) {

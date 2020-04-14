@@ -61,8 +61,8 @@ func (h *Machine) IsValid() bool {
 }
 
 // LoadMachine returns a Machine abstracting a libmachine.Host
-func LoadMachine(name string) (*Machine, error) {
-	api, err := NewAPIClient()
+func LoadMachine(name string, miniHome ...string) (*Machine, error) {
+	api, err := NewAPIClient(miniHome...)
 	if err != nil {
 		return nil, err
 	}
