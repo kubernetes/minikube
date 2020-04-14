@@ -241,7 +241,7 @@ func deleteProfile(profile *config.Profile) error {
 func deleteHosts(api libmachine.API, cc *config.ClusterConfig) {
 	if cc != nil {
 		if driver.IsKIC(cc.Driver) {
-			defer oci.DemolishCluster(cc.Driver,cc.Name)
+			defer oci.DemolishCluster(cc.Driver, cc.Name)
 		}
 		for _, n := range cc.Nodes {
 			machineName := driver.MachineName(*cc, n)

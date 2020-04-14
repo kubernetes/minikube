@@ -65,30 +65,33 @@ var printProfilesTable = func() {
 	table.SetBorders(tablewriter.Border{Left: true, Top: true, Right: true, Bottom: true})
 	table.SetCenterSeparator("|")
 	validProfiles, invalidProfiles, err := config.ListProfiles()
-
-	if len(validProfiles) == 0 || err != nil {
-		exit.UsageT("No minikube profile was found. You can create one using `minikube start`.")
-	}
+	defer func() {
+		if len(validProfiles) == 0 || err != nil {
+			exit.UsageT("No minikube profile was found. You can create one using `minikube start`.")
+		}
+	}()
 	api, err := machine.NewAPIClient()
 	if err != nil {
 		glog.Errorf("failed to get machine api client %v", err)
 	}
 	defer api.Close()
 
-	for _, p := range validProfiles {
-		cp, err := config.PrimaryControlPlane(p.Config)
-		if err != nil {
-			exit.WithError("error getting primary control plane", err)
+	if len(validProfiles) > 0 {
+		for _, p := range validProfiles {
+			cp, err := config.PrimaryControlPlane(p.Config)
+			if err != nil {
+				exit.WithError("error getting primary control plane", err)
+			}
+			p.Status, err = machine.Status(api, driver.MachineName(*p.Config, cp))
+			if err != nil {
+				glog.Warningf("error getting host status for %s: %v", p.Name, err)
+			}
+			validData = append(validData, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
 		}
-		p.Status, err = machine.Status(api, driver.MachineName(*p.Config, cp))
-		if err != nil {
-			glog.Warningf("error getting host status for %s: %v", p.Name, err)
-		}
-		validData = append(validData, []string{p.Name, p.Config.Driver, p.Config.KubernetesConfig.ContainerRuntime, cp.IP, strconv.Itoa(cp.Port), p.Config.KubernetesConfig.KubernetesVersion, p.Status})
-	}
 
-	table.AppendBulk(validData)
-	table.Render()
+		table.AppendBulk(validData)
+		table.Render()
+	}
 
 	if invalidProfiles != nil {
 		out.WarningT("Found {{.number}} invalid profile(s) ! ", out.V{"number": len(invalidProfiles)})

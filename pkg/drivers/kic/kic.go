@@ -272,7 +272,7 @@ func (d *Driver) Remove() error {
 	oci.DemolishCluster(d.OCIBinary, d.MachineName)
 	// if still got an id after deleting the container.
 	if id, err := oci.ContainerID(d.OCIBinary, d.MachineName); err == nil && id != "" {
-		return fmt.Errorf("error ! expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
+		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
 	}
 	return nil
 }
