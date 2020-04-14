@@ -19,7 +19,6 @@ package oci
 import (
 	"context"
 	"os"
-	"path/filepath"
 	"time"
 
 	"bufio"
@@ -29,7 +28,6 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	"k8s.io/minikube/pkg/minikube/constants"
-	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
 
@@ -136,25 +134,8 @@ func CreateContainerNode(p CreateParams) error {
 	}
 
 	if p.OCIBinary == Podman { // enable execing in /var
-		// volume path in minikube home folder to mount to /var
-		hostVarVolPath := filepath.Join(localpath.MiniPath(), "machines", p.Name, "var", "lib")
-		if err := os.MkdirAll(hostVarVolPath, 0755); err != nil {
-			return errors.Wrapf(err, "create var dir %s", hostVarVolPath)
-		}
-		if err := os.Mkdir(fmt.Sprintf("%s/%s", hostVarVolPath, "minikube"), 0711); err != nil {
-			return errors.Wrapf(err, "create var dir %s/%s", hostVarVolPath, "minikube")
-		}
-		hostVarLibSubdirs := []string{"docker", "containerd", "containers", "kubelet", "cni"}
-		for _, subdir := range hostVarLibSubdirs {
-			if err := os.Mkdir(fmt.Sprintf("%s/%s", hostVarVolPath, subdir), 0711); err != nil {
-				return errors.Wrapf(err, "create var dir %s/%s", hostVarVolPath, subdir)
-			}
-		}
 		// podman mounts var/lib with no-exec by default  https://github.com/containers/libpod/issues/5103
-		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s/minikube:/var/lib/minikube:exec", hostVarVolPath))
-		for _, subdir := range hostVarLibSubdirs {
-			runArgs = append(runArgs, "--volume", fmt.Sprintf("%s/%s:/var/lib/%s", hostVarVolPath, subdir, subdir))
-		}
+		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var:exec", p.Name))
 	}
 	if p.OCIBinary == Docker {
 		runArgs = append(runArgs, "--volume", fmt.Sprintf("%s:/var", p.Name))
