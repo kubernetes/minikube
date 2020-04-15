@@ -316,7 +316,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 
 	endpoint := fmt.Sprintf("https://%s", net.JoinHostPort(ip, strconv.Itoa(port)))
 	if cc.Host != endpoint {
-		glog.Errorf("Overriding stale ClientConfig host %s with %s", cc.Host, endpoint)
+		glog.Warningf("Overriding stale ClientConfig host %s with %s", cc.Host, endpoint)
 		cc.Host = endpoint
 	}
 	c, err := kubernetes.NewForConfig(cc)
