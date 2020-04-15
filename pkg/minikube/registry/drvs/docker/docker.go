@@ -98,7 +98,7 @@ func status() registry.State {
 		newErr := fmt.Errorf(`%q %v: %s`, strings.Join(cmd.Args, " "), exitErr, stderr)
 
 		if strings.Contains(stderr, "permission denied") && runtime.GOOS == "linux" {
-			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group, then re-login to your system", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
+			return registry.State{Error: newErr, Installed: true, Healthy: false, Fix: "Add your user to the 'docker' group: 'sudo usermod -aG docker $USER && newgrp docker'", Doc: "https://docs.docker.com/engine/install/linux-postinstall/"}
 		}
 
 		if strings.Contains(stderr, "Cannot connect") || strings.Contains(stderr, "refused") || strings.Contains(stderr, "Is the docker daemon running") {
