@@ -274,6 +274,10 @@ test: pkg/minikube/assets/assets.go pkg/minikube/translate/translations.go ## Tr
 generate-docs: out/minikube ## Automatically generate commands documentation.
 	out/minikube generate-docs --path ./site/content/en/docs/commands/
 
+.PHONY: gotest
+gotest: $(SOURCE_GENERATED) ## Trigger minikube test
+	go test -tags "$(MINIKUBE_BUILD_TAGS)" $(MINIKUBE_TEST_FILES)
+
 .PHONY: extract
 extract: ## Compile extract tool
 	go run cmd/extract/extract.go
