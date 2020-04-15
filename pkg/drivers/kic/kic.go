@@ -26,7 +26,6 @@ import (
 	"time"
 
 	"github.com/docker/machine/libmachine/drivers"
-	"github.com/docker/machine/libmachine/log"
 	"github.com/docker/machine/libmachine/ssh"
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
@@ -269,16 +268,22 @@ func (d *Driver) Kill() error {
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
 	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
-		log.Warnf("could not find the container %s to remove it.", d.MachineName)
+		glog.Infof("could not find the container %s to remove it. will try anyways", d.MachineName)
 	}
-	cmd := exec.Command(d.NodeConfig.OCIBinary, "rm", "-f", "-v", d.MachineName)
-	o, err := cmd.CombinedOutput()
-	out := strings.TrimSpace(string(o))
-	if err != nil {
-		if strings.Contains(out, "is already in progress") {
-			log.Warnf("Docker engine is stuck. please restart docker daemon on your computer.", d.MachineName)
+
+	if err := oci.DeleteContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
+		if strings.Contains(err.Error(), "is already in progress") {
+			return errors.Wrap(err, "stuck delete")
 		}
-		return errors.Wrapf(err, "removing container %s, output %s", d.MachineName, out)
+		if strings.Contains(err.Error(), "No such container:") {
+			return nil // nothing was found to delete.
+		}
+
+	}
+
+	// check there be no container left after delete
+	if id, err := oci.ContainerID(d.OCIBinary, d.MachineName); err == nil && id != "" {
+		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
 	}
 	return nil
 }
