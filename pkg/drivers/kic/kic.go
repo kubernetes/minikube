@@ -273,7 +273,7 @@ func (d *Driver) Remove() error {
 
 	if err := oci.DeleteContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		if strings.Contains(err.Error(), "is already in progress") {
-			glog.Warningf("Docker engine is stuck. please restart docker daemon on your computer.", d.MachineName)
+			glog.Warningf("Docker engine is stuck. please restart docker daemon on your computer.")
 			return err
 		}
 		if strings.Contains(err.Error(), "No such container:") {
