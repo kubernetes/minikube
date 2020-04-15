@@ -402,7 +402,7 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		out.T(out.CheckOption, "verifying apps running {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
-	if cc.VerifyComponents[kverify.NodeCondition] {
+	if cc.VerifyComponents[kverify.NodePressure] {
 		start := time.Now()
 		client, err := k.client(hostname, port)
 		if err != nil {
