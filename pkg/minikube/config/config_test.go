@@ -115,7 +115,7 @@ func TestReadConfig(t *testing.T) {
 	}
 
 	// invalid config file
-	mkConfig, err = ReadConfig("./testdata/.minikube/config/invalid_config.json")
+	mkConfig, err = ReadConfig("./testdata/default/.minikube/config/invalid_config.json")
 	if err == nil {
 		t.Fatalf("Error expected but got none")
 	}
@@ -125,7 +125,7 @@ func TestReadConfig(t *testing.T) {
 	}
 
 	// valid config file
-	mkConfig, err = ReadConfig("./testdata/.minikube/config/valid_config.json")
+	mkConfig, err = ReadConfig("./testdata/default/.minikube/config/valid_config.json")
 	if err != nil {
 		t.Fatalf("Error not expected but got %v", err)
 	}

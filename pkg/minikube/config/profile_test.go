@@ -25,12 +25,14 @@ import (
 
 // TestListProfiles uses a different MINIKUBE_HOME with rest of tests since it relies on file list index
 func TestListProfiles(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/profile/.minikube")
+	miniDir, err := filepath.Abs("./testdata/default2/")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+		t.Errorf("error getting dir path for %s : %v",miniDir, err)
 	}
+	val, inv, err := ListProfiles(true, miniDir)
+
 	// test cases for valid profiles
-	var testCasesValidProfs = []struct {
+	var valiProfilesCases = []struct {
 		index      int
 		expectName string
 		vmDriver   string
@@ -39,8 +41,19 @@ func TestListProfiles(t *testing.T) {
 		{1, "p2_newformat", "virtualbox"},
 	}
 
+	t.Logf("Valid cases length = %d",len(val))
+	for _, vc := range valiProfilesCases {
+		if val[vc.index].Name != vc.expectName {
+			t.Errorf("expected %s got %v", vc.expectName, val[vc.index].Name)
+		}
+		if val[vc.index].Config.Driver != vc.vmDriver {
+			t.Errorf("expected %s got %v", vc.vmDriver, val[vc.index].Config.Driver)
+		}
+
+	}
+
 	// test cases for invalid profiles
-	var testCasesInValidProfs = []struct {
+	var invalidProfileCases = []struct {
 		index      int
 		expectName string
 		vmDriver   string
@@ -50,20 +63,8 @@ func TestListProfiles(t *testing.T) {
 		{2, "p5_partial_config", ""},
 	}
 
-	val, inv, err := ListProfiles(true, miniDir)
-
-	for _, tt := range testCasesValidProfs {
-		if val[tt.index].Name != tt.expectName {
-			t.Errorf("expected %s got %v", tt.expectName, val[tt.index].Name)
-		}
-		if val[tt.index].Config.Driver != tt.vmDriver {
-			t.Errorf("expected %s got %v", tt.vmDriver, val[tt.index].Config.Driver)
-		}
-
-	}
-
 	// making sure it returns the invalid profiles
-	for _, tt := range testCasesInValidProfs {
+	for _, tt := range invalidProfileCases {
 		if inv[tt.index].Name != tt.expectName {
 			t.Errorf("expected %s got %v", tt.expectName, inv[tt.index].Name)
 		}
