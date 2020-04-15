@@ -107,8 +107,7 @@ func ProfileNameInReservedKeywords(name string) bool {
 
 // ProfileExists returns true if there is a profile config (regardless of being valid)
 func ProfileExists(name string, miniHome ...string) bool {
-	miniPath := localpath.MiniPath(miniHome...)
-	p := profileFilePath(name, miniPath)
+	p := profileFilePath(name, miniHome... )
 	_, err := os.Stat(p)
 	return err == nil
 }

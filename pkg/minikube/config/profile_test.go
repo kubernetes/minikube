@@ -19,13 +19,11 @@ package config
 import (
 	"path/filepath"
 	"testing"
-
-	"k8s.io/minikube/pkg/minikube/localpath"
 )
 
 // TestListProfiles uses a different MINIKUBE_HOME with rest of tests since it relies on file list index
 func TestListProfiles(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/default2/")
+	miniDir, err := filepath.Abs("./testdata/list-profiles")
 	if err != nil {
 		t.Errorf("error getting dir path for %s : %v",miniDir, err)
 	}
@@ -131,9 +129,9 @@ func TestProfileNameInReservedKeywords(t *testing.T) {
 }
 
 func TestProfileExists(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/default2")
+	miniHome, err := filepath.Abs("./testdata/list-profiles")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/default2 : %v", err)
+		t.Errorf("error getting dir path for %s:  %v",miniHome, err)
 	}
 
 	var testCases = []struct {
@@ -148,13 +146,11 @@ func TestProfileExists(t *testing.T) {
 		{"p6_no_file", false},
 	}
 	for _, tt := range testCases {
-		got := ProfileExists(tt.name, miniDir)
+		got := ProfileExists(tt.name, miniHome)
 		if got != tt.expected {
-			t.Errorf("expected ProfileExists(%q,%q)=%t but got %t ", tt.name, miniDir, tt.expected, got)
+			t.Errorf("expected ProfileExists(%q,%q)=%t but got %t ", tt.name, miniHome, tt.expected, got)
 		}
-
 	}
-
 }
 
 func TestCreateEmptyProfile(t *testing.T) {
@@ -311,29 +307,3 @@ func TestProfileDirs(t *testing.T) {
 
 }
 
-func TestProfileFilePath(t *testing.T) {
-	var testsCases = []struct {
-		profile  string
-		miniHome string
-		expected string
-	}{
-		{"p1", "/var/T/all6479", "/var/T/all6479/.minikube/profiles/p1/config.json"},
-		{"p1_underscore", "/var/T/all6479", "/var/T/all6479/.minikube/profiles/p1_underscore/config.json"},
-	}
-
-	for _, tc := range testsCases {
-		p := profileFilePath(tc.profile, tc.miniHome)
-		if p != tc.expected {
-			t.Errorf("expected profile file path to be %q but got %q", tc.expected, p)
-		}
-	}
-
-	// trying one without specifying minihome
-	p := profileFilePath("p3")
-	expected := filepath.Join(localpath.MiniPath(),"profiles","p3","config.json")
-	if p != expected {
-		t.Errorf("expected profile file path to be %q but got %q", expected, p)
-	}
-
-
-}
