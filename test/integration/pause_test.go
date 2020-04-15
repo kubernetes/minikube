@@ -41,8 +41,8 @@ func TestPause(t *testing.T) {
 			{"Start", validateFreshStart},
 			{"Pause", validatePause},
 			{"Unpause", validateUnpause},
-			{"Pause Again", validatePause},
-			{"delete", validateDelete},
+			{"PauseAgain", validatePause},
+			{"DeletePaused", validateDelete},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -63,7 +63,7 @@ func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validatePause(ctx context.Context, t *testing.T, profile string) {
-	args := append([]string{"pause", "-p", profile, "--alsologtostderr", "-v=5"}, StartArgs()...)
+	args := []string{"pause", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to pause minikube with args: %q : %v", rr.Command(), err)
@@ -71,7 +71,7 @@ func validatePause(ctx context.Context, t *testing.T, profile string) {
 }
 
 func validateUnpause(ctx context.Context, t *testing.T, profile string) {
-	args := append([]string{"unpause", "-p", profile, "--alsologtostderr", "-v=5"}, StartArgs()...)
+	args := []string{"unpause", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to unpause minikube with args: %q : %v", rr.Command(), err)
@@ -80,7 +80,7 @@ func validateUnpause(ctx context.Context, t *testing.T, profile string) {
 
 func validateDelete(ctx context.Context, t *testing.T, profile string) {
 	// vervose logging because this might go wrong, if container get stuck
-	args := append([]string{"delete", "-p", profile, "--alsologtostderr", "-v=5"}, StartArgs()...)
+	args := []string{"delete", "-p", profile, "--alsologtostderr", "-v=5"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to delete minikube with args: %q : %v", rr.Command(), err)
