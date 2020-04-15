@@ -33,8 +33,8 @@ const (
 	DefaultSAWaitKey = "default_sa"
 	// AppsRunning is the name used in the flags for waiting for k8s-apps to be running
 	AppsRunning = "apps_running"
-	// NodeCondition is the name used in the flags detecting node coditions such as :
-	// disk , memory and PID  pressures or network not ready.
+	// NodeCondition is the name used in the flags detecting node coditions such as
+	// disk, memory and PID pressure or network not ready.
 	NodeCondition = "node_conditions"
 	// NodeReady is the name used in the flags for waiting for the node status to be ready
 	NodeReady = "node_ready"
