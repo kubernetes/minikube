@@ -25,6 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
@@ -78,8 +79,13 @@ func trySSHPowerOff(h *host.Host) error {
 	}
 
 	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
-	out, err := h.RunSSHCommand("sudo poweroff")
-	// poweroff always results in an error, since the host disconnects.
-	glog.Infof("poweroff result: out=%s, err=%v", out, err)
+	if driver.IsKIC(h.DriverName) {
+		out, err := h.RunSSHCommand(oci.ShutDownCmd)
+		glog.Infof("shutdown cmd %q result: out=%s, err=%v", oci.ShutDownCmd, out, err)
+	} else {
+		out, err := h.RunSSHCommand("sudo poweroff")
+		// poweroff always results in an error, since the host disconnects.
+		glog.Infof("poweroff result: out=%s, err=%v", out, err)
+	}
 	return nil
 }

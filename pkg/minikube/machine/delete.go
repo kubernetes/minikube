@@ -77,8 +77,8 @@ func DeleteHost(api libmachine.API, machineName string) error {
 		return mcnerror.ErrHostDoesNotExist{Name: machineName}
 	}
 
-	// Hyper-V requires special care to avoid ACPI and file locking issues
-	if host.Driver.DriverName() == driver.HyperV {
+	// some drivers need manual shut down before delete to avoid getting stuck.
+	if driver.NeedsShutdown(host.Driver.DriverName()) {
 		if err := StopHost(api, machineName); err != nil {
 			glog.Warningf("stop host: %v", err)
 		}
