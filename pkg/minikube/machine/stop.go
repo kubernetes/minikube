@@ -80,8 +80,8 @@ func trySSHPowerOff(h *host.Host) error {
 
 	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
 	if driver.IsKIC(h.DriverName) {
-		out, err := h.RunSSHCommand(oci.ShutownCmd)
-		glog.Infof("shutdown cmd %q result: out=%s, err=%v", oci.ShutownCmd, out, err)
+		err := oci.ShutDown(h.DriverName, h.Name)
+		glog.Infof("shutdown container: err=%v", err)
 	} else {
 		out, err := h.RunSSHCommand("sudo poweroff")
 		// poweroff always results in an error, since the host disconnects.

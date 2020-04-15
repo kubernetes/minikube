@@ -497,15 +497,17 @@ func ContainerStatus(ociBin string, name string) (string, error) {
 // to ensure the containers process and networking bindings are all closed
 // to avoid containers getting stuck before delete https://github.com/kubernetes/minikube/issues/7657
 func ShutDown(ociBin string, name string) error {
-	cmd := exec.Command(ociBin, "exec", "--privileged", "-t", name, "sudo", "init", "0")
+	cmd := exec.Command(ociBin, "exec", "--privileged", "-t", name, "/bin/bash", "-c", "sudo init 0")
 	if out, err := cmd.CombinedOutput(); err != nil {
-		return errors.Wrapf(err, "shutdown %s: output %q", name, out)
+		glog.Infof("error shutdown %s output %q : %v", name, out, err)
 	}
-
+	// helps with allowing docker realize the container is exited and report its status correctly.
+	time.Sleep(time.Second * 1)
 	// wait till it is stoped
 	stopped := func() error {
 		st, err := ContainerStatus(ociBin, name)
 		if st == "exited" {
+			glog.Infof("container %s status is %s", name, st)
 			return nil
 		}
 		if err != nil {

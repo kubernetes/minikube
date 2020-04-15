@@ -282,6 +282,10 @@ func (d *Driver) Remove() error {
 		}
 
 	}
+
+	if id, err := oci.ContainerID(d.OCIBinary, d.MachineName); err == nil && id != "" {
+		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
+	}
 	return nil
 }
 
@@ -368,6 +372,11 @@ func (d *Driver) Stop() error {
 		return errors.Wrapf(err, "stopping %s", d.MachineName)
 	}
 	return nil
+}
+
+// RunSSHCommandFromDriver implements direct ssh control to the driver
+func (d *Driver) RunSSHCommandFromDriver() error {
+	return fmt.Errorf("driver does not support RunSSHCommandFromDriver commands")
 }
 
 // killAPIServerProc will kill an api server proc if it exists
