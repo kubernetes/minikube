@@ -408,10 +408,10 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		if err := kverify.NodeConditions(client, cc.Driver); err != nil {
-			return errors.Wrap(err, "verifying node conditions")
+		if err := kverify.NodePressure(client, cc.Driver); err != nil {
+			return errors.Wrapf(err, "verifying %s", kverify.NodePressure)
 		}
-		out.T(out.CheckOption, "verifying node health {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
+		out.T(out.CheckOption, "verifying node pressure {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
 	if cc.VerifyComponents[kverify.NodeReady] {
@@ -467,7 +467,7 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, driver string, p
 		return true
 	}
 
-	if err := kverify.NodeConditions(client, driver); err != nil {
+	if err := kverify.NodePressures(client, driver); err != nil {
 		glog.Infof("needs reset: node conditions %v", err)
 		return true
 	}

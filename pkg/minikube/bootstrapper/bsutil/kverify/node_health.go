@@ -33,8 +33,8 @@ import (
 	"k8s.io/minikube/pkg/minikube/out"
 )
 
-// NodeConditions verfies that node is not under disk, memory, pid or network pressure.
-func NodeConditions(cs *kubernetes.Clientset, drver string) error {
+// NodePressures verfies that node is not under disk, memory, pid or network pressure.
+func NodePressures(cs *kubernetes.Clientset, drv string) error {
 	glog.Info("verifying NodePressure condition ...")
 	start := time.Now()
 	defer func() {
@@ -54,9 +54,9 @@ func NodeConditions(cs *kubernetes.Clientset, drver string) error {
 				out.Ln("")
 				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
 				out.WarningT("The node on {{.name}} has ran out of disk space. please consider allocating more disk using or pruning un-used images", out.V{"name": n.Name})
-				if driver.IsVM(drver) {
+				if driver.IsVM(drv) {
 					out.T(out.Stopped, "You can specify a larger disk for your cluster using `minikube start --disk` ")
-				} else if driver.IsKIC(drver) && runtime.GOOS != "linux" {
+				} else if driver.IsKIC(drv) && runtime.GOOS != "linux" {
 					out.T(out.Stopped, "Please increase Docker Desktop's disk image size.")
 					if runtime.GOOS == "darwin" {
 						out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
@@ -75,7 +75,7 @@ func NodeConditions(cs *kubernetes.Clientset, drver string) error {
 				out.Ln("")
 				out.ErrT(out.FailureType, "node {{.name}} has unwanted condition {{.condition_type}} : Reason {{.reason}} Message: {{.message}}", out.V{"name": n.Name, "condition_type": c.Type, "reason": c.Reason, "message": c.Message})
 				out.WarningT("The node on {{.name}} has ran of memory.", out.V{"name": n.Name})
-				if driver.IsKIC(drver) && runtime.GOOS != "linux" {
+				if driver.IsKIC(drv) && runtime.GOOS != "linux" {
 					out.T(out.Stopped, "Please increase Docker Desktop's memory.")
 					if runtime.GOOS == "darwin" {
 						out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
