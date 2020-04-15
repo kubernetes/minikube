@@ -151,6 +151,13 @@ func TestDeleteAllProfiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("tempdir: %v", err)
 	}
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(td)
+		if err != nil {
+			t.Errorf("failed to clean up %q temp folder after the unit test.", td)
+		}
+	}()
+
 	err = copy.Copy("../../../pkg/minikube/config/testdata/delete-all", td)
 	if err != nil {
 		t.Fatalf("copy: %v", err)
