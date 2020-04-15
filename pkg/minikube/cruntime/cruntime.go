@@ -20,6 +20,7 @@ package cruntime
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/blang/semver"
 	"github.com/golang/glog"
@@ -45,6 +46,11 @@ const (
 
 func (cs ContainerState) String() string {
 	return [...]string{"all", "running", "paused"}[cs]
+}
+
+// supportedContainerRuntimes lists the supported container runtimes
+func supportedContainerRuntimes() []string {
+	return []string{"docker", "crio", "containerd"}
 }
 
 // CommandRunner is the subset of command.Runner this package consumes
@@ -154,8 +160,9 @@ func New(c Config) (Manager, error) {
 			Init:              sm,
 		}, nil
 	default:
-		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
+		return nil, fmt.Errorf("invalid runtime: %q\n\nThe supported runtimes are: %s", c.Type, strings.Join(supportedContainerRuntimes(), ", "))
 	}
+
 }
 
 // ContainerStatusCommand works across container runtimes with good formatting

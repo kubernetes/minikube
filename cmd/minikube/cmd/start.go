@@ -222,7 +222,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	k8sVersion := getKubernetesVersion(existing)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName)
 	if err != nil {
-		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
+		exit.UsageT("failed to generate config. error: {{.error}}", out.V{"error": err.Error()})
 	}
 
 	// This is about as far as we can go without overwriting config files
