@@ -268,7 +268,7 @@ func (d *Driver) Kill() error {
 // Remove will delete the Kic Node Container
 func (d *Driver) Remove() error {
 	if _, err := oci.ContainerID(d.OCIBinary, d.MachineName); err != nil {
-		glog.Info("could not find the container %s to remove it. will try anyways", d.MachineName)
+		glog.Infof("could not find the container %s to remove it. will try anyways", d.MachineName)
 	}
 
 	if err := oci.DeleteContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
@@ -277,7 +277,7 @@ func (d *Driver) Remove() error {
 			return err
 		}
 		if strings.Contains(err.Error(), "No such container:") {
-			glog.Info("no container name %q found to delete", d.MachineName)
+			glog.Infof("no container name %q found to delete", d.MachineName)
 			return nil
 		}
 

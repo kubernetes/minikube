@@ -61,7 +61,7 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 			continue
 		}
 		if err := ShutDown(ociBin, c); err != nil {
-			glog.Info("couldn't shut down %s (might be okay): %v ", c, err)
+			glog.Infof("couldn't shut down %s (might be okay): %v ", c, err)
 		}
 		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
 		if out, err := cmd.CombinedOutput(); err != nil {
@@ -81,7 +81,7 @@ func DeleteContainer(ociBin string, name string) error {
 	}
 	// try to delete anyways
 	if err := ShutDown(ociBin, name); err != nil {
-		glog.Info("couldn't shut down %s (might be okay): %v ", name, err)
+		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
 	}
 	cmd := exec.Command(ociBin, "rm", "-f", "-v", name)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -497,9 +497,26 @@ func ContainerStatus(ociBin string, name string) (string, error) {
 // to ensure the containers process and networking bindings are all closed
 // to avoid containers getting stuck before delete https://github.com/kubernetes/minikube/issues/7657
 func ShutDown(ociBin string, name string) error {
-	cmd := exec.Command(ociBin, "exec", "-it", name, "sudo init 0")
+	cmd := exec.Command(ociBin, "exec", "--privileged", "-t", name, "sudo", "init", "0")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "shutdown %s: output %q", name, out)
 	}
+
+	// wait till it is stoped
+	stopped := func() error {
+		st, err := ContainerStatus(ociBin, name)
+		if st == "exited" {
+			return nil
+		}
+		if err != nil {
+			glog.Infof("temporary error verifying shutdown: %v", err)
+		}
+		glog.Infof("temporary error: container %s status is %s but expect it to be exited", name, st)
+		return errors.Wrap(err, "couldn't verify cointainer is exited. %v")
+	}
+	if err := retry.Expo(stopped, time.Millisecond*500, time.Second*20); err != nil {
+		return errors.Wrap(err, "verify shutdown")
+	}
+	glog.Infof("Successfully shutdown container %s", name)
 	return nil
 }
