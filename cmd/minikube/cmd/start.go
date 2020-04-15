@@ -322,7 +322,7 @@ func runStart(cmd *cobra.Command, args []string) {
 	k8sVersion := getKubernetesVersion(existing)
 	cc, n, err := generateCfgFromFlags(cmd, k8sVersion, driverName)
 	if err != nil {
-		exit.WithError("Failed to generate config", err)
+		exit.UsageT("Failed to load configration. {{.error}}", out.V{"error": err.Error()})
 	}
 
 	// This is about as far as we can go without overwriting config files
