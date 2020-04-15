@@ -25,6 +25,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/util/retry"
@@ -45,8 +46,7 @@ func StopHost(api libmachine.API, machineName string) error {
 // stop forcibly stops a host without needing to load
 func stop(h *host.Host) error {
 	start := time.Now()
-	if h.DriverName == driver.HyperV {
-		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
+	if driver.NeedsShutdown(h.DriverName) {
 		if err := trySSHPowerOff(h); err != nil {
 			return errors.Wrap(err, "ssh power off")
 		}
@@ -78,8 +78,14 @@ func trySSHPowerOff(h *host.Host) error {
 	}
 
 	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
-	out, err := h.RunSSHCommand("sudo poweroff")
-	// poweroff always results in an error, since the host disconnects.
-	glog.Infof("poweroff result: out=%s, err=%v", out, err)
+	// differnet for kic because RunSSHCommand is not implemented by kic
+	if driver.IsKIC(h.DriverName) {
+		err := oci.ShutDown(h.DriverName, h.Name)
+		glog.Infof("shutdown container: err=%v", err)
+	} else {
+		out, err := h.RunSSHCommand("sudo poweroff")
+		// poweroff always results in an error, since the host disconnects.
+		glog.Infof("poweroff result: out=%s, err=%v", out, err)
+	}
 	return nil
 }
