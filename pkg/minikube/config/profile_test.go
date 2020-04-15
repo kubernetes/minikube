@@ -25,7 +25,7 @@ import (
 func TestListProfiles(t *testing.T) {
 	miniDir, err := filepath.Abs("./testdata/list-profiles")
 	if err != nil {
-		t.Errorf("error getting dir path for %s : %v",miniDir, err)
+		t.Errorf("error getting dir path for %s : %v", miniDir, err)
 	}
 	valids, invalids, err := ListProfiles(true, miniDir)
 
@@ -38,16 +38,16 @@ func TestListProfiles(t *testing.T) {
 		{0, "p1", "hyperkit"},
 		{1, "p2_newformat", "virtualbox"},
 	}
-	t.Logf("minidir is %s",miniDir)
-	t.Logf("Valid cases length = %d",len(valids))
-	for _,x := range(valids) {
-		t.Logf("valid : %s",x.Name)
+	t.Logf("minidir is %s", miniDir)
+	t.Logf("Valid cases length = %d", len(valids))
+	for _, x := range valids {
+		t.Logf("valid : %s", x.Name)
 	}
-	for _,x := range(invalids) {
-		t.Logf("invalid : %s",x.Name)
+	for _, x := range invalids {
+		t.Logf("invalid : %s", x.Name)
 	}
 
-	t.Logf("inValid cases length = %d",len(invalids))
+	t.Logf("inValid cases length = %d", len(invalids))
 	for _, vc := range valiProfilesCases {
 		if valids[vc.index].Name != vc.expectName {
 			t.Errorf("expected %s got %v", vc.expectName, valids[vc.index].Name)
@@ -131,7 +131,7 @@ func TestProfileNameInReservedKeywords(t *testing.T) {
 func TestProfileExists(t *testing.T) {
 	miniHome, err := filepath.Abs("./testdata/list-profiles")
 	if err != nil {
-		t.Errorf("error getting dir path for %s:  %v",miniHome, err)
+		t.Errorf("error getting dir path for %s:  %v", miniHome, err)
 	}
 
 	var testCases = []struct {
@@ -306,4 +306,3 @@ func TestProfileDirs(t *testing.T) {
 	}
 
 }
-
