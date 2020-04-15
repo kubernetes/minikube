@@ -273,16 +273,15 @@ func (d *Driver) Remove() error {
 
 	if err := oci.DeleteContainer(d.NodeConfig.OCIBinary, d.MachineName); err != nil {
 		if strings.Contains(err.Error(), "is already in progress") {
-			glog.Warningf("Docker engine is stuck. please restart docker daemon on your computer.")
-			return err
+			return errors.Wrap(err, "stuck delete")
 		}
 		if strings.Contains(err.Error(), "No such container:") {
-			glog.Infof("no container name %q found to delete", d.MachineName)
-			return nil
+			return nil // nothing was found to delete.
 		}
 
 	}
 
+	// check there be no container left after delete
 	if id, err := oci.ContainerID(d.OCIBinary, d.MachineName); err == nil && id != "" {
 		return fmt.Errorf("expected no container ID be found for %q after delete. but got %q", d.MachineName, id)
 	}
