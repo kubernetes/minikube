@@ -33,13 +33,8 @@ EXTRA_START_ARGS=""
 EXPECTED_DEFAULT_DRIVER="hyperkit"
 
 
-# fix mac os as a service on mac os
-# https://github.com/docker/for-mac/issues/882#issuecomment-506372814
-osascript -e 'quit app "Docker"';
-sudo /Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
-# repeating without sudo because  https://github.com/docker/for-mac/issues/882#issuecomment-516946766
-/Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
-osascript -e 'quit app "Docker"'; /Applications/Docker.app/Contents/MacOS/Docker --unattended &; while [ -z "$(docker info 2> /dev/null )" ]; do printf "."; sleep 1; done; echo "" || true
+# restart docker on mac for a fresh test
+osascript -e 'quit app "Docker"'; open -a Docker ; while [ -z "$(docker info 2> /dev/null )" ]; do printf "."; sleep 1; done; echo "" || true
 
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
 install cron/cleanup_and_reboot_Darwin.sh $HOME/cleanup_and_reboot.sh || echo "FAILED TO INSTALL CLEANUP"
