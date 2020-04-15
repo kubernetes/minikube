@@ -108,6 +108,12 @@ func TestAssetsFromDir(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			testDir, err := setupTestDir()
+			defer func() { //clean up tempdir
+				err := os.RemoveAll(testDir)
+				if err != nil {
+					t.Errorf("failed to clean up temp folder  %q", testDir)
+				}
+			}()
 			if err != nil {
 				t.Errorf("got unexpected error creating test dir: %v", err)
 				return
