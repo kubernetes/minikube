@@ -49,6 +49,9 @@ func deleteOrphanedKIC(ociBin string, name string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	if err := oci.ShutDown(ociBin, name); err != nil {
+		glog.Info("couldn't shut down %s (might be okay): %v ", name, err)
+	}
 	cmd := exec.CommandContext(ctx, ociBin, "rm", "-f", "-v", name)
 	err = cmd.Run()
 	if err == nil {

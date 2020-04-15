@@ -31,8 +31,8 @@ const (
 	nodeRoleLabelKey = "role.minikube.sigs.k8s.io"
 	// CreatedByLabelKey is applied to any container/volume that is created by minikube created_by.minikube.sigs.k8s.io=true
 	CreatedByLabelKey = "created_by.minikube.sigs.k8s.io"
-	// ShutDownCmd is the command halt and stop the container
-	ShutDownCmd = "sudo init 0"
+	// ShutownCmd is the command halt and stop the container
+	ShutownCmd = "sudo init 0"
 )
 
 // CreateParams are parameters needed to create a container

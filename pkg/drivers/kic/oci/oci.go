@@ -60,6 +60,9 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. :%v", ociBin, ociBin, err)
 			continue
 		}
+		if err := ShutDown(ociBin, c); err != nil {
+			glog.Info("couldn't shut down %s (might be okay): %v ", c, err)
+		}
 		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
@@ -77,6 +80,9 @@ func DeleteContainer(ociBin string, name string) error {
 		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways: %v", ociBin, ociBin, err)
 	}
 	// try to delete anyways
+	if err := ShutDown(ociBin, name); err != nil {
+		glog.Info("couldn't shut down %s (might be okay): %v ", name, err)
+	}
 	cmd := exec.Command(ociBin, "rm", "-f", "-v", name)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "delete container %s: output %s", name, out)
@@ -485,4 +491,15 @@ func PointToHostDockerDaemon() error {
 func ContainerStatus(ociBin string, name string) (string, error) {
 	out, err := WarnIfSlow(ociBin, "inspect", name, "--format={{.State.Status}}")
 	return strings.TrimSpace(string(out)), err
+}
+
+// Shutdown will run command to shut down the container
+// to ensure the containers process and networking bindings are all closed
+// to avoid containers getting stuck before delete https://github.com/kubernetes/minikube/issues/7657
+func ShutDown(ociBin string, name string) error {
+	cmd := exec.Command(ociBin, "exec", "-it", name, "sudo init 0")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return errors.Wrapf(err, "shutdown %s: output %q", name, out)
+	}
+	return nil
 }
