@@ -131,9 +131,9 @@ func TestProfileNameInReservedKeywords(t *testing.T) {
 }
 
 func TestProfileExists(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube2")
+	miniDir, err := filepath.Abs("./testdata/default2")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+		t.Errorf("error getting dir path for ./testdata/default2 : %v", err)
 	}
 
 	var testCases = []struct {
@@ -158,9 +158,9 @@ func TestProfileExists(t *testing.T) {
 }
 
 func TestCreateEmptyProfile(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube2")
+	miniDir, err := filepath.Abs("./testdata/default2")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+		t.Errorf("error getting dir path for ./testdata/default2 : %v", err)
 	}
 
 	var testCases = []struct {
@@ -189,9 +189,9 @@ func TestCreateEmptyProfile(t *testing.T) {
 }
 
 func TestCreateProfile(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube2")
+	miniDir, err := filepath.Abs("./testdata/default2")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+		t.Errorf("error getting dir path for ./testdata/default2 : %v", err)
 	}
 
 	var testCases = []struct {
@@ -225,9 +225,9 @@ func TestCreateProfile(t *testing.T) {
 }
 
 func TestDeleteProfile(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube2")
+	miniDir, err := filepath.Abs("./testdata/default2")
 	if err != nil {
-		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
+		t.Errorf("error getting dir path for ./testdata/default2 : %v", err)
 	}
 
 	err = CreateEmptyProfile("existing_prof", miniDir)
@@ -252,7 +252,7 @@ func TestDeleteProfile(t *testing.T) {
 }
 
 func TestGetPrimaryControlPlane(t *testing.T) {
-	miniDir, err := filepath.Abs("./testdata/.minikube2")
+	miniDir, err := filepath.Abs("./testdata/default2")
 	if err != nil {
 		t.Errorf("error getting dir path for ./testdata/.minikube : %v", err)
 	}
