@@ -29,7 +29,7 @@ func TestListProfiles(t *testing.T) {
 	if err != nil {
 		t.Errorf("error getting dir path for %s : %v",miniDir, err)
 	}
-	val, inv, err := ListProfiles(true, miniDir)
+	valids, invalids, err := ListProfiles(true, miniDir)
 
 	// test cases for valid profiles
 	var valiProfilesCases = []struct {
@@ -40,14 +40,22 @@ func TestListProfiles(t *testing.T) {
 		{0, "p1", "hyperkit"},
 		{1, "p2_newformat", "virtualbox"},
 	}
+	t.Logf("minidir is %s",miniDir)
+	t.Logf("Valid cases length = %d",len(valids))
+	for _,x := range(valids) {
+		t.Logf("valid : %s",x.Name)
+	}
+	for _,x := range(invalids) {
+		t.Logf("invalid : %s",x.Name)
+	}
 
-	t.Logf("Valid cases length = %d",len(val))
+	t.Logf("inValid cases length = %d",len(invalids))
 	for _, vc := range valiProfilesCases {
-		if val[vc.index].Name != vc.expectName {
-			t.Errorf("expected %s got %v", vc.expectName, val[vc.index].Name)
+		if valids[vc.index].Name != vc.expectName {
+			t.Errorf("expected %s got %v", vc.expectName, valids[vc.index].Name)
 		}
-		if val[vc.index].Config.Driver != vc.vmDriver {
-			t.Errorf("expected %s got %v", vc.vmDriver, val[vc.index].Config.Driver)
+		if valids[vc.index].Config.Driver != vc.vmDriver {
+			t.Errorf("expected %s got %v", vc.vmDriver, valids[vc.index].Config.Driver)
 		}
 
 	}
@@ -65,8 +73,8 @@ func TestListProfiles(t *testing.T) {
 
 	// making sure it returns the invalid profiles
 	for _, tt := range invalidProfileCases {
-		if inv[tt.index].Name != tt.expectName {
-			t.Errorf("expected %s got %v", tt.expectName, inv[tt.index].Name)
+		if invalids[tt.index].Name != tt.expectName {
+			t.Errorf("expected %s got %v", tt.expectName, invalids[tt.index].Name)
 		}
 	}
 
