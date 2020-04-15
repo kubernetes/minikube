@@ -454,7 +454,7 @@ func writeStringsToFiles(e *state, output string) error {
 		if !strings.HasSuffix(path, ".json") {
 			return nil
 		}
-		fmt.Printf("Writing to %s\n", filepath.Base(path))
+		fmt.Printf("Writing to %s", filepath.Base(path))
 		currentTranslations := make(map[string]interface{})
 		f, err := ioutil.ReadFile(path)
 		if err != nil {
@@ -482,6 +482,16 @@ func writeStringsToFiles(e *state, output string) error {
 			}
 		}
 
+		t := 0 // translated
+		u := 0 // untranslated
+		for k, _ := range e.translations{
+			if currentTranslations[k] != "" {
+				t++
+			} else {
+				u++
+			}
+		}
+
 		c, err := json.MarshalIndent(currentTranslations, "", "\t")
 		if err != nil {
 			return errors.Wrap(err, "marshalling translations")
@@ -490,6 +500,8 @@ func writeStringsToFiles(e *state, output string) error {
 		if err != nil {
 			return errors.Wrap(err, "writing translation file")
 		}
+
+		fmt.Printf(" (%d translated, %d untranslated)\n", t, u)
 		return nil
 	})
 
