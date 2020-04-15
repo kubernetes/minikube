@@ -53,7 +53,6 @@ func TestPause(t *testing.T) {
 	})
 }
 
-// validateFreshStart
 func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
 	args := append([]string{"start", "-p", profile, "--memory=1800", "--install-addons=false", "--wait=false"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))

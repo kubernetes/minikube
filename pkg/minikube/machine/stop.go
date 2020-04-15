@@ -47,7 +47,6 @@ func StopHost(api libmachine.API, machineName string) error {
 func stop(h *host.Host) error {
 	start := time.Now()
 	if driver.NeedsShutdown(h.DriverName) {
-		glog.Infof("As there are issues with stopping Hyper-V VMs using API, trying to shut down using SSH")
 		if err := trySSHPowerOff(h); err != nil {
 			return errors.Wrap(err, "ssh power off")
 		}
@@ -79,6 +78,7 @@ func trySSHPowerOff(h *host.Host) error {
 	}
 
 	out.T(out.Shutdown, `Powering off "{{.profile_name}}" via SSH ...`, out.V{"profile_name": h.Name})
+	// differnet for kic because RunSSHCommand is not implemented by kic
 	if driver.IsKIC(h.DriverName) {
 		err := oci.ShutDown(h.DriverName, h.Name)
 		glog.Infof("shutdown container: err=%v", err)
