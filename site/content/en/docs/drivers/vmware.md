@@ -23,7 +23,7 @@ No documentation is available yet.
 
 ## Issues
 
-* [Full list of open 'vmware' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fvmware)
+* [Full list of open 'vmware' driver issues](https://github.com/kubernetes/minikube/labels/co%2Fvmware-driver)
 
 ## Troubleshooting
 
