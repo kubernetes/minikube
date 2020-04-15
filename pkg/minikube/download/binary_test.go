@@ -31,12 +31,24 @@ func TestCacheBinary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("error during creating tmp dir: %v", err)
 	}
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(minikubeHome)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", minikubeHome)
+		}
+	}()
+
 	defer os.RemoveAll(minikubeHome)
 	noWritePermDir, err := ioutil.TempDir("/tmp", "")
 	if err != nil {
 		t.Fatalf("error during creating tmp dir: %v", err)
 	}
-	defer os.RemoveAll(noWritePermDir)
+	defer func() { //clean up tempdir
+		err := os.RemoveAll(noWritePermDir)
+		if err != nil {
+			t.Errorf("failed to clean up temp folder  %q", noWritePermDir)
+		}
+	}()
 	err = os.Chmod(noWritePermDir, 0000)
 	if err != nil {
 		t.Fatalf("error (%v) during changing permissions of dir %v", err, noWritePermDir)
