@@ -887,3 +887,9 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
 	return err
 }
+
+// adviceForPressure will advise the user what to do with the pressure error
+func adviceForPressure(pe error, driver string) {
+	
+	return
+}
