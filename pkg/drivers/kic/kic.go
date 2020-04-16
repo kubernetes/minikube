@@ -261,7 +261,7 @@ func (d *Driver) Kill() error {
 	}
 
 	if err := oci.ShutDown(d.OCIBinary, d.MachineName); err != nil {
-		glog.Warningf("couldn't shutdown the container, will contineu with kill anyways: %v", err)
+		glog.Warningf("couldn't shutdown the container, will continue with kill anyways: %v", err)
 	}
 
 	cr := command.NewExecRunner() // using exec runner for interacting with dameon.
