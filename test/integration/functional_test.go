@@ -202,12 +202,12 @@ func validateMultiNode(ctx context.Context, t *testing.T, profile string) {
 	addArgs := []string{"node", "add", "-p", profile}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), addArgs...))
 	if err != nil {
-		t.Errorf("failed to add node to current cluster. args %q : %v", rr.Command(), err)
+		t.Fatalf("failed to add node to current cluster. args %q : %v", rr.Command(), err)
 	}
 
 	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
 	if err != nil {
-		t.Errorf("failed to run minikube status. args %q : %v", rr.Command(), err)
+		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
 
 	if strings.Count(rr.Stdout.String(), "host: Running") != 2 {
