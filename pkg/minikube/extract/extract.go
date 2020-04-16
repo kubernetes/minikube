@@ -484,7 +484,7 @@ func writeStringsToFiles(e *state, output string) error {
 
 		t := 0 // translated
 		u := 0 // untranslated
-		for k, _ := range e.translations{
+		for k := range e.translations {
 			if currentTranslations[k] != "" {
 				t++
 			} else {
