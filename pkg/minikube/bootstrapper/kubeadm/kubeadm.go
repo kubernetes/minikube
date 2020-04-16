@@ -326,55 +326,55 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForNode blocks until the node appears to be healthy
-func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 
 	if !n.ControlPlane {
 		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
 		return nil
 	}
-	if !kverify.ShouldWait(cc.VerifyComponents) {
+	if !kverify.ShouldWait(cfg.VerifyComponents) {
 		glog.Infof("skip waiting for components based on config.")
 		return nil
 	}
 	out.T(out.HealthCheck, "Verifying Kubernetes Components:")
-	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c})
+	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
-		return errors.Wrapf(err, "create runtme-manager %s", cc.KubernetesConfig.ContainerRuntime)
+		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
 	}
 
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cc, &n, cc.Driver)
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	if cc.VerifyComponents[kverify.APIServerWaitKey] {
+	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
 		out.T(out.CheckOption, "verifying api server ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		if err := kverify.WaitForAPIServerProcess(cr, k, cc, k.c, start, timeout); err != nil {
+		if err := kverify.WaitForAPIServerProcess(cr, k, cfg, k.c, start, timeout); err != nil {
 			return errors.Wrap(err, "wait for apiserver proc")
 		}
 
-		if err := kverify.WaitForHealthyAPIServer(cr, k, cc, k.c, client, start, hostname, port, timeout); err != nil {
+		if err := kverify.WaitForHealthyAPIServer(cr, k, cfg, k.c, client, start, hostname, port, timeout); err != nil {
 			return errors.Wrap(err, "wait for healthy API server")
 		}
 	}
 
-	if cc.VerifyComponents[kverify.SystemPodsWaitKey] {
+	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
 		out.T(out.CheckOption, "verifying system pods ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		if err := kverify.WaitForSystemPods(cr, k, cc, k.c, client, start, timeout); err != nil {
+		if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, start, timeout); err != nil {
 			return errors.Wrap(err, "waiting for system pods")
 		}
 	}
 
-	if cc.VerifyComponents[kverify.DefaultSAWaitKey] {
+	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
 		out.T(out.CheckOption, "verifying default service account ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
@@ -386,7 +386,7 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		}
 	}
 
-	if cc.VerifyComponents[kverify.AppsRunningKey] {
+	if cfg.VerifyComponents[kverify.AppsRunningKey] {
 		out.T(out.CheckOption, "verifying apps running ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
@@ -397,19 +397,19 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		}
 	}
 
-	if cc.VerifyComponents[kverify.NodePressureKey] {
+	if cfg.VerifyComponents[kverify.NodePressureKey] {
 		out.T(out.CheckOption, "verifying node pressure ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
 		if err := kverify.NodePressure(client); err != nil {
-			adviseNodePressure(err, cc.Name, cc.Driver)
+			adviseNodePressure(err, cfg.Name, cfg.Driver)
 			return errors.Wrapf(err, "verifying %s", kverify.NodePressureKey)
 		}
 	}
 
-	if cc.VerifyComponents[kverify.NodeReadyKey] {
+	if cfg.VerifyComponents[kverify.NodeReadyKey] {
 		out.T(out.CheckOption, "verifying node status")
 		client, err := k.client(hostname, port)
 		if err != nil {
@@ -420,7 +420,7 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		}
 	}
 
-	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cc.VerifyComponents)
+	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
 	return nil
 }
 
