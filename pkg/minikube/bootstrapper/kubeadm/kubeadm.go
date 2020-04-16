@@ -930,3 +930,9 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 	}
 }
+
+// adviceForPressure will advise the user what to do with the pressure error
+func adviceForPressure(pe error, driver string) {
+	
+	return
+}
