@@ -29,7 +29,7 @@ spec:
     spec:
       containers:
         - name: hello-world-app
-          image: gcr.io/google-samples/hello-app:1.0
+          image: {{default "gcr.io/google-samples" .ImageRepository}}/hello-app:1.0
           ports:
             - containerPort: 8080
 ---
