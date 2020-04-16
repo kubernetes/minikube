@@ -79,19 +79,23 @@ func DigestByGoLib(imgName string) string {
 	return cf.Hex
 }
 
-// WriteImageToDaemon write img to the local docker daemon
-func WriteImageToDaemon(img string) error {
-	glog.Infof("Writing %s to local daemon", img)
-
+// ExistsImageInDaemon if img exist in local docker daemon
+func ExistsImageInDaemon(img string) bool {
 	// Check if image exists locally
 	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
 	if output, err := cmd.Output(); err == nil {
 		if strings.Contains(string(output), img) {
 			glog.Infof("Found %s in local docker daemon, skipping pull", img)
-			return nil
+			return true
 		}
 	}
 	// Else, pull it
+	return false
+}
+
+// WriteImageToDaemon write img to the local docker daemon
+func WriteImageToDaemon(img string) error {
+	glog.Infof("Writing %s to local daemon", img)
 	ref, err := name.ParseReference(img)
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
