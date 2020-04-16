@@ -64,4 +64,4 @@ To add a new addon to minikube the following steps are required:
   ```
 
 * Rebuild minikube using `make out/minikube`.  This will put the addon's .yaml binary files into the minikube binary using go-bindata.
-* Test addon using `minikube addons enable <NEW_ADDON_NAME>` command to start service.
+* Test addon using `./out/minikube addons enable <NEW_ADDON_NAME>` command to start service.
