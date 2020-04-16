@@ -458,6 +458,8 @@ func (k *Bootstrapper) needsReset(conf string, name string, hostname string, dri
 		glog.Infof("needs reset: node pressure: %v", err)
 	}
 
+	// to be used in the ingeration test to verify it wont reset.
+	glog.Infof("The running cluster does not need a reset. hostname: %s", hostname)
 	return false
 }
 
