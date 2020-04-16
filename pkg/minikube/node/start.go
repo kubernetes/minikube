@@ -133,6 +133,11 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		wg.Done()
 	}()
 
+	// enable addons, both old and new!
+	if starter.ExistingAddons != nil {
+		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
+	}
+
 	if apiServer {
 		// special ops for none , like change minikube directory.
 		// multinode super doesn't work on the none driver
@@ -144,10 +149,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if kverify.ShouldWait(starter.Cfg.VerifyComponents) && !starter.PreExists {
 			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
-			}
-			// enable addons, both old and new!
-			if starter.ExistingAddons != nil {
-				go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 			}
 		}
 	} else {
@@ -167,10 +168,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
-		}
-		// enable addons, both old and new!
-		if starter.ExistingAddons != nil {
-			go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 		}
 	}
 
@@ -401,7 +398,7 @@ func validateNetwork(h *host.Host, r command.Runner, imageRepository string) (st
 			ipExcluded := proxy.IsIPExcluded(ip) // Skip warning if minikube ip is already in NO_PROXY
 			k = strings.ToUpper(k)               // for http_proxy & https_proxy
 			if (k == "HTTP_PROXY" || k == "HTTPS_PROXY") && !ipExcluded && !warnedOnce {
-				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details", out.V{"ip_address": ip, "documentation_url": "https://minikube.sigs.k8s.io/docs/handbook/vpn_and_proxy/"})
+				out.WarningT("You appear to be using a proxy, but your NO_PROXY environment does not include the minikube IP ({{.ip_address}}). Please see {{.documentation_url}} for more details", out.V{"ip_address": ip, "documentation_url": "https://minikube.sigs.k8s.io/docs/reference/networking/proxy/"})
 				warnedOnce = true
 			}
 		}
