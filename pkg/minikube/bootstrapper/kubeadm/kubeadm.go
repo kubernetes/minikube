@@ -207,6 +207,15 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	go func() {
 		// the overlay is required for containerd and cri-o runtime: see #7428
 		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
+			// this is a sepcial wait only for containerd,cri-o on docker
+			// because for containerd and cri-o we need to
+			// to wait for default SA to be up to avoid #7704
+			tmpCFG := cfg // making a temp config to use for this specific wait
+			tmpCFG.VerifyComponents = map[string]bool{kverify.DefaultSAWaitKey: true}
+			glog.Infof("waiting for default sevice account before we apply kic overlay")
+			if err := k.WaitForNode(tmpCFG, tmpCFG.Nodes[0], time.Second*30); err != nil {
+				glog.Warningf("failed to wait for default serive account. This might cause issue #7704 when applying kic overlay.")
+			}
 			if err := k.applyKICOverlay(cfg); err != nil {
 				glog.Errorf("failed to apply kic overlay: %v", err)
 			}
@@ -327,11 +336,11 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForNode blocks until the node appears to be healthy
-func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, myNode config.Node, timeout time.Duration) error {
 	start := time.Now()
 
-	if !n.ControlPlane {
-		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
+	if !myNode.ControlPlane {
+		glog.Infof("%s is not a control plane, nothing to wait for", myNode.Name)
 		return nil
 	}
 	if !kverify.ShouldWait(cfg.VerifyComponents) {
@@ -344,7 +353,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
 	}
 
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &myNode, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "get control plane endpoint")
 	}
