@@ -19,9 +19,6 @@ package cruntime
 
 import (
 	"fmt"
-	"os/exec"
-	"strings"
-
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -30,6 +27,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/sysinit"
+	"os/exec"
 )
 
 // ContainerState is the run state of a container
@@ -48,8 +46,8 @@ func (cs ContainerState) String() string {
 	return [...]string{"all", "running", "paused"}[cs]
 }
 
-// supportedContainerRuntimes lists the supported container runtimes
-func supportedContainerRuntimes() []string {
+// ValidOptions lists the supported container runtimes
+func ValidOptions() []string {
 	return []string{"docker", "crio", "containerd"}
 }
 
@@ -160,7 +158,7 @@ func New(c Config) (Manager, error) {
 			Init:              sm,
 		}, nil
 	default:
-		return nil, fmt.Errorf("invalid runtime: %q\n\nThe supported runtimes are: %s", c.Type, strings.Join(supportedContainerRuntimes(), ", "))
+		return nil, fmt.Errorf("invalid runtime: %q", c.Type)
 	}
 
 }
