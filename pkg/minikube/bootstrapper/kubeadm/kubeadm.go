@@ -422,7 +422,8 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 		glog.Infof("needs reset: %v", err)
 		return true
 	}
-
+	// to be used in the ingeration test to verify it wont reset.
+	glog.Infof("The running cluster does not need a reset. hostname: %s", hostname)
 	return false
 }
 
