@@ -835,11 +835,12 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		}
 	}
 
+	// verfy it is created if user specified to wait
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
 		// double checking defalut sa was created.
 		// good for ensuring using minikube in CI is robust.
 		checkSA := func() error {
-			cmd = exec.CommandContext(ctx, "sudo", kubectlPath(cfg),
+			cmd = exec.Command("sudo", kubectlPath(cfg),
 				"get", "sa", "default", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 			rr, err = k.c.RunCmd(cmd)
 			if err != nil {
@@ -853,6 +854,5 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 			return errors.Wrap(err, "ensure sa was created")
 		}
 	}
-
 	return nil
 }
