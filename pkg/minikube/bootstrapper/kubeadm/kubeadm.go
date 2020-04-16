@@ -324,11 +324,11 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForNode blocks until the node appears to be healthy
-func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, myNode config.Node, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
 	start := time.Now()
 
-	if !myNode.ControlPlane {
-		glog.Infof("%s is not a control plane, nothing to wait for", myNode.Name)
+	if !n.ControlPlane {
+		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
 		return nil
 	}
 	if !kverify.ShouldWait(cfg.VerifyComponents) {
@@ -341,7 +341,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, myNode config.Node,
 		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
 	}
 
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &myNode, cfg.Driver)
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "get control plane endpoint")
 	}
