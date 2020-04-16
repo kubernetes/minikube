@@ -44,5 +44,4 @@ One nifty hack is to allow the kubelet running in minikube to talk to registries
 with TLS certificates. Because the default service cluster IP is known to be available at 10.0.0.1, users can pull images from registries
 deployed inside the cluster by creating the cluster with `minikube start --insecure-registry "10.0.0.0/24"`.
 
----
-{{% readfile file="/docs/drivers/includes/regisrtry_addon_mac_windows_usage.inc" %}}
+{{% readfile file="/docs/drivers/includes/registry_addon_mac_windows.inc" %}}
