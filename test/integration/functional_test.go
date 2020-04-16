@@ -132,7 +132,6 @@ func TestFunctional(t *testing.T) {
 			{"UpdateContextCmd", validateUpdateContextCmd},
 			{"DockerEnv", validateDockerEnv},
 			{"NodeLabels", validateNodeLabels},
-			{"MultiNode", validateMultiNode},
 		}
 		for _, tc := range tests {
 			tc := tc
@@ -184,38 +183,6 @@ func validateDockerEnv(ctx context.Context, t *testing.T, profile string) {
 	expectedImgInside := "gcr.io/k8s-minikube/storage-provisioner"
 	if !strings.Contains(rr.Output(), expectedImgInside) {
 		t.Fatalf("expected 'docker images' to have %q inside minikube. but the output is: *%s*", expectedImgInside, rr.Output())
-	}
-
-}
-
-func validateMultiNode(ctx context.Context, t *testing.T, profile string) {
-	if NoneDriver() {
-		t.Skip("none driver does not support multinode")
-	}
-
-	// TODO: remove this skip once docker multinode is fixed
-	if KicDriver() {
-		t.Skip("docker driver multinode is currently broken :(")
-	}
-
-	// Add a node to the current cluster
-	addArgs := []string{"node", "add", "-p", profile, "-v", "3", "--alsologtostderr"}
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), addArgs...))
-	if err != nil {
-		t.Fatalf("failed to add node to current cluster. args %q : %v", rr.Command(), err)
-	}
-
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
-	if err != nil {
-		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
-	}
-
-	if strings.Count(rr.Stdout.String(), "host: Running") != 2 {
-		t.Errorf("status says both hosts are not running: args %q: %v", rr.Command(), rr.Stdout.String())
-	}
-
-	if strings.Count(rr.Stdout.String(), "kubelet: Running") != 2 {
-		t.Errorf("status says both kubelets are not running: args %q: %v", rr.Command(), rr.Stdout.String())
 	}
 
 }
