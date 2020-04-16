@@ -174,7 +174,7 @@ func TestStartStop(t *testing.T) {
 	})
 }
 
-func TestStartStopWithPreload(t *testing.T) {
+func TestPreloadStartStop(t *testing.T) {
 	if NoneDriver() {
 		t.Skipf("skipping %s - incompatible with none driver", t.Name())
 	}
