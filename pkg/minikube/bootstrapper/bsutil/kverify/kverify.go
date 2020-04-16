@@ -43,7 +43,7 @@ const (
 //  vars related to the --wait flag
 var (
 	// DefaultComponents is map of the the default components to wait for
-	DefaultComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, NodePressureKey: false, NodeReadyKey: false}
+	DefaultComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true}
 	// NoWaitComponents is map of componets to wait for if specified 'none' or 'false'
 	NoComponents = map[string]bool{APIServerWaitKey: false, SystemPodsWaitKey: false, DefaultSAWaitKey: false, AppsRunningKey: false, NodePressureKey: false, NodeReadyKey: false}
 	// AllComponents is map for waiting for all components.
