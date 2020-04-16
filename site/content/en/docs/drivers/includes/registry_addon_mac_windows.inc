@@ -51,4 +51,6 @@ Push docker image to minikube registry:
 docker push $(minikube ip):5000/test-img
 ```
 
+After the image is pushed, refer to it by `localhost:5000/{name}` in kubectl specs.
+
 * For more information, documentation ([Pushing to an in-cluster using Registry addon](https://minikube.sigs.k8s.io/docs/handbook/pushing/#4-pushing-to-an-in-cluster-using-registry-addon))
