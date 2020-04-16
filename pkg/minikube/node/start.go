@@ -133,11 +133,6 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		wg.Done()
 	}()
 
-	// enable addons, both old and new!
-	if starter.ExistingAddons != nil {
-		go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
-	}
-
 	if apiServer {
 		// special ops for none , like change minikube directory.
 		// multinode super doesn't work on the none driver
@@ -149,6 +144,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 		if kverify.ShouldWait(starter.Cfg.VerifyComponents) && !starter.PreExists {
 			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
+			}
+			// enable addons, both old and new!
+			if starter.ExistingAddons != nil {
+				go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 			}
 		}
 	} else {
@@ -168,6 +167,10 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 
 		if err = bs.JoinCluster(*starter.Cfg, *starter.Node, joinCmd); err != nil {
 			return nil, errors.Wrap(err, "joining cluster")
+		}
+		// enable addons, both old and new!
+		if starter.ExistingAddons != nil {
+			go addons.Start(&wg, starter.Cfg, starter.ExistingAddons, config.AddonList)
 		}
 	}
 
