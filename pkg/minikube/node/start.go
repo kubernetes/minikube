@@ -156,9 +156,11 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			return nil, errors.Wrap(err, "Updating node")
 		}
 
-		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, starter.Runner)
+		// Make sure to use the command runner for the control plane to generate the join token
+		c := mustload.Running(starter.Cfg.Name)
+		cpBs, err := cluster.Bootstrapper(starter.MachineAPI, viper.GetString(cmdcfg.Bootstrapper), *starter.Cfg, c.CP.Runner)
 		if err != nil {
-			return nil, errors.Wrap(err, "Getting bootstrapper")
+			return nil, errors.Wrap(err, "getting control plane bootstrapper")
 		}
 
 		joinCmd, err := cpBs.GenerateToken(*starter.Cfg)
