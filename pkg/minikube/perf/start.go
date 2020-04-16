@@ -35,20 +35,20 @@ const (
 
 var (
 	// For testing
-	collectTimeMinikubeStart = timeMinikubeStart
+	collectTimeMinikubeStart = collectTimes
 )
 
 // CompareMinikubeStart compares the time to run `minikube start` between two minikube binaries
 func CompareMinikubeStart(ctx context.Context, out io.Writer, binaries []*Binary) error {
-	durations, err := collectTimes(ctx, binaries)
+	durations, err := collectTimeMinikubeStart(ctx, binaries)
 	if err != nil {
 		return err
 	}
 
 	for i, d := range durations {
-		fmt.Printf("Results for %s:\n", binaries[i].Name())
-		fmt.Printf("Times: %v\n", d)
-		fmt.Printf("Average Time: %f\n\n", average(d))
+		fmt.Fprintf(out, "Results for %s:\n", binaries[i].Name())
+		fmt.Fprintf(out, "Times: %v\n", d)
+		fmt.Fprintf(out, "Average Time: %f\n\n", average(d))
 	}
 
 	return nil
@@ -63,7 +63,7 @@ func collectTimes(ctx context.Context, binaries []*Binary) ([][]float64, error) 
 	for r := 0; r < runs; r++ {
 		log.Printf("Executing run %d...", r)
 		for index, binary := range binaries {
-			duration, err := collectTimeMinikubeStart(ctx, binary)
+			duration, err := timeMinikubeStart(ctx, binary)
 			if err != nil {
 				return nil, errors.Wrapf(err, "timing run %d with %s", r, binary.Name())
 			}
