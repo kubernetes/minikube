@@ -123,7 +123,7 @@ func WriteImageToDaemon(img string) error {
 	glog.V(3).Infof("Pulling image %v", ref)
 
 	// Pull digest
-	cmd = exec.Command("docker", "pull", "--quiet", img)
+	cmd := exec.Command("docker", "pull", "--quiet", img)
 	if _, err := cmd.Output(); err != nil {
 		return errors.Wrap(err, "pulling remote image")
 	}
