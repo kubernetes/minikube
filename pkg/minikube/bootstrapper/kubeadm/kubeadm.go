@@ -38,6 +38,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -852,7 +853,10 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 // elevateKubeSystemPrivileges gives the kube-system service account cluster admin privileges to work with RBAC.
 func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) error {
 	start := time.Now()
-	defer glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
+	defer func() {
+		glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
+	}()
+
 	// Allow no more than 5 seconds for creating cluster role bindings
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -870,22 +874,21 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 		}
 	}
 
-	// verfy it is created if user specified to wait
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
 		// double checking defalut sa was created.
 		// good for ensuring using minikube in CI is robust.
-		checkSA := func() error {
+		checkSA := func() (bool, error) {
 			cmd = exec.Command("sudo", kubectlPath(cfg),
 				"get", "sa", "default", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
 			rr, err = k.c.RunCmd(cmd)
 			if err != nil {
-				return err
+				return false, nil
 			}
-			return nil
+			return true, nil
 		}
 
 		// retry up to make sure SA is created
-		if err := retry.Expo(checkSA, 1*time.Millisecond, time.Minute); err != nil {
+		if err := wait.PollImmediate(kconst.APICallRetryInterval, time.Minute, checkSA); err != nil {
 			return errors.Wrap(err, "ensure sa was created")
 		}
 	}
