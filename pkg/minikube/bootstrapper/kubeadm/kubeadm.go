@@ -428,7 +428,7 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 }
 
 // needsReset returns whether or not the cluster needs to be reconfigured
-func (k *Bootstrapper) needsReset(conf string, hostname string, driver string, port int, client *kubernetes.Clientset, version string) bool {
+func (k *Bootstrapper) needsReset(conf string, name string, hostname string, driver string, port int, client *kubernetes.Clientset, version string) bool {
 	if rr, err := k.c.RunCmd(exec.Command("sudo", "diff", "-u", conf, conf+".new")); err != nil {
 		glog.Infof("needs reset: configs differ:\n%s", rr.Output())
 		return true
@@ -456,7 +456,7 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, driver string, p
 	}
 
 	if err := kverify.NodePressure(client); err != nil {
-		adviseNodePressure(err, hostname, driver)
+		adviseNodePressure(err, name, driver)
 		glog.Infof("needs reset: node pressure: %v", err)
 	}
 
@@ -505,7 +505,7 @@ func (k *Bootstrapper) restartCluster(cc config.ClusterConfig) error {
 
 	// If the cluster is running, check if we have any work to do.
 	conf := bsutil.KubeadmYamlPath
-	if !k.needsReset(conf, hostname, cc.Driver, port, client, cc.KubernetesConfig.KubernetesVersion) {
+	if !k.needsReset(conf, cc.Name, hostname, cc.Driver, port, client, cc.KubernetesConfig.KubernetesVersion) {
 		glog.Infof("Taking a shortcut, as the cluster seems to be properly configured")
 		return nil
 	}
@@ -912,7 +912,7 @@ func adviseNodePressure(err error, name string, drv string) {
 			if runtime.GOOS == "windows" {
 				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
-		} 
+		}
 		out.ErrLn("")
 	}
 
