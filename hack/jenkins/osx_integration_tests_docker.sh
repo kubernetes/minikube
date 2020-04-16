@@ -37,7 +37,7 @@ sudo /Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unatt
 # repeating above command without sudo because  https://github.com/docker/for-mac/issues/882#issuecomment-516946766
 /Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended || true
 
-# restart docker on mac for a fresh test
+# restart docker on mac
 osascript -e 'quit app "Docker"'; open -a Docker /Applications/Docker.app/Contents/MacOS/Docker --quit-after-install --unattended  ; while [ -z "$(docker info 2> /dev/null )" ]; do printf "."; sleep 1; done; echo "" || true
 
 mkdir -p cron && gsutil -qm rsync "gs://minikube-builds/${MINIKUBE_LOCATION}/cron" cron || echo "FAILED TO GET CRON FILES"
