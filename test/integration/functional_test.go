@@ -199,7 +199,7 @@ func validateMultiNode(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Add a node to the current cluster
-	addArgs := []string{"node", "add", "-p", profile, "-v", "10", "--alsologtostderr"}
+	addArgs := []string{"node", "add", "-p", profile, "-v", "3", "--alsologtostderr"}
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), addArgs...))
 	if err != nil {
 		t.Fatalf("failed to add node to current cluster. args %q : %v", rr.Command(), err)
