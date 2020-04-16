@@ -457,7 +457,8 @@ func (k *Bootstrapper) needsReset(conf string, name string, hostname string, dri
 
 	if err := kverify.NodePressure(client); err != nil {
 		adviseNodePressure(err, name, driver)
-		glog.Infof("detected node pressure: %v", err)
+		glog.Infof("needs reset: node pressure: %v", err)
+		retrun true
 	}
 
 	return false
