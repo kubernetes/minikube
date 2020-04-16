@@ -22,6 +22,7 @@ import (
 	"math"
 	"os/exec"
 	"path"
+	"runtime"
 	"sync"
 
 	"fmt"
@@ -41,6 +42,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/bootstrapper"
@@ -888,8 +890,47 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	return err
 }
 
-// adviceForPressure will advise the user what to do with the pressure error
-func adviceForPressure(pe error, driver string) {
-	
+// adviseNodePressure will advise the user what to do with the pressure error
+func adviseNodePressure(err error, name string, drv string) {
+	if diskErr, ok := err.(*kverify.ErrDiskPressure); ok {
+		out.Ln("")
+		glog.Warning(diskErr)
+		out.WarningT("The node {{.name}} has ran out of disk space.", out.V{"name": name})
+		if driver.IsVM(drv) {
+			out.T(out.Stopped, "You can also create a cluster with a bigger disk `minikube start --disk` ")
+		} else if drv == oci.Docker && runtime.GOOS != "linux" {
+			out.T(out.Stopped, "You can also increase Docker Desktop's disk image size.")
+			if runtime.GOOS == "darwin" {
+				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+			}
+			if runtime.GOOS == "windows" {
+				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+			}
+		}
+		// generic advice for all drivers
+		out.T(out.Stopped, "Please free up disk or prune images.")
+		out.Ln("")
+	}
+
+	if memErr, ok := err.(*kverify.ErrMemoryPressure); ok {
+		out.Ln("")
+		glog.Warning(memErr)
+		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
+		if driver.IsVM(drv) {
+			out.T(out.Stopped, "Please create a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
+		} else if drv == oci.Docker && runtime.GOOS != "linux" {
+			out.T(out.Stopped, "Please change Docker Desktop's memory size.")
+			if runtime.GOOS == "darwin" {
+				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
+			}
+			if runtime.GOOS == "windows" {
+				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
+			}
+		} else { // podman, docker linux and none.
+			out.T(out.Stopped, "Please free up memory on the cluster.")
+		}
+		out.Ln("")
+	}
+
 	return
 }
