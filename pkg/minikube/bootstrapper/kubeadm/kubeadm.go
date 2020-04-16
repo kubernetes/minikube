@@ -878,13 +878,15 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 // adviseNodePressure will advise the user what to do with the pressure error
 func adviseNodePressure(err error, name string, drv string) {
 	if diskErr, ok := err.(*kverify.ErrDiskPressure); ok {
-		out.Ln("")
+		out.ErrLn("")
 		glog.Warning(diskErr)
 		out.WarningT("The node {{.name}} has ran out of disk space.", out.V{"name": name})
+		// generic advice for all drivers
+		out.T(out.Tip, "Please free up disk or prune images.")
 		if driver.IsVM(drv) {
-			out.T(out.Stopped, "You can also create a cluster with a bigger disk `minikube start --disk` ")
+			out.T(out.Stopped, "Consider creating a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.T(out.Stopped, "You can also increase Docker Desktop's disk image size.")
+			out.T(out.Stopped, "Consider increasing Docker Desktop's disk size.")
 			if runtime.GOOS == "darwin" {
 				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
@@ -892,42 +894,39 @@ func adviseNodePressure(err error, name string, drv string) {
 				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
 		}
-		// generic advice for all drivers
-		out.T(out.Stopped, "Please free up disk or prune images.")
-		out.Ln("")
+		out.ErrLn("")
 	}
 
 	if memErr, ok := err.(*kverify.ErrMemoryPressure); ok {
-		out.Ln("")
+		out.ErrLn("")
 		glog.Warning(memErr)
 		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
+		out.T(out.Tip, "Please free up memory on the cluster.")
 		if driver.IsVM(drv) {
-			out.T(out.Stopped, "Please create a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
+			out.T(out.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.T(out.Stopped, "Please change Docker Desktop's memory size.")
+			out.T(out.Stopped, "Consider increasing Docker Desktop's memory size.")
 			if runtime.GOOS == "darwin" {
 				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
 			if runtime.GOOS == "windows" {
 				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-windows/"})
 			}
-		} else { // podman, docker linux and none.
-			out.T(out.Stopped, "Please free up memory on the cluster.")
-		}
-		out.Ln("")
+		} 
+		out.ErrLn("")
 	}
 
 	if pidErr, ok := err.(*kverify.ErrPIDPressure); ok {
 		glog.Warning(pidErr)
-		out.Ln("")
+		out.ErrLn("")
 		out.WarningT("The node {{.name}} has ran out of available PIDs.", out.V{"name": name})
-		out.Ln("")
+		out.ErrLn("")
 	}
 
 	if netErr, ok := err.(*kverify.ErrNetworkNotReady); ok {
 		glog.Warning(netErr)
-		out.Ln("")
+		out.ErrLn("")
 		out.WarningT("The node {{.name}} network is not available. Please verify network settings.", out.V{"name": name})
-		out.Ln("")
+		out.ErrLn("")
 	}
 }
