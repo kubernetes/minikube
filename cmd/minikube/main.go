@@ -56,7 +56,7 @@ func main() {
 	defer func() { glog.Flush() }()
 
 	if os.Getenv(minikubeEnableProfile) == "1" {
-		defer profile.Start(profile.TraceProfile).Stop()
+		defer func() { profile.Start(profile.TraceProfile).Stop() }()
 	}
 	if os.Getenv(constants.IsMinikubeChildProcess) == "" {
 		machine.StartDriver()
