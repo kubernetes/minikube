@@ -244,7 +244,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		return err
 	}
 
-	return retry.Expo(apply, 1*time.Second, time.Second*30)
+	return retry.Expo(apply, 100*time.Microsecond, time.Minute)
 }
 
 // enableOrDisableStorageClasses enables or disables storage classes

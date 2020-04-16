@@ -88,7 +88,6 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 		for i := range serviceList.Items {
 			svc := serviceList.Items[i].ObjectMeta.Name
 			var urlString []string
-
 			if urlString, err = service.WaitForService(co.API, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
 				exit.WithCodeT(exit.Unavailable, "Wait failed: {{.error}}", out.V{"error": err})
 			}
