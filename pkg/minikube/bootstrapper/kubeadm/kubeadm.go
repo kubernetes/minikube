@@ -609,14 +609,21 @@ func (k *Bootstrapper) GenerateToken(cc config.ClusterConfig) (string, error) {
 
 // DeleteCluster removes the components that were started earlier
 func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
+	cr, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: k.c, Socket: k8s.CRISocket})
+	if err != nil {
+		return errors.Wrap(err, "runtime")
+	}
+
 	version, err := util.ParseKubernetesVersion(k8s.KubernetesVersion)
 	if err != nil {
 		return errors.Wrap(err, "parsing kubernetes version")
 	}
 
-	cmd := fmt.Sprintf("%s reset --force", bsutil.InvokeKubeadm(k8s.KubernetesVersion))
+	ka := bsutil.InvokeKubeadm(k8s.KubernetesVersion)
+	sp := cr.SocketPath()
+	cmd := fmt.Sprintf("%s reset --cri-socket %s --force", ka, sp)
 	if version.LT(semver.MustParse("1.11.0")) {
-		cmd = fmt.Sprintf("%s reset", bsutil.InvokeKubeadm(k8s.KubernetesVersion))
+		cmd = fmt.Sprintf("%s reset --cri-socket %s", ka, sp)
 	}
 
 	rr, derr := k.c.RunCmd(exec.Command("/bin/bash", "-c", cmd))
@@ -626,11 +633,6 @@ func (k *Bootstrapper) DeleteCluster(k8s config.KubernetesConfig) error {
 
 	if err := sysinit.New(k.c).ForceStop("kubelet"); err != nil {
 		glog.Warningf("stop kubelet: %v", err)
-	}
-
-	cr, err := cruntime.New(cruntime.Config{Type: k8s.ContainerRuntime, Runner: k.c, Socket: k8s.CRISocket})
-	if err != nil {
-		return errors.Wrap(err, "runtime")
 	}
 
 	containers, err := cr.ListContainers(cruntime.ListOptions{Namespaces: []string{"kube-system"}})
