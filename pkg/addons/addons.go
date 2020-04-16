@@ -332,7 +332,9 @@ func Start(wg *sync.WaitGroup, cc *config.ClusterConfig, toEnable map[string]boo
 
 	var awg sync.WaitGroup
 
-	out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
+	defer func() { // making it show after verifications
+		out.T(out.AddonEnable, "Enabling addons: {{.addons}}", out.V{"addons": strings.Join(toEnableList, ", ")})
+	}()
 	for _, a := range toEnableList {
 		awg.Add(1)
 		go func(name string) {
