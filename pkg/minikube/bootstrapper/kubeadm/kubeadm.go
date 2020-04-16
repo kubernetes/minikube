@@ -412,6 +412,7 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 			return errors.Wrap(err, "get k8s client")
 		}
 		if err := kverify.NodePressure(client); err != nil {
+			adviseNodePressure(err, cc.Name, cc.Driver)
 			return errors.Wrapf(err, "verifying %s", kverify.NodePressureKey)
 		}
 		out.T(out.CheckOption, "verifying node pressure {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
@@ -471,8 +472,8 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, driver string, p
 	}
 
 	if err := kverify.NodePressure(client); err != nil {
-		glog.Infof("Node is under pressure ! %s : %v", driver, err)
-		// TODO: medyagh add handling suggest
+		adviseNodePressure(err, hostname, driver)
+		glog.Infof("needs reset: node pressure: %v", err)
 	}
 
 	return false
@@ -932,5 +933,17 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.Ln("")
 	}
 
-	return
+	if pidErr, ok := err.(*kverify.ErrPIDPressure); ok {
+		glog.Warning(pidErr)
+		out.Ln("")
+		out.WarningT("The node {{.name}} has ran out of available PIDs.", out.V{"name": name})
+		out.Ln("")
+	}
+
+	if netErr, ok := err.(*kverify.ErrNetworkNotReady); ok {
+		glog.Warning(netErr)
+		out.Ln("")
+		out.WarningT("The node {{.name}} network is not available. Please verify network settings.", out.V{"name": name})
+		out.Ln("")
+	}
 }
