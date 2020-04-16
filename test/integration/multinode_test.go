@@ -34,21 +34,24 @@ func TestMultiNode(t *testing.T) {
 		t.Skip("docker driver multinode is currently broken :(")
 	}
 
-	newProfile := UniqueProfileName("multinode")
+	profile := UniqueProfileName("multinode")
 	ctx, cancel := context.WithTimeout(context.Background(), Minutes(30))
 	defer CleanupWithLogs(t, profile, cancel)
 
-	startArgs := append([]string{"start", "-p", newProfile, "--wait=true"}, StartArgs()...)
-	c := exec.CommandContext(ctx, Target(), startArgs...)
+	startArgs := append([]string{"start", "-p", profile, "--wait=true"}, StartArgs()...)
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), startArgs...))
+	if err != nil {
+		t.Fatalf("failed to start cluster. args %q : %v", rr.Command(), err)
+	}
 
 	// Add a node to the current cluster
-	addArgs := []string{"node", "add", "-p", newProfile, "-v", "3", "--alsologtostderr"}
-	rr, err := Run(t, exec.CommandContext(ctx, Target(), addArgs...))
+	addArgs := []string{"node", "add", "-p", profile, "-v", "3", "--alsologtostderr"}
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), addArgs...))
 	if err != nil {
 		t.Fatalf("failed to add node to current cluster. args %q : %v", rr.Command(), err)
 	}
 
-	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", newProfile, "status"))
+	rr, err = Run(t, exec.CommandContext(ctx, Target(), "-p", profile, "status"))
 	if err != nil {
 		t.Fatalf("failed to run minikube status. args %q : %v", rr.Command(), err)
 	}
