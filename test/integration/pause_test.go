@@ -56,7 +56,7 @@ func TestPause(t *testing.T) {
 }
 
 func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
-	args := append([]string{"start", "-p", profile, "--memory=1800", "--install-addons=false", "--wait=true"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=1800", "--install-addons=false", "--wait=all"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
