@@ -457,7 +457,7 @@ func (k *Bootstrapper) needsReset(conf string, name string, hostname string, dri
 
 	if err := kverify.NodePressure(client); err != nil {
 		adviseNodePressure(err, name, driver)
-		glog.Infof("needs reset: node pressure: %v", err)
+		glog.Infof("detected node pressure: %v", err)
 	}
 
 	return false
@@ -973,5 +973,17 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.Ln("")
 	}
 
-	return
+	if pidErr, ok := err.(*kverify.ErrPIDPressure); ok {
+		glog.Warning(pidErr)
+		out.Ln("")
+		out.WarningT("The node {{.name}} has ran out of available PIDs.", out.V{"name": name})
+		out.Ln("")
+	}
+
+	if netErr, ok := err.(*kverify.ErrNetworkNotReady); ok {
+		glog.Warning(netErr)
+		out.Ln("")
+		out.WarningT("The node {{.name}} network is not available. Please verify network settings.", out.V{"name": name})
+		out.Ln("")
+	}
 }
