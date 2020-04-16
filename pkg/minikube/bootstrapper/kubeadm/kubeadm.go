@@ -204,20 +204,15 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(4)
+	wg.Add(3)
 
 	go func() {
+		// we need to have cluster role binding before applying overlay to avoid #7428
+		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
+			glog.Errorf("unable to create cluster role binding, some addons might not work: %v", err)
+		}
 		// the overlay is required for containerd and cri-o runtime: see #7428
 		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
-			// this is a sepcial wait only for containerd,cri-o on docker
-			// because for containerd and cri-o we need to
-			// to wait for default SA to be up to avoid #7704
-			tmpCFG := cfg // making a temp config to use for this specific wait
-			tmpCFG.VerifyComponents = map[string]bool{kverify.DefaultSAWaitKey: true}
-			glog.Infof("waiting for default sevice account before we apply kic overlay")
-			if err := k.WaitForNode(tmpCFG, tmpCFG.Nodes[0], time.Second*30); err != nil {
-				glog.Warningf("failed to wait for default serive account. This might cause issue #7704 when applying kic overlay.")
-			}
 			if err := k.applyKICOverlay(cfg); err != nil {
 				glog.Errorf("failed to apply kic overlay: %v", err)
 			}
@@ -235,13 +230,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	go func() {
 		if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 			glog.Warningf("unable to adjust resource limits: %v", err)
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
-			glog.Warningf("unable to create cluster role binding, some addons might not work: %v", err)
 		}
 		wg.Done()
 	}()
@@ -864,6 +852,7 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 // elevateKubeSystemPrivileges gives the kube-system service account cluster admin privileges to work with RBAC.
 func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) error {
 	start := time.Now()
+	defer glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
 	// Allow no more than 5 seconds for creating cluster role bindings
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -880,8 +869,27 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 			return nil
 		}
 	}
-	glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
-	return err
+
+	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
+		// double checking defalut sa was created.
+		// good for ensuring using minikube in CI is robust.
+		checkSA := func() error {
+			cmd = exec.CommandContext(ctx, "sudo", kubectlPath(cfg),
+				"get", "sa", "default", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
+			rr, err = k.c.RunCmd(cmd)
+			if err != nil {
+				return err
+			}
+			return nil
+		}
+
+		// retry up to make sure SA is created
+		if err := retry.Expo(checkSA, 1*time.Millisecond, time.Minute); err != nil {
+			return errors.Wrap(err, "ensure sa was created")
+		}
+	}
+
+	return nil
 }
 
 // adviseNodePressure will advise the user what to do with the pressure error
