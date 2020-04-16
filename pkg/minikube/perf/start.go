@@ -65,7 +65,7 @@ func collectTimes(ctx context.Context, binaries []*Binary) ([][]float64, error) 
 		for index, binary := range binaries {
 			duration, err := collectTimeMinikubeStart(ctx, binary)
 			if err != nil {
-				return nil, errors.Wrapf(err, "timing run %d with %s", r, binary)
+				return nil, errors.Wrapf(err, "timing run %d with %s", r, binary.Name())
 			}
 			durations[index][r] = duration
 		}
