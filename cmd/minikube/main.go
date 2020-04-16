@@ -53,7 +53,7 @@ var (
 
 func main() {
 	bridgeLogMessages()
-	defer glog.Flush()
+	defer func() { glog.Flush() }()
 
 	if os.Getenv(minikubeEnableProfile) == "1" {
 		defer profile.Start(profile.TraceProfile).Stop()
