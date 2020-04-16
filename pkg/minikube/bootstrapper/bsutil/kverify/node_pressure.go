@@ -114,7 +114,7 @@ func NodePressure(cs *kubernetes.Clientset) error {
 		glog.Infof("node cpu capacity is %s", n.Status.Capacity.Cpu().AsDec())
 		for _, c := range n.Status.Conditions {
 			pc := NodeCondition{Type: c.Type, Status: c.Status, Reason: c.Reason, Message: c.Message}
-			if pc.DiskPressure() {
+			if !pc.DiskPressure() {
 				return &ErrDiskPressure{
 					NodeCondition: pc,
 				}

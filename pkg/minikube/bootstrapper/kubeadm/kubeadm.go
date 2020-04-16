@@ -19,7 +19,6 @@ package kubeadm
 import (
 	"bytes"
 	"context"
-	"math"
 	"os/exec"
 	"path"
 	"runtime"
@@ -341,7 +340,7 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		glog.Infof("skip waiting for components based on config.")
 		return nil
 	}
-	out.T(out.HealthCheck, "Verifying Kubernetes Components")
+	out.T(out.HealthCheck, "Verifying Kubernetes Components:")
 	cr, err := cruntime.New(cruntime.Config{Type: cc.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrapf(err, "create runtme-manager %s", cc.KubernetesConfig.ContainerRuntime)
@@ -353,7 +352,7 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 	}
 
 	if cc.VerifyComponents[kverify.APIServerWaitKey] {
-		start := time.Now()
+		out.T(out.CheckOption, "verifying api server ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -365,11 +364,10 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		if err := kverify.WaitForHealthyAPIServer(cr, k, cc, k.c, client, start, hostname, port, timeout); err != nil {
 			return errors.Wrap(err, "wait for healthy API server")
 		}
-		out.T(out.CheckOption, "verifying api server {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
 	if cc.VerifyComponents[kverify.SystemPodsWaitKey] {
-		start := time.Now()
+		out.T(out.CheckOption, "verifying system pods ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -377,11 +375,10 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		if err := kverify.WaitForSystemPods(cr, k, cc, k.c, client, start, timeout); err != nil {
 			return errors.Wrap(err, "waiting for system pods")
 		}
-		out.T(out.CheckOption, "verifying system pods {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
 	if cc.VerifyComponents[kverify.DefaultSAWaitKey] {
-		start := time.Now()
+		out.T(out.CheckOption, "verifying default service account ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -390,11 +387,10 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 			// TODO: medya handle different err type
 			return errors.Wrap(err, "waiting for default service account")
 		}
-		out.T(out.CheckOption, "verifying default service account {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
 	if cc.VerifyComponents[kverify.AppsRunningKey] {
-		start := time.Now()
+		out.T(out.CheckOption, "verifying apps running ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -402,11 +398,10 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
 			return errors.Wrap(err, "waiting for apps_running")
 		}
-		out.T(out.CheckOption, "verifying apps running {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
 	if cc.VerifyComponents[kverify.NodePressureKey] {
-		start := time.Now()
+		out.T(out.CheckOption, "verifying node pressure ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -415,11 +410,10 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 			adviseNodePressure(err, cc.Name, cc.Driver)
 			return errors.Wrapf(err, "verifying %s", kverify.NodePressureKey)
 		}
-		out.T(out.CheckOption, "verifying node pressure {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
 	if cc.VerifyComponents[kverify.NodeReadyKey] {
-		start := time.Now()
+		out.T(out.CheckOption, "verifying node status")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -427,20 +421,10 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
 			return errors.Wrap(err, "waiting for node to be ready")
 		}
-		out.T(out.CheckOption, "verifying node ready {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
 	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cc.VerifyComponents)
 	return nil
-}
-
-func timeToSecond(d time.Duration) string {
-	s := float64((d / time.Millisecond) / 1000)
-	s = math.Round(s*100) / 100
-	if s == 0 {
-		return ""
-	}
-	return fmt.Sprintf("%fs", s)
 }
 
 // needsReset returns whether or not the cluster needs to be reconfigured
