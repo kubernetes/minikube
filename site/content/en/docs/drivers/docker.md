@@ -11,9 +11,6 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
 
 {{% readfile file="/docs/drivers/includes/docker_usage.inc" %}}
 
-{{% readfile file="/docs/drivers/includes/regisrtry_addon_mac_windows_usage.inc" %}}
-
-
 ## Special features
 
 - Cross platform (linux, macOS, Windows)
