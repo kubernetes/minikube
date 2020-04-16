@@ -521,7 +521,7 @@ func ShutDown(ociBin string, name string) error {
 	// wait till it is stoped
 	stopped := func() error {
 		st, err := ContainerStatus(ociBin, name)
-		if st == "exited" {
+		if st == state.Stopped {
 			glog.Infof("container %s status is %s", name, st)
 			return nil
 		}
