@@ -60,6 +60,9 @@ func DeleteContainersByLabel(ociBin string, label string) []error {
 			glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. :%v", ociBin, ociBin, err)
 			continue
 		}
+		if err := ShutDown(ociBin, c); err != nil {
+			glog.Infof("couldn't shut down %s (might be okay): %v ", c, err)
+		}
 		cmd := exec.Command(ociBin, "rm", "-f", "-v", c)
 		if out, err := cmd.CombinedOutput(); err != nil {
 			deleteErrs = append(deleteErrs, errors.Wrapf(err, "delete container %s: output %s", c, out))
@@ -77,6 +80,9 @@ func DeleteContainer(ociBin string, name string) error {
 		glog.Errorf("%s daemon seems to be stuck. Please try restarting your %s. Will try to delete anyways: %v", ociBin, ociBin, err)
 	}
 	// try to delete anyways
+	if err := ShutDown(ociBin, name); err != nil {
+		glog.Infof("couldn't shut down %s (might be okay): %v ", name, err)
+	}
 	cmd := exec.Command(ociBin, "rm", "-f", "-v", name)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return errors.Wrapf(err, "delete container %s: output %s", name, out)
@@ -485,4 +491,34 @@ func PointToHostDockerDaemon() error {
 func ContainerStatus(ociBin string, name string) (string, error) {
 	out, err := WarnIfSlow(ociBin, "inspect", name, "--format={{.State.Status}}")
 	return strings.TrimSpace(string(out)), err
+}
+
+// Shutdown will run command to shut down the container
+// to ensure the containers process and networking bindings are all closed
+// to avoid containers getting stuck before delete https://github.com/kubernetes/minikube/issues/7657
+func ShutDown(ociBin string, name string) error {
+	cmd := exec.Command(ociBin, "exec", "--privileged", "-t", name, "/bin/bash", "-c", "sudo init 0")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		glog.Infof("error shutdown %s output %q : %v", name, out, err)
+	}
+	// helps with allowing docker realize the container is exited and report its status correctly.
+	time.Sleep(time.Second * 1)
+	// wait till it is stoped
+	stopped := func() error {
+		st, err := ContainerStatus(ociBin, name)
+		if st == "exited" {
+			glog.Infof("container %s status is %s", name, st)
+			return nil
+		}
+		if err != nil {
+			glog.Infof("temporary error verifying shutdown: %v", err)
+		}
+		glog.Infof("temporary error: container %s status is %s but expect it to be exited", name, st)
+		return errors.Wrap(err, "couldn't verify cointainer is exited. %v")
+	}
+	if err := retry.Expo(stopped, time.Millisecond*500, time.Second*20); err != nil {
+		return errors.Wrap(err, "verify shutdown")
+	}
+	glog.Infof("Successfully shutdown container %s", name)
+	return nil
 }

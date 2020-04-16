@@ -100,12 +100,14 @@ func doCacheBinaries(k8sVersion string) error {
 
 // BeginDownloadKicArtifacts downloads the kic image + preload tarball, returns true if preload is available
 func beginDownloadKicArtifacts(g *errgroup.Group) {
-	out.T(out.Pulling, "Pulling base image ...")
 	glog.Info("Beginning downloading kic artifacts")
-	g.Go(func() error {
-		glog.Infof("Downloading %s to local daemon", kic.BaseImage)
-		return image.WriteImageToDaemon(kic.BaseImage)
-	})
+	if !image.ExistsImageInDaemon(kic.BaseImage) {
+		out.T(out.Pulling, "Pulling base image ...")
+		g.Go(func() error {
+			glog.Infof("Downloading %s to local daemon", kic.BaseImage)
+			return image.WriteImageToDaemon(kic.BaseImage)
+		})
+	}
 }
 
 // WaitDownloadKicArtifacts blocks until the required artifacts for KIC are downloaded.

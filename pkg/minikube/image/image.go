@@ -79,23 +79,28 @@ func DigestByGoLib(imgName string) string {
 	return cf.Hex
 }
 
-// WriteImageToDaemon write img to the local docker daemon
-func WriteImageToDaemon(img string) error {
-	glog.Infof("Writing %s to local daemon", img)
-
+// ExistsImageInDaemon if img exist in local docker daemon
+func ExistsImageInDaemon(img string) bool {
 	// Check if image exists locally
 	cmd := exec.Command("docker", "images", "--format", "{{.Repository}}:{{.Tag}}@{{.Digest}}")
 	if output, err := cmd.Output(); err == nil {
 		if strings.Contains(string(output), img) {
 			glog.Infof("Found %s in local docker daemon, skipping pull", img)
-			return nil
+			return true
 		}
 	}
 	// Else, pull it
+	return false
+}
+
+// WriteImageToDaemon write img to the local docker daemon
+func WriteImageToDaemon(img string) error {
+	glog.Infof("Writing %s to local daemon", img)
 	ref, err := name.ParseReference(img)
 	if err != nil {
 		return errors.Wrap(err, "parsing reference")
 	}
+	glog.V(3).Infof("Getting image %v", ref)
 	i, err := remote.Image(ref)
 	if err != nil {
 		return errors.Wrap(err, "getting remote image")
@@ -104,8 +109,26 @@ func WriteImageToDaemon(img string) error {
 	if err != nil {
 		return errors.Wrap(err, "getting tag")
 	}
+	glog.V(3).Infof("Writing image %v", tag)
 	_, err = daemon.Write(tag, i)
-	return err
+	if err != nil {
+		return errors.Wrap(err, "writing image")
+	}
+
+	//TODO: Make pkg/v1/daemon accept Ref too
+	//      Only added it to pkg/v1/tarball
+	//
+	// https://github.com/google/go-containerregistry/pull/702
+
+	glog.V(3).Infof("Pulling image %v", ref)
+
+	// Pull digest
+	cmd := exec.Command("docker", "pull", "--quiet", img)
+	if _, err := cmd.Output(); err != nil {
+		return errors.Wrap(err, "pulling remote image")
+	}
+
+	return nil
 }
 
 func retrieveImage(ref name.Reference) (v1.Image, error) {
