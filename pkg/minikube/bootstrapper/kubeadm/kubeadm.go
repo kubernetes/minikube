@@ -209,6 +209,15 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	go func() {
 		// the overlay is required for containerd and cri-o runtime: see #7428
 		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
+			// this is a sepcial wait only for containerd,cri-o on docker
+			// because for containerd and cri-o we need to
+			// to wait for default SA to be up to avoid #7704
+			tmpCFG := cfg // making a temp config to use for this specific wait
+			tmpCFG.VerifyComponents = map[string]bool{kverify.DefaultSAWaitKey: true}
+			glog.Infof("waiting for default sevice account before we apply kic overlay")
+			if err := k.WaitForNode(tmpCFG, tmpCFG.Nodes[0], time.Second*30); err != nil {
+				glog.Warningf("failed to wait for default serive account. This might cause issue #7704 when applying kic overlay.")
+			}
 			if err := k.applyKICOverlay(cfg); err != nil {
 				glog.Errorf("failed to apply kic overlay: %v", err)
 			}
