@@ -31,27 +31,27 @@ const (
 	SystemPodsWaitKey = "system_pods"
 	// DefaultSAWaitKey is the name used in the flags for default service account
 	DefaultSAWaitKey = "default_sa"
-	// AppsRunning is the name used in the flags for waiting for k8s-apps to be running
-	AppsRunning = "apps_running"
-	// NodePressure is the name used in the flags detecting node coditions such as
+	// AppsRunningKey is the name used in the flags for waiting for k8s-apps to be running
+	AppsRunningKey = "apps_running"
+	// NodePressureKey is the name used in the flags detecting node coditions such as
 	// disk, memory and PID pressure or network not ready.
-	NodePressure = "no_pressure"
-	// NodeReady is the name used in the flags for waiting for the node status to be ready
-	NodeReady = "node_ready"
+	NodePressureKey = "no_pressure"
+	// NodeReadyKey is the name used in the flags for waiting for the node status to be ready
+	NodeReadyKey = "node_ready"
 )
 
 //  vars related to the --wait flag
 var (
 	// DefaultComponents is map of the the default components to wait for
-	DefaultComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, NodePressure: true, NodeReady: false}
+	DefaultComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, NodePressureKey: true, NodeReadyKey: false}
 	// NoWaitComponents is map of componets to wait for if specified 'none' or 'false'
-	NoComponents = map[string]bool{APIServerWaitKey: false, SystemPodsWaitKey: false, DefaultSAWaitKey: false, AppsRunning: false, NodePressure: false, NodeReady: false}
+	NoComponents = map[string]bool{APIServerWaitKey: false, SystemPodsWaitKey: false, DefaultSAWaitKey: false, AppsRunningKey: false, NodePressureKey: false, NodeReadyKey: false}
 	// AllComponents is map for waiting for all components.
-	AllComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, DefaultSAWaitKey: true, AppsRunning: true, NodePressure: true, NodeReady: true}
+	AllComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, DefaultSAWaitKey: true, AppsRunningKey: true, NodePressureKey: true, NodeReadyKey: true}
 	// DefaultWaitList is list of all default components to wait for. only names to be used for start flags.
-	DefaultWaitList = []string{APIServerWaitKey, SystemPodsWaitKey, NodePressure}
+	DefaultWaitList = []string{APIServerWaitKey, SystemPodsWaitKey, NodePressureKey}
 	// AllComponentsList list of all valid components keys to wait for. only names to be used used for start flags.
-	AllComponentsList = []string{APIServerWaitKey, SystemPodsWaitKey, DefaultSAWaitKey, AppsRunning, NodePressure, NodeReady}
+	AllComponentsList = []string{APIServerWaitKey, SystemPodsWaitKey, DefaultSAWaitKey, AppsRunningKey, NodePressureKey, NodeReadyKey}
 	// AppsRunningList running list are valid k8s-app components to wait for them to be running
 	AppsRunningList = []string{
 		"kube-dns", // coredns

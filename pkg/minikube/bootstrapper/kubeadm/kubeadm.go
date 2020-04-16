@@ -385,12 +385,13 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 			return errors.Wrap(err, "get k8s client")
 		}
 		if err := kverify.WaitForDefaultSA(client, timeout); err != nil {
+			// TODO: medya handle different err type
 			return errors.Wrap(err, "waiting for default service account")
 		}
 		out.T(out.CheckOption, "verifying default service account {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
-	if cc.VerifyComponents[kverify.AppsRunning] {
+	if cc.VerifyComponents[kverify.AppsRunningKey] {
 		start := time.Now()
 		client, err := k.client(hostname, port)
 		if err != nil {
@@ -402,19 +403,19 @@ func (k *Bootstrapper) WaitForNode(cc config.ClusterConfig, n config.Node, timeo
 		out.T(out.CheckOption, "verifying apps running {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
-	if cc.VerifyComponents[kverify.NodePressure] {
+	if cc.VerifyComponents[kverify.NodePressureKey] {
 		start := time.Now()
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
-		if err := kverify.NodePressure(client, cc.Driver); err != nil {
-			return errors.Wrapf(err, "verifying %s", kverify.NodePressure)
+		if err := kverify.NodePressure(client); err != nil {
+			return errors.Wrapf(err, "verifying %s", kverify.NodePressureKey)
 		}
 		out.T(out.CheckOption, "verifying node pressure {{.seconds}}", out.V{"seconds": timeToSecond(time.Since(start))})
 	}
 
-	if cc.VerifyComponents[kverify.NodeReady] {
+	if cc.VerifyComponents[kverify.NodeReadyKey] {
 		start := time.Now()
 		client, err := k.client(hostname, port)
 		if err != nil {
@@ -467,9 +468,9 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, driver string, p
 		return true
 	}
 
-	if err := kverify.NodePressures(client, driver); err != nil {
-		glog.Infof("needs reset: node conditions %v", err)
-		return true
+	if err := kverify.NodePressure(client); err != nil {
+		glog.Infof("Node is under pressure ! %s : %v", driver, err)
+		// TODO: medyagh add handling suggest
 	}
 
 	return false
