@@ -43,13 +43,13 @@ const (
 //  vars related to the --wait flag
 var (
 	// DefaultComponents is map of the the default components to wait for
-	DefaultComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, NodePressureKey: true, NodeReadyKey: false}
+	DefaultComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, NodePressureKey: false, NodeReadyKey: false}
 	// NoWaitComponents is map of componets to wait for if specified 'none' or 'false'
 	NoComponents = map[string]bool{APIServerWaitKey: false, SystemPodsWaitKey: false, DefaultSAWaitKey: false, AppsRunningKey: false, NodePressureKey: false, NodeReadyKey: false}
 	// AllComponents is map for waiting for all components.
 	AllComponents = map[string]bool{APIServerWaitKey: true, SystemPodsWaitKey: true, DefaultSAWaitKey: true, AppsRunningKey: true, NodePressureKey: true, NodeReadyKey: true}
 	// DefaultWaitList is list of all default components to wait for. only names to be used for start flags.
-	DefaultWaitList = []string{APIServerWaitKey, SystemPodsWaitKey, NodePressureKey}
+	DefaultWaitList = []string{APIServerWaitKey, SystemPodsWaitKey}
 	// AllComponentsList list of all valid components keys to wait for. only names to be used used for start flags.
 	AllComponentsList = []string{APIServerWaitKey, SystemPodsWaitKey, DefaultSAWaitKey, AppsRunningKey, NodePressureKey, NodeReadyKey}
 	// AppsRunningList running list are valid k8s-app components to wait for them to be running
