@@ -33,6 +33,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/browser"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
@@ -112,7 +113,7 @@ func startKicServiceTunnel(svc, configName string) {
 	ctrlC := make(chan os.Signal, 1)
 	signal.Notify(ctrlC, os.Interrupt)
 
-	clientset, err := service.K8s.GetClientset(1 * time.Second)
+	clientset, err := kapi.Client(configName)
 	if err != nil {
 		exit.WithError("error creating clientset", err)
 	}
