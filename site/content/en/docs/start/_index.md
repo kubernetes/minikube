@@ -115,17 +115,27 @@ kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
 kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
 
-Find your cluster IP:
+It may take a second, but your deployment will soon show up if you run:
+
+```shell
+kubectl get services hello-minikube
+```
+
+The easiest way to access this service is to let minikube launch a web browser for you:
+
+```shell
+minikube service hello-minikube
+```
+
+Alternatively, you can find the cluster IP as seen by your host:
 
 ```shell
 minikube ip
 ```
 
-Either navigate to &lt;your ip&gt;:8080 in your web browser, or let minikube do it for you:
+Then navigate to &lt;your ip&gt;:8080 in your web browser
 
-```shell
-minikube service hello-minikube
-```
+## What about LoadBalanced apps?
 
 To access a LoadBalancer application, use the "minikube tunnel" feature. Here is an example deployment:
 
@@ -134,13 +144,19 @@ kubectl create deployment balanced --image=k8s.gcr.io/echoserver:1.4
 kubectl expose deployment balanced --type=LoadBalancer --port=8081
 ```
 
-In another window, start the tunnel to create a routable IP for the deployment:
+In another window, start the tunnel. The tunnel creates routable IP's for LoadBalancer apps:
 
 ```shell
 minikube tunnel
 ```
 
-Access the application using the "service" command, or your web browser. If you are using macOS, minikube will also forward DNS requests for you: [http://balanced.default.svc.cluster.local:8081/](http://balanced.default.svc.cluster.local:8081/)
+Find the external IP assigned to your LoadBalancer app:
+
+`kubectl get services balanced`
+
+Access the application using `http://&lt;EXTERNAL-IP&gt;:8081`
+
+TIP: If you are using macOS, minikube will also forward DNS for you: [http://balanced.default.svc.cluster.local:8081/](http://balanced.default.svc.cluster.local:8081/)
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">5</strong></span>Manage your cluster</h2>
 
