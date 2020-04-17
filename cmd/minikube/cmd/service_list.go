@@ -40,7 +40,7 @@ var serviceListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		co := mustload.Healthy(ClusterFlagValue())
 
-		serviceURLs, err := service.GetServiceURLs(co.API, serviceListNamespace, serviceURLTemplate)
+		serviceURLs, err := service.GetServiceURLs(co.API, co.Config.Name, serviceListNamespace, serviceURLTemplate)
 		if err != nil {
 			out.FatalT("Failed to get service URL: {{.error}}", out.V{"error": err})
 			out.ErrT(out.Notice, "Check that minikube is running and that you have specified the correct namespace (-n flag) if required.")

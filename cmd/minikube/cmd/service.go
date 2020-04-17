@@ -33,7 +33,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/browser"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -78,12 +80,12 @@ var serviceCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
+		if driver.NeedsPortForward(co.Config.Driver) {
 			startKicServiceTunnel(svc, cname)
 			return
 		}
 
-		urls, err := service.WaitForService(co.API, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
+		urls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
 			var s *service.SVCNotFoundError
 			if errors.As(err, &s) {
@@ -112,7 +114,7 @@ func startKicServiceTunnel(svc, configName string) {
 	ctrlC := make(chan os.Signal, 1)
 	signal.Notify(ctrlC, os.Interrupt)
 
-	clientset, err := service.K8s.GetClientset(1 * time.Second)
+	clientset, err := kapi.Client(configName)
 	if err != nil {
 		exit.WithError("error creating clientset", err)
 	}
@@ -137,7 +139,7 @@ func startKicServiceTunnel(svc, configName string) {
 	service.PrintServiceList(os.Stdout, data)
 
 	openURLs(svc, urls)
-	out.WarningT("Because you are using docker driver on Mac, the terminal needs to be open to run it.")
+	out.WarningT("Because you are using a Docker driver on {{.operating_system}}, the terminal needs to be open to run it.", out.V{"operating_system": runtime.GOOS})
 
 	<-ctrlC
 

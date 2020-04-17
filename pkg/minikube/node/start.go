@@ -275,24 +275,16 @@ func setupKubeAdm(mAPI libmachine.API, cfg config.ClusterConfig, n config.Node, 
 		out.T(out.Option, "{{.extra_option_component_name}}.{{.key}}={{.value}}", out.V{"extra_option_component_name": eo.Component, "key": eo.Key, "value": eo.Value})
 	}
 	// Loads cached images, generates config files, download binaries
-	// update cluster and set up certs in parallel
-	var parallel sync.WaitGroup
-	parallel.Add(2)
-	go func() {
-		if err := bs.UpdateCluster(cfg); err != nil {
-			exit.WithError("Failed to update cluster", err)
-		}
-		parallel.Done()
-	}()
+	// update cluster and set up certs
 
-	go func() {
-		if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
-			exit.WithError("Failed to setup certs", err)
-		}
-		parallel.Done()
-	}()
+	if err := bs.UpdateCluster(cfg); err != nil {
+		exit.WithError("Failed to update cluster", err)
+	}
 
-	parallel.Wait()
+	if err := bs.SetupCerts(cfg.KubernetesConfig, n); err != nil {
+		exit.WithError("Failed to setup certs", err)
+	}
+
 	return bs
 }
 
