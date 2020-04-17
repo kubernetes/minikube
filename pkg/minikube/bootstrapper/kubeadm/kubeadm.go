@@ -422,7 +422,8 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 		glog.Infof("needs reset: %v", err)
 		return true
 	}
-
+	// to be used in the ingeration test to verify it wont reset.
+	glog.Infof("The running cluster does not need a reset. hostname: %s", hostname)
 	return false
 }
 
@@ -521,7 +522,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, conf)))
 		return err
 	}
-	if err = retry.Expo(addonPhase, 1*time.Second, 30*time.Second); err != nil {
+	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
 		glog.Warningf("addon install failed, wil retry: %v", err)
 		return errors.Wrap(err, "addons")
 	}

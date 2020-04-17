@@ -21,6 +21,7 @@ package integration
 import (
 	"context"
 	"os/exec"
+	"strings"
 	"testing"
 )
 
@@ -39,6 +40,7 @@ func TestPause(t *testing.T) {
 			validator validateFunc
 		}{
 			{"Start", validateFreshStart},
+			{"SecondStartNoReset", validateStartNoReset},
 			{"Pause", validatePause},
 			{"Unpause", validateUnpause},
 			{"PauseAgain", validatePause},
@@ -54,11 +56,27 @@ func TestPause(t *testing.T) {
 }
 
 func validateFreshStart(ctx context.Context, t *testing.T, profile string) {
-	args := append([]string{"start", "-p", profile, "--memory=1800", "--install-addons=false", "--wait=false"}, StartArgs()...)
+	args := append([]string{"start", "-p", profile, "--memory=1800", "--install-addons=false", "--wait=all"}, StartArgs()...)
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Fatalf("failed to start minikube with args: %q : %v", rr.Command(), err)
 	}
+}
+
+// validateStartNoReset validates that starting a running cluster won't invoke a reset
+func validateStartNoReset(ctx context.Context, t *testing.T, profile string) {
+	args := []string{"start", "-p", profile, "--alsologtostderr", "-v=5"}
+	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
+	if err != nil {
+		t.Fatalf("failed to second start a running minikube with args: %q : %v", rr.Command(), err)
+	}
+	if !NoneDriver() {
+		softLog := "The running cluster does not need a reset"
+		if !strings.Contains(rr.Output(), softLog) {
+			t.Errorf("expected the second start log outputs to include %q but got: %s", softLog, rr.Output())
+		}
+	}
+
 }
 
 func validatePause(ctx context.Context, t *testing.T, profile string) {

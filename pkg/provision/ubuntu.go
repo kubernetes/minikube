@@ -180,7 +180,7 @@ func (p *UbuntuProvisioner) Provision(swarmOptions swarm.Options, authOptions au
 		return nil
 	}
 
-	err := retry.Expo(configAuth, time.Second, 2*time.Minute)
+	err := retry.Expo(configAuth, 100*time.Microsecond, 2*time.Minute)
 
 	if err != nil {
 		glog.Infof("Error configuring auth during provisioning %v", err)

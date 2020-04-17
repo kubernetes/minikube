@@ -21,6 +21,7 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
+	"path"
 	"path/filepath"
 	"strconv"
 
@@ -30,6 +31,7 @@ import (
 	"k8s.io/client-go/tools/clientcmd/api"
 	"k8s.io/client-go/tools/clientcmd/api/latest"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/localpath"
 	pkgutil "k8s.io/minikube/pkg/util"
 	"k8s.io/minikube/pkg/util/lock"
 )
@@ -103,24 +105,43 @@ func Endpoint(contextName string, configPath ...string) (string, int, error) {
 }
 
 // UpdateEndpoint overwrites the IP stored in kubeconfig with the provided IP.
-func UpdateEndpoint(contextName string, hostname string, port int, path string) (bool, error) {
+func UpdateEndpoint(contextName string, hostname string, port int, confpath string) (bool, error) {
 	if hostname == "" {
 		return false, fmt.Errorf("empty ip")
 	}
 
-	err := VerifyEndpoint(contextName, hostname, port, path)
+	err := VerifyEndpoint(contextName, hostname, port, confpath)
 	if err == nil {
 		return false, nil
 	}
 	glog.Infof("verify returned: %v", err)
 
-	cfg, err := readOrNew(path)
+	cfg, err := readOrNew(confpath)
 	if err != nil {
 		return false, errors.Wrap(err, "read")
 	}
 
-	cfg.Clusters[contextName].Server = "https://" + hostname + ":" + strconv.Itoa(port)
-	err = writeToFile(cfg, path)
+	address := "https://" + hostname + ":" + strconv.Itoa(port)
+
+	// if the kubeconfig is missed, create new one
+	if len(cfg.Clusters) == 0 {
+		lp := localpath.Profile(contextName)
+		gp := localpath.MiniPath()
+		kcs := &Settings{
+			ClusterName:          contextName,
+			ClusterServerAddress: address,
+			ClientCertificate:    path.Join(lp, "client.crt"),
+			ClientKey:            path.Join(lp, "client.key"),
+			CertificateAuthority: path.Join(gp, "ca.crt"),
+			KeepContext:          false,
+		}
+		err = PopulateFromSettings(kcs, cfg)
+		if err != nil {
+			return false, errors.Wrap(err, "populating kubeconfig")
+		}
+	}
+	cfg.Clusters[contextName].Server = address
+	err = writeToFile(cfg, confpath)
 	if err != nil {
 		return false, errors.Wrap(err, "write")
 	}
