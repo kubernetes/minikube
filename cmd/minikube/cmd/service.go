@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 	"text/template"
@@ -34,6 +33,7 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/browser"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -78,7 +78,7 @@ var serviceCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
+		if driver.NeedsPortForward(co.Config.Driver) {
 			startKicServiceTunnel(svc, cname)
 			return
 		}
