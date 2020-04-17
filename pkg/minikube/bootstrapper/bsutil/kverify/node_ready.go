@@ -30,9 +30,9 @@ import (
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
-// WaitForNodeReady waits for a node to be ready
+// WaitForNodeReady waits till kube client reports node status as "ready"
 func WaitForNodeReady(cs *kubernetes.Clientset, timeout time.Duration) error {
-	glog.Info("waiting for node to be ready ...")
+	glog.Info("waiting for node status to be ready ...")
 	start := time.Now()
 	defer func() {
 		glog.Infof("duration metric: took %s to wait for WaitForNodeReady...", time.Since(start))
