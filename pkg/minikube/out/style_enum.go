@@ -43,7 +43,7 @@ const (
 	ThumbsUp
 	ThumbsDown
 	Option
-	OptionVerify
+	IndentVerify
 	Command
 	LogEntry
 	Deleted
