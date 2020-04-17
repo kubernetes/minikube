@@ -327,7 +327,7 @@ func (k *Bootstrapper) client(ip string, port int) (*kubernetes.Clientset, error
 }
 
 // WaitForNode blocks until the node appears to be healthy
-func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) error {
+func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, timeout time.Duration) (waitErr error) {
 	start := time.Now()
 
 	if !n.ControlPlane {
@@ -344,21 +344,20 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	defer func() error { // run pressure verification after all other checks, so there be an api server to talk to.
+	defer func() { // run pressure verification after all other checks, so there be an api server to talk to.
 		client, err := k.client(hostname, port)
 		if err != nil {
-			return errors.Wrap(err, "get k8s client")
+			waitErr = errors.Wrap(err, "get k8s client")
 		}
 		if err := kverify.NodePressure(client); err != nil {
 			adviseNodePressure(err, cfg.Name, cfg.Driver)
-			return errors.Wrap(err, "node pressure")
+			waitErr = errors.Wrap(err, "node pressure")
 		}
-		return nil
 	}()
 
 	if !kverify.ShouldWait(cfg.VerifyComponents) {
 		glog.Infof("skip waiting for components based on config.")
-		return nil
+		return waitErr
 	}
 
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
@@ -426,7 +425,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	glog.Infof("duration metric: took %s to wait for : %+v ...", time.Since(start), cfg.VerifyComponents)
-	return nil
+	return waitErr
 }
 
 // needsReset returns whether or not the cluster needs to be reconfigured
@@ -919,13 +918,14 @@ func adviseNodePressure(err error, name string, drv string) {
 			}
 		}
 		out.ErrLn("")
+		return
 	}
 
 	if memErr, ok := err.(*kverify.ErrMemoryPressure); ok {
 		out.ErrLn("")
 		glog.Warning(memErr)
 		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
-		out.T(out.Tip, "Check if you have unneccessary pods running by running 'kubectl get po -A")
+		out.T(out.Tip, "Check if you have unnecessary pods running by running 'kubectl get po -A")
 		if driver.IsVM(drv) {
 			out.T(out.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
@@ -938,6 +938,7 @@ func adviseNodePressure(err error, name string, drv string) {
 			}
 		}
 		out.ErrLn("")
+		return
 	}
 
 	if pidErr, ok := err.(*kverify.ErrPIDPressure); ok {
@@ -945,6 +946,7 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 		out.WarningT("The node {{.name}} has ran out of available PIDs.", out.V{"name": name})
 		out.ErrLn("")
+		return
 	}
 
 	if netErr, ok := err.(*kverify.ErrNetworkNotReady); ok {
@@ -952,5 +954,6 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 		out.WarningT("The node {{.name}} network is not available. Please verify network settings.", out.V{"name": name})
 		out.ErrLn("")
+		return
 	}
 }
