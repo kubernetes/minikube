@@ -335,7 +335,6 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
-	// starting from minikube v1.10 checking for node pressure is a reuqired check
 	out.T(out.HealthCheck, "Verifying Kubernetes Components:")
 	out.T(out.IndentVerify, "verifying node conditions ...")
 
@@ -345,18 +344,19 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	client, err := k.client(hostname, port)
-	if err != nil {
-		return errors.Wrap(err, "get k8s client")
-	}
-	if err := kverify.NodePressure(client); err != nil {
-		adviseNodePressure(err, cfg.Name, cfg.Driver)
-		return errors.Wrap(err, "node pressure")
-
-	}
+	defer func() { // run pressure verification after all other checks, so there be an api server to talk to.
+		client, err := k.client(hostname, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.NodePressure(client); err != nil {
+			adviseNodePressure(err, cfg.Name, cfg.Driver)
+			return errors.Wrap(err, "node pressure")
+		}
+	}()
 
 	if !kverify.ShouldWait(cfg.VerifyComponents) {
-		glog.Infof("skip waiting for the reset of components based on config.")
+		glog.Infof("skip waiting for components based on config.")
 		return nil
 	}
 
@@ -907,9 +907,9 @@ func adviseNodePressure(err error, name string, drv string) {
 		// generic advice for all drivers
 		out.T(out.Tip, "Please free up disk or prune images.")
 		if driver.IsVM(drv) {
-			out.T(out.Stopped, "Consider creating a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
+			out.T(out.Stopped, "Please create a cluster with bigger disk size: `minikube start --disk SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {
-			out.T(out.Stopped, "Consider increasing Docker Desktop's disk size.")
+			out.T(out.Stopped, "Please increse Desktop's disk size.")
 			if runtime.GOOS == "darwin" {
 				out.T(out.Documentation, "Documentation: {{.url}}", out.V{"url": "https://docs.docker.com/docker-for-mac/space/"})
 			}
@@ -924,7 +924,7 @@ func adviseNodePressure(err error, name string, drv string) {
 		out.ErrLn("")
 		glog.Warning(memErr)
 		out.WarningT("The node {{.name}} has ran out of memory.", out.V{"name": name})
-		out.T(out.Tip, "Please free up memory on the cluster.")
+		out.T(out.Tip, "Check if you have unneccessary pods running by running 'kubectl get po -A")
 		if driver.IsVM(drv) {
 			out.T(out.Stopped, "Consider creating a cluster with larger memory size using `minikube start --memory SIZE_MB` ")
 		} else if drv == oci.Docker && runtime.GOOS != "linux" {

@@ -99,7 +99,7 @@ func NodePressure(cs *kubernetes.Clientset) error {
 	glog.Info("verifying NodePressure condition ...")
 	start := time.Now()
 	defer func() {
-		glog.Infof("duration metric: took %s to wait for NodePressure...", time.Since(start))
+		glog.Infof("duration metric: took %s to run NodePressure ...", time.Since(start))
 	}()
 
 	ns, err := cs.CoreV1().Nodes().List(meta.ListOptions{})
@@ -119,7 +119,7 @@ func NodePressure(cs *kubernetes.Clientset) error {
 			}
 
 			if pc.MemoryPressure() {
-				return &ErrDiskPressure{
+				return &ErrMemoryPressure{
 					NodeCondition: pc,
 				}
 			}
