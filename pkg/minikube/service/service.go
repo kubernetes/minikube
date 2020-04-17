@@ -52,7 +52,7 @@ const (
 
 // K8sClient represents a kubernetes client
 type K8sClient interface {
-	GetCoreClient() (typed_core.CoreV1Interface, error)
+	GetCoreClient(string) (typed_core.CoreV1Interface, error)
 }
 
 // K8sClientGetter can get a K8sClient
@@ -66,10 +66,10 @@ func init() {
 }
 
 // GetCoreClient returns a core client
-func (k *K8sClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
-	client, err := kapi.Client(viper.GetString(config.ProfileName))
+func (k *K8sClientGetter) GetCoreClient(context string) (typed_core.CoreV1Interface, error) {
+	client, err := kapi.Client(context)
 	if err != nil {
-		return nil, errors.Wrap(err, "getting clientset")
+		return nil, errors.Wrap(err, "client")
 	}
 	return client.CoreV1(), nil
 }
@@ -90,7 +90,8 @@ type URLs []SvcURL
 // GetServiceURLs returns a SvcURL object for every service in a particular namespace.
 // Accepts a template for formatting
 func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) (URLs, error) {
-	host, err := machine.LoadHost(api, viper.GetString(config.ProfileName))
+	cname := viper.GetString(config.ProfileName)
+	host, err := machine.LoadHost(api, cname)
 	if err != nil {
 		return nil, err
 	}
@@ -100,7 +101,7 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 		return nil, err
 	}
 
-	client, err := K8s.GetCoreClient()
+	client, err := K8s.GetCoreClient(cname)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +127,8 @@ func GetServiceURLs(api libmachine.API, namespace string, t *template.Template) 
 
 // GetServiceURLsForService returns a SvcUrl object for a service in a namespace. Supports optional formatting.
 func GetServiceURLsForService(api libmachine.API, namespace, service string, t *template.Template) (SvcURL, error) {
-	host, err := machine.LoadHost(api, viper.GetString(config.ProfileName))
+	cname := viper.GetString(config.ProfileName)
+	host, err := machine.LoadHost(api, cname)
 	if err != nil {
 		return SvcURL{}, errors.Wrap(err, "Error checking if api exist and loading it")
 	}
@@ -136,7 +138,7 @@ func GetServiceURLsForService(api libmachine.API, namespace, service string, t *
 		return SvcURL{}, errors.Wrap(err, "Error getting ip from host")
 	}
 
-	client, err := K8s.GetCoreClient()
+	client, err := K8s.GetCoreClient(cname)
 	if err != nil {
 		return SvcURL{}, err
 	}
@@ -197,7 +199,8 @@ func printURLsForService(c typed_core.CoreV1Interface, ip, service, namespace st
 
 // CheckService checks if a service is listening on a port.
 func CheckService(namespace string, service string) error {
-	client, err := K8s.GetCoreClient()
+	cname := viper.GetString(config.ProfileName)
+	client, err := K8s.GetCoreClient(cname)
 	if err != nil {
 		return errors.Wrap(err, "Error getting kubernetes client")
 	}
@@ -301,7 +304,8 @@ func WaitForService(api libmachine.API, namespace string, service string, urlTem
 
 // GetServiceListByLabel returns a ServiceList by label
 func GetServiceListByLabel(namespace string, key string, value string) (*core.ServiceList, error) {
-	client, err := K8s.GetCoreClient()
+	cname := viper.GetString(config.ProfileName)
+	client, err := K8s.GetCoreClient(cname)
 	if err != nil {
 		return &core.ServiceList{}, &retry.RetriableError{Err: err}
 	}
@@ -320,7 +324,8 @@ func getServiceListFromServicesByLabel(services typed_core.ServiceInterface, key
 
 // CreateSecret creates or modifies secrets
 func CreateSecret(namespace, name string, dataValues map[string]string, labels map[string]string) error {
-	client, err := K8s.GetCoreClient()
+	cname := viper.GetString(config.ProfileName)
+	client, err := K8s.GetCoreClient(cname)
 	if err != nil {
 		return &retry.RetriableError{Err: err}
 	}
@@ -365,7 +370,8 @@ func CreateSecret(namespace, name string, dataValues map[string]string, labels m
 
 // DeleteSecret deletes a secret from a namespace
 func DeleteSecret(namespace, name string) error {
-	client, err := K8s.GetCoreClient()
+	cname := viper.GetString(config.ProfileName)
+	client, err := K8s.GetCoreClient(cname)
 	if err != nil {
 		return &retry.RetriableError{Err: err}
 	}

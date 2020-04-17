@@ -52,7 +52,7 @@ type MockClientGetter struct {
 // Force GetCoreClient to fail
 var getCoreClientFail bool
 
-func (m *MockClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
+func (m *MockClientGetter) GetCoreClient(string) (typed_core.CoreV1Interface, error) {
 	if getCoreClientFail {
 		return nil, fmt.Errorf("test Error - Mocked Get")
 	}
@@ -619,7 +619,7 @@ users:
 			os.Setenv("KUBECONFIG", mockK8sConfigPath)
 
 			k8s := K8sClientGetter{}
-			_, err = k8s.GetCoreClient()
+			_, err = k8s.GetCoreClient("minikube")
 			if err != nil && !test.err {
 				t.Fatalf("GetCoreClient returned unexpected error: %v", err)
 			}
