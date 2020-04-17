@@ -239,7 +239,8 @@ func TestGetStoragev1(t *testing.T) {
 				t.Fatalf(err.Error())
 			}
 
-			_, err = GetStoragev1(configfile.Name())
+			// context name is hardcoded by mockK8sConfig
+			_, err = GetStoragev1("minikube")
 			if err != nil && !test.err {
 				t.Fatalf("Unexpected err: %v for test: %v", err, test.description)
 			}
