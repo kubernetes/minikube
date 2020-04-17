@@ -25,6 +25,17 @@ import (
 	"testing"
 )
 
+// stderrWhitelist are regular expressions acceptable to find in normal stderr
+var stderrWhitelist = []string{
+	// kubectl out of date warning
+	`kubectl`,
+	// slow docker warning
+	`slow|long time|Restarting the docker service may improve`,
+}
+
+// stderrWhitelistRe combines rootCauses into a single regex
+var stderrWhitelistRe = regexp.MustCompile(strings.Join(stderrWhitelist, "|"))
+
 // TestErrorSpam asserts that there are no errors displayed
 func TestErrorSpam(t *testing.T) {
 	if NoneDriver() {
@@ -41,20 +52,22 @@ func TestErrorSpam(t *testing.T) {
 
 	rr, err := Run(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
-		t.Errorf("failed to start minikube with args: %q : %v", rr.Command(), err)
+		t.Errorf("%q failed: %v", rr.Command(), err)
 	}
 
 	for _, line := range strings.Split(rr.Stderr.String(), "\n") {
 		if strings.HasPrefix(line, "E") {
-			t.Errorf("unexpected error log in stderr: %q", line)
+			t.Errorf("unexpected error log: %q", line)
 			continue
 		}
 
-		if strings.Contains(line, "kubectl") || strings.Contains(line, "slow") || strings.Contains(line, "long time") {
+		if stderrWhitelistRe.MatchString(line) {
+			t.Logf("acceptable stderr: %q", line)
 			continue
 		}
+
 		if len(strings.TrimSpace(line)) > 0 {
-			t.Errorf("unexpected stderr line: %q", line)
+			t.Errorf("unexpected stderr: %q", line)
 		}
 	}
 
@@ -62,7 +75,7 @@ func TestErrorSpam(t *testing.T) {
 		keywords := []string{"error", "fail", "warning", "conflict"}
 		for _, keyword := range keywords {
 			if strings.Contains(line, keyword) {
-				t.Errorf("unexpected %q in stdout line: %q", keyword, line)
+				t.Errorf("unexpected %q in stdout: %q", keyword, line)
 			}
 		}
 	}
