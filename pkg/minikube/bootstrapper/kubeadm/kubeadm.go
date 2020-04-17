@@ -339,7 +339,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	out.T(out.HealthCheck, "Verifying Kubernetes Components:")
 	out.T(out.OptionVerify, "verifying node conditions ...")
 
-	// TODO: #7706: for better perforamnce we could use k.client inside minikube to avoid asking for external IP:PORT
+	// TODO: #7706: for better performance we could use k.client inside minikube to avoid asking for external IP:PORT
 	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
 	if err != nil {
 		return errors.Wrap(err, "get control plane endpoint")
@@ -350,9 +350,9 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrap(err, "get k8s client")
 	}
 	if err := kverify.NodePressure(client); err != nil {
-		adviseNodePressure(err,cfg.Name,cfg.Driver)		
-		return errors.Wrap(err,"node pressure")
-		
+		adviseNodePressure(err, cfg.Name, cfg.Driver)
+		return errors.Wrap(err, "node pressure")
+
 	}
 
 	if !kverify.ShouldWait(cfg.VerifyComponents) {
@@ -508,9 +508,8 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 	}
 
 	if err := kverify.NodePressure(client); err != nil {
-		adviseNodePressure(err,cfg.Name,cfg.Driver)
+		adviseNodePressure(err, cfg.Name, cfg.Driver)
 	}
-
 
 	if err := k.clearStaleConfigs(cfg); err != nil {
 		return errors.Wrap(err, "clearing stale configs")
@@ -898,7 +897,6 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 	}
 	return nil
 }
-
 
 // adviseNodePressure will advise the user what to do with difference pressure errors based on their environment
 func adviseNodePressure(err error, name string, drv string) {
