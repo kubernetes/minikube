@@ -77,7 +77,7 @@ minikube addons enable {{.name}}`, out.V{"name": addonName})
 		namespace := "kube-system"
 		key := "kubernetes.io/minikube-addons-endpoint"
 
-		serviceList, err := service.GetServiceListByLabel(namespace, key, addonName)
+		serviceList, err := service.GetServiceListByLabel(cname, namespace, key, addonName)
 		if err != nil {
 			exit.WithCodeT(exit.Unavailable, "Error getting service with namespace: {{.namespace}} and labels {{.labelName}}:{{.addonName}}: {{.error}}", out.V{"namespace": namespace, "labelName": key, "addonName": addonName, "error": err})
 		}
@@ -89,7 +89,7 @@ You can add one by annotating a service with the label {{.labelName}}:{{.addonNa
 			svc := serviceList.Items[i].ObjectMeta.Name
 			var urlString []string
 
-			if urlString, err = service.WaitForService(co.API, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
+			if urlString, err = service.WaitForService(co.API, co.Config.Name, namespace, svc, addonsURLTemplate, addonsURLMode, https, wait, interval); err != nil {
 				exit.WithCodeT(exit.Unavailable, "Wait failed: {{.error}}", out.V{"error": err})
 			}
 
