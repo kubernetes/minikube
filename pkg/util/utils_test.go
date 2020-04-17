@@ -22,6 +22,28 @@ import (
 	"github.com/blang/semver"
 )
 
+func TestValidateString(t *testing.T) {
+	testData := []struct {
+		input     		string
+		validOptions	[]string
+		wantIndex		int
+		wantValid		bool
+	}{
+		{"docker", []string{"docker", "crio", "containerd"}, 0, true},
+		{"Docker", []string{"docker", "crio", "containerd"}, -1, false},
+		{"dcker", []string{"docker", "crio", "containerd"}, -1, false},
+		{"", []string{"docker", "crio", "containerd"}, -1, false},
+		{"cri o", []string{"docker", "crio", "containerd"}, -1, false},
+	}
+
+	for _, tt := range testData {
+		index, isValid := ValidateString(tt.input, tt.validOptions)
+		if index != tt.wantIndex && isValid != tt.wantValid {
+			t.Fatalf("Expected '%d' but got '%d'", tt.wantIndex, index)
+		}
+	}
+}
+
 func TestGetBinaryDownloadURL(t *testing.T) {
 	testData := []struct {
 		version     string

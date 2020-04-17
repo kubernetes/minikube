@@ -32,6 +32,16 @@ const (
 	downloadURL = "https://storage.googleapis.com/minikube/releases/%s/minikube-%s-amd64%s"
 )
 
+// ValidateString returns index, true if a string exists in []string
+func ValidateString(input string, validOptions []string) (int, bool) {
+	for index, option := range validOptions {
+		if input == option {
+			return index, true
+		}
+	}
+	return -1, false
+}
+
 // CalculateSizeInMB returns the number of MB in the human readable string
 func CalculateSizeInMB(humanReadableSize string) (int, error) {
 	_, err := strconv.ParseInt(humanReadableSize, 10, 64)
