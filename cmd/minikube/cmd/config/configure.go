@@ -100,8 +100,11 @@ var addonsConfigureCmd = &cobra.Command{
 				acrPassword = AskForPasswordValue("-- Enter service principal password to access Azure Container Registry: ")
 			}
 
+			cname := ClusterFlagValue()
+
 			// Create ECR Secret
 			err := service.CreateSecret(
+				cname,
 				"kube-system",
 				"registry-creds-ecr",
 				map[string]string{
@@ -124,6 +127,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 			// Create GCR Secret
 			err = service.CreateSecret(
+				cname,
 				"kube-system",
 				"registry-creds-gcr",
 				map[string]string{
@@ -142,6 +146,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 			// Create Docker Secret
 			err = service.CreateSecret(
+				cname,
 				"kube-system",
 				"registry-creds-dpr",
 				map[string]string{
@@ -161,6 +166,7 @@ var addonsConfigureCmd = &cobra.Command{
 
 			// Create Azure Container Registry Secret
 			err = service.CreateSecret(
+				cname,
 				"kube-system",
 				"registry-creds-acr",
 				map[string]string{
