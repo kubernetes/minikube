@@ -144,7 +144,7 @@ func Start(starter Starter, apiServer bool) (*kubeconfig.Settings, error) {
 			prepareNone()
 		}
 
-		// Skip pre-existing, because we already waited for health
+		// TODO: existing cluster should wait for health #7597
 		if !starter.PreExists {
 			if err := bs.WaitForNode(*starter.Cfg, *starter.Node, viper.GetDuration(waitTimeout)); err != nil {
 				return nil, errors.Wrap(err, "Wait failed")
