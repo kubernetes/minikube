@@ -94,7 +94,6 @@ func (e *ErrNetworkNotReady) Error() string {
 	return fmt.Sprintf(errTextFormat, e.Type, e.Reason, e.Message)
 }
 
-
 // NodePressure verfies that node is not under disk, memory, pid or network pressure.
 func NodePressure(cs *kubernetes.Clientset) error {
 	glog.Info("verifying NodePressure condition ...")
@@ -141,4 +140,3 @@ func NodePressure(cs *kubernetes.Clientset) error {
 	}
 	return nil
 }
-
