@@ -19,6 +19,8 @@ package cruntime
 
 import (
 	"fmt"
+	"os/exec"
+
 	"github.com/blang/semver"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
@@ -27,7 +29,6 @@ import (
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/out"
 	"k8s.io/minikube/pkg/minikube/sysinit"
-	"os/exec"
 )
 
 // ContainerState is the run state of a container
@@ -158,9 +159,8 @@ func New(c Config) (Manager, error) {
 			Init:              sm,
 		}, nil
 	default:
-		return nil, fmt.Errorf("invalid runtime: %q", c.Type)
+		return nil, fmt.Errorf("unknown runtime type: %q", c.Type)
 	}
-
 }
 
 // ContainerStatusCommand works across container runtimes with good formatting

@@ -46,6 +46,7 @@ import (
 	"k8s.io/minikube/pkg/minikube/bootstrapper/images"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
+	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
@@ -222,7 +223,7 @@ func provisionWithDriver(cmd *cobra.Command, ds registry.DriverState, existing *
 	k8sVersion := getKubernetesVersion(existing)
 	cc, n, err := generateClusterConfig(cmd, existing, k8sVersion, driverName)
 	if err != nil {
-		exit.UsageT("failed to generate config. error: {{.error}}", out.V{"error": err.Error()})
+		return node.Starter{}, errors.Wrap(err, "Failed to generate config")
 	}
 
 	// This is about as far as we can go without overwriting config files
@@ -808,6 +809,17 @@ func validateFlags(cmd *cobra.Command, drvName string) {
 		validateMemorySize()
 		if !driver.HasResourceLimits(drvName) {
 			out.WarningT("The '{{.name}}' driver does not respect the --memory flag", out.V{"name": drvName})
+		}
+	}
+
+	if cmd.Flags().Changed(containerRuntime) {
+
+		runtime := viper.GetString(containerRuntime)
+
+		_, isValidRuntime := util.ValidateString(runtime, cruntime.ValidOptions())
+
+		if !isValidRuntime {
+			exit.UsageT("Invalid Container Runtime: \"{{.runtime}}\". Valid runtimes are: {{.validOptions}}", out.V{"runtime": runtime, "validOptions": strings.Join(cruntime.ValidOptions(), ", ")})
 		}
 	}
 
