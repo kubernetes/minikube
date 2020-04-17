@@ -2,7 +2,7 @@ ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/master/images/base/Dockerfile
 # which is an ubuntu 19.10 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
-FROM kindest/base:v20200317-92225082 as base
+FROM kindest/base:v20200109-d9c81a89@sha256:3e7cbf766fa8661d879f8acc415b0c700788b6d0fdffe4505196d9d3718a3dfa as base
 USER root
 # specify version of everything explicitly using 'apt-cache policy'
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -21,7 +21,7 @@ RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/lib
     apt-key add - < Release.key && apt-get update && \
     apt-get install -y --no-install-recommends cri-o-1.17=1.17.2~1
 # install podman
-RUN apt-get install -y --no-install-recommends podman=1.8.2~144
+RUN apt-get install -y --no-install-recommends podman=1.9.0~2
 # disable non-docker runtimes by default
 RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
 # enable docker which is default
@@ -53,4 +53,4 @@ RUN apt-get clean -y && rm -rf \
   /usr/share/doc/* \
   /usr/share/man/* \
   /usr/share/local/* \
-  RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
+RUN echo "kic! Build: ${COMMIT_SHA} Time :$(date)" > "/kic.txt"
