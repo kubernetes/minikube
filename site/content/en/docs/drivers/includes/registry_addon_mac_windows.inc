@@ -35,12 +35,12 @@ minikube start --addons=registry  --vm-driver={{docker | podman}}
 Build docker image and tag it appropriately:
 
 ```shell
-docker build --tag $(minikube ip):5000 <container_id>)/test-img .
+docker build --tag $(minikube ip):5000/test-img .
 ```
 Push docker image to minikube registry:
 
 ```shell
-docker push $(minikube ip):5000 <container_id>/test-img
+docker push $(minikube ip):5000/test-img
 ```
 
 ## 2. Use Registry for docker on mac and windows
