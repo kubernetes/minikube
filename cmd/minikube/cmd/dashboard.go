@@ -83,7 +83,7 @@ var dashboardCmd = &cobra.Command{
 		ns := "kubernetes-dashboard"
 		svc := "kubernetes-dashboard"
 		out.ErrT(out.Verifying, "Verifying dashboard health ...")
-		checkSVC := func() error { return service.CheckService(ns, svc) }
+		checkSVC := func() error { return service.CheckService(cname, ns, svc) }
 		// for slow machines or parallels in CI to avoid #7503
 		if err = retry.Expo(checkSVC, 100*time.Microsecond, time.Minute*10); err != nil {
 			exit.WithCodeT(exit.Unavailable, "dashboard service is not running: {{.error}}", out.V{"error": err})

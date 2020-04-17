@@ -84,7 +84,7 @@ var serviceCmd = &cobra.Command{
 			return
 		}
 
-		urls, err := service.WaitForService(co.API, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
+		urls, err := service.WaitForService(co.API, co.Config.Name, namespace, svc, serviceURLTemplate, serviceURLMode, https, wait, interval)
 		if err != nil {
 			var s *service.SVCNotFoundError
 			if errors.As(err, &s) {
