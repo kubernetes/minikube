@@ -44,7 +44,7 @@ func TestStartStop(t *testing.T) {
 			version string
 			args    []string
 		}{
-			{"old-docker", constants.OldestKubernetesVersion, []string{
+			{"old-k8s-version", constants.OldestKubernetesVersion, []string{
 				// default is the network created by libvirt, if we change the name minikube won't boot
 				// because the given network doesn't exist
 				"--kvm-network=default",
