@@ -28,7 +28,7 @@ minikube start [flags]
       --apiserver-port int                The apiserver listening port (default 8443)
       --auto-update-drivers               If set, automatically updates drivers to the latest version. Defaults to true. (default true)
       --cache-images                      If true, cache docker images for the current bootstrapper and load them into the machine. Always false with --driver=none. (default true)
-      --container-runtime string          The container runtime to be used (docker, crio, containerd). (default "docker")
+      --container-runtime string          The container runtime to be used. Defaults to: "docker", Available Runimes: "docker, crio, containerd" (default "docker")
       --cpus int                          Number of CPUs allocated to Kubernetes. (default 2)
       --cri-socket string                 The cri socket path to be used.
       --delete-on-failure                 If set, delete the current cluster if start fails and try again. Defaults to false.
