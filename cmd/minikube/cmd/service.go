@@ -34,6 +34,7 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/browser"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -78,7 +79,7 @@ var serviceCmd = &cobra.Command{
 		cname := ClusterFlagValue()
 		co := mustload.Healthy(cname)
 
-		if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
+		if driver.NeedsPortForward(co.Config.Driver) {
 			startKicServiceTunnel(svc, cname)
 			return
 		}
@@ -137,7 +138,7 @@ func startKicServiceTunnel(svc, configName string) {
 	service.PrintServiceList(os.Stdout, data)
 
 	openURLs(svc, urls)
-	out.WarningT("Because you are using docker driver on Mac, the terminal needs to be open to run it.")
+	out.WarningT("Because you are using a Docker driver on {{.operating_system}}, the terminal needs to be open to run it.", out.V{"operating_system": runtime.GOOS})
 
 	<-ctrlC
 

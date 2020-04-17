@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"time"
 
@@ -30,6 +29,7 @@ import (
 
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/localpath"
 	"k8s.io/minikube/pkg/minikube/mustload"
@@ -78,7 +78,8 @@ var tunnelCmd = &cobra.Command{
 			cancel()
 		}()
 
-		if runtime.GOOS == "darwin" && co.Config.Driver == oci.Docker {
+		if driver.NeedsPortForward(co.Config.Driver) {
+
 			port, err := oci.ForwardedPort(oci.Docker, cname, 22)
 			if err != nil {
 				exit.WithError("error getting ssh port", err)
