@@ -21,6 +21,7 @@ package integration
 import (
 	"context"
 	"os/exec"
+	"regexp"
 	"strings"
 	"testing"
 )
