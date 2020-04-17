@@ -30,7 +30,20 @@ Open a shell console, and run the following command:
 minikube start --addons=registry  --vm-driver={{docker | podman}}
 ```
 
-## Usage Registry
+## 1. Usage Registry for drivers that dont need port forward
+
+Build docker image and tag it appropriately:
+
+```shell
+docker build --tag $(minikube ip):5000 <container_id>)/test-img .
+```
+Push docker image to minikube registry:
+
+```shell
+docker push $(minikube ip):5000 <container_id>/test-img
+```
+
+## 2. Use Registry for docker on mac and windows
 
 Build docker image and tag it appropriately:
 
