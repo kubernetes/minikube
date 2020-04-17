@@ -35,7 +35,6 @@ import (
 	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
-	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/cruntime"
 	"k8s.io/minikube/pkg/minikube/download"
@@ -204,15 +203,6 @@ func (d *Driver) GetSSHPort() (int, error) {
 	p, err := oci.ForwardedPort(d.OCIBinary, d.MachineName, constants.SSHPort)
 	if err != nil {
 		return p, errors.Wrap(err, "get ssh host-port")
-	}
-	return p, nil
-}
-
-// GetRegistryAddonPort returns port for use with registry
-func GetRegistryAddonPort(cc *config.ClusterConfig) (int, error) {
-	p, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
-	if err != nil {
-		return p, errors.Wrap(err, "get registry port")
 	}
 	return p, nil
 }
