@@ -70,7 +70,7 @@ var styles = map[StyleEnum]style{
 	ThumbsUp:      {Prefix: "👍  "},
 	ThumbsDown:    {Prefix: "👎  "},
 	Option:        {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
-	OptionVerify:  {Prefix: "    🔎 ", LowPrefix: lowIndent}, //  Indented verifying  icon
+	IndentVerify:  {Prefix: "    🔎 ", LowPrefix: lowIndent}, //  Indented verifying icon, it needs extra space to make it work
 	Command:       {Prefix: "    ▪ ", LowPrefix: lowIndent}, // Indented bullet
 	LogEntry:      {Prefix: "    "},                         // Indent
 	Deleted:       {Prefix: "💀  "},
