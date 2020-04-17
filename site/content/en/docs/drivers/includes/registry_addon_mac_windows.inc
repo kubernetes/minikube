@@ -5,15 +5,15 @@ The registry addon works in all OS, to use it depends on the driver you built yo
 
 Here is a table to help you with registry addon:
 
-| Drivers   	| Supported Status  	|  Drivers to port forward 	|  Ports 	|
+| Drivers   	|  Ports 	|
 |---	|---	|---	|---	|---	|
-|  [Linux drivers](/docs/drivers)	|   works fine	|  	|  5000 	|
-|  [Mac drivers](/docs/drivers)	|   works fine	| [Docker](/docs/drivers/docker/)  |  random 	|
-|  [Windows drivers](/docs/drivers) 	|  works fine 	| [Docker](docs/drivers/docker/)   	|  random 	|
+|  [Docker driver on Linux](/docs/drivers)	| 5000 	|
+|  [Docker driver on Mac and windows](/docs/drivers)	| Random 	|
+|  [All other drivers](/docs/drivers) 	| Random 	|
 
 
 * note1 : The default port for linux drivers is 5000.
-* note2 : Drivers for Docker driver is random like (87362).
+* note2 : Drivers for Docker driver is random.
 
 ---
 
@@ -30,25 +30,17 @@ Open a shell console, and run the following command:
 minikube start --addons=registry  --vm-driver={{docker | podman}}
 ```
 
-## Before usage Registry
-
-Make sure the port you have to use, you can see it as a result of the previous command, or seeing the port forward running(in case of docker driver on Mac or Windows):
-
-```shell
-docker ps
-```
-
 ## Usage Registry
 
 Build docker image and tag it appropriately:
 
 ```shell
-docker build --tag $(minikube ip):5000/test-img .
+docker build --tag $(minikube ip):$(docker inspect --format '{{(index (index .NetworkSettings.Ports "5000/tcp") 0).HostPort}}' <container_id>)/test-img .
 ```
 Push docker image to minikube registry:
 
 ```shell
-docker push $(minikube ip):5000/test-img
+docker push $(minikube ip):$(docker inspect --format '{{(index (index .NetworkSettings.Ports "5000/tcp") 0).HostPort}}' <container_id>/test-img
 ```
 
 After the image is pushed, refer to it by `localhost:5000/{name}` in kubectl specs.
