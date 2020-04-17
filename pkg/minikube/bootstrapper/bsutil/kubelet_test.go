@@ -55,7 +55,7 @@ Wants=docker.socket
 
 [Service]
 ExecStart=
-ExecStart=/var/lib/minikube/binaries/v1.11.10/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests
+ExecStart=/var/lib/minikube/binaries/v1.12.0/kubelet --allow-privileged=true --authorization-mode=Webhook --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --cadvisor-port=0 --cgroup-driver=cgroupfs --client-ca-file=/var/lib/minikube/certs/ca.crt --cluster-domain=cluster.local --config=/var/lib/kubelet/config.yaml --container-runtime=docker --fail-swap-on=false --hostname-override=minikube --kubeconfig=/etc/kubernetes/kubelet.conf --node-ip=192.168.1.100 --pod-manifest-path=/etc/kubernetes/manifests
 
 [Install]
 `,
@@ -200,10 +200,7 @@ ExecStart=/var/lib/minikube/binaries/v1.18.0/kubelet --authorization-mode=Webhoo
 				Context:  1,
 			})
 			if err != nil {
-				t.Fatalf("diff error: %v", err)
-			}
-			if diff != "" {
-				t.Errorf("unexpected diff:\n%s", diff)
+				t.Fatalf("diff error: %v\n%s", err, diff)
 			}
 		})
 	}
