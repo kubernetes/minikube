@@ -125,7 +125,7 @@ For more information, see:
 
 ## 3. Pushing directly to in-cluster CRIO. (podman-env)
 
-This is simmilar to docker-env but only for cri-o runtime.
+This is similar to docker-env but only for cri-o runtime.
 To push directly to CRIO, configure podman client on your mac/linux host using the podman-env command in your shell:
 
 ```shell
