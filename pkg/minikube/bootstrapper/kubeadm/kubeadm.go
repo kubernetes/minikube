@@ -344,7 +344,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	defer func() { // run pressure verification after all other checks, so there be an api server to talk to.
+	defer func() error { // run pressure verification after all other checks, so there be an api server to talk to.
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -353,6 +353,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 			adviseNodePressure(err, cfg.Name, cfg.Driver)
 			return errors.Wrap(err, "node pressure")
 		}
+		return nil
 	}()
 
 	if !kverify.ShouldWait(cfg.VerifyComponents) {
