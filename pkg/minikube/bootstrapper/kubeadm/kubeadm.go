@@ -507,7 +507,6 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-
 	if err := k.clearStaleConfigs(cfg); err != nil {
 		return errors.Wrap(err, "clearing stale configs")
 	}
