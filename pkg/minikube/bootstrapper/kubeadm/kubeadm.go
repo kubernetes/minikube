@@ -332,21 +332,33 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		glog.Infof("%s is not a control plane, nothing to wait for", n.Name)
 		return nil
 	}
-	if !kverify.ShouldWait(cfg.VerifyComponents) {
-		glog.Infof("skip waiting for components based on config.")
-		return nil
+
+	// starting from minikube v1.10 checking for node pressure is a reuqired check
+	out.T(out.HealthCheck, "Verifying Kubernetes Components:")
+	out.T(out.OptionVerify, "verifying node conditions ...")
+
+	// TODO: #7706: for better perforamnce we could use k.client inside minikube to avoid asking for external IP:PORT
+	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
+	if err != nil {
+		return errors.Wrap(err, "get control plane endpoint")
 	}
 
-	out.T(out.HealthCheck, "Verifying Kubernetes Components:")
+	client, err := k.client(hostname, port)
+	if err != nil {
+		return errors.Wrap(err, "get k8s client")
+	}
+	if err := kverify.NodePressure(client); err != nil {
+		return errors.Wrap(err, "verifying node conditions")
+	}
+
+	if !kverify.ShouldWait(cfg.VerifyComponents) {
+		glog.Infof("skip waiting for the reset of components based on config.")
+		return nil
+	}
 
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
-	}
-
-	hostname, _, port, err := driver.ControlPaneEndpoint(&cfg, &n, cfg.Driver)
-	if err != nil {
-		return errors.Wrap(err, "get control plane endpoint")
 	}
 
 	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
