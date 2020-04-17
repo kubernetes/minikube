@@ -26,8 +26,6 @@ import (
 	"testing"
 	"text/template"
 
-	"time"
-
 	"github.com/docker/machine/libmachine"
 	"github.com/docker/machine/libmachine/host"
 	"github.com/pkg/errors"
@@ -35,7 +33,6 @@ import (
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
-	"k8s.io/client-go/kubernetes"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/kubernetes/typed/core/v1/fake"
 	testing_fake "k8s.io/client-go/testing"
@@ -63,10 +60,6 @@ func (m *MockClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
 		servicesMap:  m.servicesMap,
 		endpointsMap: m.endpointsMap,
 		secretsMap:   m.secretsMap}, nil
-}
-
-func (m *MockClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
-	return nil, nil
 }
 
 func (m *MockCoreClient) Secrets(ns string) typed_core.SecretInterface {

@@ -22,9 +22,8 @@ import (
 	"github.com/pkg/errors"
 	v1 "k8s.io/api/storage/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	storagev1 "k8s.io/client-go/kubernetes/typed/storage/v1"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/minikube/pkg/kapi"
 )
 
 func annotateDefaultStorageClass(storage storagev1.StorageV1Interface, class *v1.StorageClass, enable bool) error {
@@ -71,25 +70,11 @@ func SetDefaultStorageClass(storage storagev1.StorageV1Interface, name string) e
 }
 
 // GetStoragev1 return storage v1 interface for client
-func GetStoragev1() (storagev1.StorageV1Interface, error) {
-	client, err := getClient()
+func GetStoragev1(context string) (storagev1.StorageV1Interface, error) {
+	client, err := kapi.Client(context)
 	if err != nil {
 		return nil, err
 	}
 	sv1 := client.StorageV1()
 	return sv1, nil
-}
-
-func getClient() (*kubernetes.Clientset, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, &clientcmd.ConfigOverrides{})
-	config, err := kubeConfig.ClientConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "Error creating kubeConfig")
-	}
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "Error creating new client from kubeConfig.ClientConfig()")
-	}
-	return client, nil
 }

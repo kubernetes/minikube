@@ -35,14 +35,11 @@ import (
 	core "k8s.io/api/core/v1"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes"
 	typed_core "k8s.io/client-go/kubernetes/typed/core/v1"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	"k8s.io/minikube/pkg/kapi"
 	"k8s.io/minikube/pkg/minikube/config"
 	"k8s.io/minikube/pkg/minikube/machine"
 	"k8s.io/minikube/pkg/minikube/out"
-	"k8s.io/minikube/pkg/minikube/proxy"
 	"k8s.io/minikube/pkg/util/retry"
 )
 
@@ -57,7 +54,6 @@ const (
 // K8sClient represents a kubernetes client
 type K8sClient interface {
 	GetCoreClient() (typed_core.CoreV1Interface, error)
-	GetClientset(timeout time.Duration) (*kubernetes.Clientset, error)
 }
 
 // K8sClientGetter can get a K8sClient
@@ -72,36 +68,11 @@ func init() {
 
 // GetCoreClient returns a core client
 func (k *K8sClientGetter) GetCoreClient() (typed_core.CoreV1Interface, error) {
-	client, err := k.GetClientset(defaultK8sClientTimeout)
+	client, err := kapi.Client(viper.GetString(config.ProfileName))
 	if err != nil {
 		return nil, errors.Wrap(err, "getting clientset")
 	}
 	return client.CoreV1(), nil
-}
-
-// GetClientset returns a clientset
-func (*K8sClientGetter) GetClientset(timeout time.Duration) (*kubernetes.Clientset, error) {
-	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	profile := viper.GetString(config.ProfileName)
-	configOverrides := &clientcmd.ConfigOverrides{
-		Context: clientcmdapi.Context{
-			Cluster:  profile,
-			AuthInfo: profile,
-		},
-	}
-	kubeConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
-	clientConfig, err := kubeConfig.ClientConfig()
-	if err != nil {
-		return nil, fmt.Errorf("kubeConfig: %v", err)
-	}
-	clientConfig.Timeout = timeout
-	clientConfig = proxy.UpdateTransport(clientConfig)
-	client, err := kubernetes.NewForConfig(clientConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "client from config")
-	}
-
-	return client, nil
 }
 
 // SvcURL represents a service URL. Each item in the URLs field combines the service URL with one of the configured

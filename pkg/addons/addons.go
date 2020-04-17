@@ -259,10 +259,6 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	if name == "storage-provisioner-gluster" {
 		class = "glusterfile"
 	}
-	storagev1, err := storageclass.GetStoragev1()
-	if err != nil {
-		return errors.Wrapf(err, "Error getting storagev1 interface %v ", err)
-	}
 
 	api, err := machine.NewAPIClient()
 	if err != nil {
@@ -277,6 +273,11 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	if !machine.IsRunning(api, driver.MachineName(*cc, cp)) {
 		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", driver.MachineName(*cc, cp), name, val)
 		return enableOrDisableAddon(cc, name, val)
+	}
+
+	storagev1, err := storageclass.GetStoragev1(cc.Name)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting storagev1 interface %v ", err)
 	}
 
 	if enable {
