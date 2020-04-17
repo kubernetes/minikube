@@ -337,6 +337,8 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 		return nil
 	}
 
+	out.T(out.HealthCheck, "Verifying Kubernetes Components:")
+
 	cr, err := cruntime.New(cruntime.Config{Type: cfg.KubernetesConfig.ContainerRuntime, Runner: k.c})
 	if err != nil {
 		return errors.Wrapf(err, "create runtme-manager %s", cfg.KubernetesConfig.ContainerRuntime)
@@ -348,6 +350,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.APIServerWaitKey] {
+		out.T(out.OptionVerify, "verifying api server ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -362,6 +365,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.SystemPodsWaitKey] {
+		out.T(out.OptionVerify, "verifying system pods ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -372,6 +376,7 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
+		out.T(out.OptionVerify, "verifying default service account ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
@@ -382,12 +387,24 @@ func (k *Bootstrapper) WaitForNode(cfg config.ClusterConfig, n config.Node, time
 	}
 
 	if cfg.VerifyComponents[kverify.AppsRunningKey] {
+		out.T(out.OptionVerify, "verifying apps running ...")
 		client, err := k.client(hostname, port)
 		if err != nil {
 			return errors.Wrap(err, "get k8s client")
 		}
 		if err := kverify.WaitForAppsRunning(client, kverify.AppsRunningList, timeout); err != nil {
 			return errors.Wrap(err, "waiting for apps_running")
+		}
+	}
+
+	if cfg.VerifyComponents[kverify.NodeReadyKey] {
+		out.T(out.OptionVerify, "verifying node ready")
+		client, err := k.client(hostname, port)
+		if err != nil {
+			return errors.Wrap(err, "get k8s client")
+		}
+		if err := kverify.WaitForNodeReady(client, timeout); err != nil {
+			return errors.Wrap(err, "waiting for node to be ready")
 		}
 	}
 
