@@ -37,6 +37,7 @@ import (
 	"github.com/docker/machine/libmachine/state"
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
 	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 	"k8s.io/minikube/pkg/drivers/kic"
@@ -202,9 +203,13 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	}
 
 	var wg sync.WaitGroup
-	wg.Add(4)
+	wg.Add(3)
 
 	go func() {
+		// we need to have cluster role binding before applying overlay to avoid #7428
+		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
+			glog.Errorf("unable to create cluster role binding, some addons might not work: %v", err)
+		}
 		// the overlay is required for containerd and cri-o runtime: see #7428
 		if driver.IsKIC(cfg.Driver) && cfg.KubernetesConfig.ContainerRuntime != "docker" {
 			if err := k.applyKICOverlay(cfg); err != nil {
@@ -224,13 +229,6 @@ func (k *Bootstrapper) init(cfg config.ClusterConfig) error {
 	go func() {
 		if err := bsutil.AdjustResourceLimits(k.c); err != nil {
 			glog.Warningf("unable to adjust resource limits: %v", err)
-		}
-		wg.Done()
-	}()
-
-	go func() {
-		if err := k.elevateKubeSystemPrivileges(cfg); err != nil {
-			glog.Warningf("unable to create cluster role binding, some addons might not work: %v", err)
 		}
 		wg.Done()
 	}()
@@ -424,7 +422,8 @@ func (k *Bootstrapper) needsReset(conf string, hostname string, port int, client
 		glog.Infof("needs reset: %v", err)
 		return true
 	}
-
+	// to be used in the ingeration test to verify it wont reset.
+	glog.Infof("The running cluster does not need a reset. hostname: %s", hostname)
 	return false
 }
 
@@ -523,7 +522,7 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		_, err := k.c.RunCmd(exec.Command("/bin/bash", "-c", fmt.Sprintf("%s phase addon all --config %s", baseCmd, conf)))
 		return err
 	}
-	if err = retry.Expo(addonPhase, 1*time.Second, 30*time.Second); err != nil {
+	if err = retry.Expo(addonPhase, 100*time.Microsecond, 30*time.Second); err != nil {
 		glog.Warningf("addon install failed, wil retry: %v", err)
 		return errors.Wrap(err, "addons")
 	}
@@ -820,6 +819,10 @@ func (k *Bootstrapper) applyNodeLabels(cfg config.ClusterConfig) error {
 // elevateKubeSystemPrivileges gives the kube-system service account cluster admin privileges to work with RBAC.
 func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) error {
 	start := time.Now()
+	defer func() {
+		glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
+	}()
+
 	// Allow no more than 5 seconds for creating cluster role bindings
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -836,6 +839,24 @@ func (k *Bootstrapper) elevateKubeSystemPrivileges(cfg config.ClusterConfig) err
 			return nil
 		}
 	}
-	glog.Infof("duration metric: took %s to wait for elevateKubeSystemPrivileges.", time.Since(start))
-	return err
+
+	if cfg.VerifyComponents[kverify.DefaultSAWaitKey] {
+		// double checking defalut sa was created.
+		// good for ensuring using minikube in CI is robust.
+		checkSA := func() (bool, error) {
+			cmd = exec.Command("sudo", kubectlPath(cfg),
+				"get", "sa", "default", fmt.Sprintf("--kubeconfig=%s", path.Join(vmpath.GuestPersistentDir, "kubeconfig")))
+			rr, err = k.c.RunCmd(cmd)
+			if err != nil {
+				return false, nil
+			}
+			return true, nil
+		}
+
+		// retry up to make sure SA is created
+		if err := wait.PollImmediate(kconst.APICallRetryInterval, time.Minute, checkSA); err != nil {
+			return errors.Wrap(err, "ensure sa was created")
+		}
+	}
+	return nil
 }
