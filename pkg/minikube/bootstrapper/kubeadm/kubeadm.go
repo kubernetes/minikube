@@ -507,9 +507,6 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 		return nil
 	}
 
-	if err := kverify.NodePressure(client); err != nil {
-		adviseNodePressure(err, cfg.Name, cfg.Driver)
-	}
 
 	if err := k.clearStaleConfigs(cfg); err != nil {
 		return errors.Wrap(err, "clearing stale configs")
@@ -552,6 +549,10 @@ func (k *Bootstrapper) restartCluster(cfg config.ClusterConfig) error {
 
 	if err := kverify.WaitForSystemPods(cr, k, cfg, k.c, client, time.Now(), kconst.DefaultControlPlaneTimeout); err != nil {
 		return errors.Wrap(err, "system pods")
+	}
+
+	if err := kverify.NodePressure(client); err != nil {
+		adviseNodePressure(err, cfg.Name, cfg.Driver)
 	}
 
 	// This can fail during upgrades if the old pods have not shut down yet
