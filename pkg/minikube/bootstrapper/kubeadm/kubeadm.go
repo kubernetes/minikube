@@ -26,7 +26,7 @@ import (
 	"fmt"
 	"net"
 
-	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths
+	// WARNING: Do not use path/filepath in this package unless you want bizarre Windows paths :)
 
 	"strconv"
 	"strings"
