@@ -115,7 +115,7 @@ kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
 kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
 
-It may take a second, but your deployment will soon show up if you run:
+It may take a second, but your deployment will soon show up when you run:
 
 ```shell
 kubectl get services hello-minikube
@@ -127,21 +127,21 @@ The easiest way to access this service is to let minikube launch a web browser f
 minikube service hello-minikube
 ```
 
-Alternatively, you can find the cluster IP as seen by your host:
+Alternatively, use kubectl to forward the port:
 
 ```shell
-minikube ip
+kubectl port-forward service/hello-minikube 8780:8080
 ```
 
-Then navigate to &lt;your ip&gt;:8080 in your web browser
+Tada! Your application is now available at http://localhost:7080/
 
-## What about LoadBalanced apps?
+## LoadBalancer deployments
 
-To access a LoadBalancer application, use the "minikube tunnel" feature. Here is an example deployment:
+To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is an example deployment:
 
 ```shell
 kubectl create deployment balanced --image=k8s.gcr.io/echoserver:1.4  
-kubectl expose deployment balanced --type=LoadBalancer --port=8081
+kubectl expose deployment balanced --type=LoadBalancer --port=8080
 ```
 
 In another window, start the tunnel. The tunnel creates routable IP's for LoadBalancer apps:
@@ -150,13 +150,11 @@ In another window, start the tunnel. The tunnel creates routable IP's for LoadBa
 minikube tunnel
 ```
 
-Find the external IP assigned to your LoadBalancer app:
+It may take a second, but your LoadBalancer app will soon have an external IP associated to it:
 
 `kubectl get services balanced`
 
-Access the application using `http://&lt;EXTERNAL-IP&gt;:8081`
-
-TIP: If you are using macOS, minikube will also forward DNS for you: [http://balanced.default.svc.cluster.local:8081/](http://balanced.default.svc.cluster.local:8081/)
+Tada! Your LoadBalancer application is now available at `http://&lt;EXTERNAL-IP&gt;:8080/`
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">5</strong></span>Manage your cluster</h2>
 
