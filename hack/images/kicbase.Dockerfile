@@ -2,7 +2,7 @@ ARG COMMIT_SHA
 # using base image created by kind https://github.com/kubernetes-sigs/kind/blob/master/images/base/Dockerfile
 # which is an ubuntu 19.10 with an entry-point that helps running systemd
 # could be changed to any debian that can run systemd
-FROM kindest/base:v20200317-92225082 as base
+FROM kindest/base:v20200122-2dfe64b2 as base
 USER root
 # specify version of everything explicitly using 'apt-cache policy'
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -19,9 +19,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN sh -c "echo 'deb http://download.opensuse.org/repositories/devel:/kubic:/libcontainers:/stable/xUbuntu_19.10/ /' > /etc/apt/sources.list.d/devel:kubic:libcontainers:stable.list" && \    
     curl -LO https://download.opensuse.org/repositories/devel:kubic:libcontainers:stable/xUbuntu_19.10/Release.key && \
     apt-key add - < Release.key && apt-get update && \
-    apt-get install -y --no-install-recommends cri-o-1.17=1.17.2~1
+    apt-get install -y --no-install-recommends cri-o-1.17=1.17.0-3
 # install podman
-RUN apt-get install -y --no-install-recommends podman=1.8.2~144
+RUN apt-get install -y --no-install-recommends podman=1.8.2~1
 # disable non-docker runtimes by default
 RUN systemctl disable containerd && systemctl disable crio && rm /etc/crictl.yaml
 # enable docker which is default
