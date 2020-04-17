@@ -5,11 +5,11 @@ The registry addon works in all OS, to use it depends on the driver you built yo
 
 Here is a table to help you with registry addon:
 
-| Drivers   	|  Ports 	|
+| Drivers   	|  Port 	|
 |---	|---	|---	|---	|---	|
-|  [Docker driver on Linux](/docs/drivers)	| 5000 	|
-|  [Docker driver on Mac and windows](/docs/drivers)	| Random 	|
-|  [All other drivers](/docs/drivers) 	| Random 	|
+|  Docker driver on Linux	| 5000 	|
+|  Docker driver on Mac and windows | Random 	|
+|  All other drivers | 5000 	|
 
 
 * note1 : The default port for linux drivers is 5000.
