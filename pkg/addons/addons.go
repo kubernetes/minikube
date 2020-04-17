@@ -29,10 +29,11 @@ import (
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 
-	"k8s.io/minikube/pkg/drivers/kic"
+	"k8s.io/minikube/pkg/drivers/kic/oci"
 	"k8s.io/minikube/pkg/minikube/assets"
 	"k8s.io/minikube/pkg/minikube/command"
 	"k8s.io/minikube/pkg/minikube/config"
+	"k8s.io/minikube/pkg/minikube/constants"
 	"k8s.io/minikube/pkg/minikube/driver"
 	"k8s.io/minikube/pkg/minikube/exit"
 	"k8s.io/minikube/pkg/minikube/machine"
@@ -179,13 +180,13 @@ https://github.com/kubernetes/minikube/issues/7332`, out.V{"driver_name": cc.Dri
 	}
 
 	if name == "registry" {
-		if driver.IsKIC(cc.Driver) && runtime.GOOS != "linux" {
-			port, err := kic.GetRegistryAddonPort(cc)
+		if driver.NeedsPortForward(cc.Driver) {
+			port, err := oci.ForwardedPort(cc.Driver, cc.Name, constants.RegistryAddonPort)
 			if err != nil {
 				return errors.Wrap(err, "registry port")
 			}
-			out.T(out.Documentation, `Registry addon on with {{.driver}} uses {{.port}} please use that.
-For more information see: https://minikube.sigs.k8s.io/docs/drivers/docker/#install-docker to documentation`, out.V{"driver": cc.Driver, "port": port})
+			out.T(out.Tip, `Registry addon on with {{.driver}} uses {{.port}} please use that instead of default 5000`, out.V{"driver": cc.Driver, "port": port})
+			out.T(out.Documentation, `For more information see: https://minikube.sigs.k8s.io/docs/drivers/{{.driver}}`, out.V{"driver": cc.Driver})
 		}
 	}
 
