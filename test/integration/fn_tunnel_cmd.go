@@ -41,9 +41,8 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	ctx, cancel := context.WithTimeout(ctx, Minutes(20))
 	defer cancel()
 
-	if runtime.GOOS != "windows" {
-		// Otherwise minikube fails waiting for a password.
-		if err := exec.Command("sudo", "-n", "route").Run(); err != nil {
+	if !KicDriver() && runtime.GOOS != "windows" {
+		if err := exec.Command("sudo", "-n", "ifconfig").Run(); err != nil {
 			t.Skipf("password required to execute 'route', skipping testTunnel: %v", err)
 		}
 	}
@@ -59,7 +58,7 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Start the tunnel
-	args := []string{"-p", profile, "tunnel", "--alsologtostderr", "-v=1"}
+	args := []string{"-p", profile, "tunnel", "--alsologtostderr"}
 	ss, err := Start(t, exec.CommandContext(ctx, Target(), args...))
 	if err != nil {
 		t.Errorf("failed to start a tunnel: args %q: %v", args, err)
@@ -80,14 +79,14 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	// Wait until the nginx-svc has a loadbalancer ingress IP
-	nginxIP := ""
-	err = wait.PollImmediate(1*time.Second, Minutes(3), func() (bool, error) {
+	hostname := ""
+	err = wait.PollImmediate(5*time.Second, Minutes(3), func() (bool, error) {
 		rr, err := Run(t, exec.CommandContext(ctx, "kubectl", "--context", profile, "get", "svc", "nginx-svc", "-o", "jsonpath={.status.loadBalancer.ingress[0].ip}"))
 		if err != nil {
 			return false, err
 		}
 		if len(rr.Stdout.String()) > 0 {
-			nginxIP = rr.Stdout.String()
+			hostname = rr.Stdout.String()
 			return true, nil
 		}
 		return false, nil
@@ -103,9 +102,11 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 	}
 
 	got := []byte{}
+	url := fmt.Sprintf("http://%s", hostname)
+
 	fetch := func() error {
 		h := &http.Client{Timeout: time.Second * 10}
-		resp, err := h.Get(fmt.Sprintf("http://%s", nginxIP))
+		resp, err := h.Get(url)
 		if err != nil {
 			return &retry.RetriableError{Err: err}
 		}
@@ -119,12 +120,32 @@ func validateTunnelCmd(ctx context.Context, t *testing.T, profile string) {
 		}
 		return nil
 	}
-	if err = retry.Expo(fetch, time.Millisecond*500, Minutes(2), 13); err != nil {
-		t.Errorf("failed to hit nginx at %q: %v", nginxIP, err)
+	if err = retry.Expo(fetch, 3*time.Second, Minutes(2), 13); err != nil {
+		t.Errorf("failed to hit nginx at %q: %v", url, err)
 	}
 
 	want := "Welcome to nginx!"
 	if !strings.Contains(string(got), want) {
 		t.Errorf("expected body to contain %q, but got *%q*", want, got)
+	} else {
+		t.Logf("tunnel at %s is working!", url)
 	}
+
+	// Not all platforms support DNS forwarding
+	if runtime.GOOS != "darwin" {
+		return
+	}
+
+	url = "http://nginx-svc.default.svc.cluster.local"
+	if err = retry.Expo(fetch, 3*time.Second, Seconds(30), 10); err != nil {
+		t.Errorf("failed to hit nginx with DNS forwarded %q: %v", url, err)
+	}
+
+	want = "Welcome to nginx!"
+	if !strings.Contains(string(got), want) {
+		t.Errorf("expected body to contain %q, but got *%q*", want, got)
+	} else {
+		t.Logf("tunnel at %s is working!", url)
+	}
+
 }
