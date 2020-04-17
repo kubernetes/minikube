@@ -18,36 +18,36 @@ limitations under the License.
 package kverify
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
 	meta "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/minikube/pkg/util/retry"
+	kconst "k8s.io/kubernetes/cmd/kubeadm/app/constants"
 )
 
 // WaitForDefaultSA waits for the default service account to be created.
 func WaitForDefaultSA(cs *kubernetes.Clientset, timeout time.Duration) error {
 	glog.Info("waiting for default service account to be created ...")
 	start := time.Now()
-	saReady := func() error {
+	saReady := func() (bool, error) {
 		// equivalent to manual check of 'kubectl --context profile get serviceaccount default'
 		sas, err := cs.CoreV1().ServiceAccounts("default").List(meta.ListOptions{})
 		if err != nil {
 			glog.Infof("temproary error waiting for default SA: %v", err)
-			return err
+			return false, nil
 		}
 		for _, sa := range sas.Items {
 			if sa.Name == "default" {
 				glog.Infof("found service account: %q", sa.Name)
-				return nil
+				return true, nil
 			}
 		}
-		return fmt.Errorf("couldn't find default service account")
+		return false, nil
 	}
-	if err := retry.Expo(saReady, 500*time.Millisecond, timeout); err != nil {
+	if err := wait.PollImmediate(kconst.APICallRetryInterval, timeout, saReady); err != nil {
 		return errors.Wrapf(err, "waited %s for SA", time.Since(start))
 	}
 
