@@ -115,7 +115,7 @@ kubectl create deployment hello-minikube --image=k8s.gcr.io/echoserver:1.4
 kubectl expose deployment hello-minikube --type=NodePort --port=8080
 ```
 
-It may take a second, but your deployment will soon show up when you run:
+It may take a moment, but your deployment will soon show up when you run:
 
 ```shell
 kubectl get services hello-minikube
@@ -133,7 +133,7 @@ Alternatively, use kubectl to forward the port:
 kubectl port-forward service/hello-minikube 8780:8080
 ```
 
-Tada! Your application is now available at http://localhost:7080/
+Tada! Your application is now available at [http://localhost:7080/](http://localhost:7080/)
 
 ## LoadBalancer deployments
 
@@ -141,7 +141,7 @@ To access a LoadBalancer deployment, use the "minikube tunnel" command. Here is 
 
 ```shell
 kubectl create deployment balanced --image=k8s.gcr.io/echoserver:1.4  
-kubectl expose deployment balanced --type=LoadBalancer --port=8080
+kubectl expose deployment balanced --type=LoadBalancer --port=8000
 ```
 
 In another window, start the tunnel to create a routable IP for the 'balanced' deployment:
@@ -150,11 +150,11 @@ In another window, start the tunnel to create a routable IP for the 'balanced' d
 minikube tunnel
 ```
 
-It may take a second, but the 'balanced' deployment will soon have an external IP listed:
+To find the routable IP, run this command and examine the `EXTERNAL-IP` column:
 
 `kubectl get services balanced`
 
-Tada! Your LoadBalancer deployment is now available at `http://&lt;EXTERNAL-IP&gt;:8080/`
+Your deployment is now available at <EXTERNAL-IP>:8000
 
 <h2 class="step"><span class="fa-stack fa-1x"><i class="fa fa-circle fa-stack-2x"></i><strong class="fa-stack-1x text-primary">5</strong></span>Manage your cluster</h2>
 
