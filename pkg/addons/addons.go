@@ -244,7 +244,7 @@ func enableOrDisableAddonInternal(cc *config.ClusterConfig, addon *assets.Addon,
 		return err
 	}
 
-	return retry.Expo(apply, 1*time.Second, time.Second*30)
+	return retry.Expo(apply, 100*time.Microsecond, time.Minute)
 }
 
 // enableOrDisableStorageClasses enables or disables storage classes
@@ -258,10 +258,6 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	class := defaultStorageClassProvisioner
 	if name == "storage-provisioner-gluster" {
 		class = "glusterfile"
-	}
-	storagev1, err := storageclass.GetStoragev1()
-	if err != nil {
-		return errors.Wrapf(err, "Error getting storagev1 interface %v ", err)
 	}
 
 	api, err := machine.NewAPIClient()
@@ -277,6 +273,11 @@ func enableOrDisableStorageClasses(cc *config.ClusterConfig, name string, val st
 	if !machine.IsRunning(api, driver.MachineName(*cc, cp)) {
 		glog.Warningf("%q is not running, writing %s=%v to disk and skipping enablement", driver.MachineName(*cc, cp), name, val)
 		return enableOrDisableAddon(cc, name, val)
+	}
+
+	storagev1, err := storageclass.GetStoragev1(cc.Name)
+	if err != nil {
+		return errors.Wrapf(err, "Error getting storagev1 interface %v ", err)
 	}
 
 	if enable {
