@@ -774,8 +774,6 @@ func validateMySQL(ctx context.Context, t *testing.T, profile string) {
 		return err
 	}
 	if err = retry.Expo(mysql, 1*time.Second, Minutes(5)); err != nil {
-		// show mysql pod logs to isolate what is happening: https://github.com/kubernetes/minikube/issues/7401
-		showPodLogs(ctx, t, profile, "default", names)
 		t.Errorf("failed to exec 'mysql -ppassword -e show databases;': %v", err)
 	}
 }
