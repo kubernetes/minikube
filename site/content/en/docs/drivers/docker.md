@@ -40,6 +40,4 @@ The Docker driver allows you to install Kubernetes into an existing Docker insta
    If you machine enables AppArmor, you need to disable AppArmor for the mysql profile.
    To disable apparmor for mysql, run the following command on host machine.
 
-    `sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/
-    sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld
-    `
+    `sudo ln -s /etc/apparmor.d/usr.sbin.mysqld /etc/apparmor.d/disable/ && sudo apparmor_parser -R /etc/apparmor.d/usr.sbin.mysqld`
